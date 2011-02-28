@@ -1,5 +1,5 @@
 #
-#  The main file of the collector
+#  The main file of the db
 #
 
 # relatives

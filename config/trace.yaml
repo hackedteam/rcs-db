@@ -13,14 +13,14 @@ log4r_config:
     - name      : rcslogger
       level     : DEBUG
       additive  : 'false'
-      trace     : 'false'      
+      trace     : 'false'
       outputters:
         - stderr
         - logfile
 
   outputters:
     - type     : StderrOutputter
-      name     : stderr 
+      name     : stderr
       level    : DEBUG
       formatter:
       # take a look at this: http://log4r.rubyforge.org/rdoc/Log4r/PatternFormatter.html

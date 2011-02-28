@@ -47,5 +47,15 @@ pkg
 # bundler
 Gemfile.lock
 
+# log files
+log/*
+
 # config
 config/config.yaml
+
+# encrypted code
+lib/rcs-db-release
+lib/rcs-worker-release
+
+# evidences
+evidence/*
