@@ -46,3 +46,6 @@ pkg
 
 # bundler
 Gemfile.lock
+
+# config
+config/config.yaml
