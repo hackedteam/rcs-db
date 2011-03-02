@@ -4,7 +4,7 @@
 
 # relatives
 require_relative 'heartbeat.rb'
-#require_relative 'parser.rb'
+require_relative 'parser.rb'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -21,7 +21,7 @@ module DB
 class HTTPHandler < EM::Connection
   include RCS::Tracer
   include EM::HttpServer
-  #include RCS::Collector::Parser
+  include Parser
 
   attr_reader :peer
   attr_reader :peer_port
@@ -29,6 +29,9 @@ class HTTPHandler < EM::Connection
   def post_init
     # don't forget to call super here !
     super
+
+    #TODO: we want the connection to be encrypted with ssl
+    #start_tls(:private_key_file => '/tmp/server.key', :cert_chain_file => '/tmp/server.crt', :verify_peer => false)
 
     # to speed-up the processing, we disable the CGI environment variables
     self.no_environment_strings
@@ -39,6 +42,14 @@ class HTTPHandler < EM::Connection
     # get the peer name
     @peer_port, @peer = Socket.unpack_sockaddr_in(get_peername)
     trace :debug, "Connection from #{@peer}:#{@peer_port}"
+  end
+
+  def ssl_handshake_completed
+    #TODO: implement
+  end
+
+  def ssl_verify_peer(cert)
+    #TODO: check if the client cert is valid
   end
 
   def unbind
@@ -72,14 +83,15 @@ class HTTPHandler < EM::Connection
       #   - the content_type
       #   - the cookie if the backdoor successfully passed the auth phase
       begin
-        #content, content_type, cookie = http_parse(@http_headers.split("\x00"), @http_request_method, @http_request_uri, @http_cookie, @http_post_content)
+        status, content, content_type, cookie = http_parse(@http_headers.split("\x00"), @http_request_method, @http_request_uri, @http_cookie, @http_post_content)
       rescue Exception => e
         trace :error, "ERROR: " + e.message
         trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
       end
 
       # prepare the HTTP response
-      resp.status = 200
+      resp.status = status
+      #TODO: status_string from status
       resp.status_string = "OK"
       resp.content = content
       resp.headers['Content-Type'] = content_type

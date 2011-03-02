@@ -83,7 +83,7 @@ class Application
     
     optparse = OptionParser.new do |opts|
       # Set a banner, displayed at the top of the help screen.
-      opts.banner = "Usage: rcs-worker [options] <databse file>"
+      opts.banner = "Usage: rcs-worker [options] <database file>"
         
       # Default is to process ALL types of evidence, otherwise explicit the one you want parsed
       options[:type] = :ALL
