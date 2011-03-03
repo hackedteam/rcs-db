@@ -60,9 +60,14 @@ module Parser
       end
     end
 
+    # default is not authorized to do anything
+    resp_status = RESTController::STATUS_NOT_AUTHORIZED
+
     # invoke the right method on the controller
     begin
       resp_status, resp_content, resp_content_type, resp_cookie = controller.send(method) unless method.nil?
+    rescue NotAuthorized => e
+      trace :warn, "Invalid access level: " + e.message
     rescue Exception => e
       trace :error, "ERROR: " + e.message
       trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")

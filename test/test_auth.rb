@@ -4,18 +4,15 @@ module RCS
 module DB
 class AuthController
   def trace(a,b)
-    puts b
   end
 end
-end
-end
+
 
 # fake class to hold the Mixin
 class Classy
   include RCS::DB::Parser
   # fake trace method for testing
   def trace(a, b)
-    puts b
   end
 end
 
@@ -64,3 +61,5 @@ class ParserTest < Test::Unit::TestCase
   end
 end
 
+end #DB::
+end #RCS::

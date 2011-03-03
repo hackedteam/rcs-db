@@ -2,8 +2,6 @@
 # Controller for the Auth objects
 #
 
-require 'json'
-
 module RCS
 module DB
 
@@ -23,6 +21,8 @@ class AuthController < RESTController
         sess = SessionManager.instance.get(cookie)
         return STATUS_OK, *json_reply(sess), cookie
     end
+
+    return STATUS_NOT_AUTHORIZED
   end
 
 

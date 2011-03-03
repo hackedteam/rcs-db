@@ -14,6 +14,13 @@ require 'json'
 module RCS
 module DB
 
+class NotAuthorized < StandardError
+  def initialize(actual, required)
+    @message = "#{actual} not in #{required}"
+    super @message
+  end
+end
+
 class RESTController
   include RCS::Tracer
 
@@ -34,7 +41,9 @@ class RESTController
       return false unless controller_name.capitalize.eql? 'Auth' and params.first.eql? 'login'
     else
       # we have a cookie, check if it's valid
-      if not SessionManager.instance.check(req_cookie) then
+      if SessionManager.instance.check(req_cookie) then
+        @session = SessionManager.instance.get(req_cookie)
+      else
         trace :warn, "[#{@peer}][#{cookie}] Invalid cookie"
         return false
       end
@@ -58,6 +67,11 @@ class RESTController
   # helper method for the replies
   def json_reply(reply)
     return reply.to_json, 'application/json'
+  end
+
+  # macro for auth level check
+  def require_auth_level(*levels)
+    raise NotAuthorized.new(@session[:level], levels) unless levels.include? @session[:level]
   end
 
   def create
@@ -90,5 +104,7 @@ end
 end #DB::
 end #RCS::
 
-require_relative 'rest/auth'
-require_relative 'rest/user'
+# require all the controllers
+Dir[File.dirname(__FILE__) + '/rest/*.rb'].each do |file|
+  require file
+end
