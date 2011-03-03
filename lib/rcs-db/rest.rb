@@ -25,6 +25,21 @@ class RESTController
   attr_accessor :params
 
   def init(http_headers, req_method, req_uri, req_cookie, req_content)
+
+    # check the authentication
+    if req_cookie.nil? then
+      # extract the name of the controller and the parameters
+      root, controller_name, *params = req_uri.split('/')
+      # if the request does not contains any cookies, the only allowed method is AuthController::login
+      return false unless controller_name.capitalize.eql? 'Auth' and params.first.eql? 'login'
+    else
+      # we have a cookie, check if it's valid
+      if not SessionManager.instance.check(req_cookie) then
+        trace :warn, "[#{@peer}][#{cookie}] Invalid cookie"
+        return false
+      end
+    end
+
     @http_headers = http_headers
     @req_method = req_method
     @req_uri = req_uri
@@ -32,6 +47,8 @@ class RESTController
     @req_content = req_content
     # the parsed http parameters (from uri and from content)
     @params = {}
+
+    return true
   end
 
   def cleanup

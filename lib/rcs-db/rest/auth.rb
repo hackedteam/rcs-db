@@ -20,7 +20,8 @@ class AuthController < RESTController
       when 'POST'
         #TODO: authenticate the user
         cookie = SessionManager.instance.create(1, @params['user'], :admin)
-        return STATUS_OK, *json_reply({:cookie => cookie}), cookie
+        sess = SessionManager.instance.get(cookie)
+        return STATUS_OK, *json_reply(sess), cookie
     end
   end
 
