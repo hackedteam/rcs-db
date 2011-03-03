@@ -1,7 +1,11 @@
+
+require 'rcs-common/trace'
+
 require 'ffi'
 
 module Speex
 	extend FFI::Library
+  extend RCS::Tracer
 
 	class SpeexMode < FFI::Struct
 	  layout :mode,       :pointer,

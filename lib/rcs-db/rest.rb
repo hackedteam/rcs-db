@@ -1,12 +1,25 @@
+#
+# The REST interface for all the rest Objects
+#
+
+# relatives
+require_relative 'sessions.rb'
 
 # from RCS::Common
 require 'rcs-common/trace'
+
+# system
+require 'json'
 
 module RCS
 module DB
 
 class RESTController
   include RCS::Tracer
+
+  STATUS_OK = 200
+  STATUS_NOT_FOUND = 404
+  STATUS_NOT_AUTHORIZED = 403
 
   # the parameters passed on the REST request
   attr_accessor :params
@@ -22,7 +35,12 @@ class RESTController
   end
 
   def cleanup
-    
+    # hook method if you need to perform some cleanup operation
+  end
+
+  # helper method for the replies
+  def json_reply(reply)
+    return reply.to_json, 'application/json'
   end
 
   def create

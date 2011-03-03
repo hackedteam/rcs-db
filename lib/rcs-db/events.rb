@@ -5,6 +5,7 @@
 # relatives
 require_relative 'heartbeat.rb'
 require_relative 'parser.rb'
+require_relative 'sessions.rb'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -141,6 +142,8 @@ class Events
         # set up the heartbeat (the interval is in the config)
         EM::PeriodicTimer.new(Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
 
+        # timeout for the sessions (will destroy inactive sessions)
+        EM::PeriodicTimer.new(60) { SessionManager.instance.timeout }
       end
     rescue Exception => e
       # bind error
