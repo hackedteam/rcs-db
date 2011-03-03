@@ -3,13 +3,6 @@ require 'ffi'
 module Speex
 	extend FFI::Library
 
-  begin
-	  ffi_lib 'speex'
-    ffi_convention :stdcall
-  rescue Exception => e
-    puts "Cannot open libspeex."
-  end
-	
 	class SpeexMode < FFI::Struct
 	  layout :mode,       :pointer,
 	         :query,      :pointer,
@@ -43,16 +36,24 @@ module Speex
   SET_ENH = 0
   GET_FRAME_SIZE = 3
   
-  attach_function :decoder_init, :speex_decoder_init, [:pointer], :pointer
-  attach_function :decoder_destroy, :speex_decoder_destroy, [:pointer], :void
-  attach_function :decoder_ctl, :speex_decoder_ctl, [:pointer, :int, :pointer], :int
-  attach_function :decode, :speex_decode, [:pointer, :pointer, :pointer], :int
+  begin
+	  ffi_lib 'speex'
+    ffi_convention :stdcall
+
+    attach_function :decoder_init, :speex_decoder_init, [:pointer], :pointer
+    attach_function :decoder_destroy, :speex_decoder_destroy, [:pointer], :void
+    attach_function :decoder_ctl, :speex_decoder_ctl, [:pointer, :int, :pointer], :int
+    attach_function :decode, :speex_decode, [:pointer, :pointer, :pointer], :int
+
+	  attach_function :bits_init, :speex_bits_init, [:pointer], :void
+    attach_function :bits_destroy, :speex_bits_destroy, [:pointer], :void
+    attach_function :bits_read_from, :speex_bits_read_from, [:pointer, :pointer, :int], :void
+
+    attach_function :lib_get_mode, :speex_lib_get_mode, [:int], :pointer
+  rescue Exception => e
+    puts "Cannot open libspeex."
+  end
   
-	attach_function :bits_init, :speex_bits_init, [:pointer], :void
-  attach_function :bits_destroy, :speex_bits_destroy, [:pointer], :void
-  attach_function :bits_read_from, :speex_bits_read_from, [:pointer, :pointer, :int], :void
-  
-  attach_function :lib_get_mode, :speex_lib_get_mode, [:int], :pointer
 end
 
 =begin
