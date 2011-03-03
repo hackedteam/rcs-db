@@ -8,6 +8,7 @@ end
 gem 'sqlite3-ruby'
 gem 'uuidtools'
 #gem 'rcs-common', ">= 0.1.4"
+gem 'ffi'
 
 # Add dependencies to develop your gem here.
 # Include everything needed to run rake, tests, features, etc.
