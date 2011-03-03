@@ -2,8 +2,13 @@ require 'ffi'
 
 module Speex
 	extend FFI::Library
-	ffi_lib 'speex'
-	ffi_convention :stdcall
+
+  begin
+	  ffi_lib 'speex'
+    ffi_convention :stdcall
+  rescue Exception => e
+    puts "Cannot open libspeex."
+  end
 	
 	class SpeexMode < FFI::Struct
 	  layout :mode,       :pointer,
