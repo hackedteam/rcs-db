@@ -51,7 +51,7 @@ module Speex
 
     attach_function :lib_get_mode, :speex_lib_get_mode, [:int], :pointer
   rescue Exception => e
-    puts "Cannot open libspeex."
+    trace :fatal, "ERROR: Cannot open libspeex"
   end
   
 end
