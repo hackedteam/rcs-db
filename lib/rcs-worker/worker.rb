@@ -43,7 +43,7 @@ class Worker
   def process
     require 'pp'
     
-    info = RCS::EvidenceManager.instance.get_info(@instance)
+    info = RCS::EvidenceManager.get_info(@instance)
     trace :info, "Processing backdoor #{info['build']}:#{info['instance']}"
     
     # the log key is passed as a string taken from the db
@@ -51,12 +51,12 @@ class Worker
     trace :debug, "Evidence key #{info['key']}"
     evidence_key = Digest::MD5.digest info['key']
     
-    evidence_sizes = RCS::EvidenceManager.instance.get_info_evidence(@instance)
-    evidence_ids = RCS::EvidenceManager.instance.get_evidence_ids(@instance)
+    evidence_sizes = RCS::EvidenceManager.get_info_evidence(@instance)
+    evidence_ids = RCS::EvidenceManager.get_evidence_ids(@instance)
     trace :info, "Pieces of evidence to be processed: #{evidence_ids.join(', ')}."
     
     evidence_ids.each do |id|
-      binary = RCS::EvidenceManager.instance.get_evidence(id, @instance)
+      binary = RCS::EvidenceManager.get_evidence(id, @instance)
       trace :info, "Processing evidence #{id}: #{binary.size} bytes."
       begin
         evidence = RCS::Evidence.new(evidence_key).deserialize(binary)
