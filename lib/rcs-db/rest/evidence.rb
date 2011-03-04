@@ -29,7 +29,7 @@ class EvidenceController < RESTController
     session = {:instance => params[:evidence]}
 
     # save the evidence in the db
-    EvidenceManager.instance.store session, @req_content.size, @req_content
+    EvidenceManager.store_evidence session, @req_content.size, @req_content
 
     return STATUS_OK, *json_reply({:bytes => @req_content.size})
   end
@@ -50,7 +50,7 @@ class EvidenceController < RESTController
     key = 'magical-key'
 
     # store the status
-    EvidenceManager.instance.sync_start session, params['version'], params['user'], params['device'], params['source'], now, key
+    EvidenceManager.sync_start session, params['version'], params['user'], params['device'], params['source'], now, key
 
     return STATUS_OK
   end
@@ -63,7 +63,7 @@ class EvidenceController < RESTController
                :instance => params['instance']}
 
     # store the status
-    EvidenceManager.instance.sync_end session
+    EvidenceManager.sync_end session
 
     return STATUS_OK
   end
@@ -76,7 +76,7 @@ class EvidenceController < RESTController
                :instance => params['instance']}
 
     # store the status
-    EvidenceManager.instance.sync_timeout session
+    EvidenceManager.sync_timeout session
 
     return STATUS_OK
   end
