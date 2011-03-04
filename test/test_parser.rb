@@ -19,8 +19,8 @@ class ParserTest < Test::Unit::TestCase
   def test_get_fake_page
     status, content, content_type, cookie = @rest.http_parse(@http_headers, 'GET', '/fake/1', nil, nil)
 
-    # not existing pages should receive 403 status code
-    assert_equal 403, status
+    # not existing pages should receive 404 status code
+    assert_equal 404, status
     assert_nil cookie
   end
 
