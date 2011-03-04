@@ -3,7 +3,7 @@ require 'ffi'
 module Speex
 	extend FFI::Library
 
-	class SpeexMode < FFI::Struct
+	class Mode < FFI::Struct
 	  layout :mode,       :pointer,
 	         :query,      :pointer,
 	         :modeName,   :string,
@@ -19,7 +19,7 @@ module Speex
 	         :dec_ctl,    :pointer
   end
 	
-	class SpeexBits < FFI::Struct
+	class Bits < FFI::Struct
 	  layout :chars,      :string,
 	         :nbBits,     :int,
 	         :charPtr,    :int,
