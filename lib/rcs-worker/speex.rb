@@ -50,6 +50,7 @@ module Speex
     attach_function :decode, :speex_decode, [:pointer, :pointer, :pointer], :int
 
 	  attach_function :bits_init, :speex_bits_init, [:pointer], :void
+    attach_function :bits_init_buffer, :speex_bits_init_buffer, [:pointer, :pointer, :int], :void
     attach_function :bits_destroy, :speex_bits_destroy, [:pointer], :void
     attach_function :bits_read_from, :speex_bits_read_from, [:pointer, :pointer, :int], :void
 

