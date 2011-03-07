@@ -65,3 +65,6 @@ lib/rcs-worker-release
 
 # evidences
 evidence
+
+# temporary wav files
+*.wav
