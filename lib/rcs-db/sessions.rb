@@ -56,7 +56,7 @@ class SessionManager
   # default timeout is 15 mins
   # this timeout is calculated from the last time the cookie was checked
   def timeout(delta = 900)
-    trace :debug, "Session Manager timeouting entries..." if @sessions.length > 0
+    trace :debug, "Session Manager timing out entries..." if @sessions.length > 0
     # save the size of the hash before deletion
     size = @sessions.length
     # search for timeouted sessions
@@ -67,7 +67,7 @@ class SessionManager
         @sessions.delete key
       end
     end
-    trace :info, "Session Manager timeouted #{size - @sessions.length} sessions" if size - @sessions.length > 0
+    trace :info, "Session Manager timed out #{size - @sessions.length} sessions" if size - @sessions.length > 0
   end
 
   def length

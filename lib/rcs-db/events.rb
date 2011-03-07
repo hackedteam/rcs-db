@@ -15,6 +15,7 @@ require 'rcs-common/status'
 require 'eventmachine'
 require 'evma_httpserver'
 require 'socket'
+require 'em-proxy'
 
 module RCS
 module DB
@@ -113,50 +114,40 @@ class HTTPHandler < EM::Connection
 
 end #HTTPHandler
 
-module ProxyConnection
-  include RCS::Tracer
-
-  def initialize(client, request)
-    @client, @request = client, request
-  end
-
-  def post_init
-    start_tls
-  end
-
-  def receive_data(data)
-    @client.send_data data
-  end
-
-  def connection_completed
-    send_data @request
-  end
-
-  def unbind
-    @client.close_connection_after_writing
-  end
-end
-
-module ProxyServer
-  include RCS::Tracer
-  
-  def post_init
-    start_tls(:private_key_file => './config/rcs-db.key', :cert_chain_file => './config/rcs-db.crt', :verify_peer => false)
-  end
-
-  def receive_data(data)
-    # forward the connection to the XML-RPC DB
-    EM.connect(Config.global['DB_ADDRESS'], 4443, ProxyConnection, self, data)
-  end
-end
 
 class Events
   include RCS::Tracer
+
+  def start_proxy(local_port, server, server_port)
+    Thread.new do
+      trace :info, "Forwarding port #{local_port} to #{server}:#{server_port}..."
+      
+      Proxy.start(:host => "0.0.0.0", :port => local_port, :debug => false) do |conn|
+        conn.server :srv, :host => server, :port => server_port
+
+        conn.on_data do |data|
+          data
+        end
+
+        conn.on_response do |backend, resp|
+          resp
+        end
+
+        conn.on_finish do |backend, name|
+          unbind if backend == :srv
+        end
+      end
+    end
+  end
   
   def setup(port = 4444)
 
     # main EventMachine loop
     begin
+
+      #start the proxy for the XML-RPC calls
+      start_proxy(port - 1, Config.global['DB_ADDRESS'], port - 1)
+
       # all the events are handled here
       EM::run do
         # if we have epoll(), prefer it over select()
@@ -171,10 +162,6 @@ class Events
         # start the HTTP REST server
         EM::start_server("0.0.0.0", port, HTTPHandler)
         trace :info, "Listening on port #{port}..."
-
-        # start the Forwarder server
-        EM::start_server("0.0.0.0", port - 1, ProxyServer)
-        trace :info, "Forwarding port #{port - 1} to #{Config.global['DB_ADDRESS']}..."
 
         # send the first heartbeat to the db, we are alive and want to notify the db immediately
         # subsequent heartbeats will be sent every HB_INTERVAL
