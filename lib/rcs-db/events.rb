@@ -32,7 +32,7 @@ class HTTPHandler < EM::Connection
     super
 
     #TODO: we want the connection to be encrypted with ssl
-    #start_tls(:private_key_file => '/tmp/server.key', :cert_chain_file => '/tmp/server.crt', :verify_peer => false)
+    start_tls(:private_key_file => './config/rcs-db.key', :cert_chain_file => './config/rcs-db.crt', :verify_peer => false)
 
     # to speed-up the processing, we disable the CGI environment variables
     self.no_environment_strings
@@ -113,10 +113,47 @@ class HTTPHandler < EM::Connection
 
 end #HTTPHandler
 
+module ProxyConnection
+  include RCS::Tracer
+
+  def initialize(client, request)
+    @client, @request = client, request
+  end
+
+  def post_init
+    start_tls
+  end
+
+  def receive_data(data)
+    @client.send_data data
+  end
+
+  def connection_completed
+    send_data @request
+  end
+
+  def unbind
+    @client.close_connection_after_writing
+  end
+end
+
+module ProxyServer
+  include RCS::Tracer
+  
+  def post_init
+    start_tls(:private_key_file => './config/rcs-db.key', :cert_chain_file => './config/rcs-db.crt', :verify_peer => false)
+  end
+
+  def receive_data(data)
+    # forward the connection to the XML-RPC DB
+    EM.connect(Config.global['DB_ADDRESS'], 4443, ProxyConnection, self, data)
+  end
+end
+
 class Events
   include RCS::Tracer
   
-  def setup(port = 443)
+  def setup(port = 4444)
 
     # main EventMachine loop
     begin
@@ -131,16 +168,20 @@ class Events
         # we are alive and ready to party
         Status.my_status = Status::OK
 
-        # start the HTTP server
+        # start the HTTP REST server
         EM::start_server("0.0.0.0", port, HTTPHandler)
         trace :info, "Listening on port #{port}..."
+
+        # start the Forwarder server
+        EM::start_server("0.0.0.0", port - 1, ProxyServer)
+        trace :info, "Forwarding port #{port - 1} to #{Config.global['DB_ADDRESS']}..."
 
         # send the first heartbeat to the db, we are alive and want to notify the db immediately
         # subsequent heartbeats will be sent every HB_INTERVAL
         HeartBeat.perform
 
         # set up the heartbeat (the interval is in the config)
-        EM::PeriodicTimer.new(Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
+        EM::PeriodicTimer.new(Config.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
 
         # timeout for the sessions (will destroy inactive sessions)
         EM::PeriodicTimer.new(60) { SessionManager.instance.timeout }
@@ -148,7 +189,7 @@ class Events
     rescue Exception => e
       # bind error
       if e.message.eql? 'no acceptor' then
-        trace :fatal, "Cannot bind port #{Config.instance.global['LISTENING_PORT']}"
+        trace :fatal, "Cannot bind port #{Config.global['LISTENING_PORT']}"
         return 1
       end
       raise

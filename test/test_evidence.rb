@@ -6,7 +6,6 @@ module RCS
 
 class EvidenceManager
   def trace(a,b)
-    puts b
   end
 end
 
@@ -14,7 +13,6 @@ module DB
 
 class EvidenceController
   def trace(a,b)
-    puts b
   end
 end
 
@@ -23,7 +21,6 @@ class Classy
   include RCS::DB::Parser
   # fake trace method for testing
   def trace(a, b)
-    puts b
   end
 end
 

@@ -45,10 +45,10 @@ class Application
       trace :info, "Starting the RCS Database #{version}..."
 
       # config file parsing
-      return 1 unless Config.instance.load_from_file
+      return 1 unless Config.load_from_file
 
       # enter the main loop (hopefully will never exit from it)
-      Events.new.setup Config.instance.global['LISTENING_PORT']
+      Events.new.setup Config.global['LISTENING_PORT']
 
     rescue Exception => e
       trace :fatal, "FAILURE: " << e.message

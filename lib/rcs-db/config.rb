@@ -4,9 +4,9 @@
 
 # from RCS::Common
 require 'rcs-common/trace'
+require 'rcs-common/flatsingleton'
 
 # system
-require 'singleton'
 require 'yaml'
 require 'pp'
 require 'optparse'
@@ -16,12 +16,14 @@ module DB
 
 class Config
   include Singleton
+  extend FlatSingleton
   include Tracer
 
   CONF_FILE = '/config/config.yaml'
 
   DEFAULT_CONFIG= {'DB_ADDRESS' => 'localhost',
-                   'LISTENING_PORT' => 4443,
+                   'DB_CERT' => 'rcs-ca.pem',
+                   'LISTENING_PORT' => 4444,
                    'HB_INTERVAL' => 30}
 
   attr_reader :global
@@ -84,6 +86,7 @@ class Config
 
     # values taken from command line
     @global['DB_ADDRESS'] = options[:db_address] unless options[:db_address].nil?
+    @global['DB_CERT'] = options[:db_cert] unless options[:db_cert].nil?
     @global['LISTENING_PORT'] = options[:port] unless options[:port].nil?
     @global['HB_INTERVAL'] = options[:hb_interval] unless options[:hb_interval].nil?
 
@@ -120,6 +123,9 @@ class Config
       opts.on( '-a', '--db-address HOST', String, 'Use the rcs-db at HOST' ) do |host|
         options[:db_address] = host
       end
+      opts.on( '-t', '--db-cert FILE', 'The certificate file (pem) used for ssl communication with rcs-db' ) do |file|
+        options[:db_cert] = file
+      end
       opts.on( '-b', '--db-heartbeat SEC', Integer, 'Time in seconds between two heartbeats to the rcs-db' ) do |sec|
         options[:hb_interval] = sec
       end
@@ -137,7 +143,7 @@ class Config
     optparse.parse(argv)
 
     # execute the configurator
-    return Config.instance.run(options)
+    return Config.run(options)
   end
 
 end #Config
