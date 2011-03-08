@@ -56,7 +56,8 @@ class ParserTest < Test::Unit::TestCase
                :version => 2011030401,
                :user => 'test-user',
                :device => 'test-device',
-               :source => 'test-source'
+               :source => 'test-source',
+               :sync_time => Time.now
               }
     status, *dummy = @rest.http_parse(@http_headers, 'POST', '/evidence/start', @cookie, content.to_json)
     assert_equal 200, status

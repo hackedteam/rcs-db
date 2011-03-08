@@ -31,6 +31,8 @@ class EvidenceController < RESTController
     # save the evidence in the db
     EvidenceManager.store_evidence session, @req_content.size, @req_content
 
+    #TODO: notify the worker
+
     return STATUS_OK, *json_reply({:bytes => @req_content.size})
   end
 
@@ -43,14 +45,11 @@ class EvidenceController < RESTController
                :instance => params['instance'],
                :subtype => params['subtype']}
 
-    # get the time in UTC
-    now = Time.now - Time.now.utc_offset
-
     #TODO: retrieve the key from the db
     key = 'magical-key'
 
     # store the status
-    EvidenceManager.sync_start session, params['version'], params['user'], params['device'], params['source'], now, key
+    EvidenceManager.sync_start session, params['version'], params['user'], params['device'], params['source'], params['sync_time'], key
 
     return STATUS_OK
   end
