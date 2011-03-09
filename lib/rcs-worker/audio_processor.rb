@@ -9,16 +9,52 @@ require 'rcs-worker/wave'
 require 'digest/md5'
 
 class Channel
-  attr_reader :sample_rate, :start_time, :wav_data
+  include Tracer
+  attr_reader :sample_rate, :start_time, :stop_time, :wav_data, :status
   
-  def initialize(sample_rate, start_time)
-    @sample_rate = sample_rate
-    @start_time = start_time
+  def initialize(evidence)
+    @name = evidence.channel.to_s
+    @sample_rate = evidence.sample_rate
+    @start_time = evidence.start_time
+    @stop_time = @start_time
     @wav_data = String.new
+    @status = :open
+    trace :debug, "Creating new channel #{self.id}"
   end
   
-  def feed(wav_data)
-    @wav_data += wav_data
+  def id
+    "#{@name}:#{@sample_rate}:#{@start_time}:#{@stop_time}:#{@status.to_s}"
+  end
+  
+  def self.other_than channel
+    channel == :incoming ? :outgoing : :incoming
+  end
+  
+  def close!
+    @status = :closed
+    trace :debug, "Closing channel #{self.id}"
+  end
+  
+  def closed?
+    @status == :closed
+  end
+
+  def accept?(evidence)
+    return false if closed?
+    time_gap = evidence.start_time.to_f - @stop_time.to_f
+    trace :debug, "evidence with a time gap of #{time_gap} with channel stop time."
+    return false if time_gap >= 5.0
+    return true
+  end
+  
+  def feed(evidence)
+    if evidence.end_call?
+      self.close!
+      return
+    end
+
+    @stop_time = evidence.stop_time
+    @wav_data += evidence.wav
   end
   
   def size
@@ -26,11 +62,11 @@ class Channel
   end
   
   def to_s
-    "#{size} bytes, samplerate #{@sample_rate}"
+    self.id
   end
   
   def to_wavfile (filename = '')
-    name = "#{Digest::MD5.hexdigest("#{@start_time}")}.wav"
+    name = "#{Digest::MD5.hexdigest("#{@start_time}")}_#{@name}.wav"
     File.open(name, 'wb') do |f|
       data_header = Wave.data_header @wav_data.size
       chunk_header = Wave.chunk_header 1, @sample_rate
@@ -44,33 +80,75 @@ class Channel
 end
 
 class Call
+  include Tracer
   attr_writer :start_time
-  attr_reader :incoming, :outgoing
   
-  def initialize(start_time)
-    @start_time = start_time
+  def initialize(evidence)
+    @callee = evidence.callee
+    @start_time = evidence.start_time
     @channels = {}
+    create_channel evidence
+    trace :info, "new call for #{@callee} #{@start_time} on channel #{evidence.channel.to_s.upcase}"
   end
   
-  def append_to_channel(evidence)
-    @channels[evidence.channel] = Channel.new(evidence.sample_rate, evidence.start_time) unless @channels.has_key? evidence.channel
-    @channels[evidence.channel].feed(evidence.wav)
-    puts "[#{object_id}] feeding #{evidence.wav.size} bytes at #{evidence.start_time}:#{evidence.stop_time}"
+  def id
+    "#{@callee}:#{@start_time}"
+  end
+  
+  def accept?(evidence)
+    # we accept evidence only if relative channel accept it
+    channel = get_channel evidence
+    return channel.accept? evidence unless channel.nil?
+    trace :debug, "evidence is not being accepted by call #{id}"
+    return false
+  end
+  
+  def get_channel(evidence)
+    return @channels[evidence.channel] || create_channel(evidence)
+  end
+  
+  def create_channel(evidence)
+    # update start time of call if new channel have start time before current one
+    channel = Channel.new evidence
+    @channels[evidence.channel] = channel
+    channel
+  end
+  
+  def closed?
+    closed_channels = @channels.select {|k,v| v.closed? unless v.nil? }
+    trace :debug, "Closed channels: #{closed_channels.size}, total channels: #{@channels.size}"
+    return closed_channels.size == @channels.size
+  end
+  
+  def feed(evidence)
+    # if evidence is empty or call is closed, refuse feeding
+    return false if evidence.wav.size == 0
+    return false if closed?
+    
+    # get the correct channel for the evidence
+    channel = get_channel(evidence)
+    trace :debug, "feeding #{evidence.wav.size} bytes at #{evidence.start_time}:#{evidence.stop_time} to #{channel.id}"
+    
+    # check if channel accepts evidence
+    unless channel.accept? evidence
+      trace :debug, "channel refused evidence"
+      return false
+    end
+    
+    channel.feed evidence
+    return true
   end
   
   def to_s
-    string = ''
-    @channels.keys.each do |c|
-      string += "#{c} #{@channels[c]} "
-    end
-    return string
+    self.id
   end
   
   def to_wavfile
-    @channels.each do |k, c|
-      c.to_wavfile "#{self.object_id}_#{k.to_s}.wav"
+    @channels.keys.each do |k|
+      @channels[k].to_wavfile "#{self.object_id}_#{k.to_s}.wav"
     end
   end
+  
 end
 
 class AudioProcessor
@@ -78,62 +156,46 @@ class AudioProcessor
   require 'pp'
   
   def initialize
-    @calls = {}
+    @calls = []
+  end
+  
+  def get_call(evidence)
+    open_calls = @calls.select {|c| c.accept? evidence and not c.closed? }
+    return open_calls.first unless open_calls.empty?
+
+    # no valid call was found, we need to create a new one
+    call = create_call(evidence)
+    return call
+  end
+  
+  def create_call(evidence)
+    call = Call.new evidence
+    @calls << call
+    trace :debug, "issuing a new call for #{evidence.callee}:#{evidence.start_time}"
+    call
   end
   
   def feed(evidence)
+    # if callee is unknown or evidence is empty, evidence is invalid, ignore it
+    return if evidence.callee.size == 0 or evidence.wav.size == 0
     
-    if evidence.callee.size == 0
-      trace :debug, "ignoring sample, no calling info ..."
-      return
-    end
-    
-    # check if a new call is beginning
-    call_id = evidence.callee
-    if @calls.has_key?(call_id)
-      call = @calls[call_id]
-    else
-      trace :debug, "issuing a new call for #{call_id}, starting time #{evidence.start_time}"
-      call = Call.new(evidence.start_time)
-      @calls[call_id] = call
-    end
-    
-    # add sample to correct channel of call
-    
-    call.append_to_channel evidence
+    call = get_call evidence
+    call.feed evidence
   end
-
+  
   def to_s
     string = ''
-    @calls.keys.each do |c|
-      string += "#{c} #{@calls[c]}\n"
+    @calls.each do |c|
+      string += "#{c}\n"
     end
     return string
   end
-
-  def to_wavfile
-    @calls.keys.each do |c|
-      @calls[c].to_wavfile
-    end
-  end
-
-=begin
-  def to_s
-    @calls.keys.each do |k|
-      trace :debug, "call #{k}"
-      @calls[k].keys.each do |c|
-        bytes = 0
-        @calls[k][c].each do |s|
-          trace :debug, "\t\t#{s.start_time.usec}:#{s.stop_time.usec}"
-          bytes += s.content.size
-          decode_speex(s.content)
-        end
-        trace :debug, "\t- #{c} #{bytes}"
-      end
-    end
-  end
-=end
   
+  def to_wavfile
+    @calls.each do |c|
+      c.to_wavfile
+    end
+  end
 end
 
 end # Audio::

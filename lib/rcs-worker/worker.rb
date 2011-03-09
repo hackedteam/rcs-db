@@ -65,23 +65,25 @@ class Worker
         evidence = RCS::Evidence.new(evidence_key).deserialize(binary)
         mod = "#{evidence.type.to_s.capitalize}Processing"
         evidence.extend eval mod if RCS.const_defined? mod.to_sym
+        
         evidence.process if evidence.respond_to? :process
         
         case evidence.type
           when :CALL
+            trace :debug, "Evidence channel #{evidence.channel} callee #{evidence.callee} with #{evidence.wav.size} bytes of data."
             @audio_processor.feed(evidence)
-            @audio_processor.to_wavfile
         end
-      
-      rescue EvidenceDeserializeError
-        trace :fatal, "FAILURE: " << e.to_s
-        trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
+      rescue EvidenceDeserializeError => e
+        trace :info, "DECODING FAILED: " << e.to_s
+        # trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
       rescue Exception => e
         trace :fatal, "FAILURE: " << e.to_s
         trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
       end
       
     end
+
+    @audio_processor.to_wavfile
     
     trace :info, "All evidence has been processed."
   end
