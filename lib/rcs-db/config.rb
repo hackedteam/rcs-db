@@ -22,7 +22,9 @@ class Config
   CONF_FILE = '/config/config.yaml'
 
   DEFAULT_CONFIG= {'DB_ADDRESS' => 'localhost',
-                   'DB_CERT' => 'rcs-ca.pem',
+                   'CA_PEM' => 'rcs-ca.pem',
+                   'DB_CERT' => 'rcs-db.crt',
+                   'DB_KEY' => 'rcs-db.key',
                    'LISTENING_PORT' => 4444,
                    'HB_INTERVAL' => 30}
 
@@ -86,7 +88,9 @@ class Config
 
     # values taken from command line
     @global['DB_ADDRESS'] = options[:db_address] unless options[:db_address].nil?
+    @global['CA_PEM'] = options[:ca_pem] unless options[:ca_pem].nil?
     @global['DB_CERT'] = options[:db_cert] unless options[:db_cert].nil?
+    @global['DB_KEY'] = options[:db_key] unless options[:db_key].nil?
     @global['LISTENING_PORT'] = options[:port] unless options[:port].nil?
     @global['HB_INTERVAL'] = options[:hb_interval] unless options[:hb_interval].nil?
 
@@ -123,10 +127,16 @@ class Config
       opts.on( '-a', '--db-address HOST', String, 'Use the rcs-db at HOST' ) do |host|
         options[:db_address] = host
       end
-      opts.on( '-t', '--db-cert FILE', 'The certificate file (pem) used for ssl communication with rcs-db' ) do |file|
+      opts.on( '-c', '--ca-pem FILE', 'The certificate file (pem) of the issuing CA' ) do |file|
+        options[:ca_pem] = file
+      end
+      opts.on( '-t', '--db-cert FILE', 'The certificate file (crt) used for ssl communication' ) do |file|
         options[:db_cert] = file
       end
-      opts.on( '-b', '--db-heartbeat SEC', Integer, 'Time in seconds between two heartbeats to the rcs-db' ) do |sec|
+      opts.on( '-k', '--db-key FILE', 'The certificate file (key) used for ssl communication' ) do |file|
+        options[:db_key] = file
+      end
+      opts.on( '-b', '--db-heartbeat SEC', Integer, 'Time in seconds between two heartbeats' ) do |sec|
         options[:hb_interval] = sec
       end
       opts.on( '-X', '--defaults', 'Write a new config file with default values' ) do

