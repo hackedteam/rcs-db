@@ -22,7 +22,7 @@ Dir::mkdir(datadir) if not File.directory?(datadir)
 mongod = Dir.pwd + '/mongodb/' + os + '/mongod' + ext
 
 # the data path
-parameters = '--dbpath ' + datadir
+parameters = "--dbpath #{datadir} --bind_ip localhost"
 
 # custom arguments
 custom = ARGV.join(' ')
