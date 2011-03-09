@@ -7,6 +7,9 @@ module RCS
 class EvidenceManager
   def trace(a,b)
   end
+  def store_evidence(sess, s, c)
+    # do nothing during test
+  end
 end
 
 module DB

@@ -31,7 +31,11 @@ class EvidenceController < RESTController
     session = {:instance => params[:evidence]}
 
     # save the evidence in the db
-    EvidenceManager.store_evidence session, @req_content.size, @req_content
+    begin
+      EvidenceManager.store_evidence session, @req_content.size, @req_content
+    rescue
+      return STATUS_NOT_FOUND
+    end
 
     #TODO: notify the worker
 
