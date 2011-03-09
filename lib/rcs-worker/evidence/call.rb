@@ -45,9 +45,9 @@ module CallProcessing
     
     Speex.bits_destroy(bits.pointer)
     Speex.decoder_destroy(decoder)
-
+    
     @wav = wave_buffer
-
+    
 =begin
     channel = RCS::Worker::Channel.new self.sample_rate, self.start_time
     channel.feed(@wav)
