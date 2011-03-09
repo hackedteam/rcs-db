@@ -28,16 +28,7 @@ pkg
 # For MacOS:
 #
 .DS_Store
-#
-# For TextMate
-#*.tmproj
-#tmtags
-#
-# For emacs:
-#*~
-#\#*
-#.\#*
-#
+
 # For vim:
 *.swp
 
@@ -68,3 +59,6 @@ evidence
 
 # temporary wav files
 *.wav
+
+# data dir for mongo
+data/
