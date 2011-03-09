@@ -32,8 +32,9 @@ class HTTPHandler < EM::Connection
     # don't forget to call super here !
     super
 
-    #TODO: we want the connection to be encrypted with ssl
-    start_tls(:private_key_file => './config/rcs-db.key', :cert_chain_file => './config/rcs-db.crt', :verify_peer => false)
+    # we want the connection to be encrypted with ssl
+    #TODO: put the name in the config
+    start_tls(:private_key_file => './config/rcs-db.key', :cert_chain_file => './config/rcs-db.crt', :verify_peer => true)
 
     # to speed-up the processing, we disable the CGI environment variables
     self.no_environment_strings
@@ -47,7 +48,7 @@ class HTTPHandler < EM::Connection
   end
 
   def ssl_handshake_completed
-    #TODO: implement
+    trace :debug, "SSL Handshake completed successfully"
   end
 
   def ssl_verify_peer(cert)

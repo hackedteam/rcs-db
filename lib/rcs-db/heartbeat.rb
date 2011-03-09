@@ -2,9 +2,15 @@
 #  Heartbeat to update the status of the component in the db
 #
 
+# relatives
+require_relative 'db_layer.rb'
+
 # from RCS::Common
 require 'rcs-common/trace'
 require 'rcs-common/status'
+
+# system
+require 'socket'
 
 module RCS
 module DB
@@ -16,9 +22,10 @@ class HeartBeat
 
     # report our status to the db
     component = "RCS::DB"
-    # used only by NC
-    ip = ''
+    # our local ip address
+    ip = IPSocket.getaddress(Socket.gethostname)
 
+    #TODO: report some useful information
     message = "Idle..."
 
     # report our status
@@ -31,8 +38,7 @@ class HeartBeat
     stats = {:disk => disk, :cpu => cpu, :pcpu => pcpu}
 
     # send the status to the db
-    #TODO: db layer
-    #DB.instance.update_status component, ip, status, message, stats
+    DB.update_status component, ip, status, message, stats
   end
 end
 
