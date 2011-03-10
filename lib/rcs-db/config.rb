@@ -19,12 +19,14 @@ class Config
   extend FlatSingleton
   include Tracer
 
-  CONF_FILE = '/config/config.yaml'
+  CONF_DIR = 'config'
+  CONF_FILE = 'config.yaml'
 
   DEFAULT_CONFIG= {'DB_ADDRESS' => 'localhost',
                    'CA_PEM' => 'rcs-ca.pem',
                    'DB_CERT' => 'rcs-db.crt',
                    'DB_KEY' => 'rcs-db.key',
+                   'SERVER_SIG' => 'rcs-server.sig',
                    'LISTENING_PORT' => 4444,
                    'HB_INTERVAL' => 30}
 
@@ -36,8 +38,7 @@ class Config
 
   def load_from_file
     trace :info, "Loading configuration file..."
-    conf_file = Dir.pwd + CONF_FILE
-
+    conf_file = File.join Dir.pwd, CONF_DIR, CONF_FILE
     # load the config in the @global hash
     begin
       File.open(conf_file, "r") do |f|
@@ -46,6 +47,34 @@ class Config
     rescue
       trace :fatal, "Cannot open config file [#{conf_file}]"
       return false
+    end
+
+    if not @global['DB_CERT'].nil? then
+      if not File.exist?(Config.file('DB_CERT')) then
+        trace :fatal, "Cannot open certificate file [#{@global['DB_CERT']}]"
+        return false
+      end
+    end
+
+    if not @global['DB_KEY'].nil? then
+      if not File.exist?(Config.file('DB_KEY')) then
+        trace :fatal, "Cannot open private key file [#{@global['DB_KEY']}]"
+        return false
+      end
+    end
+
+    if not @global['CA_PEM'].nil? then
+      if not File.exist?(Config.file('CA_PEM')) then
+        trace :fatal, "Cannot open CA file [#{@global['CA_PEM']}]"
+        return false
+      end
+    end
+
+    if not @global['SERVER_SIG'].nil? then
+      if not File.exist?(Config.file('SERVER_SIG')) then
+        trace :fatal, "Cannot open signature file [#{@global['SERVER_SIG']}]"
+        return false
+      end
     end
 
     # to avoid problems with checks too frequent
@@ -57,8 +86,11 @@ class Config
     return true
   end
 
+  def file(name)
+    return File.join Dir.pwd, CONF_DIR, @global[name]
+  end
+
   def safe_to_file
-    trace :info, "Writing configuration file..."
     conf_file = Dir.pwd + CONF_FILE
 
     # Write the @global into a yaml file
@@ -78,6 +110,7 @@ class Config
     # load the current config
     load_from_file
 
+    trace :info, ""
     trace :info, "Current configuration:"
     pp @global
 
@@ -91,9 +124,11 @@ class Config
     @global['CA_PEM'] = options[:ca_pem] unless options[:ca_pem].nil?
     @global['DB_CERT'] = options[:db_cert] unless options[:db_cert].nil?
     @global['DB_KEY'] = options[:db_key] unless options[:db_key].nil?
+    @global['SERVER_SIG'] = options[:server_sig] unless options[:server_sig].nil?
     @global['LISTENING_PORT'] = options[:port] unless options[:port].nil?
     @global['HB_INTERVAL'] = options[:hb_interval] unless options[:hb_interval].nil?
 
+    trace :info, ""
     trace :info, "Final configuration:"
     pp @global
 
@@ -135,6 +170,9 @@ class Config
       end
       opts.on( '-k', '--db-key FILE', 'The certificate file (key) used for ssl communication' ) do |file|
         options[:db_key] = file
+      end
+      opts.on( '-s', '--server-sig FILE', 'The signature file (sig) used by Collectors' ) do |file|
+        options[:server_sig] = file
       end
       opts.on( '-b', '--db-heartbeat SEC', Integer, 'Time in seconds between two heartbeats' ) do |sec|
         options[:hb_interval] = sec
