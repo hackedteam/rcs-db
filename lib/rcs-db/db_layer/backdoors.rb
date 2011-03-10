@@ -2,7 +2,7 @@
 # Mix-in for DB Layer
 #
 
-module Backdoor
+module Backdoors
 
   def backdoor_evidence_key(bid)
     #TODO: implement the evidence key

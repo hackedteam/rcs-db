@@ -67,9 +67,11 @@ module Parser
     begin
       resp_status, resp_content, resp_content_type, resp_cookie = controller.send(method) unless method.nil?
     rescue NotAuthorized => e
-      trace :warn, "Invalid access level: " + e.message
+      resp_content = "Invalid access level: " + e.message
+      trace :warn, resp_content
     rescue Exception => e
-      trace :error, "ERROR: " + e.message
+      resp_content = "ERROR: " + e.message
+      trace :error, resp_content
       trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
     end
 

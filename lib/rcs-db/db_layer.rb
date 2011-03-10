@@ -20,7 +20,8 @@ class DB
   include RCS::Tracer
 
   # in the mix-ins there are all the methods for the respective section
-  include Backdoor
+  include Users
+  include Backdoors
   include Status
 
 

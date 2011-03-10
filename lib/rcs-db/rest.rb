@@ -71,7 +71,7 @@ class RESTController
 
   # macro for auth level check
   def require_auth_level(*levels)
-    raise NotAuthorized.new(@session[:level], levels) unless levels.include? @session[:level]
+    raise NotAuthorized.new(@session[:level], levels) if (levels & @session[:level]).empty?
   end
 
   def create
