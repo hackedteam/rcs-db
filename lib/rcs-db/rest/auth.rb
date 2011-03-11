@@ -26,16 +26,16 @@ class AuthController < RESTController
         # the unique username will be used to create an entry for it in the network schema
         if auth_server(@params['user'], @params['pass']) or auth_user(@params['user'], @params['pass'])
 
-          # we have to check if it was already logged in
-          # in this case, invalidate the previous session
-          sess = SessionManager.get_by_user(@params['user'])
-          unless sess.nil? then
-            Audit.log :actor => @params['user'], :action => 'logout', :user => @params['user'], :desc => "User '#{@params['user']}' forcibly logged out by system"
-            SessionManager.delete(sess[:cookie])
-          end
-
           # audit the normal users, not the server
           unless @auth_level.include? :server
+            # we have to check if it was already logged in
+            # in this case, invalidate the previous session
+            sess = SessionManager.get_by_user(@params['user'])
+            unless sess.nil? then
+              Audit.log :actor => @params['user'], :action => 'logout', :user => @params['user'], :desc => "User '#{@params['user']}' forcibly logged out by system"
+              SessionManager.delete(sess[:cookie])
+            end
+
             Audit.log :actor => @params['user'], :action => 'login', :user => @params['user'], :desc => "User '#{@params['user']}' logged in"
           end
 
