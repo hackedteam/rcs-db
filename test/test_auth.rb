@@ -12,6 +12,11 @@ class Config
   end
 end
 
+class Audit
+  def self.trace(a, b)
+  end
+end
+
 # fake class to hold the Mixin
 class Classy
   include RCS::DB::Parser
@@ -25,10 +30,10 @@ class ParserTest < Test::Unit::TestCase
   def setup
     @rest = Classy.new
     @http_headers = nil
-    Config.load_from_file
   end
 
   def test_login
+    Config.load_from_file
     account = {:user => "test-user", :pass => 'test-pass'}
     status, content, content_type, cookie = @rest.http_parse(@http_headers, 'POST', '/auth/login', nil, account.to_json)
     assert_equal 200, status
@@ -44,7 +49,8 @@ class ParserTest < Test::Unit::TestCase
   end
 
   def test_login_server
-    account = {:user => "test-server", :pass => File.read(Config.file('SERVER_SIG'))}
+    Config.load_from_file
+    account = {:user => "test-server", :pass => File.read(Config.file('SERVER_SIG')).chomp}
     status, content, content_type, cookie = @rest.http_parse(@http_headers, 'POST', '/auth/login', nil, account.to_json)
     assert_equal 200, status
     assert_false cookie.nil?
@@ -65,6 +71,7 @@ class ParserTest < Test::Unit::TestCase
   end
 
   def test_logout_after_login
+    Config.load_from_file
     account = {:user => "test-user", :pass => 'test-pass'}
     status, content, content_type, cookie = @rest.http_parse(@http_headers, 'POST', '/auth/login', nil, account.to_json)
     assert_equal 200, status

@@ -2,8 +2,6 @@
 # Controller for the Auth objects
 #
 
-require 'rcs-db/config'
-
 module RCS
 module DB
 
@@ -17,7 +15,7 @@ class AuthController < RESTController
     case @req_method
       # return the info about the current auth session
       when 'GET'
-        sess = SessionManager.instance.get(@req_cookie)
+        sess = SessionManager.get(@req_cookie)
         return if sess.nil?
         return STATUS_OK, *json_reply(sess)
 
@@ -27,8 +25,8 @@ class AuthController < RESTController
         # and the password must be the 'server signature'
         # the unique username will be used to create an entry for it in the network schema
         if auth_server(@params['user'], @params['pass']) or auth_user(@params['user'], @params['pass'])
-          cookie = SessionManager.instance.create(1, @params['user'], @auth_level)
-          sess = SessionManager.instance.get(cookie)
+          cookie = SessionManager.create(1, @params['user'], @auth_level)
+          sess = SessionManager.get(cookie)
           return STATUS_OK, *json_reply(sess), cookie
         end
     end
@@ -37,7 +35,9 @@ class AuthController < RESTController
   end
 
   def logout
-    SessionManager.instance.delete(@req_cookie)
+    sess = SessionManager.get(@req_cookie)
+    Audit.log :actor => sess[:user], :action => 'logout', :user => sess[:user], :desc => "User '#{sess[:user]}' logged out"
+    SessionManager.delete(@req_cookie)
     return STATUS_OK
   end
 
@@ -62,16 +62,21 @@ class AuthController < RESTController
 
     # user not found
     if u.empty?
+      Audit.log :actor => user, :action => 'login', :user => user, :desc => "User '#{user}' not found"
       trace :warn, "User [#{user}] NOT FOUND"
       return false
     end
 
+    #TODO: check for multiple login from the same account
+    
     # check the password
     if DB.user_check_pass(pass, u['pass']) then
+      Audit.log :actor => user, :action => 'login', :user => user, :desc => "User '#{user}' logged in"
       @auth_level = u['level']
       return true
     end
 
+    Audit.log :actor => user, :action => 'login', :user => user, :desc => "Invalid password for user '#{user}'"
     trace :warn, "User [#{user}] INVALID PASSWORD"
     return false
   end

@@ -4,6 +4,9 @@
 
 # relatives
 require_relative 'sessions.rb'
+require_relative 'audit.rb'
+require_relative 'config.rb'
+require_relative 'audit.rb'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -41,8 +44,8 @@ class RESTController
       return false unless controller_name.capitalize.eql? 'Auth' and params.first.eql? 'login'
     else
       # we have a cookie, check if it's valid
-      if SessionManager.instance.check(req_cookie) then
-        @session = SessionManager.instance.get(req_cookie)
+      if SessionManager.check(req_cookie) then
+        @session = SessionManager.get(req_cookie)
       else
         trace :warn, "[#{@peer}][#{cookie}] Invalid cookie"
         return false

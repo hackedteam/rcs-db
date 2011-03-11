@@ -173,7 +173,7 @@ class Events
         EM::PeriodicTimer.new(Config.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
 
         # timeout for the sessions (will destroy inactive sessions)
-        EM::PeriodicTimer.new(60) { SessionManager.instance.timeout }
+        EM::PeriodicTimer.new(60) { SessionManager.timeout }
       end
     rescue Exception => e
       # bind error
