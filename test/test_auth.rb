@@ -86,6 +86,31 @@ class ParserTest < Test::Unit::TestCase
     assert_equal 403, status
     assert_true cookie.nil?
   end
+
+  def test_no_double_login
+    Config.load_from_file
+    account = {:user => "test-user", :pass => 'test-pass'}
+    status, content, content_type, cookie = @rest.http_parse(@http_headers, 'POST', '/auth/login', nil, account.to_json)
+    assert_equal 200, status
+    assert_false cookie.nil?
+
+    # login again
+    # the previous session should be destroyed and be invalidated
+    status, content, content_type, cookie_new = @rest.http_parse(@http_headers, 'POST', '/auth/login', nil, account.to_json)
+    assert_equal 200, status
+    assert_false cookie_new.nil?
+
+    # this must fail since the old session is not valid anymore
+    status, content, content_type = @rest.http_parse(@http_headers, 'GET', '/auth/login', cookie, nil)
+    assert_equal 403, status
+    assert_true content.nil?
+
+    # this is the new session and must be valid
+    status, content, content_type = @rest.http_parse(@http_headers, 'GET', '/auth/login', cookie_new, nil)
+    assert_equal 200, status
+    assert_false content.nil?
+  end
+
 end
 
 end #DB::

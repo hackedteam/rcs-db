@@ -47,7 +47,7 @@ class RESTController
       if SessionManager.check(req_cookie) then
         @session = SessionManager.get(req_cookie)
       else
-        trace :warn, "[#{@peer}][#{cookie}] Invalid cookie"
+        trace :warn, "[#{@peer}][#{req_cookie}] Invalid cookie"
         return false
       end
     end

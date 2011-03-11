@@ -25,6 +25,21 @@ class AuthController < RESTController
         # and the password must be the 'server signature'
         # the unique username will be used to create an entry for it in the network schema
         if auth_server(@params['user'], @params['pass']) or auth_user(@params['user'], @params['pass'])
+
+          # we have to check if it was already logged in
+          # in this case, invalidate the previous session
+          sess = SessionManager.get_by_user(@params['user'])
+          unless sess.nil? then
+            Audit.log :actor => @params['user'], :action => 'logout', :user => @params['user'], :desc => "User '#{@params['user']}' forcibly logged out by system"
+            SessionManager.delete(sess[:cookie])
+          end
+
+          # audit the normal users, not the server
+          unless @auth_level.include? :server
+            Audit.log :actor => @params['user'], :action => 'login', :user => @params['user'], :desc => "User '#{@params['user']}' logged in"
+          end
+
+          # create the new auth sessions
           cookie = SessionManager.create(1, @params['user'], @auth_level)
           sess = SessionManager.get(cookie)
           return STATUS_OK, *json_reply(sess), cookie
@@ -67,11 +82,8 @@ class AuthController < RESTController
       return false
     end
 
-    #TODO: check for multiple login from the same account
-    
-    # check the password
+    # the account is valid
     if DB.user_check_pass(pass, u['pass']) then
-      Audit.log :actor => user, :action => 'login', :user => user, :desc => "User '#{user}' logged in"
       @auth_level = u['level']
       return true
     end
