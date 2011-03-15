@@ -9,7 +9,13 @@ gem 'sqlite3-ruby'
 gem 'uuidtools'
 #gem 'rcs-common', ">= 0.1.4"
 gem 'ffi'
+
+# remove this after migration is complete
 gem 'em-proxy'
+
+gem 'mongo'
+gem 'bson'
+gem 'bson_ext'
 
 # Add dependencies to develop your gem here.
 # Include everything needed to run rake, tests, features, etc.

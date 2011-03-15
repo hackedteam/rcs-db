@@ -19,6 +19,10 @@ class DB
   extend FlatSingleton
   include RCS::Tracer
 
+  def initialize
+    
+  end
+
   # in the mix-ins there are all the methods for the respective section
   include Users
   include Backdoors

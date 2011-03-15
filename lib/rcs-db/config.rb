@@ -39,6 +39,7 @@ class Config
   def load_from_file
     trace :info, "Loading configuration file..."
     conf_file = File.join Dir.pwd, CONF_DIR, CONF_FILE
+
     # load the config in the @global hash
     begin
       File.open(conf_file, "r") do |f|
@@ -91,7 +92,7 @@ class Config
   end
 
   def safe_to_file
-    conf_file = Dir.pwd + CONF_FILE
+    conf_file = File.join Dir.pwd, CONF_DIR, CONF_FILE
 
     # Write the @global into a yaml file
     begin
