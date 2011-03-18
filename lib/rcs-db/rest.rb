@@ -34,7 +34,7 @@ class RESTController
   # the parameters passed on the REST request
   attr_accessor :params
 
-  def init(http_headers, req_method, req_uri, req_cookie, req_content)
+  def init(http_headers, req_method, req_uri, req_cookie, req_content, req_peer)
 
     # check the authentication
     if req_cookie.nil? then
@@ -57,6 +57,7 @@ class RESTController
     @req_uri = req_uri
     @req_cookie = req_cookie
     @req_content = req_content
+    @req_peer = req_peer
     # the parsed http parameters (from uri and from content)
     @params = {}
 

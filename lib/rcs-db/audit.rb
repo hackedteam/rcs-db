@@ -2,6 +2,8 @@
 # The Audit class, everything happening on the system should be logged
 #
 
+require 'rcs-common/trace'
+
 module RCS
 module DB
 
@@ -18,6 +20,7 @@ class Audit
   #  :backdoor
   #  :desc
   def self.log(params)
+    #TODO: implement audit 
     trace :debug, params
   end
 

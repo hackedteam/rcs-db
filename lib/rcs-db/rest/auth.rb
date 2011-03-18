@@ -11,6 +11,7 @@ class AuthController < RESTController
     @auth_level = [:none]
   end
 
+  # everyone who wants to use the system must first authenticate with this method
   def login
     case @req_method
       # return the info about the current auth session
@@ -49,14 +50,20 @@ class AuthController < RESTController
     return STATUS_NOT_AUTHORIZED
   end
 
+  # once the session is over you can explicitly logout
   def logout
-    sess = SessionManager.get(@req_cookie)
-    Audit.log :actor => sess[:user], :action => 'logout', :user => sess[:user], :desc => "User '#{sess[:user]}' logged out"
+    Audit.log :actor => @session[:user], :action => 'logout', :user => @session[:user], :desc => "User '#{@session[:user]}' logged out"
     SessionManager.delete(@req_cookie)
     return STATUS_OK
   end
 
+  # every user is able to change its own password
+  def change_pass
+    #TODO: implement password change
+  end
 
+
+  # private method to authenticate a server
   def auth_server(user, pass)
     server_sig = File.read(Config.file('SERVER_SIG')).chomp
 
@@ -71,6 +78,7 @@ class AuthController < RESTController
     return false
   end
 
+  # method for user authentication
   def auth_user(user, pass)
 
     u = DB.user_find(user)

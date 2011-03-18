@@ -42,6 +42,7 @@ class EvidenceController < RESTController
     return STATUS_OK, *json_reply({:bytes => @req_content.size})
   end
 
+  # used to report that the activity of an instance is starting
   def start
     require_auth_level :server
 
@@ -60,6 +61,7 @@ class EvidenceController < RESTController
     return STATUS_OK
   end
 
+  # used to report that the processing of an instance has finished
   def stop
     require_auth_level :server
 
@@ -73,6 +75,7 @@ class EvidenceController < RESTController
     return STATUS_OK
   end
 
+  # used to report that the activity on an instance has timed out
   def timeout
     require_auth_level :server
 

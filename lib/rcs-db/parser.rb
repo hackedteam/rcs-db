@@ -35,7 +35,7 @@ module Parser
     end
 
     # init the controller and check if everything is ok to proceed
-    if not controller.init(http_headers, req_method, req_uri, req_cookie, req_content) then
+    if not controller.init(http_headers, req_method, req_uri, req_cookie, req_content, @peer) then
       return RESTController::STATUS_NOT_AUTHORIZED
     end
 
