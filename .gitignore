@@ -27,17 +27,8 @@ pkg
 #
 # For MacOS:
 #
-#.DS_Store
-#
-# For TextMate
-#*.tmproj
-#tmtags
-#
-# For emacs:
-#*~
-#\#*
-#.\#*
-#
+.DS_Store
+
 # For vim:
 *.swp
 
@@ -46,3 +37,28 @@ pkg
 
 # bundler
 Gemfile.lock
+
+# log files
+log/*
+
+# certs
+config/*.pem
+config/*.sig
+config/*.crt
+config/*.key
+
+# config
+config/config.yaml
+
+# encrypted code
+lib/rcs-db-release
+lib/rcs-worker-release
+
+# evidences
+evidence
+
+# temporary wav files
+*.wav
+
+# data dir for mongo
+data/

@@ -1,0 +1,40 @@
+#
+# Available name trace:
+
+
+log4r_config:
+  pre_config:
+    global:
+      level: DEBUG
+    root  :
+      level: DEBUG
+
+  loggers:
+    - name      : rcslogger
+      level     : DEBUG
+      additive  : 'false'
+      trace     : 'false'
+      outputters:
+        - stderr
+        - logfile
+
+  outputters:
+    - type     : StderrOutputter
+      name     : stderr
+      level    : DEBUG
+      formatter:
+      # take a look at this: http://log4r.rubyforge.org/rdoc/Log4r/PatternFormatter.html
+        date_pattern: '%Y-%m-%d %H:%M:%S'
+        pattern     : '%d [%l]: %x %m'
+        type        : PatternFormatter
+
+    - type        : DateFileOutputter
+      name        : logfile
+      level       : INFO
+      date_pattern: '%Y-%m-%d'
+      trunc       : 'false'
+      dirname     : "#{HOME}/log"
+      formatter   :
+        date_pattern: '%Y-%m-%d %H:%M:%S'
+        pattern     : '%d [%l]: %x %m'
+        type        : PatternFormatter
