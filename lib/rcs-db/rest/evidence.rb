@@ -6,6 +6,8 @@ require 'rcs-db/db_layer'
 
 require 'rcs-common/evidence_manager'
 
+require 'time'
+
 module RCS
 module DB
 
@@ -55,8 +57,11 @@ class EvidenceController < RESTController
     # retrieve the key from the db
     key = DB.backdoor_evidence_key(params['bid'])
 
+    # convert the string time to a time object to be passed to 'sync_start'
+    time = Time.parse(params['sync_time'])
+    
     # store the status
-    EvidenceManager.sync_start session, params['version'], params['user'], params['device'], params['source'], params['sync_time'], key
+    EvidenceManager.sync_start session, params['version'], params['user'], params['device'], params['source'], time, key
 
     return STATUS_OK
   end
