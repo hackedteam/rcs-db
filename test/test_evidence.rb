@@ -43,7 +43,7 @@ class ParserTest < Test::Unit::TestCase
   end
 
   def test_create_not_enough_privileges
-    @controller.init(nil, 'PUT', '/evidence', @cookie, 'test-evidence-content')
+    @controller.init(nil, 'PUT', '/evidence', @cookie, 'test-evidence-content', '127.0.0.1')
 
     # set the wrong level (other then :server)
     sess = @controller.instance_variable_get(:@session)

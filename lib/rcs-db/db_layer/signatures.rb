@@ -2,7 +2,7 @@
 # Mix-in for DB Layer
 #
 
-module Signature
+module Signatures
 
   def signature(sign)
 

@@ -25,6 +25,11 @@ class Classy
   end
 end
 
+class DB
+  def trace(a, b)
+  end
+end
+
 class ParserTest < Test::Unit::TestCase
 
   def setup

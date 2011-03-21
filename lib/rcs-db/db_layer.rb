@@ -47,7 +47,7 @@ class DB
   include Users
   include Backdoors
   include Status
-  include Signature
+  include Signatures
 
 end
 
