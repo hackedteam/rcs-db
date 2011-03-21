@@ -36,12 +36,9 @@ module Status
 
   # get the list of all components' statuses
   def status_get
-
-    mysql_query("SELECT * FROM monitor").each do |row|
-      #TODO: return the results...
-      puts row.inspect
+    return mysql_query("SELECT * FROM monitor").each do |row|
+      row
     end
-    
   end
 
 end

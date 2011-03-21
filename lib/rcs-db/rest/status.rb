@@ -12,8 +12,6 @@ class StatusController < RESTController
 
     result = DB.status_get
 
-    trace :debug, "STATUS INDEX #{result}"
-
     return STATUS_OK, *json_reply(result)
   end
 
