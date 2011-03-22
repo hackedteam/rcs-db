@@ -5,12 +5,21 @@ gem 'eventmachine', ">= 1.0.0.beta.3"
 git "git://github.com/alor/evma_httpserver.git", :branch => "master" do
   gem 'eventmachine_httpserver', ">= 0.2.2"
 end
-gem 'sqlite3-ruby'
 gem 'uuidtools'
 #gem 'rcs-common', ">= 0.1.4"
 gem 'ffi'
+
+# remove this after migration is complete
 gem 'em-proxy'
 gem 'em-zeromq'
+
+# databases
+gem 'sqlite3-ruby'
+gem 'mongo'
+gem 'bson'
+gem 'bson_ext'
+gem 'mysql2'
+
 
 # Add dependencies to develop your gem here.
 # Include everything needed to run rake, tests, features, etc.

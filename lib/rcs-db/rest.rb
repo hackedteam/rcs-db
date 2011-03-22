@@ -4,6 +4,9 @@
 
 # relatives
 require_relative 'sessions.rb'
+require_relative 'audit.rb'
+require_relative 'config.rb'
+require_relative 'audit.rb'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -31,7 +34,7 @@ class RESTController
   # the parameters passed on the REST request
   attr_accessor :params
 
-  def init(http_headers, req_method, req_uri, req_cookie, req_content)
+  def init(http_headers, req_method, req_uri, req_cookie, req_content, req_peer)
 
     # check the authentication
     if req_cookie.nil? then
@@ -41,10 +44,10 @@ class RESTController
       return false unless controller_name.capitalize.eql? 'Auth' and params.first.eql? 'login'
     else
       # we have a cookie, check if it's valid
-      if SessionManager.instance.check(req_cookie) then
-        @session = SessionManager.instance.get(req_cookie)
+      if SessionManager.check(req_cookie) then
+        @session = SessionManager.get(req_cookie)
       else
-        trace :warn, "[#{@peer}][#{cookie}] Invalid cookie"
+        trace :warn, "[#{@peer}][#{req_cookie}] Invalid cookie"
         return false
       end
     end
@@ -54,6 +57,7 @@ class RESTController
     @req_uri = req_uri
     @req_cookie = req_cookie
     @req_content = req_content
+    @req_peer = req_peer
     # the parsed http parameters (from uri and from content)
     @params = {}
 
@@ -71,7 +75,7 @@ class RESTController
 
   # macro for auth level check
   def require_auth_level(*levels)
-    raise NotAuthorized.new(@session[:level], levels) unless levels.include? @session[:level]
+    raise NotAuthorized.new(@session[:level], levels) if (levels & @session[:level]).empty?
   end
 
   def create

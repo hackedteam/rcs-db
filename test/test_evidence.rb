@@ -31,11 +31,15 @@ class ParserTest < Test::Unit::TestCase
 
   def setup
     # create a fake authenticated user and session
-    @cookie = SessionManager.instance.create(1, 'test-user', :server)
+    @cookie = SessionManager.create(1, 'test-server', [:server])
     @controller = EvidenceController.new
     @rest = Classy.new
     @http_headers = nil
     @instance = 'test-instance'
+  end
+
+  def teardown
+    SessionManager.delete(@cookie)
   end
 
   def test_create_not_enough_privileges
@@ -43,7 +47,7 @@ class ParserTest < Test::Unit::TestCase
 
     # set the wrong level (other then :server)
     sess = @controller.instance_variable_get(:@session)
-    sess[:level] = :admin
+    sess[:level] = [:admin]
 
     # this should fail, we don't have enough privileges
     assert_raise(RCS::DB::NotAuthorized) do

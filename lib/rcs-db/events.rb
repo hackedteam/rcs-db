@@ -33,8 +33,8 @@ class HTTPHandler < EM::Connection
     super
 
     # we want the connection to be encrypted with ssl
-    start_tls(:private_key_file => Dir.pwd + "/config/" + Config.global['DB_KEY'],
-              :cert_chain_file => Dir.pwd + "/config/" + Config.global['DB_CERT'],
+    start_tls(:private_key_file => Config.file('DB_KEY'),
+              :cert_chain_file => Config.file('DB_CERT'),
               :verify_peer => true)
 
     # to speed-up the processing, we disable the CGI environment variables
@@ -173,7 +173,7 @@ class Events
         EM::PeriodicTimer.new(Config.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
 
         # timeout for the sessions (will destroy inactive sessions)
-        EM::PeriodicTimer.new(60) { SessionManager.instance.timeout }
+        EM::PeriodicTimer.new(60) { SessionManager.timeout }
       end
     rescue Exception => e
       # bind error

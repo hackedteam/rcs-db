@@ -8,23 +8,23 @@ module DB
 class UserController < RESTController
 
   def index
-    trace :debug, "INDEX #{params}"
+    trace :debug, "USER INDEX #{params}"
   end
 
   def show
-    trace :debug, "SHOW #{params}"
+    trace :debug, "USER SHOW #{params}"
   end
 
   def create
-    trace :debug, "CREATE #{params}"
+    trace :debug, "USER CREATE #{params}"
   end
 
   def update
-    trace :debug, "UPDATE #{params}"
+    trace :debug, "USER UPDATE #{params}"
   end
 
   def destroy
-    trace :debug, "DESTROY #{params}"
+    trace :debug, "USER DESTROY #{params}"
   end
 
 end

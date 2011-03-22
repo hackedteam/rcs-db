@@ -35,7 +35,7 @@ module Parser
     end
 
     # init the controller and check if everything is ok to proceed
-    if not controller.init(http_headers, req_method, req_uri, req_cookie, req_content) then
+    if not controller.init(http_headers, req_method, req_uri, req_cookie, req_content, @peer) then
       return RESTController::STATUS_NOT_AUTHORIZED
     end
 
@@ -67,9 +67,11 @@ module Parser
     begin
       resp_status, resp_content, resp_content_type, resp_cookie = controller.send(method) unless method.nil?
     rescue NotAuthorized => e
-      trace :warn, "Invalid access level: " + e.message
+      resp_content = "Invalid access level: " + e.message
+      trace :warn, resp_content
     rescue Exception => e
-      trace :error, "ERROR: " + e.message
+      resp_content = "ERROR: " + e.message
+      trace :error, resp_content
       trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
     end
 
