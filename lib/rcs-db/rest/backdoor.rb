@@ -95,8 +95,31 @@ class BackdoorController < RESTController
         trace :info, "[#{@req_peer}] Requested the UPGRADE #{request} -- #{upgrade[:content].size.to_s_bytes}"
         return STATUS_OK, upgrade[:content], "binary/octet-stream"
       when 'DELETE'
-        DB.backdoor_del_upgrade(request['backdoor_id'], request['upgrade_id'])
+        DB.backdoor_del_upgrades(request['backdoor_id'])
         trace :info, "[#{@req_peer}] Deleted the UPGRADE #{request}"
+    end
+
+    return STATUS_OK
+  end
+
+  # retrieve the list of download for a given backdoor
+  def downloads
+    require_auth_level :server, :tech
+
+    list = DB.backdoor_downloads(params[:backdoor])
+
+    return STATUS_OK, *json_reply(list)
+  end
+
+  def download
+    require_auth_level :server, :tech
+
+    request = JSON.parse(params[:backdoor])
+
+    case @req_method
+      when 'DELETE'
+        DB.backdoor_del_download(request['backdoor_id'], request['download_id'])
+        trace :info, "[#{@req_peer}] Deleted the DOWNLOAD #{request}"
     end
 
     return STATUS_OK
