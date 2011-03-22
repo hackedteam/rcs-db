@@ -7,6 +7,7 @@ module DB
 
 class StatusController < RESTController
 
+  # retrieve the list of all components with their status
   def index
     require_auth_level :admin, :tech, :viewer
 

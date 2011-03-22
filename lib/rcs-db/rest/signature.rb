@@ -7,6 +7,8 @@ module DB
 
 class SignatureController < RESTController
 
+  # retrieve the signature for a given entity
+  # e.g. 'backdoor', 'network', ...
   def show
     require_auth_level :server
 
