@@ -25,4 +25,16 @@ module Backdoors
                        AND subtype = '#{subtype}'").to_a.first
   end
 
+  def backdoor_uploads(bid)
+    mysql_query("SELECT upload_id, filename FROM upload WHERE backdoor_id = #{bid}").to_a
+  end
+
+  def backdoor_upload(bid, id)
+    mysql_query("SELECT content FROM upload WHERE backdoor_id = #{bid} AND upload_id = #{id}").to_a.first
+  end
+
+  def backdoor_del_upload(bid, id)
+    mysql_query("DELETE FROM upload WHERE backdoor_id = #{bid} AND upload_id = #{id}")
+  end
+
 end
