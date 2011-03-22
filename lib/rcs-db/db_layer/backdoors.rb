@@ -57,4 +57,12 @@ module Backdoors
     mysql_query("DELETE FROM download WHERE backdoor_id = #{bid} AND download_id = #{id}")
   end
 
+  def backdoor_filesystems(bid)
+    mysql_query("SELECT filesystem_id, path, depth FROM filesystem WHERE backdoor_id = #{bid}").to_a
+  end
+
+  def backdoor_del_filesystem(bid, id)
+    mysql_query("DELETE FROM filesystem WHERE backdoor_id = #{bid} AND filesystem_id = #{id}")
+  end
+
 end
