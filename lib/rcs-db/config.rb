@@ -196,5 +196,6 @@ class Config
   end
 
 end #Config
-end #Collector::
+
+end #DB::
 end #RCS::

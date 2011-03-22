@@ -1,7 +1,7 @@
 source "http://rubygems.org"
 # Add dependencies required to use your gem here.
 
-gem 'eventmachine'
+gem 'eventmachine', ">= 1.0.0.beta.3"
 git "git://github.com/alor/evma_httpserver.git", :branch => "master" do
   gem 'eventmachine_httpserver', ">= 0.2.2"
 end
@@ -11,6 +11,7 @@ gem 'ffi'
 
 # remove this after migration is complete
 gem 'em-proxy'
+gem 'em-zeromq'
 
 # databases
 gem 'sqlite3-ruby'
@@ -27,6 +28,6 @@ group :development do
   gem "jeweler", "~> 1.5.2"
   gem "rcov", ">= 0"
   gem 'test-unit'
-
+  
   gem "rcs-common", :path => "../rcs-common"
 end
