@@ -5,6 +5,7 @@ require 'ffi'
 require 'rcs-common/trace'
 require 'rcs-worker/speex'
 require 'rcs-worker/wave'
+require 'rcs-worker/src'
 
 require 'digest/md5'
 
@@ -19,11 +20,11 @@ class Channel
     @stop_time = @start_time
     @wav_data = String.new
     @status = :open
-    trace :debug, "Creating new channel #{self.id}"
+    trace :debug, "creating new channel #{self.id}."
   end
   
   def id
-    "#{@name}:#{@sample_rate}:#{@start_time}:#{@stop_time}:#{@status.to_s}"
+    "#{@name}:#{@sample_rate}:#{@start_time.to_f}:#{@stop_time.to_f}:#{@status.to_s}"
   end
   
   def self.other_than channel
@@ -38,12 +39,23 @@ class Channel
   def closed?
     @status == :closed
   end
-
+  
+  def fill(gap)
+    samples_to_fill = @sample_rate * gap
+    trace :debug, "filling #{samples_to_fill} samples to fill #{gap} seconds of missing data."
+    data = StringIO.new
+    data.write([0].pack("S") * samples_to_fill.ceil)
+    @wav_data += data.string
+  end
+  
+  def time_gap(evidence)
+    evidence.start_time.to_f - @stop_time.to_f
+  end
+  
   def accept?(evidence)
     return false if closed?
-    time_gap = evidence.start_time.to_f - @stop_time.to_f
-    trace :debug, "evidence with a time gap of #{time_gap} with channel stop time."
-    return false if time_gap >= 5.0
+    gap = time_gap evidence
+    return false if gap >= 5.0
     return true
   end
   
@@ -52,21 +64,36 @@ class Channel
       self.close!
       return
     end
-
+    
+    gap = time_gap(evidence)
+    fill gap unless gap == 0
+    
     @stop_time = evidence.stop_time
     @wav_data += evidence.wav
   end
   
-  def size
+  def bytes
     @wav_data.size
+  end
+  
+  def num_samples
+    bytes.to_f / 16
+  end
+  
+  def seconds
+    num_samples.to_f / @sample_rate
   end
   
   def to_s
     self.id
   end
   
+  def to_float_samples
+    @wav_data.pack('S*').unpack('F*')
+  end
+  
   def to_wavfile (filename = '')
-    name = "#{Digest::MD5.hexdigest("#{@start_time}")}_#{@name}.wav"
+    name = "#{Digest::MD5.hexdigest("#{self.id}")}_#{@name}.wav"
     File.open(name, 'wb') do |f|
       data_header = Wave.data_header @wav_data.size
       chunk_header = Wave.chunk_header 1, @sample_rate
@@ -87,12 +114,13 @@ class Call
     @callee = evidence.callee
     @start_time = evidence.start_time
     @channels = {}
+    @resampled = :not_yet
     create_channel evidence
     trace :info, "new call for #{@callee} #{@start_time} on channel #{evidence.channel.to_s.upcase}"
   end
   
   def id
-    "#{@callee}:#{@start_time}"
+    "#{@callee}:#{@start_time.to_f}"
   end
   
   def accept?(evidence)
@@ -108,15 +136,17 @@ class Call
   end
   
   def create_channel(evidence)
-    # update start time of call if new channel have start time before current one
     channel = Channel.new evidence
     @channels[evidence.channel] = channel
-    channel
+    
+    # fix start time
+    @start_time = get_start_time
+    
+    return channel
   end
   
   def closed?
     closed_channels = @channels.select {|k,v| v.closed? unless v.nil? }
-    trace :debug, "Closed channels: #{closed_channels.size}, total channels: #{@channels.size}"
     return closed_channels.size == @channels.size
   end
   
@@ -140,7 +170,10 @@ class Call
   end
   
   def to_s
-    self.id
+    string = "---\nCALL #{self.id}\n"
+    @channels.each {|k, c| string += "\t- #{k} #{c.seconds} #{c.num_samples}\n" }
+    string += "---\n"
+    return string
   end
   
   def to_wavfile
@@ -149,6 +182,52 @@ class Call
     end
   end
   
+  def get_start_time
+    times = @channels.values.collect {|c| c.start_time.to_f }
+    times.min
+  end
+  
+  def to_resampled_stream
+    #return nil unless @channels.size == 2
+    
+    # sort channels by start time
+    sorted_channels = @channels.values.sort_by {|c| c.start_time}
+    
+    #second is
+    
+    desired_sample_rate = 8000
+    src_data = SRC::DATA.new
+    channel = sorted_channels.first
+    float_samples = channel.to_float_samples
+    
+    bytecount = float_samples.size
+    in_pointer = FFI::MemoryPointer.new(:float, float_samples.size)
+    
+    in_pointer.put_bytes(0, float_samples, 0, float_samples.size)
+    src_data[:data_in] = in_pointer
+    src_data[:input_frames] = channel.num_samples
+    
+    out_pointer = FFI::MemoryPointer.new(:float, channel.num_samples)
+    src_data[:data_out] = out_pointer
+    src_data[:output_frames] = channel.num_samples
+    
+    src_data[:ratio] = channel.sample_rate / desired_sample_rate
+    
+    SRC::simple(src_data, SRC::BEST_QUALITY, 1)
+    
+    wav_data = out_pointer.get_bytes(src_data[:output_frames_gen] * 4).unpack('F*').pack('S*')
+    
+    name = "#{Digest::MD5.hexdigest("#{self.id}")}_#{channel.name}_resampled.wav"
+    File.open(name, 'wb') do |f|
+      data_header = Wave.data_header wav_data.size
+      chunk_header = Wave.chunk_header 1, desired_sample_rate
+      main_header = Wave.main_header wav_data.size + data_header.size + chunk_header.size
+      f.write main_header
+      f.write chunk_header
+      f.write data_header
+      f.write wav_data
+    end
+  end
 end
 
 class AudioProcessor
@@ -181,6 +260,8 @@ class AudioProcessor
     
     call = get_call evidence
     call.feed evidence
+
+    puts "#{call.to_s}"
   end
   
   def to_s
@@ -194,6 +275,7 @@ class AudioProcessor
   def to_wavfile
     @calls.each do |c|
       c.to_wavfile
+      c.to_resampled_stream
     end
   end
 end

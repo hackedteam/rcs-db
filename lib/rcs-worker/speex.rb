@@ -41,7 +41,7 @@ module Speex
   GET_FRAME_SIZE = 3
   
   begin
-	  ffi_lib 'speex'
+	  ffi_lib '/usr/local/Cellar/speex/1.2rc1/lib/libspeex.1.5.0.dylib'
     ffi_convention :stdcall
 
     attach_function :decoder_init, :speex_decoder_init, [:pointer], :pointer
