@@ -37,4 +37,16 @@ module Backdoors
     mysql_query("DELETE FROM upload WHERE backdoor_id = #{bid} AND upload_id = #{id}")
   end
 
+  def backdoor_upgrades(bid)
+    mysql_query("SELECT upgrade_id, filename FROM upgrade WHERE backdoor_id = #{bid}").to_a
+  end
+
+  def backdoor_upgrade(bid, id)
+    mysql_query("SELECT content FROM upgrade WHERE backdoor_id = #{bid} AND upgrade_id = #{id}").to_a.first
+  end
+
+  def backdoor_del_upgrade(bid, id)
+    mysql_query("DELETE FROM upgrade WHERE backdoor_id = #{bid} AND upgrade_id = #{id}")
+  end
+
 end

