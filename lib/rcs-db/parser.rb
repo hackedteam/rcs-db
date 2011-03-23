@@ -94,5 +94,5 @@ module Parser
 
 end #Parser
 
-end #Collector::
+end #DB::
 end #RCS::

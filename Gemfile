@@ -1,7 +1,7 @@
 source "http://rubygems.org"
 # Add dependencies required to use your gem here.
 
-gem 'eventmachine', ">= 1.0.0.beta.3"
+gem 'eventmachine'
 git "git://github.com/alor/evma_httpserver.git", :branch => "master" do
   gem 'eventmachine_httpserver', ">= 0.2.2"
 end
@@ -11,7 +11,6 @@ gem 'ffi'
 
 # remove this after migration is complete
 gem 'em-proxy'
-gem 'em-zeromq'
 
 # databases
 gem 'sqlite3-ruby'
@@ -19,7 +18,6 @@ gem 'mongo'
 gem 'bson'
 gem 'bson_ext'
 gem 'mysql2'
-
 
 # Add dependencies to develop your gem here.
 # Include everything needed to run rake, tests, features, etc.

