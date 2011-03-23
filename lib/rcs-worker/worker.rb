@@ -29,7 +29,7 @@ class HTTPHandler < EM::Connection
   include RCS::Tracer
   include EM::HttpServer
   include Parser
-
+  
   def post_init
     # don't forget to call super here !
     super
@@ -45,7 +45,7 @@ class HTTPHandler < EM::Connection
     trace :debug, "Connection from #{@peer}:#{@peer_port}"
   end
 
-def process_http_request
+  def process_http_request
     # the http request details are available via the following instance variables:
     #   @http_protocol
     #   @http_request_method
