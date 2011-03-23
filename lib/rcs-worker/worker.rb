@@ -97,94 +97,6 @@ class HTTPHandler < EM::Connection
   end
 
 end
-=begin
-class EvidenceWorker
-  include Tracer
-  
-  SLEEP_TIME = 10
-  
-  def initialize(instance)
-    @instance = instance
-    @state = :stopped
-    @evidences = []
-    trace :info, "Issuing worker for backdoor instance #{instance}."
-  end
-  
-  def stopped?
-    @state == :stopped
-  end
-
-  def sleeping_too_much?
-    
-  end
-    
-  def queue(evidence)
-    
-    # queue the evidence
-    #trace :info, "queueing #{evidence} for #{@instance}"
-    @evidences << evidence
-
-    # prepare the Proc used for handling the deferred work
-    process = Proc.new do
-      @state = :running
-      seconds_sleeping = 0
-      trace :debug, "[#{Thread.current}][#{@instance}] starting processing."
-
-      while seconds_sleeping < SLEEP_TIME
-        until @evidences.empty?
-          trace :debug, "[#{Thread.current}][#{@instance}] evidences #{@evidences}"
-          ev = @evidences.shift
-          trace :debug, "[#{Thread.current}][#{@instance}] processing #{ev}."
-          sleep 1
-          seconds_sleeping = 0
-        end
-
-        sleep 1
-        seconds_sleeping += 1
-        trace :debug, "[#{Thread.current}] sleeping #{seconds_sleeping}"
-      end
-      
-      trace :debug, "[#{Thread.current}][#{@instance}] sleeping too much, stopping!"
-      @state = :stopped
-    end
-    
-    # if the thread was sleeping, restart it
-    if stopped?
-      trace :debug, "deferring work for #{@instance}"
-      EM.defer process
-    end
-  end
-end
-
-class EMPullHandler
-  include Tracer
-  
-  attr_reader :received
-  
-  def initialize
-    @workers = []
-    @queue = {}
-  end
-  
-  def on_readable(socket, messages)
-    # each message is "<backdoor_instance>:<evidence_id>"
-    trace :debug, "on_readable"
-    messages.each do |m|
-      msg = m.copy_out_string
-      trace :debug, "received: #{msg}"
-      instance, evidence = msg.split(":")
-
-      unless @queue.has_key? instance
-        worker = EvidenceWorker.new instance
-        @workers << worker
-        @queue[instance] = worker
-      end
-      
-      @queue[instance].queue evidence
-    end
-  end
-end
-=end
 
 class Worker
   include Tracer
@@ -216,55 +128,9 @@ class Worker
       end
       raise
     end
-  
+    
   end
-    
-  def process
-    require 'pp'
-    
-    info = RCS::EvidenceManager.instance_info(@instance)
-    trace :info, "Processing backdoor #{info['build']}:#{info['instance']}"
-    
-    # the log key is passed as a string taken from the db
-    # we need to calculate the MD5 and use it in binary form
-    trace :debug, "Evidence key #{info['key']}"
-    evidence_key = Digest::MD5.digest info['key']
-    
-    evidence_sizes = RCS::EvidenceManager.evidence_info(@instance)
-    evidence_ids = RCS::EvidenceManager.evidence_ids(@instance)
-    trace :info, "Pieces of evidence to be processed: #{evidence_ids.join(', ')}."
-    
-    evidence_ids.each do |id|
-      binary = RCS::EvidenceManager.get_evidence(id, @instance)
-      trace :info, "Processing evidence #{id}: #{binary.size} bytes."
-      
-      # deserialize evidence
-      begin
-        evidence = RCS::Evidence.new(evidence_key).deserialize(binary)
-        mod = "#{evidence.type.to_s.capitalize}Processing"
-        evidence.extend eval mod if RCS.const_defined? mod.to_sym
-        
-        evidence.process if evidence.respond_to? :process
-        
-        case evidence.type
-          when :CALL
-            trace :debug, "Evidence channel #{evidence.channel} callee #{evidence.callee} with #{evidence.wav.size} bytes of data."
-            @audio_processor.feed(evidence)
-        end
-      rescue EvidenceDeserializeError => e
-        trace :info, "DECODING FAILED: " << e.to_s
-        # trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
-      rescue Exception => e
-        trace :fatal, "FAILURE: " << e.to_s
-        trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
-      end
-      
-    end
 
-    @audio_processor.to_wavfile
-    
-    trace :info, "All evidence has been processed."
-  end
 end
 
 class Application
