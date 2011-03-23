@@ -1,3 +1,6 @@
+# relatives
+require_relative 'instance_processor'
+
 # from RCS::Common
 require 'rcs-common/trace'
 
@@ -11,24 +14,21 @@ class QueueManager
   include Singleton
   include RCS::Tracer
   
-  # To change this template use File | Settings | File Templates.
   def initialize
-    # this hash has instances as keys, and array of evidences ids as values
-    @evidences = {}
+    @instances = {}
   end
   
   def queue(instance, evidence)
     return null if instance.nil? or evidence.nil?
-
-    @evidences[instance] ||= []
-    @evidences[instance] << evidence
-    trace :info, "queued #{evidence} for instance #{instance}."
+    
+    @instances[instance] ||= InstanceProcessor.new instance
+    @instances[instance].queue(evidence)
   end
   
   def to_s
     str = ""
-    @evidences.each_pair do |instance, evidences|
-      str += "instance #{@id}: #{@evidences}\n"
+    @instances.each_pair do |instance, processor|
+      str += "#{processor.to_s}"
     end
     str
   end

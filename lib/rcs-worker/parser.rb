@@ -33,11 +33,10 @@ module Parser
     trace :debug, "Content: #{content}"
     
     begin
-      content.each_pair do |instance, evidences|
-        evidences.each {|ev| QueueManager.instance.queue instance, ev}
-      end
+      content.each_pair do |instance, evidences| evidences.each {|ev| QueueManager.instance.queue(instance, ev)} end
     rescue Exception => e
       trace :error, "ERROR: " + e.message
+      trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
       return resp_status, resp_content, resp_content_type
     end
     
