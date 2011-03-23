@@ -44,10 +44,10 @@ class DB
   end
 
   # in the mix-ins there are all the methods for the respective section
-  include Users
-  include Backdoors
-  include Status
-  include Signatures
+  Dir[File.dirname(__FILE__) + '/db_layer/*.rb'].each do |file|
+    mod = File.basename(file, '.rb').capitalize
+    include eval(mod)
+  end
 
 end
 
