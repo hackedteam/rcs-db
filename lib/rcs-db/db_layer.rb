@@ -30,9 +30,11 @@ class DB
       user = 'root'
       pass = ''
       # use the credential stored by RCSDB
-      File.open('C:/RCSDB/etc/RCSDB.ini').each_line do |line|
-        user = line.split('=')[1].chomp if line['user=']
-        pass = line.split('=')[1].chomp if line['pass=']
+      if File.exist?('C:/RCSDB/etc/RCSDB.ini') then
+        File.open('C:/RCSDB/etc/RCSDB.ini').each_line do |line|
+          user = line.split('=')[1].chomp if line['user=']
+          pass = line.split('=')[1].chomp if line['pass=']
+        end
       end
       trace :info, "Connecting to MySQL... [#{user}:#{pass}]"
       @mysql = Mysql2::Client.new(:host => "localhost", :username => user, :password => pass, :database => 'rcs')
