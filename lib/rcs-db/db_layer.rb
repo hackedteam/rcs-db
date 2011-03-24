@@ -27,10 +27,20 @@ class DB
 
   def initialize
     begin
-      trace :info, "Connecting to MySQL..."
-      @mysql = Mysql2::Client.new(:host => "localhost", :username => "root", :database => 'rcs')
+      user = 'root'
+      pass = ''
+      # use the credential stored by RCSDB
+      if File.exist?('C:/RCSDB/etc/RCSDB.ini') then
+        File.open('C:/RCSDB/etc/RCSDB.ini').each_line do |line|
+          user = line.split('=')[1].chomp if line['user=']
+          pass = line.split('=')[1].chomp if line['pass=']
+        end
+      end
+      trace :info, "Connecting to MySQL... [#{user}:#{pass}]"
+      @mysql = Mysql2::Client.new(:host => "localhost", :username => user, :password => pass, :database => 'rcs')
     rescue
       trace :fatal, "Cannot connect to MySQL"
+      raise
     end
     
   end
@@ -40,6 +50,12 @@ class DB
       @mysql.query(query, {:symbolize_keys => true})
     rescue Exception => e
       trace :error, "MYSQL ERROR: #{e.message}"
+    end
+  end
+
+  def mysql_escape(strings)
+    strings.each do |s|
+      s.replace @mysql.escape(s) if s.class == String
     end
   end
 

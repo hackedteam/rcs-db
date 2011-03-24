@@ -32,7 +32,7 @@ class HeartBeat
     status = Status.my_status
     disk = Status.disk_free
     cpu = Status.cpu_load
-    pcpu = Status.my_cpu_load
+    pcpu = Status.my_cpu_load(component)
 
     # create the stats hash
     stats = {:disk => disk, :cpu => cpu, :pcpu => pcpu}
