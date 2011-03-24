@@ -43,6 +43,12 @@ class DB
     end
   end
 
+  def mysql_escape(strings)
+    strings.each do |s|
+      s.replace @mysql.escape(s) if s.class == String
+    end
+  end
+
   # in the mix-ins there are all the methods for the respective section
   Dir[File.dirname(__FILE__) + '/db_layer/*.rb'].each do |file|
     mod = File.basename(file, '.rb').capitalize
