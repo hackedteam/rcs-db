@@ -27,10 +27,18 @@ class DB
 
   def initialize
     begin
-      trace :info, "Connecting to MySQL..."
-      @mysql = Mysql2::Client.new(:host => "localhost", :username => "root", :database => 'rcs')
+      user = 'root'
+      pass = ''
+      # use the credential stored by RCSDB
+      File.open('C:/RCSDB/etc/RCSDB.ini').each_line do |line|
+        user = line.split('=')[1].chomp if line['user=']
+        pass = line.split('=')[1].chomp if line['pass=']
+      end
+      trace :info, "Connecting to MySQL... [#{user}:#{pass}]"
+      @mysql = Mysql2::Client.new(:host => "localhost", :username => user, :password => pass, :database => 'rcs')
     rescue
       trace :fatal, "Cannot connect to MySQL"
+      raise
     end
     
   end
