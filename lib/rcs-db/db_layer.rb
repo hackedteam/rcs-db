@@ -26,6 +26,11 @@ class DB
   include RCS::Tracer
 
   def initialize
+    @available = false
+    mysql_connect
+  end
+  
+  def mysql_connect
     begin
       user = 'root'
       pass = ''
@@ -38,18 +43,25 @@ class DB
       end
       trace :info, "Connecting to MySQL... [#{user}:#{pass}]"
       @mysql = Mysql2::Client.new(:host => "localhost", :username => user, :password => pass, :database => 'rcs')
+      @available = true
     rescue
       trace :fatal, "Cannot connect to MySQL"
+      @available = false
       raise
     end
-    
   end
 
   def mysql_query(query)
     begin
+      # try to reconnect if not connected
+      mysql_connect if not @available
+      # execute the query
       @mysql.query(query, {:symbolize_keys => true})
     rescue Exception => e
-      trace :error, "MYSQL ERROR: #{e.message}"
+      trace :error, "MYSQL ERROR [#{e.sql_state}][#{e.error_number}]: #{e.message}"
+      trace :error, "MYSQL QUERY: #{query}"
+      @available = false if e.error_number == 2006
+      return []
     end
   end
 
