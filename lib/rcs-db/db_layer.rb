@@ -65,7 +65,7 @@ class DB
     end
   end
 
-  def mysql_escape(strings)
+  def mysql_escape(*strings)
     strings.each do |s|
       s.replace @mysql.escape(s) if s.class == String
     end
