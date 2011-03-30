@@ -80,8 +80,8 @@ def process_http_request
       
       # prepare the HTTP response
       resp.status = status
-      #TODO: status_string from status
-      resp.status_string = "OK"
+      # status_string from status code
+      resp.status_string = Net::HTTPResponse::CODE_TO_OBJ["#{status}"].name.gsub(/Net::HTTP/, '')
       resp.content = content
       resp.headers['Content-Type'] = content_type
       resp.headers['Connection'] = 'close'
