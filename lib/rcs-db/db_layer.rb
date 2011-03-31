@@ -33,16 +33,18 @@ class DB
   def mysql_connect
     begin
       user = 'root'
-      pass = ''
+      pass = 'rootp123'
+      host = Config.global['DB_ADDRESS']
       # use the credential stored by RCSDB
       if File.exist?('C:/RCSDB/etc/RCSDB.ini') then
         File.open('C:/RCSDB/etc/RCSDB.ini').each_line do |line|
           user = line.split('=')[1].chomp if line['user=']
           pass = line.split('=')[1].chomp if line['pass=']
+          host = '127.0.0.1'
         end
       end
       trace :info, "Connecting to MySQL... [#{user}:#{pass}]"
-      @mysql = Mysql2::Client.new(:host => "localhost", :username => user, :password => pass, :database => 'rcs')
+      @mysql = Mysql2::Client.new(:host => host, :username => user, :password => pass, :database => 'rcs')
       @available = true
     rescue
       trace :fatal, "Cannot connect to MySQL"
