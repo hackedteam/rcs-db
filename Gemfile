@@ -11,6 +11,7 @@ gem 'ffi'
 
 # remove this after migration is complete
 gem 'em-proxy'
+gem 'em-http-request'
 
 # databases
 gem 'sqlite3-ruby'

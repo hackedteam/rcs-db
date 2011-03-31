@@ -9,6 +9,17 @@ require 'rcs-worker/src'
 
 require 'digest/md5'
 
+class AudioProcessingError < StandardError
+  attr_reader :msg
+  def initialize(msg)
+    @msg = msg
+  end
+
+  def to_s
+    @msg
+  end
+end
+
 class Channel
   include Tracer
   attr_reader :sample_rate, :start_time, :stop_time, :wav_data, :status
@@ -42,7 +53,7 @@ class Channel
   
   def fill(gap)
     samples_to_fill = @sample_rate * gap
-    trace :debug, "filling #{samples_to_fill} samples to fill #{gap} seconds of missing data."
+    #trace :debug, "filling #{samples_to_fill} samples to fill #{gap} seconds of missing data."
     data = StringIO.new
     data.write([0].pack("S") * samples_to_fill.ceil)
     @wav_data += data.string
@@ -60,6 +71,8 @@ class Channel
   end
   
   def feed(evidence)
+    trace :debug, "Evidence channel #{evidence.channel} callee #{evidence.callee} with #{evidence.wav.size} bytes of data."
+    
     if evidence.end_call?
       self.close!
       return
@@ -70,6 +83,8 @@ class Channel
     
     @stop_time = evidence.stop_time
     @wav_data += evidence.wav
+    
+    #to_wavfile
   end
   
   def bytes
@@ -89,7 +104,7 @@ class Channel
   end
   
   def to_float_samples
-    @wav_data.pack('S*').unpack('F*')
+    @wav_data.unpack('F*').spack('S*')
   end
   
   def to_wavfile (filename = '')
@@ -110,9 +125,15 @@ class Call
   include Tracer
   attr_writer :start_time
   
+  # status of call can be:
+  #   - :queueing only first channel is present, queue data, maintain speex
+  #   - :fillin   second channel arrived, fill in later channel with silence
+  #   - :resampling second channel arrived, filled in, resample data as they arrive
+  
   def initialize(evidence)
     @callee = evidence.callee
     @start_time = evidence.start_time
+    @status = :queueing
     @channels = {}
     @resampled = :not_yet
     create_channel evidence
@@ -121,6 +142,14 @@ class Call
   
   def id
     "#{@callee}:#{@start_time.to_f}"
+  end
+  
+  def queueing?
+    @channels.size < 2
+  end
+  
+  def is_fillin?
+    @status == :fillin
   end
   
   def accept?(evidence)
@@ -166,9 +195,31 @@ class Call
     end
     
     channel.feed evidence
+
+    # update status
+    update_status
+    
     return true
   end
   
+  def sample_rates
+    @channels.values.collect {|c| c.sample_rate}
+  end
+  
+  def min_sample_rate
+    sample_rates.sort.first
+  end
+  
+  def update_status
+    if @channels.size < 2
+      @status == :queueing
+      return
+    else # we have (at least) two channels
+      @status == :fillin
+      trace :debug, "Lesser sample rate: #{min_sample_rate}, will be used for resampling."
+    end
+  end
+
   def to_s
     string = "---\nCALL #{self.id}\n"
     @channels.each {|k, c| string += "\t- #{k} #{c.seconds} #{c.num_samples}\n" }
@@ -255,13 +306,13 @@ class AudioProcessor
   end
   
   def feed(evidence)
+    return
+    
     # if callee is unknown or evidence is empty, evidence is invalid, ignore it
     return if evidence.callee.size == 0 or evidence.wav.size == 0
     
     call = get_call evidence
-    call.feed evidence
-
-    puts "#{call.to_s}"
+    call.feed evidence unless call.nil?
   end
   
   def to_s
@@ -275,7 +326,7 @@ class AudioProcessor
   def to_wavfile
     @calls.each do |c|
       c.to_wavfile
-      c.to_resampled_stream
+      #c.to_resampled_stream
     end
   end
 end
