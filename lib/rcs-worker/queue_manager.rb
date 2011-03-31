@@ -21,8 +21,13 @@ class QueueManager
   def queue(instance, evidence)
     return null if instance.nil? or evidence.nil?
     
-    @instances[instance] ||= InstanceProcessor.new instance
-    @instances[instance].queue(evidence)
+    begin
+      @instances[instance] ||= InstanceProcessor.new instance
+      @instances[instance].queue(evidence)
+    rescue Exception => e
+      trace :error, e.message
+      return nil
+    end
   end
   
   def to_s

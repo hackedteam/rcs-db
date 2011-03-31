@@ -4,9 +4,11 @@
 
 # relatives
 require_relative 'audio_processor'
-require_relative 'config'
 require_relative 'evidence/call'
 require_relative 'parser'
+
+# from RCS::DB
+require 'rcs-db/config'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -165,9 +167,9 @@ class Application
       trace :info, "Starting a RCS Worker #{version}..."
       
       # config file parsing
-      return 1 unless Config.load_from_file
+      return 1 unless RCS::DB::Config.load_from_file
       
-      Worker.new.setup Config.global['LISTENING_PORT']
+      Worker.new.setup RCS::DB::Config.global['WORKER_PORT']
     rescue Exception => e
       trace :fatal, "FAILURE: " << e.to_s
       trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")

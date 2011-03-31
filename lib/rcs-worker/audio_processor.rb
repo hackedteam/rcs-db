@@ -71,6 +71,8 @@ class Channel
   end
   
   def feed(evidence)
+    trace :debug, "Evidence channel #{evidence.channel} callee #{evidence.callee} with #{evidence.wav.size} bytes of data."
+    
     if evidence.end_call?
       self.close!
       return
@@ -81,6 +83,8 @@ class Channel
     
     @stop_time = evidence.stop_time
     @wav_data += evidence.wav
+    
+    #to_wavfile
   end
   
   def bytes
@@ -302,13 +306,13 @@ class AudioProcessor
   end
   
   def feed(evidence)
+    return
+    
     # if callee is unknown or evidence is empty, evidence is invalid, ignore it
     return if evidence.callee.size == 0 or evidence.wav.size == 0
     
     call = get_call evidence
-    call.feed evidence
-    
-    puts "#{call.to_s}"
+    call.feed evidence unless call.nil?
   end
   
   def to_s

@@ -1,4 +1,3 @@
-require 'ffi'
 require 'stringio'
 
 class Wave

