@@ -96,7 +96,8 @@ class HTTPHandler < EM::Connection
       # prepare the HTTP response
       resp.status = status
       # status_string from status code
-      resp.status_string = Net::HTTPResponse::CODE_TO_OBJ["#{status}"].name.gsub(/Net::HTTP/, '')
+      #TODO:FIX
+      resp.status_string = 'OK' #Net::HTTPResponse::CODE_TO_OBJ["#{resp.status}"].name.gsub(/Net::HTTP/, '')
       resp.content = content
       resp.headers['Content-Type'] = content_type
       resp.headers['Set-Cookie'] = cookie unless cookie.nil?
