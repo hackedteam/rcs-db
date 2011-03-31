@@ -1,7 +1,0 @@
-#!/usr/bin/env ruby
-$LOAD_PATH.unshift File.join(File.dirname(__FILE__), '..', 'lib')
-
-require 'bundler/setup'
-require 'rcs-worker/config'
-
-exit RCS::Worker::Config.run!(*ARGV)

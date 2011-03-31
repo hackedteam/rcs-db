@@ -28,7 +28,8 @@ class Config
                    'DB_KEY' => 'rcs-db.key',
                    'SERVER_SIG' => 'rcs-server.sig',
                    'LISTENING_PORT' => 4444,
-                   'HB_INTERVAL' => 30}
+                   'HB_INTERVAL' => 30,
+                   'WORKER_PORT' => 5150}
 
   attr_reader :global
 
@@ -128,6 +129,7 @@ class Config
     @global['SERVER_SIG'] = options[:server_sig] unless options[:server_sig].nil?
     @global['LISTENING_PORT'] = options[:port] unless options[:port].nil?
     @global['HB_INTERVAL'] = options[:hb_interval] unless options[:hb_interval].nil?
+    @global['WORKER_PORT'] = options[:worker_port] unless options[:worker_port].nil?
 
     trace :info, ""
     trace :info, "Final configuration:"
@@ -177,6 +179,9 @@ class Config
       end
       opts.on( '-b', '--db-heartbeat SEC', Integer, 'Time in seconds between two heartbeats' ) do |sec|
         options[:hb_interval] = sec
+      end
+      opts.on( '-w', '--worker-port PORT', Integer, 'Listen on tcp/PORT for worker' ) do |port|
+        options[:worker_port] = port
       end
       opts.on( '-X', '--defaults', 'Write a new config file with default values' ) do
         options[:defaults] = true
