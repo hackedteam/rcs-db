@@ -2,6 +2,7 @@
 # Mix-in for DB Layer
 #
 
+module DBLayer
 module Status
 
   # updates or insert the status of a component
@@ -41,4 +42,5 @@ module Status
     end
   end
 
-end
+end # ::Status
+end # ::DBLayer

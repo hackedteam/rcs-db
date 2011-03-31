@@ -4,6 +4,7 @@
 
 require 'digest/sha1'
 
+module DBLayer
 module Users
 
   def user_find(user)
@@ -23,4 +24,5 @@ module Users
     return digest == Digest::SHA1.hexdigest('.:RCS:.' + pass)
   end
 
-end
+end # ::Users
+end # ::DBLayer

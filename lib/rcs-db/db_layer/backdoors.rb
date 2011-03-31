@@ -2,6 +2,8 @@
 # Mix-in for DB Layer
 #
 
+module DBLayer
+
 module Backdoors
 
   def backdoor_evidence_key(bid)
@@ -89,4 +91,5 @@ module Backdoors
     mysql_query("DELETE FROM filesystem WHERE backdoor_id = #{bid} AND filesystem_id = #{id}")
   end
 
-end
+end # ::Backdoors
+end # ::DBLayer

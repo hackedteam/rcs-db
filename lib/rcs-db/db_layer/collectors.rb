@@ -2,6 +2,7 @@
 # Mix-in for DB Layer
 #
 
+module DBLayer
 module Collectors
 
   def collectors
@@ -17,4 +18,5 @@ module Collectors
                  VALUES (#{id}, '#{type}', '#{time}', '#{desc}')")
   end
 
-end
+end # ::Collectors
+end # ::DBLayer

@@ -2,6 +2,7 @@
 # Mix-in for DB Layer
 #
 
+module DBLayer
 module Signatures
 
   def signature(sign)
@@ -12,4 +13,5 @@ module Signatures
 
   end
 
-end
+end # ::Signatures
+end # ::DBLayer

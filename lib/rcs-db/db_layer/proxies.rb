@@ -2,6 +2,7 @@
 # Mix-in for DB Layer
 #
 
+module DBLayer
 module Proxies
 
   def proxies
@@ -17,4 +18,5 @@ module Proxies
                  VALUES (#{id}, '#{type}', '#{time}', '#{desc}')")
   end
 
-end
+end # ::Proxies
+end # ::DBLayer
