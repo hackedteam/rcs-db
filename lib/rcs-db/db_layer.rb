@@ -34,8 +34,8 @@ class DB
   def mysql_connect
     begin
       user = 'root'
-      pass = ''
-      host = '127.0.0.1' #Config.global['DB_ADDRESS']
+      pass = 'rootp123'
+      host = Config.global['DB_ADDRESS']
       # use the credential stored by RCSDB
       if File.exist?('C:/RCSDB/etc/RCSDB.ini') then
         File.open('C:/RCSDB/etc/RCSDB.ini').each_line do |line|

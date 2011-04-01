@@ -4,8 +4,11 @@
 
 require 'rcs-db/db_layer'
 
+# rcs-common
 require 'rcs-common/evidence_manager'
+require 'rcs-common/symbolize'
 
+# system
 require 'time'
 
 module RCS
@@ -49,10 +52,7 @@ class EvidenceController < RESTController
     require_auth_level :server
 
     # create a phony session
-    session = {:bid => params['bid'],
-               :build => params['build'],
-               :instance => params['instance'],
-               :subtype => params['subtype']}
+    session = params.symbolize
 
     # retrieve the key from the db
     key = DB.backdoor_evidence_key(params['bid'])
@@ -71,8 +71,7 @@ class EvidenceController < RESTController
     require_auth_level :server
 
     # create a phony session
-    session = {:bid => params['bid'],
-               :instance => params['instance']}
+    session = params.symbolize
 
     # store the status
     EvidenceManager.sync_end session
@@ -85,8 +84,7 @@ class EvidenceController < RESTController
     require_auth_level :server
 
     # create a phony session
-    session = {:bid => params['bid'],
-               :instance => params['instance']}
+    session = params.symbolize
 
     # store the status
     EvidenceManager.sync_timeout session
