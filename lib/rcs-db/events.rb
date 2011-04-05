@@ -148,6 +148,7 @@ class Events
     begin
 
       #start the proxy for the XML-RPC calls
+      #TODO: remove this...
       start_proxy(port - 1, Config.global['DB_ADDRESS'], port - 1) if not File.exists?('C:/RCSDB/etc/RCSDB.ini')
 
       # all the events are handled here
