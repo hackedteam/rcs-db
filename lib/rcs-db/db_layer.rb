@@ -53,7 +53,7 @@ class DB
       raise
     end
   end
-
+  
   def mysql_query(query)
     begin
       # try to reconnect if not connected
@@ -64,10 +64,10 @@ class DB
       trace :error, "MYSQL ERROR [#{e.sql_state}][#{e.error_number}]: #{e.message}"
       trace :error, "MYSQL QUERY: #{query}"
       @available = false if e.error_number == 2006
-      return []
+      raise
     end
   end
-
+  
   def mysql_escape(*strings)
     strings.each do |s|
       s.replace @mysql.escape(s) if s.class == String

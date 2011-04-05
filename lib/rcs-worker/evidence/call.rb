@@ -20,7 +20,7 @@ module CallProcessing
     Speex.decoder_ctl(decoder, Speex::GET_FRAME_SIZE, frame_size_ptr);
     frame_size = frame_size_ptr.get_uint(0)
         
-    raw_content = StringIO.new @content
+    raw_content = StringIO.new @info[:content]
     wave_buffer = ''
     
     bits = Speex::Bits.new

