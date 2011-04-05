@@ -8,6 +8,7 @@ Dir[File.dirname(__FILE__) + '/db_layer/*.rb'].each do |file|
 end
 
 require_relative 'audit.rb'
+require_relative 'config'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -24,7 +25,7 @@ class DB
   include Singleton
   extend FlatSingleton
   include RCS::Tracer
-
+  
   def initialize
     @available = false
     mysql_connect
@@ -46,8 +47,8 @@ class DB
       trace :info, "Connecting to MySQL... [#{user}:#{pass}]"
       @mysql = Mysql2::Client.new(:host => host, :username => user, :password => pass, :database => 'rcs')
       @available = true
-    rescue
-      trace :fatal, "Cannot connect to MySQL"
+    rescue Exception => e
+      trace :fatal, "Cannot connect to MySQL: #{e.message}"
       @available = false
       raise
     end
@@ -76,7 +77,7 @@ class DB
   # in the mix-ins there are all the methods for the respective section
   Dir[File.dirname(__FILE__) + '/db_layer/*.rb'].each do |file|
     mod = File.basename(file, '.rb').capitalize
-    include eval(mod)
+    include eval("DBLayer::#{mod}")
   end
 
 end

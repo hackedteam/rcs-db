@@ -4,9 +4,9 @@ require 'rcs-worker/speex'
 require 'rcs-worker/audio_processor'
 
 module CallProcessing
-
+  
   attr_reader :wav
-
+  
   def process
     
     decoder = Speex.decoder_init(Speex.lib_get_mode(Speex::MODEID_UWB))
@@ -47,12 +47,6 @@ module CallProcessing
     Speex.decoder_destroy(decoder)
     
     @wav = wave_buffer
-    
-=begin
-    channel = RCS::Worker::Channel.new self.sample_rate, self.start_time
-    channel.feed(@wav)
-    channel.to_wavfile
-=end
     
   end
   
