@@ -19,6 +19,13 @@ class EvidenceController
   end
 end
 
+class DB
+  def mysql_connect; end
+  def mysql_query(q); end
+  def backdoor_evidence_key(id)
+    return 'evidence-key'
+  end
+end
 # fake class to hold the Mixin
 class Classy
   include RCS::DB::Parser
@@ -64,7 +71,7 @@ class ParserTest < Test::Unit::TestCase
                :user => 'test-user',
                :device => 'test-device',
                :source => 'test-source',
-               :sync_time => Time.now
+               :sync_time => Time.now.to_i
               }
     status, *dummy = @rest.http_parse(@http_headers, 'POST', '/evidence/start', @cookie, content.to_json)
     assert_equal 200, status

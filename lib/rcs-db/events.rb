@@ -16,6 +16,7 @@ require 'eventmachine'
 require 'evma_httpserver'
 require 'socket'
 require 'em-proxy'
+require 'net/http'
 
 module RCS
 module DB
@@ -97,7 +98,7 @@ class HTTPHandler < EM::Connection
       resp.status = status
       # status_string from status code
       #TODO:FIX
-      resp.status_string = 'OK' #Net::HTTPResponse::CODE_TO_OBJ["#{resp.status}"].name.gsub(/Net::HTTP/, '')
+      resp.status_string = Net::HTTPResponse::CODE_TO_OBJ["#{resp.status}"].name.gsub(/Net::HTTP/, '')
       resp.content = content
       resp.headers['Content-Type'] = content_type
       resp.headers['Set-Cookie'] = cookie unless cookie.nil?
@@ -149,6 +150,7 @@ class Events
     begin
 
       #start the proxy for the XML-RPC calls
+      #TODO: remove this...
       start_proxy(port - 1, Config.global['DB_ADDRESS'], port - 1) if not File.exists?('C:/RCSDB/etc/RCSDB.ini')
 
       # all the events are handled here
