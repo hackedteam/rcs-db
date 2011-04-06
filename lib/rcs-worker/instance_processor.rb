@@ -100,8 +100,6 @@ class InstanceProcessor
                     sleep 1
                   end
                 end
-                
-              # TODO: delete evidence if store was successful
             end
             
             trace :debug, "[#{Thread.current}][#{@id}] processed #{evidence_id} of type #{evidence.info[:type]}, #{data.size} bytes."

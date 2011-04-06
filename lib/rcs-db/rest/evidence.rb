@@ -50,7 +50,7 @@ class EvidenceController < RESTController
     rescue
       return STATUS_NOT_FOUND
     end
-
+    
     return STATUS_OK, *json_reply({:bytes => @req_content.size})
   end
   
