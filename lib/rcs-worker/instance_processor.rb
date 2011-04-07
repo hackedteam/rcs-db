@@ -112,7 +112,7 @@ class InstanceProcessor
                       done = true
                     rescue Exception => e
                       trace :debug, "[#{@id}] DB seems down, waiting for it to resume ... [#{e.message}]"
-                      #trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
+                      trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
                       sleep 1
                     end
                   end

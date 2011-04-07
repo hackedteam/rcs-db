@@ -65,7 +65,7 @@ class EvidenceController < RESTController
     key = DB.backdoor_evidence_key(session[:bid])
     
     # convert the string time to a time object to be passed to 'sync_start'
-    time = Time.at(params['sync_time'])
+    time = Time.at(params['sync_time']).getutc
     
     # store the status
     EvidenceManager.sync_start session, params['version'], params['user'], params['device'], params['source'], time.to_i, key
