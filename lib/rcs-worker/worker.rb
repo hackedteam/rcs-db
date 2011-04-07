@@ -45,7 +45,7 @@ class HTTPHandler < EM::Connection
     
     # get the peer name
     @peer_port, @peer = Socket.unpack_sockaddr_in(get_peername)
-    trace :debug, "Connection from #{@peer}:#{@peer_port}"
+    #trace :debug, "Connection from #{@peer}:#{@peer_port}"
   end
 
   def process_http_request
@@ -61,8 +61,8 @@ class HTTPHandler < EM::Connection
     #   @http_post_content
     #   @http_headers
 
-    trace :debug, "[#{@peer}] Incoming HTTP Connection"
-    trace :debug, "[#{@peer}] Request: [#{@http_request_method}] #{@http_request_uri}"
+    #trace :debug, "[#{@peer}] Incoming HTTP Connection"
+    #trace :debug, "[#{@peer}] Request: [#{@http_request_method}] #{@http_request_uri}"
 
     resp = EM::DelegatedHttpResponse.new(self)
 

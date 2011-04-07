@@ -30,6 +30,16 @@ module Backdoors
                        AND subtype = '#{subtype}'").to_a.first
   end
 
+  def backdoor_sync_start(bid, time, user, device, source)
+    # time, params['user'], params['device'], params['source']
+    mysql_escape user, device, source
+    mysql_query("UPDATE stat SET `received` = '#{time}',
+                                 `remoteip` = '#{source}',
+                                 `remotehost` = '#{device}',
+                                 `remoteuser` = '#{user}'
+                 WHERE backdoor_id = #{bid}")
+  end
+
   def backdoor_config(bid)
     mysql_escape bid
     #TODO: implement config creation
