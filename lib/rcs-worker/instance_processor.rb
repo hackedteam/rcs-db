@@ -103,7 +103,7 @@ class InstanceProcessor
                   end
               end
 
-              trace :debug, "[#{Thread.current}][#{@id}] processed #{evidence_id} of type #{evidence.info[:type]}, #{data.size} bytes."
+              trace :debug, "[#{@id}] processed #{evidence_id} of type #{evidence.info[:type]}, #{data.size.to_s_bytes}"
             end
 
           rescue EvidenceDeserializeError => e

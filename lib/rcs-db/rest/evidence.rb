@@ -42,8 +42,8 @@ class EvidenceController < RESTController
     # save the evidence in the db
     begin
       id = EvidenceManager.store_evidence session, @req_content.size, @req_content
-      #TODO: notify the worker
-      trace :debug, "notifying worker of [#{session[:instance]}][#{id}]"
+      # notify the worker
+      trace :info, "Evidence saved. Notifying worker of [#{session[:instance]}][#{id}]"
       notification = {session[:instance] => [id]}.to_json
       request = EM::HttpRequest.new('http://127.0.0.1:5150').post :body => notification
       request.callback {|http| http.response}
