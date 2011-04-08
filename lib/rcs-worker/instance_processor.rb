@@ -119,7 +119,7 @@ class InstanceProcessor
               end
               
               processing_time = Time.now - start_time
-              trace :info, "processed evidence #{evidence_id} of type #{evidence.info[:type]} (#{data.size.to_s_bytes}) for backdoor #{@id} [#{processing_time}s]"
+              trace :info, "processed #{evidence.info[:type]} (#{data.size.to_s_bytes}) for #{@id} in #{processing_time} sec"
             end
           
           rescue EvidenceDeserializeError => e
