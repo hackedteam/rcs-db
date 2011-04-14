@@ -44,7 +44,7 @@ class InstanceProcessor
   def take_some_rest
     sleep 1
     @seconds_sleeping += 1
-    trace :debug, "processor #{@id} takes some sleep [slept #{@seconds_sleeping} seconds]."
+    #trace :debug, "processor #{@id} takes some sleep [slept #{@seconds_sleeping} seconds]."
   end
   
   def put_to_sleep
@@ -63,7 +63,7 @@ class InstanceProcessor
   
   def queue(id)
     @evidences << id unless id.nil?
-    trace :info, "queueing evidence id #{id} for #{@id}"
+    #trace :info, "queueing evidence id #{id} for #{@id}"
     
     process = Proc.new do
       resume
@@ -91,13 +91,13 @@ class InstanceProcessor
               
               # store backdoor instance in evidence (used when storing into db)
               evidence.info[:instance] = @id
-
+              
               # find correct processing module and extend evidence
-              mod = "#{evidence.type.to_s.capitalize}Processing"
+              mod = "#{evidence.info[:type].to_s.capitalize}Processing"
               evidence.extend eval mod if RCS.const_defined? mod.to_sym
-
+              
               evidence.process if evidence.respond_to? :process
-
+              
               case evidence.info[:type]
                 when :CALL
                   @audio_processor.feed(evidence)
@@ -106,7 +106,8 @@ class InstanceProcessor
                   until done
                     begin
                       # TODO: gestire tutti i casi di inserimento fallito verso il DB
-                      evidence.info[:backdoor_id] = RCS::EvidenceManager.instance_info(@id)["bid"]
+                      info = RCS::EvidenceManager.instance_info(@id)
+                      evidence.info[:backdoor_id] = info["bid"]
                       RCS::DB::DB.evidence_store(evidence)
                       RCS::EvidenceManager.del_evidence(evidence_id, @id)
                       done = true

@@ -19,8 +19,8 @@ module CallProcessing
     frame_size_ptr = FFI::MemoryPointer.new(:int32).write_uint 0
     Speex.decoder_ctl(decoder, Speex::GET_FRAME_SIZE, frame_size_ptr);
     frame_size = frame_size_ptr.get_uint(0)
-        
-    raw_content = StringIO.new @info[:content]
+    
+    raw_content = StringIO.new @content
     wave_buffer = ''
     
     bits = Speex::Bits.new
