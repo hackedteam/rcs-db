@@ -72,7 +72,7 @@ class InstanceProcessor
         until @evidences.empty?
           resume
           evidence_id = @evidences.shift
-          
+
           begin
             # get evidence and deserialize it
             start_time = Time.now
@@ -81,7 +81,7 @@ class InstanceProcessor
             evidences = RCS::Evidence.new(@key).deserialize(data)
 
             evidences.each do |evidence|
-
+                          
               # delete empty evidences
               if evidence.empty?
                 RCS::EvidenceManager.del_evidence(evidence_id, @id)
