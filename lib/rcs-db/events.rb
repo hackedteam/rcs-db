@@ -33,6 +33,9 @@ class HTTPHandler < EM::Connection
     # don't forget to call super here !
     super
 
+    # timeout on the socket
+    comm_inactivity_timeout = 60
+
     # we want the connection to be encrypted with ssl
     start_tls(:private_key_file => Config.file('DB_KEY'),
               :cert_chain_file => Config.file('DB_CERT'),
@@ -74,7 +77,7 @@ class HTTPHandler < EM::Connection
     #   @http_post_content
     #   @http_headers
 
-    trace :debug, "[#{@peer}] Incoming HTTP Connection"
+    #trace :debug, "[#{@peer}] Incoming HTTP Connection"
     trace :debug, "[#{@peer}] Request: [#{@http_request_method}] #{@http_request_uri}"
 
     resp = EM::DelegatedHttpResponse.new(self)
@@ -97,14 +100,14 @@ class HTTPHandler < EM::Connection
       # prepare the HTTP response
       resp.status = status
       # status_string from status code
-      #TODO:FIX
       resp.status_string = Net::HTTPResponse::CODE_TO_OBJ["#{resp.status}"].name.gsub(/Net::HTTP/, '')
       resp.content = content
       resp.headers['Content-Type'] = content_type
       resp.headers['Set-Cookie'] = cookie unless cookie.nil?
-      #TODO: investigate the keep-alive option
-      #resp.keep_connection_open = true
-      resp.headers['Connection'] = 'close'
+      # keep the connection open to allow multiple requests on the same connection
+      # this will increase the speed of sync since it decrease the latency on the net
+      resp.keep_connection_open true
+      resp.headers['Connection'] = 'Keep-Alive'
     end
 
     # Callback block to execute once the request is fulfilled
