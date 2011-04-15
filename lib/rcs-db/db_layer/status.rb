@@ -8,7 +8,7 @@ module Status
   # updates or insert the status of a component
   def status_update(component, ip, status, message, stats)
 
-    trace :debug, "#{component}, #{ip}, #{status}, #{message}, #{stats}"
+    #trace :debug, "#{component}, #{ip}, #{status}, #{message}, #{stats}"
 
     result = mysql_query("SELECT `monitor_id` FROM monitor WHERE `monitor` = '#{component}' AND remoteip = '#{ip}'")
 

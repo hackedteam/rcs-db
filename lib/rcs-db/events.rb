@@ -34,7 +34,7 @@ class HTTPHandler < EM::Connection
     super
 
     # timeout on the socket
-    comm_inactivity_timeout = 60
+    set_comm_inactivity_timeout 60
 
     # we want the connection to be encrypted with ssl
     start_tls(:private_key_file => Config.file('DB_KEY'),
@@ -91,6 +91,7 @@ class HTTPHandler < EM::Connection
       #   - the content_type
       #   - the cookie if the backdoor successfully passed the auth phase
       begin
+        http_headers = @http_headers.split("\x00")
         status, content, content_type, cookie = http_parse(@http_headers.split("\x00"), @http_request_method, @http_request_uri, @http_cookie, @http_post_content)
       rescue Exception => e
         trace :error, "ERROR: " + e.message
@@ -104,10 +105,16 @@ class HTTPHandler < EM::Connection
       resp.content = content
       resp.headers['Content-Type'] = content_type
       resp.headers['Set-Cookie'] = cookie unless cookie.nil?
-      # keep the connection open to allow multiple requests on the same connection
-      # this will increase the speed of sync since it decrease the latency on the net
-      resp.keep_connection_open true
-      resp.headers['Connection'] = 'Keep-Alive'
+
+      if @http_headers.split("\x00").index {|h| h['Connection: keep-alive'] || h['Connection: Keep-Alive']} then
+        # keep the connection open to allow multiple requests on the same connection
+        # this will increase the speed of sync since it decrease the latency on the net
+        resp.keep_connection_open true
+        resp.headers['Connection'] = 'keep-alive'
+      else
+        resp.headers['Connection'] = 'close'
+      end
+
     end
 
     # Callback block to execute once the request is fulfilled
