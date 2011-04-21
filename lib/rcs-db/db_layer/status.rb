@@ -14,8 +14,8 @@ module Status
 
     result.each do |row|
       mysql_query("UPDATE `monitor` SET `timestamp` = UTC_TIMESTAMP(),
-                                        `status` = '#{status}',
-                                        `desc` = '#{message}',
+                                        `status` = '#{@mysql.escape(status)}',
+                                        `desc` = '#{@mysql.escape(message)}',
                                         `disk` = #{stats[:disk]},
                                         `cputotal` = #{stats[:cpu]},
                                         `cpuprocess` = #{stats[:pcpu]}
@@ -25,7 +25,7 @@ module Status
     # the component is not preset, create it
     if result.count == 0 then
       mysql_query("INSERT INTO monitor (`monitor`, `remoteip`, `timestamp`, `status`, `desc`, `disk`, `cputotal`, `cpuprocess`)
-                   VALUES ('#{component}', '#{ip}', UTC_TIMESTAMP(), '#{status}', '#{message}', #{stats[:disk]}, #{stats[:cpu]}, #{stats[:pcpu]})")
+                   VALUES ('#{component}', '#{ip}', UTC_TIMESTAMP(), '#{@mysql.escape(status)}', '#{@mysql.escape(message)}', #{stats[:disk]}, #{stats[:cpu]}, #{stats[:pcpu]})")
     end
 
   end
