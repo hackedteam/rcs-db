@@ -20,6 +20,9 @@ gem 'bson'
 gem 'bson_ext'
 gem 'mysql2'
 
+# MIME decoding
+gem 'mail'
+
 # Add dependencies to develop your gem here.
 # Include everything needed to run rake, tests, features, etc.
 group :development do
