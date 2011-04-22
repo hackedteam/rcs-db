@@ -29,9 +29,9 @@ class Channel
     @sample_rate = evidence.info[:sample_rate]
     @start_time = evidence.info[:start_time]
     @stop_time = @start_time
-    @wav_data = String.new
+    @wav_data = StringIO.new
     @status = :open
-    trace :debug, "creating new channel #{self.id}."
+    trace :debug, "created new channel #{self.id}."
   end
   
   def id
@@ -53,11 +53,8 @@ class Channel
   
   def fill(gap)
     samples_to_fill = @sample_rate * gap
-    trace :debug, "filling #{samples_to_fill} samples(@#{@sample_rate}) to fill #{gap} seconds of missing data."
-    exit if gap < 0
-    data = StringIO.new
-    data.write([0].pack("S") * samples_to_fill.ceil)
-    @wav_data += data.string
+    @wav_data.write([0].pack("S") * samples_to_fill.ceil)
+    trace :debug, "filled with #{samples_to_fill} samples(@#{@sample_rate}) to fill #{gap} seconds of missing data."
   end
   
   def time_gap(evidence)
@@ -67,13 +64,12 @@ class Channel
   
   def accept?(evidence)
     return false if closed?
-    gap = time_gap evidence
-    return false if gap >= 5.0
+    return false if time_gap(evidence) >= 5.0
     return true
   end
   
   def feed(evidence)
-    trace :debug, "Evidence channel #{evidence.info[:channel]} callee #{evidence.info[:callee]} with #{evidence.wav.size} bytes of data."
+    trace :debug, "Evidence channel #{evidence.info[:channel]} callee #{evidence.info[:callee]} with #{evidence.wav.bytesize} bytes of data."
     
     if evidence.end_call?
       self.close!
@@ -84,12 +80,10 @@ class Channel
     fill gap unless gap == 0
     
     @stop_time = evidence.info[:stop_time]
-    @wav_data += evidence.wav
-    
-    #to_wavfile
+    @wav_data.write evidence.wav
   end
   
-  def bytes
+  def size
     @wav_data.size
   end
   
@@ -108,19 +102,6 @@ class Channel
   def to_float_samples
     @wav_data.unpack('F*').spack('S*')
   end
-  
-  def to_wavfile (filename = '')
-    name = "#{Digest::MD5.hexdigest("#{self.id}")}_#{@name}.wav"
-    File.open(name, 'wb') do |f|
-      data_header = Wave.data_header @wav_data.size
-      chunk_header = Wave.chunk_header 1, @sample_rate
-      main_header = Wave.main_header @wav_data.size + data_header.size + chunk_header.size
-      f.write main_header
-      f.write chunk_header
-      f.write data_header
-      f.write @wav_data
-    end
-  end
 end
 
 class Call
@@ -132,14 +113,13 @@ class Call
   #   - :fillin   second channel arrived, fill in later channel with silence
   #   - :resampling second channel arrived, filled in, resample data as they arrive
   
-  def initialize(evidence)
-    @callee = evidence.info[:callee]
-    @start_time = evidence.info[:start_time]
+  def initialize(callee, start_time)
+    @callee = callee
+    @start_time = start_time
     @status = :queueing
     @channels = {}
     @resampled = :not_yet
-    create_channel evidence
-    trace :info, "new call for #{@callee} #{@start_time} on channel #{evidence.info[:channel].to_s.upcase}"
+    trace :info, "new call for #{@callee}, starting at #{@start_time}"
   end
   
   def id
@@ -163,7 +143,9 @@ class Call
   end
   
   def get_channel(evidence)
-    return @channels[evidence.info[:channel]] || create_channel(evidence)
+    channel = @channels[evidence.info[:channel]] || create_channel(evidence)
+    return channel if channel.accept? evidence
+    return nil
   end
   
   def create_channel(evidence)
@@ -183,21 +165,16 @@ class Call
   
   def feed(evidence)
     # if evidence is empty or call is closed, refuse feeding
-    return false if evidence.wav.size == 0
+    return false if evidence.wav.bytesize == 0
     return false if closed?
     
     # get the correct channel for the evidence
     channel = get_channel(evidence)
-    trace :debug, "feeding #{evidence.wav.size} bytes at #{evidence.info[:start_time]}:#{evidence.info[:stop_time]} to #{channel.id}"
+    return false if channel.nil?
     
-    # check if channel accepts evidence
-    unless channel.accept? evidence
-      trace :debug, "channel refused evidence"
-      return false
-    end
-    
+    trace :debug, "feeding #{evidence.wav.bytesize} bytes at #{evidence.info[:start_time]}:#{evidence.info[:stop_time]} to #{channel.id}"
     channel.feed evidence
-
+    
     # update status
     update_status
     
@@ -221,69 +198,21 @@ class Call
       trace :debug, "Lesser sample rate: #{min_sample_rate}, will be used for resampling."
     end
   end
-
+  
   def to_s
     string = "---\nCALL #{self.id}\n"
     @channels.each {|k, c| string += "\t- #{k} #{c.seconds} #{c.num_samples}\n" }
     string += "---\n"
     return string
   end
-  
-  def to_wavfile
-    @channels.keys.each do |k|
-      @channels[k].to_wavfile "#{self.object_id}_#{k.to_s}.wav"
-    end
-  end
-  
+   
   def get_start_time
     times = @channels.values.collect {|c| c.start_time.to_f }
     times.min
   end
-  
-  def to_resampled_stream
-    #return nil unless @channels.size == 2
-    
-    # sort channels by start time
-    sorted_channels = @channels.values.sort_by {|c| c.start_time}
-    
-    #second is
-    
-    desired_sample_rate = 8000
-    src_data = SRC::DATA.new
-    channel = sorted_channels.first
-    float_samples = channel.to_float_samples
-    
-    bytecount = float_samples.size
-    in_pointer = FFI::MemoryPointer.new(:float, float_samples.size)
-    
-    in_pointer.put_bytes(0, float_samples, 0, float_samples.size)
-    src_data[:data_in] = in_pointer
-    src_data[:input_frames] = channel.num_samples
-    
-    out_pointer = FFI::MemoryPointer.new(:float, channel.num_samples)
-    src_data[:data_out] = out_pointer
-    src_data[:output_frames] = channel.num_samples
-    
-    src_data[:ratio] = channel.sample_rate / desired_sample_rate
-    
-    SRC::simple(src_data, SRC::BEST_QUALITY, 1)
-    
-    wav_data = out_pointer.get_bytes(src_data[:output_frames_gen] * 4).unpack('F*').pack('S*')
-    
-    name = "#{Digest::MD5.hexdigest("#{self.id}")}_#{channel.name}_resampled.wav"
-    File.open(name, 'wb') do |f|
-      data_header = Wave.data_header wav_data.size
-      chunk_header = Wave.chunk_header 1, desired_sample_rate
-      main_header = Wave.main_header wav_data.size + data_header.size + chunk_header.size
-      f.write main_header
-      f.write chunk_header
-      f.write data_header
-      f.write wav_data
-    end
-  end
 end
 
-class AudioProcessor
+class CallProcessor
   include Tracer
   require 'pp'
   
@@ -292,25 +221,24 @@ class AudioProcessor
   end
   
   def get_call(evidence)
+    # if callee is unknown or evidence is empty, evidence is invalid, ignore it
+    return nil if evidence.info[:callee].empty? or evidence.wav.empty?
+    
     open_calls = @calls.select {|c| c.accept? evidence and not c.closed? }
     return open_calls.first unless open_calls.empty?
 
     # no valid call was found, we need to create a new one
-    call = create_call(evidence)
+    call = create_call evidence
     return call
   end
   
   def create_call(evidence)
-    call = Call.new evidence
+    call = Call.new evidence.info[:callee], evidence.info[:start_time]
     @calls << call
-    trace :debug, "issuing a new call for #{evidence.info[:callee]}:#{evidence.info[:start_time]}"
     call
   end
   
   def feed(evidence)
-    # if callee is unknown or evidence is empty, evidence is invalid, ignore it
-    return if evidence.info[:callee].size == 0 or evidence.wav.size == 0
-    
     call = get_call evidence
     call.feed evidence unless call.nil?
   end
@@ -321,13 +249,6 @@ class AudioProcessor
       string += "#{c}\n"
     end
     return string
-  end
-  
-  def to_wavfile
-    @calls.each do |c|
-      c.to_wavfile
-      #c.to_resampled_stream
-    end
   end
 end
 
