@@ -36,18 +36,29 @@ class RESTController
 
   def init(http_headers, req_method, req_uri, req_cookie, req_content, req_peer)
 
+    # cookie parsing
+    # we extract the session cookie from the cookies, proxies or browsers can
+    # add cookies that has nothing to do with our session
+
+    # this will match our GUID session cookie
+    re = '.*?(session=)([A-Z0-9]{8}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{12})'
+
+    # match on the cookies and return the parsed GUID (the third match of the regexp)
+    m = Regexp.new(re, Regexp::IGNORECASE).match(req_cookie)
+    cookie = m[2] unless m.nil?
+
     # check the authentication
-    if req_cookie.nil? then
+    if cookie.nil? then
       # extract the name of the controller and the parameters
       root, controller_name, *params = req_uri.split('/')
       # if the request does not contains any cookies, the only allowed method is AuthController::login
       return false unless controller_name.capitalize.eql? 'Auth' and params.first.eql? 'login'
     else
       # we have a cookie, check if it's valid
-      if SessionManager.check(req_cookie) then
-        @session = SessionManager.get(req_cookie)
+      if SessionManager.check(cookie) then
+        @session = SessionManager.get(cookie)
       else
-        trace :warn, "[#{@peer}][#{req_cookie}] Invalid cookie"
+        trace :warn, "[#{@peer}][#{cookie}] Invalid cookie"
         return false
       end
     end
@@ -55,7 +66,7 @@ class RESTController
     @http_headers = http_headers
     @req_method = req_method
     @req_uri = req_uri
-    @req_cookie = req_cookie
+    @req_cookie = req_cookie || ''
     @req_content = req_content
     @req_peer = req_peer
     # the parsed http parameters (from uri and from content)

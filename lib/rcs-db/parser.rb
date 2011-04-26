@@ -42,6 +42,8 @@ module Parser
     # if the object has an explicit method calling
     method = params.shift if not params.first.nil? and controller.respond_to?(params.first)
 
+    #trace :debug, req_content
+
     # save the params in the controller object
     controller.params[controller_name.downcase.to_sym] = params.first unless params.first.nil?
     controller.params.merge!(http_parse_parameters(req_content))

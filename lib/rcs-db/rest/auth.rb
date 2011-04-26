@@ -43,7 +43,8 @@ class AuthController < RESTController
           # create the new auth sessions
           cookie = SessionManager.create(1, @params['user'], @auth_level)
           sess = SessionManager.get(cookie)
-          return STATUS_OK, *json_reply(sess), cookie
+          # append the cookie to the other that may have been present in the request
+          return STATUS_OK, *json_reply(sess), @req_cookie + 'session=' + cookie + ';'
         end
     end
 
