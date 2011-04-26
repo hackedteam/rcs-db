@@ -28,6 +28,7 @@ class DB
   
   def initialize
     @available = false
+    @semaphore = Mutex.new
     mysql_connect
   end
   
@@ -44,8 +45,8 @@ class DB
           host = '127.0.0.1'
         end
       end
-      trace :info, "Connecting to MySQL... [#{user}:#{pass}]"
       @mysql = Mysql2::Client.new(:host => host, :username => user, :password => pass, :database => 'rcs')
+      trace :info, "Connected to MySQL [#{user}:#{pass}]"
       @available = true
     rescue Exception => e
       trace :fatal, "Cannot connect to MySQL: #{e.message}"
@@ -56,10 +57,16 @@ class DB
   
   def mysql_query(query)
     begin
-      # try to reconnect if not connected
-      mysql_connect if not @available
-      # execute the query
-      @mysql.query(query, {:symbolize_keys => true})
+      @semaphore.synchronize do
+        # try to reconnect if not connected
+        mysql_connect if not @available
+        # execute the query
+        @mysql.query(query, {:symbolize_keys => true})
+      end
+    rescue Mysql2::Error => e
+      trace :error, "#{e.message}. Retrying ..."
+      sleep 0.05
+      retry
     rescue Exception => e
       trace :error, "MYSQL ERROR [#{e.sql_state}][#{e.error_number}]: #{e.message}"
       trace :error, "MYSQL QUERY: #{query}"
