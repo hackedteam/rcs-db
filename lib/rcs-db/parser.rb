@@ -75,6 +75,9 @@ module Parser
       trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
     end
 
+    # paranoid check
+    resp_status = RESTController::STATUS_NOT_AUTHORIZED if resp_status.nil?
+
     # the controller job has finished, call the cleanup hook
     controller.cleanup
 

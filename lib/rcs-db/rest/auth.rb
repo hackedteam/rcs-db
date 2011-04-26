@@ -17,7 +17,7 @@ class AuthController < RESTController
       # return the info about the current auth session
       when 'GET'
         sess = SessionManager.get(@req_cookie)
-        return if sess.nil?
+        return STATUS_NOT_AUTHORIZED if sess.nil?
         return STATUS_OK, *json_reply(sess)
 
       # authenticate the user
