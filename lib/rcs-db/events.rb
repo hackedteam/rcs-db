@@ -99,6 +99,8 @@ class HTTPHandler < EM::Connection
         trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
       end
 
+      status = STATUS_SERVER_ERROR if status.nil? or status.class != Fixnum
+      
       # prepare the HTTP response
       resp.status = status
       # status_string from status code

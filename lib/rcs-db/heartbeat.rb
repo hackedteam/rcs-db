@@ -23,7 +23,11 @@ class HeartBeat
     # report our status to the db
     component = "RCS::DB"
     # our local ip address
-    ip = IPSocket.getaddress(Socket.gethostname)
+    begin
+      ip = IPSocket.getaddress(Socket.gethostname)
+    rescue Exception => e
+      ip = 'unknown'
+    end
 
     #TODO: report some useful information
     message = "Idle..."

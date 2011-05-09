@@ -48,7 +48,7 @@ class AuthController < RESTController
         end
     end
 
-    return STATUS_NOT_AUTHORIZED
+    return STATUS_NOT_AUTHORIZED, "invalid account"
   end
 
   # once the session is over you can explicitly logout

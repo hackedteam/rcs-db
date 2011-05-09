@@ -20,6 +20,7 @@ module Parser
   
   STATUS_OK = 200
   STATUS_NOT_FOUND = 404
+  STATUS_SERVER_ERROR = 500
   
   # parse a request from a client
   def http_parse(http_headers, req_method, req_uri, req_cookies, req_content)
