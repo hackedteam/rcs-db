@@ -80,25 +80,25 @@ class AuthController < RESTController
   end
 
   # method for user authentication
-  def auth_user(user, pass)
+  def auth_user(username, pass)
 
-    u = DB.instance.user_find(user)
+    u = User.where(name: username).first
 
     # user not found
-    if u.empty?
-      Audit.log :actor => user, :action => 'login', :user => user, :desc => "User '#{user}' not found"
-      trace :warn, "User [#{user}] NOT FOUND"
+    if u.nil?
+      Audit.log :actor => username, :action => 'login', :user => username, :desc => "User '#{username}' not found"
+      trace :warn, "User [#{username}] NOT FOUND"
       return false
     end
 
     # the account is valid
-    if DB.instance.user_check_pass(pass, u['pass']) then
-      @auth_level = u['level']
+    if u.verify_password(pass) then
+      @auth_level = u[:privs]
       return true
     end
-
-    Audit.log :actor => user, :action => 'login', :user => user, :desc => "Invalid password for user '#{user}'"
-    trace :warn, "User [#{user}] INVALID PASSWORD"
+    
+    Audit.log :actor => username, :action => 'login', :user => username, :desc => "Invalid password for user '#{username}'"
+    trace :warn, "User [#{username}] INVALID PASSWORD"
     return false
   end
 

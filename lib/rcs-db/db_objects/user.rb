@@ -17,6 +17,11 @@ class User
   attr_protected :pass
   validates_uniqueness_of :name, :message => "USER_ALREADY_EXISTS"
   store_in :users
+  
+  def verify_password(password)
+    # we use the SHA1 with a salt '.:RCS:.' to avoid rainbow tabling
+    return self[:pass] == Digest::SHA1.hexdigest('.:RCS:.' + password)
+  end
 end
 
 end # ::DB
