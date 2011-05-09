@@ -10,7 +10,7 @@ class CollectorController < RESTController
   def index
     require_auth_level :server, :tech
 
-    list = DB.collectors
+    list = DB.instance.collectors
     
     return STATUS_OK, *json_reply(list)
   end
@@ -18,7 +18,7 @@ class CollectorController < RESTController
   def version
     require_auth_level :server
 
-    DB.collector_set_version(params['collector_id'], params['version'])
+    DB.instance.collector_set_version(params['collector_id'], params['version'])
 
     return STATUS_OK
   end
@@ -33,7 +33,7 @@ class CollectorController < RESTController
     require_auth_level :server
 
     time = Time.parse(params['time'])
-    DB.collector_add_log(params['collector_id'], time, params['type'], params['desc'])
+    DB.instance.collector_add_log(params['collector_id'], time, params['type'], params['desc'])
 
     return STATUS_OK
   end

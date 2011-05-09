@@ -15,7 +15,6 @@ module DB
 
 class SessionManager
   include Singleton
-  extend FlatSingleton
   include RCS::Tracer
 
   def initialize

@@ -37,8 +37,8 @@ class HTTPHandler < EM::Connection
     set_comm_inactivity_timeout 60
 
     # we want the connection to be encrypted with ssl
-    start_tls(:private_key_file => Config.file('DB_KEY'),
-              :cert_chain_file => Config.file('DB_CERT'),
+    start_tls(:private_key_file => Config.instance.file('DB_KEY'),
+              :cert_chain_file => Config.instance.file('DB_CERT'),
               :verify_peer => true)
 
 
@@ -164,7 +164,7 @@ class Events
 
       #start the proxy for the XML-RPC calls
       #TODO: remove this...
-      start_proxy(port - 1, Config.global['DB_ADDRESS'], port - 1) if not File.exists?('C:/RCSDB/etc/RCSDB.ini')
+      start_proxy(port - 1, Config.instance.global['DB_ADDRESS'], port - 1) if not File.exists?('C:/RCSDB/etc/RCSDB.ini')
 
       # all the events are handled here
       EM::run do
@@ -186,15 +186,15 @@ class Events
         HeartBeat.perform
 
         # set up the heartbeat (the interval is in the config)
-        EM::PeriodicTimer.new(Config.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
+        EM::PeriodicTimer.new(Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
 
         # timeout for the sessions (will destroy inactive sessions)
-        EM::PeriodicTimer.new(60) { SessionManager.timeout }
+        EM::PeriodicTimer.new(60) { SessionManager.instance.timeout }
       end
     rescue Exception => e
       # bind error
       if e.message.eql? 'no acceptor' then
-        trace :fatal, "Cannot bind port #{Config.global['LISTENING_PORT']}"
+        trace :fatal, "Cannot bind port #{Config.instance.global['LISTENING_PORT']}"
         return 1
       end
       raise

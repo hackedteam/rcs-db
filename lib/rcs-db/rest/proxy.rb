@@ -10,7 +10,7 @@ class ProxyController < RESTController
   def index
     require_auth_level :server, :tech
 
-    list = DB.proxies
+    list = DB.instance.proxies
     
     return STATUS_OK, *json_reply(list)
   end
@@ -18,7 +18,7 @@ class ProxyController < RESTController
   def version
     require_auth_level :server
 
-    DB.proxy_set_version(params['proxy_id'], params['version'])
+    DB.instance.proxy_set_version(params['proxy_id'], params['version'])
 
     return STATUS_OK
   end
@@ -33,7 +33,7 @@ class ProxyController < RESTController
     require_auth_level :server
 
     time = Time.parse(params['time'])
-    DB.proxy_add_log(params['proxy_id'], time, params['type'], params['desc'])
+    DB.instance.proxy_add_log(params['proxy_id'], time, params['type'], params['desc'])
 
     return STATUS_OK
   end

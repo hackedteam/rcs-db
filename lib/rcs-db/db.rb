@@ -9,6 +9,7 @@ require_relative 'config.rb'
 # from RCS::Common
 require 'rcs-common/trace'
 
+require 'mongoid'
 
 module RCS
 module DB
@@ -39,16 +40,22 @@ class Application
       puts e
       exit
     end
+    
+    # connect to MongoDB
+    Mongoid.load!(Dir.pwd + '/config/mongoid.yaml')
+    Mongoid.configure do |config|
+      config.master = Mongo::Connection.new.db('rcs')
+    end
 
     begin
       version = File.read(Dir.pwd + '/config/version.txt')
       trace :info, "Starting the RCS Database #{version}..."
 
       # config file parsing
-      return 1 unless Config.load_from_file
+      return 1 unless Config.instance.load_from_file
 
       # enter the main loop (hopefully will never exit from it)
-      Events.new.setup Config.global['LISTENING_PORT']
+      Events.new.setup Config.instance.global['LISTENING_PORT']
 
     rescue Exception => e
       trace :fatal, "FAILURE: " << e.message

@@ -16,7 +16,7 @@ class AuthController < RESTController
     case @req_method
       # return the info about the current auth session
       when 'GET'
-        sess = SessionManager.get(@req_cookie)
+        sess = SessionManager.instance.get(@req_cookie)
         return STATUS_NOT_AUTHORIZED if sess.nil?
         return STATUS_OK, *json_reply(sess)
 
@@ -31,18 +31,18 @@ class AuthController < RESTController
           unless @auth_level.include? :server
             # we have to check if it was already logged in
             # in this case, invalidate the previous session
-            sess = SessionManager.get_by_user(@params['user'])
+            sess = SessionManager.instance.get_by_user(@params['user'])
             unless sess.nil? then
               Audit.log :actor => @params['user'], :action => 'logout', :user => @params['user'], :desc => "User '#{@params['user']}' forcibly logged out by system"
-              SessionManager.delete(sess[:cookie])
+              SessionManager.instance.delete(sess[:cookie])
             end
 
             Audit.log :actor => @params['user'], :action => 'login', :user => @params['user'], :desc => "User '#{@params['user']}' logged in"
           end
 
           # create the new auth sessions
-          cookie = SessionManager.create(1, @params['user'], @auth_level)
-          sess = SessionManager.get(cookie)
+          cookie = SessionManager.instance.create(1, @params['user'], @auth_level)
+          sess = SessionManager.instance.get(cookie)
           # append the cookie to the other that may have been present in the request
           return STATUS_OK, *json_reply(sess), @req_cookie + 'session=' + cookie + ';'
         end
@@ -54,7 +54,7 @@ class AuthController < RESTController
   # once the session is over you can explicitly logout
   def logout
     Audit.log :actor => @session[:user], :action => 'logout', :user => @session[:user], :desc => "User '#{@session[:user]}' logged out"
-    SessionManager.delete(@req_cookie)
+    SessionManager.instance.delete(@req_cookie)
     return STATUS_OK
   end
 
@@ -66,7 +66,7 @@ class AuthController < RESTController
 
   # private method to authenticate a server
   def auth_server(user, pass)
-    server_sig = File.read(Config.file('SERVER_SIG')).chomp
+    server_sig = File.read(Config.instance.file('SERVER_SIG')).chomp
 
     # the Collectors are authenticated only by the server signature
     if pass.eql? server_sig
@@ -82,7 +82,7 @@ class AuthController < RESTController
   # method for user authentication
   def auth_user(user, pass)
 
-    u = DB.user_find(user)
+    u = DB.instance.user_find(user)
 
     # user not found
     if u.empty?
@@ -92,7 +92,7 @@ class AuthController < RESTController
     end
 
     # the account is valid
-    if DB.user_check_pass(pass, u['pass']) then
+    if DB.instance.user_check_pass(pass, u['pass']) then
       @auth_level = u['level']
       return true
     end

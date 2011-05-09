@@ -137,7 +137,7 @@ class Worker
     rescue Exception => e
       # bind error
       if e.message.eql? 'no acceptor' then
-        trace :fatal, "Cannot bind port #{Config.global['LISTENING_PORT']}"
+        trace :fatal, "Cannot bind port #{Config.instance.global['LISTENING_PORT']}"
         return 1
       end
       raise
@@ -179,9 +179,9 @@ class Application
       trace :info, "Starting a RCS Worker #{version}..."
       
       # config file parsing
-      return 1 unless RCS::DB::Config.load_from_file
+      return 1 unless RCS::DB::Config.instance.load_from_file
       
-      Worker.new.setup RCS::DB::Config.global['WORKER_PORT']
+      Worker.new.setup RCS::DB::Config.instance.global['WORKER_PORT']
     rescue Exception => e
       trace :fatal, "FAILURE: " << e.to_s
       trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")

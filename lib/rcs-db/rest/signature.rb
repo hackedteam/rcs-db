@@ -12,7 +12,7 @@ class SignatureController < RESTController
   def show
     require_auth_level :server
 
-    sig = DB.signature params[:signature]
+    sig = DB.instance.signature params[:signature]
     
     trace :info, "[#{@req_peer}] Requested the '#{params[:signature]}' signature [#{sig[:sign]}]"
 

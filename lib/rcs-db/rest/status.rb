@@ -11,7 +11,7 @@ class StatusController < RESTController
   def index
     require_auth_level :admin, :tech, :viewer
 
-    result = DB.status_get
+    result = DB.instance.status_get
 
     return STATUS_OK, *json_reply(result)
   end
@@ -28,7 +28,7 @@ class StatusController < RESTController
 
     # save the status to the db
     stats = {:disk => params['disk'], :cpu => params['cpu'], :pcpu => params['pcpu']}
-    DB.status_update params['component'], params['ip'], params['status'], params['message'], stats
+    DB.instance.status_update params['component'], params['ip'], params['status'], params['message'], stats
 
     return STATUS_OK
   end
@@ -38,7 +38,7 @@ class StatusController < RESTController
   def destroy
     require_auth_level :admin
 
-    DB.status_del params[:status]
+    DB.instance.status_del params[:status]
 
     Audit.log :actor => @session[:user], :action => 'monitor delete', :desc => "Component #{params[:status]} was deleted from db"
         

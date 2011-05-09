@@ -16,7 +16,6 @@ module DB
 
 class Config
   include Singleton
-  extend FlatSingleton
   include Tracer
 
   CONF_DIR = 'config'
@@ -52,28 +51,28 @@ class Config
     end
 
     if not @global['DB_CERT'].nil? then
-      if not File.exist?(Config.file('DB_CERT')) then
+      if not File.exist?(Config.instance.file('DB_CERT')) then
         trace :fatal, "Cannot open certificate file [#{@global['DB_CERT']}]"
         return false
       end
     end
 
     if not @global['DB_KEY'].nil? then
-      if not File.exist?(Config.file('DB_KEY')) then
+      if not File.exist?(Config.instance.file('DB_KEY')) then
         trace :fatal, "Cannot open private key file [#{@global['DB_KEY']}]"
         return false
       end
     end
 
     if not @global['CA_PEM'].nil? then
-      if not File.exist?(Config.file('CA_PEM')) then
+      if not File.exist?(Config.instance.file('CA_PEM')) then
         trace :fatal, "Cannot open CA file [#{@global['CA_PEM']}]"
         return false
       end
     end
 
     if not @global['SERVER_SIG'].nil? then
-      if not File.exist?(Config.file('SERVER_SIG')) then
+      if not File.exist?(Config.instance.file('SERVER_SIG')) then
         trace :fatal, "Cannot open signature file [#{@global['SERVER_SIG']}]"
         return false
       end
@@ -197,7 +196,7 @@ class Config
     optparse.parse(argv)
 
     # execute the configurator
-    return Config.run(options)
+    return Config.instance.run(options)
   end
 
 end #Config

@@ -23,7 +23,6 @@ module DB
 
 class DB
   include Singleton
-  extend FlatSingleton
   include RCS::Tracer
   
   def initialize
@@ -36,7 +35,7 @@ class DB
     begin
       user = 'root'
       pass = 'rootp123'
-      host = Config.global['DB_ADDRESS']
+      host = Config.instance.global['DB_ADDRESS']
       # use the credential stored by RCSDB
       if File.exist?('C:/RCSDB/etc/RCSDB.ini') then
         File.open('C:/RCSDB/etc/RCSDB.ini').each_line do |line|

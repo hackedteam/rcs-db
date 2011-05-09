@@ -44,6 +44,7 @@ module Parser
 
     #trace :debug, req_content
 
+    trace :debug, "PARAMS: #{params.inspect}"
     # save the params in the controller object
     controller.params[controller_name.downcase.to_sym] = params.first unless params.first.nil?
     controller.params.merge!(http_parse_parameters(req_content))

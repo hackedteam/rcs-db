@@ -12,6 +12,7 @@ require_relative 'audit.rb'
 require 'rcs-common/trace'
 
 # system
+require 'bson'
 require 'json'
 
 module RCS
@@ -28,8 +29,11 @@ class RESTController
   include RCS::Tracer
 
   STATUS_OK = 200
+  STATUS_BAD_REQUEST = 400
   STATUS_NOT_FOUND = 404
   STATUS_NOT_AUTHORIZED = 403
+  STATUS_CONFLICT = 409
+  STATUS_SERVER_ERROR = 500
 
   # the parameters passed on the REST request
   attr_accessor :params
@@ -55,8 +59,8 @@ class RESTController
       return false unless controller_name.capitalize.eql? 'Auth' and params.first.eql? 'login'
     else
       # we have a cookie, check if it's valid
-      if SessionManager.check(cookie) then
-        @session = SessionManager.get(cookie)
+      if SessionManager.instance.check(cookie) then
+        @session = SessionManager.instance.get(cookie)
       else
         trace :warn, "[#{@peer}][#{cookie}] Invalid cookie"
         return false
@@ -118,6 +122,11 @@ end
 
 end #DB::
 end #RCS::
+
+# require all the DB objects
+Dir[File.dirname(__FILE__) + '/db_objects/*.rb'].each do |file|
+  require file
+end
 
 # require all the controllers
 Dir[File.dirname(__FILE__) + '/rest/*.rb'].each do |file|

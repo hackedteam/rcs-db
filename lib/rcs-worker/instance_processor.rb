@@ -128,7 +128,7 @@ class InstanceProcessor
                   until done
                     begin
                       # TODO: gestire tutti i casi di inserimento fallito verso il DB
-                      RCS::DB::DB.evidence_store(evidence)
+                      RCS::DB::DB.instance.evidence_store(evidence)
                       RCS::EvidenceManager.del_evidence(evidence.info[:db_id], @id)
                       done = true
                     rescue Exception => e

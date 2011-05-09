@@ -16,6 +16,7 @@ gem 'em-http-request'
 # databases
 gem 'sqlite3-ruby'
 gem 'mongo'
+gem 'mongoid'
 gem 'bson'
 gem 'bson_ext'
 gem 'mysql2'

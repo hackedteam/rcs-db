@@ -6,7 +6,7 @@ require 'digest/sha1'
 
 module DBLayer
 module Users
-
+  
   def user_find(user)
     #TODO: implement this
     u = {'user' => 'test-user',
