@@ -31,7 +31,9 @@ class GroupController < RESTController
 
     result = Group.create(name: @params['name'])
     return STATUS_CONFLICT, *json_reply(result.errors[:name]) unless result.persisted?
-    Audit.log :actor => @session[:user], :action => 'group.create', :group => @params['name'], :desc => "Created group '#{@params['name']}'"
+
+    Audit.log :actor => @session[:user][:name], :action => 'group.create', :group => @params['name'], :desc => "Created the group '#{@params['name']}'"
+
     return STATUS_OK, *json_reply(result)
   end
   
@@ -43,6 +45,9 @@ class GroupController < RESTController
       return STATUS_NOT_FOUND if group.nil?
       params.delete(:group)
       result = group.update_attributes(params)
+
+      Audit.log :actor => @session[:user][:name], :action => 'group.update', :group => @params['name'], :desc => "Updated the group '#{group[:name]}'"
+
       return STATUS_OK, *json_reply(group)
     end
   end
@@ -53,6 +58,9 @@ class GroupController < RESTController
     mongoid_query do
       group = Group.find(params[:group])
       return STATUS_NOT_FOUND if group.nil?
+
+      Audit.log :actor => @session[:user][:name], :action => 'group.destroy', :group => @params['name'], :desc => "Deleted the group '#{group[:name]}'"
+            
       group.destroy
       return STATUS_OK
     end

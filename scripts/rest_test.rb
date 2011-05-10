@@ -59,7 +59,7 @@ puts
 
 end
 
-if false
+if true
 # group.create
 group = {'name' => 'test'}
 res = http.request_post('/group', group.to_json, {'Cookie' => cookie}) 
@@ -84,12 +84,14 @@ puts "group.update "
 puts res
 puts
 
+=begin
 # group.add_user
 group_user = {'group' => test_group['_id'], 'user' => test_user['_id']}
 res = http.request_post('/group/add_user', group_user.to_json, {'Cookie' => cookie}) 
 puts "group.add_user "
 puts res
 puts
+=end
 
 # group.show
 res = http.request_get("/group/#{test_group['_id']}", {'Cookie' => cookie})
