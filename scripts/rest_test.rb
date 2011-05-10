@@ -37,7 +37,7 @@ puts res
 puts
 
 # user.update
-user = {'desc' => 'Ciccialculo', 'contact' => 'billg@microsoft.com', 'ciccia' => 'campo non valido'}
+user = {'desc' => 'Fallen angel', 'contact' => 'billg@microsoft.com', 'not_exist' => 'invalid field'}
 res = http.request_put("/user/#{test_user['_id']}", user.to_json, {'Cookie' => cookie}) 
 puts "user.update "
 puts res
@@ -49,17 +49,17 @@ puts "user.show"
 puts res
 puts
 
-=begin
+
 # user.destroy
 res = http.delete("/user/#{test_user['_id']}", {'Cookie' => cookie}) 
 #res = http.delete("/user/12345", {'Cookie' => cookie}) 
 puts "user.delete "
 puts res
 puts
-=end
+
 end
 
-if true
+if false
 # group.create
 group = {'name' => 'test'}
 res = http.request_post('/group', group.to_json, {'Cookie' => cookie}) 
@@ -78,7 +78,7 @@ puts res
 puts
 
 # group.update
-group = {'name' => 'ciccialculo'}
+group = {'name' => 'container'}
 res = http.request_put("/group/#{test_group['_id']}", group.to_json, {'Cookie' => cookie}) 
 puts "group.update "
 puts res

@@ -93,7 +93,10 @@ class AuthController < RESTController
 
     # the account is valid
     if u.verify_password(pass) then
-      @auth_level = u[:privs]
+      # symbolize the privs array
+      u[:privs].each do |p|
+        @auth_level << p.downcase.to_sym
+      end
       return true
     end
     

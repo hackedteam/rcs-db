@@ -10,11 +10,15 @@ module DB
 class GroupController < RESTController
   
   def index
+    require_auth_level :admin
+
     groups = Group.all
     return STATUS_OK, *json_reply(groups)
   end
 
   def show
+    require_auth_level :admin
+
     mongoid_query do
       group = Group.find(params[:group])
       return STATUS_NOT_FOUND if group.nil?
@@ -23,6 +27,8 @@ class GroupController < RESTController
   end
   
   def create
+    require_auth_level :admin
+
     result = Group.create(name: @params['name'])
     return STATUS_CONFLICT, *json_reply(result.errors[:name]) unless result.persisted?
     Audit.log :actor => @session[:user], :action => 'group.create', :group => @params['name'], :desc => "Created group '#{@params['name']}'"
@@ -30,6 +36,8 @@ class GroupController < RESTController
   end
   
   def update
+    require_auth_level :admin
+
     mongoid_query do
       group = Group.find(params[:group])
       return STATUS_NOT_FOUND if group.nil?
@@ -40,6 +48,8 @@ class GroupController < RESTController
   end
   
   def destroy
+    require_auth_level :admin
+
     mongoid_query do
       group = Group.find(params[:group])
       return STATUS_NOT_FOUND if group.nil?
@@ -49,6 +59,8 @@ class GroupController < RESTController
   end
 
   def add_user
+    require_auth_level :admin
+
     mongoid_query do
       group = Group.find(params['group'])
       return STATUS_NOT_FOUND if group.nil?
@@ -61,6 +73,8 @@ class GroupController < RESTController
   end
   
   def del_user
+    require_auth_level :admin
+    
     mongoid_query do
       group = Group.find(params['group'])
       return STATUS_NOT_FOUND if group.nil?
