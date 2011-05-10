@@ -28,13 +28,12 @@ class SessionManager
     cookie = UUIDTools::UUID.random_create.to_s
 
     # store the sessions
-    @sessions[cookie] = {:uid => uid,
-                         :user => user,
+    @sessions[cookie] = {:user => user,
                          :level => level,
                          :cookie => cookie,
                          :time => Time.now}
 
-    return cookie
+    return @sessions[cookie]
   end
 
   def check(cookie)

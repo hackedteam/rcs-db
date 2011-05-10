@@ -42,7 +42,7 @@ class UserController < RESTController
     
     return STATUS_CONFLICT, *json_reply(result.errors[:name]) unless result.persisted?
     
-    Audit.log :actor => @session[:user], :action => 'user.create', :user => @params['name'], :desc => "Created the user '#{@params['name']}'"
+    Audit.log :actor => @session[:user][:name], :action => 'user.create', :user => @params['name'], :desc => "Created the user '#{@params['name']}'"
 
     return STATUS_OK, *json_reply(result)
   end
@@ -56,7 +56,7 @@ class UserController < RESTController
       params.delete(:user)
       result = user.update_attributes(params)
 
-      Audit.log :actor => @session[:user], :action => 'user.update', :user => @params['name'], :desc => "Updated the user '#{user['name']}'"
+      Audit.log :actor => @session[:user][:name], :action => 'user.update', :user => @params['name'], :desc => "Updated the user '#{user['name']}'"
 
       return STATUS_OK, *json_reply(user)
     end
@@ -70,7 +70,7 @@ class UserController < RESTController
       user = User.find(params[:user])
       return STATUS_NOT_FOUND if user.nil?
 
-      Audit.log :actor => @session[:user], :action => 'user.destroy', :user => @params['name'], :desc => "Deleted the user '#{user['name']}'"
+      Audit.log :actor => @session[:user][:name], :action => 'user.destroy', :user => @params['name'], :desc => "Deleted the user '#{user['name']}'"
 
       user.destroy
 
