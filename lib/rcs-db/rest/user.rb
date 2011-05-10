@@ -31,7 +31,10 @@ class UserController < RESTController
     require_auth_level :admin
 
     result = User.create(name: @params['name']) do |doc|
-      doc[:pass] = Digest::SHA1.hexdigest('.:RCS:.' + @params['pass'])
+      
+      doc[:pass] = ''
+      doc[:pass] = Digest::SHA1.hexdigest('.:RCS:.' + @params['pass']) if @params['pass'] != ''
+
       doc[:desc] = @params['desc']
       doc[:contact] = @params['contact']
       doc[:privs] = @params['privs']
