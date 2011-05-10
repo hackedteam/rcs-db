@@ -5,6 +5,7 @@ module DB
 
 class User
   include Mongoid::Document
+
   field :name, type: String
   field :pass, type: String
   field :desc, type: String
@@ -14,9 +15,13 @@ class User
   field :locale, type: String
   field :timezone, type: Integer
   field :dashboard_items, type: Array
+  
   attr_protected :pass
   validates_uniqueness_of :name, :message => "USER_ALREADY_EXISTS"
-  store_in :users
+  
+  has_and_belongs_to_many :groups, :dependent => :nullify, :class_name => "RCS::DB::Group", :foreign_key => "group_ids"
+  
+  #store_in :users
   
   def verify_password(password)
     # we use the SHA1 with a salt '.:RCS:.' to avoid rainbow tabling

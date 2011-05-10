@@ -93,6 +93,19 @@ class RESTController
     raise NotAuthorized.new(@session[:level], levels) if (levels & @session[:level]).empty?
   end
 
+  def mongoid_query(&block)
+    begin
+      yield
+    rescue BSON::InvalidObjectId => e
+      trace :error, "Bad request #{e.class} => #{e.message}"
+      return STATUS_BAD_REQUEST, *json_reply(e.message)
+    rescue Exception => e
+      trace :error, e.message
+      trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
+      return STATUS_NOT_FOUND, *json_reply(e.message)
+    end
+  end
+
   def create
     # POST /object
   end

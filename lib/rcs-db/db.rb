@@ -10,6 +10,7 @@ require_relative 'config.rb'
 require 'rcs-common/trace'
 
 require 'mongoid'
+require 'rcs-db/db_objects/user'
 
 module RCS
 module DB
@@ -45,6 +46,15 @@ class Application
     Mongoid.load!(Dir.pwd + '/config/mongoid.yaml')
     Mongoid.configure do |config|
       config.master = Mongo::Connection.new.db('rcs')
+    end
+
+    result = User.create(name: 'admin') do |doc|
+      doc[:pass] = Digest::SHA1.hexdigest('.:RCS:.admin')
+      doc[:contact] = ''
+      doc[:privs] = ['ADMIN', 'TECH', 'VIEW']
+      doc[:enabled] = true
+      doc[:locale] = 'en_US'
+      doc[:timezone] = 0
     end
 
     begin
