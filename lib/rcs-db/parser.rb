@@ -88,11 +88,14 @@ module Parser
 
   # returns the JSON parsed object containing the parameters passed to a POST or PUT request
   def http_parse_parameters(content)
+    return {} if content.nil?
     begin
       # in case the content is binary and not a json document
       # we will catch the exception and return the empty hash {}
-      return JSON.parse(content)
-    rescue
+      result = JSON.parse(content)
+      return result
+    rescue Exception => e
+      trace :debug, "#{e.class}: #{e.message}"
       return {}
     end
   end

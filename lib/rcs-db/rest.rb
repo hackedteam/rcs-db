@@ -51,6 +51,8 @@ class RESTController
     m = Regexp.new(re, Regexp::IGNORECASE).match(req_cookie)
     cookie = m[2] unless m.nil?
 
+    trace :debug, "req_cookie = #{req_cookie}"
+
     # check the authentication
     if cookie.nil? then
       # extract the name of the controller and the parameters
