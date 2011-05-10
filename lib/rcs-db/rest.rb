@@ -51,24 +51,6 @@ class RESTController
     m = Regexp.new(re, Regexp::IGNORECASE).match(req_cookie)
     cookie = m[2] unless m.nil?
 
-    trace :debug, "req_cookie = #{req_cookie}"
-
-    # check the authentication
-    if cookie.nil? then
-      # extract the name of the controller and the parameters
-      root, controller_name, *params = req_uri.split('/')
-      # if the request does not contains any cookies, the only allowed method is AuthController::login
-      return false unless controller_name.capitalize.eql? 'Auth' and params.first.eql? 'login'
-    else
-      # we have a cookie, check if it's valid
-      if SessionManager.instance.check(cookie) then
-        @session = SessionManager.instance.get(cookie)
-      else
-        trace :warn, "[#{@peer}][#{cookie}] Invalid cookie"
-        return false
-      end
-    end
-
     @http_headers = http_headers
     @req_method = req_method
     @req_uri = req_uri
@@ -77,8 +59,22 @@ class RESTController
     @req_peer = req_peer
     # the parsed http parameters (from uri and from content)
     @params = {}
-
-    return true
+    
+    # if we are at auth/login, permit always
+    root, controller_name, *params = req_uri.split('/')
+    return true if controller_name.capitalize.eql? 'Auth' and params.first.eql? 'login'
+    
+    # no cookie, no methods
+    return false if cookie.nil?
+    
+    # we have a cookie, check if it's valid
+    if SessionManager.instance.check(cookie) then
+      @session = SessionManager.instance.get(cookie)
+      return true
+    end
+    
+    trace :warn, "[#{@peer}][#{cookie}] Invalid cookie"
+    return false
   end
 
   def cleanup

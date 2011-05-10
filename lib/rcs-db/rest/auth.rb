@@ -29,9 +29,9 @@ class AuthController < RESTController
           # create the new auth sessions
           sess = SessionManager.instance.create(1, {:name => @params['user']}, @auth_level)
           # append the cookie to the other that may have been present in the request
-          return STATUS_OK, *json_reply(sess), @req_cookie + 'session=' + sess[:cookie] + ';'
+          return STATUS_OK, *json_reply(sess), 'session=' + sess[:cookie] + '; path=/;'
         end
-
+        
         # normal user login
         if auth_user(@params['user'], @params['pass'])
           # we have to check if it was already logged in
@@ -47,7 +47,9 @@ class AuthController < RESTController
           # create the new auth sessions
           sess = SessionManager.instance.create(1, @user, @auth_level)
           # append the cookie to the other that may have been present in the request
-          return STATUS_OK, *json_reply(sess), @req_cookie + 'session=' + sess[:cookie] + ';'
+          expiry = (Time.now() + 86400).strftime('%A, %d-%b-%y %H:%M:%S %Z')
+          trace :debug, "Issued cookie with expiry time: #{expiry}"
+          return STATUS_OK, *json_reply(sess), 'session=' + sess[:cookie] + "; path=/; expires=#{expiry}"
         end
 
     end
@@ -59,9 +61,9 @@ class AuthController < RESTController
   def logout
     Audit.log :actor => @session[:user][:name], :action => 'logout', :user => @session[:user][:name], :desc => "User '#{@session[:user][:name]}' logged out"
     SessionManager.instance.delete(@req_cookie)
-    return STATUS_OK
+    return STATUS_OK, '', 'text/html', "session=; path=/; expires=#{Time.at(0).strftime('%A, %d-%b-%y %H:%M:%S %Z')}"
   end
-
+  
   # every user is able to change its own password
   def change_pass
     #TODO: implement password change
