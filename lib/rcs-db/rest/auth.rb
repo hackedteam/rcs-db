@@ -16,7 +16,7 @@ class AuthController < RESTController
     case @req_method
       # return the info about the current auth session
       when 'GET'
-        sess = SessionManager.instance.get(@req_cookie)
+        sess = SessionManager.instance.get(@session_cookie)
         return STATUS_NOT_AUTHORIZED if sess.nil?
         return STATUS_OK, *json_reply(sess)
 
@@ -27,7 +27,7 @@ class AuthController < RESTController
         # the unique username will be used to create an entry for it in the network schema
         if auth_server(@params['user'], @params['pass'])
           # create the new auth sessions
-          sess = SessionManager.instance.create(1, {:name => @params['user']}, @auth_level)
+          sess = SessionManager.instance.create({:name => @params['user']}, @auth_level)
           # append the cookie to the other that may have been present in the request
           return STATUS_OK, *json_reply(sess), 'session=' + sess[:cookie] + '; path=/;'
         end
@@ -45,7 +45,7 @@ class AuthController < RESTController
           Audit.log :actor => @params['user'], :action => 'login', :user => @params['user'], :desc => "User '#{@params['user']}' logged in"
 
           # create the new auth sessions
-          sess = SessionManager.instance.create(1, @user, @auth_level)
+          sess = SessionManager.instance.create(@user, @auth_level)
           # append the cookie to the other that may have been present in the request
           expiry = (Time.now() + 86400).strftime('%A, %d-%b-%y %H:%M:%S %Z')
           trace :debug, "Issued cookie with expiry time: #{expiry}"
@@ -60,7 +60,7 @@ class AuthController < RESTController
   # once the session is over you can explicitly logout
   def logout
     Audit.log :actor => @session[:user][:name], :action => 'logout', :user => @session[:user][:name], :desc => "User '#{@session[:user][:name]}' logged out"
-    SessionManager.instance.delete(@req_cookie)
+    SessionManager.instance.delete(@session_cookie)
     return STATUS_OK, '', 'text/html', "session=; path=/; expires=#{Time.at(0).strftime('%A, %d-%b-%y %H:%M:%S %Z')}"
   end
   

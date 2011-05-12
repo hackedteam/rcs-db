@@ -73,7 +73,6 @@ class GroupController < RESTController
       group = Group.find(params['group'])
       return STATUS_NOT_FOUND if group.nil?
       user = User.find(params['user'])
-      trace :debug, user.inspect
       return STATUS_NOT_FOUND if user.nil?
       group.users << user
       return STATUS_OK
@@ -86,7 +85,18 @@ class GroupController < RESTController
     mongoid_query do
       group = Group.find(params['group'])
       return STATUS_NOT_FOUND if group.nil?
-      group.users.where(_id: params['user']).destroy_all
+
+      trace :debug, group.users
+      trace :debug, "TO REMOVE: " + params['user']
+      
+      #group.users.where(_id: params['user']).nullify
+      #group.users.delete_all
+      #group.users.delete(params['user'])
+      #group.users.nullify
+      trace :debug, group.user_ids
+      trace :debug, User.find(params['user']).inspect
+      group.users.unbind_one(User.find(params['user']))
+
       return STATUS_OK
     end
   end

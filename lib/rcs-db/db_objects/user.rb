@@ -1,10 +1,11 @@
 require 'mongoid'
 
-module RCS
-module DB
+#module RCS
+#module DB
 
 class User
   include Mongoid::Document
+  include Mongoid::Timestamps
 
   field :name, type: String
   field :pass, type: String
@@ -19,9 +20,9 @@ class User
   attr_protected :pass
   validates_uniqueness_of :name, :message => "USER_ALREADY_EXISTS"
   
-  has_and_belongs_to_many :groups, :dependent => :nullify, :class_name => "RCS::DB::Group", :foreign_key => "group_ids"
+  references_and_referenced_in_many :groups, :dependent => :nullify, :autosave => true#, :class_name => "RCS::DB::Group", :foreign_key => "rcs/db/group_ids"
   
-  #store_in :users
+  store_in :users
   
   def verify_password(password)
     # we use the SHA1 with a salt '.:RCS:.' to avoid rainbow tabling
@@ -29,5 +30,5 @@ class User
   end
 end
 
-end # ::DB
-end # ::RCS
+#end # ::DB
+#end # ::RCS

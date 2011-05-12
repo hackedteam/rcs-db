@@ -95,7 +95,7 @@ module Parser
       result = JSON.parse(content)
       return result
     rescue Exception => e
-      trace :debug, "#{e.class}: #{e.message}"
+      #trace :debug, "#{e.class}: #{e.message}"
       return {}
     end
   end

@@ -17,7 +17,24 @@ cookie = resp['Set-Cookie'] unless resp['Set-Cookie'].nil?
 puts "cookie " + cookie
 puts
 
-if true 
+if true
+  # session.index
+  res = http.request_get('/session', {'Cookie' => cookie})
+  puts "session.index"
+  puts res
+  puts
+  
+  sess = JSON.parse(res.body)[0]
+  
+  # session.destroy
+  res = http.delete("/session/#{sess['cookie']}", {'Cookie' => cookie})
+  puts "session.destroy"
+  puts res
+  puts
+
+end
+
+if false 
 # user.create
 # {'name': 'admin', 'pass': '6104a8be02be972bedf8c8bf107370fc517e2606', 'desc': 'Deus Ex Machina', 'contact': '', 'privs': ['ADMIN', 'TECH', 'VIEW'], 'enabled': true, 'locale': 'en_US', 'timezone': 0, 'group_ids':[]}
 user = {'name' => 'test', 'pass' => 'test', 'desc' => 'Deus Ex Machina', 'contact' => '', 'privs' => ['ADMIN', 'TECH', 'VIEW'], 'enabled' => true, 'locale' => 'en_US', 'timezone' => 0}
@@ -52,14 +69,13 @@ puts
 
 # user.destroy
 res = http.delete("/user/#{test_user['_id']}", {'Cookie' => cookie}) 
-#res = http.delete("/user/12345", {'Cookie' => cookie}) 
 puts "user.delete "
 puts res
 puts
 
 end
 
-if true
+if false
 # group.create
 group = {'name' => 'test'}
 res = http.request_post('/group', group.to_json, {'Cookie' => cookie}) 
@@ -78,25 +94,54 @@ puts res
 puts
 
 # group.update
-group = {'name' => 'container'}
+group = {'name' => 'test container'}
 res = http.request_put("/group/#{test_group['_id']}", group.to_json, {'Cookie' => cookie}) 
 puts "group.update "
 puts res
 puts
 
-=begin
+# get the first user
+res = http.request_get('/user', {'Cookie' => cookie})
+test_user = JSON.parse(res.body)[0]
+
 # group.add_user
 group_user = {'group' => test_group['_id'], 'user' => test_user['_id']}
 res = http.request_post('/group/add_user', group_user.to_json, {'Cookie' => cookie}) 
 puts "group.add_user "
 puts res
 puts
-=end
+
+# get the first user
+res = http.request_get('/user', {'Cookie' => cookie})
+test_user = JSON.parse(res.body)[0]
+puts "relation inside user?"
+puts test_user.inspect
+puts
 
 # group.show
 res = http.request_get("/group/#{test_group['_id']}", {'Cookie' => cookie})
 puts "group.show"
 puts res
+puts
+
+# group.del_user
+group_user = {'group' => test_group['_id'], 'user' => test_user['_id']}
+res = http.request_post('/group/del_user', group_user.to_json, {'Cookie' => cookie}) 
+puts "group.del_user "
+puts res
+puts
+
+# group.show
+res = http.request_get("/group/#{test_group['_id']}", {'Cookie' => cookie})
+puts "group.show"
+puts res
+puts
+
+# get the first user
+res = http.request_get('/user', {'Cookie' => cookie})
+test_user = JSON.parse(res.body)[0]
+puts "Is the user still there?"
+puts test_user.inspect
 puts
 
 # group.destroy
@@ -105,6 +150,14 @@ res = http.delete("/group/#{test_group['_id']}", {'Cookie' => cookie})
 puts "group.delete "
 puts res
 puts
+
+# get the first user
+res = http.request_get('/user', {'Cookie' => cookie})
+test_user = JSON.parse(res.body)[0]
+puts "Is the user still there?"
+puts test_user.inspect
+puts
+
 end
 
 # logout

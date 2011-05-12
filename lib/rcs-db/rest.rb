@@ -55,6 +55,7 @@ class RESTController
     @req_method = req_method
     @req_uri = req_uri
     @req_cookie = req_cookie || ''
+    @session_cookie = cookie
     @req_content = req_content
     @req_peer = req_peer
     # the parsed http parameters (from uri and from content)

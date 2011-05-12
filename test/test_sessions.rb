@@ -20,24 +20,24 @@ class TestSessions < Test::Unit::TestCase
   # Called before every test method runs. Can be used
   # to set up fixture information.
   def setup
-    @cookie = SessionManager.instance.create(1, 'test-user', [:admin])
+    @session = SessionManager.instance.create({:name => 'test-user'}, [:admin])
   end
 
   # Called after every test method runs. Can be used to tear
   # down fixture information.
   def teardown
-    SessionManager.instance.delete(@cookie)
+    SessionManager.instance.delete(@session[:cookie])
   end
   
   def test_session_valid
     # just created sessions must be valid
-    valid = SessionManager.instance.check(@cookie)
+    valid = SessionManager.instance.check(@session[:cookie])
     assert_true valid
   end
   
   def test_session_value
     # check the values of the session
-    session = SessionManager.instance.get(@cookie)
+    session = SessionManager.instance.get(@session[:cookie])
     assert_equal [:admin], session[:level]
 
     assert_equal 1, SessionManager.instance.length
@@ -51,7 +51,7 @@ class TestSessions < Test::Unit::TestCase
     SessionManager.instance.timeout(1)
 
     # the session must now be nil since it was timeouted
-    session = SessionManager.instance.get(@cookie)
+    session = SessionManager.instance.get(@session[:cookie])
     assert_nil session
     
     assert_equal 0, SessionManager.instance.length

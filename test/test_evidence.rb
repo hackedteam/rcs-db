@@ -38,7 +38,8 @@ class ParserTest < Test::Unit::TestCase
 
   def setup
     # create a fake authenticated user and session
-    @cookie = SessionManager.instance.create(1, 'test-server', [:server])
+    @session = SessionManager.instance.create({:name => 'test-server'}, [:server])
+    @cookie = "session=#{@session[:cookie]}"
     @controller = EvidenceController.new
     @rest = Classy.new
     @http_headers = nil
@@ -46,7 +47,7 @@ class ParserTest < Test::Unit::TestCase
   end
 
   def teardown
-    SessionManager.instance.delete(@cookie)
+    SessionManager.instance.delete(@session)
   end
 
   def test_create_not_enough_privileges

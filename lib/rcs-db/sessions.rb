@@ -21,7 +21,7 @@ class SessionManager
     @sessions = {}
   end
 
-  def create(uid, user, level)
+  def create(user, level)
 
     # create a new random cookie
     #cookie = SecureRandom.random_bytes(8).unpack('H*').first
@@ -31,7 +31,8 @@ class SessionManager
     @sessions[cookie] = {:user => user,
                          :level => level,
                          :cookie => cookie,
-                         :time => Time.now}
+                         :address => '1.2.3.4',
+                         :time => Time.now.getutc.to_i}
 
     return @sessions[cookie]
   end
@@ -40,7 +41,7 @@ class SessionManager
     return false if @sessions[cookie].nil?
 
     # update the time of the session (to avoid timeout)
-    @sessions[cookie][:time] = Time.now
+    @sessions[cookie][:time] = Time.now.getutc.to_i
 
     return true
   end
@@ -54,12 +55,20 @@ class SessionManager
     return nil
   end
 
+  def all
+    list = []
+    @sessions.each_pair do |cookie, sess|
+      list << sess
+    end
+    return list
+  end
+
   def get(cookie)
     return @sessions[cookie]
   end
 
   def delete(cookie)
-    @sessions.delete(cookie)
+    return @sessions.delete(cookie) != nil
   end
 
   # default timeout is 15 minutes
@@ -70,7 +79,7 @@ class SessionManager
     size = @sessions.length
     # search for timed out sessions
     @sessions.each_pair do |key, value|
-      if Time.now - value[:time] >= delta then
+      if Time.now.getutc.to_i - value[:time] >= delta then
         
         # don't log timeout for the server
         unless value[:level].include? :server
