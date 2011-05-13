@@ -36,7 +36,7 @@ module Parser
 
     # init the controller and check if everything is ok to proceed
     if not controller.init(http_headers, req_method, req_uri, req_cookie, req_content, @peer) then
-      return RESTController::STATUS_NOT_AUTHORIZED
+      return RESTController::STATUS_NOT_AUTHORIZED, *json_reply('AUTH_REQUIRED')
     end
 
     # if the object has an explicit method calling
@@ -62,15 +62,13 @@ module Parser
       end
     end
 
-    # default is not authorized to do anything
-    resp_status = RESTController::STATUS_NOT_AUTHORIZED
-
     # invoke the right method on the controller
     begin
       resp_status, resp_content, resp_content_type, resp_cookie = controller.send(method) unless method.nil?
     rescue NotAuthorized => e
-      resp_content = "Invalid access level: " + e.message
-      trace :warn, resp_content
+      resp_status = RESTController::STATUS_NOT_AUTHORIZED
+      resp_content, resp_content_type = *json_reply('INVALID_ACCESS_LEVEL')
+      trace :warn, "Invalid access level: " + e.message
     rescue Exception => e
       resp_content = "ERROR: " + e.message
       trace :error, resp_content
@@ -78,7 +76,7 @@ module Parser
     end
 
     # paranoid check
-    resp_status = RESTController::STATUS_NOT_AUTHORIZED if resp_status.nil?
+    resp_status = RESTController::STATUS_NOT_AUTHORIZED, *json_reply('CONTROLLER_ERROR') if resp_status.nil?
 
     # the controller job has finished, call the cleanup hook
     controller.cleanup
