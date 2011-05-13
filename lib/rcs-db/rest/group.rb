@@ -20,7 +20,7 @@ class GroupController < RESTController
     require_auth_level :admin
 
     mongoid_query do
-      group = Group.find(params[:group])
+      group = Group.find(params['group'])
       return STATUS_NOT_FOUND if group.nil?
       return STATUS_OK, *json_reply(group)
     end
@@ -41,7 +41,7 @@ class GroupController < RESTController
     require_auth_level :admin
 
     mongoid_query do
-      group = Group.find(params[:group])
+      group = Group.find(params['group'])
       return STATUS_NOT_FOUND if group.nil?
       params.delete(:group)
       result = group.update_attributes(params)
@@ -56,7 +56,7 @@ class GroupController < RESTController
     require_auth_level :admin
 
     mongoid_query do
-      group = Group.find(params[:group])
+      group = Group.find(params['group'])
       return STATUS_NOT_FOUND if group.nil?
 
       Audit.log :actor => @session[:user][:name], :action => 'group.destroy', :group => @params['name'], :desc => "Deleted the group '#{group[:name]}'"

@@ -17,11 +17,11 @@ class SessionController < RESTController
 
   def destroy
     require_auth_level :admin
-
-    session = SessionManager.instance.get(params[:session])
+    
+    session = SessionManager.instance.get(params['session'])
     Audit.log :actor => @session[:user][:name], :action => 'session.destroy', :desc => "Killed the session of the user '#{session[:user][:name]}'"
 
-    return STATUS_NOT_FOUND unless SessionManager.instance.delete(params[:session])
+    return STATUS_NOT_FOUND unless SessionManager.instance.delete(params['session'])
     return STATUS_OK
   end
 

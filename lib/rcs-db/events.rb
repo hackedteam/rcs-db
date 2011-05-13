@@ -5,6 +5,7 @@
 # relatives
 require_relative 'heartbeat.rb'
 require_relative 'parser.rb'
+require_relative 'rest.rb'
 require_relative 'sessions.rb'
 
 # from RCS::Common
@@ -99,7 +100,7 @@ class HTTPHandler < EM::Connection
         trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
       end
 
-      status = STATUS_SERVER_ERROR if status.nil? or status.class != Fixnum
+      status = RCS::DB::RESTController::STATUS_SERVER_ERROR if status.nil? or status.class != Fixnum
       
       # prepare the HTTP response
       resp.status = status

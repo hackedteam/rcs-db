@@ -45,7 +45,7 @@ module Parser
     #trace :debug, req_content
 
     # save the params in the controller object
-    controller.params[controller_name.downcase.to_sym] = params.first unless params.first.nil?
+    controller.params[controller_name.downcase] = params.first unless params.first.nil?
     controller.params.merge!(http_parse_parameters(req_content))
 
     # if we are not calling an explicit method, extract it from the http method
@@ -75,12 +75,11 @@ module Parser
       trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
     end
 
-    # paranoid check
-    resp_status = RESTController::STATUS_NOT_AUTHORIZED, *json_reply('CONTROLLER_ERROR') if resp_status.nil?
-
     # the controller job has finished, call the cleanup hook
     controller.cleanup
 
+    # paranoid check
+    return RESTController::STATUS_NOT_AUTHORIZED, *json_reply('CONTROLLER_ERROR') if resp_status.nil?
     return resp_status, resp_content, resp_content_type, resp_cookie
   end
 

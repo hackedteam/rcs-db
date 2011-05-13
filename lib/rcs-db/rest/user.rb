@@ -20,7 +20,7 @@ class UserController < RESTController
     require_auth_level :admin
     
     mongoid_query do
-      user = User.find(params[:user])
+      user = User.find(params['user'])
       return STATUS_NOT_FOUND if user.nil?
       return STATUS_OK, *json_reply(user)
     end
@@ -54,7 +54,7 @@ class UserController < RESTController
     require_auth_level :admin
 
     mongoid_query do
-      user = User.find(params[:user])
+      user = User.find(params['user'])
       return STATUS_NOT_FOUND if user.nil?
       params.delete(:user)
       result = user.update_attributes(params)
@@ -70,7 +70,7 @@ class UserController < RESTController
     require_auth_level :admin
     
     mongoid_query do
-      user = User.find(params[:user])
+      user = User.find(params['user'])
       return STATUS_NOT_FOUND if user.nil?
 
       Audit.log :actor => @session[:user][:name], :action => 'user.destroy', :user => @params['name'], :desc => "Deleted the user '#{user['name']}'"

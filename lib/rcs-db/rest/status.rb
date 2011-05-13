@@ -38,9 +38,9 @@ class StatusController < RESTController
   def destroy
     require_auth_level :admin
 
-    DB.instance.status_del params[:status]
+    DB.instance.status_del params['status']
 
-    Audit.log :actor => @session[:user], :action => 'monitor delete', :desc => "Component #{params[:status]} was deleted from db"
+    Audit.log :actor => @session[:user], :action => 'monitor delete', :desc => "Component #{params['status']} was deleted from db"
         
     return STATUS_OK
   end

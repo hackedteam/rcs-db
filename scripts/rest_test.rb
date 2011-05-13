@@ -34,7 +34,7 @@ if true
 
 end
 
-if false 
+if true 
 # user.create
 # {'name': 'admin', 'pass': '6104a8be02be972bedf8c8bf107370fc517e2606', 'desc': 'Deus Ex Machina', 'contact': '', 'privs': ['ADMIN', 'TECH', 'VIEW'], 'enabled': true, 'locale': 'en_US', 'timezone': 0, 'group_ids':[]}
 user = {'name' => 'test', 'pass' => 'test', 'desc' => 'Deus Ex Machina', 'contact' => '', 'privs' => ['ADMIN', 'TECH', 'VIEW'], 'enabled' => true, 'locale' => 'en_US', 'timezone' => 0}
@@ -67,11 +67,12 @@ puts res
 puts
 
 
+
 # user.destroy
-res = http.delete("/user/#{test_user['_id']}", {'Cookie' => cookie}) 
-puts "user.delete "
-puts res
-puts
+#res = http.delete("/user/#{test_user['_id']}", {'Cookie' => cookie}) 
+#puts "user.delete "
+#puts res
+#puts
 
 end
 
