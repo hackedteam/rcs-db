@@ -98,6 +98,11 @@ module Parser
     end
   end
 
+  # helper method for the replies
+  def json_reply(reply)
+    return reply.to_json, 'application/json'
+  end
+  
 end #Parser
 
 end #DB::
