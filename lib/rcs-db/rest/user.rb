@@ -24,7 +24,6 @@ class UserController < RESTController
       return STATUS_NOT_FOUND if user.nil?
       return STATUS_OK, *json_reply(user)
     end
-    
   end
   
   def create
@@ -51,19 +50,32 @@ class UserController < RESTController
   end
   
   def update
-    require_auth_level :admin
-
+    require_auth_level :admin, :tech, :viewer
+    
     mongoid_query do
       user = User.find(params['user'])
       return STATUS_NOT_FOUND if user.nil?
-      params.delete(:user)
+      params.delete('user')
+
+      # if non-admin you can modify only yourself
+      unless @session[:level].include? :admin
+        return STATUS_NOT_FOUND if user._id != @session[:user][:_id]
+      end
+      
+      trace :debug, "Params #{params.inspect}"
+      
+      # if pass is modified, treat it separately
+      if params.has_key? 'pass'
+        params['pass'] = Digest::SHA1.hexdigest('.:RCS:.' + params['pass'])
+        Audit.log :actor => @session[:user][:name], :action => 'user.update', :user => user['name'], :desc => "Changed password for user '#{user['name']}'"
+      else
+        Audit.log :actor => @session[:user][:name], :action => 'user.update', :user => user['name'], :desc => "Updated '#{params.keys.first}' to '#{params.values.first}' for user '#{user['name']}'"
+      end
+      
       result = user.update_attributes(params)
-
-      Audit.log :actor => @session[:user][:name], :action => 'user.update', :user => @params['name'], :desc => "Updated the user '#{user['name']}'"
-
+      
       return STATUS_OK, *json_reply(user)
     end
-    
   end
   
   def destroy
@@ -72,16 +84,15 @@ class UserController < RESTController
     mongoid_query do
       user = User.find(params['user'])
       return STATUS_NOT_FOUND if user.nil?
-
+      
       Audit.log :actor => @session[:user][:name], :action => 'user.destroy', :user => @params['name'], :desc => "Deleted the user '#{user['name']}'"
-
+      
       user.destroy
-
+      
       return STATUS_OK
     end
-
   end
-
+  
 end
 
 end #DB::

@@ -17,7 +17,6 @@ class User
   field :timezone, type: Integer
   field :dashboard_items, type: Array
   
-  attr_protected :pass
   validates_uniqueness_of :name, :message => "USER_ALREADY_EXISTS"
   
   references_and_referenced_in_many :groups, :dependent => :nullify, :autosave => true#, :class_name => "RCS::DB::Group", :foreign_key => "rcs/db/group_ids"
