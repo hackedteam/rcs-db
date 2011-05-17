@@ -152,7 +152,7 @@ class LicenseManager
 
     # check the consistency of the database (if someone tries to tamper it)
 
-    if ::User.count(conditions: {enabled: true}) > @limits[:users]
+    if User.count(conditions: {enabled: true}) > @limits[:users]
       trace :fatal, "LICENCE EXCEEDED: Number of users is greater than license file. Fixing..."
       # fix by disabling the last updated user
       offending = User.first(sort: [[ :updated_at, :desc ]])
@@ -164,6 +164,16 @@ class LicenseManager
 
   end
 
+
+  def counters
+    #TODO: get the real values
+    counters = {:users => User.count(conditions: {enabled: true}),
+                :backdoors => {:total => 0, :desktop => 0, :mobile => 0},
+                :collectors => {:collectors => 1, :anonymizers => 0},
+                :ipa => 0}
+
+    return counters
+  end
 
   def run(options)
     # load the license file

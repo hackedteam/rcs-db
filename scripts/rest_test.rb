@@ -166,7 +166,7 @@ puts
 end
 
 # audit
-if true
+if false
   # audit.count
    res = http.request_get('/audit/count', {'Cookie' => cookie})
    puts "audit.count"
@@ -183,6 +183,21 @@ if true
    puts "audit.index"
    puts res
    puts
+end
+
+# license
+if true
+  # license.limit
+  res = http.request_get('/license/limit', {'Cookie' => cookie})
+  puts "license.limit"
+  puts res
+  puts
+  
+  # license.count
+  res = http.request_get('/license/count', {'Cookie' => cookie})
+  puts "license.count"
+  puts res
+  puts
 end
 
 # logout
