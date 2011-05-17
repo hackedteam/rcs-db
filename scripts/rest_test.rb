@@ -1,5 +1,6 @@
 require 'net/http'
 require 'json'
+require 'benchmark'
 
 #http = Net::HTTP.new('192.168.1.189', 4444)
 http = Net::HTTP.new('localhost', 4444)
@@ -17,6 +18,8 @@ cookie = resp['Set-Cookie'] unless resp['Set-Cookie'].nil?
 puts "cookie " + cookie
 puts
 
+
+# session
 if false
   # session.index
   res = http.request_get('/session', {'Cookie' => cookie})
@@ -34,7 +37,8 @@ if false
 
 end
 
-if true 
+# user
+if false 
 # user.create
 # {'name': 'admin', 'pass': '6104a8be02be972bedf8c8bf107370fc517e2606', 'desc': 'Deus Ex Machina', 'contact': '', 'privs': ['ADMIN', 'TECH', 'VIEW'], 'enabled': true, 'locale': 'en_US', 'timezone': 0, 'group_ids':[]}
 user = {'name' => 'test', 'pass' => 'test', 'desc' => 'Deus Ex Machina', 'contact' => '', 'privs' => ['ADMIN', 'TECH', 'VIEW'], 'enabled' => true, 'locale' => 'en_US', 'timezone' => 0}
@@ -76,6 +80,7 @@ puts
 
 end
 
+# group
 if false
 # group.create
 group = {'name' => 'test'}
@@ -147,7 +152,6 @@ puts
 
 # group.destroy
 res = http.delete("/group/#{test_group['_id']}", {'Cookie' => cookie}) 
-#res = http.delete("/user/12345", {'Cookie' => cookie}) 
 puts "group.delete "
 puts res
 puts
@@ -159,6 +163,26 @@ puts "Is the user still there?"
 puts test_user.inspect
 puts
 
+end
+
+# audit
+if true
+  # audit.count
+   res = http.request_get('/audit/count', {'Cookie' => cookie})
+   puts "audit.count"
+   puts res
+   puts
+   
+   res = http.request_get('/audit/count&filterParam1="login"', {'Cookie' => cookie})
+    puts "audit.count 'login'"
+    puts res
+    puts
+   
+  # audit.index
+   res = http.request_get('/audit?startIndex=51&numItems=5', {'Cookie' => cookie})
+   puts "audit.index"
+   puts res
+   puts
 end
 
 # logout

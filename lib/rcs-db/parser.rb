@@ -10,6 +10,7 @@ require 'rcs-common/trace'
 require 'rcs-common/mime'
 
 # system
+require 'cgi'
 require 'json'
 
 module RCS
@@ -19,7 +20,7 @@ module Parser
   include RCS::Tracer
 
   # parse a request from a client
-  def http_parse(http_headers, req_method, req_uri, req_cookie, req_content)
+  def http_parse(http_headers, req_method, req_uri, req_cookie, req_content, req_query)
 
     # extract the name of the controller and the parameters
     root, controller_name, *params = req_uri.split('/')
@@ -43,11 +44,12 @@ module Parser
     method = params.shift if not params.first.nil? and controller.respond_to?(params.first)
 
     #trace :debug, req_content
-
+    
     # save the params in the controller object
     controller.params[controller_name.downcase] = params.first unless params.first.nil?
+    controller.params.merge!(CGI::parse(req_query)) unless req_query.nil?
     controller.params.merge!(http_parse_parameters(req_content))
-
+    
     # if we are not calling an explicit method, extract it from the http method
     if method.nil? then
       case req_method
