@@ -58,8 +58,10 @@ class SessionManager
   def all
     list = []
     @sessions.each_pair do |cookie, sess|
-      list << sess
+      # do not include server accounts
+      list << sess unless sess[:level].include? :server
     end
+    
     return list
   end
 

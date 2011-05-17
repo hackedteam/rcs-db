@@ -25,7 +25,16 @@ class User
   
   def verify_password(password)
     # we use the SHA1 with a salt '.:RCS:.' to avoid rainbow tabling
-    return self[:pass] == Digest::SHA1.hexdigest('.:RCS:.' + password)
+    if self[:pass] == Digest::SHA1.hexdigest('.:RCS:.' + password)
+      return true
+    end
+
+    # retro-compatibility for the migrated account which used only the SHA1
+    if self[:pass] == Digest::SHA1.hexdigest(password)
+      return true
+    end
+
+    return false
   end
 end
 

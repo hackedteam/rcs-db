@@ -64,11 +64,6 @@ class AuthController < RESTController
     return STATUS_OK, '', 'text/html', "session=; path=/; expires=#{Time.at(0).strftime('%A, %d-%b-%y %H:%M:%S %Z')}"
   end
   
-  # every user is able to change its own password
-  def change_pass
-    #TODO: implement password change
-  end
-
 
   # private method to authenticate a server
   def auth_server(user, pass)
