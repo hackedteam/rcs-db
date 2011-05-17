@@ -29,6 +29,8 @@ class UserController < RESTController
   def create
     require_auth_level :admin
 
+    # TODO: check for license limit
+
     result = User.create(name: @params['name']) do |doc|
       
       doc[:pass] = ''
