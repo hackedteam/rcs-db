@@ -4,7 +4,6 @@
 
 # from RCS::Common
 require 'rcs-common/trace'
-require 'rcs-common/flatsingleton'
 
 # system
 require 'yaml'
@@ -140,7 +139,7 @@ class Config
     return 0
   end
 
-  # executed from rcs-collector-config
+  # executed from rcs-db-config
   def self.run!(*argv)
     # reopen the class and declare any empty trace method
     # if called from command line, we don't have the trace facility

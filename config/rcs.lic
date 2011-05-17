@@ -1,0 +1,16 @@
+---
+:serial: 123
+:version: "8.0"
+:type: "reusable"
+:users: 5
+:backdoors: 
+  :total: .Inf
+  :desktop: 15
+  :mobile: 15
+:alerting: true
+:correlation: false
+:rmi: true
+:ipa: 5
+:collectors: 
+  :collectors: 5
+  :anonymizers: 5

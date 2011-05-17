@@ -12,7 +12,6 @@ require_relative 'config'
 
 # from RCS::Common
 require 'rcs-common/trace'
-require 'rcs-common/flatsingleton'
 
 # system
 require 'mysql2'

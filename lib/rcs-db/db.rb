@@ -5,6 +5,7 @@
 # relatives
 require_relative 'events.rb'
 require_relative 'config.rb'
+require_relative 'license.rb'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -43,11 +44,18 @@ class Application
     end
     
     # connect to MongoDB
-    Mongoid.load!(Dir.pwd + '/config/mongoid.yaml')
-    Mongoid.configure do |config|
-      config.master = Mongo::Connection.new.db('rcs')
+    begin
+      Mongoid.load!(Dir.pwd + '/config/mongoid.yaml')
+      Mongoid.configure do |config|
+        config.master = Mongo::Connection.new.db('rcs')
+      end
+    rescue Exception => e
+      trace :fatal, e
+      exit
     end
 
+
+    #FIXME: remove this...
     result = User.create(name: 'admin') do |doc|
       doc[:pass] = Digest::SHA1.hexdigest('.:RCS:.admin')
       doc[:contact] = ''
@@ -60,6 +68,9 @@ class Application
     begin
       version = File.read(Dir.pwd + '/config/version.txt')
       trace :info, "Starting the RCS Database #{version}..."
+
+      # load the license limits
+      return 1 unless LicenseManager.instance.load_license
 
       # config file parsing
       return 1 unless Config.instance.load_from_file

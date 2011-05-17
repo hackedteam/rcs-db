@@ -6,7 +6,7 @@ require 'rcs-db/audit'
 
 # from RCS::Common
 require 'rcs-common/trace'
-require 'rcs-common/flatsingleton'
+
 # system
 require 'uuidtools'
 

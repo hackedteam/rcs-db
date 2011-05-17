@@ -17,7 +17,7 @@ cookie = resp['Set-Cookie'] unless resp['Set-Cookie'].nil?
 puts "cookie " + cookie
 puts
 
-if true
+if false
   # session.index
   res = http.request_get('/session', {'Cookie' => cookie})
   puts "session.index"
