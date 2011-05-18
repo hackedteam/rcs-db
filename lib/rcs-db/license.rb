@@ -80,6 +80,7 @@ class LicenseManager
 
   def add_limits(limit)
     @limits[:type] = limit[:type]
+    @limits[:serial] = limit[:serial]
 
     @limits[:users] = limit[:users] if limit[:users] > @limits[:users]
 
