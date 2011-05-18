@@ -169,16 +169,21 @@ if true
   # audit.count
    res = http.request_get('/audit/count', {'Cookie' => cookie})
    puts "audit.count"
-   puts res
+   puts res.body.inspect
    puts
    
-   res = http.request_get('/audit/count&filterParam1="login"', {'Cookie' => cookie})
-    puts "audit.count 'login'"
-    puts res
-    puts
+   res = http.request_get('/audit/count?filterParam1="puddu"', {'Cookie' => cookie})
+   puts "audit.count 'puddu'"
+   puts res.body.inspect
+   puts
+
+   res = http.request_get('/audit/count?filterParam1="login"', {'Cookie' => cookie})
+   puts "audit.count 'login'"
+   puts res.body.inspect
+   puts
    
   # audit.index
-   res = http.request_get('/audit?startIndex=51&numItems=5', {'Cookie' => cookie})
+   res = http.request_get('/audit?filterParam1="puddu"&startIndex=51&numItems=5', {'Cookie' => cookie})
    puts "audit.index"
    puts res
    puts
