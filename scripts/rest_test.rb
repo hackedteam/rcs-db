@@ -166,32 +166,32 @@ puts
 end
 
 # audit
-if false
+if true
   # audit.count
    res = http.request_get('/audit/count', {'Cookie' => cookie})
    puts "audit.count"
    puts res.body.inspect
    puts
    
-   res = http.request_get('/audit/count?filterParam1="puddu"', {'Cookie' => cookie})
+   res = http.request_get('/audit/count?filter={action: "puddu"}', {'Cookie' => cookie})
    puts "audit.count 'puddu'"
    puts res.body.inspect
    puts
-
-   res = http.request_get('/audit/count?filterParam1="login"', {'Cookie' => cookie})
-   puts "audit.count 'login'"
+   
+   res = http.request_get('/audit/count?filter=%7B%22action%22%3A%22user%2Eupdate%22%7D', {'Cookie' => cookie})
+   puts "audit.count 'user.update'"
    puts res.body.inspect
    puts
    
   # audit.index
-   res = http.request_get('/audit?filterParam1="puddu"&startIndex=51&numItems=5', {'Cookie' => cookie})
-   puts "audit.index"
+   res = http.request_get('/audit?filter=%7B%22action%22%3A%22user%2Eupdate%22%7D&startIndex=0&numItems=10', {'Cookie' => cookie})
+   puts "audit.index 'user.update'"
    puts res
    puts
 end
 
 # license
-if true
+if false
   # license.limit
   res = http.request_get('/license/limit', {'Cookie' => cookie})
   puts "license.limit"
