@@ -29,8 +29,6 @@ class UserController < RESTController
   def create
     require_auth_level :admin
 
-    # TODO: check for license limit
-
     result = User.create(name: @params['name']) do |doc|
       
       doc[:pass] = ''
@@ -64,8 +62,11 @@ class UserController < RESTController
         return STATUS_NOT_FOUND if user._id != @session[:user][:_id]
       end
       
-      trace :debug, "Params #{params.inspect}"
-      
+      # if enabling a user, check the license
+      if params['enabled'] == true
+        return STATUS_CONFLICT, *json_reply('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :users
+      end
+
       # if pass is modified, treat it separately
       if params.has_key? 'pass'
         params['pass'] = Digest::SHA1.hexdigest('.:RCS:.' + params['pass'])
@@ -73,7 +74,7 @@ class UserController < RESTController
       else
         Audit.log :actor => @session[:user][:name], :action => 'user.update', :user => user['name'], :desc => "Updated '#{params.keys.first}' to '#{params.values.first}' for user '#{user['name']}'"
       end
-      
+
       result = user.update_attributes(params)
       
       return STATUS_OK, *json_reply(user)

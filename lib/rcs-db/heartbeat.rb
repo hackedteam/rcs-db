@@ -4,6 +4,7 @@
 
 # relatives
 require_relative 'db_layer.rb'
+require_relative 'license.rb'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -19,6 +20,9 @@ class HeartBeat
   extend RCS::Tracer
 
   def self.perform
+
+    # check the consistency of the license
+    LicenseManager.instance.periodic_check
 
     # report our status to the db
     component = "RCS::DB"

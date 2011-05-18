@@ -71,7 +71,11 @@ class AuthController < RESTController
 
     # the Collectors are authenticated only by the server signature
     if pass.eql? server_sig
+
+      raise 'LICENSE_LIMIT_EXCEEDED' unless LicenseManager.instance.check :collectors
+
       #TODO: insert the unique username in the network list
+
       trace :info, "Collector [#{user}] logged in"
       @auth_level = [:server]
       return true
