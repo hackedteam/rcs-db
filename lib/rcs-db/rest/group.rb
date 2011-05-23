@@ -42,13 +42,17 @@ class GroupController < RESTController
 
     mongoid_query do
       group = Group.find(params['group'])
+      params.delete('group')
       return STATUS_NOT_FOUND if group.nil?
       
-      Audit.log :actor => @session[:user][:name], :action => 'group.update', :group => @params['name'], :desc => "Renamed group '#{group[:name]}' into '#{params['name']}'"
+      params.each_pair do |key, value|
+        if group[key.to_s] != value and not key['_ids']
+          Audit.log :actor => @session[:user][:name], :action => 'group.update', :group => group['name'], :desc => "Updated '#{key}' to '#{value}' for group '#{group['name']}'"
+        end
+      end
       
-      params.delete('group')
       result = group.update_attributes(params)
-
+      
       return STATUS_OK, *json_reply(group)
     end
   end
@@ -72,10 +76,13 @@ class GroupController < RESTController
 
     mongoid_query do
       group = Group.find(params['group'])
-      return STATUS_NOT_FOUND if group.nil?
       user = User.find(params['user'])
-      return STATUS_NOT_FOUND if user.nil?
+      return STATUS_NOT_FOUND if user.nil? or group.nil?
+
       group.users << user
+      
+      Audit.log :actor => @session[:user][:name], :action => 'group.add_user', :group => @params['name'], :desc => "Added user '#{user.name}' to group '#{group.name}'"
+      
       return STATUS_OK
     end
   end
