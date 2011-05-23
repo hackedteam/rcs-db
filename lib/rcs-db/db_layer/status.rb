@@ -5,10 +5,12 @@
 module DBLayer
 module Status
 
+  ERROR = '2'
+
   # updates or insert the status of a component
   def status_update(name, address, status, info, stats)
 
-    trace :debug, "#{name}, #{address}, #{status}, #{info}, #{stats}"
+    #trace :debug, "#{name}, #{address}, #{status}, #{info}, #{stats}"
 
     monitor = ::Status.find_or_create_by(name: name, address: address)
 
@@ -33,9 +35,9 @@ module Status
     monitors = ::Status.all
 
     monitors.each do |m|
-      # a component is marked failed after 2 minutes
-      if Time.now.getutc.to_i - m[:time] > 120
-        m[:status] = 2
+      # a component is marked failed after 2 minutes (if not already marked)
+      if Time.now.getutc.to_i - m[:time] > 120 and m[:status] != ERROR
+        m[:status] = ERROR
         # TODO: send alerting mail
         trace :warn, "Component #{m[:name]} is not responding, marking failed..."
         m.save

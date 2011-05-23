@@ -48,7 +48,7 @@ class SessionManager
 
   def get_by_user(user)
     @sessions.each_pair do |cookie, sess|
-      if sess[:user] == user
+      if sess[:user][:name] == user
         return sess
       end
     end
