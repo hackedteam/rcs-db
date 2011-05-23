@@ -95,6 +95,23 @@ class UserController < RESTController
       return STATUS_OK
     end
   end
+
+  def del_group
+    require_auth_level :admin
+    
+    mongoid_query do
+      user = User.find(params['user'])
+      group = Group.find(params['group'])
+      return STATUS_NOT_FOUND if user.nil? or group.nil?
+      
+      trace :debug, "Removing group #{group._id} from user #{user._id}"
+      Audit.log :actor => @session[:user][:name], :action => 'user.remove_from_group', :user => @params['name'], :desc => "Removed group '#{group._id}' from user '#{user._id}'"
+      
+      group.remove_user(user)
+      
+      return STATUS_OK
+    end
+  end
   
 end
 
