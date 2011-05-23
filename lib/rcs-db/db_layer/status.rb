@@ -36,6 +36,7 @@ module Status
       # a component is marked failed after 2 minutes
       if Time.now.getutc.to_i - m[:time] > 120
         m[:status] = 2
+        # TODO: send alerting mail
         trace :warn, "Component #{m[:name]} is not responding, marking failed..."
         m.save
       end

@@ -11,9 +11,11 @@ class StatusController < RESTController
   def index
     require_auth_level :admin, :tech, :viewer
 
-    result = ::Status.all
+    mongoid_query do
+      result = ::Status.all
 
-    return STATUS_OK, *json_reply(result)
+      return STATUS_OK, *json_reply(result)
+    end
   end
 
   # insert or update an entry in the DB,
@@ -38,24 +40,30 @@ class StatusController < RESTController
   def destroy
     require_auth_level :admin
 
-    monitor = ::Status.find(params['status'])
-    name = monitor[:name]
-    monitor.destroy
-    
-    Audit.log :actor => @session[:user][:name], :action => 'monitor.delete', :desc => "Component '#{name}' was deleted from db"
-        
-    return STATUS_OK
+    mongoid_query do
+      monitor = ::Status.find(params['status'])
+      name = monitor[:name]
+      monitor.destroy
+
+      Audit.log :actor => @session[:user][:name], :action => 'monitor.delete', :desc => "Component '#{name}' was deleted from db"
+
+      return STATUS_OK
+    end
   end
 
   # returns the counters grouped by status
   def counters
+    require_auth_level :admin, :tech, :viewer
+    
     counters = {:ok => 0, :warn => 0, :error => 0}
 
-    counters[:ok] = ::Status.count(conditions: {status: '0'})
-    counters[:warn] = ::Status.count(conditions: {status: '1'})
-    counters[:error] = ::Status.count(conditions: {status: '2'})
+    mongoid_query do
+      counters[:ok] = ::Status.count(conditions: {status: '0'})
+      counters[:warn] = ::Status.count(conditions: {status: '1'})
+      counters[:error] = ::Status.count(conditions: {status: '2'})
 
-    return STATUS_OK, *json_reply(counters)
+      return STATUS_OK, *json_reply(counters)
+    end
   end
 
 end

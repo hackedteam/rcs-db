@@ -104,7 +104,32 @@ class GroupController < RESTController
       return STATUS_OK
     end
   end
-  
+
+  def alert
+    require_auth_level :admin
+
+    mongoid_query do
+
+      groups = Group.all
+
+      # reset all groups to false and set the unique group to true
+      groups.each do |g|
+        g[:alert] = false
+        if not params['group'].nil? and g[:_id] == BSON::ObjectId(params['group'])
+          g[:alert] = true
+          Audit.log :actor => @session[:user][:name], :action => 'group.alert', :group => @params['name'], :desc => "Monitor alert group set to '#{g[:name]}'"
+        end
+        g.save
+      end
+
+      if params['group'].nil?
+        Audit.log :actor => @session[:user][:name], :action => 'group.alert', :group => @params['name'], :desc => "Monitor alert group was removed"
+      end
+      
+      return STATUS_OK
+    end
+  end
+
 end
 
 end #DB::

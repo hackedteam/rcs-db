@@ -8,6 +8,7 @@ class Group
   include Mongoid::Timestamps
 
   field :name, type: String
+  field :alert, type: Boolean
 
   validates_uniqueness_of :name, :message => "GROUP_ALREADY_EXISTS"
 

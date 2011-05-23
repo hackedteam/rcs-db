@@ -99,6 +99,13 @@ puts "group.index"
 puts res
 puts
 
+# group.alert
+group = {'name' => 'test container'}
+res = http.request_post("/group/alert", test_group['_id'].to_json, {'Cookie' => cookie}) 
+puts "group.alert "
+puts res
+puts
+
 # group.update
 group = {'name' => 'test container'}
 res = http.request_put("/group/#{test_group['_id']}", group.to_json, {'Cookie' => cookie}) 
@@ -206,7 +213,7 @@ if false
 end
 
 # monitor
-if true
+if false
   # status.index
   res = http.request_get('/status', {'Cookie' => cookie})
   puts "status.index"
