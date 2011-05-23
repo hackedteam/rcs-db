@@ -166,7 +166,7 @@ puts
 end
 
 # audit
-if true
+if false
   # audit.count
    res = http.request_get('/audit/count', {'Cookie' => cookie})
    puts "audit.count"
@@ -203,6 +203,29 @@ if false
   puts "license.count"
   puts res
   puts
+end
+
+# monitor
+if true
+  # status.index
+  res = http.request_get('/status', {'Cookie' => cookie})
+  puts "status.index"
+  puts res
+  puts
+  
+  #monitor = JSON.parse(res.body)[0]
+  
+  #res = http.delete("/status/#{monitor['_id']}", {'Cookie' => cookie})
+  #puts "status.destroy"
+  #puts res
+  #puts
+
+  res = http.request_get('/status/counters', {'Cookie' => cookie})
+  puts "status.counters"
+  puts res
+  puts
+
+  
 end
 
 # logout
