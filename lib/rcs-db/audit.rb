@@ -21,6 +21,7 @@ class Audit
     #  :target
     #  :backdoor
     #  :desc
+    
     def log(params)
       trace :debug, params
       params[:time] = Time.now.getutc.to_i
@@ -33,18 +34,18 @@ class Audit
       temp = Set.new field
       return temp.add(value).to_a
     end
-
+    
     def save_audit_search(params)
-      s = AuditSearch.first
-      s = AuditSearch.new if s.nil?
-
-      s.actors = update_search s.actors, params[:actor]
-      s.actions = update_search s.actions, params[:action]
-      s.users = update_search s.users, params[:user]
-      s.groups = update_search s.groups, params[:group]
-      s.activities = update_search s.activities, params[:activity]
-      s.targets = update_search s.targets, params[:target]
-      s.backdoors = update_search s.backdoors, params[:backdoor]
+      s = AuditFilters.first
+      s = AuditFilters.new if s.nil?
+      
+      s.actor = update_search s.actor, params[:actor] if params.has_key? :actor
+      s.action = update_search s.action, params[:action] if params.has_key? :action
+      s.user = update_search s.user, params[:user] if params.has_key? :user
+      s.group = update_search s.group, params[:group] if params.has_key? :group
+      s.activity = update_search s.activity, params[:activity] if params.has_key? :activity
+      s.target = update_search s.target, params[:target] if params.has_key? :target
+      s.backdoor = update_search s.backdoor, params[:backdoor] if params.has_key? :backdoor
       s.save
     end
   end
