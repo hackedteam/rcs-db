@@ -31,7 +31,7 @@ class HeartBeat
     component = "RCS::DB"
     # our local ip address
     begin
-      ip = IPSocket.getaddress(Socket.gethostname)
+      ip = Socket.gethostname
     rescue Exception => e
       ip = 'unknown'
     end
