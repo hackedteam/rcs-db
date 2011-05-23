@@ -41,7 +41,7 @@ class HTTPHandler < EM::Connection
     # we want the connection to be encrypted with ssl
     start_tls(:private_key_file => Config.instance.file('DB_KEY'),
               :cert_chain_file => Config.instance.file('DB_CERT'),
-              :verify_peer => true)
+              :verify_peer => false)
 
 
     # to speed-up the processing, we disable the CGI environment variables

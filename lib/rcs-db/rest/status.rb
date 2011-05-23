@@ -11,7 +11,7 @@ class StatusController < RESTController
   def index
     require_auth_level :admin, :tech, :viewer
 
-    result = DB.instance.status_get
+    result = ::Status.all
 
     return STATUS_OK, *json_reply(result)
   end
@@ -22,13 +22,13 @@ class StatusController < RESTController
     require_auth_level :server
 
     # the ip address is not specified, we take the peer address
-    if params['ip'] == '' then
-      params['ip'] = @req_peer
+    if params['address'] == '' then
+      params['address'] = @req_peer
     end
 
     # save the status to the db
     stats = {:disk => params['disk'], :cpu => params['cpu'], :pcpu => params['pcpu']}
-    DB.instance.status_update params['component'], params['ip'], params['status'], params['message'], stats
+    DB.instance.status_update params['name'], params['address'], params['status'], params['info'], stats
 
     return STATUS_OK
   end
@@ -38,11 +38,24 @@ class StatusController < RESTController
   def destroy
     require_auth_level :admin
 
-    DB.instance.status_del params['status']
-
-    Audit.log :actor => @session[:user], :action => 'monitor delete', :desc => "Component #{params['status']} was deleted from db"
+    monitor = ::Status.find(params['status'])
+    name = monitor[:name]
+    monitor.destroy
+    
+    Audit.log :actor => @session[:user][:name], :action => 'monitor.delete', :desc => "Component '#{name}' was deleted from db"
         
     return STATUS_OK
+  end
+
+  # returns the counters grouped by status
+  def counters
+    counters = {:ok => 0, :warn => 0, :error => 0}
+
+    counters[:ok] = ::Status.count(conditions: {status: '0'})
+    counters[:warn] = ::Status.count(conditions: {status: '1'})
+    counters[:error] = ::Status.count(conditions: {status: '2'})
+
+    return STATUS_OK, *json_reply(counters)
   end
 
 end

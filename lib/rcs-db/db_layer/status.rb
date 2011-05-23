@@ -6,40 +6,41 @@ module DBLayer
 module Status
 
   # updates or insert the status of a component
-  def status_update(component, ip, status, message, stats)
+  def status_update(name, address, status, info, stats)
 
-    #trace :debug, "#{component}, #{ip}, #{status}, #{message}, #{stats}"
+    trace :debug, "#{name}, #{address}, #{status}, #{info}, #{stats}"
 
-    result = mysql_query("SELECT `monitor_id` FROM monitor WHERE `monitor` = '#{component}' AND remoteip = '#{ip}'")
+    monitor = ::Status.find_or_create_by(name: name, address: address)
 
-    result.each do |row|
-      mysql_query("UPDATE `monitor` SET `timestamp` = UTC_TIMESTAMP(),
-                                        `status` = '#{@mysql.escape(status)}',
-                                        `desc` = '#{@mysql.escape(message)}',
-                                        `disk` = #{stats[:disk]},
-                                        `cputotal` = #{stats[:cpu]},
-                                        `cpuprocess` = #{stats[:pcpu]}
-                   WHERE `monitor_id` = #{row[:monitor_id]}")
+    monitor[:info] = info
+    monitor[:pcpu] = stats[:pcpu]
+    monitor[:cpu] = stats[:cpu]
+    monitor[:disk] = stats[:disk]
+    monitor[:time] = Time.now.getutc.to_i
+    case(status)
+      when 'OK'
+        monitor[:status] = '0'
+      when 'WARN'
+        monitor[:status] = '1'
+      when 'ERROR'
+        monitor[:status] = '2'
     end
 
-    # the component is not preset, create it
-    if result.count == 0 then
-      mysql_query("INSERT INTO monitor (`monitor`, `remoteip`, `timestamp`, `status`, `desc`, `disk`, `cputotal`, `cpuprocess`)
-                   VALUES ('#{component}', '#{ip}', UTC_TIMESTAMP(), '#{@mysql.escape(status)}', '#{@mysql.escape(message)}', #{stats[:disk]}, #{stats[:cpu]}, #{stats[:pcpu]})")
-    end
-
+    monitor.save
   end
 
-  # remove a component from the table
-  def status_del(id)
-    mysql_query("DELETE FROM monitor WHERE monitor_id = #{id}")
-  end
+  def status_check
+    monitors = ::Status.all
 
-  # get the list of all components' statuses
-  def status_get
-    return mysql_query("SELECT * FROM monitor").each do |row|
-      row
+    monitors.each do |m|
+      # a component is marked failed after 2 minutes
+      if Time.now.getutc.to_i - m[:time] > 120
+        m[:status] = 2
+        trace :warn, "Component #{m[:name]} is not responding, marking failed..."
+        m.save
+      end
     end
+
   end
 
 end # ::Status
