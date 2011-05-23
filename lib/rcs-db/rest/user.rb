@@ -63,7 +63,7 @@ class UserController < RESTController
       end
       
       # if enabling a user, check the license
-      if params['enabled'] == true
+      if user[:enabled] == false and params['enabled'] == true
         return STATUS_CONFLICT, *json_reply('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :users
       end
 
@@ -72,7 +72,11 @@ class UserController < RESTController
         params['pass'] = Digest::SHA1.hexdigest('.:RCS:.' + params['pass'])
         Audit.log :actor => @session[:user][:name], :action => 'user.update', :user => user['name'], :desc => "Changed password for user '#{user['name']}'"
       else
-        Audit.log :actor => @session[:user][:name], :action => 'user.update', :user => user['name'], :desc => "Updated '#{params.keys.first}' to '#{params.values.first}' for user '#{user['name']}'"
+        params.each_pair do |key, value|
+          if user[key.to_s] != value
+            Audit.log :actor => @session[:user][:name], :action => 'user.update', :user => user['name'], :desc => "Updated '#{key}' to '#{value}' for user '#{user['name']}'"
+          end
+        end
       end
 
       result = user.update_attributes(params)
