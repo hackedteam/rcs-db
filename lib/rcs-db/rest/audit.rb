@@ -58,7 +58,14 @@ class AuditController < RESTController
     num_audits = -1 if num_audits == 0
     return STATUS_OK, *json_reply(num_audits)
   end
-
+  
+  def filters
+    require_auth_level :admin
+    
+    search = ::AuditFilters.first
+    return STATUS_OK, *json_reply(search)
+  end
+  
 end
 
 end #DB::

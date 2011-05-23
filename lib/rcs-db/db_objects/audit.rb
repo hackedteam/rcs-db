@@ -19,18 +19,18 @@ class Audit
   store_in :audit
 end
 
-class AuditSearch
+class AuditFilters
   include Mongoid::Document
+    
+  field :actor, type: Array
+  field :action, type: Array
+  field :user, type: Array
+  field :group, type: Array
+  field :activity, type: Array
+  field :target, type: Array
+  field :backdoor, type: Array
   
-  field :actors, type: Array
-  field :actions, type: Array
-  field :users, type: Array
-  field :groups, type: Array
-  field :activities, type: Array
-  field :targets, type: Array
-  field :backdoors, type: Array
-  
-  store_in :audit_search
+  store_in :audit_filters
 end
 
 #end # ::DB
