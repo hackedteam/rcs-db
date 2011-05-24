@@ -153,6 +153,7 @@ class LicenseManager
 
     # check the consistency of the database (if someone tries to tamper it)
 
+    trace :debug, "Number of enabled users: #{User.count(conditions: {enabled: true})} out of a maximum of #{@limits[:users]}"
     if User.count(conditions: {enabled: true}) > @limits[:users]
       trace :fatal, "LICENCE EXCEEDED: Number of users is greater than license file. Fixing..."
       # fix by disabling the last updated user
