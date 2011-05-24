@@ -10,7 +10,8 @@ class LicenseController < RESTController
   def limit
     require_auth_level :admin, :tech, :view
 
-    limits = LicenseManager.instance.limits
+    # we use marshalling due to the lack of a deep copy method ...
+    limits = Marshal::load(Marshal.dump(LicenseManager.instance.limits))
 
     # a trick to get the Infinity value
     inf = 1.0/0
