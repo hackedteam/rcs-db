@@ -157,8 +157,9 @@ class LicenseManager
     if User.count(conditions: {enabled: true}) > @limits[:users]
       trace :fatal, "LICENCE EXCEEDED: Number of users is greater than license file. Fixing..."
       # fix by disabling the last updated user
-      offending = User.first(sort: [[ :updated_at, :desc ]])
+      offending = User.first(conditions: {enabled: true}, sort: [[ :updated_at, :desc ]])
       offending[:enabled] = false
+      trace :warn, "Disabling user '#{offending[:name]}'"
       offending.save
     end
 
