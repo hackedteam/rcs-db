@@ -23,9 +23,6 @@ class HeartBeat
 
     # check the consistency of the license
     LicenseManager.instance.periodic_check
-
-    # check the status of other components
-    DB.instance.status_check
     
     # report our status to the db
     component = "RCS::DB"
@@ -50,6 +47,9 @@ class HeartBeat
 
     # send the status to the db
     DB.instance.status_update component, ip, status, message, stats
+
+    # check the status of other components
+    DB.instance.status_check
   end
 end
 
