@@ -37,7 +37,7 @@ class GroupMigration
       user = User.where({_mid: a[:user_id]}).first
       group.users << user
 
-      trace :debug, "Association user '#{user.name}' to group '#{group.name}'." if verbose
+      trace :info, "Association user '#{user.name}' to group '#{group.name}'." if verbose
       print "." unless verbose
       
     end

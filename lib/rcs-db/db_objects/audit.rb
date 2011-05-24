@@ -6,7 +6,7 @@ require 'mongoid'
 class Audit
   include Mongoid::Document
   
-  field :time, type: DateTime
+  field :time, type: Integer
   field :actor, type: String
   field :action, type: String
   field :user, type: String

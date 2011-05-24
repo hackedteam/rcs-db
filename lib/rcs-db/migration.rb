@@ -71,7 +71,11 @@ class Migration
     UserMigration.migrate options[:verbose]
     GroupMigration.migrate options[:verbose]
     GroupMigration.migrate_associations options[:verbose]
-    
+    ActivityMigration.migrate options[:verbose]
+    ActivityMigration.migrate_associations options[:verbose]
+    TargetMigration.migrate options[:verbose]
+    BackdoorMigration.migrate options[:verbose]
+
     return 0
   end
 

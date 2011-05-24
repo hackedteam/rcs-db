@@ -19,8 +19,8 @@ class User
   
   validates_uniqueness_of :name, :message => "USER_ALREADY_EXISTS"
   
-  references_and_referenced_in_many :groups, :dependent => :nullify, :autosave => true#, :class_name => "RCS::DB::Group", :foreign_key => "rcs/db/group_ids"
-  
+  has_and_belongs_to_many :groups, :dependent => :nullify, :autosave => true#, :class_name => "RCS::DB::Group", :foreign_key => "rcs/db/group_ids"
+
   store_in :users
   
   def remove_from_group(group)
