@@ -26,12 +26,12 @@ class AuditController < RESTController
     if params.has_key? 'startIndex' and params.has_key? 'numItems'
       start_index = params['startIndex'].first.to_i
       num_items = params['numItems'].first.to_i
-      query = query.skip(start_index).limit(num_items)
+      query = query.order_by([[:time, :asc]]).skip(start_index).limit(num_items)
     else
       # without paging, return everything
-      query = query.all
+      query = query.all.order_by([[:time, :asc]])
     end
-    
+
     return STATUS_OK, *json_reply(query)
   end
   
