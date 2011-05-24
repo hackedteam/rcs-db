@@ -8,7 +8,7 @@ class ActivityMigration
   
   def self.migrate(verbose)
   
-    print "Migrating activities " unless verbose
+    print "Migrating activities "
 
     activities = DB.instance.mysql_query('SELECT * from `activity` ORDER BY `activity_id`;').to_a
     activities.each do |a|
@@ -30,12 +30,12 @@ class ActivityMigration
       ma.save
     end
     
-    puts " done." unless verbose
+    puts " done."
     
   end
 
   def self.migrate_associations(verbose)
-     print "Associating activities to groups " unless verbose
+     print "Associating activities to groups "
     
     associations = DB.instance.mysql_query('SELECT * from `activity_group` ORDER BY `activity_id`;').to_a
     associations.each do |a|
@@ -48,7 +48,7 @@ class ActivityMigration
       
     end
     
-    puts " done." unless verbose
+    puts " done."
   end
 end
 

@@ -8,7 +8,7 @@ class UserMigration
   
   def self.migrate(verbose = false)
 
-    print "Migrating users " unless verbose
+    print "Migrating users "
 
     users = DB.instance.mysql_query('SELECT * from `user` ORDER BY `user_id`;').to_a
     users.each do |user|
@@ -33,7 +33,7 @@ class UserMigration
       #trace :debug, mu.inspect
     end
 
-    puts " done." unless verbose
+    puts " done."
 
   end
 end

@@ -8,7 +8,7 @@ class GroupMigration
   
   def self.migrate(verbose)
   
-    print "Migrating groups " unless verbose
+    print "Migrating groups "
 
     groups = DB.instance.mysql_query('SELECT * from `group` ORDER BY `group_id`;').to_a
     groups.each do |group|
@@ -23,13 +23,13 @@ class GroupMigration
       mg.save
     end
 
-    puts " done." unless verbose
+    puts " done."
 
   end
 
   def self.migrate_associations(verbose)
 
-    print "Associating users to groups " unless verbose
+    print "Associating users to groups "
 
     associations = DB.instance.mysql_query('SELECT * from `group_user` ORDER BY `group_id`;').to_a
     associations.each do |a|
@@ -42,7 +42,7 @@ class GroupMigration
       
     end
 
-    puts " done." unless verbose
+    puts " done."
     
   end
 end

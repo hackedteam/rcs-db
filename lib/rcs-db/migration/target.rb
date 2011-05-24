@@ -8,7 +8,7 @@ class TargetMigration
   
   def self.migrate(verbose)
   
-    print "Migrating targets " unless verbose
+    print "Migrating targets "
 
     targets = DB.instance.mysql_query('SELECT * from `target` ORDER BY `target_id`;').to_a
     targets.each do |target|
@@ -32,7 +32,7 @@ class TargetMigration
       mt.save
     end
     
-    puts " done." unless verbose
+    puts " done."
     
   end
 end

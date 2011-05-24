@@ -75,6 +75,7 @@ class Migration
     ActivityMigration.migrate_associations options[:verbose]
     TargetMigration.migrate options[:verbose]
     BackdoorMigration.migrate options[:verbose]
+    BackdoorMigration.migrate_associations options[:verbose]
 
     return 0
   end

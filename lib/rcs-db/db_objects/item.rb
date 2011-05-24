@@ -28,6 +28,58 @@ class Item
   field :logkey, type: String
 
   has_and_belongs_to_many :groups, :dependent => :nullify, :autosave => true
+
+  embeds_many :filesystem_requests, class_name: "FilesystemRequest"
+  embeds_many :download_requests, class_name: "DownloadRequest"
+  embeds_many :upgrade_requests, class_name: "UpgradeRequest"
+  embeds_many :upload_requests, class_name: "UploadRequest"
   
   store_in :items
+end
+
+class FilesystemRequest
+  include Mongoid::Document
+  
+  field :path, type: String
+  field :depth, type: Integer
+  
+  validates_uniqueness_of :path
+
+  embedded_in :item
+end
+
+class DownloadRequest
+  include Mongoid::Document
+
+  field :path, type: String
+
+  validates_uniqueness_of :path
+
+  embedded_in :item
+end
+
+class UpgradeRequest
+  include Mongoid::Document
+  
+  field :filename, type: String
+  field :_grid, type: String
+
+  validates_uniqueness_of :filename
+
+  embedded_in :item
+end
+
+class UploadRequest
+  include Mongoid::Document
+  
+  field :filename, type: String
+  field :_grid, type: String
+  
+  validates_uniqueness_of :filename
+  
+  embedded_in :item
+end
+
+class Stat
+
 end

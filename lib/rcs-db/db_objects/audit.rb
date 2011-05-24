@@ -16,6 +16,8 @@ class Audit
   field :backdoor, type: String
   field :info, type: String
   
+  index :time
+
   store_in :audit
 end
 
