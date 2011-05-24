@@ -2,11 +2,11 @@
 :serial: 123
 :version: "8.0"
 :type: "reusable"
-:users: 5
+:users: .Inf
 :backdoors: 
   :total: .Inf
-  :desktop: 15
-  :mobile: 15
+  :desktop: .Inf
+  :mobile: .Inf
 :alerting: true
 :correlation: false
 :rmi: true

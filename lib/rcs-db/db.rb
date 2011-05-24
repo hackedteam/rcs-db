@@ -54,17 +54,6 @@ class Application
       exit
     end
 
-
-    #FIXME: remove this...
-    result = User.create(name: 'admin') do |doc|
-      doc[:pass] = Digest::SHA1.hexdigest('.:RCS:.admin')
-      doc[:contact] = ''
-      doc[:privs] = ['ADMIN', 'TECH', 'VIEW']
-      doc[:enabled] = true
-      doc[:locale] = 'en_US'
-      doc[:timezone] = 0
-    end
-
     begin
       version = File.read(Dir.pwd + '/config/version.txt')
       trace :info, "Starting the RCS Database #{version}..."
