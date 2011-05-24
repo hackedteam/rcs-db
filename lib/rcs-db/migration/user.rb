@@ -6,10 +6,16 @@ module DB
 class UserMigration
   extend Tracer
   
-  def self.migrate
+  def self.migrate(verbose = false)
+
+    print "Migrating users " unless verbose
+
     users = DB.instance.mysql_query('SELECT * from `user` ORDER BY `user_id`;').to_a
     users.each do |user|
-      trace :debug, "Migrating user '#{user[:user]}'."
+      
+      trace :info, "Migrating user '#{user[:user]}'." if verbose
+      print "." unless verbose
+
       mu = ::User.new
       mu[:_mid] = user[:user_id]
       mu.name = user[:user]
@@ -26,6 +32,9 @@ class UserMigration
       mu.save
       #trace :debug, mu.inspect
     end
+
+    puts " done." unless verbose
+
   end
 end
 

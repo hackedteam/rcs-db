@@ -6,32 +6,44 @@ module DB
 class GroupMigration
   extend Tracer
   
-  def self.migrate
+  def self.migrate(verbose)
+  
+    print "Migrating groups " unless verbose
+
     groups = DB.instance.mysql_query('SELECT * from `group` ORDER BY `group_id`;').to_a
     groups.each do |group|
-      trace :debug, "Migrating group '#{group[:group]}'."
+
+      trace :info, "Migrating group '#{group[:group]}'." if verbose
+      print "." unless verbose
+
       mg = ::Group.new
       mg[:_mid] = group[:group_id]
       mg.name = group[:group]
       mg.alert = group[:alert] == 0 ? false : true
       mg.save
-      #trace :debug, mg.inspect
     end
+
+    puts " done." unless verbose
+
   end
 
-  def self.migrate_associations
+  def self.migrate_associations(verbose)
+
+    print "Associating users to groups " unless verbose
+
     associations = DB.instance.mysql_query('SELECT * from `group_user` ORDER BY `group_id`;').to_a
     associations.each do |a|
-      begin
-        group = Group.where({_mid: a[:group_id]}).first
-        user = User.where({_mid: a[:user_id]}).first
-      rescue Exception => e
-        trace :debug, "Group '#{a[:group_id]}' not found, skipping..."
-        next
-      end
-      trace :debug, "Association user '#{user.name}' to group '#{group.name}'."
+      group = Group.where({_mid: a[:group_id]}).first
+      user = User.where({_mid: a[:user_id]}).first
       group.users << user
+
+      trace :debug, "Association user '#{user.name}' to group '#{group.name}'." if verbose
+      print "." unless verbose
+      
     end
+
+    puts " done." unless verbose
+    
   end
 end
 

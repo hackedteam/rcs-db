@@ -27,14 +27,11 @@ class DB
   def initialize
     @available = false
     @semaphore = Mutex.new
-    mysql_connect
+    mysql_connect 'root', 'rootp123', Config.instance.global['DB_ADDRESS']
   end
   
-  def mysql_connect
+  def mysql_connect(user, pass, host)
     begin
-      user = 'root'
-      pass = 'rootp123'
-      host = Config.instance.global['DB_ADDRESS']
       # use the credential stored by RCSDB
       if File.exist?('C:/RCSDB/etc/RCSDB.ini') then
         File.open('C:/RCSDB/etc/RCSDB.ini').each_line do |line|
@@ -57,7 +54,7 @@ class DB
     begin
       @semaphore.synchronize do
         # try to reconnect if not connected
-        mysql_connect if not @available
+        mysql_connect('root', 'rootp123', Config.instance.global['DB_ADDRESS']) if not @available
         # execute the query
         @mysql.query(query, {:symbolize_keys => true})
       end

@@ -64,11 +64,13 @@ class Migration
       trace :fatal, e
       exit
     end
+
+    DB.instance.mysql_connect options[:user], options[:password], options[:db]
     
     # start the migrane
-    UserMigration.migrate
-    GroupMigration.migrate
-    GroupMigration.migrate_associations
+    UserMigration.migrate options[:verbose]
+    GroupMigration.migrate options[:verbose]
+    GroupMigration.migrate_associations options[:verbose]
     
     return 0
   end
@@ -90,6 +92,22 @@ class Migration
       # Set a banner, displayed at the top of the help screen.
       opts.banner = "Usage: rcs-db-migrate [options]"
 
+      opts.on( '-u', '--user USERNAME', 'RCSDB username' ) do |user|
+        options[:user] = user
+      end
+      
+      opts.on( '-p', '--password PASSWORD', 'RCSDB password' ) do |password|
+        options[:password] = password
+      end
+      
+      opts.on( '-d', '--db HOSTNAME', 'RCSDB hostname/ip' ) do |db|
+        options[:db] = db
+      end
+      
+      opts.on( '-v', '--verbose', 'Verbose output' ) do
+        options[:verbose] = true
+      end
+
       # This displays the help screen
       opts.on( '-h', '--help', 'Display this screen' ) do
         puts opts
@@ -99,6 +117,12 @@ class Migration
 
     optparse.parse(argv)
 
+    # check mandatory options
+    if not options.has_key? :user or not options.has_key? :password or not options.has_key? :db
+      puts "Missing arguments for user, password or host."
+      return 1
+    end
+    
     # execute the configurator
     return Migration.instance.run(options)
   end
