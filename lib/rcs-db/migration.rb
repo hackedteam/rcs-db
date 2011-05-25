@@ -77,6 +77,10 @@ class Migration
     BackdoorMigration.migrate options[:verbose]
     BackdoorMigration.migrate_associations options[:verbose]
     AlertMigration.migrate options[:verbose]
+    CollectorMigration.migrate options[:verbose]
+    CollectorMigration.migrate_topology options[:verbose]
+    ProxyMigration.migrate options[:verbose]
+    ProxyMigration.migrate_rules options[:verbose]
 
     return 0
   end

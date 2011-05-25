@@ -26,6 +26,7 @@ class Item
   field :pathseed, type: String
   field :confkey, type: String
   field :logkey, type: String
+  field :upgradable, type: Boolean
 
   has_and_belongs_to_many :groups, :dependent => :nullify, :autosave => true
 

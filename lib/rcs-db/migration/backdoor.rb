@@ -104,18 +104,13 @@ class BackdoorMigration
     upgrades = DB.instance.mysql_query('SELECT * from `upgrade` ORDER BY `upgrade_id`;').to_a
     upgrades.each do |ug|
       backdoor = Item.where({_mid: ug[:backdoor_id], _kind: 'backdoor'}).first
-      begin
-        upgrade = backdoor.upgrade_requests.create!(filename: ug[:filename])
-        upgrade[:_grid] = GridFS.instance.put(upgrade[:_id].to_s, ug[:content]).to_s
-        upgrade.save
 
-        puts GridFS.instance.get_by_filename(upgrade[:_id].to_s).inspect
-        
-      rescue Mongoid::Errors::Validations => e
-        next
-      end
-      
+      next if backdoor.upgradable == true
+
       print "." unless verbose
+
+      backdoor.upgradable = true
+      backdoor.save
     end
     
     puts " done."

@@ -10,7 +10,7 @@ http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 # login
 account = {
   :user => 'admin', 
-  :pass => 'admin'
+  :pass => 'adminp123'
   }
 resp = http.request_post('/auth/login', account.to_json, nil)
 puts resp.body
@@ -173,7 +173,7 @@ puts
 end
 
 # audit
-if false
+if true
   # audit.count
    res = http.request_get('/audit/count', {'Cookie' => cookie})
    puts "audit.count"
@@ -195,6 +195,12 @@ if false
    puts "audit.index 'user.update'"
    puts res
    puts
+   
+   # audit.index
+  res = http.request_get('/audit', {'Cookie' => cookie})
+  puts "audit.index"
+  puts res
+  puts
 end
 
 # license
