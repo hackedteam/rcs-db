@@ -45,7 +45,7 @@ class ProxyMigration
     rules.each do |rule|
 
       proxy = Proxy.where({_mid: rule[:proxy_id]}).first
-      target = Item.where({_mid: rule[:target_id]}).first
+      target = Item.where({_mid: rule[:target_id], _kind: 'target'}).first
 
       # skip already migrated rules
       next unless proxy.rules.where({_mid: rule[:proxyrule_id]}).first.nil?

@@ -67,21 +67,29 @@ class Migration
 
     DB.instance.mysql_connect options[:user], options[:password], options[:db]
     
-    # start the migrane
+    # start the migration
+    SignatureMigration.migrate options[:verbose]
+
     UserMigration.migrate options[:verbose]
     GroupMigration.migrate options[:verbose]
     GroupMigration.migrate_associations options[:verbose]
+
     ActivityMigration.migrate options[:verbose]
     ActivityMigration.migrate_associations options[:verbose]
     TargetMigration.migrate options[:verbose]
     BackdoorMigration.migrate options[:verbose]
     BackdoorMigration.migrate_associations options[:verbose]
+    ConfigMigration.migrate options[:verbose]
+    ConfigMigration.migrate_templates options[:verbose]
+
     AlertMigration.migrate options[:verbose]
+
     CollectorMigration.migrate options[:verbose]
     CollectorMigration.migrate_topology options[:verbose]
+
     ProxyMigration.migrate options[:verbose]
     ProxyMigration.migrate_rules options[:verbose]
-    SignatureMigration.migrate options[:verbose]
+
 
     return 0
   end
