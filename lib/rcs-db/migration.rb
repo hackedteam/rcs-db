@@ -81,6 +81,7 @@ class Migration
     CollectorMigration.migrate_topology options[:verbose]
     ProxyMigration.migrate options[:verbose]
     ProxyMigration.migrate_rules options[:verbose]
+    SignatureMigration.migrate options[:verbose]
 
     return 0
   end
