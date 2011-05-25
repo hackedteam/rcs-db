@@ -12,7 +12,10 @@ class UserMigration
 
     users = DB.instance.mysql_query('SELECT * from `user` ORDER BY `user_id`;').to_a
     users.each do |user|
-      
+
+      # skip item if already migrated
+      next if ::User.count(conditions: {_mid: user[:user_id]}) != 0
+
       trace :info, "Migrating user '#{user[:user]}'." if verbose
       print "." unless verbose
 

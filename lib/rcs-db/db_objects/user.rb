@@ -20,15 +20,9 @@ class User
   validates_uniqueness_of :name, :message => "USER_ALREADY_EXISTS"
   
   has_and_belongs_to_many :groups, :dependent => :nullify, :autosave => true#, :class_name => "RCS::DB::Group", :foreign_key => "rcs/db/group_ids"
+  has_many :alerts
 
   store_in :users
-  
-  def remove_from_group(group)
-    group.users.delete(self)
-    self.groups.delete(group)
-    group.save
-    self.save
-  end
 
   def verify_password(password)
     # we use the SHA1 with a salt '.:RCS:.' to avoid rainbow tabling

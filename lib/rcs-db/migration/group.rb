@@ -13,6 +13,9 @@ class GroupMigration
     groups = DB.instance.mysql_query('SELECT * from `group` ORDER BY `group_id`;').to_a
     groups.each do |group|
 
+      # skip item if already migrated
+      next if ::Group.count(conditions: {_mid: group[:group_id]}) != 0
+
       trace :info, "Migrating group '#{group[:group]}'." if verbose
       print "." unless verbose
 
@@ -35,6 +38,10 @@ class GroupMigration
     associations.each do |a|
       group = Group.where({_mid: a[:group_id]}).first
       user = User.where({_mid: a[:user_id]}).first
+
+      # skip already migrated associations
+      next if group.user_ids.include? user[:_id]
+
       group.users << user
 
       trace :info, "Association user '#{user.name}' to group '#{group.name}'." if verbose

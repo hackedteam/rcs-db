@@ -13,12 +13,12 @@ class ActivityMigration
     activities = DB.instance.mysql_query('SELECT * from `activity` ORDER BY `activity_id`;').to_a
     activities.each do |a|
 
-      trace :info, "Migrating activity '#{a[:activity]}'." if verbose
-      print "." unless verbose
-      
       # skip item if already migrated
       next if Item.count(conditions: {_mid: a[:activity_id], _kind: 'activity'}) != 0
-      
+
+      trace :info, "Migrating activity '#{a[:activity]}'." if verbose
+      print "." unless verbose
+
       ma = ::Item.new
       ma[:_mid] = a[:activity_id]
       ma.name = a[:activity]
@@ -35,12 +35,16 @@ class ActivityMigration
   end
 
   def self.migrate_associations(verbose)
-     print "Associating activities to groups "
+    print "Associating activities to groups "
     
     associations = DB.instance.mysql_query('SELECT * from `activity_group` ORDER BY `activity_id`;').to_a
     associations.each do |a|
       activity = Item.where({_mid: a[:activity_id], _kind: 'activity'}).first
       group = Group.where({_mid: a[:group_id]}).first
+
+      # skip already migrated associations
+      next if group.item_ids.include? activity[:_id]
+
       group.items << activity
       
       trace :info, "Associating activity '#{activity.name}' to group '#{group.name}'." if verbose

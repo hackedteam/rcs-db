@@ -13,12 +13,12 @@ class TargetMigration
     targets = DB.instance.mysql_query('SELECT * from `target` ORDER BY `target_id`;').to_a
     targets.each do |target|
 
-      trace :info, "Migrating target '#{target[:target]}'." if verbose
-      print "." unless verbose
-      
       # skip item if already migrated
       next if Item.count(conditions: {_mid: target[:target_id], _kind: 'target'}) != 0
-      
+
+      trace :info, "Migrating target '#{target[:target]}'." if verbose
+      print "." unless verbose
+            
       mt = ::Item.new
       mt[:_mid] = target[:target_id]
       mt.name = target[:target]

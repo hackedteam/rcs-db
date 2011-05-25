@@ -24,8 +24,8 @@ class GridFS
   end
 
   def put(filename, content)
-    puts content.inspect
-    puts filename.inspect
+    #puts content.inspect
+    #puts filename.inspect
     begin
       return @grid.put(content, filename)
     rescue Exception => e

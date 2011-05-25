@@ -16,7 +16,7 @@ class Status
   field :cpu, type: Integer
   field :disk, type: Integer
   
-  store_in :status
+  store_in :statuses
 end
 
 #end # ::DB

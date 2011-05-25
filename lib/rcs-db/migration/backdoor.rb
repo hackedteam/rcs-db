@@ -14,15 +14,15 @@ class BackdoorMigration
     backdoors = DB.instance.mysql_query('SELECT * from `backdoor` ORDER BY `backdoor_id`;').to_a
     backdoors.each do |backdoor|
 
-      trace :info, "Migrating backdoor '#{backdoor[:backdoor]}'." if verbose
-      print "." unless verbose
-      
       # is this a backdoor or a factory?!?!
       kind = (backdoor[:class] == 0) ? 'backdoor' : 'factory'
       
       # skip item if already migrated
       next if Item.count(conditions: {_mid: backdoor[:backdoor_id], _kind: kind}) != 0
-      
+
+      trace :info, "Migrating backdoor '#{backdoor[:backdoor]}'." if verbose
+      print "." unless verbose
+            
       mb = ::Item.new
       mb[:_mid] = backdoor[:backdoor_id]
       mb.name = backdoor[:backdoor]
