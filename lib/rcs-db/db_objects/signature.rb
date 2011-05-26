@@ -6,10 +6,10 @@ require 'mongoid'
 class Signature
   include Mongoid::Document
 
-  field :name, type: String
+  field :scope, type: String
   field :value, type: String
 
-  validates_uniqueness_of :name
+  validates_uniqueness_of :scope
 
   store_in :signatures
 end

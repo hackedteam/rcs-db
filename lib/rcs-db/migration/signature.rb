@@ -14,13 +14,13 @@ class SignatureMigration
     signs.each do |sign|
 
       # skip item if already migrated
-      next if Signature.count(conditions: {name: sign[:scope]}) != 0
+      next if Signature.count(conditions: {scope: sign[:scope]}) != 0
 
       trace :info, "Migrating signature '#{sign[:scope]}'." if verbose
       print "." unless verbose
       
       ms = ::Signature.new
-      ms.name = sign[:scope]
+      ms.scope = sign[:scope]
       ms.value = sign[:sign]
       
       ms.save
