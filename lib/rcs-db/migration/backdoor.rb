@@ -53,7 +53,7 @@ class BackdoorMigration
       
       target = Item.where({_mid: backdoor[:target_id], _kind: 'target'}).first
       mb._path = target[:_path] + [ target[:_id] ]
-      
+
       mb.save
       
     end

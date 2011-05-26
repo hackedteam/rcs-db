@@ -16,9 +16,9 @@ class ConfigMigration
       backdoor = Item.where({_mid: config[:backdoor_id]}).any_in(_kind: ['backdoor', 'factory']).first
       
       # skip item if already migrated
-      #next if Collector.count(conditions: {_mid: config[:collector_id]}) != 0
+      next unless backdoor.configs.where({_mid: config[:config_id]}).first.nil?
 
-      #trace :info, "Migrating config '#{config[:collector]}'." if verbose
+      trace :info, "Migrating config  for '#{backdoor[:name]}'." if verbose
 
       mc = ::Configuration.new
       mc[:_mid] = config[:config_id]
@@ -43,6 +43,7 @@ class ConfigMigration
       end
 
       backdoor.save
+
     end
     
     puts " done."
