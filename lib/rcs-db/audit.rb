@@ -3,7 +3,7 @@
 #
 
 require 'rcs-common/trace'
-require 'rcs-db/db_objects/audit'
+require_relative 'db_objects/audit'
 
 module RCS
 module DB
@@ -23,7 +23,6 @@ class Audit
     #  :desc
     
     def log(params)
-      trace :debug, params
       params[:time] = Time.now.getutc.to_i
       audit = ::Audit.new params
       audit.save

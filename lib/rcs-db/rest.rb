@@ -3,10 +3,10 @@
 #
 
 # relatives
-require_relative 'sessions.rb'
-require_relative 'audit.rb'
-require_relative 'config.rb'
-require_relative 'audit.rb'
+require_relative 'sessions'
+require_relative 'audit'
+require_relative 'config'
+require_relative 'audit'
 
 # from RCS::Common
 require 'rcs-common/trace'

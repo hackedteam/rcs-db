@@ -3,15 +3,15 @@
 #
 
 # relatives
-require_relative 'events.rb'
-require_relative 'config.rb'
-require_relative 'license.rb'
+require_relative 'events'
+require_relative 'config'
+require_relative 'license'
 
 # from RCS::Common
 require 'rcs-common/trace'
 
 require 'mongoid'
-require 'rcs-db/db_objects/user'
+require_relative 'db_objects/user'
 
 module RCS
 module DB
@@ -53,7 +53,7 @@ class Application
       trace :fatal, e
       exit
     end
-
+    
     begin
       version = File.read(Dir.pwd + '/config/version.txt')
       trace :info, "Starting the RCS Database #{version}..."

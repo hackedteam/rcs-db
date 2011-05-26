@@ -3,10 +3,10 @@
 #
 
 # relatives
-require_relative 'heartbeat.rb'
-require_relative 'parser.rb'
-require_relative 'rest.rb'
-require_relative 'sessions.rb'
+require_relative 'heartbeat'
+require_relative 'parser'
+require_relative 'rest'
+require_relative 'sessions'
 
 # from RCS::Common
 require 'rcs-common/trace'
