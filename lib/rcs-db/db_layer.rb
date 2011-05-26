@@ -17,6 +17,11 @@ require 'rcs-common/trace'
 require 'mysql2'
 require 'mongo'
 
+# require all the DB objects
+Dir[File.dirname(__FILE__) + '/db_objects/*.rb'].each do |file|
+  require file
+end
+
 module RCS
 module DB
 
@@ -80,6 +85,30 @@ class DB
   Dir[File.dirname(__FILE__) + '/db_layer/*.rb'].each do |file|
     mod = File.basename(file, '.rb').capitalize
     include eval("DBLayer::#{mod}")
+  end
+
+  # MONGO
+  
+  @@classes_to_be_indexed = [::Audit, ::User]
+  
+  def connect
+    begin
+      Mongoid.load!(Dir.pwd + '/config/mongoid.yaml')
+      Mongoid.configure do |config|
+        config.master = Mongo::Connection.new.db('rcs')
+      end
+      trace :info, "Connected to MongoDB"
+    rescue Exception => e
+      trace :fatal, e
+      return false
+    end
+    return true
+  end
+  
+  def create_indexes
+    @@classes_to_be_indexed.each do |k|
+      k.create_indexes
+    end
   end
 
 end

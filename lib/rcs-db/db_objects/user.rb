@@ -21,7 +21,9 @@ class User
   
   has_and_belongs_to_many :groups, :dependent => :nullify, :autosave => true#, :class_name => "RCS::DB::Group", :foreign_key => "rcs/db/group_ids"
   has_many :alerts
-
+  
+  index :name
+  
   store_in :users
 
   def verify_password(password)

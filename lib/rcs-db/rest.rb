@@ -135,11 +135,6 @@ end
 end #DB::
 end #RCS::
 
-# require all the DB objects
-Dir[File.dirname(__FILE__) + '/db_objects/*.rb'].each do |file|
-  require file
-end
-
 # require all the controllers
 Dir[File.dirname(__FILE__) + '/rest/*.rb'].each do |file|
   require file

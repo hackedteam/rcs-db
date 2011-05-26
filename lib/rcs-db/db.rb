@@ -11,7 +11,6 @@ require_relative 'license'
 require 'rcs-common/trace'
 
 require 'mongoid'
-require_relative 'db_objects/user'
 
 module RCS
 module DB
@@ -42,18 +41,7 @@ class Application
       puts e
       exit
     end
-    
-    # connect to MongoDB
-    begin
-      Mongoid.load!(Dir.pwd + '/config/mongoid.yaml')
-      Mongoid.configure do |config|
-        config.master = Mongo::Connection.new.db('rcs')
-      end
-    rescue Exception => e
-      trace :fatal, e
-      exit
-    end
-    
+
     begin
       version = File.read(Dir.pwd + '/config/version.txt')
       trace :info, "Starting the RCS Database #{version}..."
@@ -63,6 +51,14 @@ class Application
 
       # config file parsing
       return 1 unless Config.instance.load_from_file
+      
+      # connect to MongoDB
+      until DB.instance.connect
+        sleep 5
+      end
+      
+      # ensure all indexes are in place
+      DB.instance.create_indexes
 
       # enter the main loop (hopefully will never exit from it)
       Events.new.setup Config.instance.global['LISTENING_PORT']
