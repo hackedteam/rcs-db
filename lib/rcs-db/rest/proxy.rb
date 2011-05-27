@@ -35,6 +35,9 @@ class ProxyController < RESTController
     require_auth_level :server
     
     #TODO: implement config retrieval
+    #TODO: mark as configured...
+
+    return STATUS_NOT_FOUND
   end
 
   def log
