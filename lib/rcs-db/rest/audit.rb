@@ -22,25 +22,23 @@ class AuditController < RESTController
     if filter.has_key? 'from' and filter.has_key? 'to'
       filter_hash[:time.gte] = filter.delete('from')
       filter_hash[:time.lte] = filter.delete('to')
-      trace :debug, "Filtering date from #{filter['from']} to #{filter['to']}."
+      #trace :debug, "Filtering date from #{filter['from']} to #{filter['to']}."
     end
     
     # desc filters must be handled as a regexp
     if filter.has_key? 'desc'
-      trace :debug, "Filtering description by keywork '#{filter['desc']}'."
+      #trace :debug, "Filtering description by keywork '#{filter['desc']}'."
       filter_hash[:desc] = Regexp.new(filter.delete('desc'), true)
     end
     
     # copy remaining filtering criteria (if any)
     filter_hash.merge!(filter)
 
-    trace :debug, filter_hash
-
     # paging
     if params.has_key? 'startIndex' and params.has_key? 'numItems'
       start_index = params['startIndex'].first.to_i
       num_items = params['numItems'].first.to_i
-      trace :debug, "Querying with filter #{filter_hash}."
+      #trace :debug, "Querying with filter #{filter_hash}."
       query = ::Audit.where(filter_hash).order_by([[:time, :asc]]).skip(start_index).limit(num_items)
     else
       # without paging, return everything
@@ -63,27 +61,25 @@ class AuditController < RESTController
     if filter.has_key? 'from' and filter.has_key? 'to'
       filter_hash[:time.gte] = filter.delete('from')
       filter_hash[:time.lte] = filter.delete('to')
-      trace :debug, "Filtering date from #{filter['from']} to #{filter['to']}."
+      #trace :debug, "Filtering date from #{filter['from']} to #{filter['to']}."
     end
 
     # desc filters must be handled as a regexp
     if filter.has_key? 'desc'
-      trace :debug, "Filtering description by keywork '#{filter['desc']}'."
+      #trace :debug, "Filtering description by keywork '#{filter['desc']}'."
       filter_hash[:desc] = Regexp.new(filter.delete('desc'), true)
     end
     
     # copy remaining filtering criteria (if any)
     filter_hash.merge!(filter)
 
-    trace :debug, filter_hash
-
     unless filter_hash.empty?
       num_audits = ::Audit.count(conditions: filter_hash)
-      trace :debug, "number of filtered '#{filter}' audits: #{num_audits}"
+      #trace :debug, "number of filtered '#{filter}' audits: #{num_audits}"
     else
       # without filtering, return grand total
       num_audits = ::Audit.count
-      trace :debug, "number of total audits: #{num_audits}"
+      #trace :debug, "number of total audits: #{num_audits}"
     end
     
     # FIXME: Flex RPC does not accept 0 (zero) as return value for a pagination (-1 is a safe alternative)
