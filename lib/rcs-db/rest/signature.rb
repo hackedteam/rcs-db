@@ -12,13 +12,12 @@ class SignatureController < RESTController
   def show
     require_auth_level :server
 
-    sig = DB.instance.signature params['signature']
-    
-    trace :info, "[#{@req_peer}] Requested the '#{params['signature']}' signature [#{sig[:sign]}]"
+    sig = ::Signature.where({scope: params['signature']}).first
+
+    trace :info, "[#{@req_peer}] Requested the '#{params['signature']}' signature [#{sig[:value]}]"
 
     return STATUS_OK, *json_reply(sig)
   end
-
 
 end
 
