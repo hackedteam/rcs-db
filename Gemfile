@@ -20,6 +20,7 @@ gem 'mongoid'
 gem 'bson'
 gem 'bson_ext'
 gem 'mysql2'
+gem 'xml-simple'
 
 # UUID generation
 gem 'guid'

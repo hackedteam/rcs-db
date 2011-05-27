@@ -26,7 +26,7 @@ class GridFS
   def put(filename, content)
     #puts content.inspect
     #puts filename.inspect
-    puts "gridding #{filename} [#{content.bytesize} bytes]"
+    #puts "gridding #{filename} [#{content.bytesize} bytes]"
     begin
       return @grid.put(content, filename)
     rescue Exception => e

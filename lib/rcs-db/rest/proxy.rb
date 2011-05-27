@@ -10,30 +10,42 @@ class ProxyController < RESTController
   def index
     require_auth_level :server, :tech
 
-    list = DB.instance.proxies
-    
-    return STATUS_OK, *json_reply(list)
+    mongoid_query do
+      result = ::Proxy.all
+
+      return STATUS_OK, *json_reply(result)
+    end
   end
 
   def version
     require_auth_level :server
 
-    DB.instance.proxy_set_version(params['proxy_id'], params['version'])
+    mongoid_query do
+      proxy = Proxy.find(params['_id'])
+      params.delete('_id')
+      return STATUS_NOT_FOUND if proxy.nil?
 
-    return STATUS_OK
+      proxy.update_attributes(params)
+
+      return STATUS_OK
+    end
   end
 
   def config
     require_auth_level :server
     
     #TODO: implement config retrieval
+    #TODO: mark as configured...
+
+    return STATUS_NOT_FOUND
   end
 
   def log
     require_auth_level :server
 
     time = Time.parse(params['time'])
-    DB.instance.proxy_add_log(params['proxy_id'], time, params['type'], params['desc'])
+
+    #TODO: insert in capped collections
 
     return STATUS_OK
   end

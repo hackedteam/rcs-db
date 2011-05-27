@@ -10,30 +10,42 @@ class CollectorController < RESTController
   def index
     require_auth_level :server, :tech
 
-    list = DB.instance.collectors
-    
-    return STATUS_OK, *json_reply(list)
+    mongoid_query do
+      result = ::Collector.all
+
+      return STATUS_OK, *json_reply(result)
+    end
   end
 
   def version
     require_auth_level :server
 
-    DB.instance.collector_set_version(params['collector_id'], params['version'])
+    mongoid_query do
+      collector = Collector.find(params['_id'])
+      params.delete('_id')
+      return STATUS_NOT_FOUND if collector.nil?
 
-    return STATUS_OK
+      collector.update_attributes(params)
+
+      return STATUS_OK
+    end
   end
 
   def config
     require_auth_level :server
     
     #TODO: implement config retrieval
+    #TODO: mark as configured...
+
+    return STATUS_NOT_FOUND
   end
 
   def log
     require_auth_level :server
 
     time = Time.parse(params['time'])
-    DB.instance.collector_add_log(params['collector_id'], time, params['type'], params['desc'])
+
+    #TODO: insert in capped collections
 
     return STATUS_OK
   end

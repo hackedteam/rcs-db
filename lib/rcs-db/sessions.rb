@@ -31,6 +31,7 @@ class SessionManager
     @sessions[cookie] = {:user => user,
                          :level => level,
                          :cookie => cookie,
+    # TODO: get the real address of the user
                          :address => '1.2.3.4',
                          :time => Time.now.getutc.to_i}
 

