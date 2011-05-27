@@ -13,7 +13,7 @@ class GridFS
   def initialize
     connect
   end
-
+  
   def connect
     begin
       @db = Mongo::Connection.new.db('rcs')
@@ -22,10 +22,11 @@ class GridFS
       trace :fatal, "Cannot connect to MongoDB: " + e.message
     end
   end
-
+  
   def put(filename, content)
     #puts content.inspect
     #puts filename.inspect
+    puts "gridding #{filename} [#{content.bytesize} bytes]"
     begin
       return @grid.put(content, filename)
     rescue Exception => e

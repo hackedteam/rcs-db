@@ -3,8 +3,8 @@
 #
 
 # relatives
-require_relative 'db_layer.rb'
-require_relative 'license.rb'
+require_relative 'db_layer'
+require_relative 'license'
 
 # from RCS::Common
 require 'rcs-common/trace'

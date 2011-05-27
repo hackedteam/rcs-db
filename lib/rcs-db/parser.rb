@@ -3,7 +3,7 @@
 #
 
 # relatives
-require_relative 'rest.rb'
+require_relative 'rest'
 
 # from RCS::Common
 require 'rcs-common/trace'

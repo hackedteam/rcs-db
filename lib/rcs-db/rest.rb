@@ -3,10 +3,10 @@
 #
 
 # relatives
-require_relative 'sessions.rb'
-require_relative 'audit.rb'
-require_relative 'config.rb'
-require_relative 'audit.rb'
+require_relative 'sessions'
+require_relative 'audit'
+require_relative 'config'
+require_relative 'audit'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -134,11 +134,6 @@ end
 
 end #DB::
 end #RCS::
-
-# require all the DB objects
-Dir[File.dirname(__FILE__) + '/db_objects/*.rb'].each do |file|
-  require file
-end
 
 # require all the controllers
 Dir[File.dirname(__FILE__) + '/rest/*.rb'].each do |file|

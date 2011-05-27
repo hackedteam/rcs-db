@@ -2,7 +2,7 @@
 #  Session Manager, manages all the cookies
 #
 
-require 'rcs-db/audit'
+require_relative 'audit'
 
 # from RCS::Common
 require 'rcs-common/trace'

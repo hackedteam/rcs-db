@@ -17,7 +17,14 @@ class Audit
   field :info, type: String
   
   index :time
-
+  index :actor
+  index :action
+  index :user
+  index :group
+  index :activity
+  index :target
+  index :backdoor
+  
   store_in :audit
 end
 
