@@ -9,8 +9,8 @@ http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
 # login
 account = {
-  :user => 'admin', 
-  :pass => 'adminp123'
+  :user => 'daniele', 
+  :pass => 'danielep123'
   }
 resp = http.request_post('/auth/login', account.to_json, nil)
 puts resp.body
@@ -173,7 +173,7 @@ puts
 end
 
 # audit
-if true
+if false
   # audit.count
    res = http.request_get('/audit/count', {'Cookie' => cookie})
    puts "audit.count"
@@ -240,6 +240,42 @@ if false
 
   
 end
+
+# task
+if true
+
+res = http.request_get('/task', {'Cookie' => cookie})
+puts "task.index"
+puts res
+puts
+
+task_params = {'type' => 'blotter', 'activity' => 'testActivity1'}
+res = http.request_post('/task/create', task_params.to_json, {'Cookie' => cookie})
+puts "task.create"
+task = JSON.parse(res.body)
+puts "Created task #{task['_id']}"
+puts
+
+res = http.request_get('/task', {'Cookie' => cookie})
+puts "task.index"
+puts res
+puts
+
+res = http.request_get("/task/#{task['_id']}", {'Cookie' => cookie})
+puts "task.show"
+puts res
+puts
+
+=begin
+sleep 3
+
+res = http.delete("/task/#{task['id']}", {'Cookie' => cookie})
+puts "task.delete"
+puts res
+puts
+=end
+
+end # task
 
 # logout
 res = http.request_post('/auth/logout', nil, {'Cookie' => cookie})

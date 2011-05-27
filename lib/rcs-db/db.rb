@@ -6,6 +6,7 @@
 require_relative 'events'
 require_relative 'config'
 require_relative 'license'
+require_relative 'tasks'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -20,6 +21,9 @@ class Application
 
   # the main of the collector
   def run(options)
+
+    # initialize random number generator
+    srand(Time.now.to_i)
 
     # if we can't find the trace config file, default to the system one
     if File.exist? 'trace.yaml' then

@@ -14,7 +14,7 @@ rescue Exception => e
   exit
 end
 
-if false
+if true
   n_inserts = 100_000
 end_time = Time.now.getutc
 months = 12
