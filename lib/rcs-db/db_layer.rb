@@ -55,13 +55,13 @@ class DB
     end
   end
   
-  def mysql_query(query)
+  def mysql_query(query, opts={:symbolize_keys => true})
     begin
       @semaphore.synchronize do
         # try to reconnect if not connected
         mysql_connect('root', 'rootp123', Config.instance.global['DB_ADDRESS']) if not @available
         # execute the query
-        @mysql.query(query, {:symbolize_keys => true})
+        @mysql.query(query, opts)
       end
     rescue Mysql2::Error => e
       trace :error, "#{e.message}. Retrying ..."
