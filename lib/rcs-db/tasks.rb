@@ -1,5 +1,5 @@
 
-require 'guid'
+require 'uuidtools'
 require 'rcs-common/trace'
 
 module RCS
@@ -11,7 +11,7 @@ class Task
   attr_reader :_id, :total, :current, :grid_id
   
   def initialize
-    @_id = Guid.new.to_s
+    @_id = UUIDTools::UUID.random_create.to_s
     @type = 'generic'
     @current = 0
     @total = 0

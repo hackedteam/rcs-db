@@ -22,9 +22,6 @@ gem 'bson_ext'
 gem 'mysql2'
 gem 'xml-simple'
 
-# UUID generation
-gem 'guid'
-
 # MIME decoding
 gem 'mail'
 
