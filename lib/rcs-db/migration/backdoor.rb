@@ -32,7 +32,7 @@ class BackdoorMigration
       
       mb.build = backdoor[:build]
       
-      mb.instance = backdoor[:instance] if kind == 'backdoor'
+      mb.instance = backdoor[:instance].downcase if kind == 'backdoor'
       mb.version = backdoor[:version] if kind == 'backdoor'
       
       mb.logkey = backdoor[:logkey]

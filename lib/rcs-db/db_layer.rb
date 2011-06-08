@@ -2,11 +2,6 @@
 # Layer for accessing the real DB
 #
 
-# include all the mix-ins
-Dir[File.dirname(__FILE__) + '/db_layer/*.rb'].each do |file|
-  require file
-end
-
 require_relative 'status.rb'
 require_relative 'audit.rb'
 require_relative 'config'
@@ -33,7 +28,6 @@ class DB
   def initialize
     @available = false
     @semaphore = Mutex.new
-    mysql_connect 'root', 'rootp123', Config.instance.global['DB_ADDRESS']
   end
   
   def mysql_connect(user, pass, host)
@@ -80,12 +74,6 @@ class DB
     strings.each do |s|
       s.replace @mysql.escape(s) if s.class == String
     end
-  end
-
-  # in the mix-ins there are all the methods for the respective section
-  Dir[File.dirname(__FILE__) + '/db_layer/*.rb'].each do |file|
-    mod = File.basename(file, '.rb').capitalize
-    include eval("DBLayer::#{mod}")
   end
 
   include DBLayer::Status
