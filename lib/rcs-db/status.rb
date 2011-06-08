@@ -5,6 +5,8 @@
 module DBLayer
 module Status
 
+  OK = '0'
+  WARN = '1'
   ERROR = '2'
 
   # updates or insert the status of a component
@@ -21,11 +23,11 @@ module Status
     monitor[:time] = Time.now.getutc.to_i
     case(status)
       when 'OK'
-        monitor[:status] = '0'
+        monitor[:status] = OK
       when 'WARN'
-        monitor[:status] = '1'
+        monitor[:status] = WARN
       when 'ERROR'
-        monitor[:status] = '2'
+        monitor[:status] = ERROR
     end
 
     monitor.save
@@ -42,6 +44,14 @@ module Status
         trace :warn, "Component #{m[:name]} is not responding, marking failed..."
         m.save
       end
+
+      # check disk and CPU usage
+      if m[:status] == OK and (m[:disk] <= 15 or m[:cpu] >= 85 or m[:pcpu] >= 85) then
+        m[:status] = WARN
+        trace :warn, "Component #{m[:name]} has low resources, raising a warning..."
+        m.save
+      end
+      
     end
 
   end

@@ -7,6 +7,7 @@ Dir[File.dirname(__FILE__) + '/db_layer/*.rb'].each do |file|
   require file
 end
 
+require_relative 'status.rb'
 require_relative 'audit.rb'
 require_relative 'config'
 
@@ -87,8 +88,11 @@ class DB
     include eval("DBLayer::#{mod}")
   end
 
-  # MONGO
+  include DBLayer::Status
   
+  # MONGO
+
+  #TODO: index more classes...
   @@classes_to_be_indexed = [::Audit, ::User]
   
   def connect

