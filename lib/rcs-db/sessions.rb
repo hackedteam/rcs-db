@@ -21,7 +21,7 @@ class SessionManager
     @sessions = {}
   end
 
-  def create(user, level)
+  def create(user, level, address)
 
     # create a new random cookie
     #cookie = SecureRandom.random_bytes(8).unpack('H*').first
@@ -31,8 +31,7 @@ class SessionManager
     @sessions[cookie] = {:user => user,
                          :level => level,
                          :cookie => cookie,
-    # TODO: get the real address of the user
-                         :address => '1.2.3.4',
+                         :address => address,
                          :time => Time.now.getutc.to_i}
 
     return @sessions[cookie]

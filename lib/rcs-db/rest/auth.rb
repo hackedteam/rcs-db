@@ -27,7 +27,7 @@ class AuthController < RESTController
         # the unique username will be used to create an entry for it in the network schema
         if auth_server(@params['user'], @params['pass'])
           # create the new auth sessions
-          sess = SessionManager.instance.create({:name => @params['user']}, @auth_level)
+          sess = SessionManager.instance.create({:name => @params['user']}, @auth_level, @req_peer)
           # append the cookie to the other that may have been present in the request
           return STATUS_OK, *json_reply(sess), 'session=' + sess[:cookie] + '; path=/;'
         end
@@ -45,7 +45,7 @@ class AuthController < RESTController
           Audit.log :actor => @params['user'], :action => 'login', :user => @params['user'], :desc => "User '#{@params['user']}' logged in"
 
           # create the new auth sessions
-          sess = SessionManager.instance.create(@user, @auth_level)
+          sess = SessionManager.instance.create(@user, @auth_level, @req_peer)
           # append the cookie to the other that may have been present in the request
           expiry = (Time.now() + 86400).strftime('%A, %d-%b-%y %H:%M:%S %Z')
           trace :debug, "Issued cookie with expiry time: #{expiry}"
