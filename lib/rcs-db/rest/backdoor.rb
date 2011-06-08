@@ -42,6 +42,7 @@ class BackdoorController < RESTController
     status ||= {}
     
     #TODO: all the backdoor.identify stuff...
+    status = {:deleted => 0, :status => 'OPEN', :backdoor_id => 2}
     # if the backdoor does not exist, 
 
     return STATUS_OK, *json_reply(status)

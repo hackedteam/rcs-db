@@ -60,7 +60,7 @@ class EvidenceController < RESTController
 
     # create a phony session
     session = params.symbolize
-
+puts session.inspect
     # retrieve the key from the db
     key = DB.instance.backdoor_evidence_key(session[:bid])
     
