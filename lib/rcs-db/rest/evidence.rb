@@ -71,8 +71,12 @@ class EvidenceController < RESTController
     # store the status
     EvidenceManager.instance.sync_start session, params['version'], params['user'], params['device'], params['source'], time.to_i, key
 
-    # update db with sync status
-    #DB.instance.backdoor_sync_start session[:bid], time, params['user'], params['device'], params['source']
+    # update the stats
+    backdoor.stat.last_sync = time
+    backdoor.stat.source = params['source']
+    backdoor.stat.user = params['user']
+    backdoor.stat.device = params['device']
+    backdoor.save
     
     return STATUS_OK
   end
