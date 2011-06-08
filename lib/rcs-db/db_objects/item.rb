@@ -35,6 +35,8 @@ class Item
   embeds_many :upgrade_requests, class_name: "UpgradeRequest"
   embeds_many :upload_requests, class_name: "UploadRequest"
 
+  embeds_one :stat
+
   embeds_many :configs, class_name: "Configuration"
 
   store_in :items
@@ -84,5 +86,14 @@ class UploadRequest
 end
 
 class Stat
+  include Mongoid::Document
 
+  field :source, type: String
+  field :user, type: String
+  field :device, type: String
+  field :last_sync, type: Integer
+  field :size, type: Integer
+  field :evidence, type: Hash
+
+  embedded_in :item
 end
