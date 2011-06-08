@@ -27,7 +27,7 @@ class InstanceProcessor
     @seconds_sleeping = 0
     
     # get info about the backdoor instance from evidence db
-    @info = RCS::EvidenceManager.instance_info @id
+    @info = RCS::EvidenceManager.instance.instance_info @id
     raise "Instance \'#{@id}\' cannot be found." if @info.nil?
     
     trace :info, "Created processor for backdoor #{@info['build']}:#{@info['instance']}"
@@ -42,7 +42,7 @@ class InstanceProcessor
   
   def resume
     @state = :running
-    RCS::EvidenceManager.sync_status({:instance => @info['instance']}, RCS::EvidenceManager::SYNC_PROCESSING)
+    RCS::EvidenceManager.instance.sync_status({:instance => @info['instance']}, RCS::EvidenceManager::SYNC_PROCESSING)
     @seconds_sleeping = 0
   end
   
@@ -54,7 +54,7 @@ class InstanceProcessor
   
   def put_to_sleep
     @state = :stopped
-    RCS::EvidenceManager.sync_status({:instance => @info['instance']}, RCS::EvidenceManager::SYNC_IDLE)
+    RCS::EvidenceManager.instance.sync_status({:instance => @info['instance']}, RCS::EvidenceManager::SYNC_IDLE)
     trace :debug, "processor #{@id} is sleeping too much, let's stop!"
   end
   
@@ -82,7 +82,7 @@ class InstanceProcessor
             start_time = Time.now
 
             # get binary evidence
-            data = RCS::EvidenceManager.get_evidence(evidence_id, @id)
+            data = RCS::EvidenceManager.instance.get_evidence(evidence_id, @id)
             raise "Empty evidence" if data.nil?
             
             # deserialize binary evidence
@@ -99,7 +99,7 @@ class InstanceProcessor
               
               # delete empty evidences
               if evidence.empty?
-                RCS::EvidenceManager.del_evidence(evidence.info[:db_id], @id)
+                RCS::EvidenceManager.instance.del_evidence(evidence.info[:db_id], @id)
                 trace :debug, "deleted empty evidence for backdoor #{@id}"
                 next
               end
@@ -114,7 +114,7 @@ class InstanceProcessor
 
               info = nil
               while info.nil? do
-                info = RCS::EvidenceManager.instance_info(@id)
+                info = RCS::EvidenceManager.instance.instance_info(@id)
               end
 
               evidence.info[:backdoor_id] = info["bid"] unless info.nil?
@@ -129,7 +129,7 @@ class InstanceProcessor
                     begin
                       # TODO: gestire tutti i casi di inserimento fallito verso il DB
                       RCS::DB::DB.instance.evidence_store(evidence)
-                      RCS::EvidenceManager.del_evidence(evidence.info[:db_id], @id)
+                      RCS::EvidenceManager.instance.del_evidence(evidence.info[:db_id], @id)
                       done = true
                     rescue Exception => e
                       trace :debug, "[#{@id}] UNRECOVERABLE MYSQL ERROR [#{e.message}, #{e.class}]"

@@ -107,10 +107,10 @@ class Worker
   attr_reader :type, :audio_processor
   
   def resume
-    instances = EvidenceManager.instances
+    instances = EvidenceManager.instance.instances
     instances.each do |instance|
       trace :info, "Resuming remaining evidences for #{instance}"
-      ids = EvidenceManager.evidence_ids instance
+      ids = EvidenceManager.instance.evidence_ids instance
       ids.each {|id| QueueManager.instance.queue(instance, id)}
     end
   end

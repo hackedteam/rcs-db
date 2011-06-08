@@ -17,7 +17,6 @@ require 'benchmark'
 require 'eventmachine'
 require 'evma_httpserver'
 require 'socket'
-require 'em-proxy'
 require 'net/http'
 
 module RCS
@@ -136,37 +135,11 @@ end #HTTPHandler
 
 class Events
   include RCS::Tracer
-
-  def start_proxy(local_port, server, server_port)
-    Thread.new do
-      trace :info, "Forwarding port #{local_port} to #{server}:#{server_port}..."
-      
-      Proxy.start(:host => "0.0.0.0", :port => local_port, :debug => false) do |conn|
-        conn.server :srv, :host => server, :port => server_port
-
-        conn.on_data do |data|
-          data
-        end
-
-        conn.on_response do |backend, resp|
-          resp
-        end
-
-        conn.on_finish do |backend, name|
-          unbind if backend == :srv
-        end
-      end
-    end
-  end
   
   def setup(port = 4444)
 
     # main EventMachine loop
     begin
-
-      #start the proxy for the XML-RPC calls
-      #TODO: remove this...
-      start_proxy(port - 1, Config.instance.global['DB_ADDRESS'], port - 1) if not File.exists?('C:/RCSDB/etc/RCSDB.ini')
 
       # all the events are handled here
       EM::run do
