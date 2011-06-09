@@ -7,6 +7,14 @@
   :total: .Inf
   :desktop: .Inf
   :mobile: .Inf
+  :windows: true
+  :osx: true
+  :linux: true
+  :android: true
+  :blackberry: true
+  :ios: true
+  :symbian: true
+  :winmo: true
 :alerting: true
 :correlation: false
 :rmi: true

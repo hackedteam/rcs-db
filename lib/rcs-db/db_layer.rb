@@ -82,6 +82,7 @@ class DB
   
   def connect
     begin
+      #TODO: username & password
       Mongoid.load!(Dir.pwd + '/config/mongoid.yaml')
       Mongoid.configure do |config|
         config.master = Mongo::Connection.new.db('rcs')
