@@ -10,7 +10,7 @@ require_relative 'sessions'
 
 # from RCS::Common
 require 'rcs-common/trace'
-require 'rcs-common/status'
+require 'rcs-common/systemstatus'
 
 # system
 require 'benchmark'
@@ -150,7 +150,7 @@ class Events
         EM.threadpool_size = 50
 
         # we are alive and ready to party
-        Status.my_status = Status::OK
+        SystemStatus.my_status = SystemStatus::OK
 
         # start the HTTP REST server
         EM::start_server("0.0.0.0", port, HTTPHandler)

@@ -2,7 +2,6 @@
 # Layer for accessing the real DB
 #
 
-require_relative 'status.rb'
 require_relative 'audit.rb'
 require_relative 'config'
 
@@ -75,8 +74,6 @@ class DB
       s.replace @mysql.escape(s) if s.class == String
     end
   end
-
-  include DBLayer::Status
   
   # MONGO
 
