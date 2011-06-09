@@ -38,7 +38,7 @@ class ParserTest < Test::Unit::TestCase
 
   def setup
     # create a fake authenticated user and session
-    @session = SessionManager.instance.create({:name => 'test-server'}, [:server])
+    @session = SessionManager.instance.create({:name => 'test-server'}, [:server], '127.0.0.1')
     @cookie = "session=#{@session[:cookie]}"
     @controller = EvidenceController.new
     @rest = Classy.new
@@ -74,26 +74,26 @@ class ParserTest < Test::Unit::TestCase
                :source => 'test-source',
                :sync_time => Time.now.to_i
               }
-    status, *dummy = @rest.http_parse(@http_headers, 'POST', '/evidence/start', @cookie, content.to_json)
+    status, *dummy = @rest.http_parse(@http_headers, 'POST', '/evidence/start', @cookie, content.to_json, nil)
     assert_equal 200, status
   end
 
   def test_create
     binary = SecureRandom.random_bytes(1024)
-    status, content, *dummy = @rest.http_parse(@http_headers, 'POST', "/evidence/#{@instance}", @cookie, binary)
+    status, content, *dummy = @rest.http_parse(@http_headers, 'POST', "/evidence/#{@instance}", @cookie, binary, nil)
     assert_equal 200, status
     assert_equal binary.size, JSON.parse(content)['bytes']
   end
 
   def test_stop
     content = {:bid => 1, :instance => @instance}
-    status, *dummy = @rest.http_parse(@http_headers, 'POST', '/evidence/stop', @cookie, content.to_json)
+    status, *dummy = @rest.http_parse(@http_headers, 'POST', '/evidence/stop', @cookie, content.to_json, nil)
     assert_equal 200, status
   end
 
   def test_timeout
     content = {:bid => 1, :instance => @instance}
-    status, *dummy = @rest.http_parse(@http_headers, 'POST', '/evidence/timeout', @cookie, content.to_json)
+    status, *dummy = @rest.http_parse(@http_headers, 'POST', '/evidence/timeout', @cookie, content.to_json, nil)
     assert_equal 200, status
   end
 

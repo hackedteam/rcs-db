@@ -40,10 +40,10 @@ class ParserTest < Test::Unit::TestCase
   def test_login
     Config.instance.load_from_file
     account = {:user => "test-user", :pass => 'test-pass'}
-    status, content, content_type, cookie = @rest.http_parse(@http_headers, 'POST', '/auth/login', nil, account.to_json)
+    status, content, content_type, cookie = @rest.http_parse(@http_headers, 'POST', '/auth/login', nil, account.to_json, nil)
     assert_equal 200, status
     assert_false cookie.nil?
-    status, content, content_type = @rest.http_parse(@http_headers, 'GET', '/auth/login', cookie, nil)
+    status, content, content_type = @rest.http_parse(@http_headers, 'GET', '/auth/login', cookie, nil, nil)
     assert_equal 200, status
     assert_false content.nil?
 
@@ -56,21 +56,20 @@ class ParserTest < Test::Unit::TestCase
   def test_login_server
     Config.instance.load_from_file
     account = {:user => "test-server", :pass => File.read(Config.instance.file('SERVER_SIG')).chomp}
-    status, content, content_type, cookie = @rest.http_parse(@http_headers, 'POST', '/auth/login', nil, account.to_json)
+    status, content, content_type, cookie = @rest.http_parse(@http_headers, 'POST', '/auth/login', nil, account.to_json, nil)
     assert_equal 200, status
     assert_false cookie.nil?
-    status, content, content_type = @rest.http_parse(@http_headers, 'GET', '/auth/login', cookie, nil)
+    status, content, content_type = @rest.http_parse(@http_headers, 'GET', '/auth/login', cookie, nil, nil)
     assert_equal 200, status
     assert_false content.nil?
 
     response = JSON.parse(content)
-    assert_equal cookie, response['cookie']
-    assert_equal account[:user], response['user']
+    assert_equal account[:user], response['user']['name']
     assert_equal ['server'], response['level']
   end
 
   def test_logout_no_cookie
-    status, content, content_type, cookie = @rest.http_parse(@http_headers, 'POST', '/auth/logout', nil, nil)
+    status, content, content_type, cookie = @rest.http_parse(@http_headers, 'POST', '/auth/logout', nil, nil, nil)
     assert_equal 403, status
     assert_true cookie.nil?
   end
@@ -78,16 +77,16 @@ class ParserTest < Test::Unit::TestCase
   def test_logout_after_login
     Config.instance.load_from_file
     account = {:user => "test-user", :pass => 'test-pass'}
-    status, content, content_type, cookie = @rest.http_parse(@http_headers, 'POST', '/auth/login', nil, account.to_json)
+    status, content, content_type, cookie = @rest.http_parse(@http_headers, 'POST', '/auth/login', nil, account.to_json, nil)
     assert_equal 200, status
     assert_false cookie.nil?
-    status, content, content_type, cookie = @rest.http_parse(@http_headers, 'POST', '/auth/logout', cookie, nil)
+    status, content, content_type, cookie = @rest.http_parse(@http_headers, 'POST', '/auth/logout', cookie, nil, nil)
     assert_equal 200, status
     assert_true cookie.nil?
   end
 
   def test_fake
-    status, content, content_type, cookie = @rest.http_parse(@http_headers, 'GET', '/auth/fake', nil, nil)
+    status, content, content_type, cookie = @rest.http_parse(@http_headers, 'GET', '/auth/fake', nil, nil, nil)
     assert_equal 403, status
     assert_true cookie.nil?
   end
@@ -95,23 +94,23 @@ class ParserTest < Test::Unit::TestCase
   def test_no_double_login
     Config.instance.load_from_file
     account = {:user => "test-user", :pass => 'test-pass'}
-    status, content, content_type, cookie = @rest.http_parse(@http_headers, 'POST', '/auth/login', nil, account.to_json)
+    status, content, content_type, cookie = @rest.http_parse(@http_headers, 'POST', '/auth/login', nil, account.to_json, nil)
     assert_equal 200, status
     assert_false cookie.nil?
 
     # login again
     # the previous session should be destroyed and be invalidated
-    status, content, content_type, cookie_new = @rest.http_parse(@http_headers, 'POST', '/auth/login', nil, account.to_json)
+    status, content, content_type, cookie_new = @rest.http_parse(@http_headers, 'POST', '/auth/login', nil, account.to_json, nil)
     assert_equal 200, status
     assert_false cookie_new.nil?
 
     # this must fail since the old session is not valid anymore
-    status, content, content_type = @rest.http_parse(@http_headers, 'GET', '/auth/login', cookie, nil)
+    status, content, content_type = @rest.http_parse(@http_headers, 'GET', '/auth/login', cookie, nil, nil)
     assert_equal 403, status
     assert_true content.nil?
 
     # this is the new session and must be valid
-    status, content, content_type = @rest.http_parse(@http_headers, 'GET', '/auth/login', cookie_new, nil)
+    status, content, content_type = @rest.http_parse(@http_headers, 'GET', '/auth/login', cookie_new, nil, nil)
     assert_equal 200, status
     assert_false content.nil?
   end
@@ -119,23 +118,23 @@ class ParserTest < Test::Unit::TestCase
   def test_double_login_for_server
     Config.instance.load_from_file
     account = {:user => "test-server", :pass => File.read(Config.instance.file('SERVER_SIG')).chomp}
-    status, content, content_type, cookie = @rest.http_parse(@http_headers, 'POST', '/auth/login', nil, account.to_json)
+    status, content, content_type, cookie = @rest.http_parse(@http_headers, 'POST', '/auth/login', nil, account.to_json, nil)
     assert_equal 200, status
     assert_false cookie.nil?
 
     # login again
     # the previous session should be destroyed and be invalidated
-    status, content, content_type, cookie_new = @rest.http_parse(@http_headers, 'POST', '/auth/login', nil, account.to_json)
+    status, content, content_type, cookie_new = @rest.http_parse(@http_headers, 'POST', '/auth/login', nil, account.to_json, nil)
     assert_equal 200, status
     assert_false cookie_new.nil?
 
     # this must fail since the old session is not valid anymore
-    status, content, content_type = @rest.http_parse(@http_headers, 'GET', '/auth/login', cookie, nil)
+    status, content, content_type = @rest.http_parse(@http_headers, 'GET', '/auth/login', cookie, nil, nil)
     assert_equal 200, status
     assert_false content.nil?
 
     # this is the new session and must be valid
-    status, content, content_type = @rest.http_parse(@http_headers, 'GET', '/auth/login', cookie_new, nil)
+    status, content, content_type = @rest.http_parse(@http_headers, 'GET', '/auth/login', cookie_new, nil, nil)
     assert_equal 200, status
     assert_false content.nil?
   end

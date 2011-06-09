@@ -13,6 +13,8 @@ end
 class Audit
   def self.trace(a, b)
   end
+  def self.log(params)
+  end
 end
 
 class TestSessions < Test::Unit::TestCase
@@ -20,7 +22,7 @@ class TestSessions < Test::Unit::TestCase
   # Called before every test method runs. Can be used
   # to set up fixture information.
   def setup
-    @session = SessionManager.instance.create({:name => 'test-user'}, [:admin])
+    @session = SessionManager.instance.create({:name => 'test-user'}, [:admin], '127.0.0.1')
   end
 
   # Called after every test method runs. Can be used to tear
