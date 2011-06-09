@@ -30,7 +30,7 @@ class StatusController < RESTController
 
     # save the status to the db
     stats = {:disk => params['disk'], :cpu => params['cpu'], :pcpu => params['pcpu']}
-    DB.instance.status_update params['name'], params['address'], params['status'], params['info'], stats
+    ::Status.status_update params['name'], params['address'], params['status'], params['info'], stats
 
     return STATUS_OK
   end
