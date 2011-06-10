@@ -279,7 +279,7 @@ puts
 end # task
 
 # proxy
-if true
+if false
   # proxy.index
   res = http.request_get('/proxy', {'Cookie' => cookie})
   puts "proxy.index"
