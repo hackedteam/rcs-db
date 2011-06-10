@@ -124,9 +124,8 @@ class BackdoorMigration
       backdoor = Item.where({_mid: up[:backdoor_id], _kind: 'backdoor'}).first
       begin
         upload = backdoor.upload_requests.create!(filename: up[:filename])
-        upload[:_grid] = [ GridFS.instance.put(upload[:_id].to_s, up[:content]) ]
+        upload[:_grid] = [ GridFS.instance.put(up[:content]) ]
         upload.save
-        #puts GridFS.instance.get_by_filename(upload[:_id].to_s).inspect
       rescue Mongoid::Errors::Validations => e
         next
       end
@@ -137,7 +136,7 @@ class BackdoorMigration
     puts " done."
 
     # stats
-
+    
     print "Migrating stats "
 
     stats= DB.instance.mysql_query('SELECT * from `stat` ORDER BY `backdoor_id`;').to_a
