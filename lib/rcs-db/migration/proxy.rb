@@ -24,6 +24,7 @@ class ProxyMigration
       mp.name = proxy[:proxy]
       mp.desc = proxy[:desc]
       mp.address = proxy[:address]
+      mp.redirect = proxy[:redirect]
       mp.port = proxy[:port]
       mp.poll = proxy[:poll] == 0 ? false : true
       mp.configured = proxy[:status] == 0 ? true : false

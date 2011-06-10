@@ -20,5 +20,5 @@
 :rmi: true
 :ipa: 5
 :collectors: 
-  :collectors: 5
+  :collectors: 10
   :anonymizers: 5

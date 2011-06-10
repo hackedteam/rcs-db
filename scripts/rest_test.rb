@@ -1,6 +1,7 @@
 require 'net/http'
 require 'json'
 require 'benchmark'
+require 'pp'
 
 #http = Net::HTTP.new('192.168.1.189', 4444)
 http = Net::HTTP.new('localhost', 4444)
@@ -9,8 +10,8 @@ http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
 # login
 account = {
-  :user => 'daniele', 
-  :pass => 'danielep123'
+  :user => 'alor', 
+  :pass => 'demorcss'
   }
 resp = http.request_post('/auth/login', account.to_json, nil)
 puts resp.body
@@ -242,7 +243,7 @@ if false
 end
 
 # task
-if true
+if false
 
 res = http.request_get('/task', {'Cookie' => cookie})
 puts "task.index"
@@ -277,8 +278,83 @@ puts
 
 end # task
 
+# proxy
+if true
+  # proxy.index
+  res = http.request_get('/proxy', {'Cookie' => cookie})
+  puts "proxy.index"
+  
+  proxies = JSON.parse(res.body)
+  proxies.each do |proxy|
+    puts proxy
+    puts
+  end
+  
+  # proxy.delete
+  proxies.each do |proxy|
+    puts "collector.delete"
+    ret = http.delete("/proxy/#{proxy['_id']}", {'Cookie' => cookie})
+    puts ret
+  end
+  
+  # proxy.create
+  proxy = {name: 'test'}
+  res = http.request_post('/proxy', proxy.to_json, {'Cookie' => cookie})
+  puts "proxy.create"
+  puts res
+  puts
+  
+  test_proxy = JSON.parse(res.body)
+  
+  # proxy.update
+  proxy = {name: 'IPA', address: '1.2.3.4', redirect: '4.3.2.1', desc: 'test injection proxy', port: 4445, poll: true}
+  res = http.request_put("/proxy/#{test_proxy['_id']}", proxy.to_json, {'Cookie' => cookie}) 
+  puts "proxy.update "
+  puts res
+  puts
+  
+end
+
+# collector
+if false
+  # collector.index
+  res = http.request_get('/collector', {'Cookie' => cookie})
+  puts "collector.index"
+  
+  collectors = JSON.parse(res.body)
+  collectors.each do |coll|
+    puts coll
+    puts
+  end
+  
+  # collector.delete
+  collectors.each do |coll|
+    puts "collector.delete"
+    ret = http.delete("/collector/#{coll['_id']}", {'Cookie' => cookie})
+    puts ret
+  end
+  
+  # collector.create
+  coll = {name: 'test'}
+  res = http.request_post('/collector', coll.to_json, {'Cookie' => cookie})
+  puts "collector.create"
+  puts res
+  puts
+  
+  test_coll = JSON.parse(res.body)
+  
+  # collector.update
+  coll = {name: 'anonymizer', address: '1.2.3.4', desc: 'test collector', port: 4445, poll: true}
+  res = http.request_put("/collector/#{test_coll['_id']}", coll.to_json, {'Cookie' => cookie}) 
+  puts "collector.update "
+  puts res
+  puts
+  
+end
+
 # logout
 res = http.request_post('/auth/logout', nil, {'Cookie' => cookie})
+puts
 puts "auth.logout "
 puts res
 puts
