@@ -11,7 +11,7 @@ class Item
   field :_kind, type: String
   field :_path, type: Array
 
-  # activity
+  # operation
   field :contact, type: String
 
   # backdoor

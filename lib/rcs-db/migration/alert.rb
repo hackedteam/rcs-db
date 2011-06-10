@@ -26,12 +26,12 @@ class AlertMigration
       ma.suppression = alert[:suppression]
       ma.priority = alert[:tag]
 
-      activity = ::Item.where({_mid: alert[:activity_id], _kind: 'activity'}).first
+      operation = ::Item.where({_mid: alert[:activity_id], _kind: 'operation'}).first
       target = ::Item.where({_mid: alert[:target_id], _kind: 'target'}).first
       backdoor = ::Item.where({_mid: alert[:backdoor_id], _kind: 'backdoor'}).first
 
       ma.path = []
-      ma.path << activity[:_id] unless activity.nil?
+      ma.path << operation[:_id] unless operation.nil?
       ma.path << target[:_id] unless target.nil?
       ma.path << backdoor[:_id] unless backdoor.nil?
 
