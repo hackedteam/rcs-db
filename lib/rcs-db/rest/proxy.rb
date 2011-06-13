@@ -13,7 +13,7 @@ class ProxyController < RESTController
     mongoid_query do
       result = ::Proxy.all
 
-      return STATUS_OK, *json_reply(result)
+      return RESTController.ok(result)
     end
   end
 
@@ -23,11 +23,11 @@ class ProxyController < RESTController
     mongoid_query do
       proxy = Proxy.find(params['_id'])
       params.delete('_id')
-      return STATUS_NOT_FOUND if proxy.nil?
+      return RESTController.not_found if proxy.nil?
 
       proxy.update_attributes(params)
 
-      return STATUS_OK
+      return RESTController.ok
     end
   end
 
@@ -37,7 +37,7 @@ class ProxyController < RESTController
     #TODO: implement config retrieval
     #TODO: mark as configured...
 
-    return STATUS_NOT_FOUND
+    return RESTController.not_found
   end
 
   def log
@@ -47,7 +47,7 @@ class ProxyController < RESTController
 
     #TODO: insert in capped collections
 
-    return STATUS_OK
+    return RESTController.ok
   end
 
 end

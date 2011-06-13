@@ -11,8 +11,8 @@ class GridController < RESTController
     grid_id = @params['name']
     task = GridFS.instance.get grid_id
     
-    return STATUS_NOT_FOUND if task.nil?
-    return STATUS_OK, *json_reply(task)
+    return RESTController.not_found if task.nil?
+    return RESTController.ok(task)
   end
   
   def destroy
@@ -21,7 +21,7 @@ class GridController < RESTController
     grid_id = @params['name']
     task = GridFS.instance.get grid_id
     
-    return STATUS_OK
+    return RESTController.ok
   end
   
 end
