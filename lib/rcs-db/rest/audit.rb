@@ -32,17 +32,20 @@ class AuditController < RESTController
     end
     
     # copy remaining filtering criteria (if any)
-    filter_hash.merge!(filter)
-
+    filtering = ::Audit
+    filter.each_key do |k|
+      filtering = filtering.any_in(k.to_sym => filter[k])
+    end
+    
     # paging
     if params.has_key? 'startIndex' and params.has_key? 'numItems'
       start_index = params['startIndex'].first.to_i
       num_items = params['numItems'].first.to_i
       #trace :debug, "Querying with filter #{filter_hash}."
-      query = ::Audit.where(filter_hash).order_by([[:time, :asc]]).skip(start_index).limit(num_items)
+      query = filtering.where(filter_hash).order_by([[:time, :asc]]).skip(start_index).limit(num_items)
     else
       # without paging, return everything
-      query = ::Audit.where(filter_hash).order_by([[:time, :asc]])
+      query = filtering.where(filter_hash).order_by([[:time, :asc]])
     end
     
     return RESTController.ok(query)
@@ -63,7 +66,7 @@ class AuditController < RESTController
       filter_hash[:time.lte] = filter.delete('to')
       #trace :debug, "Filtering date from #{filter['from']} to #{filter['to']}."
     end
-
+    
     # desc filters must be handled as a regexp
     if filter.has_key? 'desc'
       #trace :debug, "Filtering description by keywork '#{filter['desc']}'."
@@ -71,16 +74,14 @@ class AuditController < RESTController
     end
     
     # copy remaining filtering criteria (if any)
-    filter_hash.merge!(filter)
-
-    unless filter_hash.empty?
-      num_audits = ::Audit.count(conditions: filter_hash)
-      #trace :debug, "number of filtered '#{filter}' audits: #{num_audits}"
-    else
-      # without filtering, return grand total
-      num_audits = ::Audit.count
-      #trace :debug, "number of total audits: #{num_audits}"
+    filtering = ::Audit
+    filter.each_key do |k|
+      filtering += filtering.any_in(k: filter[k])
     end
+    
+    num_audits = filtering.where(filter_hash).count
+
+    trace :debug, "number of filtered audits: " + num_audits
     
     # FIXME: Flex RPC does not accept 0 (zero) as return value for a pagination (-1 is a safe alternative)
     num_audits = -1 if num_audits == 0
