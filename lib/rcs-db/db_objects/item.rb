@@ -40,6 +40,40 @@ class Item
   embeds_many :configs, class_name: "Configuration"
 
   store_in :items
+
+  after_create :create_callback
+  after_destroy :destroy_callback
+
+  protected
+  def create_callback
+    case self._kind
+      when 'operation'
+      when 'target'
+        # create the collection for the evidence of this target
+        db = Mongoid.database
+        db.create_collection("evidence." + self._id.to_s)
+      when 'backdoor'
+    end
+  end
+
+  def destroy_callback
+    case self._kind
+      when 'operation'
+        # destroy all the targets of this operation
+        Item.where({_kind: 'target', _path: [ self._id ]}).each do |targ|
+          targ.destroy
+        end
+      when 'target'
+        db = Mongoid.database
+        db.drop_collection("evidence." + self._id.to_s)
+        # destroy all the backdoors of this target
+        Item.where({_kind: 'backdoor'}).also_in({_path: [ self._id ]}).each do |bck|
+          bck.destroy
+        end
+      when 'backdoor'
+        #TODO: destroy all the evidences
+    end
+  end
 end
 
 class FilesystemRequest
@@ -67,7 +101,7 @@ class UpgradeRequest
   include Mongoid::Document
   
   field :filename, type: String
-  field :_grid, type: String
+  field :_grid, type: Array
 
   validates_uniqueness_of :filename
 
@@ -78,7 +112,7 @@ class UploadRequest
   include Mongoid::Document
   
   field :filename, type: String
-  field :_grid, type: String
+  field :_grid, type: Array
   
   validates_uniqueness_of :filename
   
