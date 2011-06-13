@@ -51,15 +51,16 @@ class LogMigration
       log_ids = DB.instance.mysql_query("SELECT log_id FROM `log` WHERE backdoor_id = #{bck[:_mid]} ORDER BY `log_id`;")
       
       current = 0
-      print "         #{current} / #{count}\r"
+      print "         #{current} of #{count} | 0 %\r"
 
       prev_time = Time.now.to_i
       prev_current = 0
       processed = 0
+      percentage = 0
       
       log_ids.each do |log_id|
         current = current + 1
-        log = DB.instance.mysql_query("SELECT * FROM `log` WHERE log_id = #{log_id[:log_id]};")
+        log = DB.instance.mysql_query("SELECT log_id, remotehost FROM `log` WHERE log_id = #{log_id[:log_id]};")
 
         # calculate how many logs processed in one second
         time = Time.now.to_i
@@ -67,15 +68,17 @@ class LogMigration
           processed = current - prev_current
           prev_time = time
           prev_current = current
+          percentage = current.to_f / count * 100 if count != 0
         end
 
         #TODO: insert the evidence
 
         # report the status
-        print "         #{current} / #{count} -- #{processed}/sec   \r"
+        print "         #{current} of #{count} | %2.1f %%   #{processed}/sec     \r" % percentage
         $stdout.flush
       end
-      puts
+      # after completing print the status
+      puts "         #{current} of #{count} | 100 %                         "
     end
   end
 
