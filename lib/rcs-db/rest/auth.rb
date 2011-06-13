@@ -22,14 +22,19 @@ class AuthController < RESTController
       
       # authenticate the user
       when 'POST'
-        # if the user is a Collector, it will authenticate with a unique username
-        # and the password must be the 'server signature'
-        # the unique username will be used to create an entry for it in the network schema
-        if auth_server(@params['user'], @params['pass'])
-          # create the new auth sessions
-          sess = SessionManager.instance.create({:name => @params['user']}, @auth_level, @req_peer)
-          # append the cookie to the other that may have been present in the request
-          return RESTController::ok(sess, {cookie: 'session=' + sess[:cookie] + '; path=/;'})
+        begin
+          # if the user is a Collector, it will authenticate with a unique username
+          # and the password must be the 'server signature'
+          # the unique username will be used to create an entry for it in the network schema
+          if auth_server(@params['user'], @params['pass'])
+            # create the new auth sessions
+            sess = SessionManager.instance.create({:name => @params['user']}, @auth_level, @req_peer)
+            # append the cookie to the other that may have been present in the request
+            return RESTController::ok(sess, {cookie: 'session=' + sess[:cookie] + '; path=/;'})
+          end
+        rescue Exception => e
+          # TODO: specialize LICENSE_LIMIT_REACHED exception
+          return RESTController.conflict('LICENSE_LIMIT_REACHED')
         end
         
         # normal user login
@@ -71,9 +76,7 @@ class AuthController < RESTController
     # the Collectors are authenticated only by the server signature
     if pass.eql? server_sig
 
-      raise 'LICENSE_LIMIT_EXCEEDED' unless LicenseManager.instance.check :collectors
-
-      #TODO: insert the unique username in the network list
+      Collector.collector_login user, @req_peer
 
       trace :info, "Collector [#{user}] logged in"
       @auth_level = [:server]

@@ -8,13 +8,13 @@ class ActivityMigration
   
   def self.migrate(verbose)
   
-    print "Migrating activities "
+    print "Migrating activities to operations"
 
     activities = DB.instance.mysql_query('SELECT * from `activity` ORDER BY `activity_id`;').to_a
     activities.each do |a|
 
       # skip item if already migrated
-      next if Item.count(conditions: {_mid: a[:activity_id], _kind: 'activity'}) != 0
+      next if Item.count(conditions: {_mid: a[:activity_id], _kind: 'operation'}) != 0
 
       trace :info, "Migrating activity '#{a[:activity]}'." if verbose
       print "." unless verbose
@@ -24,7 +24,7 @@ class ActivityMigration
       ma.name = a[:activity]
       ma.contact = a[:contact]
       ma.desc = a[:desc]
-      ma._kind = 'activity'
+      ma._kind = 'operation'
       ma._path = []
       ma.status = a[:status].downcase
       ma.save
@@ -39,7 +39,7 @@ class ActivityMigration
     
     associations = DB.instance.mysql_query('SELECT * from `activity_group` ORDER BY `activity_id`;').to_a
     associations.each do |a|
-      activity = Item.where({_mid: a[:activity_id], _kind: 'activity'}).first
+      activity = Item.where({_mid: a[:activity_id], _kind: 'operation'}).first
       group = Group.where({_mid: a[:group_id]}).first
 
       # skip already migrated associations

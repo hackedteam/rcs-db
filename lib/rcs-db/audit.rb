@@ -17,7 +17,7 @@ class Audit
     #  :action
     #  :user
     #  :group
-    #  :activity
+    #  :operation
     #  :target
     #  :backdoor
     #  :desc
@@ -42,7 +42,7 @@ class Audit
       s.action = update_search s.action, params[:action] if params.has_key? :action
       s.user = update_search s.user, params[:user] if params.has_key? :user
       s.group = update_search s.group, params[:group] if params.has_key? :group
-      s.activity = update_search s.activity, params[:activity] if params.has_key? :activity
+      s.operation = update_search s.activity, params[:operation] if params.has_key? :operation
       s.target = update_search s.target, params[:target] if params.has_key? :target
       s.backdoor = update_search s.backdoor, params[:backdoor] if params.has_key? :backdoor
       s.save

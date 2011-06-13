@@ -11,7 +11,7 @@ class Item
   field :_kind, type: String
   field :_path, type: Array
 
-  # activity
+  # operation
   field :contact, type: String
 
   # backdoor
@@ -67,7 +67,7 @@ class UpgradeRequest
   include Mongoid::Document
   
   field :filename, type: String
-  field :_grid, type: String
+  field :_grid, type: Array
 
   validates_uniqueness_of :filename
 
@@ -78,7 +78,7 @@ class UploadRequest
   include Mongoid::Document
   
   field :filename, type: String
-  field :_grid, type: String
+  field :_grid, type: Array
   
   validates_uniqueness_of :filename
   

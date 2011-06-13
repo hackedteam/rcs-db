@@ -34,7 +34,7 @@ class GridFS
   
   def get(id)
     begin
-      return @grid.get BSON::ObjectId.from_string(id)
+      return @grid.get id
     rescue Exception => e
       # TODO handle the correct exception
       #connect
@@ -43,7 +43,7 @@ class GridFS
 
   def delete(id)
     begin
-      return @grid.delete BSON::ObjectId.from_string(id)
+      return @grid.delete id
     rescue Exception => e
       # TODO handle the correct exception
       #connect
