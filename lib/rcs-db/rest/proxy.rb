@@ -13,7 +13,7 @@ class ProxyController < RESTController
     mongoid_query do
       result = ::Proxy.all
 
-      return STATUS_OK, *json_reply(result)
+      return RESTController.ok(result)
     end
   end
 
@@ -24,7 +24,7 @@ class ProxyController < RESTController
 
     Audit.log :actor => @session[:user][:name], :action => 'proxy.create', :desc => "Created the injection proxy '#{@params['name']}'"
 
-    return STATUS_OK, *json_reply(result)
+    return RESTController.ok(result)
   end
 
   def update
@@ -33,7 +33,7 @@ class ProxyController < RESTController
     mongoid_query do
       proxy = Proxy.find(params['proxy'])
       params.delete('proxy')
-      return STATUS_NOT_FOUND if proxy.nil?
+      return RESTController.not_found if proxy.nil?
 
       params.each_pair do |key, value|
         if proxy[key.to_s] != value and not key['_ids']
@@ -43,7 +43,7 @@ class ProxyController < RESTController
 
       proxy.update_attributes(params)
 
-      return STATUS_OK, *json_reply(proxy)
+      return RESTController.ok(proxy)
     end
   end
 
@@ -54,7 +54,7 @@ class ProxyController < RESTController
       proxy = Proxy.find(params['proxy'])
       proxy.destroy
 
-      return STATUS_OK
+      return RESTController.ok
     end
   end
 
@@ -64,11 +64,11 @@ class ProxyController < RESTController
     mongoid_query do
       proxy = Proxy.find(params['_id'])
       params.delete('_id')
-      return STATUS_NOT_FOUND if proxy.nil?
+      return RESTController.not_found if proxy.nil?
 
       proxy.update_attributes(params)
 
-      return STATUS_OK
+      return RESTController.ok
     end
   end
 
@@ -78,7 +78,7 @@ class ProxyController < RESTController
     #TODO: implement config retrieval
     #TODO: mark as configured...
 
-    return STATUS_NOT_FOUND
+    return RESTController.not_found
   end
 
   def log
@@ -92,7 +92,7 @@ class ProxyController < RESTController
       coll = db['log.' + proxy[:_id].to_s]
       coll.save({time: time, type: params['type'].downcase, desc: params['desc']})
 
-      return STATUS_OK
+      return RESTController.ok
     end
   end
 
