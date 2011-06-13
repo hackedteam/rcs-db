@@ -13,7 +13,7 @@ class CollectorController < RESTController
     mongoid_query do
       result = ::Collector.all
 
-      return STATUS_OK, *json_reply(result)
+      return RESTController.ok(result)
     end
   end
 
@@ -24,7 +24,7 @@ class CollectorController < RESTController
 
     Audit.log :actor => @session[:user][:name], :action => 'collector.create', :desc => "Created the collector '#{@params['name']}'"
 
-    return STATUS_OK, *json_reply(result)
+    return RESTController.ok(result)
   end
 
   def update
@@ -33,7 +33,7 @@ class CollectorController < RESTController
     mongoid_query do
       coll = Collector.find(params['collector'])
       params.delete('collector')
-      return STATUS_NOT_FOUND if coll.nil?
+      return RESTController.not_found if coll.nil?
 
       params.each_pair do |key, value|
         if coll[key.to_s] != value and not key['_ids']
@@ -43,7 +43,7 @@ class CollectorController < RESTController
 
       coll.update_attributes(params)
 
-      return STATUS_OK, *json_reply(coll)
+      return RESTController.ok(coll)
     end
   end
 
@@ -54,7 +54,7 @@ class CollectorController < RESTController
       collector = Collector.find(params['collector'])
       collector.destroy
 
-      return STATUS_OK
+      return RESTController.ok
     end    
   end
 
@@ -64,11 +64,11 @@ class CollectorController < RESTController
     mongoid_query do
       collector = Collector.find(params['_id'])
       params.delete('_id')
-      return STATUS_NOT_FOUND if collector.nil?
+      return RESTController.not_found if collector.nil?
 
       collector.update_attributes(params)
 
-      return STATUS_OK
+      return RESTController.ok
     end
   end
 
@@ -78,7 +78,7 @@ class CollectorController < RESTController
     #TODO: implement config retrieval
     #TODO: mark as configured...
 
-    return STATUS_NOT_FOUND
+    return RESTController.not_found
   end
 
   def log
@@ -91,7 +91,7 @@ class CollectorController < RESTController
     coll = db['log.' + collector[:_id].to_s]
     coll.save({time: time, type: params['type'].downcase, desc: params['desc']})
 
-    return STATUS_OK
+    return RESTController.ok
   end
 
 end

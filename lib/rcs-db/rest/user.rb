@@ -13,7 +13,7 @@ class UserController < RESTController
     require_auth_level :admin
 
     users = User.all
-    return STATUS_OK, *json_reply(users)
+    return RESTController.ok(users)
   end
 
   def show
@@ -21,8 +21,8 @@ class UserController < RESTController
     
     mongoid_query do
       user = User.find(params['user'])
-      return STATUS_NOT_FOUND if user.nil?
-      return STATUS_OK, *json_reply(user)
+      return RESTController.not_found if user.nil?
+      return RESTController.ok(user)
     end
   end
   
@@ -42,11 +42,11 @@ class UserController < RESTController
       doc[:timezone] = @params['timezone']
     end
     
-    return STATUS_CONFLICT, *json_reply(result.errors[:name]) unless result.persisted?
+    return RESTController.conflict(result.errors[:name]) unless result.persisted?
     
     Audit.log :actor => @session[:user][:name], :action => 'user.create', :user => @params['name'], :desc => "Created the user '#{@params['name']}'"
 
-    return STATUS_OK, *json_reply(result)
+    return RESTController.ok(result)
   end
   
   def update
@@ -54,17 +54,17 @@ class UserController < RESTController
     
     mongoid_query do
       user = User.find(params['user'])
-      return STATUS_NOT_FOUND if user.nil?
+      return RESTController.not_found if user.nil?
       params.delete('user')
 
       # if non-admin you can modify only yourself
       unless @session[:level].include? :admin
-        return STATUS_NOT_FOUND if user._id != @session[:user][:_id]
+        return RESTController.not_found if user._id != @session[:user][:_id]
       end
       
       # if enabling a user, check the license
       if user[:enabled] == false and params['enabled'] == true
-        return STATUS_CONFLICT, *json_reply('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :users
+        return RESTController.conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :users
       end
 
       # if pass is modified, treat it separately
@@ -81,7 +81,7 @@ class UserController < RESTController
 
       result = user.update_attributes(params)
       
-      return STATUS_OK, *json_reply(user)
+      return RESTController.ok(user)
     end
   end
   
@@ -90,13 +90,13 @@ class UserController < RESTController
     
     mongoid_query do
       user = User.find(params['user'])
-      return STATUS_NOT_FOUND if user.nil?
+      return RESTController.not_found if user.nil?
       
       Audit.log :actor => @session[:user][:name], :action => 'user.destroy', :user => @params['name'], :desc => "Deleted the user '#{user['name']}'"
       
       user.destroy
       
-      return STATUS_OK
+      return RESTController.ok
     end
   end
   

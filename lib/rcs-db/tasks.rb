@@ -60,7 +60,7 @@ class TaskManager
   def create(user, params = {})
     @tasks[user] ||= Hash.new
     (task = Task.new).run params
-    trace :debug, "Creating task #{task._id} for user '#{user}'"
+    trace :debug, "Creating task #{task._id} for user '#{user}' [params: #{params}]"
     @tasks[user][task._id] = task
     return task
   end

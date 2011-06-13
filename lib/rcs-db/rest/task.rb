@@ -9,7 +9,7 @@ class TaskController < RESTController
     require_auth_level :admin, :tech, :viewer
     
     tasks = TaskManager.instance.list @session[:user][:name]
-    return STATUS_OK, *json_reply(tasks)
+    return RESTController.ok tasks
   end
   
   def show
@@ -17,8 +17,8 @@ class TaskController < RESTController
     
     task = TaskManager.instance.get @session[:user][:name], params['task']
 
-    return STATUS_NOT_FOUND if task.nil?
-    return STATUS_OK, *json_reply(task)
+    return RESTController.not_found if task.nil?
+    return RESTController.ok task
   end
   
   def create
@@ -26,8 +26,8 @@ class TaskController < RESTController
     
     task = TaskManager.instance.create @session[:user][:name]
     
-    return STATUS_NOT_FOUND if task.nil?
-    return STATUS_OK, *json_reply(task)
+    return RESTController.not_found if task.nil?
+    return RESTController.ok task
   end
   
   def destroy
@@ -35,7 +35,7 @@ class TaskController < RESTController
     
     TaskManager.instance.delete @session[:user][:name], params['task']
     
-    return STATUS_OK
+    return RESTController.ok
   end
 
 end

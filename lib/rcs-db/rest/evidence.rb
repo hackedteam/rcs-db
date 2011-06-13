@@ -48,10 +48,10 @@ class EvidenceController < RESTController
       request = EM::HttpRequest.new('http://127.0.0.1:5150').post :body => notification
       request.callback {|http| http.response}
     rescue
-      return STATUS_NOT_FOUND
+      return RESTController.not_found
     end
     
-    return STATUS_OK, *json_reply({:bytes => @req_content.size})
+    return RESTController.ok({:bytes => @req_content.size})
   end
   
   # used to report that the activity of an instance is starting
@@ -78,9 +78,9 @@ class EvidenceController < RESTController
     backdoor.stat.device = params['device']
     backdoor.save
     
-    return STATUS_OK
+    return RESTController.ok
   end
-
+  
   # used to report that the processing of an instance has finished
   def stop
     require_auth_level :server
@@ -91,7 +91,7 @@ class EvidenceController < RESTController
     # store the status
     EvidenceManager.instance.sync_end session
 
-    return STATUS_OK
+    return RESTController.ok
   end
 
   # used to report that the activity on an instance has timed out
@@ -104,7 +104,7 @@ class EvidenceController < RESTController
     # store the status
     EvidenceManager.instance.sync_timeout session
 
-    return STATUS_OK
+    return RESTController.ok
   end
 
 end

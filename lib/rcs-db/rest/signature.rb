@@ -16,7 +16,7 @@ class SignatureController < RESTController
 
     trace :info, "[#{@req_peer}] Requested the '#{params['signature']}' signature [#{sig[:value]}]"
 
-    return STATUS_OK, *json_reply(sig)
+    return RESTController.ok(sig)
   end
 
 end
