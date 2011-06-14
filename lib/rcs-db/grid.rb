@@ -17,7 +17,8 @@ class GridFS
   
   def connect
     begin
-      @grid = Mongo::Grid.new Mongoid.database
+      @db = Mongoid.database
+      @grid = Mongo::Grid.new @db
     rescue Exception => e
       trace :fatal, "Cannot connect to MongoDB: " + e.message
     end
@@ -51,13 +52,19 @@ class GridFS
 
     return false
   end
+
+  def delete_by_backdoor(backdoor_id)
+    items = get_by_filename(backdoor_id)
+    items.each {|item| delete item["_id"]}
+  end
   
   def get_by_filename(filename)
     begin
       files = @db.collection("fs.files")
-      return files.find(:filename => filename, :fields => ["_id"]).all
+      return files.find({"filename" => filename}, :fields => ["_id"])
     rescue Exception => e
       # TODO handle the correct exception
+      puts e.message
       #connect
     end
   end
