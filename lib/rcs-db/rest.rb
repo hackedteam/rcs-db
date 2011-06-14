@@ -175,6 +175,8 @@ Dir[File.dirname(__FILE__) + '/rest/*.rb'].each do |file|
 end
 
 class RESTResponse
+  include RCS::Tracer
+  
   attr_accessor :status, :content, :content_type, :cookie
   
   def initialize(status, content = '', opts = {})
@@ -197,7 +199,12 @@ class RESTResponse
     
     resp.status_string = Net::HTTPResponse::CODE_TO_OBJ["#{resp.status}"].name.gsub(/Net::HTTP/, '')
 
-    resp.content = content_type == 'application/json' ? @content.to_json : @content
+    begin
+      resp.content = (content_type == 'application/json') ? @content.to_json : @content
+    rescue
+      trace :error, "Cannot parse json reply: #{@content}"
+      resp.content = "JSON_SERIALIZATION_ERROR".to_json
+    end
 
     resp.headers['Content-Type'] = @content_type
     resp.headers['Set-Cookie'] = @cookie unless @cookie.nil?
