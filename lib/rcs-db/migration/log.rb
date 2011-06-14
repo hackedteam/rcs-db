@@ -60,7 +60,7 @@ class LogMigration
       
       log_ids.each do |log_id|
         current = current + 1
-        log = DB.instance.mysql_query("SELECT log_id, remotehost FROM `log` WHERE log_id = #{log_id[:log_id]};")
+        log = DB.instance.mysql_query("SELECT * FROM `log` WHERE log_id = #{log_id[:log_id]};").to_a.first
 
         # calculate how many logs processed in one second
         time = Time.now.to_i
@@ -71,7 +71,15 @@ class LogMigration
           percentage = current.to_f / count * 100 if count != 0
         end
 
-        #TODO: insert the evidence
+        klass = Evidence.collection_class id.to_s
+        ev = klass.new
+        ev.acquired = log[:acquired].to_i
+        ev.received = log[:received].to_i
+        ev.type = log[:type].downcase
+        ev.relevance = log[:tag]
+        ev.item = [ bck[:_id] ]
+        ev.data = {}
+        ev.save
 
         # report the status
         print "         #{current} of #{count} | %2.1f %%   #{processed}/sec     \r" % percentage
