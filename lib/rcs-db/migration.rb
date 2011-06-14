@@ -91,11 +91,9 @@ class Migration
       ProxyMigration.migrate options[:verbose]
       ProxyMigration.migrate_rules options[:verbose]
     end
-
-    if options[:log] then
-      LogMigration.migrate options[:verbose], options[:activity]
-    end
-
+    
+    LogMigration.migrate(options[:verbose], options[:activity], options[:exclude]) if options[:log]
+       
     return 0
   end
 
@@ -127,12 +125,13 @@ class Migration
       opts.on( '-d', '--db HOSTNAME', 'RCSDB hostname/ip' ) do |db|
         options[:db] = db
       end
-
+      
       opts.on( '-l', '--log ACTIVITY', 'Import logs for a specified activity' ) do |act|
         options[:log] = true
-        options[:activity] = act
+        options[:activity], options[:exclude] = act.split(':')
+        options[:exclude] = options[:exclude].split(',')
       end
-
+      
       opts.on( '-v', '--verbose', 'Verbose output' ) do
         options[:verbose] = true
       end
