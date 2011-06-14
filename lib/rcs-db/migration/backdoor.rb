@@ -124,7 +124,7 @@ class BackdoorMigration
       backdoor = Item.where({_mid: up[:backdoor_id], _kind: 'backdoor'}).first
       begin
         upload = backdoor.upload_requests.create!(filename: up[:filename])
-        upload[:_grid] = [ GridFS.instance.put(up[:content]) ]
+        upload[:_grid] = [ GridFS.instance.put(up[:content], {filename: up[:filename]}) ]
         upload.save
       rescue Mongoid::Errors::Validations => e
         next
