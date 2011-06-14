@@ -48,13 +48,17 @@ class AuthController < RESTController
           end
           
           Audit.log :actor => @params['user'], :action => 'login', :user => @params['user'], :desc => "User '#{@params['user']}' logged in"
-          
+
+          # get the list of accessible Items
+          accessible = SessionManager.instance.get_accessible @user
           # create the new auth sessions
-          sess = SessionManager.instance.create(@user, @auth_level, @req_peer)
+          sess = SessionManager.instance.create(@user, @auth_level, @req_peer, accessible)
           # append the cookie to the other that may have been present in the request
           expiry = (Time.now() + 86400).strftime('%A, %d-%b-%y %H:%M:%S %Z')
           trace :debug, "Issued cookie with expiry time: #{expiry}"
-          return RESTController::ok(sess, {cookie: 'session=' + sess[:cookie] + "; path=/; expires=#{expiry}" })
+          # don't return the accessible items (used only internally)
+          session = sess.select {|k,v| k != :accessible}
+          return RESTController::ok(session, {cookie: 'session=' + sess[:cookie] + "; path=/; expires=#{expiry}" })
         end
     
     end
