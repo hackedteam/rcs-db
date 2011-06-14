@@ -129,7 +129,7 @@ class Migration
       opts.on( '-l', '--log ACTIVITY', 'Import logs for a specified activity' ) do |act|
         options[:log] = true
         options[:activity], options[:exclude] = act.split(':')
-        options[:exclude] = options[:exclude].split(',')
+        options[:exclude] = options[:exclude].split(',') unless options[:exclude].nil?
       end
       
       opts.on( '-v', '--verbose', 'Verbose output' ) do

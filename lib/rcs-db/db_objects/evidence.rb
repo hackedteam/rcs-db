@@ -22,8 +22,36 @@ classDefinition = <<END
     field :blotter, type: Boolean
     field :item, type: Array         # backdoor BSON_ID
     field :data, type: Hash
-
+    
     store_in Evidence.collection_name('#{target}')
+    
+    after_create :create_callback
+    after_destroy :destroy_callback
+
+    STAT_EXCLUSION = ['info', 'filesystem']
+
+    protected
+    def create_callback
+      return if STAT_EXCLUSION.include? self.type
+      backdoor = Item.find self.item.first
+      backdoor.stat.evidence ||= {}
+      backdoor.stat.evidence[self.type] ||= 0
+      backdoor.stat.evidence[self.type] += 1
+      backdoor.stat.size += self.data[:_grid_size]
+      backdoor.stat.size += Mongoid.database.collection("#{Evidence.collection_name(target)}").stats()['avgObjSize'].to_i
+      backdoor.save
+    end
+    
+    def destroy_callback
+      return if STAT_EXCLUSION.include? self.type
+      backdoor = Item.find self.item.first
+      backdoor.stat.evidence ||= {}
+      backdoor.stat.evidence[self.type] ||= 0
+      backdoor.stat.evidence[self.type] -= 1
+      backdoor.stat.size -= self.data[:_grid_size]
+      backdoor.stat.size -= Mongoid.database.collection("#{Evidence.collection_name(target)}").stats()['avgObjSize'].to_i
+      backdoor.save
+    end
   end
 END
     

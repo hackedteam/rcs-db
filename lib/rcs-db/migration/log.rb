@@ -21,6 +21,10 @@ class LogMigration
 
     activities.each do |act|
       puts "-> #{act.name}"
+
+      # if exclude is not defined, everything is good
+      exclude ||= []
+      
       unless exclude.include? act[:name]
         migrate_single_activity act[:_id]
         puts "#{@@total} logs (#{@@size.to_s_bytes}) migrated to evidence."
@@ -50,6 +54,11 @@ class LogMigration
     # migrate evidence for each backdoor
     backdoors = Item.where({_kind: 'backdoor'}).also_in({_path: [id]})
     backdoors.each do |bck|
+
+      # clear stats for the backdoor
+      bck.stat.evidence = {}
+      bck.stat.size = 0
+      bck.save
 
       # delete all files related to the backdoor
       GridFS.instance.delete_by_backdoor(bck[:_id].to_s)
@@ -116,7 +125,8 @@ class LogMigration
 
     # TODO: parse log specific data
     ev.data = {}
-    ev.data[:_grid] = GridFS.instance.put(log[:longblob1], {filename: backdoor_id.to_s}) if log[:longblob1].size > 0
+    ev.data[:_grid_size] = log[:longblob1].bytesize
+    ev.data[:_grid] = GridFS.instance.put(log[:longblob1], {filename: backdoor_id.to_s}) if log[:longblob1].bytesize > 0
     
     ev.save
   end
