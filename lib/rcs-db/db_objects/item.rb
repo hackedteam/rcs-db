@@ -41,23 +41,13 @@ class Item
 
   store_in :items
 
-  after_create :create_callback
   after_destroy :destroy_callback
 
   protected
-  def create_callback
-    case self._kind
-      when 'operation'
-      when 'target'
-        # create the collection for the evidence of this target
-        db = Mongoid.database
-        db.create_collection("evidence." + self._id.to_s)
-      when 'backdoor'
-    end
-  end
 
   def destroy_callback
     case self._kind
+      # TODO: recalculate stats before dropping
       when 'operation'
         # destroy all the targets of this operation
         Item.where({_kind: 'target', _path: [ self._id ]}).each do |targ|
@@ -65,7 +55,7 @@ class Item
         end
       when 'target'
         db = Mongoid.database
-        db.drop_collection("evidence." + self._id.to_s)
+        db.drop_collection Evidence.collection_name(self._id.to_s)
         # destroy all the backdoors of this target
         Item.where({_kind: 'backdoor'}).also_in({_path: [ self._id ]}).each do |bck|
           bck.destroy
