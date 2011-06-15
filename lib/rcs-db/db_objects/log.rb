@@ -11,17 +11,17 @@ class CappedLog
 
   def self.collection_class(id)
 
-classDefinition = <<END
-  class CappedLog_#{id}
-    include Mongoid::Document
+    classDefinition = <<-END
+      class CappedLog_#{id}
+        include Mongoid::Document
 
-    field :time, type: Integer
-    field :type, type: String
-    field :desc, type: String
+        field :time, type: Integer
+        field :type, type: String
+        field :desc, type: String
 
-    store_in CappedLog.collection_name('#{id}')    
-  end
-END
+        store_in CappedLog.collection_name('#{id}')
+      end
+    END
     
     classname = "CappedLog_#{id}"
     

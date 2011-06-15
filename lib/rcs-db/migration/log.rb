@@ -106,11 +106,11 @@ class LogMigration
         migrate_single_log(log, id.to_s, bck[:_id])
         
         # report the status
-        print "         #{current} of #{count} | %2.1f %%   #{processed}/sec  #{speed.to_s_bytes}/sec        \r" % percentage
+        print "         #{current} of #{count}  %2.1f %% | #{processed}/sec  #{speed.to_s_bytes}/sec | #{@@size.to_s_bytes}      \r" % percentage
         $stdout.flush
       end
       # after completing print the status
-      puts "         #{current} of #{count} | 100 %                                                           "
+      puts "         #{current} of #{count} | 100 %                                                                               "
     end
   end
 
