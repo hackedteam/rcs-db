@@ -20,6 +20,7 @@ classDefinition = <<END
     field :type, type: String
     field :relevance, type: Integer
     field :blotter, type: Boolean
+    field :note, type: String
     field :item, type: Array         # backdoor BSON_ID
     field :data, type: Hash
     

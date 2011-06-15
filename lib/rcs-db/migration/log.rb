@@ -86,7 +86,7 @@ class LogMigration
       
       log_ids.each do |log_id|
         current = current + 1
-        log = DB.instance.mysql_query("SELECT * FROM `log` WHERE log_id = #{log_id[:log_id]};").to_a.first
+        log = DB.instance.mysql_query("SELECT * FROM log LEFT JOIN note ON note.log_id = log.log_id LEFT JOIN blotter_log ON log.log_id = blotter_log.log_id WHERE log.log_id = #{log_id[:log_id]};").to_a.first
 
         this_size = log[:longblob1].size + log[:longtext1].size + log[:varchar1].size + log[:varchar2].size + log[:varchar3].size + log[:varchar4].size
         size += this_size
@@ -115,11 +115,14 @@ class LogMigration
   end
 
   def self.migrate_single_log(log, target_id, backdoor_id)
+
     ev = Evidence.dynamic_new target_id
     ev.acquired = log[:acquired].to_i
     ev.received = log[:received].to_i
     ev.type = log[:type].downcase
     ev.relevance = log[:tag]
+    ev.blotter = true unless log[:blotter_id].nil?
+    ev.note = log[:content] unless log[:content].nil?
     ev.item = [ backdoor_id ]
 
     # TODO: parse log specific data
