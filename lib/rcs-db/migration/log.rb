@@ -82,7 +82,7 @@ class LogMigration
       prev_current = 0
       processed = 0
       percentage = 0
-      sized = 0
+      speed = 0
       
       log_ids.each do |log_id|
         current = current + 1
@@ -92,21 +92,21 @@ class LogMigration
         size += this_size
         @@size += this_size
 
-        # calculate how many logs processed in one second
+        # calculate how many logs processed in a second or in a processing time of one log (whichever is lower)
         time = Time.now.to_i
         if time != prev_time then
-          processed = current - prev_current
+          processed = (current - prev_current) / (time - prev_time)
+          speed = size / (time - prev_time)
+          percentage = current.to_f / count * 100 if count != 0
           prev_time = time
           prev_current = current
-          sized = size
           size = 0
-          percentage = current.to_f / count * 100 if count != 0
         end
         
         migrate_single_log(log, id.to_s, bck[:_id])
         
         # report the status
-        print "         #{current} of #{count} | %2.1f %%   #{processed}/sec  #{sized.to_s_bytes}/sec        \r" % percentage
+        print "         #{current} of #{count} | %2.1f %%   #{processed}/sec  #{speed.to_s_bytes}/sec        \r" % percentage
         $stdout.flush
       end
       # after completing print the status
@@ -115,8 +115,7 @@ class LogMigration
   end
 
   def self.migrate_single_log(log, target_id, backdoor_id)
-    klass = Evidence.collection_class target_id
-    ev = klass.new
+    ev = Evidence.dynamic_new target_id
     ev.acquired = log[:acquired].to_i
     ev.received = log[:received].to_i
     ev.type = log[:type].downcase
