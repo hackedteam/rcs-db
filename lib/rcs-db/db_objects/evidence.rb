@@ -15,30 +15,15 @@ class Evidence
       class Evidence_#{target}
         include Mongoid::Document
 
-<<<<<<< HEAD
-    field :acquired, type: Integer
-    field :received, type: Integer
-    field :type, type: String
-    field :relevance, type: Integer
-    field :blotter, type: Boolean
-    field :note, type: String
-    field :item, type: Array         # backdoor BSON_ID
-    field :data, type: Hash
-    
-    store_in Evidence.collection_name('#{target}')
-    
-    after_create :create_callback
-    after_destroy :destroy_callback
-=======
         field :acquired, type: Integer
         field :received, type: Integer
         field :type, type: String
         field :relevance, type: Integer
         field :blotter, type: Boolean
+        field :note, type: String
         field :item, type: Array         # backdoor BSON_ID
         field :data, type: Hash
->>>>>>> 422a66706920c9507e57313c464290e01ea1aca6
-
+    
         store_in Evidence.collection_name('#{target}')
 
         after_create :create_callback
