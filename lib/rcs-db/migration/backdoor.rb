@@ -151,7 +151,7 @@ class BackdoorMigration
       ms.source = st[:remoteip]
       ms.user = st[:remoteuser]
       ms.device = st[:remotehost]
-      ms.last_sync = Time.at(st[:received]).getutc unless st[:received].nil?
+      ms.last_sync = Time.parse(st[:received]).getutc.to_i unless st[:received].nil?
 
       backdoor.stat = ms
 
