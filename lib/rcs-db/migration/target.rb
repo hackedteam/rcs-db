@@ -26,8 +26,8 @@ class TargetMigration
       mt._kind = 'target'
       mt.status = target[:status].downcase
 
-      activity = Item.where({_mid: target[:activity_id], _kind: 'activity'}).first
-      mt._path = [ activity[:_id] ]
+      operation = Item.where({_mid: target[:activity_id], _kind: 'operation'}).first
+      mt._path = [ operation[:_id] ]
 
       mt.save
     end

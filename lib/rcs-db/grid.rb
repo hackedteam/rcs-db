@@ -1,7 +1,8 @@
+require 'mongo'
+require 'mongoid'
+
 # from RCS::Common
 require 'rcs-common/trace'
-
-require 'mongo'
 
 module RCS
 module DB
@@ -16,19 +17,16 @@ class GridFS
   
   def connect
     begin
-      @db = Mongo::Connection.new.db('rcs')
-      @grid = Mongo::Grid.new(@db)
+      @db = Mongoid.database
+      @grid = Mongo::Grid.new @db
     rescue Exception => e
       trace :fatal, "Cannot connect to MongoDB: " + e.message
     end
   end
   
-  def put(filename, content)
-    #puts content.inspect
-    #puts filename.inspect
-    #puts "gridding #{filename} [#{content.bytesize} bytes]"
+  def put(content, opts = {})
     begin
-      return @grid.put(content, filename)
+      return @grid.put(content, opts)
     rescue Exception => e
       # TODO handle the correct exception
       #connect
@@ -37,19 +35,36 @@ class GridFS
   
   def get(id)
     begin
-      return @grid.get(id)
+      return @grid.get id
     rescue Exception => e
       # TODO handle the correct exception
       #connect
     end
   end
+
+  def delete(id)
+    begin
+      return @grid.delete id
+    rescue Exception => e
+      # TODO handle the correct exception
+      #connect
+    end
+
+    return false
+  end
+
+  def delete_by_backdoor(backdoor_id)
+    items = get_by_filename(backdoor_id)
+    items.each {|item| delete item["_id"]}
+  end
   
   def get_by_filename(filename)
     begin
       files = @db.collection("fs.files")
-      return files.find(:filename => filename, :fields => ["_id"]).all
+      return files.find({"filename" => filename}, :fields => ["_id"])
     rescue Exception => e
       # TODO handle the correct exception
+      puts e.message
       #connect
     end
   end

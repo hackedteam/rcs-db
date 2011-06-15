@@ -26,11 +26,11 @@ class ParserTest < Test::Unit::TestCase
   end
 
   def test_user_index
-    @rest.http_parse(@http_headers, 'GET', '/user', nil, nil)
+    @rest.http_parse(@http_headers, 'GET', '/user', nil, nil, nil)
   end
 
   def test_user_show
-    @rest.http_parse(@http_headers, 'GET', '/user/id', nil, nil)
+    @rest.http_parse(@http_headers, 'GET', '/user/id', nil, nil, nil)
   end
 
 end

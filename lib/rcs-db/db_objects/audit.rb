@@ -11,7 +11,7 @@ class Audit
   field :action, type: String
   field :user, type: String
   field :group, type: String
-  field :activity, type: String
+  field :operation, type: String
   field :target, type: String
   field :backdoor, type: String
   field :info, type: String
@@ -21,7 +21,7 @@ class Audit
   index :action
   index :user
   index :group
-  index :activity
+  index :operation
   index :target
   index :backdoor
   
@@ -35,7 +35,7 @@ class AuditFilters
   field :action, type: Array
   field :user, type: Array
   field :group, type: Array
-  field :activity, type: Array
+  field :operation, type: Array
   field :target, type: Array
   field :backdoor, type: Array
   

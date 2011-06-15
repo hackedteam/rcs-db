@@ -2,11 +2,6 @@
 # Layer for accessing the real DB
 #
 
-# include all the mix-ins
-Dir[File.dirname(__FILE__) + '/db_layer/*.rb'].each do |file|
-  require file
-end
-
 require_relative 'audit.rb'
 require_relative 'config'
 
@@ -32,7 +27,6 @@ class DB
   def initialize
     @available = false
     @semaphore = Mutex.new
-    mysql_connect 'root', 'rootp123', Config.instance.global['DB_ADDRESS']
   end
   
   def mysql_connect(user, pass, host)
@@ -80,19 +74,15 @@ class DB
       s.replace @mysql.escape(s) if s.class == String
     end
   end
-
-  # in the mix-ins there are all the methods for the respective section
-  Dir[File.dirname(__FILE__) + '/db_layer/*.rb'].each do |file|
-    mod = File.basename(file, '.rb').capitalize
-    include eval("DBLayer::#{mod}")
-  end
-
-  # MONGO
   
+  # MONGO
+
+  #TODO: index more classes...
   @@classes_to_be_indexed = [::Audit, ::User]
   
   def connect
     begin
+      #TODO: username & password
       Mongoid.load!(Dir.pwd + '/config/mongoid.yaml')
       Mongoid.configure do |config|
         config.master = Mongo::Connection.new.db('rcs')

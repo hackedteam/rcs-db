@@ -7,6 +7,7 @@ require_relative 'sessions'
 require_relative 'audit'
 require_relative 'config'
 require_relative 'audit'
+require_relative 'em_streamer'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -77,15 +78,48 @@ class RESTController
     trace :warn, "[#{@peer}][#{cookie}] Invalid cookie"
     return false
   end
-
+  
   def cleanup
     # hook method if you need to perform some cleanup operation
   end
+  
+  def self.not_found
+    return RESTResponse.new(STATUS_NOT_FOUND)
+  end
+  
+  def self.not_authorized message
+    message = '' unless message.nil?
+    return RESTResponse.new(STATUS_NOT_AUTHORIZED, message)
+  end
 
+  def self.conflict message
+    message = '' unless message.nil?
+    return RESTResponse.new(STATUS_CONFLICT, message)
+  end
+
+  # helper method for REST replies
+  def self.ok(*args)
+    return RESTResponse.new STATUS_OK, *args
+  end
+
+  def self.generic(*args)
+    return RESTResponse.new *args
+  end
+
+  def self.stream_file(filename)
+    return RESTFileStream.new(filename)
+  end
+
+  def self.stream_grid(grid_io)
+    return RESTGridStream.new(grid_io)
+  end
+
+=begin
   # helper method for the replies
   def json_reply(reply)
     return reply.to_json, 'application/json'
   end
+=end
 
   # macro for auth level check
   def require_auth_level(*levels)
@@ -138,4 +172,75 @@ end #RCS::
 # require all the controllers
 Dir[File.dirname(__FILE__) + '/rest/*.rb'].each do |file|
   require file
+end
+
+class RESTResponse
+  include RCS::Tracer
+  
+  attr_accessor :status, :content, :content_type, :cookie
+  
+  def initialize(status, content = '', opts = {})
+    @status = status
+    @content = content
+    
+    @content_type = 'application/json'
+    @content_type = opts[:content_type] if opts.has_key? :content_type
+    
+    @cookie = nil
+    @cookie = opts[:cookie] if opts.has_key? :cookie
+  end
+  
+  def send_response(connection)
+
+    resp = EM::DelegatedHttpResponse.new connection
+    @status = RCS::DB::RESTController::STATUS_SERVER_ERROR if @status.nil? or @status.class != Fixnum
+
+    resp.status = @status
+    
+    resp.status_string = Net::HTTPResponse::CODE_TO_OBJ["#{resp.status}"].name.gsub(/Net::HTTP/, '')
+
+    begin
+      resp.content = (content_type == 'application/json') ? @content.to_json : @content
+    rescue
+      trace :error, "Cannot parse json reply: #{@content}"
+      resp.content = "JSON_SERIALIZATION_ERROR".to_json
+    end
+
+    resp.headers['Content-Type'] = @content_type
+    resp.headers['Set-Cookie'] = @cookie unless @cookie.nil?
+
+    http_headers = connection.instance_variable_get :@http_headers
+    if http_headers.split("\x00").index {|h| h['Connection: keep-alive'] || h['Connection: Keep-Alive']} then
+      # keep the connection open to allow multiple requests on the same connection
+      # this will increase the speed of sync since it decrease the latency on the net
+      resp.keep_connection_open true
+      resp.headers['Connection'] = 'keep-alive'
+    else
+      resp.headers['Connection'] = 'close'
+    end
+
+    resp.send_response
+  end
+end
+
+class RESTFileStream
+  def initialize(filename)
+    @filename = filename
+  end
+
+  def send_response(connection)
+    response = DelegatedHttpFileResponse.new connection, @filename
+    response.send_response
+  end
+end
+
+class RESTGridStream
+  def initialize(grid_io)
+    @grid_io = grid_io
+  end
+
+  def send_response(connection)
+    response = DelegatedHttpGridResponse.new connection, @grid_io
+    response.send_response
+  end
 end

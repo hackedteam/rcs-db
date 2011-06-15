@@ -9,7 +9,8 @@ class Proxy
 
   field :name, type: String
   field :desc, type: String
-  field :address, typs: String
+  field :address, type: String
+  field :redirect, type: String
   field :port, type: Integer
   field :poll, type: Boolean
   field :version, type: String
@@ -19,6 +20,20 @@ class Proxy
   store_in :proxies
 
   embeds_many :rules, class_name: "ProxyRule"
+
+  after_create :create_log_collection
+  after_destroy :drop_log_collection
+
+  protected
+  def create_log_collection
+    db = Mongoid.database
+    db.create_collection(CappedLog.collection_name(self._id.to_s), {capped: true, size: 2_000_000, max: 10_000})
+  end
+
+  def drop_log_collection
+    db = Mongoid.database
+    db.drop_collection(CappedLog.collection_name(self._id.to_s))
+  end
 end
 
 

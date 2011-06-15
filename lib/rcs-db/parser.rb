@@ -21,7 +21,7 @@ module Parser
 
   # parse a request from a client
   def http_parse(http_headers, req_method, req_uri, req_cookie, req_content, req_query)
-
+    
     # extract the name of the controller and the parameters
     root, controller_name, *params = req_uri.split('/')
 
@@ -32,19 +32,17 @@ module Parser
       controller = eval(klass).new
     rescue
       trace :error, "Invalid controller [#{req_uri}]"
-      return RESTController::STATUS_NOT_FOUND
+      return RESTController.not_found
     end
-
+    
     # init the controller and check if everything is ok to proceed
     if not controller.init(http_headers, req_method, req_uri, req_cookie, req_content, @peer) then
-      return RESTController::STATUS_NOT_AUTHORIZED, *json_reply('AUTH_REQUIRED')
+      return RESTController.not_authorized 'AUTH_REQUIRED'
     end
-
+    
     # if the object has an explicit method calling
     method = params.shift if not params.first.nil? and controller.respond_to?(params.first)
-
-    #trace :debug, req_content
-    
+  
     # save the params in the controller object
     controller.params[controller_name.downcase] = params.first unless params.first.nil?
     controller.params.merge!(CGI::parse(req_query)) unless req_query.nil?
@@ -66,25 +64,25 @@ module Parser
 
     # invoke the right method on the controller
     begin
-      resp_status, resp_content, resp_content_type, resp_cookie = controller.send(method) unless method.nil?
+      response = controller.send(method) unless method.nil?
     rescue NotAuthorized => e
-      resp_status = RESTController::STATUS_NOT_AUTHORIZED
-      resp_content, resp_content_type = *json_reply('INVALID_ACCESS_LEVEL')
+      response = RESTController.not_authorized 'INVALID_ACCESS_LEVEL'
       trace :warn, "Invalid access level: " + e.message
     rescue Exception => e
-      resp_content = "ERROR: " + e.message
-      trace :error, resp_content
+      response.content = "ERROR: " + e.message unless response.nil?
+      #resp_content = "ERROR: " + e.message
+      trace :error, response.content unless response.nil?
       trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
     end
 
     # the controller job has finished, call the cleanup hook
     controller.cleanup
-
+    
     # paranoid check
-    return RESTController::STATUS_NOT_AUTHORIZED, *json_reply('CONTROLLER_ERROR') if resp_status.nil?
-    return resp_status, resp_content, resp_content_type, resp_cookie
+    return RESTController.not_authorized('CONTROLLER_ERROR') if response.nil?
+    return response
   end
-
+  
   # returns the JSON parsed object containing the parameters passed to a POST or PUT request
   def http_parse_parameters(content)
     return {} if content.nil?

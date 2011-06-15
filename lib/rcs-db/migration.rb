@@ -68,29 +68,32 @@ class Migration
     DB.instance.mysql_connect options[:user], options[:password], options[:db]
     
     # start the migration
-    SignatureMigration.migrate options[:verbose]
+    unless options[:log] then
+      SignatureMigration.migrate options[:verbose]
 
-    UserMigration.migrate options[:verbose]
-    GroupMigration.migrate options[:verbose]
-    GroupMigration.migrate_associations options[:verbose]
+      UserMigration.migrate options[:verbose]
+      GroupMigration.migrate options[:verbose]
+      GroupMigration.migrate_associations options[:verbose]
 
-    ActivityMigration.migrate options[:verbose]
-    ActivityMigration.migrate_associations options[:verbose]
-    TargetMigration.migrate options[:verbose]
-    BackdoorMigration.migrate options[:verbose]
-    BackdoorMigration.migrate_associations options[:verbose]
-    ConfigMigration.migrate options[:verbose]
-    ConfigMigration.migrate_templates options[:verbose]
+      ActivityMigration.migrate options[:verbose]
+      ActivityMigration.migrate_associations options[:verbose]
+      TargetMigration.migrate options[:verbose]
+      BackdoorMigration.migrate options[:verbose]
+      BackdoorMigration.migrate_associations options[:verbose]
+      ConfigMigration.migrate options[:verbose]
+      ConfigMigration.migrate_templates options[:verbose]
 
-    AlertMigration.migrate options[:verbose]
+      AlertMigration.migrate options[:verbose]
 
-    CollectorMigration.migrate options[:verbose]
-    CollectorMigration.migrate_topology options[:verbose]
+      CollectorMigration.migrate options[:verbose]
+      CollectorMigration.migrate_topology options[:verbose]
 
-    ProxyMigration.migrate options[:verbose]
-    ProxyMigration.migrate_rules options[:verbose]
-
-
+      ProxyMigration.migrate options[:verbose]
+      ProxyMigration.migrate_rules options[:verbose]
+    end
+    
+    LogMigration.migrate(options[:verbose], options[:activity], options[:exclude]) if options[:log]
+       
     return 0
   end
 
@@ -121,6 +124,12 @@ class Migration
       
       opts.on( '-d', '--db HOSTNAME', 'RCSDB hostname/ip' ) do |db|
         options[:db] = db
+      end
+      
+      opts.on( '-l', '--log ACTIVITY', 'Import logs for a specified activity' ) do |act|
+        options[:log] = true
+        options[:activity], options[:exclude] = act.split(':')
+        options[:exclude] = options[:exclude].split(',') unless options[:exclude].nil?
       end
       
       opts.on( '-v', '--verbose', 'Verbose output' ) do

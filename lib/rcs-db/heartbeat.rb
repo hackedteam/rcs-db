@@ -8,7 +8,7 @@ require_relative 'license'
 
 # from RCS::Common
 require 'rcs-common/trace'
-require 'rcs-common/status'
+require 'rcs-common/systemstatus'
 
 # system
 require 'socket'
@@ -37,19 +37,19 @@ class HeartBeat
     message = "Idle..."
 
     # report our status
-    status = Status.my_status
-    disk = Status.disk_free
-    cpu = Status.cpu_load
-    pcpu = Status.my_cpu_load(component)
+    status = SystemStatus.my_status
+    disk = SystemStatus.disk_free
+    cpu = SystemStatus.cpu_load
+    pcpu = SystemStatus.my_cpu_load(component)
 
     # create the stats hash
     stats = {:disk => disk, :cpu => cpu, :pcpu => pcpu}
 
     # send the status to the db
-    DB.instance.status_update component, ip, status, message, stats
+    ::Status.status_update component, ip, status, message, stats
 
     # check the status of other components
-    DB.instance.status_check
+    ::Status.status_check
   end
 end
 

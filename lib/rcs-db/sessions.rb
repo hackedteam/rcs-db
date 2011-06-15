@@ -21,7 +21,7 @@ class SessionManager
     @sessions = {}
   end
 
-  def create(user, level)
+  def create(user, level, address, accessible = [])
 
     # create a new random cookie
     #cookie = SecureRandom.random_bytes(8).unpack('H*').first
@@ -31,9 +31,9 @@ class SessionManager
     @sessions[cookie] = {:user => user,
                          :level => level,
                          :cookie => cookie,
-    # TODO: get the real address of the user
-                         :address => '1.2.3.4',
-                         :time => Time.now.getutc.to_i}
+                         :address => address,
+                         :time => Time.now.getutc.to_i,
+                         :accessible => accessible}
 
     return @sessions[cookie]
   end
@@ -100,6 +100,26 @@ class SessionManager
   def length
     return @sessions.length
   end
+
+  def get_accessible(user)
+
+    # the list of accessible Items
+    accessible = []
+
+    # search all the groups which the user belongs to
+    Group.any_in({_id: user.group_ids}).each do |group|
+      # for each operation search the Items belonging to it
+      group.item_ids.each do |operation|
+        # it is enough to search in the _path to check the membership
+        Item.any_in({_path: [operation]}).each do |item|
+          accessible << item[:_id]
+        end
+      end
+    end
+
+    return accessible
+  end
+
 end #SessionManager
 
 end #DB::

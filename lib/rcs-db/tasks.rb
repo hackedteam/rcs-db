@@ -1,5 +1,5 @@
 
-require 'guid'
+require 'uuidtools'
 require 'rcs-common/trace'
 
 module RCS
@@ -11,7 +11,7 @@ class Task
   attr_reader :_id, :total, :current, :grid_id
   
   def initialize
-    @_id = Guid.new.to_s
+    @_id = UUIDTools::UUID.random_create.to_s
     @type = 'generic'
     @current = 0
     @total = 0
@@ -60,7 +60,7 @@ class TaskManager
   def create(user, params = {})
     @tasks[user] ||= Hash.new
     (task = Task.new).run params
-    trace :debug, "Creating task #{task._id} for user '#{user}'"
+    trace :debug, "Creating task #{task._id} for user '#{user}' [params: #{params}]"
     @tasks[user][task._id] = task
     return task
   end

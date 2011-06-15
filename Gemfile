@@ -1,17 +1,16 @@
 source "http://rubygems.org"
 # Add dependencies required to use your gem here.
 
+
 gem 'eventmachine', "~> 1.0.0.beta.3"
+gem 'em-http-request'
 git "git://github.com/alor/evma_httpserver.git", :branch => "master" do
   gem 'eventmachine_httpserver', ">= 0.2.2"
 end
+
 gem 'uuidtools'
 #gem 'rcs-common', ">= 0.1.4"
 gem 'ffi'
-
-# remove this after migration is complete
-gem 'em-proxy'
-gem 'em-http-request'
 
 # databases
 gem 'sqlite3'
@@ -19,11 +18,8 @@ gem 'mongo'
 gem 'mongoid'
 gem 'bson'
 gem 'bson_ext'
-gem 'mysql2', :git => "https://github.com/brianmario/mysql2.git", :branch => "master"
+gem 'mysql2', " >= 0.3.3"
 gem 'xml-simple'
-
-# UUID generation
-gem 'guid'
 
 # MIME decoding
 gem 'mail'

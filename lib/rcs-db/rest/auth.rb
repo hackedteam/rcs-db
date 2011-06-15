@@ -6,30 +6,35 @@ module RCS
 module DB
 
 class AuthController < RESTController
-
+  
   def initialize
     @auth_level = []
   end
-
+  
   # everyone who wants to use the system must first authenticate with this method
   def login
     case @req_method
       # return the info about the current auth session
       when 'GET'
         sess = SessionManager.instance.get(@session_cookie)
-        return STATUS_NOT_AUTHORIZED if sess.nil?
-        return STATUS_OK, *json_reply(sess)
-
+        return RESTController::not_authorized if sess.nil?
+        return RESTController::ok(sess)
+      
       # authenticate the user
       when 'POST'
-        # if the user is a Collector, it will authenticate with a unique username
-        # and the password must be the 'server signature'
-        # the unique username will be used to create an entry for it in the network schema
-        if auth_server(@params['user'], @params['pass'])
-          # create the new auth sessions
-          sess = SessionManager.instance.create({:name => @params['user']}, @auth_level)
-          # append the cookie to the other that may have been present in the request
-          return STATUS_OK, *json_reply(sess), 'session=' + sess[:cookie] + '; path=/;'
+        begin
+          # if the user is a Collector, it will authenticate with a unique username
+          # and the password must be the 'server signature'
+          # the unique username will be used to create an entry for it in the network schema
+          if auth_server(@params['user'], @params['pass'])
+            # create the new auth sessions
+            sess = SessionManager.instance.create({:name => @params['user']}, @auth_level, @req_peer)
+            # append the cookie to the other that may have been present in the request
+            return RESTController::ok(sess, {cookie: 'session=' + sess[:cookie] + '; path=/;'})
+          end
+        rescue Exception => e
+          # TODO: specialize LICENSE_LIMIT_REACHED exception
+          return RESTController.conflict('LICENSE_LIMIT_REACHED')
         end
         
         # normal user login
@@ -41,30 +46,33 @@ class AuthController < RESTController
             Audit.log :actor => @params['user'], :action => 'logout', :user => @params['user'], :desc => "User '#{@params['user']}' forcibly logged out by system"
             SessionManager.instance.delete(sess[:cookie])
           end
-
+          
           Audit.log :actor => @params['user'], :action => 'login', :user => @params['user'], :desc => "User '#{@params['user']}' logged in"
 
+          # get the list of accessible Items
+          accessible = SessionManager.instance.get_accessible @user
           # create the new auth sessions
-          sess = SessionManager.instance.create(@user, @auth_level)
+          sess = SessionManager.instance.create(@user, @auth_level, @req_peer, accessible)
           # append the cookie to the other that may have been present in the request
           expiry = (Time.now() + 86400).strftime('%A, %d-%b-%y %H:%M:%S %Z')
           trace :debug, "Issued cookie with expiry time: #{expiry}"
-          return STATUS_OK, *json_reply(sess), 'session=' + sess[:cookie] + "; path=/; expires=#{expiry}"
+          # don't return the accessible items (used only internally)
+          session = sess.select {|k,v| k != :accessible}
+          return RESTController::ok(session, {cookie: 'session=' + sess[:cookie] + "; path=/; expires=#{expiry}" })
         end
-
+    
     end
-
-    return STATUS_NOT_AUTHORIZED, "invalid account"
+    
+    return RESTController::not_authorized("invalid account")
   end
-
+  
   # once the session is over you can explicitly logout
   def logout
     Audit.log :actor => @session[:user][:name], :action => 'logout', :user => @session[:user][:name], :desc => "User '#{@session[:user][:name]}' logged out"
     SessionManager.instance.delete(@session_cookie)
-    return STATUS_OK, '', 'text/html', "session=; path=/; expires=#{Time.at(0).strftime('%A, %d-%b-%y %H:%M:%S %Z')}"
+    return RESTController::ok('', {cookie: "session=; path=/; expires=#{Time.at(0).strftime('%A, %d-%b-%y %H:%M:%S %Z')}" })
   end
   
-
   # private method to authenticate a server
   def auth_server(user, pass)
     server_sig = File.read(Config.instance.file('SERVER_SIG')).chomp
@@ -72,9 +80,7 @@ class AuthController < RESTController
     # the Collectors are authenticated only by the server signature
     if pass.eql? server_sig
 
-      raise 'LICENSE_LIMIT_EXCEEDED' unless LicenseManager.instance.check :collectors
-
-      #TODO: insert the unique username in the network list
+      Collector.collector_login user, @req_peer
 
       trace :info, "Collector [#{user}] logged in"
       @auth_level = [:server]

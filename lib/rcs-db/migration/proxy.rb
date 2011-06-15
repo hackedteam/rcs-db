@@ -1,4 +1,5 @@
 require 'rcs-db/db_layer'
+require_relative '../grid'
 
 module RCS
 module DB
@@ -24,6 +25,7 @@ class ProxyMigration
       mp.name = proxy[:proxy]
       mp.desc = proxy[:desc]
       mp.address = proxy[:address]
+      mp.redirect = proxy[:redirect]
       mp.port = proxy[:port]
       mp.poll = proxy[:poll] == 0 ? false : true
       mp.configured = proxy[:status] == 0 ? true : false
@@ -63,8 +65,9 @@ class ProxyMigration
       mr.action = rule[:action_type]
       mr.action_param = rule[:action_param]
 
-      # TODO: migrate the content to the grid
-      mr[:_grid] = []
+      if mr.action == 'REPLACE'
+        mr[:_grid] = [ GridFS.instance.put(rule[:content]) ] if rule[:content].bytesize > 0
+      end
 
       print "." unless verbose
 

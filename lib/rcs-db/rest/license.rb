@@ -9,10 +9,10 @@ class LicenseController < RESTController
 
   def limit
     require_auth_level :admin, :tech, :view
-
+    
     # we use marshalling due to the lack of a deep copy method ...
-    limits = Marshal::load(Marshal.dump(LicenseManager.instance.limits))
-
+    limits = LicenseManager.instance.limits.merge({}) #Marshal::load(Marshal.dump(LicenseManager.instance.limits))
+    
     # a trick to get the Infinity value
     inf = 1.0/0
     
@@ -24,16 +24,15 @@ class LicenseController < RESTController
     limits[:collectors][:collectors] = nil if limits[:collectors][:collectors] == inf
     limits[:collectors][:anonymizers] = nil if limits[:collectors][:anonymizers] == inf
     limits[:ipa] = nil if limits[:ipa] == inf
-
-    return STATUS_OK, *json_reply(limits)
+    
+    return RESTController.ok(limits)
   end
-
+  
   def count
     require_auth_level :admin, :tech, :view
 
-    return STATUS_OK, *json_reply(LicenseManager.instance.counters)
+    return RESTController.ok(LicenseManager.instance.counters)
   end
-
 
 end
 
