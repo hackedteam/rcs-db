@@ -40,6 +40,7 @@ class Evidence
           backdoor.stat.evidence[self.type] += 1
           backdoor.stat.size += self.data[:_grid_size]
           backdoor.stat.size += Mongoid.database.collection("#{Evidence.collection_name(target)}").stats()['avgObjSize'].to_i
+          backdoor.stat.grid_size += self.data[:_grid_size]
           backdoor.save
         end
 
@@ -51,7 +52,11 @@ class Evidence
           backdoor.stat.evidence[self.type] -= 1
           backdoor.stat.size -= self.data[:_grid_size]
           backdoor.stat.size -= Mongoid.database.collection("#{Evidence.collection_name(target)}").stats()['avgObjSize'].to_i
+          backdoor.stat.grid_size -= self.data[:_grid_size]
           backdoor.save
+          
+          # drop the file (if any) in grid
+          GridFS.instance.delete self.data[:_grid].first unless self.data[:_grid].nil?
         end
       end
     END

@@ -50,6 +50,11 @@ class BackdoorMigration
       mb.counter = backdoor[:counter] if kind == 'factory'
       
       mb.pathseed = backdoor[:pathseed]
+
+      mb.stat = Stat.new
+      mb.stat.evidence = {}
+      mb.stat.size = 0
+      mb.stat.grid_size = 0
       
       target = Item.where({_mid: backdoor[:target_id], _kind: 'target'}).first
       mb._path = target[:_path] + [ target[:_id] ]
@@ -151,7 +156,7 @@ class BackdoorMigration
       ms.source = st[:remoteip]
       ms.user = st[:remoteuser]
       ms.device = st[:remotehost]
-      ms.last_sync = Time.parse(st[:received]).getutc.to_i unless st[:received].nil?
+      ms.last_sync = Time.at(st[:received]).getutc.to_i unless st[:received].nil?
 
       backdoor.stat = ms
 

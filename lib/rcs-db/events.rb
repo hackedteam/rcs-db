@@ -144,6 +144,11 @@ class Events
 
         # timeout for the sessions (will destroy inactive sessions)
         EM::PeriodicTimer.new(60) { SessionManager.instance.timeout }
+
+        # recalculate size statistics for operations, targets and backdoors
+        Item.restat
+        EM::PeriodicTimer.new(60) { Item.restat }
+        
       end
     rescue Exception => e
       # bind error
