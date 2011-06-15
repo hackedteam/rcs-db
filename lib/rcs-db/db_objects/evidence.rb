@@ -67,6 +67,11 @@ END
     return klass
   end
 
+  def self.dynamic_new(id)
+    klass = self.collection_class(id)
+    return klass.new
+  end
+
 end
 
 #end # ::DB
