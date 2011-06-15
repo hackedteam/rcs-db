@@ -87,9 +87,12 @@ class CollectorController < RESTController
     time = Time.parse(params['time']).getutc.to_i
 
     collector = Collector.find(params['_id'])
-    db = Mongoid.database
-    coll = db['log.' + collector[:_id].to_s]
-    coll.save({time: time, type: params['type'].downcase, desc: params['desc']})
+
+    entry = CappedLog.dynamic_new collector[:_id]
+    entry.time = time
+    entry.type = params['type'].downcase
+    entry.desc = params['desc']
+    entry.save
 
     return RESTController.ok
   end

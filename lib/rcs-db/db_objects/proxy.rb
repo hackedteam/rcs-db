@@ -27,12 +27,12 @@ class Proxy
   protected
   def create_log_collection
     db = Mongoid.database
-    db.create_collection("log." + self._id.to_s, {capped: true, size: 2_000_000, max: 10_000})
+    db.create_collection(CappedLog.collection_name(self._id.to_s), {capped: true, size: 2_000_000, max: 10_000})
   end
 
   def drop_log_collection
     db = Mongoid.database
-    db.drop_collection("log." + self._id.to_s)
+    db.drop_collection(CappedLog.collection_name(self._id.to_s))
   end
 end
 

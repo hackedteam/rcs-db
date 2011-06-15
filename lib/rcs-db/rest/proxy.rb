@@ -88,9 +88,12 @@ class ProxyController < RESTController
 
     mongoid_query do
       proxy = Proxy.find(params['_id'])
-      db = Mongoid.database
-      coll = db['log.' + proxy[:_id].to_s]
-      coll.save({time: time, type: params['type'].downcase, desc: params['desc']})
+
+      entry = CappedLog.dynamic_new proxy[:_id]
+      entry.time = time
+      entry.type = params['type'].downcase
+      entry.desc = params['desc']
+      entry.save
 
       return RESTController.ok
     end
