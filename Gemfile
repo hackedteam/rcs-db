@@ -1,8 +1,7 @@
 source "http://rubygems.org"
 # Add dependencies required to use your gem here.
 
-
-gem 'eventmachine', "~> 1.0.0.beta.3"
+gem 'eventmachine', "= 1.0.0.beta.3"
 gem 'em-http-request'
 git "git://github.com/alor/evma_httpserver.git", :branch => "master" do
   gem 'eventmachine_httpserver', ">= 0.2.2"
@@ -18,7 +17,7 @@ gem 'mongo'
 gem 'mongoid'
 gem 'bson'
 gem 'bson_ext'
-gem 'mysql2', " >= 0.3.3"
+gem 'mysql2', "= 0.3.3"
 gem 'xml-simple'
 
 # MIME decoding

@@ -50,6 +50,11 @@ class BackdoorMigration
       mb.counter = backdoor[:counter] if kind == 'factory'
       
       mb.pathseed = backdoor[:pathseed]
+
+      mb.stat = Stat.new
+      mb.stat.evidence = {}
+      mb.stat.size = 0
+      mb.stat.grid_size = 0
       
       target = Item.where({_mid: backdoor[:target_id], _kind: 'target'}).first
       mb._path = target[:_path] + [ target[:_id] ]

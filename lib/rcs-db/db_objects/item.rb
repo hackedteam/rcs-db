@@ -43,25 +43,59 @@ class Item
 
   after_destroy :destroy_callback
 
+  public
+  
+  # performs global recalculation of stats (to be called periodically)
+  def self.restat
+    # to make stat converge in one step, first restat targets, then operations
+    Item.where(_kind: 'target').each {|i| i.restat}
+    Item.where(_kind: 'operation').each {|i| i.restat}
+  end
+  
+  def restat
+    case self._kind
+      when 'operation'
+        self.stat.size = 0; self.stat.grid_size = 0; self.stat.evidence = {}
+        targets = Item.where(_kind: 'target').also_in(_path: [self._id])
+        targets.each do |t|
+          self.stat.evidence.merge!(t.stat.evidence) {|k,o,n| o+n }
+          self.stat.size += t.stat.size
+          self.stat.grid_size += t.stat.grid_size
+        end
+        self.save
+      when 'target'
+        self.stat.grid_size = 0; self.stat.evidence = {}
+        backdoors = Item.where(_kind: 'backdoor').also_in(_path: [self._id])
+        backdoors.each do |b|
+          self.stat.evidence.merge!(b.stat.evidence) {|k,o,n| o+n }
+          self.stat.grid_size += b.stat.grid_size
+        end
+        db = Mongoid.database
+        collection = db.collections.select {|c| c.name == Evidence.collection_name(self._id.to_s)}
+        unless collection.empty?
+          self.stat.size = collection.first.stats()['size'].to_i
+          self.save
+        end
+    end
+  end
+  
   protected
-
+  
   def destroy_callback
     case self._kind
-      # TODO: recalculate stats before dropping
       when 'operation'
         # destroy all the targets of this operation
-        Item.where({_kind: 'target', _path: [ self._id ]}).each do |targ|
-          targ.destroy
-        end
+        Item.where({_kind: 'target', _path: [ self._id ]}).each {|targ| targ.destroy}
       when 'target'
-        db = Mongoid.database
-        db.drop_collection Evidence.collection_name(self._id.to_s)
         # destroy all the backdoors of this target
-        Item.where({_kind: 'backdoor'}).also_in({_path: [ self._id ]}).each do |bck|
-          bck.destroy
-        end
+        Item.where({_kind: 'backdoor'}).also_in({_path: [ self._id ]}).each {|bck| bck.destroy}
+        # drop the collection
+        Mongoid.database.drop_collection Evidence.collection_name(self._id.to_s)
       when 'backdoor'
-        #TODO: destroy all the evidences
+        # destroy all the evidences
+        Evidence.collection_class(self._path.last).where(item: self._id).each {|ev| ev.destroy}
+        # drop all grid items
+        GridFS.instance.delete_by_backdoor(self._id.to_s)
     end
   end
 end
@@ -117,7 +151,8 @@ class Stat
   field :device, type: String
   field :last_sync, type: Integer
   field :size, type: Integer
+  field :grid_size, type: Integer
   field :evidence, type: Hash
-
+  
   embedded_in :item
 end

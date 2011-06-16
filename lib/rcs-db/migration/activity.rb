@@ -27,7 +27,14 @@ class ActivityMigration
       ma._kind = 'operation'
       ma._path = []
       ma.status = a[:status].downcase
+
+      ma.stat = Stat.new
+      ma.stat.evidence = {}
+      ma.stat.size = 0
+      ma.stat.grid_size = 0
+
       ma.save
+
     end
     
     puts " done."

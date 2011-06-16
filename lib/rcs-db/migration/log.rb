@@ -54,12 +54,13 @@ class LogMigration
     # migrate evidence for each backdoor
     backdoors = Item.where({_kind: 'backdoor'}).also_in({_path: [id]})
     backdoors.each do |bck|
-
+      
       # clear stats for the backdoor
       bck.stat.evidence = {}
       bck.stat.size = 0
+      bck.stat.grid_size = 0
       bck.save
-
+      
       # delete all files related to the backdoor
       GridFS.instance.delete_by_backdoor(bck[:_id].to_s)
 

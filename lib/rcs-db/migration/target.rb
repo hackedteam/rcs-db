@@ -26,6 +26,11 @@ class TargetMigration
       mt._kind = 'target'
       mt.status = target[:status].downcase
 
+      mt.stat = Stat.new
+      mt.stat.evidence = {}
+      mt.stat.size = 0
+      mt.stat.grid_size = 0
+
       operation = Item.where({_mid: target[:activity_id], _kind: 'operation'}).first
       mt._path = [ operation[:_id] ]
 
