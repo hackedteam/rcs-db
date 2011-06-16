@@ -31,14 +31,6 @@ class DB
   
   def mysql_connect(user, pass, host)
     begin
-      # use the credential stored by RCSDB
-      if File.exist?('C:/RCSDB/etc/RCSDB.ini') then
-        File.open('C:/RCSDB/etc/RCSDB.ini').each_line do |line|
-          user = line.split('=')[1].chomp if line['user=']
-          pass = line.split('=')[1].chomp if line['pass=']
-          host = '127.0.0.1'
-        end
-      end
       @mysql = Mysql2::Client.new(:host => host, :username => user, :password => pass, :database => 'rcs')
       trace :info, "Connected to MySQL [#{user}:#{pass}]"
       @available = true
@@ -49,13 +41,13 @@ class DB
     end
   end
   
-  def mysql_query(query)
+  def mysql_query(query, opts={:symbolize_keys => true})
     begin
       @semaphore.synchronize do
         # try to reconnect if not connected
         mysql_connect('root', 'rootp123', Config.instance.global['DB_ADDRESS']) if not @available
         # execute the query
-        @mysql.query(query, {:symbolize_keys => true})
+        @mysql.query(query, opts)
       end
     rescue Mysql2::Error => e
       trace :error, "#{e.message}. Retrying ..."

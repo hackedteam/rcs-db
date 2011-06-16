@@ -9,7 +9,7 @@ doc
 .yardoc
 
 # bundler
-.bundle
+#.bundle
 
 # jeweler generated
 pkg
