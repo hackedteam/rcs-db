@@ -8,9 +8,6 @@ rdoc
 doc
 .yardoc
 
-# bundler
-.bundle
-
 # jeweler generated
 pkg
 
