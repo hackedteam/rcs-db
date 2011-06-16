@@ -1,3 +1,4 @@
+# encoding: utf-8
 #
 #  License handling stuff
 #
@@ -7,6 +8,7 @@ require_relative 'dongle.rb'
 
 # from RCS::Common
 require 'rcs-common/trace'
+require 'rcs-common/crypt'
 
 # system
 require 'yaml'
@@ -19,6 +21,7 @@ module DB
 class LicenseManager
   include Singleton
   include RCS::Tracer
+  include RCS::Crypt
 
   LICENSE_VERSION = '8.0'
   LICENSE_FILE = 'rcs.lic'
@@ -70,11 +73,14 @@ class LicenseManager
 
       File.open(lic_file, "r") do |f|
         lic = YAML.load(f.read)
-        # TODO: check the crypto signature
+
+        # check the autenticity of the license
+        unless crypt_check(lic)
+          trace :fatal, 'Invalid License File: corrupted integrity check'
+          exit
+        end
 
         if lic[:serial] != serial
-          trace :fatal, 'Invalid License File: incorrect serial number'
-          exit
         end
 
         if lic[:version] != LICENSE_VERSION
@@ -273,8 +279,18 @@ class LicenseManager
       trace :warn, "Queuing backdoor '#{offending[:name]}' #{offending[:desc]}"
       offending.save
     end
-
   end
+
+
+  def crypt_check(hash)
+    # calculate the check on the whole hash except the :integrity field itself
+    content = hash.reject {|k,v| k == :integrity}.to_s
+    # calculate the encrypted SHA1
+    check = aes_encrypt(Digest::SHA1.digest(content), Digest::SHA1.digest("€ ∫∑x=1 ∆t π™")).unpack('H*').first
+    #trace :debug, check
+    return hash[:integrity] == check
+  end
+
 
   def counters
     counters = {:users => User.count(conditions: {enabled: true}),
