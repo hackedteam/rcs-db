@@ -20,7 +20,7 @@ class Config
   CONF_DIR = 'config'
   CONF_FILE = 'config.yaml'
 
-  DEFAULT_CONFIG= {'DB_ADDRESS' => 'localhost',
+  DEFAULT_CONFIG = {'DB_ADDRESS' => 'localhost',
                    'CA_PEM' => 'rcs-ca.pem',
                    'DB_CERT' => 'rcs-db.crt',
                    'DB_KEY' => 'rcs-db.key',
