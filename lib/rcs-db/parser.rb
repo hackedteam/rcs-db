@@ -24,13 +24,11 @@ module Parser
     
     # extract the name of the controller and the parameters
     root, controller_name, *params = req_uri.split('/')
-
+    
     # instantiate the correct AnythingController class
     # we will then pass the control of the operation to that object
-    begin
-      klass = "#{controller_name.capitalize}Controller" unless controller_name.nil?
-      controller = eval(klass).new
-    rescue
+    controller = RESTController.get_controller(controller_name)
+    if controller.nil?
       trace :error, "Invalid controller [#{req_uri}]"
       return RESTController.not_found
     end
@@ -42,7 +40,7 @@ module Parser
     
     # if the object has an explicit method calling
     method = params.shift if not params.first.nil? and controller.respond_to?(params.first)
-  
+    
     # save the params in the controller object
     controller.params[controller_name.downcase] = params.first unless params.first.nil?
     controller.params.merge!(CGI::parse(req_query)) unless req_query.nil?
@@ -61,7 +59,7 @@ module Parser
           method = :destroy
       end
     end
-
+    
     # invoke the right method on the controller
     begin
       response = controller.send(method) unless method.nil?
@@ -74,7 +72,7 @@ module Parser
       trace :error, response.content unless response.nil?
       trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
     end
-
+    
     # the controller job has finished, call the cleanup hook
     controller.cleanup
     

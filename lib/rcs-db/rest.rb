@@ -83,6 +83,16 @@ class RESTController
     # hook method if you need to perform some cleanup operation
   end
   
+  def self.get_controller(name)
+    return nil if name.nil?
+    begin
+      controller = eval("#{name.capitalize}Controller").new
+      return controller
+    rescue
+      return nil
+    end
+  end
+  
   def self.not_found
     return RESTResponse.new(STATUS_NOT_FOUND)
   end
@@ -113,13 +123,6 @@ class RESTController
   def self.stream_grid(grid_io)
     return RESTGridStream.new(grid_io)
   end
-
-=begin
-  # helper method for the replies
-  def json_reply(reply)
-    return reply.to_json, 'application/json'
-  end
-=end
 
   # macro for auth level check
   def require_auth_level(*levels)
