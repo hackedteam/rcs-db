@@ -51,11 +51,16 @@ class HTTPHandler < EM::Connection
 
     # get the peer name
     @peer_port, @peer = Socket.unpack_sockaddr_in(get_peername)
+    @closed = false
     trace :debug, "Connection from #{@peer}:#{@peer_port}"
   end
 
   def ssl_handshake_completed
     trace :debug, "SSL Handshake completed successfully"
+  end
+
+  def closed?
+    @closed
   end
 
   def ssl_verify_peer(cert)
@@ -64,6 +69,7 @@ class HTTPHandler < EM::Connection
 
   def unbind
     trace :debug, "Connection closed #{@peer}:#{@peer_port}"
+    @closed = true
   end
 
   def process_http_request

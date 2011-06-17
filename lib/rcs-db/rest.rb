@@ -83,6 +83,16 @@ class RESTController
     # hook method if you need to perform some cleanup operation
   end
   
+  def self.get_controller(name)
+    return nil if name.nil?
+    begin
+      controller = eval("#{name.capitalize}Controller").new
+      return controller
+    rescue
+      return nil
+    end
+  end
+  
   def self.not_found
     return RESTResponse.new(STATUS_NOT_FOUND)
   end
@@ -113,13 +123,6 @@ class RESTController
   def self.stream_grid(grid_io)
     return RESTGridStream.new(grid_io)
   end
-
-=begin
-  # helper method for the replies
-  def json_reply(reply)
-    return reply.to_json, 'application/json'
-  end
-=end
 
   # macro for auth level check
   def require_auth_level(*levels)
@@ -205,7 +208,7 @@ class RESTResponse
       trace :error, "Cannot parse json reply: #{@content}"
       resp.content = "JSON_SERIALIZATION_ERROR".to_json
     end
-
+    
     resp.headers['Content-Type'] = @content_type
     resp.headers['Set-Cookie'] = @cookie unless @cookie.nil?
 
@@ -223,24 +226,26 @@ class RESTResponse
   end
 end
 
-class RESTFileStream
-  def initialize(filename)
-    @filename = filename
-  end
-
-  def send_response(connection)
-    response = DelegatedHttpFileResponse.new connection, @filename
-    response.send_response
-  end
-end
-
 class RESTGridStream
   def initialize(grid_io)
     @grid_io = grid_io
   end
 
   def send_response(connection)
-    response = DelegatedHttpGridResponse.new connection, @grid_io
-    response.send_response
+    response = EM::DelegatedHttpGridResponse.new connection, @grid_io
+    response.send_headers
+    response.send_body
+  end
+end
+
+class RESTFileStream
+  def initialize(filename)
+    @filename = filename
+  end
+
+  def send_response(connection)
+    response = EM::DelegatedHttpFileResponse.new connection, @filename
+    response.send_headers
+    response.send_body
   end
 end

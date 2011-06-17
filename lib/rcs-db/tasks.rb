@@ -10,18 +10,16 @@ class Task
   
   attr_reader :_id, :total, :current, :grid_id
   
-  def initialize
+  def initialize(type, file_name)
     @_id = UUIDTools::UUID.random_create.to_s
-    @type = 'generic'
+    @file_name = file_name
+    @type = type
     @current = 0
     @total = 0
-    @desc = description()
     @grid_id = ''
+    @file_size = 0
+    @desc = 'Task fuffa'
     @stopped = false
-  end
-  
-  def description
-    'Generic task'
   end
   
   def stopped?
@@ -32,15 +30,31 @@ class Task
     trace :debug, "Cancelling task #{@_id}"
     @stopped = true
   end
+
+  # override this
+  def perform_cycle(params)
+    trace :debug, "processing #{@current} out of #{@total}"
+    sleep 1
+  end
+  
+  # override this
+  def generate_output(params)
+    @grid_id = '4dfa12a00afc5deb66ef3c5d' # pragmatic_agile.pdf
+    #@grid_id = '4dfa1d1aa4df496c90fab43e' # underground.avi
+    #@grid_id = '4dfa2483674bba48cd2a153f' # en_outlook.exe
+    file = GridFS.instance.get(BSON::ObjectId.from_string(@grid_id))
+    @file_size = file.file_length
+    @file_name = @file_name + '.pdf'
+  end
   
   def run(params)
     process = Proc.new do
       @total = rand(10) + 1
       @total.times do |n|
         break if stopped?
+        perform_cycle(params)
+        generate_output(params) if (@current + 1 == @total)
         @current += 1
-        trace :debug, "processing #{@current} out of #{@total}"
-        sleep 1
       end
       trace :debug, "process ended"
     end
@@ -57,11 +71,12 @@ class TaskManager
     @tasks = Hash.new
   end
   
-  def create(user, params = {})
+  def create(user, type, file_name, params = {})
     @tasks[user] ||= Hash.new
-    (task = Task.new).run params
-    trace :debug, "Creating task #{task._id} for user '#{user}' [params: #{params}]"
+    task = Task.new type, file_name
     @tasks[user][task._id] = task
+    trace :debug, "Creating task #{task._id} of type #{type}for user '#{user}', saving to '#{file_name}'"
+    task.run params
     return task
   end
   
@@ -84,6 +99,7 @@ class TaskManager
     task = @tasks[user][task_id]
     task.stop!
     @tasks[user].delete task_id
+    # TODO: delete file from grid
   end
 end
 

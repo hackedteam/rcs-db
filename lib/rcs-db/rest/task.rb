@@ -24,7 +24,7 @@ class TaskController < RESTController
   def create
     require_auth_level :admin, :tech, :viewer
     
-    task = TaskManager.instance.create @session[:user][:name]
+    task = TaskManager.instance.create @session[:user][:name], params['type'], params['file_name']
     
     return RESTController.not_found if task.nil?
     return RESTController.ok task
