@@ -11,7 +11,7 @@ class LicenseController < RESTController
     require_auth_level :admin, :tech, :view
     
     # we use marshalling due to the lack of a deep copy method ...
-    limits = LicenseManager.instance.limits.merge({}) #Marshal::load(Marshal.dump(LicenseManager.instance.limits))
+    limits = Marshal::load(Marshal.dump(LicenseManager.instance.limits)) #LicenseManager.instance.limits.merge({})
     
     # a trick to get the Infinity value
     inf = 1.0/0
