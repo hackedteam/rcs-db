@@ -55,16 +55,7 @@ class LicenseManager
   end
 
   def load_license
-    trace :info, "Checking for hardware dongle..."
 
-    begin
-      # get the version from the dongle (can rise exception)
-      serial = Dongle.serial
-    rescue Exception => e
-      trace :fatal, e.message
-      exit
-    end
-    
     # load the license file
     lic_file = File.join Dir.pwd, Config::CONF_DIR, LICENSE_FILE
 
@@ -78,9 +69,6 @@ class LicenseManager
         unless crypt_check(lic)
           trace :fatal, 'Invalid License File: corrupted integrity check'
           exit
-        end
-
-        if lic[:serial] != serial
         end
 
         if lic[:version] != LICENSE_VERSION
@@ -98,6 +86,21 @@ class LicenseManager
     # sanity check
     if @limits[:backdoors][:total] < @limits[:backdoors][:desktop] or @limits[:backdoors][:total] < @limits[:backdoors][:mobile]
       trace :fatal, 'Invalid License File: total is lower than desktop or mobile'
+      exit
+    end
+
+    begin
+      if @limits[:serial] != 'off'
+        trace :info, "Checking for hardware dongle..."
+        # get the version from the dongle (can rise exception)
+        if @limits[:serial] != Dongle.serial
+          raise 'Invalid License File: incorrect serial number'
+        end
+      else
+        trace :info, "Hardware dongle not required..."
+      end
+    rescue Exception => e
+      trace :fatal, e.message
       exit
     end
 
