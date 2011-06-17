@@ -1,6 +1,7 @@
 require 'net/http'
 require 'json'
 require 'benchmark'
+require 'open-uri'
 require 'pp'
 
 #http = Net::HTTP.new('192.168.1.189', 4444)
@@ -18,7 +19,6 @@ puts resp.body
 cookie = resp['Set-Cookie'] unless resp['Set-Cookie'].nil?
 puts "cookie " + cookie
 puts
-
 
 # session
 if false
@@ -174,25 +174,25 @@ puts
 end
 
 # audit
-if false
+if true
   # audit.count
    res = http.request_get('/audit/count', {'Cookie' => cookie})
    puts "audit.count"
    puts res.body.inspect
    puts
    
-   res = http.request_get('/audit/count?filter={action: "puddu"}', {'Cookie' => cookie})
+   res = http.request_get(URI.escape('/audit/count?filter={"action": ["puddu"]}'), {'Cookie' => cookie})
    puts "audit.count 'puddu'"
    puts res.body.inspect
    puts
    
-   res = http.request_get('/audit/count?filter=%7B%22action%22%3A%22user%2Eupdate%22%7D', {'Cookie' => cookie})
+   res = http.request_get(URI.escape('/audit/count?filter={"action": ["user.update", "login"]}'), {'Cookie' => cookie})
    puts "audit.count 'user.update'"
    puts res.body.inspect
    puts
    
   # audit.index
-   res = http.request_get('/audit?filter=%7B%22action%22%3A%22user%2Eupdate%22%7D&startIndex=0&numItems=10', {'Cookie' => cookie})
+   res = http.request_get('/audit?filter={"action": ["user.update"]}&startIndex=0&numItems=10', {'Cookie' => cookie})
    puts "audit.index 'user.update'"
    puts res
    puts
@@ -277,6 +277,24 @@ puts
 =end
 
 end # task
+
+# grid
+if false
+  grid_id = '4dfa1d1aa4df496c90fab43e' # 1.4 gb (underground.avi)
+  #grid_id = '4dfa2483674bba48cd2a153f' # 280 mb (en_outlook.exe)
+  fo = File.open('underground.avi', 'wb')
+  puts "grid.show"
+  total = 0
+  http.request_get("/grid/#{grid_id}", {'Cookie' => cookie}) do |resp|
+    resp.read_body do |segment|
+      print "."
+      total += segment.bytesize
+      fo.write(segment)
+    end
+  end
+  fo.close
+  puts "Got #{total} bytes."
+end
 
 # proxy
 if false
