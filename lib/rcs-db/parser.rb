@@ -68,9 +68,8 @@ module Parser
       trace :warn, "Invalid access level: " + e.message
     rescue Exception => e
       response.content = "ERROR: " + e.message unless response.nil?
-      #resp_content = "ERROR: " + e.message
-      trace :error, response.content unless response.nil?
-      trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
+      trace :error, "EXCEPTION: " + e.message
+      trace :fatal, "BACKTRACE: " + e.backtrace.join("\n")
     end
     
     # the controller job has finished, call the cleanup hook
