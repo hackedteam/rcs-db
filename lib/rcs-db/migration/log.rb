@@ -126,12 +126,25 @@ class LogMigration
     ev.note = log[:content] unless log[:content].nil?
     ev.item = [ backdoor_id ]
 
-    # TODO: parse log specific data
-    ev.data = {}
+    # parse log specific data
+    ev.data = migrate_data(log)
     ev.data[:_grid_size] = log[:longblob1].bytesize
     ev.data[:_grid] = GridFS.instance.put(log[:longblob1], {filename: backdoor_id.to_s}) if log[:longblob1].bytesize > 0
     
     ev.save
+  end
+
+
+  def self.migrate_data(log)
+    data = {}
+
+    # TODO: parse log specific data
+    case log[:type]
+      when 'CALL'
+        #puts 'call...'
+    end
+
+    return data
   end
 
 end
