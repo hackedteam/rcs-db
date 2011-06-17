@@ -52,25 +52,35 @@ module EventMachine
     
     def stream_one_chunk
       loop {
-          if @position < @size
+        break if @connection.closed?
+        if @position < @size
+          if @connection.get_outbound_data_size > BackpressureLevel
+              EventMachine::next_tick {stream_one_chunk}
+              break
+          else
+            break unless @position < @size
             len = @size - @position
             len = ChunkSize if (len > ChunkSize)
-            
+
             @connection.send_data( @mapping.get_chunk( @position, len ))
-            
+
             @position += len
-          else
-            @mapping.close
-            break
           end
-        }
-      end
+        else
+          @mapping.close
+          succeed
+          #puts "streamed #{@position} bytes."
+          break
+        end
+      }
+    end
     
 	end # DelegatedHttpFileResponse
 	
 	class DelegatedHttpGridResponse < HttpResponse
 	  
 	  ChunkSize = 16384
+    BackpressureLevel = 50000
 	  
 	  extend Forwardable
 		def_delegators :@connection,
@@ -107,19 +117,33 @@ module EventMachine
 	  end
 	  
 	  def stream_with_mapping filename # :nodoc:
+      @position = 0
+      @size = @grid_io.file_length
       stream_one_chunk
     end
     
     def stream_one_chunk
       loop {
-          break unless @grid_io.file_position < @grid_io.file_length
-          
-          len = @grid_io.file_length - @grid_io.file_position
-          len = ChunkSize if (len > ChunkSize)
-          
-          @connection.send_data( @grid_io.read( len ))
-        }
-      end
+        break if @connection.closed?
+        if @position < @size
+          if @connection.get_outbound_data_size > BackpressureLevel
+              EventMachine::next_tick {stream_one_chunk}
+              break
+          else
+            break unless @grid_io.file_position < @grid_io.file_length
+            
+            len = @grid_io.file_length - @grid_io.file_position
+            len = ChunkSize if (len > ChunkSize)
+            
+            @connection.send_data( @grid_io.read( len ))
+          end
+        else
+          succeed
+          #puts "streamed #{@position} bytes."
+          break
+        end
+      }
+    end
     
 	end # DelegatedHttpGridResponse
 
