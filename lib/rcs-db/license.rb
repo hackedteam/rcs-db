@@ -140,7 +140,7 @@ class LicenseManager
   def burn_one_license(type, platform)
 
     # check if the platform can be used
-    unless @limit[:backdoors][platform]
+    unless @limits[:backdoors][platform]
       trace :warn, "You don't have a license for #{platform.to_s}. Queuing..."
       return false
     end
@@ -156,9 +156,11 @@ class LicenseManager
         return false
       end
       if type == :desktop and desktop < @limits[:backdoors][:desktop]
+        trace :info, "Using a reusable license: #{type.to_s} #{platform.to_s}"
         return true
       end
       if type == :mobile and mobile < @limits[:backdoors][:mobile]
+        trace :info, "Using a reusable license: #{type.to_s} #{platform.to_s}"
         return true
       end
 
@@ -170,7 +172,7 @@ class LicenseManager
 
       # do we have available license on the dongle?
       if Dongle.count > 0
-        trace :info, "Using a permanent license: #{type.to_s} #{platform.to_s}"
+        trace :info, "Using a oneshot license: #{type.to_s} #{platform.to_s}"
         Dongle.decrement
         return true
       else

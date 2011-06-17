@@ -158,6 +158,9 @@ class BackdoorMigration
       ms.user = st[:remoteuser]
       ms.device = st[:remotehost]
       ms.last_sync = st[:received].to_i unless st[:received].nil?
+      ms.evidence = {}
+      ms.size = 0
+      ms.grid_size = 0
 
       backdoor.stat = ms
 
