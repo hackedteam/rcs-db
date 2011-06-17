@@ -208,7 +208,7 @@ class RESTResponse
       trace :error, "Cannot parse json reply: #{@content}"
       resp.content = "JSON_SERIALIZATION_ERROR".to_json
     end
-
+    
     resp.headers['Content-Type'] = @content_type
     resp.headers['Set-Cookie'] = @cookie unless @cookie.nil?
 
@@ -226,24 +226,26 @@ class RESTResponse
   end
 end
 
-class RESTFileStream
-  def initialize(filename)
-    @filename = filename
-  end
-
-  def send_response(connection)
-    response = DelegatedHttpFileResponse.new connection, @filename
-    response.send_response
-  end
-end
-
 class RESTGridStream
   def initialize(grid_io)
     @grid_io = grid_io
   end
 
   def send_response(connection)
-    response = DelegatedHttpGridResponse.new connection, @grid_io
-    response.send_response
+    response = EM::DelegatedHttpGridResponse.new connection, @grid_io
+    response.send_headers
+    response.send_body
+  end
+end
+
+class RESTFileStream
+  def initialize(filename)
+    @filename = filename
+  end
+
+  def send_response(connection)
+    response = EM::DelegatedHttpFileResponse.new connection, @filename
+    response.send_headers
+    response.send_body
   end
 end
