@@ -22,11 +22,11 @@ class SessionManager
   end
 
   def create(user, level, address, accessible = [])
-
+    
     # create a new random cookie
     #cookie = SecureRandom.random_bytes(8).unpack('H*').first
     cookie = UUIDTools::UUID.random_create.to_s
-
+    
     # store the sessions
     @sessions[cookie] = {:user => user,
                          :level => level,
@@ -36,15 +36,6 @@ class SessionManager
                          :accessible => accessible}
 
     return @sessions[cookie]
-  end
-
-  def check(cookie)
-    return false if @sessions[cookie].nil?
-
-    # update the time of the session (to avoid timeout)
-    @sessions[cookie][:time] = Time.now.getutc.to_i
-
-    return true
   end
 
   def get_by_user(user)
@@ -65,15 +56,22 @@ class SessionManager
     
     return list
   end
-
+  
+  def update(cookie)
+    # update the time of the session (to avoid timeout)
+    @sessions[cookie][:time] = Time.now.getutc.to_i
+  end
+  
   def get(cookie)
+    return nil if @sessions[cookie].nil?
+    update cookie
     return @sessions[cookie]
   end
-
+  
   def delete(cookie)
     return @sessions.delete(cookie) != nil
   end
-
+  
   # default timeout is 15 minutes
   # this timeout is calculated from the last time the cookie was checked
   def timeout(delta = 900)

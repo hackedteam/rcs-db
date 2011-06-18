@@ -23,7 +23,7 @@ module Parser
   STATUS_SERVER_ERROR = 500
   
   # parse a request from a client
-  def http_parse(http_headers, req_method, req_uri, req_cookies, req_content)
+  def process_request(http_headers, req_method, req_uri, req_cookies, req_content)
     
     # safe value
     resp_status = STATUS_NOT_FOUND

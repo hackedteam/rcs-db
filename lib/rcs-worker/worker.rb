@@ -75,7 +75,7 @@ class HTTPHandler < EM::Connection
       #   - the content_type
       #   - the cookie if the backdoor successfully passed the auth phase
       begin
-        status, content, content_type = http_parse(@http_headers.split("\x00"), @http_request_method, @http_request_uri, @http_cookie, @http_post_content)
+        status, content, content_type = process_request(@http_headers.split("\x00"), @http_request_method, @http_request_uri, @http_cookie, @http_post_content)
       rescue Exception => e
         trace :error, "ERROR: " + e.message
         trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")

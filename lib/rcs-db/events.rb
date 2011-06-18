@@ -84,22 +84,33 @@ class HTTPHandler < EM::Connection
     #   @http_query_string
     #   @http_post_content
     #   @http_headers
-
+    
     #trace :debug, "[#{@peer}] Incoming HTTP Connection"
     trace :debug, "[#{@peer}] Request: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string}"
-    
+
     response = nil
-    
+
     # Block which fulfills the request
     operation = proc do
-    
+      
       # do the dirty job :)
       # here we pass the control to the internal parser which will return:
       #   - the content of the reply
       #   - the content_type
       #   - the cookie if the backdoor successfully passed the auth phase
+      
+      headers = @http_headers.split("\x00")
+      request = {
+          method: @http_request_method,
+          uri: @http_request_uri,
+          cookie: @http_cookie,
+          content: @http_post_content,
+          query: @http_query_string,
+          peer: @peer
+      }
+      
       begin
-        response = http_parse(@http_headers.split("\x00"), @http_request_method, @http_request_uri, @http_cookie, @http_post_content, @http_query_string)
+        response ||= process_request(headers, request)
       rescue Exception => e
         trace :error, "ERROR: " + e.message
         trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
