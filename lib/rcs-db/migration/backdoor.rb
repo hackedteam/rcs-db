@@ -29,11 +29,12 @@ class BackdoorMigration
       mb.desc = backdoor[:desc]
       mb._kind = kind
       mb.status = backdoor[:status].downcase
+      mb.demo = false
       
       mb.build = backdoor[:build]
       
       mb.instance = backdoor[:instance].downcase if kind == 'backdoor'
-      mb.version = backdoor[:version] if kind == 'backdoor'
+      mb.version = backdoor[:version].to_i if kind == 'backdoor'
       
       mb.logkey = backdoor[:logkey]
       mb.confkey = backdoor[:confkey]
@@ -42,6 +43,8 @@ class BackdoorMigration
       if kind == 'backdoor'
         mb.platform = backdoor[:subtype].downcase
         mb.platform = 'windows' if ['win32', 'win64'].include? mb.platform
+        mb.platform = 'ios' if mb.platform == 'iphone'
+        mb.platform = 'osx' if mb.platform == 'macos'
       end
       
       mb.deleted = (backdoor[:deleted] == 0) ? false : true
@@ -148,7 +151,7 @@ class BackdoorMigration
     stats.each do |st|
       backdoor = Item.where({_mid: st[:backdoor_id], _kind: 'backdoor'}).first
 
-      next unless backdoor.stat.nil?
+      next unless backdoor.stat.nil? or backdoor.stat.source.nil?
 
       print "." unless verbose
 
@@ -156,7 +159,10 @@ class BackdoorMigration
       ms.source = st[:remoteip]
       ms.user = st[:remoteuser]
       ms.device = st[:remotehost]
-      ms.last_sync = Time.at(st[:received]).getutc.to_i unless st[:received].nil?
+      ms.last_sync = st[:received].to_i unless st[:received].nil?
+      ms.evidence = {}
+      ms.size = 0
+      ms.grid_size = 0
 
       backdoor.stat = ms
 

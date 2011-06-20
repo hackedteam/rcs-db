@@ -17,7 +17,7 @@ class Item
   # backdoor
   field :build, type: String
   field :instance, type: String
-  field :version, type: String
+  field :version, type: Integer
   field :type, type: String
   field :platform, type: String
   field :deleted, type: Boolean
@@ -26,6 +26,7 @@ class Item
   field :pathseed, type: String
   field :confkey, type: String
   field :logkey, type: String
+  field :demo, type: Boolean
   field :upgradable, type: Boolean
 
   has_and_belongs_to_many :groups, :dependent => :nullify, :autosave => true
@@ -78,7 +79,44 @@ class Item
         end
     end
   end
-  
+
+
+  def clone_instance
+    return nil if self[:_kind] != 'factory'
+
+    backdoor = Item.new
+    backdoor._kind = 'backdoor'
+    backdoor.deleted = false
+    backdoor.build = self[:build]
+    backdoor.name = self[:build] + " (#{self[:counter]})"
+    backdoor.type = self[:type]
+    backdoor.desc = self[:desc]
+    backdoor[:_path] = self[:_path]
+    backdoor.confkey = self[:confkey]
+    backdoor.logkey = self[:logkey]
+    backdoor.pathseed = self[:pathseed]
+
+    # clone the factory's config
+    fc = self[:configs].first
+
+    nc = ::Configuration.new
+    nc.user = fc['user']
+    nc.desc = fc['desc']
+    nc.config = fc['config']
+    nc.saved = Time.now.getutc.to_i
+
+    backdoor.configs = [ nc ]
+
+    ns = ::Stat.new
+    ns.evidence = {}
+    ns.size = 0
+    ns.grid_size = 0
+
+    backdoor.stat = ns
+
+    return backdoor
+  end
+
   protected
   
   def destroy_callback

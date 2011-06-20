@@ -36,6 +36,10 @@ class Dongle
       @@count -= 1
     end
 
+    def time
+      Time.now.getutc
+    end
+
   end
 
 end

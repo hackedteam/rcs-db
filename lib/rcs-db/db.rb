@@ -5,6 +5,7 @@
 # relatives
 require_relative 'events'
 require_relative 'config'
+require_relative 'core'
 require_relative 'license'
 require_relative 'tasks'
 

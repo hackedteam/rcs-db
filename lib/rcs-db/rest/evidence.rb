@@ -72,10 +72,10 @@ class EvidenceController < RESTController
     EvidenceManager.instance.sync_start session, params['version'], params['user'], params['device'], params['source'], time.to_i, key
 
     # update the stats
-    backdoor.stat.last_sync = time
-    backdoor.stat.source = params['source']
-    backdoor.stat.user = params['user']
-    backdoor.stat.device = params['device']
+    backdoor.stat[:last_sync] = time
+    backdoor.stat[:source] = params['source']
+    backdoor.stat[:user] = params['user']
+    backdoor.stat[:device] = params['device']
     backdoor.save
     
     return RESTController.ok

