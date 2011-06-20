@@ -43,6 +43,8 @@ class BackdoorMigration
       if kind == 'backdoor'
         mb.platform = backdoor[:subtype].downcase
         mb.platform = 'windows' if ['win32', 'win64'].include? mb.platform
+        mb.platform = 'ios' if mb.platform == 'iphone'
+        mb.platform = 'osx' if mb.platform == 'macos'
       end
       
       mb.deleted = (backdoor[:deleted] == 0) ? false : true

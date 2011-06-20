@@ -10,6 +10,7 @@ class Core
   field :platform, type: String
   field :name, type: String
   field :version, type: Integer
+  field :_grid, type: Array
 
   store_in :cores
 end
