@@ -23,6 +23,11 @@ gem 'xml-simple'
 # MIME decoding
 gem 'mail'
 
+# TAR/GZIP compression
+git "git://github.com/danielemilan/minitar.git", :branch => "master" do
+	gem 'minitar', :require => 'archive/tar/minitar'
+end
+
 # Add dependencies to develop your gem here.
 # Include everything needed to run rake, tests, features, etc.
 group :development do
