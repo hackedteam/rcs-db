@@ -1,5 +1,7 @@
 require 'helper'
 
+=begin
+
 module RCS
 module DB
 class UserController
@@ -35,3 +37,4 @@ class ParserTest < Test::Unit::TestCase
 
 end
 
+=end

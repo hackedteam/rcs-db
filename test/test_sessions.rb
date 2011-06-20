@@ -1,5 +1,7 @@
 require 'helper'
 
+=begin
+
 module RCS
 module DB
 
@@ -62,3 +64,5 @@ end
 
 end #Collector::
 end #RCS::
+
+=end

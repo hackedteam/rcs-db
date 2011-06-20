@@ -1,6 +1,9 @@
 require 'helper'
-require_relative '../lib/rcs-db/parser.rb'
-require_relative '../lib/rcs-db/rest/auth.h'
+
+=begin
+
+require_db 'parser'
+require_db 'auth'
 
 module RCS
 module DB
@@ -147,3 +150,5 @@ end
 
 end #DB::
 end #RCS::
+
+=end

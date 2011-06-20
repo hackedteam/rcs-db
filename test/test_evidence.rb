@@ -1,6 +1,7 @@
 require 'helper'
-
 require 'json'
+
+=begin
 
 module RCS
 
@@ -101,3 +102,5 @@ end
 
 end #DB::
 end #RCS::
+
+=end
