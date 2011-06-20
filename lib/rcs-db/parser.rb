@@ -18,45 +18,60 @@ module DB
 
 module Parser
   include RCS::Tracer
-
-  # parse a request from a client
-  def process_request(headers, request)
-    
-    # extract the name of the controller and the parameters
-    root, controller_name, *params = request[:uri].split('/')
-    
-    # instantiate the correct AnythingController class
-    # we will then pass the control of the operation to that object
-    controller = RESTController.get_controller(controller_name, headers, request, params)
-    if controller.nil?
-      trace :error, "Invalid controller [#{request[:uri]}]"
-      return RESTController.not_found
-    end
-    
-    # init the controller and check if everything is ok to proceed
-    return RESTController.not_authorized 'AUTH_REQUIRED' unless controller.valid_request?
-    
-    # invoke the controller
-    begin
-      response = controller.act!
-    rescue NotAuthorized => e
-      response = RESTController.not_authorized 'INVALID_ACCESS_LEVEL'
-      trace :warn, "Invalid access level: " + e.message
-    end
-    
-    # the controller job has finished, call the cleanup hook
-    controller.cleanup
-    
-    # paranoid check
-    return RESTController.not_authorized('CONTROLLER_ERROR') if response.nil?
-    return response
-  end
-
-  # helper method for the replies
-  def json_reply(reply)
-    return reply.to_json, 'application/json'
+  
+  def parse_uri(uri)
+    root, controller_name, *rest = uri.split('/')
+    controller = "#{controller_name.capitalize}Controller"
+    params = {:_default => rest}
+    return controller, params
   end
   
+  def parse_query_parameters(query)
+    return {} if query.nil?
+    return CGI::parse(query)
+  end
+  
+  def parse_json_content(content)
+    return {} if content.nil?
+    begin
+      # in case the content is binary and not a json document
+      # we will catch the exception and return the empty hash {}
+      result = JSON.parse(content)
+      return result
+    rescue Exception => e
+      #trace :debug, "#{e.class}: #{e.message}"
+      return {}
+    end
+  end
+  
+  def guid_from_cookie(cookie)
+    # this will match our GUID session cookie
+    re = '.*?(session=)([A-Z0-9]{8}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{12})'
+    m = Regexp.new(re, Regexp::IGNORECASE).match(cookie)
+    return m[2] unless m.nil?
+    return nil
+  end
+  
+  def prepare_request(method, uri, query, cookie, content)
+    controller, params = parse_uri uri
+    params.merge! parse_query_parameters query
+    params.merge! parse_json_content content
+    
+    request = {
+        controller: controller,
+        method: method,
+        params: params,
+        cookie: guid_from_cookie(cookie)
+    }
+  end
+  
+  def flex_override_action(controller, request)
+    action = request[:params][:_default].first
+    if action.first.nil? or false == controller.respond_to?(action)
+      return RCS::DB::RESTController.map_method_to_action(request[:method], request[:params][:_default].empty?)
+    end
+    return request[:params][:_default].shift.to_sym
+  end
 end #Parser
 
 end #DB::

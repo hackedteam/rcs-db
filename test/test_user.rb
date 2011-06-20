@@ -11,7 +11,7 @@ end
 end
 
 # fake class to hold the Mixin
-class Classy
+class DummyParser
   include RCS::DB::Parser
   # fake trace method for testing
   def trace(a, b)
@@ -21,16 +21,16 @@ end
 class ParserTest < Test::Unit::TestCase
 
   def setup
-    @rest = Classy.new
+    @parser = DummyParser.new
     @http_headers = nil
   end
 
   def test_user_index
-    @rest.http_parse(@http_headers, 'GET', '/user', nil, nil, nil)
+    @parser.process_request(@http_headers, 'GET', '/user', nil, nil, nil)
   end
 
   def test_user_show
-    @rest.http_parse(@http_headers, 'GET', '/user/id', nil, nil, nil)
+    @parser.process_request(@http_headers, 'GET', '/user/id', nil, nil, nil)
   end
 
 end

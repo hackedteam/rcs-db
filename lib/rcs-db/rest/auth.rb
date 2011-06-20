@@ -13,22 +13,26 @@ class AuthController < RESTController
   
   # everyone who wants to use the system must first authenticate with this method
   def login
-    case @req_method
+    case @request[:method]
       # return the info about the current auth session
       when 'GET'
-        sess = SessionManager.instance.get(@session_cookie)
+        sess = SessionManager.instance.get(@request[:cookie])
         return RESTController::not_authorized if sess.nil?
         return RESTController::ok(sess)
       
       # authenticate the user
       when 'POST'
+        
+        user = @params['user']
+        pass = @params['pass']
+
         begin
           # if the user is a Collector, it will authenticate with a unique username
           # and the password must be the 'server signature'
           # the unique username will be used to create an entry for it in the network schema
-          if auth_server(@params['user'], @params['pass'])
+          if auth_server(user, pass)
             # create the new auth sessions
-            sess = SessionManager.instance.create({:name => @params['user']}, @auth_level, @req_peer)
+            sess = SessionManager.instance.create({:name => user}, @auth_level, @request[:peer])
             # append the cookie to the other that may have been present in the request
             return RESTController::ok(sess, {cookie: 'session=' + sess[:cookie] + '; path=/;'})
           end
@@ -38,21 +42,21 @@ class AuthController < RESTController
         end
         
         # normal user login
-        if auth_user(@params['user'], @params['pass'])
+        if auth_user(user, pass)
           # we have to check if it was already logged in
           # in this case, invalidate the previous session
-          sess = SessionManager.instance.get_by_user(@params['user'])
+          sess = SessionManager.instance.get_by_user(user)
           unless sess.nil? then
-            Audit.log :actor => @params['user'], :action => 'logout', :user => @params['user'], :desc => "User '#{@params['user']}' forcibly logged out by system"
+            Audit.log :actor => user, :action => 'logout', :user => user, :desc => "User '#{user}' forcibly logged out by system"
             SessionManager.instance.delete(sess[:cookie])
           end
           
-          Audit.log :actor => @params['user'], :action => 'login', :user => @params['user'], :desc => "User '#{@params['user']}' logged in"
+          Audit.log :actor => user, :action => 'login', :user => user, :desc => "User '#{user}' logged in"
 
           # get the list of accessible Items
           accessible = SessionManager.instance.get_accessible @user
           # create the new auth sessions
-          sess = SessionManager.instance.create(@user, @auth_level, @req_peer, accessible)
+          sess = SessionManager.instance.create(@user, @auth_level, @request[:peer], accessible)
           # append the cookie to the other that may have been present in the request
           expiry = (Time.now() + 86400).strftime('%A, %d-%b-%y %H:%M:%S %Z')
           trace :debug, "Issued cookie with expiry time: #{expiry}"
@@ -60,7 +64,6 @@ class AuthController < RESTController
           session = sess.select {|k,v| k != :accessible}
           return RESTController::ok(session, {cookie: 'session=' + sess[:cookie] + "; path=/; expires=#{expiry}" })
         end
-    
     end
     
     return RESTController::not_authorized("invalid account")
@@ -69,7 +72,7 @@ class AuthController < RESTController
   # once the session is over you can explicitly logout
   def logout
     Audit.log :actor => @session[:user][:name], :action => 'logout', :user => @session[:user][:name], :desc => "User '#{@session[:user][:name]}' logged out"
-    SessionManager.instance.delete(@session_cookie)
+    SessionManager.instance.delete(@request[:cookie])
     return RESTController::ok('', {cookie: "session=; path=/; expires=#{Time.at(0).strftime('%A, %d-%b-%y %H:%M:%S %Z')}" })
   end
   
@@ -79,14 +82,14 @@ class AuthController < RESTController
 
     # the Collectors are authenticated only by the server signature
     if pass.eql? server_sig
-
-      Collector.collector_login user, @req_peer
-
+      
+      Collector.collector_login user, @request[:peer]
+      
       trace :info, "Collector [#{user}] logged in"
       @auth_level = [:server]
       return true
     end
-
+    
     return false
   end
 

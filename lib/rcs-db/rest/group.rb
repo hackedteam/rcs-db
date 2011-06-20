@@ -20,7 +20,7 @@ class GroupController < RESTController
     require_auth_level :admin
 
     mongoid_query do
-      group = Group.find(params['group'])
+      group = Group.find(@params[:_default])
       return RESTController.not_found if group.nil?
       return RESTController.ok(group)
     end
@@ -41,8 +41,8 @@ class GroupController < RESTController
     require_auth_level :admin
 
     mongoid_query do
-      group = Group.find(params['group'])
-      params.delete('group')
+      group = Group.find(@params[:_default])
+      @params.delete :_default
       return RESTController.not_found if group.nil?
       
       params.each_pair do |key, value|
@@ -51,7 +51,7 @@ class GroupController < RESTController
         end
       end
       
-      result = group.update_attributes(params)
+      result = group.update_attributes(@params)
       
       return RESTController.ok(group)
     end
@@ -61,7 +61,7 @@ class GroupController < RESTController
     require_auth_level :admin
 
     mongoid_query do
-      group = Group.find(params['group'])
+      group = Group.find(@params[:_default])
       return RESTController.not_found if group.nil?
       
       Audit.log :actor => @session[:user][:name], :action => 'group.destroy', :group => @params['name'], :desc => "Deleted the group '#{group[:name]}'"
@@ -75,8 +75,8 @@ class GroupController < RESTController
     require_auth_level :admin
 
     mongoid_query do
-      group = Group.find(params['group'])
-      user = User.find(params['user'])
+      group = Group.find(@params[:_default])
+      user = User.find(@params['user'])
       return RESTController.not_found if user.nil? or group.nil?
 
       group.users << user
@@ -91,8 +91,8 @@ class GroupController < RESTController
     require_auth_level :admin
     
     mongoid_query do
-      group = Group.find(params['group'])
-      user = User.find(params['user'])
+      group = Group.find(@params[:_default])
+      user = User.find(@params['user'])
       return RESTController.not_found if user.nil? or group.nil?
 
       group.remove_user(user)
@@ -105,21 +105,21 @@ class GroupController < RESTController
 
   def alert
     require_auth_level :admin
-
+    
     mongoid_query do
-
+      
       groups = Group.all
-
+      
       # reset all groups to false and set the unique group to true
       groups.each do |g|
         g[:alert] = false
-        if not params['group'].nil? and g[:_id] == BSON::ObjectId(params['group'])
+        if not @params[:_default].nil? and g[:_id] == BSON::ObjectId(@params[:_default])
           g[:alert] = true
           Audit.log :actor => @session[:user][:name], :action => 'group.alert', :group => @params['name'], :desc => "Monitor alert group set to '#{g[:name]}'"
         end
         g.save
       end
-
+      
       if params['group'].nil?
         Audit.log :actor => @session[:user][:name], :action => 'group.alert', :group => @params['name'], :desc => "Monitor alert group was removed"
       end

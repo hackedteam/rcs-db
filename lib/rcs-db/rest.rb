@@ -37,123 +37,70 @@ class RESTController
   STATUS_SERVER_ERROR = 500
   
   # the parameters passed on the REST request
-  attr_reader :params, :request, :headers
+  attr_reader :request, :session
   
-  def guid_from_cookie(cookie)
-    # this will match our GUID session cookie
-    re = '.*?(session=)([A-Z0-9]{8}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{12})'
-    m = Regexp.new(re, Regexp::IGNORECASE).match(cookie)
-    return m[2] unless m.nil?
-    return nil
-  end
-  
-  def session_cookie
-    @http_request[:session_id]
-  end
-  
-  def controller_name
-    self.class.to_s.split(':')[4]
-  end
-  
-  def init(http_headers, request, params)
-    
-    trace :debug, "RAW PARAMS: #{params}"
-    
-    @headers = http_headers
+  def act!(request, session)
     @request = request
+    # make a copy of the params, handy for access and mongoid queries
+    @params = @request[:params].clone unless @request[:params].nil?
+    @session = session
     
-    #@opts = request
-    @req_method = request[:method]
-    @req_uri = request[:uri]
-    @req_cookie = request[:cookie] || ''
-    @req_content = request[:content]
-    @req_peer = request[:peer]
+    return RESTController.server_error('NULL_ACTION') if @request[:action].nil?
     
-    # determine action
-    @rest = {}
-    @rest[:action] = params.shift if not params.first.nil? and respond_to?(params.first)
-    if @rest[:action].nil?
-      case request[:method]
-        when 'GET'
-          method = (params.empty?) ? :index : :show
-        when 'POST'
-          method = :create
-        when 'PUT'
-          method = :update
-        when 'DELETE'
-          method = :destroy
-      end
-      @rest[:action] = method
-    end
-    trace :debug, "REST ACTION: #{@rest[:action]}"
-    
-    # save the params in the controller object
-    # the parsed http parameters (from uri and from content)
-    @params = {}
-    @params[controller_name.downcase] = params.first unless params.first.nil?
-    @params.merge!(CGI::parse(@request[:query])) unless @request[:query].nil?
-    @params.merge! parse_json_content(@request[:content]) unless @request[:content].nil?
-
-    trace :debug, "REST PARAMS: #{@params}"
-    
-    # we extract the session id from the cookies
-    @request[:session_id] = guid_from_cookie(@request[:cookie])
-    
-    trace :debug, "SESSION ID : #{@request[:session_id]}"
-  end
-  
-  def valid_request?
-    # if we are at auth/login, permit always
-    return true if logging_in?
-    
-    # no cookie, no methods
-    return false if @request[:session_id].nil?
-    
-    # we have a cookie, check if it's valid
-    @session = SessionManager.instance.get(@request[:session_id])
-    return true unless @session.nil?
-    
-    # no cookie, no party!
-    trace :warn, "[#{@request[:peer]}][#{@request[:session_id]}] Invalid cookie"
-    return false
-  end
-  
-  def act!
-    send(@rest[:action])
-  end
-
-  def logging_in?
-    self.class == RCS::DB::AuthController and @rest[:action].eql? 'login'
+    # call the proper controller method
+    send(@request[:action])
   end
   
   def cleanup
     # hook method if you need to perform some cleanup operation
   end
   
-  def self.get_controller(name, http_headers, request, params)
+  def self.get(name)
     return nil if name.nil?
     begin
-      controller = eval("#{name.capitalize}Controller").new
-      controller.init(http_headers, request, params) unless controller.nil?
+      controller = eval("#{name}").new
       return controller
-    rescue Exception => e
-      puts e.message
+    rescue NameError => e
       return nil
     end
   end
   
-  def self.not_found
-    return RESTResponse.new(STATUS_NOT_FOUND)
+  def self.map_method_to_action(method, no_params)
+    case method
+      when 'GET'
+        return (no_params == true ? :index : :show)
+      when 'POST'
+        return :create
+      when 'PUT'
+        return :update
+      when 'DELETE'
+        return :destroy
+    end
   end
   
-  def self.not_authorized message
-    message = '' unless message.nil?
+  def self.not_found(message=nil)
+    message ||= ''
+    return RESTResponse.new(STATUS_NOT_FOUND, message)
+  end
+  
+  def self.not_authorized(message=nil)
+    message ||= ''
     return RESTResponse.new(STATUS_NOT_AUTHORIZED, message)
   end
   
-  def self.conflict message
-    message = '' unless message.nil?
+  def self.conflict(message=nil)
+    message ||= ''
     return RESTResponse.new(STATUS_CONFLICT, message)
+  end
+
+  def self.bad_request(message=nil)
+    message ||= ''
+    return RESTResponse.new(STATUS_BAD_REQUEST, message)
+  end
+
+  def self.server_error(message=nil)
+    message ||= ''
+    return RESTResponse.new(STATUS_SERVER_ERROR, message)
   end
 
   # helper method for REST replies
@@ -178,32 +125,19 @@ class RESTController
     raise NotAuthorized.new(@session[:level], levels) if (levels & @session[:level]).empty?
   end
 
-  # returns the JSON parsed object containing the parameters passed to a POST or PUT request
-  def parse_json_content(content)
-    begin
-      # in case the content is binary and not a json document
-      # we will catch the exception and return the empty hash {}
-      result = JSON.parse(content)
-      return result
-    rescue Exception => e
-      #trace :debug, "#{e.class}: #{e.message}"
-      return {}
-    end
-  end
-
   def mongoid_query(&block)
     begin
       yield
     rescue BSON::InvalidObjectId => e
       trace :error, "Bad request #{e.class} => #{e.message}"
-      return STATUS_BAD_REQUEST, *json_reply(e.message)
+      return RESTController.bad_request(e.message)
     rescue Exception => e
       trace :error, e.message
-      trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
-      return STATUS_NOT_FOUND, *json_reply(e.message)
+      trace :fatal, "EXCEPTION(#{e.class}): " + e.backtrace.join("\n")
+      return RESTController.not_found
     end
   end
-
+  
   def create
     # POST /object
   end

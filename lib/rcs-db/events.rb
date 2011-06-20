@@ -71,7 +71,7 @@ class HTTPHandler < EM::Connection
     trace :debug, "Connection closed #{@peer}:#{@peer_port}"
     @closed = true
   end
-
+  
   def process_http_request
     # the http request details are available via the following instance variables:
     #   @http_protocol
@@ -87,39 +87,51 @@ class HTTPHandler < EM::Connection
     
     #trace :debug, "[#{@peer}] Incoming HTTP Connection"
     trace :debug, "[#{@peer}] Request: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string}"
-
+    
     response = nil
 
     # Block which fulfills the request
     operation = proc do
       
+      # parse all the request params
+      request = prepare_request @http_request_method, @http_request_uri, @http_query_string, @http_cookie, @http_post_content
+      request[:peer] = peer
+      
+      # get the correct controller
+      controller = RESTController.get request[:controller]
+      
+      # If this controller cannot respond to the action, we need to patch this
+      # by using the proper HTTP method (GET/POST/PUT/DELETE).
+      # This is necessary to bypass a limitation in FLEX REST implementation.
+      request[:action] = flex_override_action controller, request
+      
+      # get the proper session
+      session = SessionManager.instance.get(request[:cookie])
+      # if logging in, no session is present
+      if session.nil?
+        unless request[:controller].eql? 'AuthController' and request[:action].eql? :login
+          trace :warn, "[#{request[:peer]}][#{request[:session_id]}] Invalid cookie"
+          response = RESTController.not_authorized('INVALID_COOKIE')
+        end
+      end
+      
       # do the dirty job :)
-      # here we pass the control to the internal parser which will return:
-      #   - the content of the reply
-      #   - the content_type
-      #   - the cookie if the backdoor successfully passed the auth phase
-      
-      headers = @http_headers.split("\x00")
-      request = {
-          method: @http_request_method,
-          uri: @http_request_uri,
-          cookie: @http_cookie,
-          content: @http_post_content,
-          query: @http_query_string,
-          peer: @peer
-      }
-      
       begin
-        response ||= process_request(headers, request)
+        response ||= controller.act!(request, session)
       rescue Exception => e
         trace :error, "ERROR: " + e.message
         trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
       end
+      
+      # the controller job has finished, call the cleanup hook
+      controller.cleanup
+
     end
     
     # Callback block to execute once the request is fulfilled
     callback = proc do |res|
-      response.send_response(self) unless response.nil?
+      return RESTController.not_authorized('CONTROLLER_ERROR') if response.nil?
+      response.send_response(self)
     end
     
     # Let the thread pool handle request

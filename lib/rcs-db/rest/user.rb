@@ -20,7 +20,7 @@ class UserController < RESTController
     require_auth_level :admin
     
     mongoid_query do
-      user = User.find(params['user'])
+      user = User.find(@params[:_default])
       return RESTController.not_found if user.nil?
       return RESTController.ok(user)
     end
@@ -28,11 +28,13 @@ class UserController < RESTController
   
   def create
     require_auth_level :admin
-
+    
     result = User.create(name: @params['name']) do |doc|
 
       doc[:pass] = ''
-      doc[:pass] = Digest::SHA1.hexdigest('.:RCS:.' + @params['pass']) if @params['pass'] != '' and not @params['pass'].nil?
+
+      password = @params['pass']
+      doc[:pass] = Digest::SHA1.hexdigest('.:RCS:.' + password) if password != '' and not password.nil?
 
       doc[:desc] = @params['desc']
       doc[:contact] = @params['contact']
@@ -43,8 +45,9 @@ class UserController < RESTController
     end
     
     return RESTController.conflict(result.errors[:name]) unless result.persisted?
-    
-    Audit.log :actor => @session[:user][:name], :action => 'user.create', :user => @params['name'], :desc => "Created the user '#{@params['name']}'"
+
+    username = @params['name']
+    Audit.log :actor => @session[:user][:name], :action => 'user.create', :user => username, :desc => "Created the user '#{username}'"
 
     return RESTController.ok(result)
   end
@@ -53,33 +56,33 @@ class UserController < RESTController
     require_auth_level :admin, :tech, :viewer
     
     mongoid_query do
-      user = User.find(params['user'])
+      user = User.find(@params[:_default])
       return RESTController.not_found if user.nil?
-      params.delete('user')
-
+      @params.delete('user')
+      
       # if non-admin you can modify only yourself
       unless @session[:level].include? :admin
         return RESTController.not_found if user._id != @session[:user][:_id]
       end
       
       # if enabling a user, check the license
-      if user[:enabled] == false and params['enabled'] == true
+      if user[:enabled] == false and @params.include?('enabled') and @params['enabled'] == true
         return RESTController.conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :users
       end
 
       # if pass is modified, treat it separately
-      if params.has_key? 'pass'
-        params['pass'] = Digest::SHA1.hexdigest('.:RCS:.' + params['pass'])
+      if @params.has_key? 'pass'
+        @params['pass'] = Digest::SHA1.hexdigest('.:RCS:.' + params['pass'])
         Audit.log :actor => @session[:user][:name], :action => 'user.update', :user => user['name'], :desc => "Changed password for user '#{user['name']}'"
       else
-        params.each_pair do |key, value|
+        @params.each_pair do |key, value|
           if user[key.to_s] != value and not key['_ids']
             Audit.log :actor => @session[:user][:name], :action => 'user.update', :user => user['name'], :desc => "Updated '#{key}' to '#{value}' for user '#{user['name']}'"
           end
         end
       end
-
-      result = user.update_attributes(params)
+      
+      result = user.update_attributes(@params)
       
       return RESTController.ok(user)
     end
@@ -89,7 +92,7 @@ class UserController < RESTController
     require_auth_level :admin
     
     mongoid_query do
-      user = User.find(params['user'])
+      user = User.find(@params[:_default])
       return RESTController.not_found if user.nil?
       
       Audit.log :actor => @session[:user][:name], :action => 'user.destroy', :user => @params['name'], :desc => "Deleted the user '#{user['name']}'"

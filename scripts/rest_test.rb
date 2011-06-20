@@ -11,8 +11,8 @@ http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
 # login
 account = {
-  :user => 'alor', 
-  :pass => 'demorcss'
+  :user => 'daniele', 
+  :pass => 'danielep123'
   }
 resp = http.request_post('/auth/login', account.to_json, nil)
 puts resp.body
@@ -42,7 +42,7 @@ end
 if false 
 # user.create
 # {'name': 'admin', 'pass': '6104a8be02be972bedf8c8bf107370fc517e2606', 'desc': 'Deus Ex Machina', 'contact': '', 'privs': ['ADMIN', 'TECH', 'VIEW'], 'enabled': true, 'locale': 'en_US', 'timezone': 0, 'group_ids':[]}
-user = {'name' => 'test', 'pass' => 'test', 'desc' => 'Deus Ex Machina', 'contact' => '', 'privs' => ['ADMIN', 'TECH', 'VIEW'], 'enabled' => true, 'locale' => 'en_US', 'timezone' => 0}
+user = {'name' => 'testina', 'pass' => 'test', 'desc' => 'Deus Ex Machina', 'contact' => '', 'privs' => ['ADMIN', 'TECH', 'VIEW'], 'enabled' => true, 'locale' => 'en_US', 'timezone' => 0}
 res = http.request_post('/user', user.to_json, {'Cookie' => cookie}) 
 puts "user.create "
 puts res
@@ -71,8 +71,6 @@ puts "user.show"
 puts res
 puts
 
-
-
 # user.destroy
 #res = http.delete("/user/#{test_user['_id']}", {'Cookie' => cookie}) 
 #puts "user.delete "
@@ -82,7 +80,7 @@ puts
 end
 
 # group
-if false
+if true
 # group.create
 group = {'name' => 'test'}
 res = http.request_post('/group', group.to_json, {'Cookie' => cookie}) 
@@ -174,7 +172,7 @@ puts
 end
 
 # audit
-if true
+if false
   # audit.count
    res = http.request_get('/audit/count', {'Cookie' => cookie})
    puts "audit.count"
