@@ -2,6 +2,7 @@
 :serial: "1234567890"
 :version: "8.0"
 :type: "reusable"
+:expiry: "2011-12-31 00:00:00 UTC"
 :users: .Inf
 :backdoors: 
   :total: .Inf
@@ -22,4 +23,4 @@
 :collectors: 
   :collectors: 10
   :anonymizers: 5
-:integrity: "46f2f5dfbafe781ef99837caed4f3ab23120fc16b28f57c4609bf12242bc65e9"
+:integrity: "033c3e687ae66c78229e22f9b78b19e0dd1af49595ec6a20aeaa847295d335cd"
