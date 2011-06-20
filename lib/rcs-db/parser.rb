@@ -2,7 +2,6 @@
 #  HTTP requests parsing module
 #
 
-# relatives
 require_relative 'rest'
 
 # from RCS::Common

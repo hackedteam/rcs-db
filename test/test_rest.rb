@@ -1,7 +1,8 @@
 require 'helper'
 require 'uuidtools'
 require 'bson'
-require_relative '../lib/rcs-db/rest.rb'
+
+require_db 'rest'
 
 class DummyController < RCS::DB::RESTController
   def trace(a,b)
@@ -61,33 +62,33 @@ class RESTTest < Test::Unit::TestCase
   def test_act_calling_without_action
     request = {}
     result = @controller.act!(request, nil)
-    assert_equal RESTResponse, result.class
+    assert_equal RCS::DB::RESTResponse, result.class
     assert_equal 500, result.status
     assert_equal 'NULL_ACTION', result.content
   end
   
   def test_mongoid_query_invalid_bson
     result = @controller.mongoid_query { raise BSON::InvalidObjectId.new }
-    assert_equal RESTResponse, result.class
+    assert_equal RCS::DB::RESTResponse, result.class
     assert_equal 400, result.status # BAD REQUEST
   end
 
   def test_mongoid_query_generic_exception
     result = @controller.mongoid_query { raise "OUCH!" }
-    assert_equal RESTResponse, result.class
+    assert_equal RCS::DB::RESTResponse, result.class
     assert_equal 404, result.status # NOT FOUND
   end
 
   def test_response_not_found
     result = RCS::DB::RESTController.not_found
-    assert_equal RESTResponse, result.class
+    assert_equal RCS::DB::RESTResponse, result.class
     assert_equal 404, result.status # NOT FOUND
   end
 
   def test_response_not_authorized
     message = "Permission denied!"
     result = RCS::DB::RESTController.not_authorized message
-    assert_equal RESTResponse, result.class
+    assert_equal RCS::DB::RESTResponse, result.class
     assert_equal 403, result.status # NOT FOUND
     assert_equal message, result.content
   end
@@ -95,15 +96,15 @@ class RESTTest < Test::Unit::TestCase
   def test_response_conflict
     message = "I'll fight for that!"
     result = RCS::DB::RESTController.conflict message
-    assert_equal RESTResponse, result.class
+    assert_equal RCS::DB::RESTResponse, result.class
     assert_equal 409, result.status # NOT FOUND
     assert_equal message, result.content
   end
-
+  
   def test_response_bad_request
     message = "What?!?"
     result = RCS::DB::RESTController.bad_request message
-    assert_equal RESTResponse, result.class
+    assert_equal RCS::DB::RESTResponse, result.class
     assert_equal 400, result.status # NOT FOUND
     assert_equal message, result.content
   end
@@ -111,7 +112,7 @@ class RESTTest < Test::Unit::TestCase
   def test_response_server_error
     message = "Core meltdown!"
     result = RCS::DB::RESTController.server_error message
-    assert_equal RESTResponse, result.class
+    assert_equal RCS::DB::RESTResponse, result.class
     assert_equal 500, result.status # NOT FOUND
     assert_equal message, result.content
   end

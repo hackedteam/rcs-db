@@ -80,7 +80,7 @@ puts
 end
 
 # group
-if true
+if false
 # group.create
 group = {'name' => 'test'}
 res = http.request_post('/group', group.to_json, {'Cookie' => cookie}) 

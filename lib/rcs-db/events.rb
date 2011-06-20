@@ -22,6 +22,11 @@ require 'net/http'
 module RCS
 module DB
 
+# require all the controllers
+Dir[File.dirname(__FILE__) + '/rest/*.rb'].each do |file|
+  require file
+end
+
 class HTTPHandler < EM::Connection
   include RCS::Tracer
   include EM::HttpServer
@@ -88,7 +93,7 @@ class HTTPHandler < EM::Connection
     #trace :debug, "[#{@peer}] Incoming HTTP Connection"
     trace :debug, "[#{@peer}] Request: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string}"
     
-    response = nil
+    responder = nil
 
     # Block which fulfills the request
     operation = proc do
@@ -117,7 +122,7 @@ class HTTPHandler < EM::Connection
       
       # do the dirty job :)
       begin
-        response ||= controller.act!(request, session)
+        responder ||= controller.act!(request, session)
       rescue Exception => e
         trace :error, "ERROR: " + e.message
         trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
@@ -125,13 +130,13 @@ class HTTPHandler < EM::Connection
       
       # the controller job has finished, call the cleanup hook
       controller.cleanup
-
     end
     
     # Callback block to execute once the request is fulfilled
     callback = proc do |res|
-      return RESTController.not_authorized('CONTROLLER_ERROR') if response.nil?
-      response.send_response(self)
+      return RESTController.not_authorized('CONTROLLER_ERROR') if responder.nil?
+      reply = responder.prepare_response(self)
+      reply.send_response
     end
     
     # Let the thread pool handle request

@@ -1,5 +1,5 @@
 require 'helper'
-require_relative '../lib/rcs-db/parser.rb'
+require_db 'parser'
 
 # for cookie tests
 SESSION_ID = "eb92cf60-4f26-4cbb-b5db-5a8e5682e86a"

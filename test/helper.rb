@@ -1,4 +1,7 @@
 require 'rubygems'
+require 'simplecov'
+
+SimpleCov.start if ENV['COVERAGE']
 
 require 'json'
 require 'bundler'
@@ -13,18 +16,12 @@ end
 require 'test/unit'
 require 'minitest/mock'
 
-#$LOAD_PATH.unshift(File.dirname(__FILE__))
-#$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
-#require 'rcs-db'
-#require 'rcs-worker'
+def require_db(file)
+  relative_path_to_db = 'lib/rcs-db/'
+  require_relative File.join(Dir.pwd, relative_path_to_db, file)
+end
 
-def prepare_request(method, uri, cookie, content, query, peer)
-  request = {
-          method: method,
-          uri: uri,
-          cookie: cookie,
-          content: content,
-          query: query,
-          peer: peer
-      }
+def require_worker(file)
+  relative_path_to_worker = 'lib/rcs-worker/'
+  require_relative File.join(Dir.pwd, relative_path_to_worker, file)
 end
