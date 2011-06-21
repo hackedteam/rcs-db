@@ -21,7 +21,7 @@ module Parser
   def parse_uri(uri)
     root, controller_name, *rest = uri.split('/')
     controller = "#{controller_name.capitalize}Controller"
-    params = {:_default => rest}
+    params = {'_id' => rest}
     return controller, params
   end
   
@@ -65,11 +65,11 @@ module Parser
   end
   
   def flex_override_action(controller, request)
-    action = request[:params][:_default].first
+    action = request[:params]['_id'].first
     if action.first.nil? or false == controller.respond_to?(action)
-      return RCS::DB::RESTController.map_method_to_action(request[:method], request[:params][:_default].empty?)
+      return RCS::DB::RESTController.map_method_to_action(request[:method], request[:params]['_id'].empty?)
     end
-    return request[:params][:_default].shift.to_sym
+    return request[:params]['_id'].shift.to_sym
   end
 end #Parser
 

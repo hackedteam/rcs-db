@@ -22,26 +22,26 @@ class ParserTest < Test::Unit::TestCase
   def test_parse_uri_without_action_override
     controller, params = @parser.parse_uri('/fake')
     assert_equal "FakeController", controller
-    assert_true params[:_default].empty?
+    assert_true params['_id'].empty?
   end
   
   def test_parse_uri_with_action_override
     controller, params = @parser.parse_uri('/fake/destroy')
     assert_equal "FakeController", controller
-    assert_equal "destroy", params[:_default].first
+    assert_equal "destroy", params['_id'].first
   end
   
   def test_parse_uri_with_action_override_and_params
     controller, params = @parser.parse_uri('/fake/destroy/1234')
     assert_equal "FakeController", controller
-    assert_equal "destroy", params[:_default].first
-    assert_equal "1234", params[:_default].second
+    assert_equal "destroy", params['_id'].first
+    assert_equal "1234", params['_id'].second
   end
-
+  
   def test_parse_nil_query_parameters
     assert_equal Hash.new, @parser.parse_query_parameters(nil)
   end
-
+  
   def test_parse_valid_query_parameters
     result = @parser.parse_query_parameters("q=123")
     assert_equal , result['q'] = "123"
@@ -73,7 +73,7 @@ class ParserTest < Test::Unit::TestCase
     # not existing pages should receive 404 status code
     assert_equal 'IndexController', request[:controller]
     assert_nil request[:cookie]
-    assert_empty request[:params][:_default]
+    assert_empty request[:params]['_id']
   end
   
   def test_request_show_page
@@ -82,7 +82,7 @@ class ParserTest < Test::Unit::TestCase
     # not existing pages should receive 404 status code
     assert_equal 'ShowController', request[:controller]
     assert_nil request[:cookie]
-    assert_equal "1234", request[:params][:_default].first
+    assert_equal "1234", request[:params]['_id'].first
   end
   
   def test_request_flex_overridden_method_page
@@ -92,7 +92,7 @@ class ParserTest < Test::Unit::TestCase
     # not existing pages should receive 404 status code
     assert_equal 'FakeController', request[:controller]
     assert_equal SESSION_ID, request[:cookie]
-    assert_equal "destroy", request[:params][:_default].first
+    assert_equal "destroy", request[:params]['_id'].first
     assert_equal "test", request[:params]['user']
   end
 
@@ -100,19 +100,19 @@ class ParserTest < Test::Unit::TestCase
     controller = MiniTest::Mock.new
     controller.expect :destroy, nil, nil
     
-    request = {method: 'DELETE', params: {_default: ['destroy']}}
+    request = {method: 'DELETE', params: {'_id' => ['destroy']}}
     action = @parser.flex_override_action controller, request
     assert_equal :destroy, action
-    assert_empty request[:params][:_default]
+    assert_empty request[:params]['_id']
   end
 
   def test_flex_direct_action
     controller = MiniTest::Mock.new
     
-    request = {method: 'GET', params: {_default: ['123']}}
+    request = {method: 'GET', params: {'_id' => ['123']}}
     action = @parser.flex_override_action controller, request
     assert_equal :show, action
-    assert_equal "123", request[:params][:_default].first
+    assert_equal "123", request[:params]['_id'].first
   end
 end
 
