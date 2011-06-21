@@ -92,27 +92,24 @@ class HTTPHandler < EM::Connection
     
     # Block which fulfills the request
     operation = proc do
-    
+      
       # do the dirty job :)
-      # here we pass the control to the internal parser which will return:
-      #   - the content of the reply
-      #   - the content_type
-      #   - the cookie if the backdoor successfully passed the auth phase
       begin
+        # get a valid response for the REST query
         response = http_parse(@http_headers.split("\x00"), @http_request_method, @http_request_uri, @http_cookie, @http_post_content, @http_query_string)
+        # verify we have a valid response, return a server error otherwise
+        response = RESTController.server_error if response.nil?
+        response = RESTController.server_error unless response.class.eql? RESTResponse
+        # send 
+        response.send_response(self)
       rescue Exception => e
         trace :error, "ERROR: " + e.message
         trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
       end
     end
     
-    # Callback block to execute once the request is fulfilled
-    callback = proc do |res|
-      response.send_response(self) unless response.nil?
-    end
-    
     # Let the thread pool handle request
-    EM.defer(operation, callback)
+    EM.defer(operation)
   end
 
 end #HTTPHandler
