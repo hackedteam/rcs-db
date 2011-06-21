@@ -24,8 +24,6 @@ class GridController < RESTController
     grid_id = GridFS.instance.put @req_content
     trace :debug, "stored #{@req_content.bytesize} bytes into Grid #{grid_id}."
 
-    trace :debug, grid_id.inspect
-
     return RESTController.ok({_grid: grid_id.to_s})
   end
 

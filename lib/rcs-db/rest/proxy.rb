@@ -41,8 +41,8 @@ class ProxyController < RESTController
     require_auth_level :admin
 
     mongoid_query do
-      proxy = Proxy.find(params['proxy'])
-      params.delete('proxy')
+      proxy = Proxy.find(params['_id'])
+      params.delete('_id')
       return RESTController.not_found if proxy.nil?
 
       params.each_pair do |key, value|
@@ -61,7 +61,7 @@ class ProxyController < RESTController
     require_auth_level :admin
 
     mongoid_query do
-      proxy = Proxy.find(params['proxy'])
+      proxy = Proxy.find(params['_id'])
 
       Audit.log :actor => @session[:user][:name], :action => 'proxy.destroy', :desc => "Deleted the injection proxy '#{proxy.name}'"
 
@@ -87,10 +87,17 @@ class ProxyController < RESTController
   def config
     require_auth_level :server
     
-    #TODO: implement config retrieval
-    #TODO: mark as configured...
+    mongoid_query do
+      proxy = ::Proxy.find(params['_id'])
+      return RESTController.not_found if proxy.nil?
 
-    return RESTController.not_found
+      #TODO: implement config retrieval
+
+      proxy.configured = true
+      proxy.save
+
+      return RESTController.not_found
+    end
   end
 
   def log
@@ -116,7 +123,7 @@ class ProxyController < RESTController
     require_auth_level :tech
 
     mongoid_query do
-      proxy = ::Proxy.find(params['proxy'])
+      proxy = ::Proxy.find(params['_id'])
       return RESTController.not_found if proxy.nil?
 
       target = ::Item.find(params['target'])
@@ -134,6 +141,9 @@ class ProxyController < RESTController
 
       rule.target = [ target[:_id] ]
 
+      # the file is uploaded to the grid before calling this method
+      rule[:_grid] = [ BSON::ObjectId.from_string(params['_grid']) ] unless params['_grid'].nil?
+      
       Audit.log :actor => @session[:user][:name], :action => 'proxy.add_rule', :target => target.name,
                 :desc => "Added a rule to the injection proxy '#{proxy.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
 
@@ -148,7 +158,7 @@ class ProxyController < RESTController
     require_auth_level :tech
 
     mongoid_query do
-      proxy = ::Proxy.find(params['proxy'])
+      proxy = ::Proxy.find(params['_id'])
       return RESTController.not_found if proxy.nil?
 
       rule = proxy.rules.find(params['rule'])
@@ -161,6 +171,54 @@ class ProxyController < RESTController
                 :desc => "Deleted a rule from the injection proxy '#{proxy.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
       
       proxy.rules.delete_all(conditions: { _id: rule[:_id]})
+      proxy.save
+
+      return RESTController.ok
+    end
+  end
+
+  def update_rule
+    require_auth_level :tech
+
+    mongoid_query do
+      proxy = ::Proxy.find(params['_id'])
+      return RESTController.not_found if proxy.nil?
+
+      target = ::Item.find(params['target'])
+      return RESTController.not_found if target.nil?
+
+      rule = proxy.rules.find(params['rule'])
+      return RESTController.not_found if rule.nil?
+
+      params.delete('_id')
+      params.delete('target')
+      params.delete('rule')
+      params['target'] = [ target[:_id] ]
+      rule.update_attributes(params)
+
+      # the file is uploaded to the grid before calling this method
+      rule[:_grid] = [ BSON::ObjectId.from_string(params['_grid']) ] unless params['_grid'].nil?
+
+      rule.save
+
+      Audit.log :actor => @session[:user][:name], :action => 'proxy.update_rule', :target => target.name,
+                :desc => "Modified a rule on the injection proxy '#{proxy.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
+
+      return RESTController.ok(rule)
+    end
+  end
+
+  def apply_rules
+    require_auth_level :tech
+
+    mongoid_query do
+      proxy = ::Proxy.find(params['_id'])
+      return RESTController.not_found if proxy.nil?
+
+      Audit.log :actor => @session[:user][:name], :action => 'proxy.apply_rules',
+                :desc => "Applied the rules to the injection proxy '#{proxy.name}'"
+      
+      proxy.configured = false
       proxy.save
 
       return RESTController.ok
