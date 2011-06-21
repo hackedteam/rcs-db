@@ -26,6 +26,7 @@ class GridFS
   
   def put(content, opts = {})
     begin
+      # returns grid id
       return @grid.put(content, opts)
     rescue Exception => e
       # TODO handle the correct exception
@@ -35,6 +36,7 @@ class GridFS
   
   def get(id)
     begin
+      # returns grid IO
       return @grid.get id
     rescue Exception => e
       # TODO handle the correct exception

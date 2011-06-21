@@ -174,7 +174,7 @@ puts
 end
 
 # audit
-if true
+if false
   # audit.count
    res = http.request_get('/audit/count', {'Cookie' => cookie})
    puts "audit.count"
@@ -238,8 +238,6 @@ if false
   puts "status.counters"
   puts res
   puts
-
-  
 end
 
 # task
@@ -279,7 +277,8 @@ puts
 end # task
 
 # grid
-if false
+if true
+=begin
   grid_id = '4dfa1d1aa4df496c90fab43e' # 1.4 gb (underground.avi)
   #grid_id = '4dfa2483674bba48cd2a153f' # 280 mb (en_outlook.exe)
   fo = File.open('underground.avi', 'wb')
@@ -294,6 +293,12 @@ if false
   end
   fo.close
   puts "Got #{total} bytes."
+=end
+
+  fo = File.open('dropall.js', 'rb') do |f|
+    ret = http.request_post("/grid", f.read ,{'Cookie' => cookie})
+    puts ret
+  end
 end
 
 # proxy
