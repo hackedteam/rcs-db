@@ -97,14 +97,16 @@ class RESTController
     return RESTResponse.new(STATUS_NOT_FOUND)
   end
   
-  def self.not_authorized message
-    message = '' unless message.nil?
+  def self.not_authorized message=''
     return RESTResponse.new(STATUS_NOT_AUTHORIZED, message)
   end
 
-  def self.conflict message
-    message = '' unless message.nil?
+  def self.conflict message = ''
     return RESTResponse.new(STATUS_CONFLICT, message)
+  end
+
+  def self.server_error message = ''
+    return RESTResponse.new(STATUS_SERVER_ERROR, message)
   end
 
   # helper method for REST replies
@@ -186,11 +188,10 @@ class RESTResponse
     @status = status
     @content = content
     
-    @content_type = 'application/json'
-    @content_type = opts[:content_type] if opts.has_key? :content_type
+    @content_type = opts[:content_type]
+    @content_type ||= 'application/json'
     
-    @cookie = nil
-    @cookie = opts[:cookie] if opts.has_key? :cookie
+    @cookie = opts[:cookie]
   end
   
   def send_response(connection)
