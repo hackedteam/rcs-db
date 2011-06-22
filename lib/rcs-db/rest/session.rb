@@ -18,7 +18,7 @@ class SessionController < RESTController
   def destroy
     require_auth_level :admin
     
-    session_id = @request[:params][:_default]
+    session_id = @request[:params]['_id']
     session = SessionManager.instance.get(session_id)
     return RESTController.not_found if session.nil?
     
