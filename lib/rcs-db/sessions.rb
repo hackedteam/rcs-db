@@ -51,7 +51,9 @@ class SessionManager
     list = []
     @sessions.each_pair do |cookie, sess|
       # do not include server accounts
-      list << sess unless sess[:level].include? :server
+      s = sess.clone
+      s.delete :accessible
+      list << s unless sess[:level].include? :server
     end
     
     return list
@@ -63,8 +65,6 @@ class SessionManager
   end
   
   def get(cookie)
-    return nil if @sessions[cookie].nil?
-    update cookie
     return @sessions[cookie]
   end
   
