@@ -107,8 +107,6 @@ class Task
   # override this
   def generate_output(params)
     @grid_id = '4dfa12a00afc5deb66ef3c5d' # pragmatic_agile.pdf
-    #@grid_id = '4dfa1d1aa4df496c90fab43e' # underground.avi
-    #@grid_id = '4dfa2483674bba48cd2a153f' # en_outlook.exe
     file = GridFS.instance.get(BSON::ObjectId.from_string(@grid_id))
     @file_size = file.file_length
     @file_name = @file_name + '.pdf'

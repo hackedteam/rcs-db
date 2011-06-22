@@ -1,5 +1,5 @@
 require_relative 'helper'
-require_relative '../lib/rcs-db/tasks.rb'
+require_db 'tasks'
 
 module RCS
 module DB

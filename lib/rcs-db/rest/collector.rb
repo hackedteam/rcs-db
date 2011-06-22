@@ -31,17 +31,17 @@ class CollectorController < RESTController
     require_auth_level :admin
 
     mongoid_query do
-      coll = Collector.find(params['collector'])
-      params.delete('collector')
+      coll = Collector.find(@params['_id'])
+      @params.delete('collector')
       return RESTController.not_found if coll.nil?
 
-      params.each_pair do |key, value|
+      @params.each_pair do |key, value|
         if coll[key.to_s] != value and not key['_ids']
           Audit.log :actor => @session[:user][:name], :action => 'collector.update', :desc => "Updated '#{key}' to '#{value}' for collector '#{coll['name']}'"
         end
       end
 
-      coll.update_attributes(params)
+      coll.update_attributes(@params)
 
       return RESTController.ok(coll)
     end
@@ -51,7 +51,7 @@ class CollectorController < RESTController
     require_auth_level :admin
 
     mongoid_query do
-      collector = Collector.find(params['collector'])
+      collector = Collector.find(@params['_id'])
 
       Audit.log :actor => @session[:user][:name], :action => 'collector.destroy', :desc => "Deleted the collector '#{collector[:name]}'"
 
@@ -64,11 +64,11 @@ class CollectorController < RESTController
     require_auth_level :server
 
     mongoid_query do
-      collector = Collector.find(params['_id'])
-      params.delete('_id')
+      collector = Collector.find(@params['_id'])
+      @params.delete('_id')
       return RESTController.not_found if collector.nil?
 
-      collector.update_attributes(params)
+      collector.update_attributes(@params)
 
       return RESTController.ok
     end
@@ -86,14 +86,14 @@ class CollectorController < RESTController
   def log
     require_auth_level :server
 
-    time = Time.parse(params['time']).getutc.to_i
+    time = Time.parse(@params['time']).getutc.to_i
 
-    collector = Collector.find(params['_id'])
+    collector = Collector.find(@params['_id'])
 
     entry = CappedLog.dynamic_new collector[:_id]
     entry.time = time
-    entry.type = params['type'].downcase
-    entry.desc = params['desc']
+    entry.type = @params['type'].downcase
+    entry.desc = @params['desc']
     entry.save
 
     return RESTController.ok

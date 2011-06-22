@@ -1,9 +1,6 @@
 source "http://rubygems.org"
 # Add dependencies required to use your gem here.
 
-# latest rdoc to avoid deprecated error messages
-gem 'rdoc'
-
 gem 'eventmachine', "= 1.0.0.beta.3"
 gem 'em-http-request'
 git "git://github.com/alor/evma_httpserver.git", :branch => "master" do

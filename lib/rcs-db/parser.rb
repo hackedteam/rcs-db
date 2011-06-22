@@ -2,7 +2,6 @@
 #  HTTP requests parsing module
 #
 
-# relatives
 require_relative 'rest'
 
 # from RCS::Common
@@ -18,70 +17,19 @@ module DB
 
 module Parser
   include RCS::Tracer
-
-  # parse a request from a client
-  def http_parse(http_headers, req_method, req_uri, req_cookie, req_content, req_query)
-    
-    # extract the name of the controller and the parameters
-    root, controller_name, *params = req_uri.split('/')
-    
-    # instantiate the correct AnythingController class
-    # we will then pass the control of the operation to that object
-    controller = RESTController.get_controller(controller_name)
-    if controller.nil?
-      trace :error, "Invalid controller [#{req_uri}]"
-      return RESTController.not_found
-    end
-    
-    # init the controller and check if everything is ok to proceed
-    if not controller.init(http_headers, req_method, req_uri, req_cookie, req_content, @peer) then
-      return RESTController.not_authorized 'AUTH_REQUIRED'
-    end
-    
-    # if the object has an explicit method calling
-    method = params.shift if not params.first.nil? and controller.respond_to?(params.first)
-    
-    # save the params in the controller object
-    controller.params[controller_name.downcase] = params.first unless params.first.nil?
-    controller.params.merge!(CGI::parse(req_query)) unless req_query.nil?
-    controller.params.merge!(http_parse_parameters(req_content))
-    
-    # if we are not calling an explicit method, extract it from the http method
-    if method.nil? then
-      case req_method
-        when 'GET'
-          method = (params.empty?) ? :index : :show 
-        when 'POST'
-          method = :create
-        when 'PUT'
-          method = :update
-        when 'DELETE'
-          method = :destroy
-      end
-    end
-    
-    # invoke the right method on the controller
-    begin
-      response = controller.send(method) unless method.nil?
-    rescue NotAuthorized => e
-      response = RESTController.not_authorized 'INVALID_ACCESS_LEVEL'
-      trace :warn, "Invalid access level: " + e.message
-    rescue Exception => e
-      response.content = "ERROR: " + e.message unless response.nil?
-      trace :error, "EXCEPTION: " + e.message
-      trace :fatal, "BACKTRACE: " + e.backtrace.join("\n")
-    end
-    
-    # the controller job has finished, call the cleanup hook
-    controller.cleanup
-    
-    # paranoid check
-    return RESTController.not_authorized('CONTROLLER_ERROR') if response.nil?
-    return response
+  
+  def parse_uri(uri)
+    root, controller_name, *rest = uri.split('/')
+    controller = "#{controller_name.capitalize}Controller"
+    return controller, rest
   end
   
-  # returns the JSON parsed object containing the parameters passed to a POST or PUT request
-  def http_parse_parameters(content)
+  def parse_query_parameters(query)
+    return {} if query.nil?
+    return CGI::parse(query)
+  end
+  
+  def parse_json_content(content)
     return {} if content.nil?
     begin
       # in case the content is binary and not a json document
@@ -93,13 +41,40 @@ module Parser
       return {}
     end
   end
-
-  # helper method for the replies
-  def json_reply(reply)
-    return reply.to_json, 'application/json'
-  end
   
-end #Parser
+  def guid_from_cookie(cookie)
+    # this will match our GUID session cookie
+    re = '.*?(session=)([A-Z0-9]{8}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{12})'
+    m = Regexp.new(re, Regexp::IGNORECASE).match(cookie)
+    return m[2] unless m.nil?
+    return nil
+  end
+
+  # we handle the following types of requests:
+  # /<controller>
+  # /<controller>/<method>
+  # /<controller>/<method>/<id>
+  #
+  # - any CGI style query ("?q=pippo,pluto&filter=all") will be parsed and passed as parameters
+  # - JSON encoded POST content ("{"q": ["pippo", "pluto"], "filter": "all"}") will be treated as a CGI query
+  #
+  def prepare_request(method, uri, query, cookie, content)
+    controller, uri_params = parse_uri uri
+    
+    params = parse_query_parameters query
+    json_content = parse_json_content content
+    params.merge! json_content unless json_content.empty?
+    
+    request = Hash.new
+    request[:controller] = controller
+    request[:method] = method
+    request[:uri_params] = uri_params
+    request[:params] = params
+    request[:cookie] = guid_from_cookie(cookie)
+    request[:content] = content if json_content.empty?
+    return request
+  end
+end # Parser
 
 end #DB::
 end #RCS::

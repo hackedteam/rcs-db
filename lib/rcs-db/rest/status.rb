@@ -22,16 +22,16 @@ class StatusController < RESTController
   # every component uses this to report its status
   def create
     require_auth_level :server
-
+    
     # the ip address is not specified, we take the peer address
-    if params['address'] == '' then
-      params['address'] = @req_peer
+    if @params['address'] == '' then
+      @params['address'] = @request[:peer]
     end
-
+    
     # save the status to the db
-    stats = {:disk => params['disk'], :cpu => params['cpu'], :pcpu => params['pcpu']}
-    ::Status.status_update params['name'], params['address'], params['status'], params['info'], stats
-
+    stats = {:disk => @params['disk'], :cpu => @params['cpu'], :pcpu => @params['pcpu']}
+    ::Status.status_update @params['name'], @params['address'], @params['status'], @params['info'], stats
+    
     return RESTController.ok
   end
 
@@ -41,7 +41,7 @@ class StatusController < RESTController
     require_auth_level :admin
 
     mongoid_query do
-      monitor = ::Status.find(params['status'])
+      monitor = ::Status.find(@params['_id'])
       name = monitor[:name]
       monitor.destroy
 
