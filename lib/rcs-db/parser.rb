@@ -26,7 +26,10 @@ module Parser
   
   def parse_query_parameters(query)
     return {} if query.nil?
-    return CGI::parse(query)
+    parsed = CGI::parse(query)
+    # if value is an array with a lone value, assign direct value to hash key
+    parsed.each_pair { |k,v| parsed[k] = v.first if v.class == Array and v.size == 1 }
+    return parsed
   end
   
   def parse_json_content(content)

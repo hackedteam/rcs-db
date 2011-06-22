@@ -28,7 +28,6 @@ class GridFS
     begin
       # returns grid id
       grid_id = @grid.put(content, opts)
-      trace :debug, "stored #{content.bytesize} bytes into Grid #{grid_id}."
       return grid_id
     rescue Exception => e
       # TODO handle the correct exception

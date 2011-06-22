@@ -115,20 +115,23 @@ class ParserTest < Test::Unit::TestCase
     assert_equal 1, request[:params].size
     assert_equal "test", request[:params]['user']
   end
-
+  
   def test_request_method_with_uri_query
-    query = "q=pippo&params=123"
-    request = @parser.prepare_request('GET', '/master/get', query, nil, nil)
-
+    # check we support both single (returned as String) and multiple (return as Array) parameters
+    query = "q=pippo&params=123&params=456"
+    request = @parser.prepare_request('GET', '/master/get/123', query, nil, nil)
+    
     assert_equal 'GET', request[:method]
     assert_equal 'MasterController', request[:controller]
-    assert_equal 1, request[:uri_params].size
+    assert_equal 2, request[:uri_params].size
     assert_equal 'get', request[:uri_params].first
+    assert_equal '123', request[:uri_params].second
     assert_equal 2, request[:params].size
-    assert_equal 'pippo', request[:params]['q'].first
+    assert_equal 'pippo', request[:params]['q']
     assert_equal '123', request[:params]['params'].first
+    assert_equal '456', request[:params]['params'].second
   end
-
+  
   def test_request_with_cookie
     request = @parser.prepare_request('GET', '/master', nil, "session=#{SESSION_ID}", nil)
     assert_equal SESSION_ID, request[:cookie]
