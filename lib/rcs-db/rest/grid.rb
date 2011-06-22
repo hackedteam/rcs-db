@@ -9,10 +9,7 @@ class GridController < RESTController
     require_auth_level :admin, :tech, :viewer
     
     grid_id = @params['grid']
-    
-    trace :debug, "getting grid file #{grid_id}!!!"
     file = GridFS.instance.get BSON::ObjectId.from_string grid_id
-    trace :debug, "got file '#{file.filename} of size #{file.file_length} bytes." unless file.nil?
     
     return RESTController.not_found if file.nil?
     return RESTController.stream_grid(file)
@@ -22,7 +19,8 @@ class GridController < RESTController
     require_auth_level :tech
     
     grid_id = GridFS.instance.put @req_content
-    trace :debug, "stored #{@req_content.bytesize} bytes into Grid #{grid_id}."
+    Audit.log :actor => @session[:user][:name], :action => 'grid.upload', :desc => "Uploaded #{@req_content.to_s_bytes} bytes into #{grid_id}."
+    trace :debug, "uploaded #{@req_content.bytesize} bytes into Grid #{grid_id}."
 
     return RESTController.ok({_grid: grid_id.to_s})
   end
