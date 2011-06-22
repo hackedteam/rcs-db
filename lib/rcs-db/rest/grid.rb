@@ -20,7 +20,8 @@ class GridController < RESTController
     
     grid_id = GridFS.instance.put @req_content
     Audit.log :actor => @session[:user][:name], :action => 'grid.upload', :desc => "Uploaded #{@req_content.to_s_bytes} bytes into #{grid_id}."
-    
+    trace :debug, "uploaded #{@req_content.bytesize} bytes into Grid #{grid_id}."
+
     return RESTController.ok({_grid: grid_id.to_s})
   end
 

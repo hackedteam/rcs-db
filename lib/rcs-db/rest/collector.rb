@@ -52,8 +52,10 @@ class CollectorController < RESTController
 
     mongoid_query do
       collector = Collector.find(params['collector'])
-      collector.destroy
 
+      Audit.log :actor => @session[:user][:name], :action => 'collector.destroy', :desc => "Deleted the collector '#{collector[:name]}'"
+
+      collector.destroy
       return RESTController.ok
     end    
   end
