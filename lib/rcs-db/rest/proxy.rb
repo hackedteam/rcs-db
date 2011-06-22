@@ -82,12 +82,15 @@ class ProxyController < RESTController
   end
 
   def config
-    require_auth_level :server
+    require_auth_level :server, :admin
     
     mongoid_query do
       proxy = ::Proxy.find(@params['_id'])
 
       #TODO: implement config retrieval
+      proxy.rules.each do |rule|
+        puts rule.inspect
+      end
 
       proxy.configured = true
       proxy.save
