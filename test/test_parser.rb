@@ -122,4 +122,9 @@ class ParserTest < Test::Unit::TestCase
     assert_equal 1, request[:params].size
     assert_equal "test", request[:params]['user']
   end
+
+  def test_request_with_cookie
+    request = @parser.prepare_request('GET', '/master', nil, "session=#{SESSION_ID}", nil)
+    assert_equal SESSION_ID, request[:cookie]
+  end
 end
