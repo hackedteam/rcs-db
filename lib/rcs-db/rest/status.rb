@@ -41,7 +41,7 @@ class StatusController < RESTController
     require_auth_level :admin
 
     mongoid_query do
-      monitor = ::Status.find(@params['status'])
+      monitor = ::Status.find(@params['_id'])
       name = monitor[:name]
       monitor.destroy
 

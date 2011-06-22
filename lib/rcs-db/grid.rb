@@ -26,19 +26,23 @@ class GridFS
   
   def put(content, opts = {})
     begin
-      return @grid.put(content, opts)
+      # returns grid id
+      grid_id = @grid.put(content, opts)
+      trace :debug, "stored #{content.bytesize} bytes into Grid #{grid_id}."
+      return grid_id
     rescue Exception => e
       # TODO handle the correct exception
-      #connect
+      return nil
     end
   end
   
   def get(id)
     begin
+      # returns grid IO
       return @grid.get id
     rescue Exception => e
       # TODO handle the correct exception
-      #connect
+      return nil
     end
   end
 
@@ -47,7 +51,7 @@ class GridFS
       return @grid.delete id
     rescue Exception => e
       # TODO handle the correct exception
-      #connect
+      return nil
     end
 
     return false

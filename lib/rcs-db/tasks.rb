@@ -5,6 +5,73 @@ require 'rcs-common/trace'
 module RCS
 module DB
 
+class TaskProcessor
+
+  attr_reader :generator
+  
+  def initialize(generator)
+    @generator = generator
+  end
+  
+  def count
+    @generator.count
+  end
+  
+  def process_entry(entry, string, tar)
+    description "compressing #{entry}."
+    Minitar::pack_stream(entry, StringIO.new(string), tar)
+  end
+  
+  def description(string)
+    @description = string
+  end
+  
+  def init_compression
+    out = File.new(outfile, 'wb')
+    sgz = Zlib::GzipWriter.new(out)
+    tar = Minitar::Output.new(sgz)
+    return tar
+  end
+  
+  def init_digest
+    return Digest::SHA1.new
+  end
+  
+  def process(outfile, &block)
+    
+    tar = init_compression
+    
+    begin
+      current = 0
+      @generator.next_entry do |entry, content|
+        yield "compressing #{entry}", current, count
+        process_entry entry, content, tar
+        current += 1
+      end
+    ensure
+      tar.close
+    end
+    
+    yield "calculating digest.", current, count
+    digest = init_digest
+    return digest.file(outfile).hexdigest
+    current += 1
+    
+    description "done."
+    yield description, current, count
+  end
+  
+  def self.get(type)
+    begin
+      generator = eval("#{type.capitalize}Generator").new
+      return TaskProcessor.new(generator)
+    rescue NameError
+      return nil
+    end
+  end
+  
+end # TaskProcessor
+
 class Task
   include RCS::Tracer
   
@@ -40,8 +107,6 @@ class Task
   # override this
   def generate_output(params)
     @grid_id = '4dfa12a00afc5deb66ef3c5d' # pragmatic_agile.pdf
-    #@grid_id = '4dfa1d1aa4df496c90fab43e' # underground.avi
-    #@grid_id = '4dfa2483674bba48cd2a153f' # en_outlook.exe
     file = GridFS.instance.get(BSON::ObjectId.from_string(@grid_id))
     @file_size = file.file_length
     @file_name = @file_name + '.pdf'
@@ -61,7 +126,8 @@ class Task
     
     EM.defer process
   end
-end
+  
+end # Task
 
 class TaskManager
   include Singleton
@@ -101,7 +167,8 @@ class TaskManager
     @tasks[user].delete task_id
     # TODO: delete file from grid
   end
-end
+
+end # TaskManager
 
 end # DB::
 end # RCS::

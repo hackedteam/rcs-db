@@ -45,7 +45,7 @@ class GroupController < RESTController
       @params.delete('_id')
       return RESTController.not_found if group.nil?
       
-      params.each_pair do |key, value|
+      @params.each_pair do |key, value|
         if group[key.to_s] != value and not key['_ids']
           Audit.log :actor => @session[:user][:name], :action => 'group.update', :group => group['name'], :desc => "Updated '#{key}' to '#{value}' for group '#{group['name']}'"
         end

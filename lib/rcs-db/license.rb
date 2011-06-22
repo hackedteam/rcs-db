@@ -71,8 +71,14 @@ class LicenseManager
           exit
         end
 
+        # the license is not for this version
         if lic[:version] != LICENSE_VERSION
           trace :fatal, 'Invalid License File: incorrect version'
+          exit
+        end
+
+        if not lic[:expiry].nil? and Time.parse(lic[:expiry]).getutc < Dongle.time
+          trace :fatal, "Invalid License File: license expired on #{Time.parse(lic[:expiry]).getutc}"
           exit
         end
 

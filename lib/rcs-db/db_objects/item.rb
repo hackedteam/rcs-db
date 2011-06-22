@@ -17,7 +17,7 @@ class Item
   # backdoor
   field :build, type: String
   field :instance, type: String
-  field :version, type: String
+  field :version, type: Integer
   field :type, type: String
   field :platform, type: String
   field :deleted, type: Boolean

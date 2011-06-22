@@ -13,7 +13,7 @@ class Proxy
   field :redirect, type: String
   field :port, type: Integer
   field :poll, type: Boolean
-  field :version, type: String
+  field :version, type: Integer
   field :configured, type: Boolean
   field :redirection_tag, type: String
 

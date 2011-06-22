@@ -29,7 +29,7 @@ class CollectorMigration
       mc.poll = collector[:poll] == 0 ? false : true
       mc.instance = collector[:instance]
       mc.configured = collector[:status] == 0 ? false : true
-      mc.version = collector[:version]
+      mc.version = collector[:version].to_i
 
       mc.prev = []
       mc.next = []

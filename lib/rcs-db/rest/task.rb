@@ -15,8 +15,7 @@ class TaskController < RESTController
   def show
     require_auth_level :admin, :tech, :viewer
     
-    task = TaskManager.instance.get @session[:user][:name], @params['task']
-
+    task = TaskManager.instance.get @session[:user][:name], @params['_id']
     return RESTController.not_found if task.nil?
     return RESTController.ok task
   end
@@ -25,7 +24,6 @@ class TaskController < RESTController
     require_auth_level :admin, :tech, :viewer
     
     task = TaskManager.instance.create @session[:user][:name], @params['type'], @params['file_name']
-    
     return RESTController.not_found if task.nil?
     return RESTController.ok task
   end
@@ -33,9 +31,8 @@ class TaskController < RESTController
   def destroy
     require_auth_level :admin, :tech, :viewer
     
-    TaskManager.instance.delete @session[:user][:name], @params['task']
-    
-    return RESTController.ok
+    TaskManager.instance.delete @session[:user][:name], @params['_id']
+    return RESTController.ok @params['_id']
   end
 
 end

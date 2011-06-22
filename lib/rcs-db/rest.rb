@@ -57,10 +57,20 @@ class RESTController
     
     # consolidate URI parameters
     @params ||= {}
-    @params['_id'] = @request[:uri_params].first
+    @params['_id'] ||= @request[:uri_params].first unless @request[:uri_params].first.nil?
+
+    trace :debug, "URI param: #{@request[:uri_params].first}"
+    trace :debug, "params      : #{@params.inspect}"
     
     return RESTController.server_error('NULL_ACTION') if @request[:action].nil?
-    send(@request[:action])
+    begin
+      send(@request[:action])
+    rescue NotAuthorized => e
+      trace :error, "Request not authorized: #{e.message}"
+      return RESTController.not_authorized(e.message)
+    rescue Exception
+      raise
+    end
   end
   
   def cleanup
@@ -91,7 +101,7 @@ class RESTController
         return :destroy
     end
   end
-
+  
   # macro for auth level check
   def require_auth_level(*levels)
     # TODO: checking auth level should be done by SessionManager, refactor
@@ -102,6 +112,12 @@ class RESTController
   def mongoid_query(&block)
     begin
       yield
+    rescue Mongoid::Errors::DocumentNotFound => e
+      trace :error, "Document not found => #{e.message}"
+      return RESTController.not_found(e.message)
+    rescue Mongoid::Errors::InvalidOptions => e
+      trace :error, "Invalid parameter => #{e.message}"
+      return RESTController.bad_request(e.message)
     rescue BSON::InvalidObjectId => e
       trace :error, "Bad request #{e.class} => #{e.message}"
       return RESTController.bad_request(e.message)

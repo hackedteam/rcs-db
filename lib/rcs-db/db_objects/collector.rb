@@ -14,7 +14,7 @@ class Collector
   field :port, type: Integer
   field :instance, type: String
   field :poll, type: Boolean
-  field :version, type: String
+  field :version, type: Integer
   field :configured, type: Boolean
 
   field :next, type: Array

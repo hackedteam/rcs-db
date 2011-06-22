@@ -29,7 +29,7 @@ class ProxyMigration
       mp.port = proxy[:port]
       mp.poll = proxy[:poll] == 0 ? false : true
       mp.configured = proxy[:status] == 0 ? true : false
-      mp.version = proxy[:version]
+      mp.version = proxy[:version].to_i
       mp.redirection_tag = proxy[:tag]
 
       mp.save
