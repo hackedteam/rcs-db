@@ -182,9 +182,9 @@ class Events
         EM::PeriodicTimer.new(60) { Item.restat }
         
       end
-    rescue Exception => e
+    rescue RuntimeError => e
       # bind error
-      if e.message.eql? 'no acceptor' then
+      if e.message.start_with? 'no acceptor' then
         trace :fatal, "Cannot bind port #{Config.instance.global['LISTENING_PORT']}"
         return 1
       end
