@@ -57,11 +57,10 @@ class RESTController
     
     # consolidate URI parameters
     @params ||= {}
-    @params['_id'] ||= @request[:uri_params].first unless @request[:uri_params].first.nil?
+    unless @params.has_key? '_id'
+      @params['_id'] = @request[:uri_params].first unless @request[:uri_params].first.nil?
+    end
 
-    trace :debug, "URI param: #{@request[:uri_params].first}"
-    trace :debug, "params      : #{@params.inspect}"
-    
     return RESTController.server_error('NULL_ACTION') if @request[:action].nil?
     begin
       send(@request[:action])
