@@ -21,7 +21,7 @@ puts "cookie " + cookie
 puts
 
 # session
-if false
+if true
   # session.index
   res = http.request_get('/session', {'Cookie' => cookie})
   puts "session.index"
@@ -35,7 +35,6 @@ if false
   puts "session.destroy"
   puts res
   puts
-
 end
 
 # user

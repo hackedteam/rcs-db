@@ -21,8 +21,7 @@ module Parser
   def parse_uri(uri)
     root, controller_name, *rest = uri.split('/')
     controller = "#{controller_name.capitalize}Controller"
-    params = {'_id' => rest}
-    return controller, params
+    return controller, rest
   end
   
   def parse_query_parameters(query)
@@ -52,26 +51,22 @@ module Parser
   end
   
   def prepare_request(method, uri, query, cookie, content)
-    controller, params = parse_uri uri
-    params.merge! parse_query_parameters query
-    params.merge! parse_json_content content
+    controller, uri_params = parse_uri uri
+
+    params = parse_query_parameters query
+    json_content = parse_json_content content
+    params.merge! json_content unless json_content.empty?
     
-    request = {
-        controller: controller,
-        method: method,
-        params: params,
-        cookie: guid_from_cookie(cookie)
-    }
+    request = Hash.new
+    request[:controller] = controller
+    request[:method] = method
+    request[:uri_params] = uri_params
+    request[:params] = params
+    request[:cookie] = guid_from_cookie(cookie)
+    request[:content] = content if json_content.empty?
+    return request
   end
-  
-  def flex_override_action(controller, request)
-    action = request[:params]['_id'].first
-    if action.first.nil? or false == controller.respond_to?(action)
-      return RCS::DB::RESTController.map_method_to_action(request[:method], request[:params]['_id'].empty?)
-    end
-    return request[:params]['_id'].shift.to_sym
-  end
-end #Parser
+end # Parser
 
 end #DB::
 end #RCS::

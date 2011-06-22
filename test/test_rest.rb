@@ -7,10 +7,6 @@ require_db 'rest'
 class DummyController < RCS::DB::RESTController
   def trace(a,b)
   end
-
-  def hello
-    "hello!"
-  end
 end
 
 class RESTTest < Test::Unit::TestCase
@@ -34,33 +30,44 @@ class RESTTest < Test::Unit::TestCase
   end
   
   def test_GET_to_index_action
-    assert_equal :index, RCS::DB::RESTController.map_method_to_action('GET', [].empty?)
+    assert_equal :index, @controller.map_method_to_action('GET', [].empty?)
   end
 
   def test_GET_to_show_action
-    assert_equal :show, RCS::DB::RESTController.map_method_to_action('GET', ["param"].empty?)
+    assert_equal :show, @controller.map_method_to_action('GET', ["param"].empty?)
   end
 
   def test_POST_to_create_action
-    assert_equal :create, RCS::DB::RESTController.map_method_to_action('POST', [].empty?)
+    assert_equal :create, @controller.map_method_to_action('POST', [].empty?)
   end
 
   def test_PUT_to_update_action
-    assert_equal :update, RCS::DB::RESTController.map_method_to_action('PUT', [].empty?)
+    assert_equal :update, @controller.map_method_to_action('PUT', [].empty?)
   end
 
   def test_DELETE_to_destroy_action
-    assert_equal :destroy, RCS::DB::RESTController.map_method_to_action('DELETE', [].empty?)
+    assert_equal :destroy, @controller.map_method_to_action('DELETE', [].empty?)
   end
-
+  
   def test_act_calling_proper_action
-    request = {:action => :hello}
+    # make controller respond to requested action
+    def @controller.hello() "Hello!" end
+    
+    request = {:uri_params => [:hello]}
     result = @controller.act!(request, nil)
-    assert_equal "hello!", result
+    assert_equal "Hello!", result
   end
   
   def test_act_calling_without_action
-    request = {}
+    request = {:uri_params => []}
+    result = @controller.act!(request, nil)
+    assert_equal RCS::DB::RESTResponse, result.class
+    assert_equal 500, result.status
+    assert_equal 'NULL_ACTION', result.content
+  end
+  
+  def test_act_calling_with_invalid_action
+    request = {:uri_params => [:invalid]}
     result = @controller.act!(request, nil)
     assert_equal RCS::DB::RESTResponse, result.class
     assert_equal 500, result.status

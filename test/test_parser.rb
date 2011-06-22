@@ -22,20 +22,20 @@ class ParserTest < Test::Unit::TestCase
   def test_parse_uri_without_action_override
     controller, params = @parser.parse_uri('/fake')
     assert_equal "FakeController", controller
-    assert_true params['_id'].empty?
+    assert_empty params
   end
   
   def test_parse_uri_with_action_override
     controller, params = @parser.parse_uri('/fake/destroy')
     assert_equal "FakeController", controller
-    assert_equal "destroy", params['_id'].first
+    assert_equal "destroy", params.first
   end
   
   def test_parse_uri_with_action_override_and_params
     controller, params = @parser.parse_uri('/fake/destroy/1234')
     assert_equal "FakeController", controller
-    assert_equal "destroy", params['_id'].first
-    assert_equal "1234", params['_id'].second
+    assert_equal "destroy", params.first
+    assert_equal "1234", params.second
   end
   
   def test_parse_nil_query_parameters
@@ -67,52 +67,46 @@ class ParserTest < Test::Unit::TestCase
     assert_equal SESSION_ID, session_id_from_cookie
   end
   
-  def test_request_index_page
-    request = @parser.prepare_request('GET', '/index', nil, nil, nil)
+  def test_request_GET_index_page
+    request = @parser.prepare_request('GET', '/master', nil, nil, nil)
     
-    # not existing pages should receive 404 status code
-    assert_equal 'IndexController', request[:controller]
+    assert_equal 'GET', request[:method]
+    assert_equal 'MasterController', request[:controller]
     assert_nil request[:cookie]
-    assert_empty request[:params]['_id']
+    assert_empty request[:uri_params]
+    assert_empty request[:params]
   end
   
-  def test_request_show_page
-    request = @parser.prepare_request('GET', '/show/1234', nil, nil, nil)
-    
-    # not existing pages should receive 404 status code
-    assert_equal 'ShowController', request[:controller]
+  def test_request_GET_show_page
+    request = @parser.prepare_request('GET', '/master/1234', nil, nil, nil)
+
+    assert_equal 'GET', request[:method]
+    assert_equal 'MasterController', request[:controller]
     assert_nil request[:cookie]
-    assert_equal "1234", request[:params]['_id'].first
+    assert_equal "1234", request[:uri_params].first
+    assert_empty request[:params]
   end
   
-  def test_request_flex_overridden_method_page
+  def test_request_method_with_params
     content = {'user' => 'test'}
-    request = @parser.prepare_request('GET', '/fake/destroy', nil, "session=#{SESSION_ID}", content.to_json)
+    request = @parser.prepare_request('POST', '/master/destroy/123', nil, "session=#{SESSION_ID}", content.to_json)
     
-    # not existing pages should receive 404 status code
-    assert_equal 'FakeController', request[:controller]
+    assert_equal 'POST', request[:method]
+    assert_equal 'MasterController', request[:controller]
     assert_equal SESSION_ID, request[:cookie]
-    assert_equal "destroy", request[:params]['_id'].first
+    assert_equal "destroy", request[:uri_params].first
+    assert_equal "123", request[:uri_params].second
     assert_equal "test", request[:params]['user']
   end
 
-  def test_flex_overriden_action
-    controller = MiniTest::Mock.new
-    controller.expect :destroy, nil, nil
-    
-    request = {method: 'DELETE', params: {'_id' => ['destroy']}}
-    action = @parser.flex_override_action controller, request
-    assert_equal :destroy, action
-    assert_empty request[:params]['_id']
-  end
+  def test_request_method_with_uri_query
+    query = "?&q=pippo&params=123"
+    request = @parser.prepare_request('GET', '/master/get', query, nil, nil)
 
-  def test_flex_direct_action
-    controller = MiniTest::Mock.new
-    
-    request = {method: 'GET', params: {'_id' => ['123']}}
-    action = @parser.flex_override_action controller, request
-    assert_equal :show, action
-    assert_equal "123", request[:params]['_id'].first
+    assert_equal 'GET', request[:method]
+    assert_equal 'MasterController', request[:controller]
+    assert_equal 'get', request[:uri_params].first
+    assert_equal 'pippo', request[:params]['q'].first
+    assert_equal '123', request[:params]['params'].first
   end
 end
-
