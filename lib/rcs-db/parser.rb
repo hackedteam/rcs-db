@@ -49,10 +49,18 @@ module Parser
     return m[2] unless m.nil?
     return nil
   end
-  
+
+  # we handle the following types of requests:
+  # /<controller>
+  # /<controller>/<method>
+  # /<controller>/<method>/<id>
+  #
+  # - any CGI style query ("?q=pippo,pluto&filter=all") will be parsed and passed as parameters
+  # - JSON encoded POST content ("{"q": ["pippo", "pluto"], "filter": "all"}") will be treated as a CGI query
+  #
   def prepare_request(method, uri, query, cookie, content)
     controller, uri_params = parse_uri uri
-
+    
     params = parse_query_parameters query
     json_content = parse_json_content content
     params.merge! json_content unless json_content.empty?

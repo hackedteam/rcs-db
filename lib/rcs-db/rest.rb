@@ -28,27 +28,36 @@ class RESTController
   extend RCS::DB::RESTReplies
   
   # the parameters passed on the REST request
-  attr_reader :request, :session
+  attr_reader :session, :request
+  
+  def request=(request)
+    @request = request
+    identify_action
+  end
   
   def identify_action
     action = @request[:uri_params].first
     if not action.nil? and respond_to?(action)
       # use the default http method as action
-      action = @request[:uri_params].shift
-      return action.to_sym
+      @request[:action] = @request[:uri_params].shift.to_sym
     else
-      return map_method_to_action(@request[:method], @request[:uri_params].empty?)
+      @request[:action] = map_method_to_action(@request[:method], @request[:uri_params].empty?)
     end
   end
+
+  def logging_in?
+    (@request[:controller].eql? 'AuthController' and @request[:action].eql? :login)
+  end
   
-  def act!(request, session)
-    @request = request
-    # make a copy of the params, handy for access and mongoid queries
-    @params = @request[:params].clone unless @request[:params].nil?
+  def act!(session)
     @session = session
     
-    # call the proper controller method
-    @request[:action] = identify_action
+    # make a copy of the params, handy for access and mongoid queries
+    @params = @request[:params].clone unless @request[:params].nil?
+    
+    # consolidate URI parameters
+    @params ||= {}
+    @params['_id'] = @request[:uri_params].first
     
     return RESTController.server_error('NULL_ACTION') if @request[:action].nil?
     send(@request[:action])
@@ -58,10 +67,12 @@ class RESTController
     # hook method if you need to perform some cleanup operation
   end
   
-  def self.get(name)
+  def self.get(request)
+    name = request[:controller]
     return nil if name.nil?
     begin
       controller = eval("#{name}").new
+      controller.request = request
       return controller
     rescue NameError => e
       return nil
@@ -83,6 +94,7 @@ class RESTController
 
   # macro for auth level check
   def require_auth_level(*levels)
+    # TODO: checking auth level should be done by SessionManager, refactor
     raise NotAuthorized.new(@session[:level], levels) if (levels & @session[:level]).empty?
   end
 

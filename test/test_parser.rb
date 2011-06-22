@@ -57,6 +57,12 @@ class ParserTest < Test::Unit::TestCase
     assert_equal "Darth Vader", result['evil']
   end
 
+  def test_parse_invalid_json_content
+    content = '{"evil" : "Darth Vader"' # missing } closing bracket
+    result = @parser.parse_json_content(content.to_json)
+    assert_nil result['evil']
+  end
+
   def test_guid_from_invalid_cookie
     session_id = @parser.guid_from_cookie("session=1234567890")
     assert_nil session_id
@@ -98,6 +104,18 @@ class ParserTest < Test::Unit::TestCase
     assert_equal "123", request[:uri_params].second
   end
 
+  def test_request_POST_with_json_content
+    content = {'user' => 'test'}
+    request = @parser.prepare_request('POST', '/master/update', nil, nil, content.to_json)
+
+    assert_equal 'POST', request[:method]
+    assert_equal 'MasterController', request[:controller]
+    assert_equal 1, request[:uri_params].size
+    assert_equal "update", request[:uri_params].first
+    assert_equal 1, request[:params].size
+    assert_equal "test", request[:params]['user']
+  end
+
   def test_request_method_with_uri_query
     query = "q=pippo&params=123"
     request = @parser.prepare_request('GET', '/master/get', query, nil, nil)
@@ -109,18 +127,6 @@ class ParserTest < Test::Unit::TestCase
     assert_equal 2, request[:params].size
     assert_equal 'pippo', request[:params]['q'].first
     assert_equal '123', request[:params]['params'].first
-  end
-  
-  def test_request_POST_with_json_content
-    content = {'user' => 'test'}
-    request = @parser.prepare_request('POST', '/master/update', nil, nil, content.to_json)
-
-    assert_equal 'POST', request[:method]
-    assert_equal 'MasterController', request[:controller]
-    assert_equal 1, request[:uri_params].size
-    assert_equal "update", request[:uri_params].first
-    assert_equal 1, request[:params].size
-    assert_equal "test", request[:params]['user']
   end
 
   def test_request_with_cookie
