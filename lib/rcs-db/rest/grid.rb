@@ -8,7 +8,7 @@ class GridController < RESTController
   def show
     require_auth_level :admin, :tech, :viewer
     
-    grid_id = @params['grid']
+    grid_id = @params['_id']
     
     trace :debug, "Getting grid file #{grid_id}!!!"
     file = GridFS.instance.get BSON::ObjectId.from_string grid_id
@@ -21,7 +21,7 @@ class GridController < RESTController
   def destroy
     require_auth_level :admin, :tech, :viewer
     
-    grid_id = @params['grid']
+    grid_id = @params['_id']
     GridFS.instance.delete grid_id
     
     return RESTController.ok

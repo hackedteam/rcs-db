@@ -31,17 +31,17 @@ class ProxyController < RESTController
     require_auth_level :admin
 
     mongoid_query do
-      proxy = Proxy.find(params['proxy'])
-      params.delete('proxy')
+      proxy = Proxy.find(@params['_id'])
+      @params.delete('_id')
       return RESTController.not_found if proxy.nil?
 
-      params.each_pair do |key, value|
+      @params.each_pair do |key, value|
         if proxy[key.to_s] != value and not key['_ids']
           Audit.log :actor => @session[:user][:name], :action => 'proxy.update', :desc => "Updated '#{key}' to '#{value}' for injection proxy '#{proxy['name']}'"
         end
       end
 
-      proxy.update_attributes(params)
+      proxy.update_attributes(@params)
 
       return RESTController.ok(proxy)
     end
@@ -51,7 +51,7 @@ class ProxyController < RESTController
     require_auth_level :admin
 
     mongoid_query do
-      proxy = Proxy.find(params['proxy'])
+      proxy = Proxy.find(@params['_id'])
       proxy.destroy
 
       return RESTController.ok
@@ -62,11 +62,11 @@ class ProxyController < RESTController
     require_auth_level :server
 
     mongoid_query do
-      proxy = Proxy.find(params['_id'])
-      params.delete('_id')
+      proxy = Proxy.find(@params['_id'])
+      @params.delete('_id')
       return RESTController.not_found if proxy.nil?
 
-      proxy.update_attributes(params)
+      proxy.update_attributes(@params)
 
       return RESTController.ok
     end
@@ -84,15 +84,15 @@ class ProxyController < RESTController
   def log
     require_auth_level :server
 
-    time = Time.parse(params['time']).getutc.to_i
+    time = Time.parse(@params['time']).getutc.to_i
 
     mongoid_query do
-      proxy = Proxy.find(params['_id'])
+      proxy = Proxy.find(@params['_id'])
 
       entry = CappedLog.dynamic_new proxy[:_id]
       entry.time = time
-      entry.type = params['type'].downcase
-      entry.desc = params['desc']
+      entry.type = @params['type'].downcase
+      entry.desc = @params['desc']
       entry.save
 
       return RESTController.ok

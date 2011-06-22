@@ -14,7 +14,7 @@ class AuditController < RESTController
     
     # filtering
     filter = {}
-    filter = JSON.parse(params['filter'].first) if params.has_key? 'filter'
+    filter = JSON.parse(@params['filter'].first) if @params.has_key? 'filter'
     
     filter_hash = {}
     
@@ -38,9 +38,9 @@ class AuditController < RESTController
     end
     
     # paging
-    if params.has_key? 'startIndex' and params.has_key? 'numItems'
-      start_index = params['startIndex'].first.to_i
-      num_items = params['numItems'].first.to_i
+    if @params.has_key? 'startIndex' and @params.has_key? 'numItems'
+      start_index = @params['startIndex'].first.to_i
+      num_items = @params['numItems'].first.to_i
       #trace :debug, "Querying with filter #{filter_hash}."
       query = filtering.where(filter_hash).order_by([[:time, :asc]]).skip(start_index).limit(num_items)
     else
@@ -56,7 +56,7 @@ class AuditController < RESTController
     
     # filtering
     filter = {}
-    filter = JSON.parse(params['filter'].first) if params.has_key? 'filter'
+    filter = JSON.parse(@params['filter'].first) if @params.has_key? 'filter'
 
     filter_hash = {}
 
@@ -83,7 +83,7 @@ class AuditController < RESTController
     
     trace :debug, "number of filtered audits: " + num_audits.to_s unless num_audits.nil?
     
-    # FIXME: Flex RPC does not accept 0 (zero) as return value for a pagination (-1 is a safe alternative)
+    # Flex RPC does not accept 0 (zero) as return value for a pagination (-1 is a safe alternative)
     num_audits = -1 if num_audits == 0
     return RESTController.ok(num_audits)
   end

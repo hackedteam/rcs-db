@@ -11,11 +11,9 @@ class SignatureController < RESTController
   # e.g. 'backdoor', 'network', ...
   def show
     require_auth_level :server
-
-    sig = ::Signature.where({scope: params['signature']}).first
-
-    trace :info, "[#{@req_peer}] Requested the '#{params['signature']}' signature [#{sig[:value]}]"
-
+    
+    sig = ::Signature.where({scope: @params['signature']}).first
+    trace :info, "[#{@req_peer}] Requested the '#{@params['signature']}' signature [#{sig[:value]}]"
     return RESTController.ok(sig)
   end
 
