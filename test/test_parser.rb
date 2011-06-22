@@ -83,30 +83,43 @@ class ParserTest < Test::Unit::TestCase
     assert_equal 'GET', request[:method]
     assert_equal 'MasterController', request[:controller]
     assert_nil request[:cookie]
+    assert_equal 1, request[:uri_params].size
     assert_equal "1234", request[:uri_params].first
     assert_empty request[:params]
   end
   
-  def test_request_method_with_params
-    content = {'user' => 'test'}
-    request = @parser.prepare_request('POST', '/master/destroy/123', nil, "session=#{SESSION_ID}", content.to_json)
+  def test_request_POST__with_id_param
+    request = @parser.prepare_request('POST', '/master/destroy/123', nil, nil, nil)
     
     assert_equal 'POST', request[:method]
     assert_equal 'MasterController', request[:controller]
-    assert_equal SESSION_ID, request[:cookie]
+    assert_equal 2, request[:uri_params].size
     assert_equal "destroy", request[:uri_params].first
     assert_equal "123", request[:uri_params].second
-    assert_equal "test", request[:params]['user']
   end
 
   def test_request_method_with_uri_query
-    query = "?&q=pippo&params=123"
+    query = "q=pippo&params=123"
     request = @parser.prepare_request('GET', '/master/get', query, nil, nil)
 
     assert_equal 'GET', request[:method]
     assert_equal 'MasterController', request[:controller]
+    assert_equal 1, request[:uri_params].size
     assert_equal 'get', request[:uri_params].first
+    assert_equal 2, request[:params].size
     assert_equal 'pippo', request[:params]['q'].first
     assert_equal '123', request[:params]['params'].first
+  end
+  
+  def test_request_POST_with_json_content
+    content = {'user' => 'test'}
+    request = @parser.prepare_request('POST', '/master/update', nil, nil, content.to_json)
+
+    assert_equal 'POST', request[:method]
+    assert_equal 'MasterController', request[:controller]
+    assert_equal 1, request[:uri_params].size
+    assert_equal "update", request[:uri_params].first
+    assert_equal 1, request[:params].size
+    assert_equal "test", request[:params]['user']
   end
 end
