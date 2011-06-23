@@ -11,8 +11,8 @@ http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
 # login
 account = {
-  :user => 'daniele', 
-  :pass => 'danielep123'
+  :user => 'alor', 
+  :pass => 'demorcss'
   }
 resp = http.request_post('/auth/login', account.to_json, nil)
 puts "auth.login"
@@ -441,6 +441,49 @@ if false
   coll = {name: 'anonymizer', address: '1.2.3.4', desc: 'test collector', port: 4445, poll: true}
   res = http.request_put("/collector/#{test_coll['_id']}", coll.to_json, {'Cookie' => cookie}) 
   puts "collector.update "
+  puts res
+  puts
+  
+end
+
+# alerts
+if true
+  # alert.index
+  puts "alert.index" 
+  res = http.request_get('/alert', {'Cookie' => cookie})
+  puts res
+  puts
+  
+  # alert.create
+  puts "alert.create" 
+  alert = {evidence: 'keylog', priority: 5, suppression: 600, type: 'mail', keywords: 'ciao miao bau', path: [1, 2, 3]}
+  res = http.request_post('/alert', alert.to_json, {'Cookie' => cookie})
+  alert = JSON.parse(res.body)
+  puts alert
+  puts
+
+  # alert.update
+  puts "alert.update" 
+  mod = {evidence: 'chat', priority: 1, enabled: false}
+  res = http.request_put("/alert/#{alert['_id']}", mod.to_json, {'Cookie' => cookie})
+  puts res
+  puts
+
+  # alert.index
+  puts "alert.index" 
+  res = http.request_get('/alert', {'Cookie' => cookie})
+  puts res
+  puts
+  
+  # alert.delete
+  puts "alert.delete"
+  res = http.delete("/alert/#{alert['_id']}", {'Cookie' => cookie})
+  puts res
+  puts
+  
+  # alert.index
+  puts "alert.index" 
+  res = http.request_get('/alert', {'Cookie' => cookie})
   puts res
   puts
   

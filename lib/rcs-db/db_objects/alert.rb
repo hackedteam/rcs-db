@@ -9,11 +9,12 @@ class Alert
 
   field :type, type: String
   field :evidence, type: String
-  field :keyword, type: String
+  field :keywords, type: String
   field :suppression, type: Integer
   field :priority, type: Integer
   field :path, type: Array
-
+  field :enabled, type: Boolean
+  
   store_in :alerts
 
   belongs_to :user

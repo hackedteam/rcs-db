@@ -22,10 +22,11 @@ class AlertMigration
       ma[:_mid] = alert[:alert_id]
       ma.type = alert[:type].downcase
       ma.evidence = alert[:log_type].downcase
-      ma.keyword = alert[:log_pattern]
+      ma.keywords = alert[:log_pattern]
       ma.suppression = alert[:suppression]
       ma.priority = alert[:tag]
-
+      ma.enabled = true
+      
       operation = ::Item.where({_mid: alert[:activity_id], _kind: 'operation'}).first
       target = ::Item.where({_mid: alert[:target_id], _kind: 'target'}).first
       backdoor = ::Item.where({_mid: alert[:backdoor_id], _kind: 'backdoor'}).first
