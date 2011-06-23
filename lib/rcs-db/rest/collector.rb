@@ -6,7 +6,7 @@ module RCS
 module DB
 
 class CollectorController < RESTController
-
+  
   def index
     require_auth_level :server, :tech, :admin
 
@@ -33,7 +33,6 @@ class CollectorController < RESTController
     mongoid_query do
       coll = Collector.find(@params['_id'])
       @params.delete('collector')
-      return RESTController.reply.not_found if coll.nil?
 
       @params.each_pair do |key, value|
         if coll[key.to_s] != value and not key['_ids']
@@ -42,11 +41,11 @@ class CollectorController < RESTController
       end
 
       coll.update_attributes(@params)
-
+      
       return RESTController.reply.ok(coll)
     end
   end
-
+  
   def destroy
     require_auth_level :admin
 
@@ -66,10 +65,10 @@ class CollectorController < RESTController
     mongoid_query do
       collector = Collector.find(@params['_id'])
       @params.delete('_id')
-      return RESTController.reply.not_found if collector.nil?
-
-      collector.update_attributes(@params)
-
+      
+      collector.version = @params['version']
+      collector.save
+      
       return RESTController.reply.ok
     end
   end
@@ -86,12 +85,10 @@ class CollectorController < RESTController
   def log
     require_auth_level :server
 
-    time = Time.parse(@params['time']).getutc.to_i
-
     collector = Collector.find(@params['_id'])
 
     entry = CappedLog.dynamic_new collector[:_id]
-    entry.time = time
+    entry.time = Time.parse(@params['time']).getutc.to_i
     entry.type = @params['type'].downcase
     entry.desc = @params['desc']
     entry.save

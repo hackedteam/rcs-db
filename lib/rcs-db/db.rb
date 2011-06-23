@@ -12,8 +12,6 @@ require_relative 'tasks'
 # from RCS::Common
 require 'rcs-common/trace'
 
-require 'mongoid'
-
 module RCS
 module DB
 

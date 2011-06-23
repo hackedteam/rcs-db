@@ -11,6 +11,7 @@ require 'rcs-common/trace'
 # system
 require 'mysql2'
 require 'mongo'
+require 'mongoid'
 
 # require all the DB objects
 Dir[File.dirname(__FILE__) + '/db_objects/*.rb'].each do |file|

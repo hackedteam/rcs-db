@@ -56,8 +56,8 @@ class GridFS
     return false
   end
 
-  def delete_by_backdoor(backdoor_id)
-    items = get_by_filename(backdoor_id)
+  def delete_by_backdoor(backdoor)
+    items = get_by_filename(backdoor)
     items.each {|item| delete item["_id"]}
   end
   

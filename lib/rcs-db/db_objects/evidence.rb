@@ -38,9 +38,9 @@ class Evidence
           backdoor.stat.evidence ||= {}
           backdoor.stat.evidence[self.type] ||= 0
           backdoor.stat.evidence[self.type] += 1
-          backdoor.stat.size += self.data[:_grid_size]
+          backdoor.stat.size += self.data[:_grid_size] unless self.data[:_grid].nil?
           backdoor.stat.size += Mongoid.database.collection("#{Evidence.collection_name(target)}").stats()['avgObjSize'].to_i
-          backdoor.stat.grid_size += self.data[:_grid_size]
+          backdoor.stat.grid_size += self.data[:_grid_size] unless self.data[:_grid].nil?
           backdoor.save
         end
 
@@ -50,9 +50,9 @@ class Evidence
           backdoor.stat.evidence ||= {}
           backdoor.stat.evidence[self.type] ||= 0
           backdoor.stat.evidence[self.type] -= 1
-          backdoor.stat.size -= self.data[:_grid_size]
+          backdoor.stat.size -= self.data[:_grid_size] unless self.data[:_grid].nil?
           backdoor.stat.size -= Mongoid.database.collection("#{Evidence.collection_name(target)}").stats()['avgObjSize'].to_i
-          backdoor.stat.grid_size -= self.data[:_grid_size]
+          backdoor.stat.grid_size -= self.data[:_grid_size] unless self.data[:_grid].nil?
           backdoor.save
           
           # drop the file (if any) in grid
