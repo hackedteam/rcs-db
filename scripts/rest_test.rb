@@ -172,7 +172,7 @@ puts
 end
 
 # audit
-if false
+if true
   # audit.count
    res = http.request_get('/audit/count', {'Cookie' => cookie})
    puts "audit.count"
@@ -198,6 +198,15 @@ if false
    # audit.index
   res = http.request_get('/audit', {'Cookie' => cookie})
   puts "audit.index"
+  puts res
+  puts
+end
+
+# audit export log
+if true
+  params = {'file_name' => 'pippo'} #, 'filter' => {"action" => ["user.update", "login"]} }
+  res = http.request_post("/audit/create", params.to_json, {'Cookie' => cookie})
+  puts "audit.export"
   puts res
   puts
 end
