@@ -2,12 +2,74 @@
 # Controller for Audit
 #
 
+require 'csv'
 require 'json'
+require 'tempfile'
 
 module RCS
 module DB
 
 class AuditController < RESTController
+  
+  def create
+    require_auth_level :view
+    
+    file_name = "#{@params['file_name']}.tar.gz"
+    
+    trace :debug, "Exporting logs with filename #{file_name} and filter #{@params['filter']}"
+    
+    # export audit logs
+    
+    # filtering
+    filter = @params['filter']
+    filter ||= {}
+
+    filter_hash = {}
+
+    # date filters must be treated separately
+    if filter.has_key? 'from' and filter.has_key? 'to'
+      filter_hash[:time.gte] = filter.delete('from')
+      filter_hash[:time.lte] = filter.delete('to')
+      #trace :debug, "Filtering date from #{filter['from']} to #{filter['to']}."
+    end
+
+    # desc filters must be handled as a regexp
+    if filter.has_key? 'desc'
+      #trace :debug, "Filtering description by keywork '#{filter['desc']}'."
+      filter_hash[:desc] = Regexp.new(filter.delete('desc'), true)
+    end
+
+    # copy remaining filtering criteria (if any)
+    filtering = ::Audit
+    filter.each_key do |k|
+      filtering = filtering.any_in(k.to_sym => filter[k])
+    end
+
+    # paging
+    if @params.has_key? 'startIndex' and @params.has_key? 'numItems'
+      start_index = @params['startIndex'].to_i
+      num_items = @params['numItems'].to_i
+      #trace :debug, "Querying with filter #{filter_hash}."
+      query = filtering.where(filter_hash).order_by([[:time, :asc]]).skip(start_index).limit(num_items)
+    else
+      # without paging, return everything
+      query = filtering.where(filter_hash).order_by([[:time, :asc]])
+    end
+    
+    # merge all the hash we have
+    file = Tempfile.new(@params['file_name'], '.csv', :encoding => 'utf-8')
+
+    CSV.open(File.join('/', 'tmp', 'pippo.csv'), "wb") do |csv|
+      query.each do |p|
+        f.write p.to_flat_array.to_csv
+      end
+    end
+    
+    file = nil
+    
+    return RESTController.reply.not_found if file.nil?
+    return RESTController.reply.stream_file(file)
+  end
 
   def index
     require_auth_level :admin
