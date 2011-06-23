@@ -1,14 +1,219 @@
-require 'helper'
+require_relative 'helper'
 require 'uuidtools'
 require 'bson'
 
 require_db 'rest'
+
+# for cookie tests
+SESSION_ID = "eb92cf60-4f26-4cbb-b5db-5a8e5682e86a"
 
 class DummyController < RCS::DB::RESTController
   def trace(a,b)
   end
 end
 
+class RESTInvalidSession < Test::Unit::TestCase
+  def setup
+    sm = MiniTest::Mock.new
+    sm.expect :get, nil, [SESSION_ID]
+    sm.expect :update, nil, [SESSION_ID]
+    
+    RCS::DB::RESTController.instance_eval { @session_manager = sm }
+    @controller = DummyController.new
+  end
+  
+  def test_invalid_session
+    def @controller.get_rule() assert_true 1 end
+    @controller.request = {method: 'GET', uri_params: ['get_rule'], cookie: SESSION_ID}
+    response = @controller.act!
+    
+    assert_not_nil response
+    assert_equal 403, response.status
+    assert_equal 'INVALID_COOKIE', response.content
+  end
+end
+
+class RESTValidSession < Test::Unit::TestCase
+  def setup
+    sm = MiniTest::Mock.new
+    sm.expect :get, Object.new, [SESSION_ID]
+    sm.expect :update, nil, [SESSION_ID]
+    
+    RCS::DB::RESTController.instance_eval { @session_manager = sm }
+    @controller = DummyController.new
+  end
+  
+  def test_invalid_action
+    @controller.request = {:uri_params => [], cookie: SESSION_ID}
+
+    response = @controller.act!
+    
+    assert_not_nil response
+    assert_equal 500, response.status
+    assert_equal 'NULL_ACTION', response.content
+  end
+
+  def test_exception_in_controller
+    def @controller.index() raise "This should be trapped" end
+    @controller.request = {method: 'GET', uri_params: [], cookie: SESSION_ID}
+
+    response = @controller.act!
+
+    assert_not_nil response
+    assert_equal 500, response.status
+    assert_equal 'SERVER_ERROR', response.content
+  end
+
+  def test_method_called_with_nil_response
+    def @controller.index() return nil end
+     @controller.request = {method: 'GET', uri_params: [], cookie: SESSION_ID}
+    
+    response = @controller.act!
+    
+    assert_not_nil response
+    assert_equal 500, response.status
+    assert_equal 'CONTROLLER_ERROR', response.content
+  end
+
+  def test_method_called_with_insufficient_level
+    def @controller.index() raise RCS::DB::NotAuthorized.new(:admin, []) end
+    @controller.request = {method: 'GET', uri_params: [], cookie: SESSION_ID}
+    
+    response = @controller.act!
+    
+    assert_not_nil response
+    assert_equal 403, response.status
+  end
+
+  # GET /master/123
+  def test_GET_with_id
+    def @controller.show() "show called!" end
+    @controller.request = {method: 'GET', uri_params: ['123']}
+
+    result = @controller.act!
+    assert_equal "show called!", result
+  end
+
+  # GET /master/get_rule/123
+  def test_GET_with_method_and_id
+    def @controller.get_rule() "get_rule #{@params['_id']} called!" end
+    @controller.request = {method: 'GET', uri_params: ['get_rule', '123']}
+
+    result = @controller.act!
+    assert_equal "get_rule 123 called!", result
+  end
+
+  # GET /master/get_rule/123?q=pippo
+  def test_GET_with_method_and_id_and_CGI_query
+    def @controller.get_rule() "get_rule #{@params['_id']} #{@params['q']} called!" end
+    @controller.request = {method: 'GET', uri_params: ['get_rule', '123'], params: {'q' => 'pippo'}}
+
+    result = @controller.act!
+    assert_equal "get_rule 123 pippo called!", result
+  end
+
+  # POST /master/get_rule/123 json {"q": "pippo"}
+  def test_POST_with_method_and_id_and_json_body
+    def @controller.get_rule() "get_rule #{@params['_id']} #{@params['q']} called!" end
+    @controller.request = {method: 'GET', uri_params: ['get_rule', '123'], params: {'q' => 'pippo'}}
+
+    result = @controller.act!
+    assert_equal "get_rule 123 pippo called!", result
+  end
+
+  def test_mongoid_query_invalid_bson
+    result = @controller.mongoid_query { raise BSON::InvalidObjectId.new }
+    assert_equal RCS::DB::RESTResponse, result.class
+    assert_equal 400, result.status # BAD REQUEST
+  end
+
+  def test_mongoid_query_generic_exception
+    result = @controller.mongoid_query { raise "OUCH!" }
+    assert_equal RCS::DB::RESTResponse, result.class
+    assert_equal 404, result.status # NOT FOUND
+  end
+
+=begin
+  def test_response_not_found
+    result = RCS::DB::RESTController.not_found
+    assert_equal RCS::DB::RESTResponse, result.class
+    assert_equal 404, result.status # NOT FOUND
+  end
+
+  def test_response_not_authorized
+    message = "Permission denied!"
+    result = RCS::DB::RESTController.not_authorized message
+    assert_equal RCS::DB::RESTResponse, result.class
+    assert_equal 403, result.status # NOT FOUND
+    assert_equal message, result.content
+  end
+
+  def test_response_conflict
+    message = "I'll fight for that!"
+    result = RCS::DB::RESTController.conflict message
+    assert_equal RCS::DB::RESTResponse, result.class
+    assert_equal 409, result.status # NOT FOUND
+    assert_equal message, result.content
+  end
+
+  def test_response_bad_request
+    message = "What?!?"
+    result = RCS::DB::RESTController.bad_request message
+    assert_equal RCS::DB::RESTResponse, result.class
+    assert_equal 400, result.status # NOT FOUND
+    assert_equal message, result.content
+  end
+
+  def test_response_server_error
+    message = "Core meltdown!"
+    result = RCS::DB::RESTController.server_error message
+    assert_equal RCS::DB::RESTResponse, result.class
+    assert_equal 500, result.status # NOT FOUND
+    assert_equal message, result.content
+  end
+=end
+
+=begin
+  # GET /master/123
+  def test_GET_with_id
+    def @controller.show() "show called!" end
+    @controller.request = {method: 'GET', uri_params: ['123']}
+
+    result = @controller.act!
+    assert_equal "show called!", result
+  end
+  
+  # GET /master/get_rule/123
+  def test_GET_with_method_and_id
+    def @controller.get_rule() "get_rule #{@params['_id']} called!" end
+    @controller.request = {method: 'GET', uri_params: ['get_rule', '123']}
+
+    result = @controller.act!
+    assert_equal "get_rule 123 called!", result
+  end
+  
+  # GET /master/get_rule/123?q=pippo
+  def test_GET_with_method_and_id_and_CGI_query
+    def @controller.get_rule() "get_rule #{@params['_id']} #{@params['q']} called!" end
+    @controller.request = {method: 'GET', uri_params: ['get_rule', '123'], params: {'q' => 'pippo'}}
+
+    result = @controller.act!
+    assert_equal "get_rule 123 pippo called!", result
+  end
+
+  # POST /master/get_rule/123 json {"q": "pippo"}
+  def test_POST_with_method_and_id_and_json_body
+    def @controller.get_rule() "get_rule #{@params['_id']} #{@params['q']} called!" end
+    @controller.request = {method: 'GET', uri_params: ['get_rule', '123'], params: {'q' => 'pippo'}}
+
+    result = @controller.act!
+    assert_equal "get_rule 123 pippo called!", result
+  end
+=end
+
+end
+
+=begin
 class RESTTest < Test::Unit::TestCase
   
   def setup
@@ -56,7 +261,7 @@ class RESTTest < Test::Unit::TestCase
     def @controller.show() "show called!" end
     @controller.request = {method: 'GET', uri_params: ['123']}
     
-    result = @controller.act!(nil)
+    result = @controller.act!
     assert_equal "show called!", result
   end
   
@@ -65,7 +270,7 @@ class RESTTest < Test::Unit::TestCase
     def @controller.get_rule() "get_rule #{@params['_id']} called!" end
     @controller.request = {method: 'GET', uri_params: ['get_rule', '123']}
     
-    result = @controller.act!(nil)
+    result = @controller.act!
     assert_equal "get_rule 123 called!", result
   end
   
@@ -74,7 +279,7 @@ class RESTTest < Test::Unit::TestCase
     def @controller.get_rule() "get_rule #{@params['_id']} #{@params['q']} called!" end
     @controller.request = {method: 'GET', uri_params: ['get_rule', '123'], params: {'q' => 'pippo'}}
     
-    result = @controller.act!(nil)
+    result = @controller.act!
     assert_equal "get_rule 123 pippo called!", result
   end
   
@@ -83,7 +288,7 @@ class RESTTest < Test::Unit::TestCase
     def @controller.get_rule() "get_rule #{@params['_id']} #{@params['q']} called!" end
     @controller.request = {method: 'GET', uri_params: ['get_rule', '123'], params: {'q' => 'pippo'}}
 
-    result = @controller.act!(nil)
+    result = @controller.act!
     assert_equal "get_rule 123 pippo called!", result
   end
   
@@ -92,13 +297,13 @@ class RESTTest < Test::Unit::TestCase
     def @controller.hello() "Hello!" end
     
     @controller.request = {:uri_params => [:hello]}
-    result = @controller.act!(nil)
+    result = @controller.act!
     assert_equal "Hello!", result
   end
-  
+
   def test_act_calling_without_action
     @controller.request = {:uri_params => []}
-    result = @controller.act!(nil)
+    result = @controller.act!
     assert_equal RCS::DB::RESTResponse, result.class
     assert_equal 500, result.status
     assert_equal 'NULL_ACTION', result.content
@@ -106,7 +311,7 @@ class RESTTest < Test::Unit::TestCase
   
   def test_act_calling_with_invalid_action
     @controller.request = {:uri_params => [:invalid]}
-    result = @controller.act!(nil)
+    result = @controller.act!
     assert_equal RCS::DB::RESTResponse, result.class
     assert_equal 500, result.status
     assert_equal 'NULL_ACTION', result.content
@@ -162,3 +367,4 @@ class RESTTest < Test::Unit::TestCase
     assert_equal message, result.content
   end
 end
+=end

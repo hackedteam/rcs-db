@@ -17,8 +17,8 @@ class AuthController < RESTController
       # return the info about the current auth session
       when 'GET'
         sess = SessionManager.instance.get(@request[:cookie])
-        return RESTController::not_authorized if sess.nil?
-        return RESTController::ok(sess)
+        return RESTController.reply.not_authorized if sess.nil?
+        return RESTController.reply.ok(sess)
       
       # authenticate the user
       when 'POST'
@@ -34,11 +34,11 @@ class AuthController < RESTController
             # create the new auth sessions
             sess = SessionManager.instance.create({:name => user}, @auth_level, @request[:peer])
             # append the cookie to the other that may have been present in the request
-            return RESTController::ok(sess, {cookie: 'session=' + sess[:cookie] + '; path=/;'})
+            return RESTController.reply.ok(sess, {cookie: 'session=' + sess[:cookie] + '; path=/;'})
           end
         rescue Exception => e
           # TODO: specialize LICENSE_LIMIT_REACHED exception
-          return RESTController.conflict('LICENSE_LIMIT_REACHED')
+          return RESTController.reply.conflict('LICENSE_LIMIT_REACHED')
         end
         
         # normal user login
@@ -62,18 +62,18 @@ class AuthController < RESTController
           trace :debug, "Issued cookie with expiry time: #{expiry}"
           # don't return the accessible items (used only internally)
           session = sess.select {|k,v| k != :accessible}
-          return RESTController::ok(session, {cookie: 'session=' + sess[:cookie] + "; path=/; expires=#{expiry}" })
+          return RESTController.reply.ok(session, {cookie: 'session=' + sess[:cookie] + "; path=/; expires=#{expiry}" })
         end
     end
     
-    return RESTController::not_authorized("invalid account")
+    return RESTController.reply.not_authorized("invalid account")
   end
   
   # once the session is over you can explicitly logout
   def logout
     Audit.log :actor => @session[:user][:name], :action => 'logout', :user => @session[:user][:name], :desc => "User '#{@session[:user][:name]}' logged out"
     SessionManager.instance.delete(@request[:cookie])
-    return RESTController::ok('', {cookie: "session=; path=/; expires=#{Time.at(0).strftime('%A, %d-%b-%y %H:%M:%S %Z')}" })
+    return RESTController.reply.ok('', {cookie: "session=; path=/; expires=#{Time.at(0).strftime('%A, %d-%b-%y %H:%M:%S %Z')}" })
   end
   
   # private method to authenticate a server

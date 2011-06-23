@@ -239,7 +239,7 @@ if false
 end
 
 # task
-if true
+if false
 
 res = http.request_get('/task', {'Cookie' => cookie})
 puts "task.index"

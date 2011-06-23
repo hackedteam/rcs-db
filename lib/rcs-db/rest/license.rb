@@ -25,13 +25,13 @@ class LicenseController < RESTController
     limits[:collectors][:anonymizers] = nil if limits[:collectors][:anonymizers] == inf
     limits[:ipa] = nil if limits[:ipa] == inf
     
-    return RESTController.ok(limits)
+    return RESTController.reply.ok(limits)
   end
   
   def count
     require_auth_level :admin, :tech, :view
 
-    return RESTController.ok(LicenseManager.instance.counters)
+    return RESTController.reply.ok(LicenseManager.instance.counters)
   end
 
 end

@@ -13,7 +13,7 @@ class UserController < RESTController
     require_auth_level :admin
 
     users = User.all
-    return RESTController.ok(users)
+    return RESTController.reply.ok(users)
   end
 
   def show
@@ -21,8 +21,8 @@ class UserController < RESTController
     
     mongoid_query do
       user = User.find(@params['_id'])
-      return RESTController.not_found if user.nil?
-      return RESTController.ok(user)
+      return RESTController.reply.not_found if user.nil?
+      return RESTController.reply.ok(user)
     end
   end
   
@@ -44,12 +44,12 @@ class UserController < RESTController
       doc[:timezone] = @params['timezone']
     end
     
-    return RESTController.conflict(result.errors[:name]) unless result.persisted?
+    return RESTController.reply.conflict(result.errors[:name]) unless result.persisted?
 
     username = @params['name']
     Audit.log :actor => @session[:user][:name], :action => 'user.create', :user => username, :desc => "Created the user '#{username}'"
 
-    return RESTController.ok(result)
+    return RESTController.reply.ok(result)
   end
   
   def update
@@ -57,17 +57,17 @@ class UserController < RESTController
     
     mongoid_query do
       user = User.find(@params['_id'])
-      return RESTController.not_found if user.nil?
+      return RESTController.reply.not_found if user.nil?
       @params.delete('user')
       
       # if non-admin you can modify only yourself
       unless @session[:level].include? :admin
-        return RESTController.not_found if user._id != @session[:user][:_id]
+        return RESTController.reply.not_found if user._id != @session[:user][:_id]
       end
       
       # if enabling a user, check the license
       if user[:enabled] == false and @params.include?('enabled') and @params['enabled'] == true
-        return RESTController.conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :users
+        return RESTController.reply.conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :users
       end
 
       # if pass is modified, treat it separately
@@ -84,7 +84,7 @@ class UserController < RESTController
       
       result = user.update_attributes(@params)
       
-      return RESTController.ok(user)
+      return RESTController.reply.ok(user)
     end
   end
   
@@ -93,13 +93,13 @@ class UserController < RESTController
     
     mongoid_query do
       user = User.find(@params['_id'])
-      return RESTController.not_found if user.nil?
+      return RESTController.reply.not_found if user.nil?
       
       Audit.log :actor => @session[:user][:name], :action => 'user.destroy', :user => @params['name'], :desc => "Deleted the user '#{user['name']}'"
       
       user.destroy
       
-      return RESTController.ok
+      return RESTController.reply.ok
     end
   end
   

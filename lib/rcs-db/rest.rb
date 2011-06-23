@@ -25,55 +25,16 @@ end
 
 class RESTController
   include RCS::Tracer
-  extend RCS::DB::RESTReplies
   
   # the parameters passed on the REST request
   attr_reader :session, :request
   
-  def request=(request)
-    @request = request
-    identify_action
+  def self.sessionmanager
+    @session_manager || SessionManager.instance
   end
   
-  def identify_action
-    action = @request[:uri_params].first
-    if not action.nil? and respond_to?(action)
-      # use the default http method as action
-      @request[:action] = @request[:uri_params].shift.to_sym
-    else
-      @request[:action] = map_method_to_action(@request[:method], @request[:uri_params].empty?)
-    end
-  end
-
-  def logging_in?
-    (@request[:controller].eql? 'AuthController' and @request[:action].eql? :login)
-  end
-  
-  def act!(session)
-    @session = session
-    
-    # make a copy of the params, handy for access and mongoid queries
-    @params = @request[:params].clone unless @request[:params].nil?
-    
-    # consolidate URI parameters
-    @params ||= {}
-    unless @params.has_key? '_id'
-      @params['_id'] = @request[:uri_params].first unless @request[:uri_params].first.nil?
-    end
-
-    return RESTController.server_error('NULL_ACTION') if @request[:action].nil?
-    begin
-      send(@request[:action])
-    rescue NotAuthorized => e
-      trace :error, "Request not authorized: #{e.message}"
-      return RESTController.not_authorized(e.message)
-    rescue Exception
-      raise
-    end
-  end
-  
-  def cleanup
-    # hook method if you need to perform some cleanup operation
+  def self.reply
+    @response_class || RESTResponse
   end
   
   def self.get(request)
@@ -86,6 +47,73 @@ class RESTController
     rescue NameError => e
       return nil
     end
+  end
+  
+  def request=(request)
+    @request = request
+    identify_action
+  end
+  
+  def valid_session?
+    @session = RESTController.sessionmanager.get(@request[:cookie])
+    RESTController.sessionmanager.update(@request[:cookie]) unless session.nil?
+    
+    return false if @session.nil? and not logging_in?
+    return true
+  end
+  
+  def identify_action
+    action = @request[:uri_params].first
+    if not action.nil? and respond_to?(action)
+      # use the default http method as action
+      @request[:action] = @request[:uri_params].shift.to_sym
+    else
+      @request[:action] = map_method_to_action(@request[:method], @request[:uri_params].empty?)
+    end
+  end
+  
+  def logging_in?
+    # TODO: each method should define if it's able bypass authentication
+    # something like
+    # class AuthController < RESTController
+    #   def login
+    #     bypass_authentication true
+    #     ...
+    (@request[:controller].eql? 'AuthController' and @request[:action].eql? :login)
+  end
+  
+  def act!
+    # check we have a valid session and an action
+    return RESTController.reply.not_authorized('INVALID_COOKIE') unless valid_session?
+    return RESTController.reply.server_error('NULL_ACTION') if @request[:action].nil?
+    
+    # make a copy of the params, handy for access and mongoid queries
+    @params = @request[:params].clone unless @request[:params].nil?
+    
+    # consolidate URI parameters
+    @params ||= {}
+    unless @params.has_key? '_id'
+      @params['_id'] = @request[:uri_params].first unless @request[:uri_params].first.nil?
+    end
+    
+    # GO!
+    begin
+      response = send(@request[:action])
+    rescue NotAuthorized => e
+      trace :error, "Request not authorized: #{e.message}"
+      return RESTController.reply.not_authorized(e.message)
+    rescue Exception => e
+      trace :error, "Server error: #{e.message}"
+      trace :fatal, "Backtrace   : #{e.backtrace}"
+      return RESTController.reply.server_error('SERVER_ERROR')
+    end
+    
+    return RESTController.reply.server_error('CONTROLLER_ERROR') if response.nil?
+    return response
+  end
+  
+  def cleanup
+    # hook method if you need to perform some cleanup operation
   end
   
   def map_method_to_action(method, no_params)
@@ -106,24 +134,24 @@ class RESTController
     # TODO: checking auth level should be done by SessionManager, refactor
     raise NotAuthorized.new(@session[:level], levels) if (levels & @session[:level]).empty?
   end
-
+  
   # TODO: mongoid_query doesn't belong here
   def mongoid_query(&block)
     begin
       yield
     rescue Mongoid::Errors::DocumentNotFound => e
       trace :error, "Document not found => #{e.message}"
-      return RESTController.not_found(e.message)
+      return RESTController.reply.not_found(e.message)
     rescue Mongoid::Errors::InvalidOptions => e
       trace :error, "Invalid parameter => #{e.message}"
-      return RESTController.bad_request(e.message)
+      return RESTController.reply.bad_request(e.message)
     rescue BSON::InvalidObjectId => e
       trace :error, "Bad request #{e.class} => #{e.message}"
-      return RESTController.bad_request(e.message)
+      return RESTController.reply.bad_request(e.message)
     rescue Exception => e
       trace :error, e.message
       trace :fatal, "EXCEPTION(#{e.class}): " + e.backtrace.join("\n")
-      return RESTController.not_found
+      return RESTController.reply.not_found
     end
   end
   

@@ -22,10 +22,10 @@ class SignatureController < RESTController
         sig = ::Signature.where({scope: @params['_id']}).first
         trace :info, "[#{@request[:peer]}] Requested the '#{@params['_id']}' signature [#{sig[:value]}]"
       end
-      return RESTController.ok(sig)
+      return RESTController.reply.ok(sig)
     rescue Exception => e
       trace :warn, "[#{@request[:peer]}] Requested '#{params['_id']}' NOT FOUND"
-      return RESTController.not_found
+      return RESTController.reply.not_found
     end
   end
 

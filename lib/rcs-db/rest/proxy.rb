@@ -13,7 +13,7 @@ class ProxyController < RESTController
     mongoid_query do
       result = ::Proxy.all
 
-      return RESTController.ok(result)
+      return RESTController.reply.ok(result)
     end
   end
 
@@ -22,7 +22,7 @@ class ProxyController < RESTController
 
     mongoid_query do
       proxy = ::Proxy.find(@params['_id'])
-      return RESTController.ok(proxy)
+      return RESTController.reply.ok(proxy)
     end
   end
 
@@ -33,7 +33,7 @@ class ProxyController < RESTController
 
     Audit.log :actor => @session[:user][:name], :action => 'proxy.create', :desc => "Created the injection proxy '#{@params['name']}'"
 
-    return RESTController.ok(result)
+    return RESTController.reply.ok(result)
   end
 
   def update
@@ -51,7 +51,7 @@ class ProxyController < RESTController
 
       proxy.update_attributes(@params)
 
-      return RESTController.ok(proxy)
+      return RESTController.reply.ok(proxy)
     end
   end
 
@@ -64,7 +64,7 @@ class ProxyController < RESTController
       proxy.destroy
       Audit.log :actor => @session[:user][:name], :action => 'proxy.destroy', :desc => "Deleted the injection proxy '#{proxy_name}'"
       
-      return RESTController.ok
+      return RESTController.reply.ok
     end
   end
 
@@ -77,7 +77,7 @@ class ProxyController < RESTController
 
       proxy.update_attributes(@params)
 
-      return RESTController.ok
+      return RESTController.reply.ok
     end
   end
 
@@ -95,7 +95,7 @@ class ProxyController < RESTController
       proxy.configured = true
       proxy.save
 
-      return RESTController.not_found
+      return RESTController.reply.not_found
     end
   end
 
@@ -113,7 +113,7 @@ class ProxyController < RESTController
       entry.desc = @params['desc']
       entry.save
 
-      return RESTController.ok
+      return RESTController.reply.ok
     end
   end
 
@@ -146,7 +146,7 @@ class ProxyController < RESTController
       proxy.rules << rule
       proxy.save
 
-      return RESTController.ok(rule)
+      return RESTController.reply.ok(rule)
     end
   end
 
@@ -155,13 +155,13 @@ class ProxyController < RESTController
 
     mongoid_query do
       proxy = ::Proxy.find(@params['_id'])
-      return RESTController.not_found if proxy.nil?
+      return RESTController.reply.not_found if proxy.nil?
 
       rule = proxy.rules.find(@params['rule'])
-      return RESTController.not_found if rule.nil?
+      return RESTController.reply.not_found if rule.nil?
 
       target = ::Item.find(rule.target.first)
-      return RESTController.not_found if target.nil?
+      return RESTController.reply.not_found if target.nil?
 
       Audit.log :actor => @session[:user][:name], :action => 'proxy.del_rule', :target => target.name,
                 :desc => "Deleted a rule from the injection proxy '#{proxy.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
@@ -169,7 +169,7 @@ class ProxyController < RESTController
       proxy.rules.delete_all(conditions: { _id: rule[:_id]})
       proxy.save
 
-      return RESTController.ok
+      return RESTController.reply.ok
     end
   end
 
@@ -195,7 +195,7 @@ class ProxyController < RESTController
       Audit.log :actor => @session[:user][:name], :action => 'proxy.update_rule', :target => target.name,
                 :desc => "Modified a rule on the injection proxy '#{proxy.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
 
-      return RESTController.ok(rule)
+      return RESTController.reply.ok(rule)
     end
   end
 
@@ -211,7 +211,7 @@ class ProxyController < RESTController
       proxy.configured = false
       proxy.save
 
-      return RESTController.ok
+      return RESTController.reply.ok
     end
   end
 

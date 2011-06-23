@@ -13,7 +13,7 @@ class GroupController < RESTController
     require_auth_level :admin
 
     groups = Group.all
-    return RESTController.ok(groups)
+    return RESTController.reply.ok(groups)
   end
 
   def show
@@ -21,8 +21,8 @@ class GroupController < RESTController
 
     mongoid_query do
       group = Group.find(@params['_id'])
-      return RESTController.not_found if group.nil?
-      return RESTController.ok(group)
+      return RESTController.reply.not_found if group.nil?
+      return RESTController.reply.ok(group)
     end
   end
   
@@ -30,11 +30,11 @@ class GroupController < RESTController
     require_auth_level :admin
     
     result = Group.create(name: @params['name'])
-    return RESTController.conflict(result.errors[:name]) unless result.persisted?
+    return RESTController.reply.conflict(result.errors[:name]) unless result.persisted?
 
     Audit.log :actor => @session[:user][:name], :action => 'group.create', :group => @params['name'], :desc => "Created the group '#{@params['name']}'"
 
-    return RESTController.ok(result)
+    return RESTController.reply.ok(result)
   end
   
   def update
@@ -43,7 +43,7 @@ class GroupController < RESTController
     mongoid_query do
       group = Group.find(@params['_id'])
       @params.delete('_id')
-      return RESTController.not_found if group.nil?
+      return RESTController.reply.not_found if group.nil?
       
       @params.each_pair do |key, value|
         if group[key.to_s] != value and not key['_ids']
@@ -53,7 +53,7 @@ class GroupController < RESTController
       
       result = group.update_attributes(@params)
       
-      return RESTController.ok(group)
+      return RESTController.reply.ok(group)
     end
   end
   
@@ -62,12 +62,12 @@ class GroupController < RESTController
 
     mongoid_query do
       group = Group.find(@params['_id'])
-      return RESTController.not_found if group.nil?
+      return RESTController.reply.not_found if group.nil?
       
       Audit.log :actor => @session[:user][:name], :action => 'group.destroy', :group => @params['name'], :desc => "Deleted the group '#{group[:name]}'"
       
       group.destroy
-      return RESTController.ok
+      return RESTController.reply.ok
     end
   end
 
@@ -77,13 +77,13 @@ class GroupController < RESTController
     mongoid_query do
       group = Group.find(@params['_id'])
       user = User.find(@params['user'])
-      return RESTController.not_found if user.nil? or group.nil?
+      return RESTController.reply.not_found if user.nil? or group.nil?
       
       group.users << user
       
       Audit.log :actor => @session[:user][:name], :action => 'group.add_user', :group => @params['name'], :desc => "Added user '#{user.name}' to group '#{group.name}'"
       
-      return RESTController.ok
+      return RESTController.reply.ok
     end
   end
   
@@ -93,13 +93,13 @@ class GroupController < RESTController
     mongoid_query do
       group = Group.find(@params['_id'])
       user = User.find(@params['user'])
-      return RESTController.not_found if user.nil? or group.nil?
+      return RESTController.reply.not_found if user.nil? or group.nil?
 
       group.remove_user(user)
       
       Audit.log :actor => @session[:user][:name], :action => 'group.remove_user', :group => @params['name'], :desc => "Removed user '#{user.name}' from group '#{group.name}'"
       
-      return RESTController.ok
+      return RESTController.reply.ok
     end
   end
 
@@ -124,7 +124,7 @@ class GroupController < RESTController
         Audit.log :actor => @session[:user][:name], :action => 'group.alert', :group => @params['name'], :desc => "Monitor alert group was removed"
       end
       
-      return RESTController.ok
+      return RESTController.reply.ok
     end
   end
 

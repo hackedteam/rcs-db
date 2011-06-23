@@ -13,7 +13,7 @@ class CollectorController < RESTController
     mongoid_query do
       result = ::Collector.all
 
-      return RESTController.ok(result)
+      return RESTController.reply.ok(result)
     end
   end
 
@@ -24,7 +24,7 @@ class CollectorController < RESTController
 
     Audit.log :actor => @session[:user][:name], :action => 'collector.create', :desc => "Created the collector '#{@params['name']}'"
 
-    return RESTController.ok(result)
+    return RESTController.reply.ok(result)
   end
 
   def update
@@ -33,7 +33,7 @@ class CollectorController < RESTController
     mongoid_query do
       coll = Collector.find(@params['_id'])
       @params.delete('collector')
-      return RESTController.not_found if coll.nil?
+      return RESTController.reply.not_found if coll.nil?
 
       @params.each_pair do |key, value|
         if coll[key.to_s] != value and not key['_ids']
@@ -43,7 +43,7 @@ class CollectorController < RESTController
 
       coll.update_attributes(@params)
 
-      return RESTController.ok(coll)
+      return RESTController.reply.ok(coll)
     end
   end
 
@@ -56,7 +56,7 @@ class CollectorController < RESTController
       Audit.log :actor => @session[:user][:name], :action => 'collector.destroy', :desc => "Deleted the collector '#{collector[:name]}'"
 
       collector.destroy
-      return RESTController.ok
+      return RESTController.reply.ok
     end    
   end
 
@@ -66,11 +66,11 @@ class CollectorController < RESTController
     mongoid_query do
       collector = Collector.find(@params['_id'])
       @params.delete('_id')
-      return RESTController.not_found if collector.nil?
+      return RESTController.reply.not_found if collector.nil?
 
       collector.update_attributes(@params)
 
-      return RESTController.ok
+      return RESTController.reply.ok
     end
   end
 
@@ -80,7 +80,7 @@ class CollectorController < RESTController
     #TODO: implement config retrieval
     #TODO: mark as configured...
 
-    return RESTController.not_found
+    return RESTController.reply.not_found
   end
 
   def log
@@ -96,7 +96,7 @@ class CollectorController < RESTController
     entry.desc = @params['desc']
     entry.save
 
-    return RESTController.ok
+    return RESTController.reply.ok
   end
 
 end

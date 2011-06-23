@@ -34,7 +34,7 @@ class HTTPHandler < EM::Connection
 
   attr_reader :peer
   attr_reader :peer_port
-
+  
   def post_init
     # don't forget to call super here !
     super
@@ -76,7 +76,15 @@ class HTTPHandler < EM::Connection
     trace :debug, "Connection closed #{@peer}:#{@peer_port}"
     @closed = true
   end
-  
+
+  def self.sessionmanager
+    @session_manager || SessionManager.instance
+  end
+
+  def self.restcontroller
+    @rest_controller || RESTController
+  end
+
   def process_http_request
     # the http request details are available via the following instance variables:
     #   @http_protocol
@@ -94,7 +102,7 @@ class HTTPHandler < EM::Connection
     trace :debug, "[#{@peer}] Request: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string}"
     
     responder = nil
-
+    
     # Block which fulfills the request
     operation = proc do
       
@@ -103,38 +111,15 @@ class HTTPHandler < EM::Connection
       request[:peer] = peer
       
       # get the correct controller
-      controller = RESTController.get request
+      controller = HTTPHandler.restcontroller.get request
       
-      # If this controller cannot respond to the action, we need to patch this
-      # by using the proper HTTP method (GET/POST/PUT/DELETE).
-      # This is necessary to bypass a limitation in FLEX REST implementation.
-      #request[:action] = identify_action controller, request
-      
-      # get the proper session and (if available) update it
-      session = SessionManager.instance.get(request[:cookie])
-      SessionManager.instance.update(request[:cookie]) unless session.nil?
-      
-      # no session and not logging in
-      if session.nil? and not controller.logging_in?
-        trace :warn, "[#{request[:peer]}][#{request[:session_id]}] Invalid cookie"
-        responder = RESTController.not_authorized('INVALID_COOKIE')
-        reply = responder.prepare_response(self)
-        reply.send_response
-      else
-        # do the dirty job :)
-        begin
-          responder ||= controller.act!(session)
-          responder = RESTController.not_authorized('CONTROLLER_ERROR') if responder.nil?
-          reply = responder.prepare_response(self)
-          reply.send_response
-        rescue Exception => e
-          trace :error, "ERROR: " + e.message
-          trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
-        end
+      # do the dirty job :)
+      responder = controller.act!
+      reply = responder.prepare_response(self)
+      reply.send_response
 
-        # the controller job has finished, call the cleanup hook
-        controller.cleanup
-      end
+      # the controller job has finished, call the cleanup hook
+      controller.cleanup
     end
     
     # Let the thread pool handle request

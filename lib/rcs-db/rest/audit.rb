@@ -14,7 +14,7 @@ class AuditController < RESTController
     
     # filtering
     filter = {}
-    filter = JSON.parse(@params['filter'].first) if @params.has_key? 'filter'
+    filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
     
     filter_hash = {}
     
@@ -39,8 +39,8 @@ class AuditController < RESTController
     
     # paging
     if @params.has_key? 'startIndex' and @params.has_key? 'numItems'
-      start_index = @params['startIndex'].first.to_i
-      num_items = @params['numItems'].first.to_i
+      start_index = @params['startIndex'].to_i
+      num_items = @params['numItems'].to_i
       #trace :debug, "Querying with filter #{filter_hash}."
       query = filtering.where(filter_hash).order_by([[:time, :asc]]).skip(start_index).limit(num_items)
     else
@@ -48,7 +48,7 @@ class AuditController < RESTController
       query = filtering.where(filter_hash).order_by([[:time, :asc]])
     end
     
-    return RESTController.ok(query)
+    return RESTController.reply.ok(query)
   end
   
   def count
@@ -56,7 +56,7 @@ class AuditController < RESTController
     
     # filtering
     filter = {}
-    filter = JSON.parse(@params['filter'].first) if @params.has_key? 'filter'
+    filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
 
     filter_hash = {}
 
@@ -85,14 +85,14 @@ class AuditController < RESTController
     
     # Flex RPC does not accept 0 (zero) as return value for a pagination (-1 is a safe alternative)
     num_audits = -1 if num_audits == 0
-    return RESTController.ok(num_audits)
+    return RESTController.reply.ok(num_audits)
   end
   
   def filters
     require_auth_level :admin
     
     search = ::AuditFilters.first
-    return RESTController.ok(search)
+    return RESTController.reply.ok(search)
   end
   
 end

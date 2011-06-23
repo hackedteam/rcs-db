@@ -9,6 +9,55 @@ module DB
 
 class RESTResponse
   include RCS::Tracer
+
+  STATUS_OK = 200
+  STATUS_BAD_REQUEST = 400
+  STATUS_NOT_FOUND = 404
+  STATUS_NOT_AUTHORIZED = 403
+  STATUS_CONFLICT = 409
+  STATUS_SERVER_ERROR = 500
+
+  def self.not_found(message=nil)
+    message ||= ''
+    return RESTResponse.new(STATUS_NOT_FOUND, message)
+  end
+
+  def self.not_authorized(message=nil)
+    message ||= ''
+    return RESTResponse.new(STATUS_NOT_AUTHORIZED, message)
+  end
+
+  def self.conflict(message=nil)
+    message ||= ''
+    return RESTResponse.new(STATUS_CONFLICT, message)
+  end
+
+  def self.bad_request(message=nil)
+    message ||= ''
+    return RESTResponse.new(STATUS_BAD_REQUEST, message)
+  end
+
+  def self.server_error(message=nil)
+    message ||= ''
+    return RESTResponse.new(STATUS_SERVER_ERROR, message)
+  end
+
+  # helper method for REST replies
+  def self.ok(*args)
+    return RESTResponse.new STATUS_OK, *args
+  end
+
+  def self.generic(*args)
+    return RESTResponse.new *args
+  end
+
+  def self.stream_file(filename)
+    return RESTFileStream.new(filename)
+  end
+
+  def self.stream_grid(grid_io)
+    return RESTGridStream.new(grid_io)
+  end
   
   attr_accessor :status, :content, :content_type, :cookie
   
@@ -97,58 +146,6 @@ class RESTFileStream
     response.send_body
   end
 end # RESTFileStream
-
-module RESTReplies
-  
-  STATUS_OK = 200
-  STATUS_BAD_REQUEST = 400
-  STATUS_NOT_FOUND = 404
-  STATUS_NOT_AUTHORIZED = 403
-  STATUS_CONFLICT = 409
-  STATUS_SERVER_ERROR = 500
-  
-  def not_found(message=nil)
-    message ||= ''
-    return RESTResponse.new(STATUS_NOT_FOUND, message)
-  end
-
-  def not_authorized(message=nil)
-    message ||= ''
-    return RESTResponse.new(STATUS_NOT_AUTHORIZED, message)
-  end
-
-  def conflict(message=nil)
-    message ||= ''
-    return RESTResponse.new(STATUS_CONFLICT, message)
-  end
-
-  def bad_request(message=nil)
-    message ||= ''
-    return RESTResponse.new(STATUS_BAD_REQUEST, message)
-  end
-
-  def server_error(message=nil)
-    message ||= ''
-    return RESTResponse.new(STATUS_SERVER_ERROR, message)
-  end
-
-  # helper method for REST replies
-  def ok(*args)
-    return RESTResponse.new STATUS_OK, *args
-  end
-
-  def generic(*args)
-    return RESTResponse.new *args
-  end
-
-  def stream_file(filename)
-    return RESTFileStream.new(filename)
-  end
-
-  def stream_grid(grid_io)
-    return RESTGridStream.new(grid_io)
-  end
-end # AnswersToREST
 
 end # ::DB
 end # ::RCS
