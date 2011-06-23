@@ -66,9 +66,9 @@ class CollectorController < RESTController
     mongoid_query do
       collector = Collector.find(@params['_id'])
       @params.delete('_id')
-      return RESTController.not_found if collector.nil?
 
-      collector.update_attributes(@params)
+      collector.version = @params['version']
+      collector.save
 
       return RESTController.ok
     end
@@ -86,12 +86,10 @@ class CollectorController < RESTController
   def log
     require_auth_level :server
 
-    time = Time.parse(@params['time']).getutc.to_i
-
     collector = Collector.find(@params['_id'])
 
     entry = CappedLog.dynamic_new collector[:_id]
-    entry.time = time
+    entry.time = Time.parse(@params['time']).getutc.to_i
     entry.type = @params['type'].downcase
     entry.desc = @params['desc']
     entry.save

@@ -75,7 +75,8 @@ class ProxyController < RESTController
       proxy = Proxy.find(@params['_id'])
       @params.delete('_id')
 
-      proxy.update_attributes(@params)
+      proxy.version = @params['version']
+      proxy.save
 
       return RESTController.ok
     end
@@ -102,13 +103,11 @@ class ProxyController < RESTController
   def log
     require_auth_level :server
 
-    time = Time.parse(@params['time']).getutc.to_i
-
     mongoid_query do
       proxy = Proxy.find(@params['_id'])
 
       entry = CappedLog.dynamic_new proxy[:_id]
-      entry.time = time
+      entry.time = Time.parse(@params['time']).getutc.to_i
       entry.type = @params['type'].downcase
       entry.desc = @params['desc']
       entry.save
