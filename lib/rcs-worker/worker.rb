@@ -120,6 +120,7 @@ class Worker
     # main EventMachine loop
     begin
 
+      # process all the pending evidence in the repository
       resume
 
       # all the events are handled here
@@ -180,7 +181,12 @@ class Application
       
       # config file parsing
       return 1 unless RCS::DB::Config.instance.load_from_file
-      
+
+      # connect to MongoDB
+      until RCS::DB::DB.instance.connect
+        sleep 5
+      end
+
       Worker.new.setup RCS::DB::Config.instance.global['WORKER_PORT']
     rescue Exception => e
       trace :fatal, "FAILURE: " << e.to_s

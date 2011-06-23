@@ -27,7 +27,7 @@ class EvidenceController < RESTController
     require_auth_level :server
 
     # create a phony session
-    session = {:instance => @params['evidence']}
+    session = {:instance => @params['_id']}
 
     # save the evidence in the db
     begin
