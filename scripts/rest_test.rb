@@ -203,7 +203,7 @@ if false
 end
 
 # audit export log
-if true
+if false
   params = {'file_name' => 'pippo', 'filter' => {"action" => ["user.update", "login"]} }
   res = http.request_post("/audit/create", params.to_json, {'Cookie' => cookie})
   puts "audit.export"
@@ -321,7 +321,7 @@ if false
 end
 
 # proxy
-if true
+if false
   
   proxy_id = 0
   
@@ -429,11 +429,12 @@ if true
 end
 
 # collector
-if false
+if true
   # collector.index
   res = http.request_get('/collector', {'Cookie' => cookie})
   puts "collector.index"
-  
+  puts res.body
+=begin  
   collectors = JSON.parse(res.body)
   collectors.each do |coll|
     puts coll
@@ -446,7 +447,7 @@ if false
     ret = http.delete("/collector/#{coll['_id']}", {'Cookie' => cookie})
     puts ret
   end
-  
+=end  
   # collector.create
   coll = {name: 'test'}
   res = http.request_post('/collector', coll.to_json, {'Cookie' => cookie})
@@ -517,6 +518,25 @@ if false
   res = http.request_get('/alert', {'Cookie' => cookie})
   puts res
   puts
+  
+end
+
+# items
+if false
+  # item.index
+  puts "item.index" 
+  res = http.request_get('/item', {'Cookie' => cookie})
+  puts res.body.size
+  puts
+  
+  item = JSON.parse(res.body).first
+  
+  # item.show
+  puts "item.show" 
+  res = http.request_get("/item/#{item['_id']}", {'Cookie' => cookie})
+  puts res
+  puts
+  
   
 end
 

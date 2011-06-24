@@ -122,7 +122,7 @@ class ProxyController < RESTController
           return RESTController.reply.ok
       end
 
-      return RESTController.reply.con
+      return RESTController.reply.bad_request
     end
   end
 
