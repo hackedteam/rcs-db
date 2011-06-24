@@ -83,17 +83,30 @@ class CollectorController < RESTController
   end
 
   def log
-    require_auth_level :server
+    mongoid_query do
+      collector = Collector.find(@params['_id'])
 
-    collector = Collector.find(@params['_id'])
+      case @request[:method]
+        when 'GET'
+          require_auth_level :admin, :tech
 
-    entry = CappedLog.dynamic_new collector[:_id]
-    entry.time = Time.parse(@params['time']).getutc.to_i
-    entry.type = @params['type'].downcase
-    entry.desc = @params['desc']
-    entry.save
+          klass = CappedLog.collection_class collector[:_id]
+          logs = klass.all
+          return RESTController.reply.ok(logs)
 
-    return RESTController.reply.ok
+        when 'POST'
+          require_auth_level :server
+
+          entry = CappedLog.dynamic_new collector[:_id]
+          entry.time = Time.parse(@params['time']).getutc.to_i
+          entry.type = @params['type'].downcase
+          entry.desc = @params['desc']
+          entry.save
+          return RESTController.reply.ok
+      end
+
+      return RESTController.reply.bad_request
+    end
   end
 
 end
