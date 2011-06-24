@@ -462,6 +462,12 @@ if true
   puts alert
   puts
 
+  # alert.index
+  puts "alert.index" 
+  res = http.request_get('/alert', {'Cookie' => cookie})
+  puts res
+  puts
+
   # alert.update
   puts "alert.update" 
   mod = {evidence: 'chat', priority: 1, enabled: false}
@@ -469,6 +475,12 @@ if true
   puts res
   puts
 
+  # alert.show
+  puts "alert.show" 
+  res = http.request_get("/alert/#{alert['_id']}", {'Cookie' => cookie})
+  puts res
+  puts
+  
   # alert.index
   puts "alert.index" 
   res = http.request_get('/alert', {'Cookie' => cookie})

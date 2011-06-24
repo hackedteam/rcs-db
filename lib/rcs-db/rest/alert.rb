@@ -15,7 +15,22 @@ class AlertController < RESTController
       # use reload to avoid cache
       user = @session[:user].reload
 
-      return RESTController.reply.ok(user.alerts)
+      alerts = user.alerts.without(:logs)
+
+      return RESTController.reply.ok(alerts)
+    end
+  end
+
+  def show
+    require_auth_level :view
+
+    mongoid_query do
+      # use reload to avoid cache
+      user = @session[:user].reload
+
+      alert = user.alerts.find(@params['_id'])
+
+      return RESTController.reply.ok(alert)
     end
   end
 
