@@ -135,6 +135,9 @@ class Worker
         trace :info, "Listening on port #{port}..."
         
       end
+    rescue Interrupt
+      trace :info, "User asked to exit. Bye bye!"
+      return 0
     rescue Exception => e
       # bind error
       if e.message.eql? 'no acceptor' then

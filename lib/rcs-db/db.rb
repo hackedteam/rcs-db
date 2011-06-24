@@ -65,13 +65,16 @@ class Application
 
       # enter the main loop (hopefully will never exit from it)
       Events.new.setup Config.instance.global['LISTENING_PORT']
-
+      
+    rescue Interrupt
+      trace :info, "User asked to exit. Bye bye!"
+      return 0
     rescue Exception => e
       trace :fatal, "FAILURE: " << e.message
       trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
       return 1
     end
-
+    
     return 0
   end
 
