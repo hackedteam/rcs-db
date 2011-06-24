@@ -9,8 +9,10 @@ require 'rcs-common/mime'
 module EventMachine
   
 	class DelegatedHttpFileResponse < HttpResponse
+    include EventMachine::Deferrable
 		
 		ChunkSize = 16384
+    BackpressureLevel = 50000
 		
 		extend Forwardable
 		def_delegators :@connection,
@@ -79,6 +81,7 @@ module EventMachine
 	end # DelegatedHttpFileResponse
 	
 	class DelegatedHttpGridResponse < HttpResponse
+    include EventMachine::Deferrable
 	  
 	  ChunkSize = 16384
     BackpressureLevel = 50000
