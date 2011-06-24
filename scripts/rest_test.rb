@@ -202,6 +202,15 @@ if false
   puts
 end
 
+# audit export log
+if true
+  params = {'file_name' => 'pippo', 'filter' => {"action" => ["user.update", "login"]} }
+  res = http.request_post("/audit/create", params.to_json, {'Cookie' => cookie})
+  puts "audit.export"
+  puts res
+  puts
+end
+
 # license
 if false
   # license.limit

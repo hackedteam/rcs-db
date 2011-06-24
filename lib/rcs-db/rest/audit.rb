@@ -2,12 +2,46 @@
 # Controller for Audit
 #
 
+require 'csv'
 require 'json'
+require 'tempfile'
 
 module RCS
 module DB
 
 class AuditController < RESTController
+
+  # TODO: remove this method, audit export should be created by task/create based on type
+  def create
+    require_auth_level :view
+    
+    file_name = "#{@params['file_name']}.tar.gz"
+    
+    trace :debug, "Exporting logs with filename #{file_name} and filter #{@params['filter']}"
+    
+    # export audit logs
+
+    audits = ::Audit.filter(@params['filter'])
+    audits ||= ::Audit.all
+
+    tmpfile = Tempfile.new(@params['file_name'])
+    begin
+      trace :debug, "storing temporary audit export in #{tmpfile.path}"
+      audits.each do |p|
+        tmpfile.write p.to_flat_array.to_csv
+      end
+    end
+
+    File.open(tmpfile.path, 'r') do |f|
+      puts f.read
+    end
+
+    # TODO: streaming file doesn't work, remove following line to test it after fix
+    tmpfile = nil
+
+    return RESTController.reply.not_found if tmpfile.nil?
+    return RESTController.reply.stream_file(tmpfile.path)
+  end
 
   def index
     require_auth_level :admin

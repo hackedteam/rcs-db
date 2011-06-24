@@ -121,7 +121,7 @@ class RESTGridStream
   end
 
   def prepare_response(connection)
-    response = get_em_response :grid, connection, @grid_io
+    response = EM::DelegatedHttpGridResponse.new connection, @grid_io
     return response
   end
   
@@ -137,7 +137,7 @@ class RESTFileStream
   end
   
   def prepare_response(connection)
-    response = get_em_reponse :file, connection, @filename
+    response = EM::DelegatedHttpFileResponse.new connection, @filename
     return response
   end
 
