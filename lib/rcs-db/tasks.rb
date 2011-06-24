@@ -1,132 +1,126 @@
-
+require 'archive/tar/minitar'
 require 'uuidtools'
 require 'rcs-common/trace'
+require 'rcs-common/temporary'
 
 module RCS
 module DB
 
-class TaskProcessor
+class TarGzCompression
+  include Archive::Tar
+  
+  def initialize(fd)
+    sgz = Zlib::GzipWriter.new(fd)
+    @tar = Minitar::Output.new(sgz)
+  end
+  
+  def add_stream(entry, string)
+    Minitar::pack_stream(entry, StringIO.new(string), @tar)
+  end
+  
+  def add_file(entry)
+    Minitar::pack_file(entry, @tar)
+  end
+  
+  def close
+    @tar.close
+  end
+end
 
-  attr_reader :generator
-  
-  def initialize(generator)
-    @generator = generator
+class DummyGenerator
+  def total
+    100
   end
   
-  def count
-    @generator.count
+  def description
+    @description || 'Dummy Generator'
   end
   
-  def process_entry(entry, string, tar)
-    description "compressing #{entry}."
-    Minitar::pack_stream(entry, StringIO.new(string), tar)
-  end
-  
-  def description(string)
-    @description = string
-  end
-  
-  def init_compression
-    out = File.new(outfile, 'wb')
-    sgz = Zlib::GzipWriter.new(out)
-    tar = Minitar::Output.new(sgz)
-    return tar
-  end
-  
-  def init_digest
-    return Digest::SHA1.new
-  end
-  
-  def process(outfile, &block)
-    
-    tar = init_compression
-    
-    begin
-      current = 0
-      @generator.next_entry do |entry, content|
-        yield "compressing #{entry}", current, count
-        process_entry entry, content, tar
-        current += 1
-      end
-    ensure
-      tar.close
-    end
-    
-    yield "calculating digest.", current, count
-    digest = init_digest
-    return digest.file(outfile).hexdigest
-    current += 1
-    
-    description "done."
-    yield description, current, count
-  end
-  
-  def self.get(type)
-    begin
-      generator = eval("#{type.capitalize}Generator").new
-      return TaskProcessor.new(generator)
-    rescue NameError
-      return nil
+  def next_entry
+    100.times do |n|
+      filename = "dummy#{n}.txt"
+      @description = "generating '#{filename}'"
+      content = @description + " ciccio pasticcio 123"
+      yield 'stream', filename, content
     end
   end
-  
-end # TaskProcessor
+end
 
 class Task
   include RCS::Tracer
   
-  attr_reader :_id, :total, :current, :grid_id
+  attr_reader :_id, :total, :current, :grid_id, :desc, :type, :file_name, :file_size
   
-  def initialize(type, file_name)
+  def initialize(type, file_name, params = {})
     @_id = UUIDTools::UUID.random_create.to_s
     @file_name = file_name
     @type = type
     @current = 0
-    @total = 0
+    @desc = ''
     @grid_id = ''
-    @file_size = 0
-    @desc = 'Task fuffa'
     @stopped = false
+    @generator = Task.generator_class.new(params)
+    @total = @generator.total
+  end
+  
+  def self.generator_class
+    @generator_class || eval("#{@type}Generator")
+  end
+  
+  def self.compressor_class
+    @compressor_class || TarGzCompression
+  end
+  
+  def self.digest_class
+    @digest_class || Digest::SHA1
+  end
+  
+  def sha1(file)
+    Task.digest_class.new.file(file).hexdigest
+  end
+    
+  def step
+    @current += 1
   end
   
   def stopped?
-    return @stopped
+    @stopped
   end
   
   def stop!
-    trace :debug, "Cancelling task #{@_id}"
+    trace :info, "cancelling task #{@_id}"
     @stopped = true
   end
-
-  # override this
-  def perform_cycle(params)
-    trace :debug, "processing #{@current} out of #{@total}"
-    sleep 1
-  end
   
-  # override this
-  def generate_output(params)
-    @grid_id = '4dfa12a00afc5deb66ef3c5d' # pragmatic_agile.pdf
-    file = GridFS.instance.get(BSON::ObjectId.from_string(@grid_id))
-    @file_size = file.file_length
-    @file_name = @file_name + '.pdf'
-  end
-  
-  def run(params)
+  def run
     process = Proc.new do
-      @total = rand(10) + 1
-      @total.times do |n|
-        break if stopped?
-        perform_cycle(params)
-        generate_output(params) if (@current + 1 == @total)
-        @current += 1
+      
+      # temporary file is our task id
+      begin
+        tmpfile = Temporary.file('temp', @_id)
+        compressor = Task.compressor_class.new tmpfile
+        @generator.next_entry do |type, entry, content|
+          
+          break if stopped?
+          
+          @desc = @generator.description
+          case type
+            when 'stream'
+              compressor.add_stream entry, content
+            when 'file'
+              compressor.add_file entry
+          end
+          step
+        end
+      ensure
+        compressor.close
       end
-      trace :debug, "process ended"
-    end
+      
+      @grid_id = @_id
+    end # process
     
     EM.defer process
   end
-  
 end # Task
 
 class TaskManager
@@ -135,20 +129,21 @@ class TaskManager
   
   def initialize
     @tasks = Hash.new
+    Task.instance_eval { @generator_class = DummyGenerator }
   end
   
   def create(user, type, file_name, params = {})
     @tasks[user] ||= Hash.new
-    task = Task.new type, file_name
-    @tasks[user][task._id] = task
+    task = Task.new type, file_name, params
     trace :debug, "Creating task #{task._id} of type #{type}for user '#{user}', saving to '#{file_name}'"
-    task.run params
-    return task
+    task.run
+    @tasks[user][task._id] = task
+    task
   end
   
   def get(user, id)
     trace :debug, "Getting task #{id} for user '#{user}'"
-    return @tasks[user][id]
+    @tasks[user][id] rescue nil
   end
   
   def list(user)
@@ -157,17 +152,17 @@ class TaskManager
     tasks = @tasks[user]
     tasks ||= {}
     
-    return tasks.values
+    tasks.values
   end
-  
+
+  # TODO: delete temporary file
   def delete(user, task_id)
     trace :info, "Deleting task #{task_id} for user '#{user}'"
     task = @tasks[user][task_id]
     task.stop!
     @tasks[user].delete task_id
-    # TODO: delete file from grid
+    # TODO: delete file
   end
-
 end # TaskManager
 
 end # DB::
