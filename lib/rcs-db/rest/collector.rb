@@ -17,6 +17,15 @@ class CollectorController < RESTController
     end
   end
 
+  def show
+    require_auth_level :admin, :tech
+
+    mongoid_query do
+      result = Collector.find(@params['_id'])
+      return RESTController.reply.ok(result)
+    end
+  end
+
   def create
     require_auth_level :admin
 

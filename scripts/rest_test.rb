@@ -427,11 +427,12 @@ if false
 end
 
 # collector
-if false
+if true
   # collector.index
   res = http.request_get('/collector', {'Cookie' => cookie})
   puts "collector.index"
-  
+  puts res.body
+=begin  
   collectors = JSON.parse(res.body)
   collectors.each do |coll|
     puts coll
@@ -444,7 +445,7 @@ if false
     ret = http.delete("/collector/#{coll['_id']}", {'Cookie' => cookie})
     puts ret
   end
-  
+=end  
   # collector.create
   coll = {name: 'test'}
   res = http.request_post('/collector', coll.to_json, {'Cookie' => cookie})
@@ -519,7 +520,7 @@ if false
 end
 
 # items
-if true
+if false
   # item.index
   puts "item.index" 
   res = http.request_get('/item', {'Cookie' => cookie})
