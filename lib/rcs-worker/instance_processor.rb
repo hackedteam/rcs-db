@@ -174,8 +174,8 @@ class InstanceProcessor
   def store_evidence(info)
 
     # retrieve the target and the dynamic collection for the evidence
-    backdoor = ::Item.where({_kind: 'backdoor', _id: evidence.info[:backdoor]}).first
-    target = ::Item.where({_kind: 'target', _id: backdoor[:_path].last}).first
+    backdoor = ::Item.backdoors.where({_id: evidence.info[:backdoor]}).first
+    target = ::Item.targets.where({_id: backdoor[:_path].last}).first
     ev = ::Evidence.dynamic_new target[:_id].to_s
 
     ev.acquired = evidence.info[:acquired].to_i

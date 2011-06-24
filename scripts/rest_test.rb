@@ -203,7 +203,7 @@ if false
 end
 
 # audit export log
-if true
+if false
   params = {'file_name' => 'pippo', 'filter' => {"action" => ["user.update", "login"]} }
   res = http.request_post("/audit/create", params.to_json, {'Cookie' => cookie})
   puts "audit.export"
@@ -319,7 +319,7 @@ if false
 end
 
 # proxy
-if true
+if false
   
   proxy_id = 0
   
@@ -515,6 +515,25 @@ if false
   res = http.request_get('/alert', {'Cookie' => cookie})
   puts res
   puts
+  
+end
+
+# items
+if true
+  # item.index
+  puts "item.index" 
+  res = http.request_get('/item', {'Cookie' => cookie})
+  puts res.body.size
+  puts
+  
+  item = JSON.parse(res.body).first
+  
+  # item.show
+  puts "item.show" 
+  res = http.request_get("/item/#{item['_id']}", {'Cookie' => cookie})
+  puts res
+  puts
+  
   
 end
 

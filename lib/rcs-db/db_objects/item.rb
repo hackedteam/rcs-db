@@ -29,6 +29,11 @@ class Item
   field :demo, type: Boolean
   field :upgradable, type: Boolean
 
+  scope :operations, where(_kind: "operation")
+  scope :targets, where(_kind: "target")
+  scope :backdoors, where(_kind: "backdoor")
+  scope :factories, where(_kind: "factory")
+
   has_and_belongs_to_many :groups, :dependent => :nullify, :autosave => true
 
   embeds_many :filesystem_requests, class_name: "FilesystemRequest"
