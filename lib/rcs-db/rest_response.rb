@@ -84,18 +84,13 @@ class RESTResponse
   end
   
   def prepare_response(connection)
-      
+    
     resp = get_em_response :http, connection
     
     resp.status = @status
     resp.status_string = ::Net::HTTPResponse::CODE_TO_OBJ["#{resp.status}"].name.gsub(/Net::HTTP/, '')
     
-    begin
-      resp.content = (content_type == 'application/json') ? @content.to_json : @content
-    rescue
-      trace :error, "Cannot parse json reply: #{@content}"
-      resp.content = "JSON_SERIALIZATION_ERROR".to_json
-    end
+    resp.content = (content_type == 'application/json') ? @content.to_json : @content
     
     resp.headers['Content-Type'] = @content_type
     resp.headers['Set-Cookie'] = @cookie unless @cookie.nil?
