@@ -6,6 +6,8 @@ require 'csv'
 require 'json'
 require 'tempfile'
 
+require 'rcs-common/temporary'
+
 module RCS
 module DB
 
@@ -20,25 +22,22 @@ class AuditController < RESTController
     trace :debug, "Exporting logs with filename #{file_name} and filter #{@params['filter']}"
     
     # export audit logs
-
+    
     audits = ::Audit.filter(@params['filter'])
     audits ||= ::Audit.all
-
-    tmpfile = Tempfile.new(@params['file_name'])
+    
+    tmpfile = Temporary.file('temp', @params['file_name'])
     begin
       trace :debug, "storing temporary audit export in #{tmpfile.path}"
+      # write headers
+      tmpfile.write ::Audit.field_names.to_csv
       audits.each do |p|
         tmpfile.write p.to_flat_array.to_csv
       end
+    ensure
+      tmpfile.close
     end
-
-    File.open(tmpfile.path, 'r') do |f|
-      puts f.read
-    end
-
-    # TODO: streaming file doesn't work, remove following line to test it after fix
-    tmpfile = nil
-
+    
     return RESTController.reply.not_found if tmpfile.nil?
     return RESTController.reply.stream_file(tmpfile.path)
   end

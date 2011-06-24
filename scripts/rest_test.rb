@@ -207,7 +207,9 @@ if true
   params = {'file_name' => 'pippo', 'filter' => {"action" => ["user.update", "login"]} }
   res = http.request_post("/audit/create", params.to_json, {'Cookie' => cookie})
   puts "audit.export"
-  puts res
+  File.open('pippo.csv', 'wb') do |f|
+    f.write res.body
+  end
   puts
 end
 
@@ -456,7 +458,7 @@ if false
 end
 
 # alerts
-if true
+if false
   # alert.index
   puts "alert.index" 
   res = http.request_get('/alert', {'Cookie' => cookie})

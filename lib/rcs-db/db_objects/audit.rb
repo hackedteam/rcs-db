@@ -61,13 +61,25 @@ class Audit
     return query
   end
 
-  def to_flat_array
+  def self.field_names
     column_names = Audit.fields.keys
     column_names.delete('_type') if fields.has_key? '_type'
+    return column_names
+  end
+
+  def to_flat_array
+    column_names = Audit.field_names
     
     flat_array = []
     column_names.each do |name|
-      flat_array << (self.attributes[name].nil? ? "" : self.attributes[name].to_s)
+      value = (self.attributes[name].nil? ? "" : self.attributes[name].to_s)
+      
+      case name
+        when 'time'
+          value = Time.at(value.to_i).getutc.to_s
+      end
+      
+      flat_array << value
     end
     
     return flat_array
