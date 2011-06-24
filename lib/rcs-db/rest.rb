@@ -102,10 +102,6 @@ class RESTController
     rescue NotAuthorized => e
       trace :error, "Request not authorized: #{e.message}"
       return RESTController.reply.not_authorized(e.message)
-    rescue Exception => e
-      trace :error, "Server error: #{e.message}"
-      trace :fatal, "Backtrace   : #{e.backtrace}"
-      return RESTController.reply.server_error('SERVER_ERROR')
     end
     
     return RESTController.reply.server_error('CONTROLLER_ERROR') if response.nil?
