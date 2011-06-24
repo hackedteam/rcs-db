@@ -310,7 +310,7 @@ if false
 end
 
 # proxy
-if false
+if true
   
   proxy_id = 0
   
@@ -320,7 +320,7 @@ if false
   
   proxies = JSON.parse(res.body)
   proxies.each do |proxy|
-    if proxy['_mid'] == 2
+    if proxy['_mid'] == 3
       proxy_id = proxy['_id']
     end
     puts proxy
@@ -362,6 +362,14 @@ if false
   puts proxy['rules'].inspect
   puts
   
+  # proxy.log
+  res = http.request_get("/proxy/log/#{proxy_id}", {'Cookie' => cookie})
+  puts "proxy.log"
+  puts res
+  puts
+  
+
+=begin
   # proxy.add_rule
   puts "proxy.add_rule"
   rule = {_id: proxy_id, enabled: true, disable_sync: false, ident: 'STATIC-IP', 
@@ -406,7 +414,7 @@ if false
   res = http.request_get("/proxy/config/#{proxy_id}", {'Cookie' => cookie})
   puts res
   puts
-  
+=end
 end
 
 # collector
@@ -447,7 +455,7 @@ if false
 end
 
 # alerts
-if true
+if false
   # alert.index
   puts "alert.index" 
   res = http.request_get('/alert', {'Cookie' => cookie})
