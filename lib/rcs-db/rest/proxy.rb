@@ -12,7 +12,6 @@ class ProxyController < RESTController
 
     mongoid_query do
       result = ::Proxy.all
-
       return RESTController.reply.ok(result)
     end
   end
@@ -101,18 +100,29 @@ class ProxyController < RESTController
   end
 
   def log
-    require_auth_level :server
-
     mongoid_query do
       proxy = Proxy.find(@params['_id'])
 
-      entry = CappedLog.dynamic_new proxy[:_id]
-      entry.time = Time.parse(@params['time']).getutc.to_i
-      entry.type = @params['type'].downcase
-      entry.desc = @params['desc']
-      entry.save
+      case @request[:method]
+        when 'GET'
+          require_auth_level :admin, :tech
+          
+          klass = CappedLog.collection_class proxy[:_id]
+          logs = klass.all
+          return RESTController.reply.ok(logs)
 
-      return RESTController.reply.ok
+        when 'POST'
+          require_auth_level :server
+
+          entry = CappedLog.dynamic_new proxy[:_id]
+          entry.time = Time.parse(@params['time']).getutc.to_i
+          entry.type = @params['type'].downcase
+          entry.desc = @params['desc']
+          entry.save
+          return RESTController.reply.ok
+      end
+
+      return RESTController.reply.con
     end
   end
 

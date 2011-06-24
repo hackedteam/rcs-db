@@ -18,7 +18,7 @@ class Alert
   store_in :alerts
 
   belongs_to :user
-  embeds_many :alert_logs, class_name: "AlertLog"
+  embeds_many :logs, class_name: "AlertLog"
 end
 
 
