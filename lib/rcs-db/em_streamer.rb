@@ -28,7 +28,7 @@ module EventMachine
 		end
 		
 		def fixup_headers
-	    @headers["Content-length"] = File.size @filename
+	    @headers["Content-length"] = @size
 	    
 	    # TODO: remove RCS dependency 
 	    @headers["Content-Type"] = RCS::MimeType.get @filename
