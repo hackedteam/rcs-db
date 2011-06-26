@@ -250,39 +250,53 @@ if false
 end
 
 # task
-if false
+if true
+
+def REST_task(http, cookie, type, filename, params={})
+  
+  task_params = {'type' => type, 'file_name' => filename}
+  task_params.merge! params
+  
+  res = http.request_post('/task/create', task_params.to_json, {'Cookie' => cookie})
+  puts "task.create"
+  puts res.inspect
+  task = JSON.parse(res.body)
+  puts "Created task #{task['_id']}"
+  puts
+  
+  file_id = ''
+  grid_id = ''
+  file_name = ''
+  while (grid_id == '' and file_id == '')
+    res = http.request_get("/task/#{task['_id']}", {'Cookie' => cookie})
+    puts "task.show"
+    task = JSON.parse(res.body)
+    puts "#{task['current']}/#{task['total']} #{task['desc']}"
+    grid_id = task['grid_id']
+    #file_id = task['file_id']
+    file_name = task['file_name']
+    sleep 0.1
+  end
+  
+  puts "grid_id: #{grid_id}, file_id: #{file_id}"
+  res = http.request_get("/file/#{grid_id}", {'Cookie' => cookie})
+  puts "file.get"
+  File.open(file_name, 'wb') do |f|
+    f.write res.body
+  end
+  
+  puts "Written #{file_name}."
+end
+
+REST_task(http, cookie, 'audit', 'audit-all.tar.gz')
+REST_task(http, cookie, 'dummy', 'dummy.tar.gz')
 
 res = http.request_get('/task', {'Cookie' => cookie})
 puts "task.index"
 puts res
 puts
 
-task_params = {'type' => 'blotter', 'activity' => 'testActivity1'}
-res = http.request_post('/task/create', task_params.to_json, {'Cookie' => cookie})
-puts "task.create"
-task = JSON.parse(res.body)
-puts "Created task #{task['_id']}"
-puts
 
-res = http.request_get('/task', {'Cookie' => cookie})
-puts "task.index"
-puts res
-puts
-
-res = http.request_get("/task/#{task['_id']}", {'Cookie' => cookie})
-puts "task.show"
-puts res
-puts
-
-res = http.request_get("/task/destroy/#{task['_id']}", {'Cookie' => cookie})
-puts "task.destroy"
-puts res
-puts
-
-res = http.request_get("/task", {'Cookie' => cookie})
-puts "task.show"
-puts res
-puts
 
 =begin
 sleep 3
@@ -429,7 +443,7 @@ if false
 end
 
 # collector
-if true
+if false
   # collector.index
   res = http.request_get('/collector', {'Cookie' => cookie})
   puts "collector.index"

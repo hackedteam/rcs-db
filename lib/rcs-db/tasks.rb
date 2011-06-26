@@ -3,6 +3,8 @@ require 'uuidtools'
 require 'rcs-common/trace'
 require 'rcs-common/temporary'
 
+require_relative 'tasks/audit'
+
 module RCS
 module DB
 
@@ -14,12 +16,17 @@ class TarGzCompression
     @tar = Minitar::Output.new(sgz)
   end
   
-  def add_stream(entry, string)
-    Minitar::pack_stream(entry, StringIO.new(string), @tar)
+  def add_stream(path, string)
+    Minitar::pack_stream(path, StringIO.new(string), @tar)
   end
   
-  def add_file(entry)
-    Minitar::pack_file(entry, @tar)
+  def add_file(path, rename_to = nil)
+    h = {name: path, as: (rename_to.nil? ? path : rename_to)}
+    Minitar::pack_file(h, @tar)
+  end
+
+  def add_file_as(path, path_in_tar)
+
   end
   
   def close
@@ -27,31 +34,37 @@ class TarGzCompression
   end
 end
 
-class DummyGenerator
+class DummyTask
+  extend TaskGenerator
+  
+  store_in :file, 'temp'
+  multi_file
+  
   def total
     100
-  end
-  
-  def description
-    @description || 'Dummy Generator'
   end
   
   def next_entry
     100.times do |n|
       filename = "dummy#{n}.txt"
       @description = "generating '#{filename}'"
-      content = @description + " ciccio pasticcio 123"
+      
+      content = "This is file #{filename}, generated especially for you by our most skilled gerbils."
       yield 'stream', filename, content
     end
   end
 end
+
+# TODO: support single-file and multi-file tasks
+# for single files, progress should be reported on # of lines or similar
+# for multi files, progress is by number of files
 
 class Task
   include RCS::Tracer
   
   attr_reader :_id, :total, :current, :grid_id, :desc, :type, :file_name, :file_size
   
-  def initialize(type, file_name, params = {})
+  def initialize(type, file_name, params)
     @_id = UUIDTools::UUID.random_create.to_s
     @file_name = file_name
     @type = type
@@ -59,12 +72,12 @@ class Task
     @desc = ''
     @grid_id = ''
     @stopped = false
-    @generator = Task.generator_class.new(params)
+    @generator = Task.generator_class(@type).new(params)
     @total = @generator.total
   end
   
-  def self.generator_class
-    @generator_class || eval("#{@type}Generator")
+  def self.generator_class(type)
+    @generator_class || eval("#{type.downcase.capitalize}Task")
   end
   
   def self.compressor_class
@@ -75,10 +88,10 @@ class Task
     @digest_class || Digest::SHA1
   end
   
-  def sha1(file)
-    Task.digest_class.new.file(file).hexdigest
+  def sha1(path)
+    Task.digest_class.new.file(path).hexdigest
   end
-    
+  
   def step
     @current += 1
   end
@@ -93,7 +106,27 @@ class Task
   end
   
   def run
-    process = Proc.new do
+    process_single_file = Proc.new do
+      begin
+        tgz_file = Temporary.file(@generator.folder, @_id)
+        #change to temporary directory
+        tmp_file = Temporary.file('temp', @generator.filename)
+        compressor = Task.compressor_class.new tgz_file
+        @generator.next_entry do |chunk|
+          break if stopped?
+          @desc = @generator.description
+          tmp_file.write chunk
+          step
+        end
+        compressor.add_file(tmp_file.path, @generator.filename)
+      ensure
+        compressor.close
+      end
+
+      @grid_id = @_id
+    end
+    
+    process_multi_file = Proc.new do
       
       # temporary file is our task id
       begin
@@ -119,7 +152,11 @@ class Task
       @grid_id = @_id
     end # process
     
-    EM.defer process
+    if @generator.multi_file?
+      EM.defer process_multi_file
+    else
+      EM.defer process_single_file
+    end
   end
 end # Task
 
@@ -129,7 +166,7 @@ class TaskManager
   
   def initialize
     @tasks = Hash.new
-    Task.instance_eval { @generator_class = DummyGenerator }
+    #Task.instance_eval { @generator_class = DummyTask }
   end
   
   def create(user, type, file_name, params = {})

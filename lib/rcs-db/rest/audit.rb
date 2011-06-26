@@ -25,7 +25,8 @@ class AuditController < RESTController
     
     audits = ::Audit.filter(@params['filter'])
     audits ||= ::Audit.all
-    
+
+    # TODO: temporary file directory creation should be dictated by generator
     tmpfile = Temporary.file('temp', @params['file_name'])
     begin
       trace :debug, "storing temporary audit export in #{tmpfile.path}"

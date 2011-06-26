@@ -1,34 +1,32 @@
+require_relative 'generator'
+
 class AuditTask
-  attr_accessor :file_name
-
+  extend TaskGenerator
+  
+  store_in :file, 'temp'
+  single_file "auditlog.csv"
+  
   def initialize(params)
-    @file_name = "#{@params['file_name']}.tar.gz"
+    @filter = params['filter']
   end
-
-  def count
-
+  
+  def total
+    return (::Audit.count + 1) if @filter.nil?
+    (::Audit.filtered_count(@filter) + 1)
   end
-
+  
   def next_entry
-    
-  end
+    @description = "exporting audit logs"
 
-  def create
-    audits = ::Audit.filter(@params['filter'])
+    audits = ::Audit.filter(@filter) unless @filter.nil?
     audits ||= ::Audit.all
 
-    tmpfile = Temporary.file('temp', @params['file_name'])
-    begin
-      trace :debug, "storing temporary audit export in #{tmpfile.path}"
-      # write headers
-      tmpfile.write ::Audit.field_names.to_csv
-      audits.each do |p|
-        tmpfile.write p.to_flat_array.to_csv
-      end
-    ensure
-      tmpfile.close
+    # header
+    yield ::Audit.field_names.to_csv
+
+    #rows
+    audits.each do |p|
+      yield p.to_flat_array.to_csv
     end
-    
-    return @file_name,
   end
 end

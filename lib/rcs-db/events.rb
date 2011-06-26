@@ -114,17 +114,8 @@ class HTTPHandler < EM::Connection
       controller = HTTPHandler.restcontroller.get request
       
       # do the dirty job :)
-      # TODO: refactor exception handling for response generation
-      begin
-        responder = controller.act!
-        reply = responder.prepare_response(self)
-      rescue RuntimeError => e
-        trace :error, "Server error: #{e.message}"
-        trace :fatal, "Backtrace   : #{e.backtrace}"
-        responder = RESTController.reply.server_error(e.message)
-        reply = responder.prepare_response(self)
-      end
-      
+      responder = controller.act!
+      reply = responder.prepare_response(self)
       reply.send_response
       
       # the controller job has finished, call the cleanup hook

@@ -82,21 +82,34 @@ class RESTResponse
         return EM::DelegatedFileResponse.new connection, opt
     end
   end
+
+  def keep_alive?(connection)
+    http_headers = connection.instance_variable_get :@http_headers
+    http_headers.split("\x00").index {|h| h['Connection: keep-alive'] || h['Connection: Keep-Alive']}
+  end
   
+  #
+  # BEWARE: for any reason this method should raise an exception!
+  # An exception raised here WILL NOT be catched, resulting in a crash.
+  #
   def prepare_response(connection)
     
     resp = get_em_response :http, connection
     
     resp.status = @status
     resp.status_string = ::Net::HTTPResponse::CODE_TO_OBJ["#{resp.status}"].name.gsub(/Net::HTTP/, '')
-    
-    resp.content = (content_type == 'application/json') ? @content.to_json : @content
+
+    begin
+      resp.content = (content_type == 'application/json') ? @content.to_json : @content
+    rescue Exception
+      resp.status = STATUS_SERVER_ERROR
+      resp.content = 'JSON_SERIALIZATION_ERROR'
+    end
     
     resp.headers['Content-Type'] = @content_type
     resp.headers['Set-Cookie'] = @cookie unless @cookie.nil?
     
-    http_headers = connection.instance_variable_get :@http_headers
-    if http_headers.split("\x00").index {|h| h['Connection: keep-alive'] || h['Connection: Keep-Alive']} then
+    if keep_alive? connection
       # keep the connection open to allow multiple requests on the same connection
       # this will increase the speed of sync since it decrease the latency on the net
       resp.keep_connection_open true
@@ -104,8 +117,8 @@ class RESTResponse
     else
       resp.headers['Connection'] = 'close'
     end
-
-    return resp
+    
+    resp
   end
 
 end # RESTResponse
