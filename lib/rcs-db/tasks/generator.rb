@@ -34,7 +34,11 @@ module TaskGenerator
   
   module InstanceMethods
     attr_accessor :description
-    
+
+    def destination
+      self.class.destination
+    end
+
     def folder
       self.class.path
     end

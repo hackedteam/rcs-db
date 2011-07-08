@@ -25,6 +25,7 @@ class TaskController < RESTController
     
     task = TaskManager.instance.create @session[:user][:name], @params['type'], @params['file_name']
     return RESTController.reply.not_found if task.nil?
+    puts task.inspect
     return RESTController.reply.ok task
   end
   
@@ -32,7 +33,7 @@ class TaskController < RESTController
     require_auth_level :admin, :tech, :viewer
     
     TaskManager.instance.delete @session[:user][:name], @params['_id']
-    RESTController.reply.ok @params['_id']
+    RESTController.reply.ok
   end
 
 end

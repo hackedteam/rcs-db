@@ -24,7 +24,7 @@ class TarGzCompression
     h = {name: path, as: (rename_to.nil? ? path : rename_to)}
     Minitar::pack_file(h, @tar)
   end
-
+  
   def add_file_as(path, path_in_tar)
 
   end
@@ -62,7 +62,7 @@ end
 class Task
   include RCS::Tracer
   
-  attr_reader :_id, :total, :current, :grid_id, :desc, :type, :file_name, :file_size
+  attr_reader :_id, :total, :current, :resource, :desc, :type, :file_name, :file_size
   
   def initialize(type, file_name, params)
     @_id = UUIDTools::UUID.random_create.to_s
@@ -70,7 +70,7 @@ class Task
     @type = type
     @current = 0
     @desc = ''
-    @grid_id = ''
+    @resource = {}
     @stopped = false
     @generator = Task.generator_class(@type).new(params)
     @total = @generator.total
@@ -108,10 +108,10 @@ class Task
   def run
     process_single_file = Proc.new do
       begin
-        tgz_file = Temporary.file(@generator.folder, @_id)
-        #change to temporary directory
+        #identify where results should be stored
+        destination = Temporary.file(@generator.folder, @_id)
         tmp_file = Temporary.file('temp', @generator.filename)
-        compressor = Task.compressor_class.new tgz_file
+        compressor = Task.compressor_class.new destination
         @generator.next_entry do |chunk|
           break if stopped?
           @desc = @generator.description
@@ -119,11 +119,19 @@ class Task
           step
         end
         compressor.add_file(tmp_file.path, @generator.filename)
+
+        if @generator.destination.eql? :grid
+          # upload file to grid and delete from temp
+          resource_id = GridFS.instance.put(destination, @generator.filename)
+          File.unlink(File.join('temp', @generator.filename))
+        end
+        resource_id ||= @_id
+        
       ensure
         compressor.close
       end
 
-      @grid_id = @_id
+      @resource = {type: @generator.destination, _id: resource_id}
     end
     
     process_multi_file = Proc.new do
@@ -149,7 +157,7 @@ class Task
         compressor.close
       end
       
-      @grid_id = @_id
+      @resource = {type: @generator.destination, _id: @_id}
     end # process
     
     if @generator.multi_file?
@@ -172,7 +180,7 @@ class TaskManager
   def create(user, type, file_name, params = {})
     @tasks[user] ||= Hash.new
     task = Task.new type, file_name, params
-    trace :debug, "Creating task #{task._id} of type #{type}for user '#{user}', saving to '#{file_name}'"
+    trace :debug, "Creating task #{task._id} of type #{type} for user '#{user}', saving to '#{file_name}'"
     task.run
     @tasks[user][task._id] = task
     task
@@ -191,12 +199,12 @@ class TaskManager
     
     tasks.values
   end
-
+  
   # TODO: delete temporary file
   def delete(user, task_id)
     trace :info, "Deleting task #{task_id} for user '#{user}'"
     task = @tasks[user][task_id]
-    task.stop!
+    task.stop! unless task.nil?
     @tasks[user].delete task_id
     # TODO: delete file
   end
