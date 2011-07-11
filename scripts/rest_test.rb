@@ -174,6 +174,11 @@ end
 # audit
 if false
   # audit.count
+    res = http.request_get('/audit/filters', {'Cookie' => cookie})
+    puts "audit.filters"
+    puts res.body
+    puts
+  
    res = http.request_get('/audit/count', {'Cookie' => cookie})
    puts "audit.count"
    puts res.body.inspect
@@ -254,49 +259,55 @@ if true
 
 def REST_task(http, cookie, type, filename, params={})
   
+  res = http.request_get('/task', {'Cookie' => cookie})
+  puts "task.index"
+  puts res.body
+  puts
+  
   task_params = {'type' => type, 'file_name' => filename}
   task_params.merge! params
   
   res = http.request_post('/task/create', task_params.to_json, {'Cookie' => cookie})
   puts "task.create"
-  puts res.inspect
+  puts res.body
   task = JSON.parse(res.body)
   puts "Created task #{task['_id']}"
   puts
   
-  file_id = ''
-  grid_id = ''
-  file_name = ''
-  while (grid_id == '' and file_id == '')
+  resource = ''
+  while (resource == '')
     res = http.request_get("/task/#{task['_id']}", {'Cookie' => cookie})
     puts "task.show"
+    puts res.body
     task = JSON.parse(res.body)
     puts "#{task['current']}/#{task['total']} #{task['desc']}"
-    grid_id = task['grid_id']
-    #file_id = task['file_id']
+    resource = task['resource']
     file_name = task['file_name']
     sleep 0.1
   end
   
-  puts "grid_id: #{grid_id}, file_id: #{file_id}"
-  res = http.request_get("/file/#{grid_id}", {'Cookie' => cookie})
-  puts "file.get"
+  puts "resource: #{resource.to_s}"
+  res = http.request_get("/#{resource['type']}/#{resource['_id']}", {'Cookie' => cookie})
+  puts "#{resource['type']}.get"
   File.open(file_name, 'wb') do |f|
     f.write res.body
   end
   
   puts "Written #{file_name}."
+  
+  res = http.request_get('/task', {'Cookie' => cookie})
+  puts "task.index"
+  puts res.body
+  puts
+  
+  res = http.request_post('/task/destroy', task['_id'].to_json, {'Cookie' => cookie})
+  puts "task.destroy"
+  puts res.inspect
+  puts
 end
 
 REST_task(http, cookie, 'audit', 'audit-all.tar.gz')
 REST_task(http, cookie, 'dummy', 'dummy.tar.gz')
-
-res = http.request_get('/task', {'Cookie' => cookie})
-puts "task.index"
-puts res
-puts
-
-
 
 =begin
 sleep 3

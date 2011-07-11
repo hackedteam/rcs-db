@@ -28,7 +28,10 @@ gem 'mail'
 #	gem 'minitar', :require => 'archive/tar/minitar'
 #end
 
-gem 'minitar', :path => "../minitar"
+git "git://github.com/danielemilan/minitar.git", :branch => "master" do
+  gem "minitar"
+end
+#gem 'minitar', :path => "../minitar"
 
 # Add dependencies to develop your gem here.
 # Include everything needed to run rake, tests, features, etc.
