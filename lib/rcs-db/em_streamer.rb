@@ -9,8 +9,10 @@ require 'rcs-common/mime'
 module EventMachine
   
 	class DelegatedHttpFileResponse < HttpResponse
+    include EventMachine::Deferrable
 		
 		ChunkSize = 16384
+    BackpressureLevel = 50000
 		
 		extend Forwardable
 		def_delegators :@connection,
@@ -26,7 +28,7 @@ module EventMachine
 		end
 		
 		def fixup_headers
-	    @headers["Content-length"] = File.size @filename
+	    @headers["Content-length"] = @size
 	    
 	    # TODO: remove RCS dependency 
 	    @headers["Content-Type"] = RCS::MimeType.get @filename
@@ -79,6 +81,7 @@ module EventMachine
 	end # DelegatedHttpFileResponse
 	
 	class DelegatedHttpGridResponse < HttpResponse
+    include EventMachine::Deferrable
 	  
 	  ChunkSize = 16384
     BackpressureLevel = 50000

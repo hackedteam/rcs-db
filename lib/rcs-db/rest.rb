@@ -88,28 +88,25 @@ class RESTController
     return RESTController.reply.server_error('NULL_ACTION') if @request[:action].nil?
     
     # make a copy of the params, handy for access and mongoid queries
-    @params = @request[:params].clone unless @request[:params].nil?
-    
     # consolidate URI parameters
+    @params = @request[:params].clone unless @request[:params].nil?
     @params ||= {}
     unless @params.has_key? '_id'
       @params['_id'] = @request[:uri_params].first unless @request[:uri_params].first.nil?
     end
-    
+
     # GO!
-    begin
-      response = send(@request[:action])
-    rescue NotAuthorized => e
-      trace :error, "Request not authorized: #{e.message}"
-      return RESTController.reply.not_authorized(e.message)
-    rescue Exception => e
-      trace :error, "Server error: #{e.message}"
-      trace :fatal, "Backtrace   : #{e.backtrace}"
-      return RESTController.reply.server_error('SERVER_ERROR')
-    end
-    
+    response = send(@request[:action])
+
     return RESTController.reply.server_error('CONTROLLER_ERROR') if response.nil?
     return response
+  rescue NotAuthorized => e
+    trace :error, "Request not authorized: #{e.message}"
+    return RESTController.reply.not_authorized(e.message)
+  rescue Exception => e
+    trace :error, "Server error: #{e.message}"
+    trace :fatal, "Backtrace   : #{e.backtrace}"
+    return RESTController.reply.server_error(e.message)
   end
   
   def cleanup

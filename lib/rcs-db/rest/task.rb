@@ -9,7 +9,7 @@ class TaskController < RESTController
     require_auth_level :admin, :tech, :viewer
     
     tasks = TaskManager.instance.list @session[:user][:name]
-    return RESTController.reply.ok tasks
+    RESTController.reply.ok tasks
   end
   
   def show
@@ -32,7 +32,7 @@ class TaskController < RESTController
     require_auth_level :admin, :tech, :viewer
     
     TaskManager.instance.delete @session[:user][:name], @params['_id']
-    return RESTController.reply.ok @params['_id']
+    RESTController.reply.ok @params['_id']
   end
 
 end

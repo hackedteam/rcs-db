@@ -117,7 +117,7 @@ class HTTPHandler < EM::Connection
       responder = controller.act!
       reply = responder.prepare_response(self)
       reply.send_response
-
+      
       # the controller job has finished, call the cleanup hook
       controller.cleanup
     end
