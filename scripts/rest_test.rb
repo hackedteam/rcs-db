@@ -80,7 +80,7 @@ puts
 end
 
 # group
-if false
+if true
 # group.create
 group = {'name' => 'test'}
 res = http.request_post('/group', group.to_json, {'Cookie' => cookie}) 
@@ -427,7 +427,7 @@ if false
 end
 
 # collector
-if true
+if false
   # collector.index
   res = http.request_get('/collector', {'Cookie' => cookie})
   puts "collector.index"

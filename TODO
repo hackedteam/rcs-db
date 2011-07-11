@@ -1,6 +1,11 @@
 proxy config methods
 rest methods for items
 
+get time via http (collector)
+
+integrity check on Items
+
+background index
 
 Windows Installers (NSIS)
 
