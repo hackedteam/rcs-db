@@ -26,7 +26,7 @@ class TarGzCompression
   end
   
   def add_file_as(path, path_in_tar)
-
+  
   end
   
   def close
@@ -70,10 +70,11 @@ class Task
     @type = type
     @current = 0
     @desc = ''
-    @resource = {}
+    @time = Time.now
     @stopped = false
     @generator = Task.generator_class(@type).new(params)
     @total = @generator.total
+    @resource = {type: @generator.destination}
   end
   
   def self.generator_class(type)
@@ -119,19 +120,12 @@ class Task
           step
         end
         compressor.add_file(tmp_file.path, @generator.filename)
-
-        if @generator.destination.eql? :grid
-          # upload file to grid and delete from temp
-          resource_id = GridFS.instance.put(destination, @generator.filename)
-          File.unlink(File.join('temp', @generator.filename))
-        end
-        resource_id ||= @_id
-        
+        @resource[:size] = File.size(destination.path)
       ensure
         compressor.close
       end
-
-      @resource = {type: @generator.destination, _id: resource_id}
+      
+      @resource[:_id] = @_id
     end
     
     process_multi_file = Proc.new do
@@ -153,11 +147,12 @@ class Task
           end
           step
         end
+        @resource[:size] = File.size(tmpfile.path)
       ensure
         compressor.close
       end
       
-      @resource = {type: @generator.destination, _id: @_id}
+      @resource[:_id] = @_id
     end # process
     
     if @generator.multi_file?
