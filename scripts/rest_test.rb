@@ -255,7 +255,7 @@ if false
 end
 
 # task
-if true
+if false
 
 def REST_task(http, cookie, type, filename, params={})
   
@@ -492,7 +492,7 @@ if false
 end
 
 # alerts
-if false
+if true
   # alert.index
   puts "alert.index" 
   res = http.request_get('/alert', {'Cookie' => cookie})
