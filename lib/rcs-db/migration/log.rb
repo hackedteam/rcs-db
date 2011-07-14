@@ -37,7 +37,7 @@ class LogMigration
   end
   
   def self.migrate_single_activity(id)
-    targets = Item.where({_kind: 'target'}).also_in({_path: [id]})
+    targets = Item.where({_kind: 'target'}).also_in({path: [id]})
 
     targets.each do |targ|
       puts "   + #{targ.name}"
@@ -52,7 +52,7 @@ class LogMigration
     db.drop_collection Evidence.collection_name(id.to_s)
 
     # migrate evidence for each backdoor
-    backdoors = Item.where({_kind: 'backdoor'}).also_in({_path: [id]})
+    backdoors = Item.where({_kind: 'backdoor'}).also_in({path: [id]})
     backdoors.each do |bck|
       
       # clear stats for the backdoor

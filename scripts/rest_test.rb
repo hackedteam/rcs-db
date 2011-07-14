@@ -551,7 +551,7 @@ if true
 end
 
 # items
-if false
+if true
   # item.index
   puts "item.index" 
   res = http.request_get('/item', {'Cookie' => cookie})
@@ -567,30 +567,34 @@ if false
   puts
   
   puts "item.create operation"
-  operation_post = {name: "test operation", desc: "this is a test operation", _kind: "operation", contact: "billg@microsoft.com"}
+  operation_post = {
+    _kind: "operation", 
+    name: "test operation", 
+    desc: "this is a test operation", 
+    contact: "billg@microsoft.com"}
   res = http.request_post("/item/create", operation_post.to_json, {'Cookie' => cookie})
   operation = JSON.parse(res.body)
-  puts operation
-  puts
-  
-  puts "item.create target"
-  target_post = {name: "test target", desc: "this is a test target", _kind: "target", operation: operation['_id'], target: target['_id']}
-  res = http.request_post("/item/create", target_post.to_json, {'Cookie' => cookie})
-  target = JSON.parse(res.body)
-  puts target
-  puts
-  
-  puts "item.create factory"
-  operation = {name: "test operation", desc: "this is a test operation", _kind: "factory"}
-  res = http.request_post("/item/create", operation.to_json, {'Cookie' => cookie})
   puts res
   puts
   
-  #puts "item.create backdoor"
-  #operation = {name: "test operation", desc: "this is a test operation", _kind: "operation", contact: "billg@microsoft.com"}
-  #res = http.request_post("/item/create", operation.to_json, {'Cookie' => cookie})
-  #puts res
-  #puts
+  puts "item.create target"
+  target_post = {name: "test target", desc: "this is a test target", _kind: "target", operation: operation['_id']}
+  res = http.request_post("/item/create", target_post.to_json, {'Cookie' => cookie})
+  target = JSON.parse(res.body)
+  puts res
+  puts
+  
+  puts "item.create factory"
+  operation = {
+    _kind: "factory", 
+    operation: operation['_id'], 
+    target: target['_id'],
+    name: "test factory", 
+    desc: "this is a test operation", 
+  }
+  res = http.request_post("/item/create", operation.to_json, {'Cookie' => cookie})
+  puts res
+  puts
   
 end
 

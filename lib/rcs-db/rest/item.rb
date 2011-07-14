@@ -10,17 +10,19 @@ class ItemController < RESTController
   
   def index
     require_auth_level :admin, :tech, :view
-
-    filter = {}
+    
     filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
+    filter ||= {}
+
+    puts @session[:accessible]
     
     mongoid_query do
       items = ::Item.any_in(_id: @session[:accessible])
       filter.each_key do |k|
         items = items.any_in(k.to_sym => filter[k])
       end
-
-      items = items.only(:name, :desc, :status, :_kind, :_path, :stat)
+      
+      items = items.only(:name, :desc, :status, :_kind, :path, :stat)
       RESTController.reply.ok(items)
     end
   end
@@ -28,7 +30,8 @@ class ItemController < RESTController
   def show
     require_auth_level :admin, :tech, :view
     
-    return RESTController.reply.not_found unless @session[:accessible].include? BSON::ObjectId.from_string(@params['_id'])
+    item_id = BSON::ObjectId.from_string(@params['_id'])
+    return RESTController.reply.not_found unless @session[:accessible].include? item_id
     
     mongoid_query do
       item = ::Item.find(@params['_id'])
@@ -38,59 +41,48 @@ class ItemController < RESTController
   
   def create
     # check they're asking to create a meaningful item
-    return RESTController.reply.not_found unless ['operation', 'target', 'factory', 'backdoor'].include? @params['_kind']
+    return RESTController.reply.not_found unless ['operation', 'target', 'factory'].include? @params['_kind']
 
     # enforce authorization levels
     check_auth_by_item_kind @params['_kind']
-
+    
     mongoid_query do
       item = Item.create(name: @params['name']) do |doc|
         # common fields
         doc[:desc] = @params['desc']
         doc[:status] = @params['status']
         doc[:_kind] = @params['_kind']
-        
-        operation = ::Item.where({_id: @params['operation'], _kind: 'operation'}) if @params.has_key? 'operation'
-        target = ::Item.where({_id: @params['target'], _kind: 'target'}) if @params.has_key? 'target'
+
+        if @params.has_key? 'operation'
+          operation = ::Item.where({_id: @params['operation'], _kind: 'operation'}).first
+          RESTController.reply.bad_request('INVALID_OPERATION') if operation.nil?
+        end
+
+        if @params.has_key? 'target'
+          target = ::Item.where({_id: @params['target'], _kind: 'target'}).first
+          RESTController.reply.bad_request('INVALID_TARGET') if target.nil?
+        end
         
         case doc[:_kind]
-          when 'backdoor'
-            doc[:_path] = [operation._id, target._id]
+          when 'factory' then
+            doc[:path] = [operation._id, target._id]
+          when 'target' then
+            doc[:path] = [operation._id]
             doc[:stat] = Stat.new
-            
-            doc[:build] = @params['build']
-            doc[:instance] = @params['instance']
-            doc[:version] = @params['version']
-            doc[:type] = @params['type']
-            doc[:platform] = @params['platform']
-            doc[:deleted] = @params['deleted']
-            doc[:uninstalled] = @params['uninstalled']
-            doc[:counter] = @params['counter']
-            doc[:pathseed] = @params['pathseed']
-            doc[:confkey] = @params['confkey']
-            doc[:logkey] = @params['logkey']
-            doc[:demo] = @params['demo']
-            doc[:upgradable] = @params['upgradable']
-          when 'factory'
-            doc[:_path] = [operation._id, target._id]
-          when 'target'
-            doc[:_path] = [operation._id]
+          when 'operation' then
+            doc[:path] = []
             doc[:stat] = Stat.new
-          when 'operation'
-            doc[:_path] = []
-            doc[:stat] = Stat.new
-
             doc[:contact] = @params['contact']
         end
       end
-
+      
       # make item accessible to this user
       @session[:accessible] << item
       
       RESTController.reply.ok(item)
     end
   end
-
+  
   def update
     # enforce authorization levels
     check_auth_by_item_kind @params['_kind']

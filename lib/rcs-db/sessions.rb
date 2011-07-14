@@ -109,7 +109,7 @@ class SessionManager
       # for each operation search the Items belonging to it
       group.item_ids.each do |operation|
         # it is enough to search in the _path to check the membership
-        Item.any_in({_path: [operation]}).each do |item|
+        Item.any_in({path: [operation]}).each do |item|
           accessible << item[:_id]
         end
       end
