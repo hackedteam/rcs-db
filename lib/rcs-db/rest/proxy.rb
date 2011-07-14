@@ -132,19 +132,19 @@ class ProxyController < RESTController
 
     mongoid_query do
       proxy = ::Proxy.find(@params['_id'])
-      target = ::Item.find(@params['target'])
+      target = ::Item.find(@params['rule']['target_id'])
       
       rule = ::ProxyRule.new
-      rule.enabled = @params['enabled']
-      rule.probability = @params['probability']
-      rule.disable_sync = @params['disable_sync']
-      rule.ident = @params['ident']
-      rule.ident_param = @params['ident_param']
-      rule.resource = @params['resource']
-      rule.action = @params['action']
-      rule.action_param = @params['action_param']
+      rule.enabled = @params['rule']['enabled']
+      rule.probability = @params['rule']['probability']
+      rule.disable_sync = @params['rule']['disable_sync']
+      rule.ident = @params['rule']['ident']
+      rule.ident_param = @params['rule']['ident_param']
+      rule.resource = @params['rule']['resource']
+      rule.action = @params['rule']['action']
+      rule.action_param = @params['rule']['action_param']
 
-      rule.target = [ target[:_id] ]
+      rule.target_id = [ target[:_id] ]
 
       # the file is uploaded to the grid before calling this method
       rule[:_grid] = [ BSON::ObjectId.from_string(@params['_grid']) ] unless @params['_grid'].nil?
@@ -166,10 +166,10 @@ class ProxyController < RESTController
       proxy = ::Proxy.find(@params['_id'])
       return RESTController.reply.not_found if proxy.nil?
 
-      rule = proxy.rules.find(@params['rule'])
+      rule = proxy.rules.find(@params['rule']['_id'])
       return RESTController.reply.not_found if rule.nil?
 
-      target = ::Item.find(rule.target.first)
+      target = ::Item.find(rule.target_id.first)
       return RESTController.reply.not_found if target.nil?
 
       Audit.log :actor => @session[:user][:name], :action => 'proxy.del_rule', :target => target.name,
@@ -187,17 +187,15 @@ class ProxyController < RESTController
 
     mongoid_query do
       proxy = ::Proxy.find(@params['_id'])
-      target = ::Item.find(@params['target'])
-      rule = proxy.rules.find(@params['rule'])
+      target = ::Item.find(@params['rule']['target_id'])
+      rule = proxy.rules.find(@params['rule']['_id'])
 
       @params.delete('_id')
-      @params.delete('target')
-      @params.delete('rule')
-      @params['target'] = [ target[:_id] ]
-      rule.update_attributes(@params)
+      @params['rule']['target_id'] = [ target[:_id] ]
+      rule.update_attributes(@params['rule'])
       
       # the file is uploaded to the grid before calling this method
-      rule[:_grid] = [ BSON::ObjectId.from_string(@params['_grid']) ] unless @params['_grid'].nil?
+      rule[:_grid] = [ BSON::ObjectId.from_string(@params['rule']['_grid']) ] unless @params['rule']['_grid'].nil?
       
       rule.save
       

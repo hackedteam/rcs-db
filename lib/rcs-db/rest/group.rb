@@ -76,7 +76,7 @@ class GroupController < RESTController
 
     mongoid_query do
       group = Group.find(@params['_id'])
-      user = User.find(@params['user'])
+      user = User.find(@params['user']['_id'])
       return RESTController.reply.not_found if user.nil? or group.nil?
       
       group.users << user
@@ -92,7 +92,7 @@ class GroupController < RESTController
     
     mongoid_query do
       group = Group.find(@params['_id'])
-      user = User.find(@params['user'])
+      user = User.find(@params['user']['_id'])
       return RESTController.reply.not_found if user.nil? or group.nil?
 
       group.remove_user(user)
