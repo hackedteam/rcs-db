@@ -45,7 +45,7 @@ class ProxyRule
   field :disable_sync, type: Boolean
   field :probability, type: Integer
 
-  field :target, type: Array
+  field :target_id, type: Array
   field :ident, type: String
   field :ident_param, type: String
   field :resource, type: String

@@ -58,7 +58,7 @@ class ProxyMigration
       mr.disable_sync = rule[:until_sync] == 0 ? false : true
       mr.probability = rule[:probability]
 
-      mr.target = [ target[:_id] ]
+      mr.target_id = [ target[:_id] ]
       mr.ident = rule[:user_type]
       mr.ident_param = rule[:user_pattern]
       mr.resource = rule[:resource_pattern]
