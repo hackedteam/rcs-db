@@ -193,9 +193,9 @@ class Stat
   field :user, type: String
   field :device, type: String
   field :last_sync, type: Integer
-  field :size, type: Integer
-  field :grid_size, type: Integer
-  field :evidence, type: Hash
+  field :size, type: Integer, :default => 0
+  field :grid_size, type: Integer, :default => 0
+  field :evidence, type: Hash, :default => {}
   
   embedded_in :item
 end

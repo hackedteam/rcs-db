@@ -42,11 +42,11 @@ class RESTController
     return nil if name.nil?
     begin
       controller = eval("#{name}").new
-      controller.request = request
-      return controller
     rescue NameError => e
-      return nil
+      controller = InvalidController.new
     end
+      controller.request = request
+      controller
   end
   
   def request=(request)
@@ -94,10 +94,10 @@ class RESTController
     unless @params.has_key? '_id'
       @params['_id'] = @request[:uri_params].first unless @request[:uri_params].first.nil?
     end
-
+    
     # GO!
     response = send(@request[:action])
-
+    
     return RESTController.reply.server_error('CONTROLLER_ERROR') if response.nil?
     return response
   rescue NotAuthorized => e
@@ -151,8 +151,15 @@ class RESTController
       return RESTController.reply.not_found
     end
   end
-  
+
 end # RESTController
+
+class InvalidController < RESTController
+  def act!
+    trace :error, "Invalid controller invoked: #{@request[:controller]}/#{@request[:action]}. Replied 404."
+    RESTController.reply.not_found
+  end
+end
 
 end #DB::
 end #RCS::

