@@ -100,12 +100,14 @@ class SessionManager
   end
 
   def get_accessible(user)
-
+    
     # the list of accessible Items
     accessible = []
-
+    
     # search all the groups which the user belongs to
     Group.any_in({_id: user.group_ids}).each do |group|
+      # add all the accessible operations
+      accessible += group.item_ids
       # for each operation search the Items belonging to it
       group.item_ids.each do |operation|
         # it is enough to search in the _path to check the membership
