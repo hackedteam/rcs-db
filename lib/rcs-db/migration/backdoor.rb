@@ -8,21 +8,27 @@ class BackdoorMigration
   extend Tracer
   
   def self.migrate(verbose)
-  
+
+    @higher_build = 0
+    
     print "Migrating backdoors "
 
+    # check if there is already a global document
+    global = ::Item.where({_kind: 'global'}).first
+    global = ::Item.new({_kind: 'global', counter: 0}) if global.nil?
+    
     backdoors = DB.instance.mysql_query('SELECT * from `backdoor` ORDER BY `backdoor_id`;').to_a
     backdoors.each do |backdoor|
-
+      
       # is this a backdoor or a factory?!?!
       kind = (backdoor[:class] == 0) ? 'backdoor' : 'factory'
       
       # skip item if already migrated
       next if Item.count(conditions: {_mid: backdoor[:backdoor_id], _kind: kind}) != 0
-
+      
       trace :info, "Migrating backdoor '#{backdoor[:backdoor]}'." if verbose
       print "." unless verbose
-            
+      
       mb = ::Item.new
       mb[:_mid] = backdoor[:backdoor_id]
       mb.name = backdoor[:backdoor]
@@ -31,7 +37,9 @@ class BackdoorMigration
       mb.status = backdoor[:status].downcase
       mb.demo = false
       
-      mb.build = backdoor[:build]
+      mb.ident = backdoor[:build]
+      build_no = backdoor[:build].sub("RCS_", "").to_i
+      global.counter = build_no if build_no > global.counter
       
       mb.instance = backdoor[:instance].downcase if kind == 'backdoor'
       mb.version = backdoor[:version].to_i if kind == 'backdoor'
@@ -53,7 +61,7 @@ class BackdoorMigration
       mb.counter = backdoor[:counter] if kind == 'factory'
       
       mb.seed = backdoor[:pathseed]
-
+      
       mb.stat = Stat.new
       mb.stat.evidence = {}
       mb.stat.size = 0
@@ -61,15 +69,16 @@ class BackdoorMigration
       
       target = Item.where({_mid: backdoor[:target_id], _kind: 'target'}).first
       mb.path = target[:path] + [ target[:_id] ]
-
+      
       mb.save
       
     end
     
-    puts " done."
+    global.save
+    puts " done, higher build number is #{global.counter}."
     
   end
-
+  
   def self.migrate_associations(verbose)
     # filesystems
     

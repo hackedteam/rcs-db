@@ -15,7 +15,7 @@ class Item
   field :contact, type: String
 
   # backdoor
-  field :build, type: String
+  field :ident, type: String
   field :instance, type: String
   field :version, type: Integer
   field :type, type: String
@@ -92,8 +92,8 @@ class Item
     backdoor = Item.new
     backdoor._kind = 'backdoor'
     backdoor.deleted = false
-    backdoor.build = self[:build]
-    backdoor.name = self[:build] + " (#{self[:counter]})"
+    backdoor.ident = self[:ident]
+    backdoor.name = self[:ident] + " (#{self[:counter]})"
     backdoor.type = self[:type]
     backdoor.desc = self[:desc]
     backdoor[:path] = self[:path]

