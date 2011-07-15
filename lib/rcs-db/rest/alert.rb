@@ -44,10 +44,10 @@ class AlertController < RESTController
       na.path = @params['path']
       na.evidence = @params['evidence']
       na.keywords = @params['keywords']
-      na.enabled = true
+      na.enabled = @params['enabled']
       na.suppression = @params['suppression']
       na.type = @params['type']
-      na.priority = @params['priority']
+      na.tag = @params['tag']
 
       user.alerts << na
 

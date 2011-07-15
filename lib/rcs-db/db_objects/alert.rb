@@ -10,7 +10,7 @@ class Alert
   field :enabled, type: Boolean
   field :type, type: String
   field :suppression, type: Integer
-  field :priority, type: Integer
+  field :tag, type: Integer
   field :path, type: Array
   field :action, type: String
   field :evidence, type: String

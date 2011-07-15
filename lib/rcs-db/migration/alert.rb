@@ -20,13 +20,13 @@ class AlertMigration
       
       ma = ::Alert.new
       ma[:_mid] = alert[:alert_id]
-      ma.type = alert[:type].downcase
-      ma.evidence = alert[:log_type].downcase
+      ma.type = alert[:type]
+      ma.evidence = alert[:log_type]
       ma.keywords = alert[:log_pattern]
       ma.suppression = alert[:suppression]
-      ma.priority = alert[:tag]
+      ma.tag = alert[:tag]
       ma.enabled = true
-      ma.action = :evidence
+      ma.action = 'EVIDENCE'
       
       operation = ::Item.where({_mid: alert[:activity_id], _kind: 'operation'}).first
       target = ::Item.where({_mid: alert[:target_id], _kind: 'target'}).first
