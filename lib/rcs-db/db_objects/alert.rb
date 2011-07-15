@@ -7,14 +7,15 @@ class Alert
   include Mongoid::Document
   include Mongoid::Timestamps
 
+  field :enabled, type: Boolean
   field :type, type: String
-  field :evidence, type: String
-  field :keywords, type: String
   field :suppression, type: Integer
   field :priority, type: Integer
   field :path, type: Array
-  field :enabled, type: Boolean
-  
+  field :action, type: String
+  field :evidence, type: String
+  field :keywords, type: String
+
   store_in :alerts
 
   belongs_to :user

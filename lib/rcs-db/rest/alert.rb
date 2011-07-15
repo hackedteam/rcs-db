@@ -15,7 +15,7 @@ class AlertController < RESTController
       # use reload to avoid cache
       user = @session[:user].reload
 
-      alerts = user.alerts.without(:logs)
+      alerts = user.alerts
 
       return RESTController.reply.ok(alerts)
     end
@@ -89,6 +89,24 @@ class AlertController < RESTController
       user.reload
       
       return RESTController.reply.ok
+    end
+  end
+
+    # returns the counters grouped by status
+  def counters
+    require_auth_level :view
+
+    counter = 0
+
+    mongoid_query do
+      user = @session[:user].reload
+      alert = user.alerts.all
+
+      alert.each do |a|
+        counter += a.logs.length
+      end
+
+      return RESTController.reply.ok(counter)
     end
   end
 

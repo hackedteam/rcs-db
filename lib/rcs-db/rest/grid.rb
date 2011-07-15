@@ -6,7 +6,7 @@ module DB
 class GridController < RESTController
   
   def show
-    require_auth_level :admin, :tech, :viewer
+    require_auth_level :admin, :tech, :view
     
     grid_id = @params['_id']
     file = GridFS.instance.get BSON::ObjectId.from_string grid_id

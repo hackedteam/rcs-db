@@ -26,6 +26,7 @@ class AlertMigration
       ma.suppression = alert[:suppression]
       ma.priority = alert[:tag]
       ma.enabled = true
+      ma.action = :evidence
       
       operation = ::Item.where({_mid: alert[:activity_id], _kind: 'operation'}).first
       target = ::Item.where({_mid: alert[:target_id], _kind: 'target'}).first

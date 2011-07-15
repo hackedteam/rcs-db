@@ -548,6 +548,12 @@ if true
   puts res
   puts
   
+  # alert.counter
+  puts "alert.counter" 
+  res = http.request_get('/alert/counters', {'Cookie' => cookie})
+  puts res
+  puts
+  
 end
 
 # items
