@@ -25,7 +25,7 @@ class ActivityMigration
       ma.contact = a[:contact]
       ma.desc = a[:desc]
       ma._kind = 'operation'
-      ma._path = []
+      ma.path = []
       ma.status = a[:status].downcase
 
       ma.stat = Stat.new

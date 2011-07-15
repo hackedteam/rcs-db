@@ -66,7 +66,7 @@ class ParserTest < Test::Unit::TestCase
 
   def test_start
     content = {:bid => 1,
-               :build => 'RCS_0000test',
+               :ident => 'RCS_0000test',
                :instance => @instance,
                :subtype => 'test-subtype',
                :version => 2011030401,

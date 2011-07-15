@@ -496,7 +496,7 @@ if false
 end
 
 # alerts
-if true
+if false
   # alert.index
   puts "alert.index" 
   res = http.request_get('/alert', {'Cookie' => cookie})
@@ -557,46 +557,58 @@ if true
 end
 
 # items
-if false
+if true
   # item.index
   puts "item.index" 
   res = http.request_get('/item', {'Cookie' => cookie})
   puts res.body.size
   puts
   
-  item = JSON.parse(res.body).first
+  # item.index
+  puts "item.index operations"
+  res = http.request_get(URI.escape('/item?filter={"_kind": "operation"}'), {'Cookie' => cookie})
+  operations = JSON.parse(res.body)
   
-  # item.show
-  puts "item.show" 
-  res = http.request_get("/item/#{item['_id']}", {'Cookie' => cookie})
-  puts res
+  puts operations
   puts
   
-  puts "item.create operation"
-  operation_post = {name: "test operation", desc: "this is a test operation", _kind: "operation", contact: "billg@microsoft.com"}
-  res = http.request_post("/item/create", operation_post.to_json, {'Cookie' => cookie})
-  operation = JSON.parse(res.body)
-  puts operation
+  # item.index
+  puts "item.index targets"
+  res = http.request_get(URI.escape('/item?filter={"_kind": "target"}'), {'Cookie' => cookie})
+  targets = JSON.parse(res.body)
+  
+  puts targets
   puts
   
-  puts "item.create target"
-  target_post = {name: "test target", desc: "this is a test target", _kind: "target", operation: operation['_id'], target: target['_id']}
-  res = http.request_post("/item/create", target_post.to_json, {'Cookie' => cookie})
-  target = JSON.parse(res.body)
-  puts target
-  puts
+#  puts "item.create operation"
+#  operation_post = {
+#    _kind: "operation", 
+#    name: "test operation", 
+#    desc: "this is a test operation", 
+#    contact: "billg@microsoft.com"}
+#  res = http.request_post("/item/create", operation_post.to_json, {'Cookie' => cookie})
+#  operation = JSON.parse(res.body)
+#  puts res
+#  puts
+  
+#  puts "item.create target"
+#  target_post = {name: "test target", desc: "this is a test target", _kind: "target", operation: operations.first['_id']}
+#  res = http.request_post("/item/create", target_post.to_json, {'Cookie' => cookie})
+#  target = JSON.parse(res.body)
+#  puts res
+#  puts
   
   puts "item.create factory"
-  operation = {name: "test operation", desc: "this is a test operation", _kind: "factory"}
+  operation = {
+    _kind: "factory", 
+    operation: operations.first['_id'], 
+    target: targets.first['_id'],
+    name: "test factory", 
+    desc: "this is a test factory", 
+  }
   res = http.request_post("/item/create", operation.to_json, {'Cookie' => cookie})
   puts res
   puts
-  
-  #puts "item.create backdoor"
-  #operation = {name: "test operation", desc: "this is a test operation", _kind: "operation", contact: "billg@microsoft.com"}
-  #res = http.request_post("/item/create", operation.to_json, {'Cookie' => cookie})
-  #puts res
-  #puts
   
 end
 

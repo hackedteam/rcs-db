@@ -32,7 +32,7 @@ class TargetMigration
       mt.stat.grid_size = 0
 
       operation = Item.where({_mid: target[:activity_id], _kind: 'operation'}).first
-      mt._path = [ operation[:_id] ]
+      mt.path = [ operation[:_id] ]
 
       mt.save
     end

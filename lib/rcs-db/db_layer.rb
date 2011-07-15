@@ -69,7 +69,7 @@ class DB
   end
   
   # MONGO
-
+  
   #TODO: index more classes...
   @@classes_to_be_indexed = [::Audit, ::User]
   
@@ -93,7 +93,7 @@ class DB
       k.create_indexes
     end
   end
-
+  
 end
 
 end #DB::
