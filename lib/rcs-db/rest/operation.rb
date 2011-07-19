@@ -42,7 +42,7 @@ class OperationController < RESTController
       end
       
       # make item accessible to this user
-      @session[:accessible] << item
+      @session[:accessible] << item._id
       
       Audit.log :actor => @session[:user][:name], :action => "operation.create", :operation => item['name'], :desc => "Created operation '#{item['name']}'"
 
