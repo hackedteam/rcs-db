@@ -36,7 +36,7 @@ class TargetController < RESTController
     
     mongoid_query do
       
-      operation = ::Item.where({_id: @params['operation'], _kind: 'operation'}).first
+      operation = ::Item.operations.find(@params['operation'])
       return RESTController.reply.bad_request('INVALID_OPERATION') if operation.nil?
       
       item = Item.create(name: @params['name']) do |doc|
@@ -49,7 +49,7 @@ class TargetController < RESTController
       
       @session[:accessible] << item._id
       
-      Audit.log :actor => @session[:user][:name], :action => "target.create", :operation => item['name'], :desc => "Created target '#{item['name']}' under operation '#{operation['name']}'"
+      Audit.log :actor => @session[:user][:name], :action => "target.create", :target => item['name'], :desc => "Created target '#{item['name']}' under operation '#{operation['name']}'"
   
       RESTController.reply.ok(item)
     end
@@ -57,18 +57,24 @@ class TargetController < RESTController
 
   def update
     require_auth_level :admin
+    
+    updatable_fields = ['name', 'desc', 'status']
 
     mongoid_query do
       item = Item.targets.any_in(_id: @session[:accessible]).find(@params['_id'])
       @params.delete('_id')
-
-      item.update_attributes(@params)
+      @params.delete_if {|k, v| not updatable_fields.include? k }
 
       @params.each_pair do |key, value|
         if item[key.to_s] != value and not key['_ids']
-          Audit.log :actor => @session[:user][:name], :action => "operation.update", :operation => item['name'], :desc => "Updated '#{key}' to '#{value}' for #{item._kind} '#{item['name']}'"
+          Audit.log :actor => @session[:user][:name],
+                    :action => "target.update",
+                    :target => item['name'],
+                    :desc => "Updated '#{key}' to '#{value}' for target '#{item['name']}'"
         end
       end
+
+      item.update_attributes(@params)
 
       return RESTController.reply.ok(item)
     end
@@ -81,7 +87,7 @@ class TargetController < RESTController
       item = Item.targets.any_in(_id: @session[:accessible]).find(@params['_id'])
       item.destroy
 
-      Audit.log :actor => @session[:user][:name], :action => "operation.delete", :operation => @params['name'], :desc => "Deleted #{item._kind} '#{item['name']}'"
+      Audit.log :actor => @session[:user][:name], :action => "target.delete", :target => @params['name'], :desc => "Deleted target '#{item['name']}'"
       return RESTController.reply.ok
     end
   end
