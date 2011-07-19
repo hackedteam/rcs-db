@@ -72,8 +72,6 @@ class OperationController < RESTController
   def destroy
     require_auth_level :admin
 
-    puts @params
-    
     mongoid_query do
       item = Item.operations.any_in(_id: @session[:accessible]).find(@params['_id'])
       item.destroy
