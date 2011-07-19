@@ -557,7 +557,7 @@ if false
 end
 
 # operations
-if true
+if false
   puts "operation.index" 
   res = http.request_get('/operation', {'Cookie' => cookie})
   puts res.body
@@ -600,7 +600,7 @@ if true
 end
 
 # targets
-if true
+if false
   res = http.request_get('/operation', {'Cookie' => cookie})
   operations = JSON.parse(res.body)
 
@@ -646,7 +646,8 @@ if true
   puts
 end
 
-if true
+# backdoors
+if false
   res = http.request_get('/operation', {'Cookie' => cookie})
   operations = JSON.parse(res.body)
   
@@ -696,59 +697,20 @@ if true
 end
 
 # items
-if false
+if true
   # item.index
   puts "item.index" 
   res = http.request_get('/item', {'Cookie' => cookie})
-  puts res.body.size
+  items = JSON.parse(res.body)
+  puts "You've got #{items.size} items."
   puts
   
   # item.index
-  puts "item.index operations"
-  res = http.request_get(URI.escape('/item?filter={"_kind": "operation"}'), {'Cookie' => cookie})
-  operations = JSON.parse(res.body)
-  
-  puts res.body
+  puts "item.index RCS_0000000610"
+  res = http.request_get(URI.escape('/item?filter={"name": "RCS_0000000610"}'), {'Cookie' => cookie})
+  rcs_10 = JSON.parse(res.body)
+  puts rcs_10
   puts
-  
-  # item.index
-  puts "item.index targets"
-  res = http.request_get(URI.escape('/item?filter={"_kind": "target"}'), {'Cookie' => cookie})
-  targets = JSON.parse(res.body)
-  
-  puts res.body
-  puts
-    
-#  puts "item.create operation"
-#  operation_post = {
-#    _kind: "operation", 
-#    name: "test operation", 
-#    desc: "this is a test operation", 
-#    contact: "billg@microsoft.com"}
-#  res = http.request_post("/item/create", operation_post.to_json, {'Cookie' => cookie})
-#  operation = JSON.parse(res.body)
-#  puts res
-#  puts
-  
-#  puts "item.create target"
-#  target_post = {name: "test target", desc: "this is a test target", _kind: "target", operation: operations.first['_id']}
-#  res = http.request_post("/item/create", target_post.to_json, {'Cookie' => cookie})
-#  target = JSON.parse(res.body)
-#  puts res
-#  puts
-  
-#  puts "item.create factory"
-#  operation = {
-#    _kind: "factory", 
-#    operation: operations.first['_id'], 
-#    target: targets.first['_id'],
-#    name: "test factory", 
-#    desc: "this is a test factory", 
-#  }
-#  res = http.request_post("/item/create", operation.to_json, {'Cookie' => cookie})
-#  puts res
-#  puts
-  
 end
 
 # logout

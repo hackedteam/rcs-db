@@ -11,8 +11,8 @@ class OperationController < RESTController
     
     mongoid_query do
       items = ::Item.operations.where(filter)
-      items = items.any_in(_id: @session[:accessible])
-      items = items.only(:name, :desc, :status, :_kind, :path, :stat)
+        .any_in(_id: @session[:accessible])
+        .only(:name, :desc, :status, :_kind, :path, :stat)
       
       RESTController.reply.ok(items)
     end
