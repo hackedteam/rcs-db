@@ -49,8 +49,12 @@ class TargetController < RESTController
       
       @session[:accessible] << item._id
       
-      Audit.log :actor => @session[:user][:name], :action => "target.create", :target => item['name'], :desc => "Created target '#{item['name']}' under operation '#{operation['name']}'"
-  
+      Audit.log :actor => @session[:user][:name],
+                :action => "target.create",
+                :operation => operation['name'],
+                :target => item['name'],
+                :desc => "Created target '#{item['name']}'"
+      
       RESTController.reply.ok(item)
     end
   end
@@ -64,18 +68,18 @@ class TargetController < RESTController
       item = Item.targets.any_in(_id: @session[:accessible]).find(@params['_id'])
       @params.delete('_id')
       @params.delete_if {|k, v| not updatable_fields.include? k }
-
+      
       @params.each_pair do |key, value|
         if item[key.to_s] != value and not key['_ids']
           Audit.log :actor => @session[:user][:name],
                     :action => "target.update",
                     :target => item['name'],
-                    :desc => "Updated '#{key}' to '#{value}' for target '#{item['name']}'"
+                    :desc => "Updated '#{key}' to '#{value}'"
         end
       end
-
+      
       item.update_attributes(@params)
-
+      
       return RESTController.reply.ok(item)
     end
   end
@@ -85,9 +89,14 @@ class TargetController < RESTController
 
     mongoid_query do
       item = Item.targets.any_in(_id: @session[:accessible]).find(@params['_id'])
+      name = item.name
+
       item.destroy
 
-      Audit.log :actor => @session[:user][:name], :action => "target.delete", :target => @params['name'], :desc => "Deleted target '#{item['name']}'"
+      Audit.log :actor => @session[:user][:name],
+                :action => "target.delete",
+                :target => name,
+                :desc => "Deleted target '#{name}'"
       return RESTController.reply.ok
     end
   end

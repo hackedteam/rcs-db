@@ -44,7 +44,10 @@ class OperationController < RESTController
       # make item accessible to this user
       @session[:accessible] << item._id
       
-      Audit.log :actor => @session[:user][:name], :action => "operation.create", :operation => item['name'], :desc => "Created operation '#{item['name']}'"
+      Audit.log :actor => @session[:user][:name],
+                :action => "operation.create",
+                :operation => item['name'],
+                :desc => "Created operation '#{item['name']}'"
 
       RESTController.reply.ok(item)
     end
@@ -62,7 +65,10 @@ class OperationController < RESTController
       
       @params.each_pair do |key, value|
         if item[key.to_s] != value and not key['_ids']
-          Audit.log :actor => @session[:user][:name], :action => "operation.update", :operation => item['name'], :desc => "Updated '#{key}' to '#{value}' for #{item._kind} '#{item['name']}'"
+          Audit.log :actor => @session[:user][:name],
+                    :action => "operation.update",
+                    :operation => item['name'],
+                    :desc => "Updated '#{key}' to '#{value}'"
         end
       end
 
@@ -77,9 +83,16 @@ class OperationController < RESTController
 
     mongoid_query do
       item = Item.operations.any_in(_id: @session[:accessible]).find(@params['_id'])
-      item.destroy
+      name = item.name
+      _kind = item._kind
       
-      Audit.log :actor => @session[:user][:name], :action => "operation.delete", :operation => @params['name'], :desc => "Deleted #{item._kind} '#{item['name']}'"
+      item.destroy
+
+      Audit.log :actor => @session[:user][:name],
+                :action => "operation.delete",
+                :operation => name,
+                :desc => "Deleted operation '#{name}'"
+      
       return RESTController.reply.ok
     end
   end
