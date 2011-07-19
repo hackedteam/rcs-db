@@ -110,6 +110,32 @@ class AlertController < RESTController
     end
   end
 
+  def destroy_log
+    require_auth_level :view
+
+    mongoid_query do
+      user = @session[:user].reload
+      alert = user.alerts.find(@params['_id'])
+
+      alert.logs.destroy_all(conditions: {_id: @params['log']['_id']})
+
+      return RESTController.reply.ok
+    end
+  end
+
+    def destroy_all_logs
+    require_auth_level :view
+
+    mongoid_query do
+      user = @session[:user].reload
+      alert = user.alerts.find(@params['_id'])
+      
+      alert.logs.destroy_all
+
+      return RESTController.reply.ok
+    end
+  end
+
 end
 
 end #DB::
