@@ -556,7 +556,7 @@ if false
   
 end
 
-# operations
+# items
 if true
   puts "operation.index" 
   res = http.request_get('/operation', {'Cookie' => cookie})
@@ -597,7 +597,47 @@ if true
   res = http.request_post("/operation/destroy", {_id: operation['_id']}.to_json, {'Cookie' => cookie})
   puts res.body
   puts
+
+  puts "target.index" 
+  res = http.request_get('/target', {'Cookie' => cookie})
+  puts res.body
+  targets = JSON.parse(res.body)
+  puts targets  
+  puts
+
+  puts "target.show"
+  res = http.request_get("/target/#{targets.first['_id']}", {'Cookie' => cookie})
+  target = JSON.parse(res.body)
+  puts target
+  puts
+
+  puts "target.create"
+  target_post = {
+    name: "test target", 
+    desc: "this is a test target",
+    operation: operations.first['_id']
+  }
+  res = http.request_post("/target/create", target_post.to_json, {'Cookie' => cookie})
+  target = JSON.parse(res.body)
+  puts target
+  puts
   
+  puts "target.update"
+  target_post = {
+    _id: target['_id'],
+    name: "RENAMED!!!", 
+    desc: "whoa! this is our renamed target", 
+    contact: "ballmer@microsoft.com"
+  }
+  res = http.request_post("/target/update", target_post.to_json, {'Cookie' => cookie})
+  target = JSON.parse(res.body)
+  puts target
+  puts
+  
+  puts "target.delete"
+  res = http.request_post("/target/destroy", {_id: target['_id']}.to_json, {'Cookie' => cookie})
+  puts res.body
+  puts
 end
 
 # items
