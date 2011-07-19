@@ -53,17 +53,20 @@ class OperationController < RESTController
   def update
     require_auth_level :admin
     
+    updatable_fields = ['name', 'desc', 'status', 'contact']
+    
     mongoid_query do
       item = Item.operations.any_in(_id: @session[:accessible]).find(@params['_id'])
       @params.delete('_id')
-
-      item.update_attributes(@params)
+      @params.delete_if {|k, v| not updatable_fields.include? k }
       
       @params.each_pair do |key, value|
         if item[key.to_s] != value and not key['_ids']
           Audit.log :actor => @session[:user][:name], :action => "operation.update", :operation => item['name'], :desc => "Updated '#{key}' to '#{value}' for #{item._kind} '#{item['name']}'"
         end
       end
+
+      item.update_attributes(@params)
       
       return RESTController.reply.ok(item)
     end
