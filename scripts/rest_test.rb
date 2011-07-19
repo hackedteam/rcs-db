@@ -556,7 +556,7 @@ if false
   
 end
 
-# items
+# operations
 if true
   puts "operation.index" 
   res = http.request_get('/operation', {'Cookie' => cookie})
@@ -597,6 +597,12 @@ if true
   res = http.request_post("/operation/destroy", {_id: operation['_id']}.to_json, {'Cookie' => cookie})
   puts res.body
   puts
+end
+
+# targets
+if true
+  res = http.request_get('/operation', {'Cookie' => cookie})
+  operations = JSON.parse(res.body)
 
   puts "target.index" 
   res = http.request_get('/target', {'Cookie' => cookie})
@@ -610,7 +616,7 @@ if true
   target = JSON.parse(res.body)
   puts target
   puts
-
+  
   puts "target.create"
   target_post = {
     name: "test target", 
@@ -638,6 +644,55 @@ if true
   res = http.request_post("/target/destroy", {_id: target['_id']}.to_json, {'Cookie' => cookie})
   puts res.body
   puts
+end
+
+if true
+  res = http.request_get('/operation', {'Cookie' => cookie})
+  operations = JSON.parse(res.body)
+  
+  res = http.request_get('/target', {'Cookie' => cookie})
+  targets = JSON.parse(res.body)
+  
+  puts "backdoor.index"
+  res = http.request_get('/backdoor', {'Cookie' => cookie})
+  backdoors = JSON.parse(res.body)
+  puts "You got #{backdoors.size} backdoors."
+  puts
+  
+  puts "backdoor.show"
+  res = http.request_get("/backdoor/#{backdoors.first['_id']}", {'Cookie' => cookie})
+  backdoor = JSON.parse(res.body)
+  puts backdoor
+  puts
+  
+  puts "backdoor.create"
+   backdoor_post = {
+     name: 'test backdoor',
+     desc: "this is a test backdoor",
+     operation: operations.first['_id'],
+     target: targets.first['_id'],
+   }
+   res = http.request_post("/backdoor/create", backdoor_post.to_json, {'Cookie' => cookie})
+   backdoor = JSON.parse(res.body)
+   puts backdoor
+   puts
+   
+   puts "backdoor.update"
+   backdoor_post = {
+     _id: backdoor['_id'],
+     name: "RENAMED!!!", 
+     desc: "whoa! this is our renamed backdoor", 
+     ident: "this field MUST NOT be updated!!!!!!!!!!!!"
+   }
+   res = http.request_post("/backdoor/update", backdoor_post.to_json, {'Cookie' => cookie})
+   backdoor = JSON.parse(res.body)
+   puts backdoor
+   puts
+   
+   puts "backdoor.delete"
+   res = http.request_post("/backdoor/destroy", {_id: backdoor['_id']}.to_json, {'Cookie' => cookie})
+   puts res.body
+   puts
 end
 
 # items
