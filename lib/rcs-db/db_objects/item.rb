@@ -33,6 +33,7 @@ class Item
   scope :targets, where(_kind: "target")
   scope :backdoors, where(_kind: "backdoor")
   scope :factories, where(_kind: "factory")
+  scope :backdoors_and_factories, any_in(_kind: ['backdoor', 'factory'])
 
   has_and_belongs_to_many :groups, :dependent => :nullify, :autosave => true
 
