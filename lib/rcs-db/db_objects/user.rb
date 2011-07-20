@@ -15,7 +15,7 @@ class User
   field :enabled, type: Boolean
   field :locale, type: String
   field :timezone, type: Integer
-  field :dashboard_items, type: Array
+  field :dashboard_ids, type: Array
   
   validates_uniqueness_of :name, :message => "USER_ALREADY_EXISTS"
   
