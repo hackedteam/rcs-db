@@ -13,14 +13,14 @@ class BackdoorController < RESTController
   
   def index
     require_auth_level :admin, :tech, :view
-
+    
     filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
     filter ||= {}
     
     mongoid_query do
       items = ::Item.backdoors_and_factories.where(filter)
-      items = items.any_in(_id: @session[:accessible])
-      items = items.only(:name, :desc, :status, :_kind, :path, :stat)
+        .any_in(_id: @session[:accessible])
+        .only(:name, :desc, :status, :_kind, :path, :stat)
       
       RESTController.reply.ok(items)
     end
@@ -28,7 +28,7 @@ class BackdoorController < RESTController
   
   def show
     require_auth_level :admin, :tech, :view
-
+    
     mongoid_query do
       item = Item.backdoors_and_factories.any_in(_id: @session[:accessible]).find(@params['_id'])
       RESTController.reply.ok(item)
