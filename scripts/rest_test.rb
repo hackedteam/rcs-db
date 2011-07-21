@@ -697,7 +697,7 @@ if false
 end
 
 # items
-if true
+if false
   # item.index
   puts "item.index" 
   res = http.request_get('/item', {'Cookie' => cookie})

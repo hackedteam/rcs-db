@@ -91,7 +91,7 @@ class CollectorController < RESTController
     return RESTController.reply.not_found
   end
 
-  def log
+  def logs
     mongoid_query do
       collector = Collector.find(@params['_id'])
 
@@ -115,6 +115,19 @@ class CollectorController < RESTController
       end
 
       return RESTController.reply.bad_request
+    end
+  end
+
+  def del_logs
+    require_auth_level :admin, :tech
+
+    mongoid_query do
+      collector = Collector.find(@params['_id'])
+
+      klass = CappedLog.collection_class collector[:_id]
+      klass.destroy_all
+
+      return RESTController.reply.ok
     end
   end
 
