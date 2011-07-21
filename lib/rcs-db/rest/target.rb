@@ -3,7 +3,7 @@ module RCS
 module DB
 
 class TargetController < RESTController
-
+  
   def index
     require_auth_level :admin, :tech, :view
     
@@ -21,13 +21,17 @@ class TargetController < RESTController
   
   def show
     require_auth_level :admin, :tech, :view
-
+    
     mongoid_query do
-      item = Item.targets.any_in(_id: @session[:accessible]).find(@params['_id'])
+      item = Item.targets
+        .any_in(_id: @session[:accessible])
+        .only(:name, :desc, :status, :_kind, :path, :stat)
+        .find(@params['_id'])
+      
       RESTController.reply.ok(item)
     end
   end
-
+  
   def create
     require_auth_level :admin
     
@@ -66,7 +70,7 @@ class TargetController < RESTController
 
     mongoid_query do
       item = Item.targets.any_in(_id: @session[:accessible]).find(@params['_id'])
-      @params.delete('_id')
+      
       @params.delete_if {|k, v| not updatable_fields.include? k }
       
       @params.each_pair do |key, value|

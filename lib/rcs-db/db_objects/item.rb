@@ -14,18 +14,20 @@ class Item
   # operation
   field :contact, type: String
 
-  # backdoor
+  # factory
   field :ident, type: String
+  field :counter, type: Integer
+  field :seed, type: String
+  field :confkey, type: String
+  field :logkey, type: String
+
+  # backdoor (+ factory fields)
   field :instance, type: String
   field :version, type: Integer
   field :type, type: String
   field :platform, type: String
   field :deleted, type: Boolean
   field :uninstalled, type: Boolean
-  field :counter, type: Integer
-  field :seed, type: String
-  field :confkey, type: String
-  field :logkey, type: String
   field :demo, type: Boolean
   field :upgradable, type: Boolean
 
@@ -33,7 +35,6 @@ class Item
   scope :targets, where(_kind: "target")
   scope :backdoors, where(_kind: "backdoor")
   scope :factories, where(_kind: "factory")
-  scope :backdoors_and_factories, any_in(_kind: ['backdoor', 'factory'])
 
   has_and_belongs_to_many :groups, :dependent => :nullify, :autosave => true
 

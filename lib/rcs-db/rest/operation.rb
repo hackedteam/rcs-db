@@ -22,7 +22,11 @@ class OperationController < RESTController
     require_auth_level :admin, :tech, :view
     
     mongoid_query do
-      item = Item.operations.any_in(_id: @session[:accessible]).find(@params['_id'])
+      item = Item.operations
+        .any_in(_id: @session[:accessible])
+        .only(:name, :desc, :status, :_kind, :path, :stat)
+        .find(@params['_id'])
+      
       RESTController.reply.ok(item)
     end
   end
@@ -52,7 +56,7 @@ class OperationController < RESTController
       RESTController.reply.ok(item)
     end
   end
-
+  
   def update
     require_auth_level :admin
     
@@ -60,7 +64,7 @@ class OperationController < RESTController
     
     mongoid_query do
       item = Item.operations.any_in(_id: @session[:accessible]).find(@params['_id'])
-      @params.delete('_id')
+      
       @params.delete_if {|k, v| not updatable_fields.include? k }
       
       @params.each_pair do |key, value|
@@ -71,7 +75,7 @@ class OperationController < RESTController
                     :desc => "Updated '#{key}' to '#{value}'"
         end
       end
-
+      
       item.update_attributes(@params)
       
       return RESTController.reply.ok(item)
@@ -87,7 +91,7 @@ class OperationController < RESTController
       _kind = item._kind
       
       item.destroy
-
+      
       Audit.log :actor => @session[:user][:name],
                 :action => "operation.delete",
                 :operation => name,

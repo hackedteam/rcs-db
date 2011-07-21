@@ -577,6 +577,7 @@ if false
     contact: "billg@microsoft.com"
   }
   res = http.request_post("/operation/create", operation_post.to_json, {'Cookie' => cookie})
+  puts res.body
   operation = JSON.parse(res.body)
   puts operation
   puts
@@ -589,6 +590,7 @@ if false
     contact: "ballmer@microsoft.com"
   }
   res = http.request_post("/operation/update", operation_post.to_json, {'Cookie' => cookie})
+  puts res.body
   operation = JSON.parse(res.body)
   puts operation
   puts
@@ -613,8 +615,9 @@ if false
 
   puts "target.show"
   res = http.request_get("/target/#{targets.first['_id']}", {'Cookie' => cookie})
+  puts res.body
   target = JSON.parse(res.body)
-  puts target
+  #puts target
   puts
   
   puts "target.create"
@@ -624,8 +627,9 @@ if false
     operation: operations.first['_id']
   }
   res = http.request_post("/target/create", target_post.to_json, {'Cookie' => cookie})
+  puts res.body
   target = JSON.parse(res.body)
-  puts target
+  #puts target
   puts
   
   puts "target.update"
@@ -636,8 +640,9 @@ if false
     contact: "ballmer@microsoft.com"
   }
   res = http.request_post("/target/update", target_post.to_json, {'Cookie' => cookie})
+  puts res.body
   target = JSON.parse(res.body)
-  puts target
+  #puts target
   puts
   
   puts "target.delete"
@@ -656,44 +661,87 @@ if false
   
   puts "backdoor.index"
   res = http.request_get('/backdoor', {'Cookie' => cookie})
+  puts res.body
   backdoors = JSON.parse(res.body)
   puts "You got #{backdoors.size} backdoors."
   puts
   
   puts "backdoor.show"
   res = http.request_get("/backdoor/#{backdoors.first['_id']}", {'Cookie' => cookie})
+  puts res.body
   backdoor = JSON.parse(res.body)
   puts backdoor
   puts
   
-  puts "backdoor.create"
-   backdoor_post = {
-     name: 'test backdoor',
-     desc: "this is a test backdoor",
-     operation: operations.first['_id'],
-     target: targets.first['_id'],
-   }
-   res = http.request_post("/backdoor/create", backdoor_post.to_json, {'Cookie' => cookie})
-   backdoor = JSON.parse(res.body)
-   puts backdoor
-   puts
-   
-   puts "backdoor.update"
-   backdoor_post = {
+  puts "backdoor.update"
+  backdoor_post = {
      _id: backdoor['_id'],
      name: "RENAMED!!!", 
      desc: "whoa! this is our renamed backdoor", 
      ident: "this field MUST NOT be updated!!!!!!!!!!!!"
    }
-   res = http.request_post("/backdoor/update", backdoor_post.to_json, {'Cookie' => cookie})
-   backdoor = JSON.parse(res.body)
-   puts backdoor
-   puts
+  res = http.request_post("/backdoor/update", backdoor_post.to_json, {'Cookie' => cookie})
+  puts res.body
+  backdoor = JSON.parse(res.body)
+  puts backdoor
+  puts
    
-   puts "backdoor.delete"
-   res = http.request_post("/backdoor/destroy", {_id: backdoor['_id']}.to_json, {'Cookie' => cookie})
-   puts res.body
-   puts
+  puts "backdoor.delete"
+  res = http.request_post("/backdoor/destroy", {_id: backdoor['_id']}.to_json, {'Cookie' => cookie})
+  puts res.body
+  puts
+end
+
+# factories
+if true
+  res = http.request_get('/operation', {'Cookie' => cookie})
+  operations = JSON.parse(res.body)
+  
+  res = http.request_get('/target', {'Cookie' => cookie})
+  targets = JSON.parse(res.body)
+  
+  puts "factory.index"
+  res = http.request_get('/factory', {'Cookie' => cookie})
+  puts res.body
+  factories = JSON.parse(res.body)
+  puts "You got #{factories.size} factories."
+  puts
+  
+  puts "factory.show"
+  res = http.request_get("/factory/#{factories.first['_id']}", {'Cookie' => cookie})
+  puts res.body
+  factory = JSON.parse(res.body)
+  puts
+
+  puts "factory.create"
+  factory_post = {
+     name: "Uber Factory!",
+     desc: "The best factory in the World!",
+     operation: targets.first['path'].first,
+     target: targets.first['_id']
+   }
+  res = http.request_post("/factory/create", factory_post.to_json, {'Cookie' => cookie})
+  puts res.body
+  factory = JSON.parse(res.body)
+  puts
+  
+  puts "factory.update"
+  backdoor_post = {
+     _id: factory['_id'],
+     name: "RENAMED!!!", 
+     desc: "whoa! this is our renamed backdoor", 
+     ident: "this field MUST NOT be updated!!!!!!!!!!!!"
+   }
+  res = http.request_post("/factory/update", backdoor_post.to_json, {'Cookie' => cookie})
+  puts res.body
+  factory = JSON.parse(res.body)
+  puts factory
+  puts
+  
+  puts "factory.delete"
+  res = http.request_post("/factory/destroy", {_id: factory['_id']}.to_json, {'Cookie' => cookie})
+  puts res.body
+  puts
 end
 
 # items
