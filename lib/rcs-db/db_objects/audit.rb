@@ -16,14 +16,14 @@ class Audit
   field :backdoor, type: String
   field :desc, type: String
   
-  index :time
-  index :actor
-  index :action
-  index :user
-  index :group
-  index :operation
-  index :target
-  index :backdoor
+  index :time, background: true
+  index :actor, background: true
+  index :action, background: true
+  index :user, background: true
+  index :group, background: true
+  index :operation, background: true
+  index :target, background: true
+  index :backdoor, background: true
   
   store_in :audit
 

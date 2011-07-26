@@ -22,7 +22,7 @@ class User
   has_and_belongs_to_many :groups, :dependent => :nullify, :autosave => true#, :class_name => "RCS::DB::Group", :foreign_key => "rcs/db/group_ids"
   has_many :alerts
   
-  index :name
+  index :name, background: true
   
   store_in :users
 
