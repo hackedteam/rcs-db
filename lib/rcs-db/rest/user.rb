@@ -53,7 +53,7 @@ class UserController < RESTController
   end
   
   def update
-    require_auth_level :admin, :tech, :view
+    require_auth_level :admin, :sys, :tech, :view
     
     mongoid_query do
       user = User.find(@params['_id'])

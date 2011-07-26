@@ -8,8 +8,6 @@ module DB
 class LicenseController < RESTController
 
   def limit
-    require_auth_level :admin, :tech, :view
-    
     # we use marshalling due to the lack of a deep copy method ...
     limits = Marshal::load(Marshal.dump(LicenseManager.instance.limits)) #LicenseManager.instance.limits.merge({})
     
@@ -29,8 +27,6 @@ class LicenseController < RESTController
   end
   
   def count
-    require_auth_level :admin, :tech, :view
-
     return RESTController.reply.ok(LicenseManager.instance.counters)
   end
 

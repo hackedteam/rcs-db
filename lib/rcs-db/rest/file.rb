@@ -6,7 +6,7 @@ module DB
 class FileController < RESTController
   
   def show
-    require_auth_level :admin, :tech, :view
+    require_auth_level :admin, :sys, :tech, :view
     
     file_name = @params['_id']
     file_path = File.join('temp', file_name)
