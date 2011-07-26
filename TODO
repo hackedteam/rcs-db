@@ -11,6 +11,7 @@ Local Exploit portal
 
 Sharding & Replica Sets
 
+mongo authentication
 Backup Procedures
     - full
     - per operation
