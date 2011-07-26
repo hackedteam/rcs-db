@@ -28,6 +28,8 @@ class ProxyController < RESTController
   def create
     require_auth_level :admin
 
+    return RESTController.reply.conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :proxies
+
     result = Proxy.create(name: @params['name'], port: 4444, poll: false, configured: false, redirect: 'auto')
 
     Audit.log :actor => @session[:user][:name], :action => 'proxy.create', :desc => "Created the injection proxy '#{@params['name']}'"

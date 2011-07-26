@@ -29,6 +29,8 @@ class CollectorController < RESTController
   def create
     require_auth_level :admin
 
+    return RESTController.reply.conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :anonymizers
+
     result = Collector.create(name: @params['name'], type: 'remote', port: 4444, poll: false, configured: false)
 
     Audit.log :actor => @session[:user][:name], :action => 'collector.create', :desc => "Created the collector '#{@params['name']}'"

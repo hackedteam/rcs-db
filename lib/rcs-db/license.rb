@@ -207,6 +207,11 @@ class LicenseManager
           return true
         end
 
+      when :proxies
+        if Proxy.count() < @limits[:ipa]
+          return true
+        end
+
       when :alerting
         return @limits[:alerting]
 
