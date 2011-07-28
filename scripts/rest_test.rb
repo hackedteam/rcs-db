@@ -729,7 +729,7 @@ if true
   backdoor_post = {
      _id: factory['_id'],
      name: "RENAMED!!!", 
-     desc: "whoa! this is our renamed backdoor", 
+     desc: "whoa! this is our renamed factory", 
      ident: "this field MUST NOT be updated!!!!!!!!!!!!"
    }
   res = http.request_post("/factory/update", backdoor_post.to_json, {'Cookie' => cookie})
