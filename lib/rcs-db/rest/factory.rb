@@ -4,7 +4,7 @@ module DB
 class FactoryController < RESTController
   
   def index
-    require_auth_level :admin, :tech, :view
+    require_auth_level :tech, :view
     
     filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
     filter ||= {}
@@ -20,7 +20,7 @@ class FactoryController < RESTController
   end
   
   def show
-    require_auth_level :admin, :tech, :view
+    require_auth_level :tech, :view
     
     mongoid_query do
       item = Item.factories

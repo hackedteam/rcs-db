@@ -8,7 +8,7 @@ module DB
 class ProxyController < RESTController
 
   def index
-    require_auth_level :server, :admin, :tech
+    require_auth_level :server, :sys, :tech
 
     mongoid_query do
       result = ::Proxy.all
@@ -17,7 +17,7 @@ class ProxyController < RESTController
   end
 
   def show
-    require_auth_level :server, :admin, :tech
+    require_auth_level :server, :sys, :tech
 
     mongoid_query do
       proxy = ::Proxy.find(@params['_id'])
@@ -26,7 +26,9 @@ class ProxyController < RESTController
   end
 
   def create
-    require_auth_level :admin
+    require_auth_level :sys
+
+    return RESTController.reply.conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :proxies
 
     result = Proxy.create(name: @params['name'], port: 4444, poll: false, configured: false, redirect: 'auto')
 
@@ -36,7 +38,7 @@ class ProxyController < RESTController
   end
 
   def update
-    require_auth_level :admin
+    require_auth_level :sys
 
     mongoid_query do
       proxy = Proxy.find(@params['_id'])
@@ -55,7 +57,7 @@ class ProxyController < RESTController
   end
 
   def destroy
-    require_auth_level :admin
+    require_auth_level :sys
 
     mongoid_query do
       proxy = Proxy.find(@params['_id'])
@@ -82,7 +84,7 @@ class ProxyController < RESTController
   end
 
   def config
-    require_auth_level :server, :admin
+    require_auth_level :server
     
     mongoid_query do
       proxy = ::Proxy.find(@params['_id'])
@@ -105,7 +107,7 @@ class ProxyController < RESTController
 
       case @request[:method]
         when 'GET'
-          require_auth_level :admin, :tech
+          require_auth_level :sys, :tech
           
           klass = CappedLog.collection_class proxy[:_id]
           logs = klass.all
@@ -127,7 +129,7 @@ class ProxyController < RESTController
   end
 
   def del_logs
-    require_auth_level :admin, :tech
+    require_auth_level :sys, :tech
 
     mongoid_query do
       proxy = Proxy.find(@params['_id'])

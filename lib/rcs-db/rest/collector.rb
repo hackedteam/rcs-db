@@ -8,7 +8,7 @@ module DB
 class CollectorController < RESTController
   
   def index
-    require_auth_level :server, :tech, :admin
+    require_auth_level :server, :tech, :sys
 
     mongoid_query do
       result = ::Collector.all
@@ -18,7 +18,7 @@ class CollectorController < RESTController
   end
 
   def show
-    require_auth_level :admin, :tech
+    require_auth_level :sys, :tech
 
     mongoid_query do
       result = Collector.find(@params['_id'])
@@ -27,7 +27,9 @@ class CollectorController < RESTController
   end
 
   def create
-    require_auth_level :admin
+    require_auth_level :sys
+
+    return RESTController.reply.conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :anonymizers
 
     result = Collector.create(name: @params['name'], type: 'remote', port: 4444, poll: false, configured: false)
 
@@ -37,7 +39,7 @@ class CollectorController < RESTController
   end
 
   def update
-    require_auth_level :admin
+    require_auth_level :sys
 
     mongoid_query do
       coll = Collector.find(@params['_id'])
@@ -56,7 +58,7 @@ class CollectorController < RESTController
   end
   
   def destroy
-    require_auth_level :admin
+    require_auth_level :sys
 
     mongoid_query do
       collector = Collector.find(@params['_id'])
@@ -97,7 +99,7 @@ class CollectorController < RESTController
 
       case @request[:method]
         when 'GET'
-          require_auth_level :admin, :tech
+          require_auth_level :sys, :tech
 
           klass = CappedLog.collection_class collector[:_id]
           logs = klass.all
@@ -119,7 +121,7 @@ class CollectorController < RESTController
   end
 
   def del_logs
-    require_auth_level :admin, :tech
+    require_auth_level :sys, :tech
 
     mongoid_query do
       collector = Collector.find(@params['_id'])

@@ -9,7 +9,7 @@ class StatusController < RESTController
 
   # retrieve the list of all components with their status
   def index
-    require_auth_level :admin, :tech, :view
+    require_auth_level :admin, :sys, :tech, :view
 
     mongoid_query do
       result = ::Status.all
@@ -38,7 +38,7 @@ class StatusController < RESTController
   # delete an entry in the DB,
   # used when you uninstall a component and don't want the warning anymore
   def destroy
-    require_auth_level :admin
+    require_auth_level :sys
 
     mongoid_query do
       monitor = ::Status.find(@params['_id'])
@@ -53,7 +53,7 @@ class StatusController < RESTController
 
   # returns the counters grouped by status
   def counters
-    require_auth_level :admin, :tech, :view
+    require_auth_level :admin, :sys, :tech, :view
     
     counters = {:ok => 0, :warn => 0, :error => 0}
 

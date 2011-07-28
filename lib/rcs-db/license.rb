@@ -207,6 +207,11 @@ class LicenseManager
           return true
         end
 
+      when :proxies
+        if Proxy.count() < @limits[:ipa]
+          return true
+        end
+
       when :alerting
         return @limits[:alerting]
 
@@ -290,6 +295,12 @@ class LicenseManager
       trace :warn, "Queuing backdoor '#{offending[:name]}' #{offending[:desc]}"
       offending.save
     end
+
+    if @limits[:alerting] == false
+      trace :fatal, "LICENCE EXCEEDED: Alerting is not enabled in the license file. Fixing..."
+      Alert.update_all(enabled: false)
+    end
+
   end
 
 

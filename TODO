@@ -1,18 +1,18 @@
 proxy config methods
+
 rest methods for items
-
-get time via http (collector)
-
 integrity check on Items
 
-background index
+get time via http (collector)
 
 Windows Installers (NSIS)
 
 Local Exploit portal
 
 Sharding & Replica Sets
+    - split db & shard
 
+mongo authentication
 Backup Procedures
     - full
     - per operation

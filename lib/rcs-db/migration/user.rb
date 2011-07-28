@@ -30,7 +30,10 @@ class UserMigration
       mu.enabled = user[:disabled] == 0 ? true : false
       mu.dashboard_ids = []
       mu.privs = []
-      mu.privs << 'ADMIN' if user[:level] & 0x80
+      if user[:level] & 0x80
+        mu.privs << 'ADMIN'
+        mu.privs << 'SYS'
+      end
       mu.privs << 'TECH' if user[:level] & 0x02
       mu.privs << 'VIEW' if user[:level] & 0x01
       mu.save
