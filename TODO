@@ -10,6 +10,7 @@ Windows Installers (NSIS)
 Local Exploit portal
 
 Sharding & Replica Sets
+    - split db & shard
 
 mongo authentication
 Backup Procedures
