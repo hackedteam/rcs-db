@@ -20,10 +20,10 @@ logdir = Dir.pwd + '/log'
 Dir::mkdir(datadir) if not File.directory?(datadir)
 
 # the mongod executable
-mongod = Dir.pwd + '/mongodb/' + os + '/mongod' + ext
+mongod = Dir.pwd + '/mongodb/' + os + '/mongos' + ext
 
 # the data path
-parameters = "--dbpath #{datadir} --journal --logpath #{logdir}/mongod.log --shardsvr --rest --bind_ip localhost"
+parameters = "--logpath #{logdir}/mongos.log --configdb localhost --bind_ip localhost"
 
 # custom arguments
 custom = ARGV.join(' ')

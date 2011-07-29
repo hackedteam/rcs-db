@@ -165,7 +165,6 @@ class Events
         # recalculate size statistics for operations, targets and backdoors
         Item.restat
         EM::PeriodicTimer.new(60) { Item.restat }
-        
       end
     rescue RuntimeError => e
       # bind error

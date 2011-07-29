@@ -9,6 +9,8 @@ Windows Installers (NSIS)
 
 Local Exploit portal
 
+survive if the mongo connection goes down
+
 Sharding & Replica Sets
     - split db & shard
 

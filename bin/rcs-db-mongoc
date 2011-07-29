@@ -14,6 +14,7 @@ case RUBY_PLATFORM
 end
 
 datadir = Dir.pwd + '/data'
+configdir = datadir + '/config'
 logdir = Dir.pwd + '/log'
 
 # ensure the data directory is present
@@ -23,7 +24,7 @@ Dir::mkdir(datadir) if not File.directory?(datadir)
 mongod = Dir.pwd + '/mongodb/' + os + '/mongod' + ext
 
 # the data path
-parameters = "--dbpath #{datadir} --journal --logpath #{logdir}/mongod.log --shardsvr --rest --bind_ip localhost"
+parameters = "--dbpath #{configdir} --logpath #{logdir}/mongoc.log --configsvr --rest --bind_ip localhost"
 
 # custom arguments
 custom = ARGV.join(' ')

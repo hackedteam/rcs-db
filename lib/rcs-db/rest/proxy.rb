@@ -147,8 +147,7 @@ class ProxyController < RESTController
 
     mongoid_query do
       proxy = ::Proxy.find(@params['_id'])
-      target = ::Item.find(@params['rule']['target_id'])
-      
+
       rule = ::ProxyRule.new
       rule.enabled = @params['rule']['enabled']
       rule.probability = @params['rule']['probability']
@@ -159,12 +158,15 @@ class ProxyController < RESTController
       rule.action = @params['rule']['action']
       rule.action_param = @params['rule']['action_param']
 
-      rule.target_id = [ target[:_id] ]
+      unless @params['rule']['target_id'].empty?
+        target = ::Item.find(@params['rule']['target_id'])
+        rule.target_id = [ target[:_id] ]
+      end
 
       # the file is uploaded to the grid before calling this method
       rule[:_grid] = [ BSON::ObjectId.from_string(@params['_grid']) ] unless @params['_grid'].nil?
       
-      Audit.log :actor => @session[:user][:name], :action => 'proxy.add_rule', :target => target.name,
+      Audit.log :actor => @session[:user][:name], :action => 'proxy.add_rule', 
                 :desc => "Added a rule to the injection proxy '#{proxy.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
 
       proxy.rules << rule
@@ -179,13 +181,8 @@ class ProxyController < RESTController
 
     mongoid_query do
       proxy = ::Proxy.find(@params['_id'])
-      return RESTController.reply.not_found if proxy.nil?
-
       rule = proxy.rules.find(@params['rule']['_id'])
-      return RESTController.reply.not_found if rule.nil?
-
       target = ::Item.find(rule.target_id.first)
-      return RESTController.reply.not_found if target.nil?
 
       Audit.log :actor => @session[:user][:name], :action => 'proxy.del_rule', :target => target.name,
                 :desc => "Deleted a rule from the injection proxy '#{proxy.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
@@ -201,20 +198,23 @@ class ProxyController < RESTController
     require_auth_level :tech
 
     mongoid_query do
+
       proxy = ::Proxy.find(@params['_id'])
-      target = ::Item.find(@params['rule']['target_id'])
       rule = proxy.rules.find(@params['rule']['_id'])
 
       @params.delete('_id')
-      @params['rule']['target_id'] = [ target[:_id] ]
+      unless @params['rule']['target_id'].nil?
+        target = ::Item.find(@params['rule']['target_id'])
+        @params['rule']['target_id'] = [ target[:_id] ]
+      end
       rule.update_attributes(@params['rule'])
-      
+
       # the file is uploaded to the grid before calling this method
       rule[:_grid] = [ BSON::ObjectId.from_string(@params['rule']['_grid']) ] unless @params['rule']['_grid'].nil?
       
       rule.save
       
-      Audit.log :actor => @session[:user][:name], :action => 'proxy.update_rule', :target => target.name,
+      Audit.log :actor => @session[:user][:name], :action => 'proxy.update_rule', 
                 :desc => "Modified a rule on the injection proxy '#{proxy.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
 
       return RESTController.reply.ok(rule)
