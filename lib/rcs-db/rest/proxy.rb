@@ -157,6 +157,7 @@ class ProxyController < RESTController
       rule.resource = @params['rule']['resource']
       rule.action = @params['rule']['action']
       rule.action_param = @params['rule']['action_param']
+      rule.action_param_name = @params['rule']['action_param_name']
 
       unless @params['rule']['target_id'].empty?
         target = ::Item.find(@params['rule']['target_id'])
@@ -164,7 +165,11 @@ class ProxyController < RESTController
       end
 
       # the file is uploaded to the grid before calling this method
-      rule[:_grid] = [ BSON::ObjectId.from_string(@params['_grid']) ] unless @params['_grid'].nil?
+      path = File.join Dir.tmpdir, @params['rule']['action_param']
+      if File.exist?(path)
+        rule[:_grid] = [GridFS.instance.put File.read(path)]
+        File.unlink(path)
+      end
       
       Audit.log :actor => @session[:user][:name], :action => 'proxy.add_rule', 
                 :desc => "Added a rule to the injection proxy '#{proxy.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
@@ -210,7 +215,11 @@ class ProxyController < RESTController
       rule.update_attributes(@params['rule'])
 
       # the file is uploaded to the grid before calling this method
-      rule[:_grid] = [ BSON::ObjectId.from_string(@params['rule']['_grid']) ] unless @params['rule']['_grid'].nil?
+      path = File.join Dir.tmpdir, @params['rule']['action_param']
+      if File.exist?(path)
+        rule[:_grid] = [GridFS.instance.put File.read(path)]
+        File.unlink(path)
+      end
       
       rule.save
       
