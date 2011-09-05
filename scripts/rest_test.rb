@@ -693,7 +693,7 @@ if false
 end
 
 # factories
-if true
+if false
   res = http.request_get('/operation', {'Cookie' => cookie})
   operations = JSON.parse(res.body)
   
@@ -758,6 +758,15 @@ if false
   res = http.request_get(URI.escape('/item?filter={"name": "RCS_0000000610"}'), {'Cookie' => cookie})
   rcs_10 = JSON.parse(res.body)
   puts rcs_10
+  puts
+end
+
+#upload
+if true
+  # upload.create
+  res = http.request_post('/upload', "abracadabra", {'Cookie' => cookie})
+  puts "upload.create"
+  puts res
   puts
 end
 
