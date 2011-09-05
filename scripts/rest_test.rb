@@ -762,12 +762,30 @@ if false
 end
 
 #upload
-if true
+if false
   # upload.create
   res = http.request_post('/upload', "abracadabra", {'Cookie' => cookie})
   puts "upload.create"
   puts res
   puts
+end
+
+# version
+if true
+  # version.index
+  puts "version.index" 
+  res = http.request_get('/version', {'Cookie' => cookie})
+  versions = JSON.parse(res.body)
+  puts versions
+  puts
+  
+  # version.show
+  puts "version.show" 
+  res = http.request_get("/version/#{versions['console']}", {'Cookie' => cookie})
+  puts res
+  puts
+  
+  
 end
 
 # logout

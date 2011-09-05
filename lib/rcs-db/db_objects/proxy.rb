@@ -51,6 +51,7 @@ class ProxyRule
   field :resource, type: String
   field :action, type: String
   field :action_param, type: String
+  field :action_param_name, type: String
 
   field :_grid, type: Array
 

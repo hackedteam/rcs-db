@@ -3,8 +3,6 @@ proxy config methods
 rest methods for items
 integrity check on Items
 
-upload file -> id
-
 console update
 
 get time via http (collector)

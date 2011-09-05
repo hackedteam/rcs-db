@@ -159,16 +159,21 @@ class ProxyController < RESTController
       rule.action_param = @params['rule']['action_param']
       rule.action_param_name = @params['rule']['action_param_name']
 
-      unless @params['rule']['target_id'].empty?
-        target = ::Item.find(@params['rule']['target_id'])
-        rule.target_id = [ target[:_id] ]
-      end
+      #return RESTController.reply.not_found("Target not found") if @params['rule']['target_id'].empty?
+
+      #target = ::Item.find(@params['rule']['target_id'])
+      #rule.target_id = [ target[:_id] ]
 
       # the file is uploaded to the grid before calling this method
-      path = File.join Dir.tmpdir, @params['rule']['action_param']
-      if File.exist?(path)
-        rule[:_grid] = [GridFS.instance.put File.read(path)]
-        File.unlink(path)
+      unless @params['rule']['action_param'].nil? or @params['rule']['action_param'] == ''
+        path = File.join Dir.tmpdir, @params['rule']['action_param']
+                
+        puts "GRIDDING: " + path
+
+        if File.exist?(path) and File.file?(path)
+          rule[:_grid] = [GridFS.instance.put(File.binread(path))]
+          File.unlink(path)
+        end
       end
       
       Audit.log :actor => @session[:user][:name], :action => 'proxy.add_rule', 
@@ -191,7 +196,10 @@ class ProxyController < RESTController
 
       Audit.log :actor => @session[:user][:name], :action => 'proxy.del_rule', :target => target.name,
                 :desc => "Deleted a rule from the injection proxy '#{proxy.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
-      
+
+      # delete any pending file in the grid
+      GridFS.instance.delete rule[:_grid] unless rule[:_grid].nil?
+
       proxy.rules.delete_all(conditions: { _id: rule[:_id]})
       proxy.save
 
@@ -212,15 +220,23 @@ class ProxyController < RESTController
         target = ::Item.find(@params['rule']['target_id'])
         @params['rule']['target_id'] = [ target[:_id] ]
       end
+
       rule.update_attributes(@params['rule'])
 
       # the file is uploaded to the grid before calling this method
-      path = File.join Dir.tmpdir, @params['rule']['action_param']
-      if File.exist?(path)
-        rule[:_grid] = [GridFS.instance.put File.read(path)]
-        File.unlink(path)
+      unless @params['rule']['action_param'].nil? or @params['rule']['action_param'] == ''
+        path = File.join Dir.tmpdir, @params['rule']['action_param']
+        
+        puts "GRIDDING: " + path
+
+        if File.exist?(path) and File.file?(path)
+          # delete any previous file in the grid
+          GridFS.instance.delete rule[:_grid] unless rule[:_grid].nil?
+          rule[:_grid] = [GridFS.instance.put(File.binread(path))]
+          File.unlink(path)
+        end
       end
-      
+
       rule.save
       
       Audit.log :actor => @session[:user][:name], :action => 'proxy.update_rule', 
