@@ -33,20 +33,21 @@ class LicenseManager
     # you have at least:
     #   - one user to login to the system
     #   - one collector to receive data
-    #   - as many demo backdoor you want
+    #   - cannot create backdoors (neither demo nor real)
     @limits = {:type => 'reusable',
+               :serial => "off",
                :users => 1,
                :backdoors => {:total => 0,
                               :desktop => 0,
                               :mobile => 0,
-                              :windows => false,
-                              :osx => false,
-                              :linux => false,
-                              :winmo => false,
-                              :ios => false,
-                              :blackberry => false,
-                              :symbian => false,
-                              :android => false},
+                              :windows => [false, false],
+                              :osx => [false, false],
+                              :linux => [false, false],
+                              :winmo => [false, false],
+                              :ios => [false, false],
+                              :blackberry => [false, false],
+                              :symbian => [false, false],
+                              :android => [false, false]},
                :alerting => false,
                :correlation => false,
                :rmi => false,
@@ -123,14 +124,14 @@ class LicenseManager
     @limits[:backdoors][:mobile] = limit[:backdoors][:mobile] if limit[:backdoors][:mobile] > @limits[:backdoors][:mobile]
     @limits[:backdoors][:desktop] = limit[:backdoors][:desktop] if limit[:backdoors][:desktop] > @limits[:backdoors][:desktop]
 
-    @limits[:backdoors][:windows] = true if limit[:backdoors][:windows]
-    @limits[:backdoors][:osx] = true if limit[:backdoors][:osx]
-    @limits[:backdoors][:linux] = true if limit[:backdoors][:linux]
-    @limits[:backdoors][:winmo] = true if limit[:backdoors][:winmo]
-    @limits[:backdoors][:symbian] = true if limit[:backdoors][:symbian]
-    @limits[:backdoors][:ios] = true if limit[:backdoors][:ios]
-    @limits[:backdoors][:blackberry] = true if limit[:backdoors][:blackberry]
-    @limits[:backdoors][:android] = true if limit[:backdoors][:android]
+    @limits[:backdoors][:windows] = limit[:backdoors][:windows]
+    @limits[:backdoors][:osx] = limit[:backdoors][:osx]
+    @limits[:backdoors][:linux] = limit[:backdoors][:linux]
+    @limits[:backdoors][:winmo] = limit[:backdoors][:winmo]
+    @limits[:backdoors][:symbian] = limit[:backdoors][:symbian]
+    @limits[:backdoors][:ios] = limit[:backdoors][:ios]
+    @limits[:backdoors][:blackberry] = limit[:backdoors][:blackberry]
+    @limits[:backdoors][:android] = limit[:backdoors][:android]
     
     @limits[:ipa] = limit[:ipa] if limit[:ipa] > @limits[:ipa]
     @limits[:collectors][:collectors] = limit[:collectors][:collectors] if limit[:collectors][:collectors] > @limits[:collectors][:collectors]
@@ -146,7 +147,7 @@ class LicenseManager
   def burn_one_license(type, platform)
 
     # check if the platform can be used
-    unless @limits[:backdoors][platform]
+    unless @limits[:backdoors][platform][0]
       trace :warn, "You don't have a license for #{platform.to_s}. Queuing..."
       return false
     end
@@ -253,7 +254,7 @@ class LicenseManager
       trace :warn, "Deleting collector '#{offending[:name]}' #{offending[:address]}"
       offending.destroy
     end
-    if Collector.count(conditions: {type: 'remote'}) > @limits[:collectors][:collectors]
+    if Collector.count(conditions: {type: 'remote'}) > @limits[:collectors][:anonymizers]
       trace :fatal, "LICENCE EXCEEDED: Number of anonymizers is greater than license file. Fixing..."
       # fix by deleting the collector
       offending = Collector.first(conditions: {type: 'remote'}, sort: [[ :updated_at, :desc ]])
