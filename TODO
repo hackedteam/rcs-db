@@ -1,7 +1,5 @@
 proxy config methods
 
-proxy grid upload failing...
-
 rest methods for items
 integrity check on Items
 
@@ -13,8 +11,7 @@ Local Exploit portal
 
 survive if the mongo connection goes down
 
-Sharding & Replica Sets
-    - split db & shard
+Sharding 
 
 mongo authentication
 Backup Procedures

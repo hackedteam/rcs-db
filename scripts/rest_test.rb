@@ -3,6 +3,7 @@ require 'json'
 require 'benchmark'
 require 'open-uri'
 require 'pp'
+require 'cgi'
 
 #http = Net::HTTP.new('192.168.1.189', 4444)
 http = Net::HTTP.new('localhost', 4444)
@@ -219,7 +220,7 @@ if false
 end
 
 # license
-if true
+if false
   # license.limit
   res = http.request_get('/license/limit', {'Cookie' => cookie})
   puts "license.limit"
@@ -798,6 +799,22 @@ if false
   puts
   
   
+end
+
+# shards
+if true
+  # shard.index
+  puts "shard.index" 
+  res = http.request_get('/shard', {'Cookie' => cookie})
+  shards = JSON.parse(res.body)
+  puts shards
+  puts
+  
+  shards['shards'].each do |shard|
+    puts 'shard.show ' + shard['host']
+    res = http.request_get("/shard/" + CGI.escape(shard['host']), {'Cookie' => cookie})
+    puts JSON.parse(res.body)
+  end
 end
 
 # logout
