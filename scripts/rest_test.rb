@@ -219,7 +219,7 @@ if false
 end
 
 # license
-if false
+if true
   # license.limit
   res = http.request_get('/license/limit', {'Cookie' => cookie})
   puts "license.limit"
@@ -351,19 +351,17 @@ if false
   proxy_id = 0
   
   # proxy.index
-  res = http.request_get('/proxy', {'Cookie' => cookie})
-  puts "proxy.index"
-  puts res.body
-  puts
+  #res = http.request_get('/proxy', {'Cookie' => cookie})
+  #puts "proxy.index"
+  #puts res.body
+  #puts
   
-  proxies = JSON.parse(res.body)
-  proxies.each do |proxy|
-    if proxy['_mid'] == 3
-      proxy_id = proxy['_id']
-    end
-  #  puts proxy
-  #  puts
-  end
+  #proxies = JSON.parse(res.body)
+  #proxies.each do |proxy|
+  #  if proxy['_mid'] == 3
+  #    proxy_id = proxy['_id']
+  #  end
+  #end
   
   # proxy.delete
   #proxies.each do |proxy|
@@ -380,10 +378,11 @@ if false
   puts
   
   test_proxy = JSON.parse(res.body)
+  proxy_id = test_proxy['_id']
   
   # proxy.update
   proxy = {name: 'IPA', address: '1.2.3.4', redirect: '4.3.2.1', desc: 'test injection proxy', port: 4445, poll: true}
-  res = http.request_put("/proxy/#{test_proxy['_id']}", proxy.to_json, {'Cookie' => cookie}) 
+  res = http.request_put("/proxy/#{proxy_id}", proxy.to_json, {'Cookie' => cookie}) 
   puts "proxy.update "
   puts res
   puts
@@ -402,7 +401,7 @@ if false
   puts
   
   # proxy.log
-  res = http.request_get("/proxy/log/#{proxy_id}", {'Cookie' => cookie})
+  res = http.request_get("/proxy/logs/#{proxy_id}", {'Cookie' => cookie})
   puts "proxy.log"
   puts res
   puts
@@ -411,11 +410,11 @@ if false
   puts "proxy.add_rule"
   rule = {rule: {enabled: true, disable_sync: false, ident: 'STATIC-IP', 
           ident_param: '14.11.78.4', probability: 100, resource: 'www.alor.it', 
-          action: 'INJECT-HTML', action_param: 'RCS_0000602', target_id: '4e033ae62afb65e061000056'}}
+          action: 'INJECT-HTML', action_param: 'RCS_0000602', target_id: ['4e314a052afb65157900005a']}}
   res = http.request_post("/proxy/add_rule/#{proxy_id}", rule.to_json, {'Cookie' => cookie})
 
   rule = JSON.parse(res.body)
-  #puts rule
+  puts rule
   puts
   
   # proxy.rules
@@ -426,10 +425,18 @@ if false
   #puts proxy['rules'].inspect
   puts
   
+  # upload.create
+  res = http.request_post('/upload', "abracadabra", {'Cookie' => cookie})
+  puts "upload.create"
+  puts res.body
+  puts
+  
+  upload_id = res.body
+  
   # proxy.update_rule
   puts "proxy.update_rule"
   mod = {rule: {_id: rule['_id'], enabled: false, disable_sync: true, ident: 'STATIC-MAC',
-          ident_param: '00:11:22:33:44:55', target_id: '4e033ae62afb65e061000056'}}
+          ident_param: '00:11:22:33:44:55', target_id: ['4e314a052afb65157900005a'], action: 'REPLACE', action_param: upload_id}}
   res = http.request_post("/proxy/update_rule/#{proxy_id}", mod.to_json, {'Cookie' => cookie})
   puts res
   puts
@@ -455,6 +462,11 @@ if false
   puts res
   puts
 
+  # proxy.delete
+  puts "proxy.delete"
+  ret = http.delete("/proxy/#{proxy_id}", {'Cookie' => cookie})
+  puts ret
+  
 end
 
 # collector
@@ -771,7 +783,7 @@ if false
 end
 
 # version
-if true
+if false
   # version.index
   puts "version.index" 
   res = http.request_get('/version', {'Cookie' => cookie})

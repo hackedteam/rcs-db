@@ -5,6 +5,7 @@
 
 # relative
 require_relative 'dongle.rb'
+require_relative 'shard.rb'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -52,6 +53,7 @@ class LicenseManager
                :correlation => false,
                :rmi => false,
                :ipa => 0,
+               :shards => 1,
                :collectors => {:collectors => 1, :anonymizers => 0}}
   end
 
@@ -140,7 +142,9 @@ class LicenseManager
     @limits[:alerting] = true if limit[:alerting] 
     @limits[:correlation] = true if limit[:correlation]
     @limits[:rmi] = true if limit[:rmi]
-    
+
+    @limits[:shards] = limit[:shards] if limit[:shards] > @limits[:shards]
+    @limits[:exploits] = limit[:exploits]
   end
 
   
@@ -322,7 +326,8 @@ class LicenseManager
                                :mobile => Item.count(conditions: {_kind: 'backdoor', type: 'mobile', status: 'open'})},
                 :collectors => {:collectors => Collector.count(conditions: {type: 'local'}),
                                 :anonymizers => Collector.count(conditions: {type: 'remote'})},
-                :ipa => Proxy.count}
+                :ipa => Proxy.count,
+                :shards => Shard.count}
 
     return counters
   end

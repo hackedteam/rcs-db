@@ -22,6 +22,7 @@ class LicenseController < RESTController
     limits[:collectors][:collectors] = nil if limits[:collectors][:collectors] == inf
     limits[:collectors][:anonymizers] = nil if limits[:collectors][:anonymizers] == inf
     limits[:ipa] = nil if limits[:ipa] == inf
+    limits[:shards] = nil if limits[:shards] == inf
     
     return RESTController.reply.ok(limits)
   end

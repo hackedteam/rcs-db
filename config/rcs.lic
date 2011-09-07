@@ -23,4 +23,6 @@
 :collectors: 
   :collectors: 5
   :anonymizers: 20
-:integrity: "07561eeea665035c75aa008395a394d8e371152cb9b6f9c88c2004097de4fcab"
+:shards: 1
+:exploits: "5bd90a7ac2e8e5fdc4e92c90c0c900b5948517f7"
+:integrity: "b883894180896f689249ff3da19e491db618b3a203e4a306885ba95bc52e00c2"

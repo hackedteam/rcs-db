@@ -62,6 +62,11 @@ class ProxyController < RESTController
     mongoid_query do
       proxy = Proxy.find(@params['_id'])
       proxy_name = proxy.name
+
+      proxy.rules.each do |rule|
+        GridFS.instance.delete rule[:_grid].first unless rule[:_grid].nil?
+      end
+      
       proxy.destroy
       Audit.log :actor => @session[:user][:name], :action => 'proxy.destroy', :desc => "Deleted the injection proxy '#{proxy_name}'"
       
@@ -103,7 +108,7 @@ class ProxyController < RESTController
 
   def logs
     mongoid_query do
-      proxy = Proxy.find(@params['_id'])
+      proxy = ::Proxy.find(@params['_id'])
 
       case @request[:method]
         when 'GET'
@@ -159,17 +164,14 @@ class ProxyController < RESTController
       rule.action_param = @params['rule']['action_param']
       rule.action_param_name = @params['rule']['action_param_name']
 
-      #return RESTController.reply.not_found("Target not found") if @params['rule']['target_id'].empty?
+      target = ::Item.find(@params['rule']['target_id'].first)
+      return RESTController.reply.not_found("Target not found") if target.nil?
 
-      #target = ::Item.find(@params['rule']['target_id'])
-      #rule.target_id = [ target[:_id] ]
+      rule.target_id = [ target[:_id] ]
 
       # the file is uploaded to the grid before calling this method
-      unless @params['rule']['action_param'].nil? or @params['rule']['action_param'] == ''
+      if rule.action == 'REPLACE' and not @params['rule']['action_param'].nil?
         path = File.join Dir.tmpdir, @params['rule']['action_param']
-                
-        puts "GRIDDING: " + path
-
         if File.exist?(path) and File.file?(path)
           rule[:_grid] = [GridFS.instance.put(File.binread(path))]
           File.unlink(path)
@@ -198,7 +200,7 @@ class ProxyController < RESTController
                 :desc => "Deleted a rule from the injection proxy '#{proxy.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
 
       # delete any pending file in the grid
-      GridFS.instance.delete rule[:_grid] unless rule[:_grid].nil?
+      GridFS.instance.delete rule[:_grid].first unless rule[:_grid].nil?
 
       proxy.rules.delete_all(conditions: { _id: rule[:_id]})
       proxy.save
@@ -217,21 +219,24 @@ class ProxyController < RESTController
 
       @params.delete('_id')
       unless @params['rule']['target_id'].nil?
-        target = ::Item.find(@params['rule']['target_id'])
+        target = ::Item.find(@params['rule']['target_id'].first)
         @params['rule']['target_id'] = [ target[:_id] ]
       end
 
       rule.update_attributes(@params['rule'])
 
+      # remove any grid pointer if we are changing the type of action
+      if rule.action != 'REPLACE'
+        GridFS.instance.delete rule[:_grid].first unless rule[:_grid].nil?
+        rule[:_grid] = nil
+      end
+      
       # the file is uploaded to the grid before calling this method
-      unless @params['rule']['action_param'].nil? or @params['rule']['action_param'] == ''
+      if rule.action == 'REPLACE' and not @params['rule']['action_param'].nil?
         path = File.join Dir.tmpdir, @params['rule']['action_param']
-        
-        puts "GRIDDING: " + path
-
         if File.exist?(path) and File.file?(path)
           # delete any previous file in the grid
-          GridFS.instance.delete rule[:_grid] unless rule[:_grid].nil?
+          GridFS.instance.delete rule[:_grid].first unless rule[:_grid].nil?
           rule[:_grid] = [GridFS.instance.put(File.binread(path))]
           File.unlink(path)
         end
