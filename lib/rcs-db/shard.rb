@@ -35,7 +35,12 @@ class Shard
   end
 
   def self.enable(collection)
-    @db.command({ enablesharding: collection })
+    begin
+      @db.command({ enablesharding: collection })
+    rescue Exception => e
+      error = @db.command({ getlasterror: 1})
+      error['err']
+    end
   end
   
 end

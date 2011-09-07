@@ -93,7 +93,12 @@ class DB
       k.create_indexes
     end
   end
-  
+
+  def enable_sharding
+    output = Shard.enable('rcs')
+    trace :info, "Enable Sharding: #{output}"
+  end
+
 end
 
 end #DB::

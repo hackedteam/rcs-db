@@ -14,7 +14,7 @@ gem 'ffi'
 # databases
 gem 'sqlite3'
 gem 'mongo'
-gem 'mongoid'
+gem 'mongoid', ">= 2.2.0"
 gem 'bson'
 gem 'bson_ext'
 gem 'mysql2', "= 0.3.3"
