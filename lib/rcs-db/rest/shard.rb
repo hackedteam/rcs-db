@@ -29,7 +29,7 @@ class ShardController < RESTController
   def create
     require_auth_level :sys
 
-    output = Shard.create @params['_id']
+    output = Shard.create @params['host']
     return RESTController.reply.ok(output)
   end
 
