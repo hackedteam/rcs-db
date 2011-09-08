@@ -757,18 +757,18 @@ if false
   puts
 end
 
-# items
-if false
-  # item.index
-  puts "item.index" 
-  res = http.request_get('/item', {'Cookie' => cookie})
+# search
+if true
+  # search.index
+  puts "search.index" 
+  res = http.request_get('/search', {'Cookie' => cookie})
   items = JSON.parse(res.body)
   puts "You've got #{items.size} items."
   puts
   
-  # item.index
-  puts "item.index RCS_0000000610"
-  res = http.request_get(URI.escape('/item?filter={"name": "RCS_0000000610"}'), {'Cookie' => cookie})
+  # search.index with filter
+  puts "search.index RCS_0000000610"
+  res = http.request_get(URI.escape('/search?filter={"name": "RCS_0000000610"}'), {'Cookie' => cookie})
   rcs_10 = JSON.parse(res.body)
   puts rcs_10
   puts
@@ -802,7 +802,7 @@ if false
 end
 
 # shards
-if true
+if false
   # shard.index
   puts "shard.index" 
   res = http.request_get('/shard', {'Cookie' => cookie})
