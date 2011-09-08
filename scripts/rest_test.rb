@@ -807,14 +807,27 @@ if true
   puts "shard.index" 
   res = http.request_get('/shard', {'Cookie' => cookie})
   shards = JSON.parse(res.body)
-  puts shards
+  puts res.body
   puts
   
   shards['shards'].each do |shard|
     puts 'shard.show ' + shard['host']
     res = http.request_get("/shard/" + CGI.escape(shard['host']), {'Cookie' => cookie})
-    puts JSON.parse(res.body)
+    puts res.body
+    puts
   end
+
+  # shard.create
+  #res = http.request_post('/shard/create', {host: "localhost:27027"}.to_json, {'Cookie' => cookie})
+  #puts "shard.create"
+  #puts res
+  #puts
+  
+  # shard.index
+  #puts "shard.index" 
+  #res = http.request_get('/shard', {'Cookie' => cookie})
+  #puts res.body
+  #puts
 end
 
 # logout

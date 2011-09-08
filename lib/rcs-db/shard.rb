@@ -8,6 +8,7 @@ module RCS
 module DB
 
 class Shard
+  extend RCS::Tracer
 
   @db = Mongo::Connection.new("localhost").db("admin")
 
@@ -21,17 +22,23 @@ class Shard
   end
 
   def self.create(host)
+    trace :info, "Creating new shard: #{host}"
     @db.command({ addshard: host })
   end
 
   def self.destroy(host)
+    trace :info, "Destroying shard: #{host}"
     @db.command({ removeshard: host })
   end
 
   def self.find(name)
     host, port = name.split(':')
-    db = Mongo::Connection.new(host, port.to_i).db("rcs")
-    db.stats
+    begin
+      db = Mongo::Connection.new(host, port.to_i).db("rcs")
+      db.stats
+    rescue Exception => e
+      {'errmsg' => e.message, 'ok' => 0}
+    end
   end
 
   def self.enable(collection)

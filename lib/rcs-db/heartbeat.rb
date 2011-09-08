@@ -5,6 +5,7 @@
 # relatives
 require_relative 'db_layer'
 require_relative 'license'
+require_relative 'shard'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -21,6 +22,10 @@ class HeartBeat
 
   def self.perform
 
+    # reset the status
+    SystemStatus.my_status = 'OK'
+    SystemStatus.my_error_msg = nil
+
     # check the consistency of the license
     LicenseManager.instance.periodic_check
     
@@ -33,8 +38,11 @@ class HeartBeat
       ip = 'unknown'
     end
 
+    # check the status of the DB shards
+    self.checkshards
+
     #TODO: report some useful information
-    message = "Idle..."
+    message = SystemStatus.my_error_msg || "Idle..."
 
     # report our status
     status = SystemStatus.my_status
@@ -50,6 +58,18 @@ class HeartBeat
 
     # check the status of other components
     ::Status.status_check
+  end
+
+  def self.checkshards
+    shards = Shard.all
+    shards['shards'].each do |shard|
+      status = Shard.find(shard['host'])
+      if status['ok'] == 0
+        trace :fatal, "Heartbeat shard check: #{status['errmsg']}"
+        SystemStatus.my_status = 'ERROR'
+        SystemStatus.my_error_msg = status['errmsg']
+      end
+    end
   end
 end
 
