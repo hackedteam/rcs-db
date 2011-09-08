@@ -63,6 +63,9 @@ class Application
       # ensure all indexes are in place
       DB.instance.create_indexes
 
+      # ensure the sharding is enabled
+      DB.instance.enable_sharding
+
       # enter the main loop (hopefully will never exit from it)
       Events.new.setup Config.instance.global['LISTENING_PORT']
       

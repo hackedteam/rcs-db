@@ -3,20 +3,17 @@ proxy config methods
 rest methods for items
 integrity check on Items
 
-upload file -> id
-
-console update
-
 get time via http (collector)
 
 Windows Installers (NSIS)
+
+first admin creation on installation
 
 Local Exploit portal
 
 survive if the mongo connection goes down
 
-Sharding & Replica Sets
-    - split db & shard
+Sharding 
 
 mongo authentication
 Backup Procedures
