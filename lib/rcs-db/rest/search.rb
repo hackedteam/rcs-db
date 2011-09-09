@@ -6,7 +6,7 @@
 module RCS
 module DB
 
-class ItemController < RESTController
+class SearchController < RESTController
   
   def index
     require_auth_level :admin, :tech, :view
@@ -31,7 +31,7 @@ class ItemController < RESTController
       RESTController.reply.ok(item)
     end
   end
-
+  
 end
 
 end #DB::
