@@ -23,12 +23,20 @@ class Shard
 
   def self.create(host)
     trace :info, "Creating new shard: #{host}"
-    @db.command({ addshard: host })
+    begin
+      @db.command({ addshard: host })
+    rescue Exception => e
+      {'errmsg' => e.message, 'ok' => 0}
+    end
   end
 
   def self.destroy(host)
     trace :info, "Destroying shard: #{host}"
-    @db.command({ removeshard: host })
+    begin
+      @db.command({ removeshard: host })
+    rescue Exception => e
+      {'errmsg' => e.message, 'ok' => 0}
+    end
   end
 
   def self.find(name)

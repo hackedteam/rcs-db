@@ -66,6 +66,9 @@ class Application
       # ensure the sharding is enabled
       DB.instance.enable_sharding
 
+      #ensure at least one user (admin) is active
+      DB.instance.ensure_admin
+      
       # enter the main loop (hopefully will never exit from it)
       Events.new.setup Config.instance.global['LISTENING_PORT']
       

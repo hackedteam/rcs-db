@@ -75,7 +75,7 @@ class BackdoorMigration
     end
     
     global.save
-    puts " done, higher build number is #{global.counter}."
+    #puts " done, higher build number is #{global.counter}."
     
   end
   

@@ -20,14 +20,13 @@ class Config
   CONF_DIR = 'config'
   CONF_FILE = 'config.yaml'
 
-  DEFAULT_CONFIG = {'DB_ADDRESS' => 'localhost',
-                   'CA_PEM' => 'rcs-ca.pem',
-                   'DB_CERT' => 'rcs-db.crt',
-                   'DB_KEY' => 'rcs-db.key',
-                   'SERVER_SIG' => 'rcs-server.sig',
-                   'LISTENING_PORT' => 4444,
-                   'HB_INTERVAL' => 30,
-                   'WORKER_PORT' => 5150}
+  DEFAULT_CONFIG = {'CA_PEM' => 'rcs-ca.pem',
+                    'DB_CERT' => 'rcs-db.crt',
+                    'DB_KEY' => 'rcs-db.key',
+                    'SERVER_SIG' => 'rcs-server.sig',
+                    'LISTENING_PORT' => 4444,
+                    'HB_INTERVAL' => 30,
+                    'WORKER_PORT' => 5150}
 
   attr_reader :global
 
@@ -107,6 +106,20 @@ class Config
   end
 
   def run(options)
+
+    if options[:reset] then
+      trace :info, "Resetting 'admin' password..."
+
+      http = Net::HTTP.new('localhost', 4444)
+      http.use_ssl = true
+      http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+
+      resp = http.request_post('/auth/reset', {pass: options[:reset]}.to_json, nil)
+      trace :info, resp.body
+      
+      return 0
+    end
+
     # load the current config
     load_from_file
 
@@ -120,7 +133,6 @@ class Config
     end
 
     # values taken from command line
-    @global['DB_ADDRESS'] = options[:db_address] unless options[:db_address].nil?
     @global['CA_PEM'] = options[:ca_pem] unless options[:ca_pem].nil?
     @global['DB_CERT'] = options[:db_cert] unless options[:db_cert].nil?
     @global['DB_KEY'] = options[:db_key] unless options[:db_key].nil?
@@ -160,9 +172,6 @@ class Config
       opts.on( '-l', '--listen PORT', Integer, 'Listen on tcp/PORT' ) do |port|
         options[:port] = port
       end
-      opts.on( '-a', '--db-address HOST', String, 'Use the rcs-db at HOST' ) do |host|
-        options[:db_address] = host
-      end
       opts.on( '-c', '--ca-pem FILE', 'The certificate file (pem) of the issuing CA' ) do |file|
         options[:ca_pem] = file
       end
@@ -184,7 +193,9 @@ class Config
       opts.on( '-X', '--defaults', 'Write a new config file with default values' ) do
         options[:defaults] = true
       end
-
+      opts.on( '-R', '--reset-admin PASS', 'Reset the password for user \'admin\'' ) do |pass|
+        options[:reset] = pass
+      end
       # This displays the help screen
       opts.on( '-h', '--help', 'Display this screen' ) do
         puts opts

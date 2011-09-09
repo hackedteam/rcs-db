@@ -10,6 +10,14 @@ http = Net::HTTP.new('localhost', 4444)
 http.use_ssl = true
 http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
+# auth create admin
+#account = {
+#  :pass => 'adminp123'
+#  }
+#resp = http.request_post('/auth/reset', account.to_json, nil)
+#puts "auth.create"
+#puts resp.body
+
 # login
 account = {
   :user => 'alor', 
@@ -802,7 +810,7 @@ if false
 end
 
 # shards
-if true
+if false
   # shard.index
   puts "shard.index" 
   res = http.request_get('/shard', {'Cookie' => cookie})
