@@ -1,6 +1,7 @@
 require 'mongoid'
 
 class Item
+  extend RCS::Tracer
   include Mongoid::Document
   include Mongoid::Timestamps
 
@@ -55,9 +56,13 @@ class Item
   
   # performs global recalculation of stats (to be called periodically)
   def self.restat
-    # to make stat converge in one step, first restat targets, then operations
-    Item.where(_kind: 'target').each {|i| i.restat}
-    Item.where(_kind: 'operation').each {|i| i.restat}
+    begin
+      # to make stat converge in one step, first restat targets, then operations
+      Item.where(_kind: 'target').each {|i| i.restat}
+      Item.where(_kind: 'operation').each {|i| i.restat}
+    rescue Exception => e
+      trace :fatal, "Cannot restat items: #{e.message}"
+    end
   end
   
   def restat

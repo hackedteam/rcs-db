@@ -25,7 +25,7 @@ account = {
   }
 resp = http.request_post('/auth/login', account.to_json, nil)
 puts "auth.login"
-puts resp.body
+puts resp
 cookie = resp['Set-Cookie'] unless resp['Set-Cookie'].nil?
 puts "cookie " + cookie
 puts

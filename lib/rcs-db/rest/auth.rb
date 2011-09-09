@@ -119,7 +119,6 @@ class AuthController < RESTController
 
   # method for user authentication
   def auth_user(username, pass)
-
     @user = User.where(name: username).first
 
     # user not found

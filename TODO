@@ -1,7 +1,5 @@
 HIGH PRIORITY:
 
-    survive if the mongo connection goes down
-
     rest methods for items
     integrity check on Items
 

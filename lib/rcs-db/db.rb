@@ -57,6 +57,7 @@ class Application
       
       # connect to MongoDB
       until DB.instance.connect
+        trace :warn, "Cannot connect to MongoDB, retrying..."
         sleep 5
       end
       
