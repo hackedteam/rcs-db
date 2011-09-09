@@ -152,7 +152,7 @@ class Migration
     optparse.parse(argv)
 
     # check mandatory options
-    if not options.has_key? :user or not options.has_key? :password or not options.has_key? :db
+    if not options.has_key? :user or not options.has_key? :pass or not options.has_key? :db_address
       puts "Missing arguments for user, password or host."
       return 1
     end
