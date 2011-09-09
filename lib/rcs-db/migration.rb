@@ -69,6 +69,7 @@ class Migration
     
     # start the migration
     unless options[:log] then
+      Audit.log actor: '<system>', action: 'migration', desc: "Migrating data from #{options[:db]}..."
       SignatureMigration.migrate options[:verbose]
 
       UserMigration.migrate options[:verbose]
@@ -90,10 +91,15 @@ class Migration
 
       ProxyMigration.migrate options[:verbose]
       ProxyMigration.migrate_rules options[:verbose]
+      Audit.log actor: '<system>', action: 'migration', desc: "Migration of data completed (#{options[:db]})"
     end
-    
-    LogMigration.migrate(options[:verbose], options[:activity], options[:exclude]) if options[:log]
-       
+
+    if options[:log]
+      Audit.log actor: '<system>', action: 'migration', desc: "Migrating evidence from #{options[:db]}..."
+      LogMigration.migrate(options[:verbose], options[:activity], options[:exclude])
+      Audit.log actor: '<system>', action: 'migration', desc: "Migration of evidence completed (#{options[:db]})"
+    end
+
     return 0
   end
 

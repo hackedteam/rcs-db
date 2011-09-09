@@ -113,7 +113,7 @@ class DB
         u[:locale] = 'en_US'
         u[:timezone] = 0
       end
-      Audit.log :actor => 'system', :action => 'user.create', :user => 'admin', :desc => "Created the default user 'admin'"
+      Audit.log :actor => '<system>', :action => 'user.create', :user => 'admin', :desc => "Created the default user 'admin'"
     end
   end
 end
