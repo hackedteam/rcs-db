@@ -65,7 +65,7 @@ class Migration
       exit
     end
 
-    DB.instance.mysql_connect options[:user], options[:password], options[:db]
+    DB.instance.mysql_connect options[:user], options[:pass], options[:db_address]
     
     # start the migration
     unless options[:log] then
@@ -120,16 +120,16 @@ class Migration
       # Set a banner, displayed at the top of the help screen.
       opts.banner = "Usage: rcs-db-migrate [options]"
 
-      opts.on( '-u', '--user USERNAME', 'RCSDB username' ) do |user|
+      opts.on( '-u', '--user USERNAME', 'rcs-db username' ) do |user|
         options[:user] = user
       end
       
-      opts.on( '-p', '--password PASSWORD', 'RCSDB password' ) do |password|
-        options[:password] = password
+      opts.on( '-p', '--password PASSWORD', 'rcs-db password' ) do |password|
+        options[:pass] = password
       end
       
-      opts.on( '-d', '--db HOSTNAME', 'RCSDB hostname/ip' ) do |db|
-        options[:db] = db
+      opts.on( '-d', '--db-address HOSTNAME', 'Use the rcs-db at HOSTNAME' ) do |host|
+        options[:db_address] = host
       end
       
       opts.on( '-l', '--log ACTIVITY', 'Import logs for a specified activity' ) do |act|

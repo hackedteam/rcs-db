@@ -108,15 +108,12 @@ class Config
   def run(options)
 
     if options[:reset] then
-      trace :info, "Resetting 'admin' password..."
+      reset_admin options
+      return 0
+    end
 
-      http = Net::HTTP.new('localhost', 4444)
-      http.use_ssl = true
-      http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-
-      resp = http.request_post('/auth/reset', {pass: options[:reset]}.to_json, nil)
-      trace :info, resp.body
-      
+    if options[:shard] then
+      add_shard options
       return 0
     end
 
@@ -151,6 +148,46 @@ class Config
     return 0
   end
 
+  def reset_admin(options)
+    trace :info, "Resetting 'admin' password..."
+
+    http = Net::HTTP.new('localhost', 4444)
+    http.use_ssl = true
+    http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+
+    resp = http.request_post('/auth/reset', {pass: options[:reset]}.to_json, nil)
+    trace :info, resp.body
+  end
+
+  def add_shard(options)
+    if options[:db_address].nil?
+      puts "Invalid rcs-db HOSTNAME"
+      return
+    end
+    trace :info, "Adding this host as db shard..."
+
+    http = Net::HTTP.new(options[:db_address], options[:db_port] || 4444)
+    http.use_ssl = true
+    http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+
+    # login
+    account = {:user => options[:user], :pass => options[:pass] }
+    resp = http.request_post('/auth/login', account.to_json, nil)
+    unless resp['Set-Cookie'].nil?
+      cookie = resp['Set-Cookie']
+    else
+      puts "Invalid authentication"
+      return
+    end
+
+    # send the request
+    res = http.request_post('/shard/create', {host: options[:shard]}.to_json, {'Cookie' => cookie})
+    puts res.body
+
+    # logout
+    http.request_post('/auth/logout', nil, {'Cookie' => cookie})
+  end
+
   # executed from rcs-db-config
   def self.run!(*argv)
     # reopen the class and declare any empty trace method
@@ -168,10 +205,20 @@ class Config
       # Set a banner, displayed at the top of the help screen.
       opts.banner = "Usage: rcs-db-config [options]"
 
-      # Define the options, and what they do
+      opts.separator ""
+      opts.separator "Application layer options:"
       opts.on( '-l', '--listen PORT', Integer, 'Listen on tcp/PORT' ) do |port|
         options[:port] = port
       end
+      opts.on( '-b', '--db-heartbeat SEC', Integer, 'Time in seconds between two heartbeats' ) do |sec|
+        options[:hb_interval] = sec
+      end
+      opts.on( '-w', '--worker-port PORT', Integer, 'Listen on tcp/PORT for worker' ) do |port|
+        options[:worker_port] = port
+      end
+
+      opts.separator ""
+      opts.separator "Certificates options:"
       opts.on( '-c', '--ca-pem FILE', 'The certificate file (pem) of the issuing CA' ) do |file|
         options[:ca_pem] = file
       end
@@ -184,23 +231,38 @@ class Config
       opts.on( '-s', '--server-sig FILE', 'The signature file (sig) used by Collectors' ) do |file|
         options[:server_sig] = file
       end
-      opts.on( '-b', '--db-heartbeat SEC', Integer, 'Time in seconds between two heartbeats' ) do |sec|
-        options[:hb_interval] = sec
-      end
-      opts.on( '-w', '--worker-port PORT', Integer, 'Listen on tcp/PORT for worker' ) do |port|
-        options[:worker_port] = port
-      end
+
+      opts.separator ""
+      opts.separator "General options:"
       opts.on( '-X', '--defaults', 'Write a new config file with default values' ) do
         options[:defaults] = true
       end
-      opts.on( '-R', '--reset-admin PASS', 'Reset the password for user \'admin\'' ) do |pass|
-        options[:reset] = pass
-      end
-      # This displays the help screen
       opts.on( '-h', '--help', 'Display this screen' ) do
         puts opts
         return 0
       end
+
+      opts.separator ""
+      opts.separator "Utilities:"
+      opts.on( '-u', '--user USERNAME', 'rcs-db username' ) do |user|
+        options[:user] = user
+      end
+      opts.on( '-p', '--password PASSWORD', 'rcs-db password' ) do |password|
+        options[:pass] = password
+      end
+      opts.on( '-d', '--db-address HOSTNAME', 'Use the rcs-db at HOSTNAME' ) do |host|
+        options[:db_address] = host
+      end
+      opts.on( '-P', '--db-port PORT', Integer, 'Connect to tcp/PORT on rcs-db' ) do |port|
+        options[:db_port] = port
+      end
+      opts.on( '-R', '--reset-admin PASS', 'Reset the password for user \'admin\'' ) do |pass|
+        options[:reset] = pass
+      end
+      opts.on( '-S', '--add-shard ADDRESS', 'Add ADDRESS as a db shard (sys account required)' ) do |shard|
+        options[:shard] = shard
+      end
+
     end
 
     optparse.parse(argv)
