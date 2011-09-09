@@ -766,7 +766,7 @@ if false
 end
 
 # search
-if true
+if false
   # search.index
   puts "search.index" 
   res = http.request_get('/search', {'Cookie' => cookie})
