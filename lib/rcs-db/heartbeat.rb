@@ -63,7 +63,7 @@ class HeartBeat
   def self.checkshards
     shards = Shard.all
     shards['shards'].each do |shard|
-      status = Shard.find(shard['host'])
+      status = Shard.find(shard['_id'])
       if status['ok'] == 0
         trace :fatal, "Heartbeat shard check: #{status['errmsg']}"
         SystemStatus.my_status = 'ERROR'

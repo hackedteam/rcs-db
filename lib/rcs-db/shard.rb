@@ -39,11 +39,16 @@ class Shard
     end
   end
 
-  def self.find(name)
-    host, port = name.split(':')
+  def self.find(id)
     begin
-      db = Mongo::Connection.new(host, port.to_i).db("rcs")
-      db.stats
+      self.all['shards'].each do |shard|
+        if shard['_id'] == id
+          host, port = shard['host'].split(':')
+          db = Mongo::Connection.new(host, port.to_i).db("rcs")
+          return db.stats
+        end
+      end
+      {'errmsg' => 'Id not found', 'ok' => 0}
     rescue Exception => e
       {'errmsg' => e.message, 'ok' => 0}
     end

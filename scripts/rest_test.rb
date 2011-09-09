@@ -810,7 +810,7 @@ if false
 end
 
 # shards
-if false
+if true
   # shard.index
   puts "shard.index" 
   res = http.request_get('/shard', {'Cookie' => cookie})
@@ -820,7 +820,7 @@ if false
   
   shards['shards'].each do |shard|
     puts 'shard.show ' + shard['host']
-    res = http.request_get("/shard/" + CGI.escape(shard['host']), {'Cookie' => cookie})
+    res = http.request_get("/shard/#{shard['_id']}", {'Cookie' => cookie})
     puts res.body
     puts
   end

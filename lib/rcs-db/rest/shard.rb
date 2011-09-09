@@ -18,10 +18,7 @@ class ShardController < RESTController
   def show
     require_auth_level :sys
 
-    # it could contain special chars such as colon (:)
-    shard = CGI.unescape(@params['_id'])
-
-    stats = Shard.find(shard)
+    stats = Shard.find(@params['_id'])
 
     return RESTController.reply.ok(stats)
   end
