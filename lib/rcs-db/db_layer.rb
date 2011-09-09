@@ -95,8 +95,9 @@ class DB
   end
 
   def enable_sharding
+    Shard.create('localhost:27018') if Shard.count == 0
     output = Shard.enable('rcs')
-    trace :info, "Enable Sharding: #{output}"
+    trace :info, "Enable Sharding on 'rcs': #{output}"
   end
 
   def ensure_admin

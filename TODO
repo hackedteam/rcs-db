@@ -7,11 +7,11 @@ HIGH PRIORITY:
 
     Windows Installers (NSIS)
 
+    certificate creation on startup and utility
 
 MEDIUM PRIORITY:
 
     get time via http (collector)
-
 
     proxy config methods
 

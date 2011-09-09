@@ -160,13 +160,9 @@ class Config
   end
 
   def add_shard(options)
-    if options[:db_address].nil?
-      puts "Invalid rcs-db HOSTNAME"
-      return
-    end
     trace :info, "Adding this host as db shard..."
 
-    http = Net::HTTP.new(options[:db_address], options[:db_port] || 4444)
+    http = Net::HTTP.new(options[:db_address] || 'localhost', options[:db_port] || 4444)
     http.use_ssl = true
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
