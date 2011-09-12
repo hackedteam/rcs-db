@@ -68,7 +68,31 @@ class AuthController < RESTController
     
     return RESTController.reply.not_authorized("invalid account")
   end
-  
+
+  # this method is used to create (or recreate) the admin
+  # it can be used without auth but only from localhost
+  def reset
+
+    return RESTController.reply.not_authorized("can only be used locally") unless @request[:peer].eql? '127.0.0.1'
+
+    mongoid_query do
+      user = User.where(name: 'admin').first
+
+      # user not found, create it
+      if user.nil?
+        DB.instance.ensure_admin
+        user = User.where(name: 'admin').first
+      end
+      
+      trace :info, "Resetting password for user 'admin'"
+      Audit.log :actor => '<system>', :action => 'auth.reset', :user => 'admin', :desc => "Password reset"
+      user.pass = Digest::SHA1.hexdigest('.:RCS:.' + @params['pass'])
+      user.save
+    end
+    
+    return RESTController.reply.ok("Password reset for user 'admin'")
+  end
+
   # once the session is over you can explicitly logout
   def logout
     Audit.log :actor => @session[:user][:name], :action => 'logout', :user => @session[:user][:name], :desc => "User '#{@session[:user][:name]}' logged out"
@@ -95,7 +119,6 @@ class AuthController < RESTController
 
   # method for user authentication
   def auth_user(username, pass)
-
     @user = User.where(name: username).first
 
     # user not found

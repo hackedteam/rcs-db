@@ -65,10 +65,11 @@ class Migration
       exit
     end
 
-    DB.instance.mysql_connect options[:user], options[:password], options[:db]
+    DB.instance.mysql_connect options[:user], options[:pass], options[:db_address]
     
     # start the migration
     unless options[:log] then
+      Audit.log actor: '<system>', action: 'migration', desc: "Migrating data from #{options[:db]}..."
       SignatureMigration.migrate options[:verbose]
 
       UserMigration.migrate options[:verbose]
@@ -90,10 +91,15 @@ class Migration
 
       ProxyMigration.migrate options[:verbose]
       ProxyMigration.migrate_rules options[:verbose]
+      Audit.log actor: '<system>', action: 'migration', desc: "Migration of data completed (#{options[:db]})"
     end
-    
-    LogMigration.migrate(options[:verbose], options[:activity], options[:exclude]) if options[:log]
-       
+
+    if options[:log]
+      Audit.log actor: '<system>', action: 'migration', desc: "Migrating evidence from #{options[:db]}..."
+      LogMigration.migrate(options[:verbose], options[:activity], options[:exclude])
+      Audit.log actor: '<system>', action: 'migration', desc: "Migration of evidence completed (#{options[:db]})"
+    end
+
     return 0
   end
 
@@ -114,16 +120,16 @@ class Migration
       # Set a banner, displayed at the top of the help screen.
       opts.banner = "Usage: rcs-db-migrate [options]"
 
-      opts.on( '-u', '--user USERNAME', 'RCSDB username' ) do |user|
+      opts.on( '-u', '--user USERNAME', 'rcs-db username' ) do |user|
         options[:user] = user
       end
       
-      opts.on( '-p', '--password PASSWORD', 'RCSDB password' ) do |password|
-        options[:password] = password
+      opts.on( '-p', '--password PASSWORD', 'rcs-db password' ) do |password|
+        options[:pass] = password
       end
       
-      opts.on( '-d', '--db HOSTNAME', 'RCSDB hostname/ip' ) do |db|
-        options[:db] = db
+      opts.on( '-d', '--db-address HOSTNAME', 'Use the rcs-db at HOSTNAME' ) do |host|
+        options[:db_address] = host
       end
       
       opts.on( '-l', '--log ACTIVITY', 'Import logs for a specified activity' ) do |act|
@@ -146,7 +152,7 @@ class Migration
     optparse.parse(argv)
 
     # check mandatory options
-    if not options.has_key? :user or not options.has_key? :password or not options.has_key? :db
+    if not options.has_key? :user or not options.has_key? :pass or not options.has_key? :db_address
       puts "Missing arguments for user, password or host."
       return 1
     end

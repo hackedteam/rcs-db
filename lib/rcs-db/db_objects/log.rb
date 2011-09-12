@@ -19,7 +19,7 @@ class CappedLog
         field :type, type: String
         field :desc, type: String
 
-        store_in CappedLog.collection_name('#{id}')
+        store_in CappedLog.collection_name('#{id}'), capped: true, max: 10_000, size: 2_000_000
       end
     END
     
@@ -36,12 +36,6 @@ class CappedLog
   end
 
   def self.dynamic_new(id)
-    # make sure the collection is created
-    # it can happen that after a mongorestore the empty collection is not restored.
-    # we need to be sure that it is created as capped.
-    # TODO: remove this when mongoid will support capped collections.
-    Mongoid.database.create_collection(self.collection_name(id), {capped: true, size: 2_000_000, max: 10_000})
-
     klass = self.collection_class(id)
     return klass.new
   end

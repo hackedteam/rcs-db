@@ -57,9 +57,19 @@ class Application
       
       # connect to MongoDB
       until DB.instance.connect
+        trace :warn, "Cannot connect to MongoDB, retrying..."
         sleep 5
       end
       
+      # ensure the sharding is enabled
+      DB.instance.enable_sharding
+
+      # ensure at least one user (admin) is active
+      DB.instance.ensure_admin
+
+      # ensure we have the signatures for the backdoors
+      DB.instance.ensure_signatures
+
       # ensure all indexes are in place
       DB.instance.create_indexes
 

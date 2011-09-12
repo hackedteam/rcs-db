@@ -8,13 +8,13 @@ git "git://github.com/alor/evma_httpserver.git", :branch => "master" do
 end
 
 gem 'uuidtools'
-#gem 'rcs-common', ">= 0.1.4"
+#gem 'rcs-common', ">= 0.1.5"
 gem 'ffi'
 
 # databases
 gem 'sqlite3'
 gem 'mongo'
-gem 'mongoid'
+gem 'mongoid', ">= 2.2.0"
 gem 'bson'
 gem 'bson_ext'
 gem 'mysql2', "= 0.3.3"
@@ -41,5 +41,5 @@ group :development do
   gem 'test-unit'
   gem 'simplecov'
   
-  gem "rcs-common", :path => "../rcs-common"
+  gem "rcs-common", ">= 0.1.5", :path => "../rcs-common"
 end

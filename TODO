@@ -1,24 +1,29 @@
-proxy config methods
+HIGH PRIORITY:
 
-rest methods for items
-integrity check on Items
+    rest methods for items
+    integrity check on Items
 
-get time via http (collector)
+    Windows Installers (NSIS)
 
-Windows Installers (NSIS)
+    certificate creation on startup and utility
 
-Local Exploit portal
+MEDIUM PRIORITY:
 
-survive if the mongo connection goes down
+    get time via http (collector)
 
-Sharding & Replica Sets
-    - split db & shard
+    proxy config methods
 
-mongo authentication
-Backup Procedures
-    - full
-    - per operation
+    Local Exploit portal
 
-Alerting daemon
+LOW PRIORITY:
 
-Documentation
+    Sharding on dynamic collections (evidence)
+
+    mongo authentication
+    Backup Procedures
+        - full
+        - per operation
+
+    Alerting daemon
+
+    Documentation

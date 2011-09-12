@@ -22,7 +22,7 @@ class ConfigMigration
         # skip item if already migrated
         next unless backdoor.configs.where({_mid: config[:config_id]}).first.nil?
 
-        trace :info, "Migrating config  for '#{backdoor[:name]}'." if verbose
+        trace :info, "Migrating config for '#{backdoor[:name]}'." if verbose
 
         mc = ::Configuration.new
         mc[:_mid] = config[:config_id]

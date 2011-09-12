@@ -5,6 +5,7 @@
 
 # relative
 require_relative 'dongle.rb'
+require_relative 'shard.rb'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -33,24 +34,26 @@ class LicenseManager
     # you have at least:
     #   - one user to login to the system
     #   - one collector to receive data
-    #   - as many demo backdoor you want
+    #   - cannot create backdoors (neither demo nor real)
     @limits = {:type => 'reusable',
+               :serial => "off",
                :users => 1,
                :backdoors => {:total => 0,
                               :desktop => 0,
                               :mobile => 0,
-                              :windows => false,
-                              :osx => false,
-                              :linux => false,
-                              :winmo => false,
-                              :ios => false,
-                              :blackberry => false,
-                              :symbian => false,
-                              :android => false},
+                              :windows => [false, false],
+                              :osx => [false, false],
+                              :linux => [false, false],
+                              :winmo => [false, false],
+                              :ios => [false, false],
+                              :blackberry => [false, false],
+                              :symbian => [false, false],
+                              :android => [false, false]},
                :alerting => false,
                :correlation => false,
                :rmi => false,
                :ipa => 0,
+               :shards => 1,
                :collectors => {:collectors => 1, :anonymizers => 0}}
   end
 
@@ -123,14 +126,14 @@ class LicenseManager
     @limits[:backdoors][:mobile] = limit[:backdoors][:mobile] if limit[:backdoors][:mobile] > @limits[:backdoors][:mobile]
     @limits[:backdoors][:desktop] = limit[:backdoors][:desktop] if limit[:backdoors][:desktop] > @limits[:backdoors][:desktop]
 
-    @limits[:backdoors][:windows] = true if limit[:backdoors][:windows]
-    @limits[:backdoors][:osx] = true if limit[:backdoors][:osx]
-    @limits[:backdoors][:linux] = true if limit[:backdoors][:linux]
-    @limits[:backdoors][:winmo] = true if limit[:backdoors][:winmo]
-    @limits[:backdoors][:symbian] = true if limit[:backdoors][:symbian]
-    @limits[:backdoors][:ios] = true if limit[:backdoors][:ios]
-    @limits[:backdoors][:blackberry] = true if limit[:backdoors][:blackberry]
-    @limits[:backdoors][:android] = true if limit[:backdoors][:android]
+    @limits[:backdoors][:windows] = limit[:backdoors][:windows]
+    @limits[:backdoors][:osx] = limit[:backdoors][:osx]
+    @limits[:backdoors][:linux] = limit[:backdoors][:linux]
+    @limits[:backdoors][:winmo] = limit[:backdoors][:winmo]
+    @limits[:backdoors][:symbian] = limit[:backdoors][:symbian]
+    @limits[:backdoors][:ios] = limit[:backdoors][:ios]
+    @limits[:backdoors][:blackberry] = limit[:backdoors][:blackberry]
+    @limits[:backdoors][:android] = limit[:backdoors][:android]
     
     @limits[:ipa] = limit[:ipa] if limit[:ipa] > @limits[:ipa]
     @limits[:collectors][:collectors] = limit[:collectors][:collectors] if limit[:collectors][:collectors] > @limits[:collectors][:collectors]
@@ -139,14 +142,16 @@ class LicenseManager
     @limits[:alerting] = true if limit[:alerting] 
     @limits[:correlation] = true if limit[:correlation]
     @limits[:rmi] = true if limit[:rmi]
-    
+
+    @limits[:shards] = limit[:shards] if limit[:shards] > @limits[:shards]
+    @limits[:exploits] = limit[:exploits]
   end
 
   
   def burn_one_license(type, platform)
 
     # check if the platform can be used
-    unless @limits[:backdoors][platform]
+    unless @limits[:backdoors][platform][0]
       trace :warn, "You don't have a license for #{platform.to_s}. Queuing..."
       return false
     end
@@ -235,62 +240,62 @@ class LicenseManager
     # we have to stop the process in this case
     Dongle.serial
 
+    begin
     # check the consistency of the database (if someone tries to tamper it)
-
-    if User.count(conditions: {enabled: true}) > @limits[:users]
+    if ::User.count(conditions: {enabled: true}) > @limits[:users]
       trace :fatal, "LICENCE EXCEEDED: Number of users is greater than license file. Fixing..."
       # fix by disabling the last updated user
-      offending = User.first(conditions: {enabled: true}, sort: [[ :updated_at, :desc ]])
+      offending = ::User.first(conditions: {enabled: true}, sort: [[ :updated_at, :desc ]])
       offending[:enabled] = false
       trace :warn, "Disabling user '#{offending[:name]}'"
       offending.save
     end
 
-    if Collector.count(conditions: {type: 'local'}) > @limits[:collectors][:collectors]
+    if ::Collector.count(conditions: {type: 'local'}) > @limits[:collectors][:collectors]
       trace :fatal, "LICENCE EXCEEDED: Number of collector is greater than license file. Fixing..."
       # fix by deleting the collector
-      offending = Collector.first(conditions: {type: 'local'}, sort: [[ :updated_at, :desc ]])
+      offending = ::Collector.first(conditions: {type: 'local'}, sort: [[ :updated_at, :desc ]])
       trace :warn, "Deleting collector '#{offending[:name]}' #{offending[:address]}"
       offending.destroy
     end
-    if Collector.count(conditions: {type: 'remote'}) > @limits[:collectors][:collectors]
+    if ::Collector.count(conditions: {type: 'remote'}) > @limits[:collectors][:anonymizers]
       trace :fatal, "LICENCE EXCEEDED: Number of anonymizers is greater than license file. Fixing..."
       # fix by deleting the collector
-      offending = Collector.first(conditions: {type: 'remote'}, sort: [[ :updated_at, :desc ]])
+      offending = ::Collector.first(conditions: {type: 'remote'}, sort: [[ :updated_at, :desc ]])
       trace :warn, "Deleting anonymizer '#{offending[:name]}' #{offending[:address]}"
       offending.destroy
     end
 
-    if Proxy.count > @limits[:ipa]
+    if ::Proxy.count > @limits[:ipa]
       trace :fatal, "LICENCE EXCEEDED: Number of proxy is greater than license file. Fixing..."
       # fix by deleting the proxy
-      offending = Proxy.first(sort: [[ :updated_at, :desc ]])
+      offending = ::Proxy.first(sort: [[ :updated_at, :desc ]])
       trace :warn, "Deleting proxy '#{offending[:name]}' #{offending[:address]}"
       offending.destroy
     end
 
-    if Item.count(conditions: {_kind: 'backdoor', type: 'desktop', status: 'open'}) > @limits[:backdoors][:desktop]
+    if ::Item.count(conditions: {_kind: 'backdoor', type: 'desktop', status: 'open'}) > @limits[:backdoors][:desktop]
       trace :fatal, "LICENCE EXCEEDED: Number of backdoor(desktop) is greater than license file. Fixing..."
       # fix by queuing the last updated backdoor
-      offending = Item.first(conditions: {_kind: 'backdoor', type: 'desktop', status: 'open'}, sort: [[ :updated_at, :desc ]])
+      offending = ::Item.first(conditions: {_kind: 'backdoor', type: 'desktop', status: 'open'}, sort: [[ :updated_at, :desc ]])
       offending[:status] = 'queued'
       trace :warn, "Queuing backdoor '#{offending[:name]}' #{offending[:desc]}"
       offending.save
     end
 
-    if Item.count(conditions: {_kind: 'backdoor', type: 'mobile', status: 'open'}) > @limits[:backdoors][:mobile]
+    if ::Item.count(conditions: {_kind: 'backdoor', type: 'mobile', status: 'open'}) > @limits[:backdoors][:mobile]
       trace :fatal, "LICENCE EXCEEDED: Number of backdoor(mobile) is greater than license file. Fixing..."
       # fix by queuing the last updated backdoor
-      offending = Item.first(conditions: {_kind: 'backdoor', type: 'mobile', status: 'open'}, sort: [[ :updated_at, :desc ]])
+      offending = ::Item.first(conditions: {_kind: 'backdoor', type: 'mobile', status: 'open'}, sort: [[ :updated_at, :desc ]])
       offending[:status] = 'queued'
       trace :warn, "Queuing backdoor '#{offending[:name]}' #{offending[:desc]}"
       offending.save
     end
 
-    if Item.count(conditions: {_kind: 'backdoor', status: 'open'}) > @limits[:backdoors][:total]
+    if ::Item.count(conditions: {_kind: 'backdoor', status: 'open'}) > @limits[:backdoors][:total]
       trace :fatal, "LICENCE EXCEEDED: Number of backdoor(total) is greater than license file. Fixing..."
       # fix by queuing the last updated backdoor
-      offending = Item.first(conditions: {_kind: 'backdoor', status: 'open'}, sort: [[ :updated_at, :desc ]])
+      offending = ::Item.first(conditions: {_kind: 'backdoor', status: 'open'}, sort: [[ :updated_at, :desc ]])
       offending[:status] = 'queued'
       trace :warn, "Queuing backdoor '#{offending[:name]}' #{offending[:desc]}"
       offending.save
@@ -298,9 +303,11 @@ class LicenseManager
 
     if @limits[:alerting] == false
       trace :fatal, "LICENCE EXCEEDED: Alerting is not enabled in the license file. Fixing..."
-      Alert.update_all(enabled: false)
+      ::Alert.update_all(enabled: false)
     end
-
+    rescue Exception => e
+      trace :fatal, "Cannot perform license check: #{e.message}"
+    end
   end
 
 
@@ -321,7 +328,8 @@ class LicenseManager
                                :mobile => Item.count(conditions: {_kind: 'backdoor', type: 'mobile', status: 'open'})},
                 :collectors => {:collectors => Collector.count(conditions: {type: 'local'}),
                                 :anonymizers => Collector.count(conditions: {type: 'remote'})},
-                :ipa => Proxy.count}
+                :ipa => Proxy.count,
+                :shards => Shard.count}
 
     return counters
   end

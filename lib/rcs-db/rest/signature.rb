@@ -24,7 +24,7 @@ class SignatureController < RESTController
       end
       return RESTController.reply.ok(sig)
     rescue Exception => e
-      trace :warn, "[#{@request[:peer]}] Requested '#{params['_id']}' NOT FOUND"
+      trace :warn, "[#{@request[:peer]}] Requested '#{@params['_id']}' NOT FOUND"
       return RESTController.reply.not_found
     end
   end

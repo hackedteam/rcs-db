@@ -23,10 +23,14 @@ class Audit
     #  :desc
     
     def log(params)
-      params[:time] = Time.now.getutc.to_i
-      audit = ::Audit.new params
-      audit.save
-      save_audit_search params
+      begin
+        params[:time] = Time.now.getutc.to_i
+        audit = ::Audit.new params
+        audit.save
+        save_audit_search params
+      rescue Exception => e
+        trace :error, "Cannot write audit log: #{e.message}"
+      end
     end
 
     def update_search(field, value)

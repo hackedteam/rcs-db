@@ -21,18 +21,11 @@ class Proxy
 
   embeds_many :rules, class_name: "ProxyRule"
 
-  after_create :create_log_collection
   after_destroy :drop_log_collection
 
   protected
-  def create_log_collection
-    db = Mongoid.database
-    db.create_collection(CappedLog.collection_name(self._id.to_s), {capped: true, size: 2_000_000, max: 10_000})
-  end
-
   def drop_log_collection
-    db = Mongoid.database
-    db.drop_collection(CappedLog.collection_name(self._id.to_s))
+    Mongoid.database.drop_collection CappedLog.collection_name(self._id.to_s)
   end
 end
 
@@ -51,6 +44,7 @@ class ProxyRule
   field :resource, type: String
   field :action, type: String
   field :action_param, type: String
+  field :action_param_name, type: String
 
   field :_grid, type: Array
 

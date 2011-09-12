@@ -19,6 +19,9 @@ class UserMigration
       trace :info, "Migrating user '#{user[:user]}'." if verbose
       print "." unless verbose
 
+      # make sure there are no conflicts
+      User.where(name: user[:user]).delete_all
+
       mu = ::User.new
       mu[:_mid] = user[:user_id]
       mu.name = user[:user]

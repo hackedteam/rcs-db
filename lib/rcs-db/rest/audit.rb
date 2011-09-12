@@ -118,7 +118,7 @@ class AuditController < RESTController
 
       num_audits = filtering.where(filter_hash).count
 
-      trace :debug, "number of filtered audits: " + num_audits.to_s unless num_audits.nil?
+      #trace :debug, "number of filtered audits: " + num_audits.to_s unless num_audits.nil?
 
       # Flex RPC does not accept 0 (zero) as return value for a pagination (-1 is a safe alternative)
       num_audits = -1 if num_audits == 0

@@ -8,19 +8,21 @@
   :total: .Inf
   :desktop: .Inf
   :mobile: .Inf
-  :windows: true
-  :osx: true
-  :linux: true
-  :android: true
-  :blackberry: true
-  :ios: true
-  :symbian: true
-  :winmo: true
+  :windows: [true, true]
+  :osx: [true, true]
+  :linux: [true, true]
+  :android: [true, true]
+  :blackberry: [true, true]
+  :ios: [true, true]
+  :symbian: [true, true]
+  :winmo: [true, true]
 :alerting: true
 :correlation: false
 :rmi: true
-:ipa: 5
+:ipa: .Inf
 :collectors: 
-  :collectors: 10
-  :anonymizers: 5
-:integrity: "033c3e687ae66c78229e22f9b78b19e0dd1af49595ec6a20aeaa847295d335cd"
+  :collectors: 5
+  :anonymizers: 20
+:shards: 1
+:exploits: "5bd90a7ac2e8e5fdc4e92c90c0c900b5948517f7"
+:integrity: "b883894180896f689249ff3da19e491db618b3a203e4a306885ba95bc52e00c2"

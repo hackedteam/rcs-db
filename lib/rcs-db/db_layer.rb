@@ -93,7 +93,41 @@ class DB
       k.create_indexes
     end
   end
-  
+
+  def enable_sharding
+    Shard.create('localhost:27018') if Shard.count == 0
+    output = Shard.enable('rcs')
+    trace :info, "Enable Sharding on 'rcs': #{output}"
+  end
+
+  def ensure_admin
+    # check that at least one admin is present and enabled
+    # if it does not exists, create it
+    if User.count(conditions: {enabled: true, privs: 'ADMIN'}) == 0
+      trace :warn, "No ADMIN found, creating a default admin user..."
+      User.where(name: 'admin').delete_all
+      User.create(name: 'admin') do |u|
+        u[:pass] = Digest::SHA1.hexdigest('.:RCS:.' + 'adminp123')
+        u[:enabled] = true
+        u[:desc] = 'Default admin user'
+        u[:privs] = ['ADMIN', 'SYS', 'TECH', 'VIEW']
+        u[:locale] = 'en_US'
+        u[:timezone] = 0
+      end
+      Audit.log :actor => '<system>', :action => 'user.create', :user => 'admin', :desc => "Created the default user 'admin'"
+    end
+  end
+
+  def ensure_signatures
+    if Signature.count == 0
+      trace :warn, "No Signature found, creating them..."
+      Signature.create(scope: 'backdoor') { |s| s.value = SecureRandom.hex(16) }
+      Signature.create(scope: 'collector') { |s| s.value = SecureRandom.hex(16) }
+      Signature.create(scope: 'network') { |s| s.value = SecureRandom.hex(16) }
+      Signature.create(scope: 'server') { |s| s.value = SecureRandom.hex(16) }
+    end
+  end
+
 end
 
 end #DB::
