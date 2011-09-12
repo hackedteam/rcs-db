@@ -13,6 +13,9 @@ class SignatureMigration
     signs = DB.instance.mysql_query('SELECT * from `sign`;').to_a
     signs.each do |sign|
 
+      # make sure there are no conflicts
+      ::Signature.where(scope: sign[:scope]).delete_all
+
       # skip item if already migrated
       next if Signature.count(conditions: {scope: sign[:scope]}) != 0
 

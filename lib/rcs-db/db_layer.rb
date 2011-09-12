@@ -117,6 +117,17 @@ class DB
       Audit.log :actor => '<system>', :action => 'user.create', :user => 'admin', :desc => "Created the default user 'admin'"
     end
   end
+
+  def ensure_signatures
+    if Signature.count == 0
+      trace :warn, "No Signature found, creating them..."
+      Signature.create(scope: 'backdoor') { |s| s.value = SecureRandom.hex(16) }
+      Signature.create(scope: 'collector') { |s| s.value = SecureRandom.hex(16) }
+      Signature.create(scope: 'network') { |s| s.value = SecureRandom.hex(16) }
+      Signature.create(scope: 'server') { |s| s.value = SecureRandom.hex(16) }
+    end
+  end
+
 end
 
 end #DB::

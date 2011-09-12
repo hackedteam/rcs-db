@@ -173,7 +173,7 @@ class ProxyController < RESTController
       if rule.action == 'REPLACE' and not @params['rule']['action_param'].nil?
         path = File.join Dir.tmpdir, @params['rule']['action_param']
         if File.exist?(path) and File.file?(path)
-          rule[:_grid] = [GridFS.instance.put(File.binread(path))]
+          rule[:_grid] = [GridFS.instance.put(File.binread(path), {filename: @params['rule']['action_param']})]
           File.unlink(path)
         end
       end
@@ -237,7 +237,7 @@ class ProxyController < RESTController
         if File.exist?(path) and File.file?(path)
           # delete any previous file in the grid
           GridFS.instance.delete rule[:_grid].first unless rule[:_grid].nil?
-          rule[:_grid] = [GridFS.instance.put(File.binread(path))]
+          rule[:_grid] = [GridFS.instance.put(File.binread(path), {filename: @params['rule']['action_param']})]
           File.unlink(path)
         end
       end
