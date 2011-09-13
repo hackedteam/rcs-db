@@ -7,27 +7,27 @@
 !include Sections.nsh
 ;--------------------------------
 ;General
-	
+  
   !define PACKAGE_NAME "RCS"
   !Define /file PACKAGE_VERSION "..\config\version.txt"
 
   ;Variables
-	Var installALLINONE
-	Var installDISTRIBUTED
-	Var installUPGRADE
-	
-	Var installCollector
-	Var installNetworkController
-	Var installMaster
-	Var installShard
+  Var installALLINONE
+  Var installDISTRIBUTED
+  Var installUPGRADE
+  
+  Var installCollector
+  Var installNetworkController
+  Var installMaster
+  Var installShard
 
-	Var adminpass
-	Var masterAddress
-	Var masterCN
-	Var masterLicense
-	
-	Var upgradeComponents
-	
+  Var adminpass
+  Var masterAddress
+  Var masterCN
+  Var masterLicense
+  
+  Var upgradeComponents
+  
   ;Name and file
   Name "RCS"
   OutFile "RCS-${PACKAGE_VERSION}.exe"
@@ -44,8 +44,7 @@
 ;Install types
    InstType "install"
    InstType "update"
-   !define SETUP_INSTALL 0
-   !define SETUP_UPGRADE 1
+
 ;--------------------------------
 
 ;--------------------------------
@@ -86,16 +85,20 @@ Section "Update Section" SecUpdate
    SectionIn 2
 
    DetailPrint ""
-   DetailPrint "Uninstalling RCSDB Service..."
+   DetailPrint "Stopping RCS Services..."
+   SimpleSC::StopService "RCSCollector" 1
    SimpleSC::StopService "RCSDB" 1
-   SimpleSC::RemoveService "RCSDB"
+   SimpleSC::StopService "RCSMasterRouter" 1
+	 SimpleSC::StopService "RCSMasterConfig" 1
+   SimpleSC::StopService "RCSShard" 1
+
    DetailPrint "done"
    
    SetDetailsPrint "textonly"
    DetailPrint "Removing previous version..."
-   RMDir /r "$INSTDIR\Ruby"
-   RMDir /r "$INSTDIR\DB\lib"
-   RMDir /r "$INSTDIR\DB\bin"
+   ###RMDir /r "$INSTDIR\Ruby"
+   ###RMDir /r "$INSTDIR\DB\lib"
+   ###RMDir /r "$INSTDIR\DB\bin"
    DetailPrint "done"
   
 SectionEnd
@@ -104,82 +107,209 @@ Section "Install Section" SecInstall
  
   SectionIn 1 2
  
- 	WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
-	
- 	Return
- 
-  SetDetailsPrint "textonly"
+  SetDetailsPrint "both"
   DetailPrint "Extracting common files..."
-
+  SetDetailsPrint "textonly"
   !cd '..\..'
   SetOutPath "$INSTDIR\Ruby"
-  #File /r "Ruby\*.*"
-
-  !cd 'DB'
-  SetOutPath "$INSTDIR\DB\setup"
-  File "nsis\RCS.ico"
-
-  SetOutPath "$INSTDIR\DB\bin"
-  File /r "bin\*.*"
-  
-  SetOutPath "$INSTDIR\DB\lib"
-  File "lib\rcs-db.rb"
-  File "lib\rcs-worker.rb"
-  
-  SetOutPath "$INSTDIR\DB\lib\rcs-db-release"
-  #File /r "lib\rcs-db-release\*.*"
-
-  SetOutPath "$INSTDIR\DB\lib\rcs-worker-release"
-  #File /r "lib\rcs-worker-release\*.*"
-  
-  SetOutPath "$INSTDIR\DB\config"
-  File "config\trace.yaml"
-  File "config\version.txt"
-  DetailPrint "done"
-  
+  ###File /r "Ruby\*.*"
   SetDetailsPrint "both"
-    
-  DetailPrint "Setting up the path..."
-  ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
-  StrCpy $R0 "$R0;$INSTDIR\DB\bin;$INSTDIR\Ruby\bin"
-  WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R0"
-  DetailPrint "done" 
+  DetailPrint "done"
 
-  ; fresh install
-  ${If} $insttype == ${SETUP_INSTALL}
-    DetailPrint ""
-    DetailPrint "Writing the configuration..."
+  SetOutPath "$INSTDIR\setup"
+  File "DB\nsis\RCS.ico"
+
+	DetailPrint "Setting up the path..."
+	ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
+	StrCpy $R0 "$R0;$INSTDIR\Collector\bin;$INSTDIR\DB\bin;$INSTDIR\Ruby\bin"
+	###WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R0"
+	DetailPrint "done" 
+
+  ${If} $installMaster == ${BST_CHECKED}
+    DetailPrint "Installing Master files..."
     SetDetailsPrint "textonly"
-    CopyFiles /SILENT $cert "$INSTDIR\Collector\config\rcs-ca.pem"
-    CopyFiles /SILENT $sign "$INSTDIR\Collector\config\rcs-server.sig"
-    ; write the config yaml
-    nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-db-config --defaults --db-address $addr"
+    !cd 'DB'
+  
+    SetOutPath "$INSTDIR\DB\bin"
+    File /r "bin\*.*"
+
+    SetOutPath "$INSTDIR\DB\mongodb\win"
+    ###File /r "mongodb\win\*.*"
+    
+    SetOutPath "$INSTDIR\DB\lib"
+    File "lib\rcs-db.rb"
+    File "lib\rcs-worker.rb"
+
+    SetOutPath "$INSTDIR\DB\console"
+    File /r "console\*.*"
+    
+    SetOutPath "$INSTDIR\DB\lib\rcs-db-release"
+    ###File /r "lib\rcs-db-release\*.*"
+  	File /r "lib\rcs-db\*.*"
+  
+    SetOutPath "$INSTDIR\DB\lib\rcs-worker-release"
+    ###File /r "lib\rcs-worker-release\*.*"
+    File /r "lib\rcs-worker\*.*"
+    
+    SetOutPath "$INSTDIR\DB\config"
+    File "config\mongoid.yaml"
+    File "config\trace.yaml"
+    File "config\version.txt"
     SetDetailsPrint "both"
     DetailPrint "done"
+    
+    ; fresh install
+	  ${If} $installUPGRADE != ${BST_CHECKED}
+	    DetailPrint ""
+	    DetailPrint "Writing the configuration..."
+	    SetDetailsPrint "textonly"
+	    ; write the config yaml
+	    nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-db-config --defaults"
+	    SetDetailsPrint "both"
+	    DetailPrint "done"
+	  	
+	  	DetailPrint "Creating service RCS DB..."
+	  	SimpleSC::InstallService "RCSDB" "RCS DB" "16" "2" "$INSTDIR\DB\bin\srvany" "" "" ""
+  		SimpleSC::SetServiceFailure "RCSDB" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+  		WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSDB\Parameters" "Application" "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db"
+	    DetailPrint "done"
+	    DetailPrint "Creating service RCS Master Config..."
+  		SimpleSC::InstallService "RCSMasterConfig" "RCS Master Config" "16" "2" "$INSTDIR\DB\bin\srvany" "" "" ""
+  		SimpleSC::SetServiceFailure "RCSMasterConfig" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+  		WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSMasterConfig\Parameters" "Application" "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-mongoc"
+  		DetailPrint "done"	    
+	    DetailPrint "Creating service RCS Master Router..."
+  		SimpleSC::InstallService "RCSMasterRouter" "RCS Master Router" "16" "2" "$INSTDIR\DB\bin\srvany" "" "" ""
+  		SimpleSC::SetServiceFailure "RCSMasterRouter" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+  		WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSMasterRouter\Parameters" "Application" "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-mongos"
+  		DetailPrint "done"	 
+	    DetailPrint "Creating service RCS Shard..."
+  		SimpleSC::InstallService "RCSShard" "RCS Shard" "16" "2" "$INSTDIR\DB\bin\srvany" "" "" ""
+  		SimpleSC::SetServiceFailure "RCSShard" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+  		WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSShard\Parameters" "Application" "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-mongod"
+  		DetailPrint "done"
+	  ${EndIf}
+    
+  	DetailPrint "Starting RCS DB..."
+  	SimpleSC::StartService "RCSDB" ""
+  	DetailPrint "Starting RCS Master Config..."
+  	SimpleSC::StartService "RCSMasterConfig" ""
+  	DetailPrint "Starting RCS Master Router..."
+  	SimpleSC::StartService "RCSMasterRouter" ""
+  	DetailPrint "Starting RCS Shard..."
+  	SimpleSC::StartService "RCSShard" ""
+  	  
+    DetailPrint "Adding firewall rule for port 4444/tcp..."
+	  nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=4444'
+
+    !cd '..'
+    WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
+    WriteRegDWORD HKLM "Software\HT\RCS" "master" 0x00000001
   ${EndIf}
-    
-    
-  DetailPrint ""
 
-  DetailPrint "Adding firewall rule for port 4444/tcp..."
-  nsExec::ExecToLog 'netsh firewall add portopening TCP 4444 "RCSDB"'
+  ${If} $installShard == ${BST_CHECKED}
+    DetailPrint "Installing single Shard files..."
+    SetDetailsPrint "textonly"
+    !cd 'DB'
+    
+    SetOutPath "$INSTDIR\DB\bin"
+    File /r "bin\rcs-db-mongo*.*"
+    File "bin\srvany.exe"
 
-  DetailPrint "Starting RCSDB..."
-  SimpleSC::InstallService "RCSDB" "RCS DB" "16" "2" "$INSTDIR\DB\bin\srvany" "" "" ""
-  SimpleSC::SetServiceFailure "RCSDB" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-  WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSDB\Parameters" "Application" "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db"
-  SimpleSC::StartService "RCSDB" ""
-   
+    SetOutPath "$INSTDIR\DB\mongodb\win"
+    ###File /r "mongodb\win\*.*"
+    
+    SetDetailsPrint "both"
+    DetailPrint "done"
+    
+    ; fresh install
+	  ${If} $installUPGRADE != ${BST_CHECKED}
+      DetailPrint "Creating service RCS Shard..."
+  		SimpleSC::InstallService "RCSShard" "RCS Shard" "16" "2" "$INSTDIR\DB\bin\srvany" "" "" ""
+  		SimpleSC::SetServiceFailure "RCSShard" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+  		WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSShard\Parameters" "Application" "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-mongod"
+	  	DetailPrint "done"
+    ${EndIf}
+    
+    !cd '..'
+    WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
+    WriteRegDWORD HKLM "Software\HT\RCS" "shard" 0x00000001
+	${EndIf}
+
+  ${If} $installCollector == ${BST_CHECKED}
+  ${OrIf} $installNetworkController == ${BST_CHECKED}
+    DetailPrint "Installing Collector files..."
+    SetDetailsPrint "textonly"
+    !cd 'Collector'
+  
+    SetOutPath "$INSTDIR\Collector\bin"
+    File /r "bin\*.*"
+    
+    SetOutPath "$INSTDIR\Collector\lib"
+    File "lib\rcs-collector.rb"
+    
+    SetOutPath "$INSTDIR\Collector\lib\rcs-collector-release"
+    ###File /r "lib\rcs-collector-release\*.*"
+  	File /r "lib\rcs-collector\*.*"
+  
+    SetOutPath "$INSTDIR\Collector\config"
+    File "config\decoy.html"
+    File "config\trace.yaml"
+    File "config\version.txt"
+    SetDetailsPrint "both"
+    DetailPrint "done"
+    
+    !cd '..'
+    WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
+    
+    ; fresh install
+	  ${If} $installUPGRADE != ${BST_CHECKED}
+	    DetailPrint ""
+	    DetailPrint "Writing the configuration..."
+	    SetDetailsPrint "textonly"
+	    ; write the config yaml
+	    nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector-config --defaults --db-address $masterAddress"
+	    ; retrieve the certs from the server
+	    nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector-config -d $masterAddress -u admin -p $adminpass -t -s"
+	    SetDetailsPrint "both"
+	    DetailPrint "done"
+	  
+	    DetailPrint "Creating service RCS Collector..."
+  		SimpleSC::InstallService "RCSCollector" "RCS Collector" "16" "2" "$INSTDIR\Collector\bin\srvany" "" "" ""
+  		SimpleSC::SetServiceFailure "RCSCollector" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+  		WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSCollector\Parameters" "Application" "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector"
+	  	DetailPrint "done"
+	  ${EndIf}
+
+    ${If} $installCollector == ${BST_CHECKED}			
+    	WriteRegDWORD HKLM "Software\HT\RCS" "collector" 0x00000001
+		${Else}
+			nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector-config --no-collector"
+    ${EndIf}
+    
+    ${If} $installNetworkController == ${BST_CHECKED}
+      WriteRegDWORD HKLM "Software\HT\RCS" "networkcontroller" 0x00000001
+    ${Else}
+    	nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector-config --no-network"
+    ${EndIf}
+
+    DetailPrint "Starting RCS Collector..."
+  	SimpleSC::StartService "RCSCollector" ""
+          
+  ${EndIf}
+  
+  !cd "DB\nsis"
+  
   DetailPrint "Writing uninstall informations..."
   SetDetailsPrint "textonly"
-  WriteUninstaller "$INSTDIR\DB\setup\RCSDB-uninstall.exe"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSDB" "DisplayName" "RCS Collector"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSDB" "DisplayIcon" "$INSTDIR\DB\setup\RCS.ico"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSDB" "DisplayVersion" "${PACKAGE_VERSION}"
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSDB" "UninstallString" "$INSTDIR\DB\setup\RCSDB-uninstall.exe"
-  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSDB" "NoModify" 0x00000001
-  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSDB" "NoRepair" 0x00000001
-  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSDB" "InstDir" "$INSTDIR"
+  WriteUninstaller "$INSTDIR\setup\RCS-uninstall.exe"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCS" "DisplayName" "RCS"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCS" "DisplayIcon" "$INSTDIR\setup\RCS.ico"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCS" "DisplayVersion" "${PACKAGE_VERSION}"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCS" "UninstallString" "$INSTDIR\setup\RCS-uninstall.exe"
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCS" "NoModify" 0x00000001
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCS" "NoRepair" 0x00000001
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCS" "InstDir" "$INSTDIR"
 
   SetDetailsPrint "both"
  
@@ -190,17 +320,25 @@ Section Uninstall
   DetailPrint "Removing firewall rule for 4444/tcp..."
   nsExec::ExecToLog 'netsh firewall delete portopening TCP 4444'
 
-  DetailPrint "Stopping RCSDB Service..."
+  DetailPrint "Stopping RCS Services..."
+  SimpleSC::StopService "RCSCollector" 1
+  SimpleSC::RemoveService "RCSCollector"
   SimpleSC::StopService "RCSDB" 1
   SimpleSC::RemoveService "RCSDB"
+  SimpleSC::StopService "RCSMasterRouter" 1
+  SimpleSC::RemoveService "RCSMasterRouter"
+  SimpleSC::StopService "RCSMasterConfig" 1
+  SimpleSC::RemoveService "RCSMasterConfig"
+  SimpleSC::StopService "RCSShard" 1
+  SimpleSC::RemoveService "RCSShard"
   DetailPrint "done"
 
   DetailPrint ""
   DetailPrint "Deleting files..."
   SetDetailsPrint "textonly"
-  ReadRegStr $INSTDIR HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSDB" "InstDir"
+  ReadRegStr $INSTDIR HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCS" "InstDir"
   RMDir /r "$INSTDIR\DB"
-  ; #TODO: delete ruby if not rcsdb
+  RMDir /r "$INSTDIR\Collector"
   RMDir /r "$INSTDIR\Ruby"
   RMDir /r "$INSTDIR"
   SetDetailsPrint "both"
@@ -208,9 +346,16 @@ Section Uninstall
 
   DetailPrint ""
   DetailPrint "Removing registry keys..."
-  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSDB"
-  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Run\RCSDB"
-	DetailPrint "done"
+  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCS"
+  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Run\RCS"
+  DeleteRegKey HKLM "Software\HT\RCS\installed"
+	DeleteRegKey HKLM "Software\HT\RCS\master"
+	DeleteRegKey HKLM "Software\HT\RCS\collector"
+	DeleteRegKey HKLM "Software\HT\RCS\networkcontroller"
+	DeleteRegKey HKLM "Software\HT\RCS\shard"
+  DeleteRegKey HKLM "Software\HT\RCS"
+  DeleteRegKey HKLM "Software\HT"
+  DetailPrint "done"
 
   ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
 
@@ -247,33 +392,36 @@ SectionEnd
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Function FuncUpgrade
 
-	ReadRegDWORD $R0 HKLM "Software\HT\RCS" "installed"
-	
-	; RCS is not installed
-	IntCmp $R0 1 +2 0 0
-		Abort
+  ReadRegDWORD $R0 HKLM "Software\HT\RCS" "installed"
+  
+  ; RCS is not installed
+  IntCmp $R0 1 +2 0 0
+    Abort
 
   ; check which components we have
-	ReadRegDWORD $R0 HKLM "Software\HT\RCS" "collector"
-	IntCmp $R0 1 0 +3 +3
-		StrCpy $upgradeComponents "$upgradeComponentsCollector$\r"
-		${NSD_GetState} ${BST_CHECKED} $installCollector
+  ReadRegDWORD $R0 HKLM "Software\HT\RCS" "collector"
+  IntCmp $R0 1 0 +4 +4
+    StrCpy $upgradeComponents "$upgradeComponentsCollector$\r"
+    Push ${BST_CHECKED}
+    Pop $installCollector 
 
-	ReadRegDWORD $R0 HKLM "Software\HT\RCS" "networkcontroller"
-	IntCmp $R0 1 0 +3 +3
-		StrCpy $upgradeComponents "$upgradeComponentsNetwork Controller$\r"
-		${NSD_GetState} ${BST_CHECKED} $installNetworkController
-
-	ReadRegDWORD $R0 HKLM "Software\HT\RCS" "master"
-	IntCmp $R0 1 0 +3 +3
-		StrCpy $upgradeComponents "$upgradeComponentsMaster$\r"
-		${NSD_GetState} ${BST_CHECKED} $installMaster
-
-	ReadRegDWORD $R0 HKLM "Software\HT\RCS" "shard"
-	IntCmp $R0 1 0 +3 +3
-		StrCpy $upgradeComponents "$upgradeComponentsShard$\r"
-		${NSD_GetState} ${BST_CHECKED} $installShard
-
+  ReadRegDWORD $R0 HKLM "Software\HT\RCS" "networkcontroller"
+  IntCmp $R0 1 0 +4 +4
+    StrCpy $upgradeComponents "$upgradeComponentsNetwork Controller$\r"
+    Push ${BST_CHECKED}
+    Pop $installNetworkController 
+    
+  ReadRegDWORD $R0 HKLM "Software\HT\RCS" "master"
+  IntCmp $R0 1 0 +4 +4
+    StrCpy $upgradeComponents "$upgradeComponentsMaster$\r"
+    Push ${BST_CHECKED}
+    Pop $installMaster 
+    
+  ReadRegDWORD $R0 HKLM "Software\HT\RCS" "shard"
+  IntCmp $R0 1 0 +4 +4
+    StrCpy $upgradeComponents "$upgradeComponentsShard$\r"
+    Push ${BST_CHECKED}
+    Pop $installShard 
 
   !insertmacro MUI_HEADER_TEXT "Installation Type" "Upgrade"
 
@@ -295,14 +443,14 @@ Function FuncUpgrade
 FunctionEnd
 
 Function FuncUpgradeLeave
-	${NSD_GetState} $1 $installUPGRADE
+  ${NSD_GetState} $1 $installUPGRADE
 
-	${If} $installUPGRADE != ${BST_CHECKED}
-		MessageBox MB_OK|MB_ICONSTOP "Please check the upgrade option. If you don't want to upgrade exit the installer now."
+  ${If} $installUPGRADE != ${BST_CHECKED}
+    MessageBox MB_OK|MB_ICONSTOP "Please check the upgrade option. If you don't want to upgrade exit the installer now."
     Abort
   ${EndIf}
   
-  SetCurInstType SETUP_UPGRADE
+  SetCurInstType 1
   
 FunctionEnd
 
@@ -310,7 +458,7 @@ FunctionEnd
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Function FuncInstallationType
    ${If} $installUPGRADE == ${BST_CHECKED}
-		Abort
+    Abort
    ${EndIf}
    
   !insertmacro MUI_HEADER_TEXT "Installation Type" "Deployment Method"
@@ -341,9 +489,12 @@ Function FuncInstallationTypeLeave
   
   ; Automatically select all the components
   ${If} $installALLINONE == ${BST_CHECKED}
-		${NSD_GetState} ${BST_CHECKED} $installCollector
-		${NSD_GetState} ${BST_CHECKED} $installNetworkController
-  	${NSD_GetState} ${BST_CHECKED} $installMaster
+    Push ${BST_CHECKED}
+    Pop $installCollector 
+    Push ${BST_CHECKED}
+    Pop $installNetworkController 
+    Push ${BST_CHECKED}
+    Pop $installMaster 
   ${EndIf}
 FunctionEnd
 
@@ -352,7 +503,7 @@ FunctionEnd
 Function FuncSelectComponents
    ${If} $installUPGRADE == ${BST_CHECKED}
    ${OrIf} $installALLINONE == ${BST_CHECKED}
-		Abort
+    Abort
    ${EndIf}
 
   !insertmacro MUI_HEADER_TEXT "Installation Type" "Components selection"
@@ -395,6 +546,13 @@ Function FuncSelectComponentsLeave
   ${NSD_GetState} $2 $installNetworkController
   ${NSD_GetState} $3 $installMaster
   ${NSD_GetState} $4 $installShard
+  
+  ${If} $installMaster == ${BST_CHECKED}
+  ${AndIf} $installShard == ${BST_CHECKED}
+  	MessageBox MB_OK|MB_ICONSTOP "The Master Node already include the first Shard, please deselect it."
+  	Abort
+  ${EndIf}
+  
 FunctionEnd
 
 
@@ -402,11 +560,11 @@ FunctionEnd
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Function FuncCertificate
    ${If} $installUPGRADE == ${BST_CHECKED}
-		Abort
+    Abort
    ${EndIf}
    ${If} $installMaster != ${BST_CHECKED} 
    ${AndIf} $installDISTRIBUTED == ${BST_CHECKED}
-		 Abort
+     Abort
    ${EndIf}
    
    !insertmacro MUI_HEADER_TEXT "Configuration settings: Certificate" "Please enter configuration settings."
@@ -423,10 +581,10 @@ Function FuncCertificate
 FunctionEnd
 
 Function FuncCertificateLeave
-	${NSD_GetText} $1 $masterCN
+  ${NSD_GetText} $1 $masterCN
 
   StrCmp $masterCN "" 0 +3
-  	MessageBox MB_OK|MB_ICONSTOP "Certificate CN cannot be empty"
+    MessageBox MB_OK|MB_ICONSTOP "Certificate CN cannot be empty"
     Abort
     
   ${StrFilter} $masterCN "12" "-." "" $0
@@ -442,11 +600,11 @@ FunctionEnd
 Function FuncLicense
    ${If} $installUPGRADE == ${BST_CHECKED}
    ${AndIf} $installMaster != ${BST_CHECKED}
-		Abort
+    Abort
    ${EndIf}
    ${If} $installMaster != ${BST_CHECKED} 
    ${AndIf} $installDISTRIBUTED == ${BST_CHECKED}
-		 Abort
+     Abort
    ${EndIf}
   
    !insertmacro MUI_HEADER_TEXT "Configuration settings: License" "Please enter configuration settings."
@@ -488,7 +646,7 @@ FunctionEnd
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Function FuncInsertCredentials
    ${If} $installUPGRADE == ${BST_CHECKED}
-		Abort
+    Abort
    ${EndIf}
   !insertmacro MUI_HEADER_TEXT "Configuration settings: Admin account" "Please enter configuration settings."
 
@@ -505,10 +663,10 @@ Function FuncInsertCredentials
 FunctionEnd
 
 Function FuncInsertCredentialsLeave
-	${NSD_GetText} $1 $adminpass
+  ${NSD_GetText} $1 $adminpass
 
   StrCmp $adminpass "" 0 +3
-  	MessageBox MB_OK|MB_ICONSTOP "Password for user 'admin' cannot be empty"
+    MessageBox MB_OK|MB_ICONSTOP "Password for user 'admin' cannot be empty"
     Abort
 FunctionEnd
 
@@ -517,12 +675,12 @@ FunctionEnd
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Function FuncInsertAddress
    ${If} $installUPGRADE == ${BST_CHECKED}
-		Abort
+    Abort
    ${EndIf}
   ${If} $installALLINONE == ${BST_CHECKED} 
   ${OrIf} $installMaster == ${BST_CHECKED}
     StrCpy $masterAddress "localhost"
-		Abort
+    Abort
   ${EndIf}
     
   !insertmacro MUI_HEADER_TEXT "Configuration settings" "Please enter configuration settings."
@@ -540,9 +698,9 @@ Function FuncInsertAddress
 FunctionEnd
 
 Function FuncInsertAddressLeave
-	${NSD_GetText} $1 $masterAddress
+  ${NSD_GetText} $1 $masterAddress
 
   StrCmp $masterAddress "" 0 +3
-  	MessageBox MB_OK|MB_ICONSTOP "Address for Master Node cannot be empty"
+    MessageBox MB_OK|MB_ICONSTOP "Address for Master Node cannot be empty"
     Abort
 FunctionEnd

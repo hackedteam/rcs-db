@@ -62,3 +62,6 @@ evidence
 
 # data dir for mongo
 data/
+
+#NSIS setup
+nsis/*.exe
