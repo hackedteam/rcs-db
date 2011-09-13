@@ -12,16 +12,21 @@
   !Define /file PACKAGE_VERSION "..\config\version.txt"
 
   ;Variables
-  Var insttype
 	Var installALLINONE
 	Var installDISTRIBUTED
+	Var installUPGRADE
+	
 	Var installCollector
 	Var installNetworkController
 	Var installMaster
 	Var installShard
 
 	Var adminpass
-	Var masteraddress
+	Var masterAddress
+	Var masterCN
+	Var masterLicense
+	
+	Var upgradeComponents
 	
   ;Name and file
   Name "RCS"
@@ -40,7 +45,7 @@
    InstType "install"
    InstType "update"
    !define SETUP_INSTALL 0
-   !define SETUP_UPDATE 1
+   !define SETUP_UPGRADE 1
 ;--------------------------------
 
 ;--------------------------------
@@ -60,6 +65,8 @@
   Page custom FuncUpgrade FuncUpgradeLeave
   Page custom FuncInstallationType FuncInstallationTypeLeave
   Page custom FuncSelectComponents FuncSelectComponentsLeave
+  Page custom FuncCertificate FuncCertificateLeave
+  Page custom FuncLicense FuncLicenseLeave
   Page custom FuncInsertCredentials FuncInsertCredentialsLeave
   Page custom FuncInsertAddress FuncInsertAddressLeave
   !insertmacro MUI_PAGE_INSTFILES
@@ -97,6 +104,8 @@ Section "Install Section" SecInstall
  
   SectionIn 1 2
  
+ 	WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
+	
  	Return
  
   SetDetailsPrint "textonly"
@@ -234,42 +243,92 @@ Section Uninstall
 
 SectionEnd
 
-;--------------------------------
-;Installer Functions
-
-Function .onInit
-	
-	Return
-	
-   IfFileExists "$INSTDIR\DB\config\version.txt" 0 +4
-      SetCurInstType 1
-      MessageBox MB_YESNO|MB_ICONQUESTION "RCS is already installed.$\nDo you want to update?" IDYES +2 IDNO 0
-         Quit
-   
-   GetCurInstType $insttype
-   Return
-FunctionEnd
-
-
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Function FuncUpgrade
+
+	ReadRegDWORD $R0 HKLM "Software\HT\RCS" "installed"
+	
+	; RCS is not installed
+	IntCmp $R0 1 +2 0 0
+		Abort
+
+  ; check which components we have
+	ReadRegDWORD $R0 HKLM "Software\HT\RCS" "collector"
+	IntCmp $R0 1 0 +3 +3
+		StrCpy $upgradeComponents "$upgradeComponentsCollector$\r"
+		${NSD_GetState} ${BST_CHECKED} $installCollector
+
+	ReadRegDWORD $R0 HKLM "Software\HT\RCS" "networkcontroller"
+	IntCmp $R0 1 0 +3 +3
+		StrCpy $upgradeComponents "$upgradeComponentsNetwork Controller$\r"
+		${NSD_GetState} ${BST_CHECKED} $installNetworkController
+
+	ReadRegDWORD $R0 HKLM "Software\HT\RCS" "master"
+	IntCmp $R0 1 0 +3 +3
+		StrCpy $upgradeComponents "$upgradeComponentsMaster$\r"
+		${NSD_GetState} ${BST_CHECKED} $installMaster
+
+	ReadRegDWORD $R0 HKLM "Software\HT\RCS" "shard"
+	IntCmp $R0 1 0 +3 +3
+		StrCpy $upgradeComponents "$upgradeComponentsShard$\r"
+		${NSD_GetState} ${BST_CHECKED} $installShard
+
+
+  !insertmacro MUI_HEADER_TEXT "Installation Type" "Upgrade"
+
+  nsDialogs::Create /NOUNLOAD 1018
+  
+  CreateFont $R1 "Arial" "8" "600"
+  
+  ${NSD_CreateLabel} 0 5u 100% 20u "The setup has detected that at least one RCS component is installed on this machine."
+  ${NSD_CreateLabel} 0 25u 100% 20u  "If you continue the following components will be upgraded:"
+  ${NSD_CreateLabel} 20u 40u 100% 50u  $upgradeComponents
+  Pop $1
+  SendMessage $1 ${WM_SETFONT} $R1 0
+  
+  ${NSD_CreateCheckBox} 20u 100u 200u 12u "YES, Upgrade."
+  Pop $1
+  SendMessage $1 ${WM_SETFONT} $R1 0
+ 
+  nsDialogs::Show
 FunctionEnd
 
 Function FuncUpgradeLeave
+	${NSD_GetState} $1 $installUPGRADE
+
+	${If} $installUPGRADE != ${BST_CHECKED}
+		MessageBox MB_OK|MB_ICONSTOP "Please check the upgrade option. If you don't want to upgrade exit the installer now."
+    Abort
+  ${EndIf}
+  
+  SetCurInstType SETUP_UPGRADE
+  
 FunctionEnd
 
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Function FuncInstallationType
-  !insertmacro MUI_HEADER_TEXT "Installation Type" "Method selection"
+   ${If} $installUPGRADE == ${BST_CHECKED}
+		Abort
+   ${EndIf}
+   
+  !insertmacro MUI_HEADER_TEXT "Installation Type" "Deployment Method"
 
   nsDialogs::Create /NOUNLOAD 1018
+  
+  CreateFont $R1 "Arial" "8" "600"
   
   ${NSD_CreateLabel} 0 5u 100% 10u "Please select the installation type you want:"
   ${NSD_CreateRadioButton} 20u 20u 200u 12u "All-in-one"
   Pop $1
-  ${NSD_CreateRadioButton} 20u 40u 200u 12u "Distributed"
+  SendMessage $1 ${WM_SETFONT} $R1 0
+  ${NSD_CreateLabel} 30u 35u 250u 25u "All the compoments will be installed on a single machine. Easy setup for small deployments."
+  
+  ${NSD_CreateRadioButton} 20u 60u 200u 12u "Distributed"
   Pop $2
+  SendMessage $2 ${WM_SETFONT} $R1 0
+  ${NSD_CreateLabel} 30u 75u 250u 25u "The installation is fully customizable. Each component can be installed on different machine to achieve maximum scalability. Suggested for big deployments."
 
   ${NSD_Check} $1
 
@@ -279,29 +338,54 @@ FunctionEnd
 Function FuncInstallationTypeLeave
   ${NSD_GetState} $1 $installALLINONE
   ${NSD_GetState} $2 $installDISTRIBUTED
+  
+  ; Automatically select all the components
+  ${If} $installALLINONE == ${BST_CHECKED}
+		${NSD_GetState} ${BST_CHECKED} $installCollector
+		${NSD_GetState} ${BST_CHECKED} $installNetworkController
+  	${NSD_GetState} ${BST_CHECKED} $installMaster
+  ${EndIf}
 FunctionEnd
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Function FuncSelectComponents
-   ${If} $installALLINONE == ${BST_CHECKED}
+   ${If} $installUPGRADE == ${BST_CHECKED}
+   ${OrIf} $installALLINONE == ${BST_CHECKED}
 		Abort
    ${EndIf}
 
   !insertmacro MUI_HEADER_TEXT "Installation Type" "Components selection"
-
+  
+  CreateFont $R1 "Arial" "8" "600"
+  
   nsDialogs::Create /NOUNLOAD 1018
   
-  ${NSD_CreateLabel} 0 5u 100% 10u "Front End:"
-  ${NSD_CreateCheckBox} 20u 20u 200u 12u "Collector"
+  ${NSD_CreateLabel} 0 0u 100% 10u "Frontend:"
+  Pop $0
+  SendMessage $0 ${WM_SETFONT} $R1 0
+  ${NSD_CreateCheckBox} 20u 10u 200u 12u "Collector"
   Pop $1
-  ${NSD_CreateCheckBox} 20u 35u 200u 12u "Network Controller"
-  Pop $2
+  SendMessage $1 ${WM_SETFONT} $R1 0
+  ${NSD_CreateLabel} 30u 23u 300u 25u "Service responsible for the data collection from the agents. It has to be exposed on the internet with a public IP address."
 
-  ${NSD_CreateLabel} 0 60u 100% 10u "Back End:"
-  ${NSD_CreateCheckBox} 20u 75u 200u 12u "Master Node"
+  ${NSD_CreateCheckBox} 20u 45u 200u 12u "Network Controller"
+  Pop $2
+  SendMessage $2 ${WM_SETFONT} $R1 0
+  ${NSD_CreateLabel} 30u 58u 300u 15u "Service responsible for the communications with Anonymizers and Injection Proxies."
+
+  ${NSD_CreateLabel} 0 70u 100% 10u "Backend:"
+  Pop $0
+  SendMessage $0 ${WM_SETFONT} $R1 0
+  ${NSD_CreateCheckBox} 20u 80u 200u 12u "Master Node"
   Pop $3
-  ${NSD_CreateCheckBox} 20u 90u 200u 12u "Shard"
+  SendMessage $3 ${WM_SETFONT} $R1 0
+  ${NSD_CreateLabel} 30u 93u 300u 15u "The Application Server and the primary node for the Database."
+
+  ${NSD_CreateCheckBox} 20u 110u 200u 12u "Shard"
   Pop $4
+  SendMessage $4 ${WM_SETFONT} $R1 0
+  ${NSD_CreateLabel} 30u 123u 280u 25u "Distributed single shard of the Database. It needs at least one Master node to be connected to."
   
   nsDialogs::Show
 FunctionEnd
@@ -314,8 +398,99 @@ Function FuncSelectComponentsLeave
 FunctionEnd
 
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Function FuncCertificate
+   ${If} $installUPGRADE == ${BST_CHECKED}
+		Abort
+   ${EndIf}
+   ${If} $installMaster != ${BST_CHECKED} 
+   ${AndIf} $installDISTRIBUTED == ${BST_CHECKED}
+		 Abort
+   ${EndIf}
+   
+   !insertmacro MUI_HEADER_TEXT "Configuration settings: Certificate" "Please enter configuration settings."
+
+   nsDialogs::Create /NOUNLOAD 1018
+
+   ${NSD_CreateLabel} 0 5u 100% 10u "Certificate Common Name (hostname or IP address):"
+   ${NSD_CreateLabel} 5u 22u 20u 10u "CN:"
+   ${NSD_CreateText} 30u 20u 200u 12u ""
+   Pop $1
+
+   ${NSD_SetFocus} $1
+   nsDialogs::Show
+FunctionEnd
+
+Function FuncCertificateLeave
+	${NSD_GetText} $1 $masterCN
+
+  StrCmp $masterCN "" 0 +3
+  	MessageBox MB_OK|MB_ICONSTOP "Certificate CN cannot be empty"
+    Abort
+    
+  ${StrFilter} $masterCN "12" "-." "" $0
+  StrCmp $0 $masterCN +3 0
+    MessageBox MB_OK|MB_ICONSTOP "Certificate CN can only contain alphanumeric characters, hyphens and dots"
+    Abort
+    
+FunctionEnd
+
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Function FuncLicense
+   ${If} $installUPGRADE == ${BST_CHECKED}
+   ${AndIf} $installMaster != ${BST_CHECKED}
+		Abort
+   ${EndIf}
+   ${If} $installMaster != ${BST_CHECKED} 
+   ${AndIf} $installDISTRIBUTED == ${BST_CHECKED}
+		 Abort
+   ${EndIf}
+  
+   !insertmacro MUI_HEADER_TEXT "Configuration settings: License" "Please enter configuration settings."
+
+   nsDialogs::Create /NOUNLOAD 1018
+
+   ${NSD_CreateLabel} 0 5u 100% 10u "License file:"
+   ${NSD_CreateLabel} 5u 22u 40u 10u "License:"
+   ${NSD_CreateFileRequest} 50u 20u 145u 12u ""
+   Pop $1
+   ${NSD_CreateBrowseButton} 200u 20u 50u 12u "Browse..."
+   Pop $0
+   GetFunctionAddress $2 BrowseClickFunction
+   nsDialogs::OnClick /NOUNLOAD $0 $2
+
+   ${NSD_SetFocus} $1
+   nsDialogs::Show
+FunctionEnd
+
+Function FuncLicenseLeave
+   ${NSD_GetText} $1 $masterLicense
+
+   StrCmp $masterLicense "" 0 +3
+      MessageBox MB_OK|MB_ICONSTOP "License file cannot be empty"
+      Abort
+
+   IfFileExists $masterLicense +3 0
+      MessageBox MB_OK|MB_ICONSTOP "Cannot read license file"
+      Abort
+FunctionEnd
+
+Function BrowseClickFunction
+   nsDialogs::SelectFileDialog /NOUNLOAD open "" "License files (*.lic)|*.lic"
+   Pop $0
+
+   SendMessage $1 ${WM_SETTEXT} 0 STR:$0
+FunctionEnd
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Function FuncInsertCredentials
-  !insertmacro MUI_HEADER_TEXT "Configuration settings" "Please enter configuration settings."
+   ${If} $installUPGRADE == ${BST_CHECKED}
+		Abort
+   ${EndIf}
+  !insertmacro MUI_HEADER_TEXT "Configuration settings: Admin account" "Please enter configuration settings."
 
   nsDialogs::Create /NOUNLOAD 1018
 
@@ -338,13 +513,15 @@ Function FuncInsertCredentialsLeave
 FunctionEnd
 
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Function FuncInsertAddress
-  ${If} $installALLINONE == ${BST_CHECKED}
-    StrCpy $masteraddress "localhost"
+   ${If} $installUPGRADE == ${BST_CHECKED}
 		Abort
-  ${EndIf}
-  ${If} $installMaster == ${BST_CHECKED}
-    StrCpy $masteraddress "localhost"
+   ${EndIf}
+  ${If} $installALLINONE == ${BST_CHECKED} 
+  ${OrIf} $installMaster == ${BST_CHECKED}
+    StrCpy $masterAddress "localhost"
 		Abort
   ${EndIf}
     
@@ -363,9 +540,9 @@ Function FuncInsertAddress
 FunctionEnd
 
 Function FuncInsertAddressLeave
-	${NSD_GetText} $1 $masteraddress
+	${NSD_GetText} $1 $masterAddress
 
-  StrCmp $masteraddress "" 0 +3
+  StrCmp $masterAddress "" 0 +3
   	MessageBox MB_OK|MB_ICONSTOP "Address for Master Node cannot be empty"
     Abort
 FunctionEnd
