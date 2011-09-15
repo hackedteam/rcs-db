@@ -23,7 +23,6 @@ class Config
   DEFAULT_CONFIG = {'CA_PEM' => 'rcs-ca.pem',
                     'DB_CERT' => 'rcs-db.crt',
                     'DB_KEY' => 'rcs-db.key',
-                    'SERVER_SIG' => 'rcs-server.sig',
                     'LISTENING_PORT' => 4444,
                     'HB_INTERVAL' => 30,
                     'WORKER_PORT' => 5150}
@@ -65,13 +64,6 @@ class Config
     if not @global['CA_PEM'].nil? then
       if not File.exist?(Config.instance.file('CA_PEM')) then
         trace :fatal, "Cannot open CA file [#{@global['CA_PEM']}]"
-        return false
-      end
-    end
-
-    if not @global['SERVER_SIG'].nil? then
-      if not File.exist?(Config.instance.file('SERVER_SIG')) then
-        trace :fatal, "Cannot open signature file [#{@global['SERVER_SIG']}]"
         return false
       end
     end
@@ -133,7 +125,6 @@ class Config
     @global['CA_PEM'] = options[:ca_pem] unless options[:ca_pem].nil?
     @global['DB_CERT'] = options[:db_cert] unless options[:db_cert].nil?
     @global['DB_KEY'] = options[:db_key] unless options[:db_key].nil?
-    @global['SERVER_SIG'] = options[:server_sig] unless options[:server_sig].nil?
     @global['LISTENING_PORT'] = options[:port] unless options[:port].nil?
     @global['HB_INTERVAL'] = options[:hb_interval] unless options[:hb_interval].nil?
     @global['WORKER_PORT'] = options[:worker_port] unless options[:worker_port].nil?
@@ -223,9 +214,6 @@ class Config
       end
       opts.on( '-k', '--db-key FILE', 'The certificate file (key) used for ssl communication' ) do |file|
         options[:db_key] = file
-      end
-      opts.on( '-s', '--server-sig FILE', 'The signature file (sig) used by Collectors' ) do |file|
-        options[:server_sig] = file
       end
 
       opts.separator ""

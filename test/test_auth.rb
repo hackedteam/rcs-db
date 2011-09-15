@@ -62,7 +62,7 @@ class ParserTest < Test::Unit::TestCase
   
   def test_login_server
     Config.instance.load_from_file
-    account = {:user => "test-server", :pass => File.read(Config.instance.file('SERVER_SIG')).chomp}
+    account = {:user => "test-server", :pass => server_sig}
     status, content, content_type, cookie = @parser.process_request(@http_headers, 'POST', '/auth/login', nil, account.to_json, nil)
     assert_equal 200, status
     assert_false cookie.nil?
@@ -124,7 +124,7 @@ class ParserTest < Test::Unit::TestCase
 
   def test_double_login_for_server
     Config.instance.load_from_file
-    account = {:user => "test-server", :pass => File.read(Config.instance.file('SERVER_SIG')).chomp}
+    account = {:user => "test-server", :pass => server_sig}
     status, content, content_type, cookie = @parser.process_request(@http_headers, 'POST', '/auth/login', nil, account.to_json, nil)
     assert_equal 200, status
     assert_false cookie.nil?
