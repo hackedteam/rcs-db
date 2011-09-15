@@ -274,6 +274,17 @@ class LicenseManager
       # fix by deleting the collector
       offending = ::Collector.first(conditions: {type: 'remote'}, sort: [[ :updated_at, :desc ]])
       trace :warn, "Deleting anonymizer '#{offending[:name]}' #{offending[:address]}"
+      # clear the chain of (possible) anonymizers
+      next_id = offending['next'][0]
+      begin
+        break if next_id.nil?
+        curr = ::Collector.find(next_id)
+        trace :warn, "Fixing the anonymizer chain: #{curr['name']}"
+        next_id = curr['next'][0]
+        curr.prev = [nil]
+        curr.next = [nil]
+        curr.save
+      end until next_id.nil?
       offending.destroy
     end
 

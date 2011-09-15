@@ -95,7 +95,11 @@ class DB
   end
 
   def enable_sharding
-    Shard.create('localhost:27018') if Shard.count == 0
+    if Shard.count == 0
+      output = Shard.create(Config.instance.global['CN'] + ':27018')
+      trace :info, "Adding the first Shard: #{output}"
+      raise "Cannot create shard" unless output['ok'] == 1
+    end
     output = Shard.enable('rcs')
     trace :info, "Enable Sharding on 'rcs': #{output}"
   end

@@ -25,7 +25,7 @@ Dir::mkdir(configdir) if not File.directory?(configdir)
 mongod = Dir.pwd + '/mongodb/' + os + '/mongod' + ext
 
 # the data path
-parameters = "--dbpath #{configdir} --logpath #{logdir}/mongoc.log --configsvr --rest --bind_ip localhost"
+parameters = "--dbpath #{configdir} --logpath #{logdir}/mongoc.log --configsvr --rest"
 
 # custom arguments
 custom = ARGV.join(' ')

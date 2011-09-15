@@ -20,7 +20,8 @@ class Config
   CONF_DIR = 'config'
   CONF_FILE = 'config.yaml'
 
-  DEFAULT_CONFIG = {'CA_PEM' => 'rcs-ca.pem',
+  DEFAULT_CONFIG = {'CN' => 'localhost',
+                    'CA_PEM' => 'rcs-ca.pem',
                     'DB_CERT' => 'rcs-db.crt',
                     'DB_KEY' => 'rcs-db.key',
                     'LISTENING_PORT' => 4444,
@@ -122,6 +123,7 @@ class Config
     end
 
     # values taken from command line
+    @global['CN'] = options[:cn] unless options[:cn].nil?
     @global['CA_PEM'] = options[:ca_pem] unless options[:ca_pem].nil?
     @global['DB_CERT'] = options[:db_cert] unless options[:db_cert].nil?
     @global['DB_KEY'] = options[:db_key] unless options[:db_key].nil?
@@ -202,6 +204,9 @@ class Config
       end
       opts.on( '-w', '--worker-port PORT', Integer, 'Listen on tcp/PORT for worker' ) do |port|
         options[:worker_port] = port
+      end
+      opts.on( '-n', '--CN CN', String, 'Common Name for the server' ) do |cn|
+        options[:cn] = cn
       end
 
       opts.separator ""
