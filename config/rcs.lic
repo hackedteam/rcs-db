@@ -21,8 +21,8 @@
 :rmi: true
 :ipa: .Inf
 :collectors: 
-  :collectors: 5
+  :collectors: 10
   :anonymizers: 20
 :shards: 1
 :exploits: "5bd90a7ac2e8e5fdc4e92c90c0c900b5948517f7"
-:integrity: "b883894180896f689249ff3da19e491db618b3a203e4a306885ba95bc52e00c2"
+:integrity: "ea5d07c4ca7043c339ddb9b3c5bc596730bb052de6a6a2f17a573934c9d40297"
