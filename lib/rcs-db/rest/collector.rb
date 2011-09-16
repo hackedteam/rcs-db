@@ -43,7 +43,7 @@ class CollectorController < RESTController
 
     mongoid_query do
       coll = Collector.find(@params['_id'])
-      @params.delete('collector')
+      @params.delete('_id')
 
       @params.each_pair do |key, value|
         if coll[key.to_s] != value and not key['_ids']

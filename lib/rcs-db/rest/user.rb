@@ -58,7 +58,7 @@ class UserController < RESTController
     mongoid_query do
       user = User.find(@params['_id'])
       return RESTController.reply.not_found if user.nil?
-      @params.delete('user')
+      @params.delete('_id')
       
       # if non-admin you can modify only yourself
       unless @session[:level].include? :admin
