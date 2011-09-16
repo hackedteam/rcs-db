@@ -1,26 +1,36 @@
 HIGH PRIORITY:
 
-    rest methods for items
     integrity check on Items
 
     certificate creation on startup and utility
 
+    Backup Procedures
+        - full
+        - per operation
+
+    sharding on gridfs
+
 MEDIUM PRIORITY:
 
-    get time via http (collector)
-
+    Sharding on dynamic collections (evidence)
+    
     proxy config methods
 
     Local Exploit portal
 
 LOW PRIORITY:
 
-    Sharding on dynamic collections (evidence)
+    evidence method
+
+    config
+
+    build
+
+    get time via http (collector)
+
+    dongle dll 
 
     mongo authentication
-    Backup Procedures
-        - full
-        - per operation
 
     Alerting daemon
 
