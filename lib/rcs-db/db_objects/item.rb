@@ -106,7 +106,7 @@ class Item
     backdoor[:path] = self[:path]
     backdoor.confkey = self[:confkey]
     backdoor.logkey = self[:logkey]
-    backdoor.pathseed = self[:pathseed]
+    backdoor.seed = self[:seed]
 
     # clone the factory's config
     fc = self[:configs].first

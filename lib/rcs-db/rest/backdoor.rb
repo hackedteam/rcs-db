@@ -7,7 +7,7 @@ require 'rcs-common/crypt'
 module RCS
 module DB
 
-class BackdoorController < RESTController
+class AgentController < RESTController
   include RCS::Crypt
   
   def index
@@ -114,6 +114,8 @@ class BackdoorController < RESTController
     case platform
       when 'win32', 'win64'
         platform = 'windows'
+      when 'winmobile'
+        platform = 'winmo'
       when 'iphone'
         platform = 'ios'
       when 'macos'
