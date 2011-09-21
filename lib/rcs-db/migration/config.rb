@@ -29,8 +29,11 @@ class ConfigMigration
         mc.desc = config[:desc]
         mc.user = config[:user]
         mc.saved = config[:saved].to_i
-        mc.sent = config[:sent].to_i if config[:sent].to_i != 0
-
+        if config[:sent].to_i != 0
+          mc.sent = config[:sent].to_i
+          mc.activated = mc.sent
+        end
+      
         mc.config = xml_to_json(config[:content])
 
         # migrate the complete config history

