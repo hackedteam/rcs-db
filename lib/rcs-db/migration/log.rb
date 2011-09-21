@@ -62,7 +62,7 @@ class LogMigration
       bck.save
       
       # delete all files related to the backdoor
-      GridFS.instance.delete_by_backdoor(bck[:_id].to_s)
+      GridFS.instance.delete_by_agent(bck[:_id].to_s)
 
       puts "      * #{bck.name}"
 

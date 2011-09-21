@@ -145,7 +145,7 @@ class Item
         # destroy all the evidences
         Evidence.collection_class(self.path.last).where(item: self._id).each {|ev| ev.destroy}
         # drop all grid items
-        GridFS.instance.delete_by_backdoor(self._id.to_s)
+        GridFS.instance.delete_by_agent(self._id.to_s)
     end
   end
 end

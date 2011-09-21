@@ -13,7 +13,7 @@ class Audit
   field :group, type: String
   field :operation, type: String
   field :target, type: String
-  field :backdoor, type: String
+  field :agent, type: String
   field :desc, type: String
   
   index :time
@@ -23,7 +23,7 @@ class Audit
   index :group
   index :operation
   index :target
-  index :backdoor
+  index :agent
   
   store_in :audit
 
@@ -95,7 +95,7 @@ class AuditFilters
   field :group, type: Array
   field :operation, type: Array
   field :target, type: Array
-  field :backdoor, type: Array
+  field :agent, type: Array
   
   store_in :audit_filters
 end

@@ -67,7 +67,7 @@ class Application
       # ensure at least one user (admin) is active
       DB.instance.ensure_admin
 
-      # ensure we have the signatures for the backdoors
+      # ensure we have the signatures for the agents
       DB.instance.ensure_signatures
 
       # ensure all indexes are in place
