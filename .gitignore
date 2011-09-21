@@ -65,3 +65,8 @@ data/
 
 #NSIS setup
 nsis/*.exe
+
+#configs
+scripts/*.xml
+scripts/*.json
+scripts/*.bson

@@ -246,11 +246,13 @@ require 'xmlsimple'
       subactions = []
           
       modules.each do |m|
-        subactions << {:action => 'module', :status => 'start', :module => m[:module]} if m[:enabled]
+        if m[:enabled] and not ['snapshot', 'camera', 'location'].include? m[:module]
+          subactions << {:action => 'module', :status => 'start', :module => m[:module]}
+        end
         m.delete(:enabled)
       end
 
-      start_action = {:desc => 'STARTUP', :subactions => subactions}
+      start_action = {:desc => 'STARTUP', :_mig => true, :subactions => subactions}
 
       actions << start_action
 
@@ -264,9 +266,9 @@ require 'xmlsimple'
     def agents_with_repetition(modules, actions, events)
       modules.each do |m|
         if m.has_key?('interval')
-          action = {:desc => "#{m[:module]} iteration", :subactions => [{:action => 'module', :status => 'start', :module => m[:module]}] }
+          action = {:desc => "#{m[:module]} iteration", :_mig => true, :subactions => [{:action => 'module', :status => 'start', :module => m[:module]}] }
           actions << action
-          event = {:event => 'timer', :desc => "#{m[:module]} loop", :enabled => true,
+          event = {:event => 'timer', :_mig => true, :desc => "#{m[:module]} loop", :enabled => true,
                    :ts => '00:00:00', :te => '23:59:59',
                    :repeat => actions.size - 1, :delay => m['interval']}
           if m.has_key?('iterations')
@@ -281,6 +283,23 @@ require 'xmlsimple'
               events << event
             end
             m.delete('newwindow')
+          end
+        end
+      end
+    end
+
+    def actions_with_start_stop(modules, actions, events)
+      actions.each do |a|
+        # skip actions created during migration
+        next if a[:_mig]
+        # search for start action for camera, snapshot and position
+        # and transform the start/stop action into an enable/disable event
+        a[:subactions].each do |s|
+          if s[:action] == 'module' and ['camera','snapshot', 'position'].include? s[:module]
+            s[:action] = 'event'
+            s[:event] = events.index {|e| e[:desc] == "#{s[:module]} loop" and e[:_mig] }
+            s[:status] = s[:status] == 'start' ? 'enabled' : 'disabled'
+            s.delete :module
           end
         end
       end
@@ -315,14 +334,15 @@ require 'xmlsimple'
 
       agents_on_startup(modules, actions, events)
       agents_with_repetition(modules, actions, events)
+      actions_with_start_stop(modules, actions, events)
 
       config = {'modules' => modules, 'actions' => actions, 'events' => events, 'globals' => globals}
 
       return config.to_json
     end
 
-#filename = 'config_mobile'
-filename = 'config_desktop'
+filename = 'config_mobile'
+#filename = 'config_desktop'
 content = ''
 
 File.open("#{filename}.xml", 'rb') do |f|
