@@ -16,9 +16,9 @@ class LicenseController < RESTController
     
     # convert the Infinity to null (needed by the JSON deserializer in flex)
     limits[:users] = nil if limits[:users] == inf
-    limits[:backdoors][:total] = nil if limits[:backdoors][:total] == inf
-    limits[:backdoors][:desktop] = nil if limits[:backdoors][:desktop] == inf
-    limits[:backdoors][:mobile] = nil if limits[:backdoors][:mobile] == inf
+    limits[:agents][:total] = nil if limits[:agents][:total] == inf
+    limits[:agents][:desktop] = nil if limits[:agents][:desktop] == inf
+    limits[:agents][:mobile] = nil if limits[:agents][:mobile] == inf
     limits[:collectors][:collectors] = nil if limits[:collectors][:collectors] == inf
     limits[:collectors][:anonymizers] = nil if limits[:collectors][:anonymizers] == inf
     limits[:ipa] = nil if limits[:ipa] == inf

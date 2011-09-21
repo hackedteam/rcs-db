@@ -21,7 +21,7 @@ class Evidence
         field :relevance, type: Integer
         field :blotter, type: Boolean
         field :note, type: String
-        field :item, type: Array         # backdoor BSON_ID
+        field :item, type: Array         # agent BSON_ID
         field :data, type: Hash
     
         store_in Evidence.collection_name('#{target}')
@@ -34,26 +34,26 @@ class Evidence
         protected
         def create_callback
           return if STAT_EXCLUSION.include? self.type
-          backdoor = Item.find self.item.first
-          backdoor.stat.evidence ||= {}
-          backdoor.stat.evidence[self.type] ||= 0
-          backdoor.stat.evidence[self.type] += 1
-          backdoor.stat.size += self.data[:_grid_size] unless self.data[:_grid].nil?
-          backdoor.stat.size += Mongoid.database.collection("#{Evidence.collection_name(target)}").stats()['avgObjSize'].to_i
-          backdoor.stat.grid_size += self.data[:_grid_size] unless self.data[:_grid].nil?
-          backdoor.save
+          agent = Item.find self.item.first
+          agent.stat.evidence ||= {}
+          agent.stat.evidence[self.type] ||= 0
+          agent.stat.evidence[self.type] += 1
+          agent.stat.size += self.data[:_grid_size] unless self.data[:_grid].nil?
+          agent.stat.size += Mongoid.database.collection("#{Evidence.collection_name(target)}").stats()['avgObjSize'].to_i
+          agent.stat.grid_size += self.data[:_grid_size] unless self.data[:_grid].nil?
+          agent.save
         end
 
         def destroy_callback
           return if STAT_EXCLUSION.include? self.type
-          backdoor = Item.find self.item.first
-          backdoor.stat.evidence ||= {}
-          backdoor.stat.evidence[self.type] ||= 0
-          backdoor.stat.evidence[self.type] -= 1
-          backdoor.stat.size -= self.data[:_grid_size] unless self.data[:_grid].nil?
-          backdoor.stat.size -= Mongoid.database.collection("#{Evidence.collection_name(target)}").stats()['avgObjSize'].to_i
-          backdoor.stat.grid_size -= self.data[:_grid_size] unless self.data[:_grid].nil?
-          backdoor.save
+          agent = Item.find self.item.first
+          agent.stat.evidence ||= {}
+          agent.stat.evidence[self.type] ||= 0
+          agent.stat.evidence[self.type] -= 1
+          agent.stat.size -= self.data[:_grid_size] unless self.data[:_grid].nil?
+          agent.stat.size -= Mongoid.database.collection("#{Evidence.collection_name(target)}").stats()['avgObjSize'].to_i
+          agent.stat.grid_size -= self.data[:_grid_size] unless self.data[:_grid].nil?
+          agent.save
           
           # drop the file (if any) in grid
           GridFS.instance.delete self.data[:_grid].first unless self.data[:_grid].nil?

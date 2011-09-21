@@ -17,12 +17,12 @@ class ConfigMigration
       configs = DB.instance.mysql_query('SELECT * from `config` WHERE `backdoor_id` IS NOT NULL ORDER BY `config_id`;').to_a
       configs.each do |config|
 
-        backdoor = Item.where({_mid: config[:backdoor_id]}).any_in(_kind: ['backdoor', 'factory']).first
+        agent = Item.where({_mid: config[:backdoor_id]}).any_in(_kind: ['agent', 'factory']).first
 
         # skip item if already migrated
-        next unless backdoor.configs.where({_mid: config[:config_id]}).first.nil?
+        next unless agent.configs.where({_mid: config[:config_id]}).first.nil?
 
-        trace :info, "Migrating config for '#{backdoor[:name]}'." if verbose
+        trace :info, "Migrating config for '#{agent[:name]}'." if verbose
 
         mc = ::Configuration.new
         mc[:_mid] = config[:config_id]
@@ -37,18 +37,18 @@ class ConfigMigration
         mc.config = xml_to_json(config[:content])
 
         # migrate the complete config history
-        if backdoor[:_kind] == 'backdoor'
-          backdoor.configs << mc
+        if agent[:_kind] == 'agent'
+          agent.configs << mc
           print "." unless verbose
         end
 
         # factories does not have history
-        if backdoor[:_kind] == 'factory'
-          backdoor.configs = [ mc ]
+        if agent[:_kind] == 'factory'
+          agent.configs = [ mc ]
           print "." unless verbose
         end
 
-        backdoor.save
+        agent.save
 
       end
 

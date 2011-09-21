@@ -72,7 +72,7 @@ class FactoryController < RESTController
                 :action => "factory.create",
                 :operation => operation['name'],
                 :target => target['name'],
-                :backdoor => item['name'],
+                :agent => item['name'],
                 :desc => "Created factory '#{item['name']}'"
 
       item = Item.factories

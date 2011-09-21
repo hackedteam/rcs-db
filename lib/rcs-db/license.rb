@@ -159,8 +159,8 @@ class LicenseManager
     if @limits[:type] == 'reusable'
       # reusable licenses don't consume any license slot but we have to check
       # the number of already active agents in the db
-      desktop = Item.count(conditions: {_kind: 'backdoor', type: 'desktop', status: 'open'})
-      mobile = Item.count(conditions: {_kind: 'backdoor', type: 'mobile', status: 'open'})
+      desktop = Item.count(conditions: {_kind: 'agent', type: 'desktop', status: 'open'})
+      mobile = Item.count(conditions: {_kind: 'agent', type: 'mobile', status: 'open'})
   
       if desktop + mobile >= @limits[:agents][:total]
         trace :warn, "You don't have enough total license to received data. Queuing..."
@@ -296,30 +296,30 @@ class LicenseManager
       offending.destroy
     end
 
-    if ::Item.count(conditions: {_kind: 'backdoor', type: 'desktop', status: 'open'}) > @limits[:agents][:desktop]
+    if ::Item.count(conditions: {_kind: 'agent', type: 'desktop', status: 'open'}) > @limits[:agents][:desktop]
       trace :fatal, "LICENCE EXCEEDED: Number of agents(desktop) is greater than license file. Fixing..."
       # fix by queuing the last updated agent
-      offending = ::Item.first(conditions: {_kind: 'backdoor', type: 'desktop', status: 'open'}, sort: [[ :updated_at, :desc ]])
+      offending = ::Item.first(conditions: {_kind: 'agent', type: 'desktop', status: 'open'}, sort: [[ :updated_at, :desc ]])
       offending[:status] = 'queued'
-      trace :warn, "Queuing backdoor '#{offending[:name]}' #{offending[:desc]}"
+      trace :warn, "Queuing agent '#{offending[:name]}' #{offending[:desc]}"
       offending.save
     end
 
-    if ::Item.count(conditions: {_kind: 'backdoor', type: 'mobile', status: 'open'}) > @limits[:agents][:mobile]
+    if ::Item.count(conditions: {_kind: 'agent', type: 'mobile', status: 'open'}) > @limits[:agents][:mobile]
       trace :fatal, "LICENCE EXCEEDED: Number of agents(mobile) is greater than license file. Fixing..."
       # fix by queuing the last updated agent
-      offending = ::Item.first(conditions: {_kind: 'backdoor', type: 'mobile', status: 'open'}, sort: [[ :updated_at, :desc ]])
+      offending = ::Item.first(conditions: {_kind: 'agent', type: 'mobile', status: 'open'}, sort: [[ :updated_at, :desc ]])
       offending[:status] = 'queued'
-      trace :warn, "Queuing backdoor '#{offending[:name]}' #{offending[:desc]}"
+      trace :warn, "Queuing agent '#{offending[:name]}' #{offending[:desc]}"
       offending.save
     end
 
-    if ::Item.count(conditions: {_kind: 'backdoor', status: 'open'}) > @limits[:agents][:total]
-      trace :fatal, "LICENCE EXCEEDED: Number of backdoor(total) is greater than license file. Fixing..."
+    if ::Item.count(conditions: {_kind: 'agent', status: 'open'}) > @limits[:agents][:total]
+      trace :fatal, "LICENCE EXCEEDED: Number of agent(total) is greater than license file. Fixing..."
       # fix by queuing the last updated agent
-      offending = ::Item.first(conditions: {_kind: 'backdoor', status: 'open'}, sort: [[ :updated_at, :desc ]])
+      offending = ::Item.first(conditions: {_kind: 'agent', status: 'open'}, sort: [[ :updated_at, :desc ]])
       offending[:status] = 'queued'
-      trace :warn, "Queuing backdoor '#{offending[:name]}' #{offending[:desc]}"
+      trace :warn, "Queuing agent '#{offending[:name]}' #{offending[:desc]}"
       offending.save
     end
 
@@ -345,9 +345,9 @@ class LicenseManager
 
   def counters
     counters = {:users => User.count(conditions: {enabled: true}),
-                :agents => {:total => Item.count(conditions: {_kind: 'backdoor', status: 'open'}),
-                               :desktop => Item.count(conditions: {_kind: 'backdoor', type: 'desktop', status: 'open'}),
-                               :mobile => Item.count(conditions: {_kind: 'backdoor', type: 'mobile', status: 'open'})},
+                :agents => {:total => Item.count(conditions: {_kind: 'agent', status: 'open'}),
+                               :desktop => Item.count(conditions: {_kind: 'agent', type: 'desktop', status: 'open'}),
+                               :mobile => Item.count(conditions: {_kind: 'agent', type: 'mobile', status: 'open'})},
                 :collectors => {:collectors => Collector.count(conditions: {type: 'local'}),
                                 :anonymizers => Collector.count(conditions: {type: 'remote'})},
                 :ipa => Proxy.count,

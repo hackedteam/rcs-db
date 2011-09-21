@@ -22,7 +22,7 @@ class Item
   field :confkey, type: String
   field :logkey, type: String
 
-  # backdoor (+ factory fields)
+  # agent instance (+ factory fields)
   field :instance, type: String
   field :version, type: Integer
   field :type, type: String
@@ -32,10 +32,10 @@ class Item
   field :demo, type: Boolean
   field :upgradable, type: Boolean
 
-  scope :operations, where(_kind: "operation")
-  scope :targets, where(_kind: "target")
-  scope :backdoors, where(_kind: "backdoor")
-  scope :factories, where(_kind: "factory")
+  scope :operations, where(_kind: 'operation')
+  scope :targets, where(_kind: 'target')
+  scope :agents, where(_kind: 'agent')
+  scope :factories, where(_kind: 'factory')
 
   has_and_belongs_to_many :groups, :dependent => :nullify, :autosave => true
 
@@ -78,8 +78,8 @@ class Item
         self.save
       when 'target'
         self.stat.grid_size = 0; self.stat.evidence = {}
-        backdoors = Item.where(_kind: 'backdoor').also_in(path: [self._id])
-        backdoors.each do |b|
+        agents = Item.where(_kind: 'agent').also_in(path: [self._id])
+        agents.each do |b|
           self.stat.evidence.merge!(b.stat.evidence) {|k,o,n| o+n }
           self.stat.grid_size += b.stat.grid_size
         end
@@ -96,17 +96,17 @@ class Item
   def clone_instance
     return nil if self[:_kind] != 'factory'
 
-    backdoor = Item.new
-    backdoor._kind = 'backdoor'
-    backdoor.deleted = false
-    backdoor.ident = self[:ident]
-    backdoor.name = self[:ident] + " (#{self[:counter]})"
-    backdoor.type = self[:type]
-    backdoor.desc = self[:desc]
-    backdoor[:path] = self[:path]
-    backdoor.confkey = self[:confkey]
-    backdoor.logkey = self[:logkey]
-    backdoor.seed = self[:seed]
+    agent = Item.new
+    agent._kind = 'agent'
+    agent.deleted = false
+    agent.ident = self[:ident]
+    agent.name = self[:ident] + " (#{self[:counter]})"
+    agent.type = self[:type]
+    agent.desc = self[:desc]
+    agent[:path] = self[:path]
+    agent.confkey = self[:confkey]
+    agent.logkey = self[:logkey]
+    agent.seed = self[:seed]
 
     # clone the factory's config
     fc = self[:configs].first
@@ -117,16 +117,16 @@ class Item
     nc.config = fc['config']
     nc.saved = Time.now.getutc.to_i
 
-    backdoor.configs = [ nc ]
+    agent.configs = [ nc ]
 
     ns = ::Stat.new
     ns.evidence = {}
     ns.size = 0
     ns.grid_size = 0
 
-    backdoor.stat = ns
+    agent.stat = ns
 
-    return backdoor
+    return agent
   end
 
   protected
@@ -137,11 +137,11 @@ class Item
         # destroy all the targets of this operation
         Item.where({_kind: 'target', path: [ self._id ]}).each {|targ| targ.destroy}
       when 'target'
-        # destroy all the backdoors of this target
-        Item.where({_kind: 'backdoor'}).also_in({path: [ self._id ]}).each {|bck| bck.destroy}
+        # destroy all the agents of this target
+        Item.where({_kind: 'agent'}).also_in({path: [ self._id ]}).each {|bck| bck.destroy}
         # drop the collection
         Mongoid.database.drop_collection Evidence.collection_name(self._id.to_s)
-      when 'backdoor'
+      when 'agent'
         # destroy all the evidences
         Evidence.collection_class(self.path.last).where(item: self._id).each {|ev| ev.destroy}
         # drop all grid items

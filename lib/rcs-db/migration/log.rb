@@ -51,29 +51,29 @@ class LogMigration
     db = Mongoid.database
     db.drop_collection Evidence.collection_name(id.to_s)
 
-    # migrate evidence for each backdoor
-    backdoors = Item.where({_kind: 'backdoor'}).also_in({path: [id]})
-    backdoors.each do |bck|
+    # migrate evidence for each agent
+    agents = Item.where({_kind: 'agent'}).also_in({path: [id]})
+    agents.each do |a|
       
       # clear stats for the backdoor
-      bck.stat.evidence = {}
-      bck.stat.size = 0
-      bck.stat.grid_size = 0
-      bck.save
+      a.stat.evidence = {}
+      a.stat.size = 0
+      a.stat.grid_size = 0
+      a.save
       
       # delete all files related to the backdoor
-      GridFS.instance.delete_by_agent(bck[:_id].to_s)
+      GridFS.instance.delete_by_agent(a[:_id].to_s)
 
-      puts "      * #{bck.name}"
+      puts "      * #{a.name}"
 
       # get the number of logs we have...
-      count = DB.instance.mysql_query("SELECT COUNT(*) as count FROM `log` WHERE backdoor_id = #{bck[:_mid]};").to_a
+      count = DB.instance.mysql_query("SELECT COUNT(*) as count FROM `log` WHERE backdoor_id = #{a[:_mid]};").to_a
       count = count[0][:count]
 
       @@total += count
 
       # iterate for every log...
-      log_ids = DB.instance.mysql_query("SELECT log_id FROM `log` WHERE backdoor_id = #{bck[:_mid]} ORDER BY `log_id`;")
+      log_ids = DB.instance.mysql_query("SELECT log_id FROM `log` WHERE backdoor_id = #{a[:_mid]} ORDER BY `log_id`;")
       
       current = 0
       size = 0
@@ -104,7 +104,7 @@ class LogMigration
           size = 0
         end
         
-        migrate_single_log(log, id.to_s, bck[:_id])
+        migrate_single_log(log, id.to_s, a[:_id])
         
         # report the status
         print "         #{current} of #{count}  %2.1f %% | #{processed}/sec  #{speed.to_s_bytes}/sec | #{@@size.to_s_bytes}      \r" % percentage
@@ -115,7 +115,7 @@ class LogMigration
     end
   end
 
-  def self.migrate_single_log(log, target_id, backdoor_id)
+  def self.migrate_single_log(log, target_id, agent_id)
 
     ev = Evidence.dynamic_new target_id
     ev.acquired = log[:acquired].to_i
@@ -124,7 +124,7 @@ class LogMigration
     ev.relevance = log[:tag]
     ev.blotter = true unless log[:blotter_id].nil?
     ev.note = log[:content] unless log[:content].nil?
-    ev.item = [ backdoor_id ]
+    ev.item = [ agent_id ]
 
     # parse log specific data
     ev.data = migrate_data(log)
@@ -132,7 +132,7 @@ class LogMigration
     # save the binary data
     if log[:longblob1].bytesize > 0
       ev.data[:_grid_size] = log[:longblob1].bytesize
-      ev.data[:_grid] = GridFS.instance.put(log[:longblob1], {filename: backdoor_id.to_s})
+      ev.data[:_grid] = GridFS.instance.put(log[:longblob1], {filename: agent_id.to_s})
     end
     
     ev.save

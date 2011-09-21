@@ -30,12 +30,12 @@ class AlertMigration
       
       operation = ::Item.where({_mid: alert[:activity_id], _kind: 'operation'}).first
       target = ::Item.where({_mid: alert[:target_id], _kind: 'target'}).first
-      backdoor = ::Item.where({_mid: alert[:backdoor_id], _kind: 'backdoor'}).first
+      agent = ::Item.where({_mid: alert[:backdoor_id], _kind: 'agent'}).first
 
       ma.path = []
       ma.path << operation[:_id] unless operation.nil?
       ma.path << target[:_id] unless target.nil?
-      ma.path << backdoor[:_id] unless backdoor.nil?
+      ma.path << agent[:_id] unless agent.nil?
 
       user = ::User.where({_mid: alert[:user_id]}).first
       user.alerts << ma
