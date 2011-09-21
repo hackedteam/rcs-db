@@ -19,7 +19,7 @@ class Audit
     #  :group
     #  :operation
     #  :target
-    #  :backdoor
+    #  :agent
     #  :desc
     
     def log(params)
@@ -48,7 +48,7 @@ class Audit
       s.group = update_search s.group, params[:group] if params.has_key? :group
       s.operation = update_search s.operation, params[:operation] if params.has_key? :operation
       s.target = update_search s.target, params[:target] if params.has_key? :target
-      s.backdoor = update_search s.backdoor, params[:backdoor] if params.has_key? :backdoor
+      s.agent = update_search s.agent, params[:agent] if params.has_key? :agent
       s.save
     end
   end

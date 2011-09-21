@@ -672,7 +672,7 @@ if false
   puts
 end
 
-# backdoors
+# agents
 if false
   res = http.request_get('/operation', {'Cookie' => cookie})
   operations = JSON.parse(res.body)
@@ -680,35 +680,35 @@ if false
   res = http.request_get('/target', {'Cookie' => cookie})
   targets = JSON.parse(res.body)
   
-  puts "backdoor.index"
-  res = http.request_get('/backdoor', {'Cookie' => cookie})
+  puts "agent.index"
+  res = http.request_get('/agent', {'Cookie' => cookie})
   puts res.body
-  backdoors = JSON.parse(res.body)
-  puts "You got #{backdoors.size} backdoors."
+  agents = JSON.parse(res.body)
+  puts "You got #{agents.size} agents."
   puts
   
-  puts "backdoor.show"
-  res = http.request_get("/backdoor/#{backdoors.first['_id']}", {'Cookie' => cookie})
+  puts "agent.show"
+  res = http.request_get("/agent/#{agents.first['_id']}", {'Cookie' => cookie})
   puts res.body
-  backdoor = JSON.parse(res.body)
-  puts backdoor
+  agent = JSON.parse(res.body)
+  puts agent
   puts
   
-  puts "backdoor.update"
-  backdoor_post = {
-     _id: backdoor['_id'],
+  puts "agent.update"
+  agent_post = {
+     _id: agent['_id'],
      name: "RENAMED!!!", 
-     desc: "whoa! this is our renamed backdoor", 
+     desc: "whoa! this is our renamed agent", 
      ident: "this field MUST NOT be updated!!!!!!!!!!!!"
    }
-  res = http.request_post("/backdoor/update", backdoor_post.to_json, {'Cookie' => cookie})
+  res = http.request_post("/agent/update", agent_post.to_json, {'Cookie' => cookie})
   puts res.body
-  backdoor = JSON.parse(res.body)
-  puts backdoor
+  agent = JSON.parse(res.body)
+  puts agent
   puts
    
-  puts "backdoor.delete"
-  res = http.request_post("/backdoor/destroy", {_id: backdoor['_id']}.to_json, {'Cookie' => cookie})
+  puts "agent.delete"
+  res = http.request_post("/agent/destroy", {_id: agent['_id']}.to_json, {'Cookie' => cookie})
   puts res.body
   puts
 end
@@ -747,13 +747,13 @@ if false
   puts
   
   puts "factory.update"
-  backdoor_post = {
+  agent_post = {
      _id: factory['_id'],
      name: "RENAMED!!!", 
      desc: "whoa! this is our renamed factory", 
      ident: "this field MUST NOT be updated!!!!!!!!!!!!"
    }
-  res = http.request_post("/factory/update", backdoor_post.to_json, {'Cookie' => cookie})
+  res = http.request_post("/factory/update", agent_post.to_json, {'Cookie' => cookie})
   puts res.body
   factory = JSON.parse(res.body)
   puts factory

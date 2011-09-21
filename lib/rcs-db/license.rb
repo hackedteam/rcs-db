@@ -34,11 +34,11 @@ class LicenseManager
     # you have at least:
     #   - one user to login to the system
     #   - one collector to receive data
-    #   - cannot create backdoors (neither demo nor real)
+    #   - cannot create agents (neither demo nor real)
     @limits = {:type => 'reusable',
                :serial => "off",
                :users => 1,
-               :backdoors => {:total => 0,
+               :agents => {:total => 0,
                               :desktop => 0,
                               :mobile => 0,
                               :windows => [false, false],
@@ -93,7 +93,7 @@ class LicenseManager
     end
 
     # sanity check
-    if @limits[:backdoors][:total] < @limits[:backdoors][:desktop] or @limits[:backdoors][:total] < @limits[:backdoors][:mobile]
+    if @limits[:agents][:total] < @limits[:agents][:desktop] or @limits[:agents][:total] < @limits[:agents][:mobile]
       trace :fatal, 'Invalid License File: total is lower than desktop or mobile'
       exit
     end
@@ -122,18 +122,18 @@ class LicenseManager
 
     @limits[:users] = limit[:users] if limit[:users] > @limits[:users]
 
-    @limits[:backdoors][:total] = limit[:backdoors][:total] if limit[:backdoors][:total] > @limits[:backdoors][:total]
-    @limits[:backdoors][:mobile] = limit[:backdoors][:mobile] if limit[:backdoors][:mobile] > @limits[:backdoors][:mobile]
-    @limits[:backdoors][:desktop] = limit[:backdoors][:desktop] if limit[:backdoors][:desktop] > @limits[:backdoors][:desktop]
+    @limits[:agents][:total] = limit[:agents][:total] if limit[:agents][:total] > @limits[:agents][:total]
+    @limits[:agents][:mobile] = limit[:agents][:mobile] if limit[:agents][:mobile] > @limits[:agents][:mobile]
+    @limits[:agents][:desktop] = limit[:agents][:desktop] if limit[:agents][:desktop] > @limits[:agents][:desktop]
 
-    @limits[:backdoors][:windows] = limit[:backdoors][:windows]
-    @limits[:backdoors][:osx] = limit[:backdoors][:osx]
-    @limits[:backdoors][:linux] = limit[:backdoors][:linux]
-    @limits[:backdoors][:winmo] = limit[:backdoors][:winmo]
-    @limits[:backdoors][:symbian] = limit[:backdoors][:symbian]
-    @limits[:backdoors][:ios] = limit[:backdoors][:ios]
-    @limits[:backdoors][:blackberry] = limit[:backdoors][:blackberry]
-    @limits[:backdoors][:android] = limit[:backdoors][:android]
+    @limits[:agents][:windows] = limit[:agents][:windows]
+    @limits[:agents][:osx] = limit[:agents][:osx]
+    @limits[:agents][:linux] = limit[:agents][:linux]
+    @limits[:agents][:winmo] = limit[:agents][:winmo]
+    @limits[:agents][:symbian] = limit[:agents][:symbian]
+    @limits[:agents][:ios] = limit[:agents][:ios]
+    @limits[:agents][:blackberry] = limit[:agents][:blackberry]
+    @limits[:agents][:android] = limit[:agents][:android]
     
     @limits[:ipa] = limit[:ipa] if limit[:ipa] > @limits[:ipa]
     @limits[:collectors][:collectors] = limit[:collectors][:collectors] if limit[:collectors][:collectors] > @limits[:collectors][:collectors]
@@ -151,26 +151,26 @@ class LicenseManager
   def burn_one_license(type, platform)
 
     # check if the platform can be used
-    unless @limits[:backdoors][platform][0]
+    unless @limits[:agents][platform][0]
       trace :warn, "You don't have a license for #{platform.to_s}. Queuing..."
       return false
     end
 
     if @limits[:type] == 'reusable'
       # reusable licenses don't consume any license slot but we have to check
-      # the number of already active backdoors in the db
-      desktop = Item.count(conditions: {_kind: 'backdoor', type: 'desktop', status: 'open'})
-      mobile = Item.count(conditions: {_kind: 'backdoor', type: 'mobile', status: 'open'})
+      # the number of already active agents in the db
+      desktop = Item.count(conditions: {_kind: 'agent', type: 'desktop', status: 'open'})
+      mobile = Item.count(conditions: {_kind: 'agent', type: 'mobile', status: 'open'})
   
-      if desktop + mobile >= @limits[:backdoors][:total]
+      if desktop + mobile >= @limits[:agents][:total]
         trace :warn, "You don't have enough total license to received data. Queuing..."
         return false
       end
-      if type == :desktop and desktop < @limits[:backdoors][:desktop]
+      if type == :desktop and desktop < @limits[:agents][:desktop]
         trace :info, "Using a reusable license: #{type.to_s} #{platform.to_s}"
         return true
       end
-      if type == :mobile and mobile < @limits[:backdoors][:mobile]
+      if type == :mobile and mobile < @limits[:agents][:mobile]
         trace :info, "Using a reusable license: #{type.to_s} #{platform.to_s}"
         return true
       end
@@ -296,30 +296,30 @@ class LicenseManager
       offending.destroy
     end
 
-    if ::Item.count(conditions: {_kind: 'backdoor', type: 'desktop', status: 'open'}) > @limits[:backdoors][:desktop]
-      trace :fatal, "LICENCE EXCEEDED: Number of backdoor(desktop) is greater than license file. Fixing..."
-      # fix by queuing the last updated backdoor
-      offending = ::Item.first(conditions: {_kind: 'backdoor', type: 'desktop', status: 'open'}, sort: [[ :updated_at, :desc ]])
+    if ::Item.count(conditions: {_kind: 'agent', type: 'desktop', status: 'open'}) > @limits[:agents][:desktop]
+      trace :fatal, "LICENCE EXCEEDED: Number of agents(desktop) is greater than license file. Fixing..."
+      # fix by queuing the last updated agent
+      offending = ::Item.first(conditions: {_kind: 'agent', type: 'desktop', status: 'open'}, sort: [[ :updated_at, :desc ]])
       offending[:status] = 'queued'
-      trace :warn, "Queuing backdoor '#{offending[:name]}' #{offending[:desc]}"
+      trace :warn, "Queuing agent '#{offending[:name]}' #{offending[:desc]}"
       offending.save
     end
 
-    if ::Item.count(conditions: {_kind: 'backdoor', type: 'mobile', status: 'open'}) > @limits[:backdoors][:mobile]
-      trace :fatal, "LICENCE EXCEEDED: Number of backdoor(mobile) is greater than license file. Fixing..."
-      # fix by queuing the last updated backdoor
-      offending = ::Item.first(conditions: {_kind: 'backdoor', type: 'mobile', status: 'open'}, sort: [[ :updated_at, :desc ]])
+    if ::Item.count(conditions: {_kind: 'agent', type: 'mobile', status: 'open'}) > @limits[:agents][:mobile]
+      trace :fatal, "LICENCE EXCEEDED: Number of agents(mobile) is greater than license file. Fixing..."
+      # fix by queuing the last updated agent
+      offending = ::Item.first(conditions: {_kind: 'agent', type: 'mobile', status: 'open'}, sort: [[ :updated_at, :desc ]])
       offending[:status] = 'queued'
-      trace :warn, "Queuing backdoor '#{offending[:name]}' #{offending[:desc]}"
+      trace :warn, "Queuing agent '#{offending[:name]}' #{offending[:desc]}"
       offending.save
     end
 
-    if ::Item.count(conditions: {_kind: 'backdoor', status: 'open'}) > @limits[:backdoors][:total]
-      trace :fatal, "LICENCE EXCEEDED: Number of backdoor(total) is greater than license file. Fixing..."
-      # fix by queuing the last updated backdoor
-      offending = ::Item.first(conditions: {_kind: 'backdoor', status: 'open'}, sort: [[ :updated_at, :desc ]])
+    if ::Item.count(conditions: {_kind: 'agent', status: 'open'}) > @limits[:agents][:total]
+      trace :fatal, "LICENCE EXCEEDED: Number of agent(total) is greater than license file. Fixing..."
+      # fix by queuing the last updated agent
+      offending = ::Item.first(conditions: {_kind: 'agent', status: 'open'}, sort: [[ :updated_at, :desc ]])
       offending[:status] = 'queued'
-      trace :warn, "Queuing backdoor '#{offending[:name]}' #{offending[:desc]}"
+      trace :warn, "Queuing agent '#{offending[:name]}' #{offending[:desc]}"
       offending.save
     end
 
@@ -345,9 +345,9 @@ class LicenseManager
 
   def counters
     counters = {:users => User.count(conditions: {enabled: true}),
-                :backdoors => {:total => Item.count(conditions: {_kind: 'backdoor', status: 'open'}),
-                               :desktop => Item.count(conditions: {_kind: 'backdoor', type: 'desktop', status: 'open'}),
-                               :mobile => Item.count(conditions: {_kind: 'backdoor', type: 'mobile', status: 'open'})},
+                :agents => {:total => Item.count(conditions: {_kind: 'agent', status: 'open'}),
+                               :desktop => Item.count(conditions: {_kind: 'agent', type: 'desktop', status: 'open'}),
+                               :mobile => Item.count(conditions: {_kind: 'agent', type: 'mobile', status: 'open'})},
                 :collectors => {:collectors => Collector.count(conditions: {type: 'local'}),
                                 :anonymizers => Collector.count(conditions: {type: 'remote'})},
                 :ipa => Proxy.count,

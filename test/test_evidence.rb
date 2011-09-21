@@ -23,7 +23,7 @@ end
 class DB
   def mysql_connect; end
   def mysql_query(q); end
-  def backdoor_evidence_key(id)
+  def agent_evidence_key(id)
     return 'evidence-key'
   end
 end
