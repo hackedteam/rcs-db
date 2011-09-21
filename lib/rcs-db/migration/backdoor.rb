@@ -11,7 +11,7 @@ class BackdoorMigration
 
     @higher_build = 0
     
-    print "Migrating backdoors "
+    print "Migrating backdoors to agents "
 
     # check if there is already a global document
     global = ::Item.where({_kind: 'global'}).first
