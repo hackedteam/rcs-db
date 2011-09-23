@@ -2,14 +2,25 @@
 
 require 'json'
 require 'bson'
+require 'optparse'
 require 'pp'
 require 'xmlsimple'
+
+########################################################################################################
+
+# compatibility function
+
+def trace(level, message)
+  puts message
+end
+
+########################################################################################################
 
     def parse_globals(items)
       globals = {}
       items.each_pair do |key, value|
         if key == 'quota' then
-          globals[:quota] = {:min => value.first['mindisk'], :max => value.first['maxlog']}
+          globals[:quota] = {:min => value.first['mindisk'].to_i, :max => value.first['maxlog'].to_i}
           globals[:wipe] = value.first['wipe'] == 'false' ? false : true
         end
         if key == 'template' then
@@ -134,6 +145,9 @@ require 'xmlsimple'
                 subaction['wifi'] = s['wifi'] == 'true' ? true : false
                 subaction['cell'] = s['gprs'] == 'true' ? true : false
                 subaction['cell'] = true if s.has_key?('apn')
+                subaction['bandwidth'] = subaction['bandwidth'].to_i unless subaction['bandwidth'].nil?
+                subaction['mindelay'] = subaction['mindelay'].to_i unless subaction['mindelay'].nil?
+                subaction['maxdelay'] = subaction['maxdelay'].to_i unless subaction['maxdelay'].nil?
               when 'sms'
                 subaction.merge! s
               when 'log'
@@ -170,8 +184,19 @@ require 'xmlsimple'
         case a[:module]
           when 'application', 'chat', 'clipboard', 'device', 'keylog', 'password', 'calllist', 'url'
             # no parameters
-          when 'call', 'camera', 'mouse', 'print', 'conference', 'livemic'
+          when 'call'
             a.merge! item[a[:module]].first
+            a['buffer'] = a['buffer'].to_i
+            a['compression'] = a['compression'].to_i
+          when 'camera', 'conference', 'livemic'
+            a.merge! item[a[:module]].first
+          when 'print'
+            a.merge! item[a[:module]].first
+            a['scale'] = a['scale'].to_i
+          when 'mouse'
+            a.merge! item[a[:module]].first
+            a['width'] = a['width'].to_i
+            a['height'] = a['height'].to_i
           when 'snapshot'
             a.merge! item[a[:module]].first
             a['onlywindow'] = a['onlywindow'] == 'true' ? true : false
@@ -179,6 +204,9 @@ require 'xmlsimple'
             a.merge! item[a[:module]].first
             a['autosense'] = a['autosense'] == 'true' ? true : false
             a['vad'] = a['vad'] == 'true' ? true : false
+            a['silence'] = a['silence'].to_i
+            a['vadthreshold'] = a['vadthreshold'].to_i
+            a['threshold'] = a['threshold'].to_f
           when 'position'
             a.merge! item[a[:module]].first
             a['gps'] = a['gps'] == 'true' ? true : false
@@ -207,6 +235,8 @@ require 'xmlsimple'
             a['deny'] = a['deny'].first['mask'] unless a['deny'].nil?
             a['open'] = a['open'] == 'true' ? true : false
             a['capture'] = a['capture'] == 'true' ? true : false
+            a['minsize'] = a['minsize'].to_i unless a['minsize'].nil?
+            a['maxsize'] = a['maxsize'].to_i unless a['maxsize'].nil?
           when 'messages'
             item[a[:module]].each do |mes|
               a.merge! mes
@@ -225,6 +255,7 @@ require 'xmlsimple'
               a['mail'] = a['mail'].first
               a['mail']['enabled'] = a['mail']['enabled'] == 'true' ? true : false
               a['mail']['filter'][0]['history'] = a['mail']['filter'][0]['history'] == 'true' ? true : false
+              a['mail']['filter'][0]['size'] = a['mail']['filter'][0]['size'].to_i unless a['mail']['filter'][0]['size'].nil?
             end
 
           when 'organizer'
@@ -270,9 +301,9 @@ require 'xmlsimple'
           actions << action
           event = {:event => 'timer', :_mig => true, :desc => "#{m[:module]} loop", :enabled => true,
                    :ts => '00:00:00', :te => '23:59:59',
-                   :repeat => actions.size - 1, :delay => m['interval']}
+                   :repeat => actions.size - 1, :delay => m['interval'].to_i}
           if m.has_key?('iterations')
-            event[:iter] = m['iterations']
+            event[:iter] = m['iterations'].to_i
             m.delete('iterations')
           end
           events << event
@@ -328,8 +359,8 @@ require 'xmlsimple'
           end
         end
       rescue Exception => e
-        puts "Invalid config parsing: " + e.message
-        puts "EXCEPTION: " + e.backtrace.join("\n")
+        trace :warn, "Invalid config parsing: " + e.message
+        trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
       end
 
       agents_on_startup(modules, actions, events)
@@ -341,33 +372,57 @@ require 'xmlsimple'
       return config.to_json
     end
 
-filename = 'config_mobile'
-#filename = 'config_desktop'
+
+#########################################################################
+
+# This hash will hold all of the options parsed from the command-line by OptionParser.
+options = {}
+
+optparse = OptionParser.new do |opts|
+  # Set a banner, displayed at the top of the help screen.
+  opts.banner = "Usage: xml_to_bson [options]"
+
+  opts.separator ""
+  opts.on( '-x', '--xml FILE', String, 'INPUT xml file' ) do |file|
+    options[:xml] = file
+  end
+  opts.on( '-j', '--json FILE', String, 'OUTPUT json file' ) do |file|
+    options[:json] = file
+  end
+  opts.on( '-b', '--bson FILE', String, 'OUTPUT bson file' ) do |file|
+    options[:bson] = file
+  end
+  opts.separator ""
+  opts.on( '-v', '--verbose', 'verbose mode' ) do
+    options[:verbose] = true
+  end
+  opts.on( '-h', '--help', 'Display this screen' ) do
+    puts opts
+    exit
+  end
+end
+
+optparse.parse(ARGV)
+
 content = ''
 
-File.open("#{filename}.xml", 'rb') do |f|
-  content = f.read
-end
+File.open(options[:xml], 'rb') { |f| content = f.read }
 
 json_config = xml_to_json(content)
 config = JSON.parse(json_config)
-
-#puts
-#puts "CONFIG: "
-pp config
-
-File.open("#{filename}.json", 'wb') do |f|
-  f.write json_config
-end
-
 bconfig = BSON.serialize(config)
 
-File.open("#{filename}.bson", 'wb') do |f|
-  f.write bconfig
+if options[:verbose]
+  puts "JSON CONFIG: "
+  pp config
 end
 
-puts "\n\nBSON CONFIG: [#{bconfig.size}]"
+File.open(options[:json], 'wb+') { |f| f.write json_config }  if options[:json]
+File.open(options[:bson], 'wb+') { |f| f.write bconfig } if options[:bson]
+
+puts "\nBSON CONFIG SIZE: #{bconfig.size}"
+
 #bconfig.to_a.each do |c|
 #  print "%02X" % c
 #end
-puts 
+

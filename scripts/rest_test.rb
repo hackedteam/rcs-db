@@ -810,7 +810,7 @@ if false
 end
 
 # shards
-if true
+if false
   # shard.index
   puts "shard.index" 
   res = http.request_get('/shard', {'Cookie' => cookie})
@@ -836,6 +836,32 @@ if true
   #res = http.request_get('/shard', {'Cookie' => cookie})
   #puts res.body
   #puts
+end
+
+# backup
+if true
+  # backup.index
+  puts "backup.index" 
+  res = http.request_get('/backup', {'Cookie' => cookie})
+  shards = JSON.parse(res.body)
+  puts res.body
+  puts
+  
+  # backup.create
+  backup = {what: 'all', when: {week: [], month: [], time: '14:35'}, name: 'full backup'}
+  res = http.request_post('/backup/create', backup.to_json, {'Cookie' => cookie})
+  puts "backup.create"
+  puts res.body
+  puts
+  
+  id = JSON.parse(res.body)['_id']
+  
+  # backup.delete
+  #puts "backup.delete"
+  #res = http.delete("/backup/#{id}", {'Cookie' => cookie})
+  #puts res
+  #puts
+  
 end
 
 # logout
