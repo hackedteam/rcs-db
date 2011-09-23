@@ -86,7 +86,7 @@ class ConfigMigration
       globals = {}
       items.each_pair do |key, value|
         if key == 'quota' then
-          globals[:quota] = {:min => value.first['mindisk'], :max => value.first['maxlog']}
+          globals[:quota] = {:min => value.first['mindisk'].to_i, :max => value.first['maxlog'].to_i}
           globals[:wipe] = value.first['wipe'] == 'false' ? false : true
         end
         if key == 'template' then
@@ -211,6 +211,9 @@ class ConfigMigration
                 subaction['wifi'] = s['wifi'] == 'true' ? true : false
                 subaction['cell'] = s['gprs'] == 'true' ? true : false
                 subaction['cell'] = true if s.has_key?('apn')
+                subaction['bandwidth'] = subaction['bandwidth'].to_i unless subaction['bandwidth'].nil?
+                subaction['mindelay'] = subaction['mindelay'].to_i unless subaction['mindelay'].nil?
+                subaction['maxdelay'] = subaction['maxdelay'].to_i unless subaction['maxdelay'].nil?
               when 'sms'
                 subaction.merge! s
               when 'log'
@@ -247,8 +250,19 @@ class ConfigMigration
         case a[:module]
           when 'application', 'chat', 'clipboard', 'device', 'keylog', 'password', 'calllist', 'url'
             # no parameters
-          when 'call', 'camera', 'mouse', 'print', 'conference', 'livemic'
+          when 'call'
             a.merge! item[a[:module]].first
+            a['buffer'] = a['buffer'].to_i
+            a['compression'] = a['compression'].to_i
+          when 'camera', 'conference', 'livemic'
+            a.merge! item[a[:module]].first
+          when 'print'
+            a.merge! item[a[:module]].first
+            a['scale'] = a['scale'].to_i
+          when 'mouse'
+            a.merge! item[a[:module]].first
+            a['width'] = a['width'].to_i
+            a['height'] = a['height'].to_i
           when 'snapshot'
             a.merge! item[a[:module]].first
             a['onlywindow'] = a['onlywindow'] == 'true' ? true : false
@@ -256,6 +270,9 @@ class ConfigMigration
             a.merge! item[a[:module]].first
             a['autosense'] = a['autosense'] == 'true' ? true : false
             a['vad'] = a['vad'] == 'true' ? true : false
+            a['silence'] = a['silence'].to_i
+            a['vadthreshold'] = a['vadthreshold'].to_i
+            a['threshold'] = a['threshold'].to_f
           when 'position'
             a.merge! item[a[:module]].first
             a['gps'] = a['gps'] == 'true' ? true : false
@@ -284,6 +301,8 @@ class ConfigMigration
             a['deny'] = a['deny'].first['mask'] unless a['deny'].nil?
             a['open'] = a['open'] == 'true' ? true : false
             a['capture'] = a['capture'] == 'true' ? true : false
+            a['minsize'] = a['minsize'].to_i unless a['minsize'].nil?
+            a['maxsize'] = a['maxsize'].to_i unless a['maxsize'].nil?
           when 'messages'
             item[a[:module]].each do |mes|
               a.merge! mes
@@ -302,6 +321,7 @@ class ConfigMigration
               a['mail'] = a['mail'].first
               a['mail']['enabled'] = a['mail']['enabled'] == 'true' ? true : false
               a['mail']['filter'][0]['history'] = a['mail']['filter'][0]['history'] == 'true' ? true : false
+              a['mail']['filter'][0]['size'] = a['mail']['filter'][0]['size'].to_i unless a['mail']['filter'][0]['size'].nil?
             end
 
           when 'organizer'
@@ -347,9 +367,9 @@ class ConfigMigration
           actions << action
           event = {:event => 'timer', :_mig => true, :desc => "#{m[:module]} loop", :enabled => true,
                    :ts => '00:00:00', :te => '23:59:59',
-                   :repeat => actions.size - 1, :delay => m['interval']}
+                   :repeat => actions.size - 1, :delay => m['interval'].to_i}
           if m.has_key?('iterations')
-            event[:iter] = m['iterations']
+            event[:iter] = m['iterations'].to_i
             m.delete('iterations')
           end
           events << event
@@ -417,7 +437,6 @@ class ConfigMigration
 
       return config.to_json
     end
-
 
   end
 end

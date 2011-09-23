@@ -130,6 +130,7 @@ class Config
     @global['LISTENING_PORT'] = options[:port] unless options[:port].nil?
     @global['HB_INTERVAL'] = options[:hb_interval] unless options[:hb_interval].nil?
     @global['WORKER_PORT'] = options[:worker_port] unless options[:worker_port].nil?
+    @global['BACKUP_DIR'] = options[:backup] unless options[:backup].nil?
 
     trace :info, ""
     trace :info, "Final configuration:"
@@ -225,6 +226,9 @@ class Config
       opts.separator "General options:"
       opts.on( '-X', '--defaults', 'Write a new config file with default values' ) do
         options[:defaults] = true
+      end
+      opts.on( '-B', '--backup-dir DIR', String, 'The directory to be used for backups' ) do |dir|
+        options[:backup] = dir
       end
       opts.on( '-h', '--help', 'Display this screen' ) do
         puts opts

@@ -7,6 +7,7 @@ require_relative 'heartbeat'
 require_relative 'parser'
 require_relative 'rest'
 require_relative 'sessions'
+require_relative 'backup'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -164,7 +165,10 @@ class Events
 
         # recalculate size statistics for operations, targets and agents
         Item.restat
-        EM::PeriodicTimer.new(60) { Item.restat }
+        EM::PeriodicTimer.new(60) { EM.defer(proc{Item.restat}) }
+
+        # perform the backups
+        EM::PeriodicTimer.new(10) { EM.defer(proc{ BackupManager.perform }) }
       end
     rescue RuntimeError => e
       # bind error

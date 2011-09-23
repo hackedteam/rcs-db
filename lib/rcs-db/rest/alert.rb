@@ -125,7 +125,7 @@ class AlertController < RESTController
     end
   end
 
-    def destroy_all_logs
+  def destroy_all_logs
     require_auth_level :view
 
     mongoid_query do
