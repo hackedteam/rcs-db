@@ -210,7 +210,10 @@ class ConfigMigration
                 subaction['wifi'] = false unless s.has_key?('wifi')
                 subaction['wifi'] = s['wifi'] == 'true' ? true : false
                 subaction['cell'] = s['gprs'] == 'true' ? true : false
-                subaction['cell'] = true if s.has_key?('apn')
+                if s.has_key?('apn')
+                  subaction['cell'] = true
+                  subaction['apn'] = subaction['apn'].first
+                end
                 subaction['bandwidth'] = subaction['bandwidth'].to_i unless subaction['bandwidth'].nil?
                 subaction['mindelay'] = subaction['mindelay'].to_i unless subaction['mindelay'].nil?
                 subaction['maxdelay'] = subaction['maxdelay'].to_i unless subaction['maxdelay'].nil?
@@ -254,11 +257,15 @@ class ConfigMigration
             a.merge! item[a[:module]].first
             a['buffer'] = a['buffer'].to_i
             a['compression'] = a['compression'].to_i
-          when 'camera', 'conference', 'livemic'
+          when 'camera'
+            a.merge! item[a[:module]].first
+            a['quality'] = 'med'
+          when 'conference', 'livemic'
             a.merge! item[a[:module]].first
           when 'print'
             a.merge! item[a[:module]].first
-            a['scale'] = a['scale'].to_i
+            a.delete('scale')
+            a['quality'] = 'med'
           when 'mouse'
             a.merge! item[a[:module]].first
             a['width'] = a['width'].to_i
@@ -266,6 +273,7 @@ class ConfigMigration
           when 'snapshot'
             a.merge! item[a[:module]].first
             a['onlywindow'] = a['onlywindow'] == 'true' ? true : false
+            a['quality'] = 'med'
           when 'mic'
             a.merge! item[a[:module]].first
             a['autosense'] = a['autosense'] == 'true' ? true : false

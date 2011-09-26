@@ -1,5 +1,7 @@
 HIGH PRIORITY:
 
+    rename proxy -> injector
+
     integrity check on Items
 
     certificate creation on startup and utility

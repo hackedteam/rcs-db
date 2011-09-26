@@ -6,7 +6,7 @@
 module RCS
 module DB
 
-class BackupController < RESTController
+class BackupjobController < RESTController
 
   def index
     require_auth_level :sys
@@ -32,7 +32,7 @@ class BackupController < RESTController
       b.status = 'QUEUED'
       b.save
       
-      Audit.log :actor => @session[:user][:name], :action => 'backup.create', :desc => "#{@params['what']} on #{@params['when']} -> #{@params['name']}"
+      Audit.log :actor => @session[:user][:name], :action => 'backupjob.create', :desc => "#{@params['what']} on #{@params['when']} -> #{@params['name']}"
 
       return RESTController.reply.ok(b)
     end    
@@ -47,7 +47,7 @@ class BackupController < RESTController
 
       @params.each_pair do |key, value|
         if backup[key.to_s] != value
-          Audit.log :actor => @session[:user][:name], :action => 'backup.update', :desc => "Updated '#{key}' to '#{value}' for backup #{backup[:_id]}"
+          Audit.log :actor => @session[:user][:name], :action => 'backupjob.update', :desc => "Updated '#{key}' to '#{value}' for backup #{backup[:_id]}"
         end
       end
 
@@ -62,11 +62,65 @@ class BackupController < RESTController
     
     mongoid_query do
       backup = ::Backup.find(@params['_id'])
-      Audit.log :actor => @session[:user][:name], :action => 'backup.destroy', :desc => "Deleted the backup [#{@params['what']} on #{@params['when']}]"
+      Audit.log :actor => @session[:user][:name], :action => 'backupjob.destroy', :desc => "Deleted the backup job [#{@params['what']} on #{@params['when']}]"
       backup.destroy
 
       return RESTController.reply.ok
     end
+  end
+
+end
+
+class BackuparchiveController < RESTController
+
+  def index
+    require_auth_level :sys
+
+    index = []
+
+    Dir[Config.instance.global['BACKUP_DIR'] + '/*'].each do |dir|
+      dirsize = 0
+      Find.find(dir + '/rcs') { |f| dirsize += File.stat(f).size }
+      name = File.basename(dir).split('-')[0]
+      time = File.stat(dir).ctime
+      index << {_id: File.basename(dir), name: name, when: time.strftime('%Y-%m-%d %H:%M'), size: dirsize}
+    end
+
+    return RESTController.reply.ok(index)
+  end
+
+  def destroy
+    require_auth_level :sys
+
+    real = File.realdirpath Config.instance.global['BACKUP_DIR'] + "/" + @params['_id']
+
+    # prevent escaping from the directory
+    if not real.start_with? Config.instance.global['BACKUP_DIR'] + "/" or not File.exist?(real)
+      return RESTController.reply.conflict("Invalid backup")
+    end
+
+    # recursively delete the directory
+    FileUtils.rm_rf(real)
+
+    Audit.log :actor => @session[:user][:name], :action => 'backup.destroy', :desc => "Deleted the backup #{@params['_id']} from the archive"
+
+    return RESTController.reply.ok()
+  end
+
+  def restore
+    require_auth_level :sys
+
+    command = Config.mongo_exec_path('mongorestore')
+    command += " #{Config.instance.global['BACKUP_DIR']}/#{@params['_id']}"
+
+    Audit.log :actor => @session[:user][:name], :action => 'backup.restore', :desc => "Restored the backup #{@params['_id']} from the archive"
+
+    if system command
+      return RESTController.reply.ok()
+    else
+      return RESTController.reply.server_error("Cannot restore backup")
+    end
+    
   end
 
 end

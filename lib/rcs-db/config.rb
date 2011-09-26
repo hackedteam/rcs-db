@@ -178,6 +178,20 @@ class Config
     http.request_post('/auth/logout', nil, {'Cookie' => cookie})
   end
 
+  def self.mongo_exec_path(file)
+    # select the correct dir based upon the platform we are running on
+    case RUBY_PLATFORM
+      when /darwin/
+        os = 'macos'
+        ext = ''
+      when /mingw/
+        os = 'win'
+        ext = '.exe'
+    end
+
+    return Dir.pwd + '/mongodb/' + os + '/' + file + ext
+  end
+
   # executed from rcs-db-config
   def self.run!(*argv)
     # reopen the class and declare any empty trace method

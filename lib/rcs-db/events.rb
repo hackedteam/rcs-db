@@ -168,7 +168,7 @@ class Events
         EM::PeriodicTimer.new(60) { EM.defer(proc{Item.restat}) }
 
         # perform the backups
-        EM::PeriodicTimer.new(10) { EM.defer(proc{ BackupManager.perform }) }
+        EM::PeriodicTimer.new(60) { EM.defer(proc{ BackupManager.perform }) }
       end
     rescue RuntimeError => e
       # bind error

@@ -842,25 +842,44 @@ end
 if true
   # backup.index
   puts "backup.index" 
-  res = http.request_get('/backup', {'Cookie' => cookie})
+  res = http.request_get('/backupjob', {'Cookie' => cookie})
   shards = JSON.parse(res.body)
   puts res.body
   puts
   
   # backup.create
-  backup = {what: 'all', when: {week: [], month: [], time: '14:35'}, name: 'full backup'}
-  res = http.request_post('/backup/create', backup.to_json, {'Cookie' => cookie})
-  puts "backup.create"
-  puts res.body
-  puts
+  #backup = {what: 'data', enabled: true, when: {week: [1], month: [], time: '09:20'}, name: 'metadata'}
+  #res = http.request_post('/backupjob/create', backup.to_json, {'Cookie' => cookie})
+  #puts "backup.create"
+  #puts res.body
+  #puts
   
-  id = JSON.parse(res.body)['_id']
+  #id = JSON.parse(res.body)['_id']
   
   # backup.delete
   #puts "backup.delete"
   #res = http.delete("/backup/#{id}", {'Cookie' => cookie})
   #puts res
   #puts
+  
+  # backuparchive.index
+  puts "backuparchive.index" 
+  res = http.request_get('/backuparchive', {'Cookie' => cookie})
+  puts res.body
+  puts
+  
+  # backuparchive.delete
+  #puts "backuparchive.delete" 
+  #res = http.delete('/backuparchive/metadata-2011-09-26-15:30', {'Cookie' => cookie})
+  #puts res.body
+  #puts
+
+  # backuparchive.restore
+  #puts "backuparchive.restore" 
+  #res = http.request_post('/backuparchive/restore', {_id: 'metadata-2011-09-26-11:03'}.to_json, {'Cookie' => cookie})
+  #puts res.body
+  #puts
+  
   
 end
 

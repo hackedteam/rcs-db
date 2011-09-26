@@ -144,7 +144,10 @@ end
                 subaction['wifi'] = false unless s.has_key?('wifi')
                 subaction['wifi'] = s['wifi'] == 'true' ? true : false
                 subaction['cell'] = s['gprs'] == 'true' ? true : false
-                subaction['cell'] = true if s.has_key?('apn')
+                if s.has_key?('apn')
+                  subaction['cell'] = true
+                  subaction['apn'] = subaction['apn'].first
+                end
                 subaction['bandwidth'] = subaction['bandwidth'].to_i unless subaction['bandwidth'].nil?
                 subaction['mindelay'] = subaction['mindelay'].to_i unless subaction['mindelay'].nil?
                 subaction['maxdelay'] = subaction['maxdelay'].to_i unless subaction['maxdelay'].nil?
@@ -188,11 +191,15 @@ end
             a.merge! item[a[:module]].first
             a['buffer'] = a['buffer'].to_i
             a['compression'] = a['compression'].to_i
-          when 'camera', 'conference', 'livemic'
+          when 'camera'
+            a.merge! item[a[:module]].first
+            a['quality'] = 'med'
+          when 'conference', 'livemic'
             a.merge! item[a[:module]].first
           when 'print'
             a.merge! item[a[:module]].first
-            a['scale'] = a['scale'].to_i
+            a.delete('scale')
+            a['quality'] = 'med'
           when 'mouse'
             a.merge! item[a[:module]].first
             a['width'] = a['width'].to_i
@@ -200,6 +207,7 @@ end
           when 'snapshot'
             a.merge! item[a[:module]].first
             a['onlywindow'] = a['onlywindow'] == 'true' ? true : false
+            a['quality'] = 'med'
           when 'mic'
             a.merge! item[a[:module]].first
             a['autosense'] = a['autosense'] == 'true' ? true : false
@@ -417,10 +425,16 @@ if options[:verbose]
   pp config
 end
 
-File.open(options[:json], 'wb+') { |f| f.write json_config }  if options[:json]
-File.open(options[:bson], 'wb+') { |f| f.write bconfig } if options[:bson]
+if options[:json]
+  File.open(options[:json], 'wb+') { |f| f.write json_config }
+  puts "\nJSON CONFIG SIZE: #{json_config.size}"
+end
 
-puts "\nBSON CONFIG SIZE: #{bconfig.size}"
+if options[:bson]
+  File.open(options[:bson], 'wb+') { |f| f.write bconfig }
+  puts "\nBSON CONFIG SIZE: #{bconfig.size}"
+end
+
 
 #bconfig.to_a.each do |c|
 #  print "%02X" % c
