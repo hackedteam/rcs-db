@@ -1,6 +1,6 @@
 HIGH PRIORITY:
 
-    rename proxy -> injector
+    split gridfs?
 
     integrity check on Items
 
@@ -15,7 +15,9 @@ HIGH PRIORITY:
 MEDIUM PRIORITY:
 
     Sharding on dynamic collections (evidence)
-    
+
+    rename proxy -> injector
+
     proxy config methods
 
     Local Exploit portal

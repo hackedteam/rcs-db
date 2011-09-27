@@ -86,7 +86,7 @@ class ConfigMigration
       globals = {}
       items.each_pair do |key, value|
         if key == 'quota' then
-          globals[:quota] = {:min => value.first['mindisk'].to_i, :max => value.first['maxlog'].to_i}
+          globals[:quota] = {:min => value.first['mindisk'].to_i*1024*1024, :max => value.first['maxlog'].to_i*1024*1024}
           globals[:wipe] = value.first['wipe'] == 'false' ? false : true
         end
         if key == 'template' then
@@ -138,7 +138,7 @@ class ConfigMigration
             when 'call'
               e[:number] = params['number']
             when 'quota'
-              e[:quota] = params['size'].to_i
+              e[:quota] = params['size'].to_i*1024*1024
             when 'location'
               e[:event] = 'position'
               e[:type] = params['type']
@@ -214,7 +214,7 @@ class ConfigMigration
                   subaction['cell'] = true
                   subaction['apn'] = subaction['apn'].first
                 end
-                subaction['bandwidth'] = subaction['bandwidth'].to_i unless subaction['bandwidth'].nil?
+                subaction['bandwidth'] = subaction['bandwidth'].to_i * 1024 unless subaction['bandwidth'].nil?
                 subaction['mindelay'] = subaction['mindelay'].to_i unless subaction['mindelay'].nil?
                 subaction['maxdelay'] = subaction['maxdelay'].to_i unless subaction['maxdelay'].nil?
               when 'sms'
@@ -255,7 +255,7 @@ class ConfigMigration
             # no parameters
           when 'call'
             a.merge! item[a[:module]].first
-            a['buffer'] = a['buffer'].to_i
+            a['buffer'] = a['buffer'].to_i * 1024
             a['compression'] = a['compression'].to_i
           when 'camera'
             a.merge! item[a[:module]].first
@@ -289,9 +289,9 @@ class ConfigMigration
           when 'crisis'
             t = item[a[:module]].first
             a[:network] = {:enabled => t['network'].first['enabled'] == 'false' ? false : true,
-                           :processes => t['network'].first['process']} unless a[:network].nil?
+                           :processes => t['network'].first['process']} unless t['network'].nil?
             a[:hook] = {:enabled => t['hook'].first['enabled'] == 'false' ? false : true,
-                        :processes => t['hook'].first['process']} unless a[:hook].nil?
+                        :processes => t['hook'].first['process']} unless t['hook'].nil?
             a[:synchronize] = t['synchronize'] == 'false' ? false : true unless t['synchronize'].nil?
             a[:call] = t['call'] == 'false' ? false : true unless t['call'].nil?
             a[:mic] = t['mic'] == 'false' ? false : true unless t['mic'].nil?
@@ -301,6 +301,7 @@ class ConfigMigration
             t = item[a[:module]].first
             a[:local] = t['local'] == 'false' ? false : true
             a[:usb] = t['usb'] == 'false' ? false : true
+            a[:vm] = t['vm'].to_i
             # false by default on purpose
             a[:mobile] = false
           when 'file'
@@ -318,18 +319,21 @@ class ConfigMigration
             unless a['sms'].nil?
               a['sms'] = a['sms'].first
               a['sms']['enabled'] = a['sms']['enabled'] == 'true' ? true : false
-              a['sms']['filter'][0]['history'] = a['sms']['filter'][0]['history'] == 'true' ? true : false
+              a['sms']['filter'] = a['sms']['filter'].first
+              a['sms']['filter']['history'] = a['sms']['filter']['history'] == 'true' ? true : false
             end
             unless a['mms'].nil?
               a['mms'] = a['mms'].first
               a['mms']['enabled'] = a['mms']['enabled'] == 'true' ? true : false
-              a['mms']['filter'][0]['history'] = a['mms']['filter'][0]['history'] == 'true' ? true : false
+              a['mms']['filter'] = a['mms']['filter'].first
+              a['mms']['filter']['history'] = a['mms']['filter']['history'] == 'true' ? true : false
             end
             unless a['mail'].nil?
               a['mail'] = a['mail'].first
               a['mail']['enabled'] = a['mail']['enabled'] == 'true' ? true : false
-              a['mail']['filter'][0]['history'] = a['mail']['filter'][0]['history'] == 'true' ? true : false
-              a['mail']['filter'][0]['size'] = a['mail']['filter'][0]['size'].to_i unless a['mail']['filter'][0]['size'].nil?
+              a['mail']['filter'] = a['mail']['filter'].first
+              a['mail']['filter']['history'] = a['mail']['filter']['history'] == 'true' ? true : false
+              a['mail']['filter']['maxsize'] = a['mail']['filter']['maxsize'].to_i * 1024 unless a['mail']['filter']['maxsize'].nil?
             end
 
           when 'organizer'

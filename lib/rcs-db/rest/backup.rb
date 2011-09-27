@@ -111,6 +111,7 @@ class BackuparchiveController < RESTController
     require_auth_level :sys
 
     command = Config.mongo_exec_path('mongorestore')
+    command += " --drop" if @params['drop']
     command += " #{Config.instance.global['BACKUP_DIR']}/#{@params['_id']}"
 
     Audit.log :actor => @session[:user][:name], :action => 'backup.restore', :desc => "Restored the backup #{@params['_id']} from the archive"

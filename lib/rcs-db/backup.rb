@@ -27,7 +27,7 @@ class BackupManager
       next unless backup.enabled
 
       # process the backup only if the time is right
-      next unless now.strftime('%H:%M') == btime['time']
+      #next unless now.strftime('%H:%M') == btime['time']
 
       # check if the day of the month is right
       next if (not btime['month'].empty? and not btime['month'].include? now.mday)
@@ -41,64 +41,72 @@ class BackupManager
 
       backup.status = 'RUNNING'
       backup.save
-      
-      # retrieve the list of collection and iterate on it to create a backup
-      # the 'what' property of a backup decides which collections have to be backed up
-      collections = Mongoid::Config.master.collection_names
 
-      # don't backup the system indexes
-      collections.delete('system.indexes')
-      # don't backup the statuses of the components
-      collections.delete('statuses')
-      # don't backup the logs of the components
-      collections.delete_if {|x| x['logs.']}
+      begin
+        # retrieve the list of collection and iterate on it to create a backup
+        # the 'what' property of a backup decides which collections have to be backed up
+        collections = Mongoid::Config.master.collection_names
 
-      # remove it here, it will not be dumped in the main cycle
-      # we call a dump on it later with grid_filter applied on it
-      collections.delete_if {|x| x['fs.']}
+        # don't backup the statuses of the components
+        collections.delete('statuses')
+        # don't backup the logs of the components
+        collections.delete_if {|x| x['logs.']}
 
-      case backup.what
-        when 'metadata'
-          # don't backup evidence collections
-          collections.delete_if {|x| x['evidence.']}
-          grid_filter = get_grid_ids
-        when 'full'
-          # we backup everything... woah !!
-          grid_filter = {}
-        else
-          #TODO: backup per operation
+        # remove it here, it will not be dumped in the main cycle
+        # we call a dump on it later with grid_filter applied on it
+        collections.delete_if {|x| x['fs.']}
+
+        grid_filter = "{}"
+        item_filter = "{}"
+        params = {what: backup.what, coll: collections, ifilter: item_filter, gfilter: grid_filter}
+
+        case backup.what
+          when 'metadata'
+            # don't backup evidence collections
+            params[:coll].delete_if {|x| x['evidence.']}
+            get_global_grid_ids(params)
+          when 'full'
+            # we backup everything... woah !!
+          else
+            # backup single item (operation or target)
+            partial_backup(params)
+        end
+
+        # the command of the mongodump
+        mongodump = Config.mongo_exec_path('mongodump')
+        mongodump += " -o #{Config.instance.global['BACKUP_DIR']}/#{backup.name}-#{now.strftime('%Y-%m-%d-%H:%M')}"
+        mongodump += " -d rcs"
+
+        # create the backup of the collection (common)
+        params[:coll].each do |coll|
+          if coll == 'items'
+            system mongodump + " -c #{coll} -q '#{params[:ifilter]}'"
+          else
+            system mongodump + " -c #{coll}"
+          end
+        end
+
+        # gridfs entries linked to backed up collections
+        system mongodump + " -c fs.files -q '#{params[:gfilter]}'"
+        # use the same query to retrieve the chunk list
+        params[:gfilter]['_id'] = 'files_id' unless params[:gfilter]['_id'].nil?
+        system mongodump + " -c fs.chunks -q '#{params[:gfilter]}'"
+
+        Audit.log :actor => '<system>', :action => 'backup.end', :desc => "Backup #{backup.name} completed"
+
+      rescue Exception => e
+        trace :error, "Backup #{backup.name} failed: #{e.message}"
+        backup.status = 'ERROR'
+        backup.save
       end
 
-      # the command of the mongodump
-      command = Config.mongo_exec_path('mongodump')
-      command += " -o #{Config.instance.global['BACKUP_DIR']}/#{backup.name}-#{now.strftime('%Y-%m-%d-%H:%M')}"
-      command += " -d rcs"
-
-      # create the backup of the collection (common)
-      collections.each do |coll|
-        system command + " -c #{coll}"
-      end
-
-      # TODO: FIXME: what happens if grid_filter is huge?
-      
-      # add the specific collections:
-      # - evidence collections of targets (inside the selected operation)
-      # - gridfs entries linked to backed up collections
-      system command + " -c fs.files -q '#{grid_filter}'"
-      # use the same query to retrieve the chunk list
-      grid_filter['_id'] = 'files_id'
-      system command + " -c fs.chunks -q '#{grid_filter}'"
-
-      Audit.log :actor => '<system>', :action => 'backup.end', :desc => "Backup #{backup.name} completed"
-
-      # TODO: report ERRORS
       backup.status = 'COMPLETED'
       backup.save
     end
 
   end
 
-  def self.get_grid_ids
+  def self.get_global_grid_ids(params)
 
     grid_ids = []
 
@@ -123,15 +131,41 @@ class BackupManager
     end
 
     # create a printable json query with BSON::Object converted to ObjectId
-    json_query = "{\"_id\":{\"$in\": ["
-
-    grid_ids.each do |id|
+    params[:gfilter] = "{\"_id\":{\"$in\": ["
+    params[:gfilter].each do |id|
       json_query += "ObjectId(\"#{id}\"),"
     end
+    params[:gfilter] += "0]}}"
 
-    json_query += "0]}}"
+  end
+
+  def self.partial_backup(params)
+
+    # extract the id from the string
+    id = BSON::ObjectId.from_string(params[:what][-24..-1])
+
+    # take the item and subitems contained in it
+    items = ::Item.any_of({_id: id}, {path: id})
+
+    raise "cannot perform partial backup: invalid ObjectId" if items.empty?
     
-    return json_query
+    # remove all the collections except 'items'
+    params[:coll].delete_if {|c| c != 'items'}
+
+    # prepare the json query to filter the items
+    params[:ifilter] = "{\"_id\":{\"$in\": ["
+    items.each do |item|
+      params[:ifilter] += "ObjectId(\"#{item._id}\"),"
+      # for each target we add to the list of collections the target's evidence
+      if item[:_kind] == 'target'
+        params[:coll] << "evidence.#{item._id}"
+        # TODO: uncomment this
+        #params[:coll] << "grid.#{item._id}.files"
+        #params[:coll] << "grid.#{item._id}.chunks"
+      end
+    end
+    params[:ifilter] += "0]}}"
+
   end
 
 end
