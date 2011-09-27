@@ -4,13 +4,13 @@ database: rcs
 #
 #Mongoid currently supports the following configuration options.
 #
-allow_dynamic_fields: true
+allow_dynamic_fields: false
 #
 #When attributes are not defined as fields but added to an object, they will get fields added for them
 #dynamically and will get persisted. If set to false an error will get raised when attempting to set a value
 #that has no field defined.
 #
-#autocreate_indexes: false
+#autocreate_indexes: true
 #
 #When set to true Mongoid will attempt to create indexes each time a class is loaded. This is not recommended
 #for any environment other than development or test.

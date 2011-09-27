@@ -1,20 +1,13 @@
 HIGH PRIORITY:
 
-    split gridfs?
+    split gridfs? + sharding
 
     integrity check on Items
 
     certificate creation on startup and utility
 
-    Backup Procedures
-        - full
-        - per operation
-
-    sharding on gridfs
 
 MEDIUM PRIORITY:
-
-    Sharding on dynamic collections (evidence)
 
     rename proxy -> injector
 

@@ -848,11 +848,11 @@ if true
   puts
   
   # backup.create
-  backup = {what: 'operation: 4e80369d2afb6509cc000026', enabled: true, when: {week: [], month: [], time: '09:20'}, name: 'ALoR Test'}
-  res = http.request_post('/backupjob/create', backup.to_json, {'Cookie' => cookie})
-  puts "backup.create"
-  puts res.body
-  puts
+  #backup = {what: 'operation: 4e80369d2afb6509cc000026', enabled: true, when: {week: [], month: [], time: '09:20'}, name: 'ALoR Test'}
+  #res = http.request_post('/backupjob/create', backup.to_json, {'Cookie' => cookie})
+  #puts "backup.create"
+  #puts res.body
+  #puts
   
   #id = JSON.parse(res.body)['_id']
   

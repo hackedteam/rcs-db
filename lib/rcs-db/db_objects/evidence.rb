@@ -26,12 +26,22 @@ class Evidence
     
         store_in Evidence.collection_name('#{target}')
 
-        after_create :create_callback
+        after_create :create_callback, :create_collection_callback
         after_destroy :destroy_callback
+
+        index :type, :acquired
+        shard_key :type, :acquired
 
         STAT_EXCLUSION = ['info', 'filesystem']
 
         protected
+        def create_collection_callback
+          db = Mongoid.database
+          collection = db.collection('#{Evidence.collection_name(target)}')
+          # enable sharding only if not enabled
+          RCS::DB::Shard.set_key(collection, {type: 1, acquired: 1}) unless collection.stats['sharded']
+        end
+
         def create_callback
           return if STAT_EXCLUSION.include? self.type
           agent = Item.find self.item.first
