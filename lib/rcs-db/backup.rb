@@ -27,7 +27,7 @@ class BackupManager
       next unless backup.enabled
 
       # process the backup only if the time is right
-      #next unless now.strftime('%H:%M') == btime['time']
+      next unless now.strftime('%H:%M') == btime['time']
 
       # check if the day of the month is right
       next if (not btime['month'].empty? and not btime['month'].include? now.mday)
