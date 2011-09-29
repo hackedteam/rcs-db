@@ -23,7 +23,7 @@ Dir::mkdir(datadir) if not File.directory?(datadir)
 mongod = Dir.pwd + '/mongodb/' + os + '/mongod' + ext
 
 # the data path
-parameters = "--dbpath #{datadir} --journal --logpath #{logdir}/mongod.log --shardsvr --rest"
+parameters = "--dbpath #{datadir} --journal --nssize 64 --logpath #{logdir}/mongod.log --shardsvr --rest"
 
 # custom arguments
 custom = ARGV.join(' ')

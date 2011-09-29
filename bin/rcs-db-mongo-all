@@ -34,19 +34,19 @@ mongos = Dir.pwd + '/mongodb/' + os + '/mongos' + ext
 
 puts "Starting the config server (#{rcs_config['CN']})..."
 # the config server
-parameters = "--dbpath #{configdir} --fork --logpath #{logdir}/mongoc.log --configsvr --rest"
+parameters = "--dbpath #{configdir} --fork --nssize 64 --logpath #{logdir}/mongoc.log --configsvr --rest"
 `#{mongod} #{parameters}`
 
-sleep 1
+sleep 3
 
 puts "Starting the router..."
 # the shard router
 parameters = "--logpath #{logdir}/mongos.log --fork --configdb #{rcs_config['CN']} --bind_ip localhost"
 `#{mongos} #{parameters}`
 
-sleep 1
+sleep 3
 
 puts "Starting the shard server..."
 # the shard server
-parameters = "--dbpath #{datadir} --journal --fork --logpath #{logdir}/mongod.log --shardsvr --rest"
+parameters = "--dbpath #{datadir} --journal --fork  --nssize 64 --logpath #{logdir}/mongod.log --shardsvr --rest"
 `#{mongod} #{parameters}`
