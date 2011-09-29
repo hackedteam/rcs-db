@@ -17,7 +17,7 @@ class BackupManager
 
   def self.perform
 
-    now = Time.now
+    now = Time.now.getutc
 
     ::Backup.all.each do |backup|
 
@@ -39,10 +39,14 @@ class BackupManager
 
       Audit.log :actor => '<system>', :action => 'backup.start', :desc => "Performing backup #{backup.name}"
 
+      backup.lastrun = Time.now.getutc.to_i
       backup.status = 'RUNNING'
       backup.save
 
       begin
+
+        raise "invalid backup directory" unless File.directory? Config.instance.global['BACKUP_DIR']
+        
         # retrieve the list of collection and iterate on it to create a backup
         # the 'what' property of a backup decides which collections have to be backed up
         collections = Mongoid::Config.master.collection_names
@@ -63,8 +67,7 @@ class BackupManager
         case backup.what
           when 'metadata'
             # don't backup evidence collections
-            params[:coll].delete_if {|x| x['evidence.']}
-            get_global_grid_ids(params)
+            params[:coll].delete_if {|x| x['evidence.'] || x['grid.']}
           when 'full'
             # we backup everything... woah !!
           else
@@ -95,47 +98,18 @@ class BackupManager
         Audit.log :actor => '<system>', :action => 'backup.end', :desc => "Backup #{backup.name} completed"
 
       rescue Exception => e
+        Audit.log :actor => '<system>', :action => 'backup.end', :desc => "Backup #{backup.name} failed"
         trace :error, "Backup #{backup.name} failed: #{e.message}"
+        backup.lastrun = Time.now.getutc.to_i
         backup.status = 'ERROR'
         backup.save
+        return
       end
 
+      backup.lastrun = Time.now.getutc.to_i
       backup.status = 'COMPLETED'
       backup.save
     end
-
-  end
-
-  def self.get_global_grid_ids(params)
-
-    grid_ids = []
-
-    # here we need to return the list of gridfs ids that are linked
-    # to other objects into the db
-
-    # the files of the upload_request
-    ::Item.agents.each do |item|
-      item.upload_requests.each do |up|
-        grid_ids << up[:_grid].first
-      end
-      item.upgrade_requests.each do |up|
-        grid_ids << up[:_grid].first
-      end
-    end
-
-    # the replace file of the proxy rules
-    ::Proxy.all.each do |proxy|
-      proxy.rules.each do |rule|
-        grid_ids << rule[:_grid].first unless rule[:_grid].nil?
-      end
-    end
-
-    # create a printable json query with BSON::Object converted to ObjectId
-    params[:gfilter] = "{\"_id\":{\"$in\": ["
-    params[:gfilter].each do |id|
-      json_query += "ObjectId(\"#{id}\"),"
-    end
-    params[:gfilter] += "0]}}"
 
   end
 
@@ -154,17 +128,30 @@ class BackupManager
 
     # prepare the json query to filter the items
     params[:ifilter] = "{\"_id\":{\"$in\": ["
+    params[:gfilter] = "{\"_id\":{\"$in\": ["
+
     items.each do |item|
       params[:ifilter] += "ObjectId(\"#{item._id}\"),"
+
       # for each target we add to the list of collections the target's evidence
-      if item[:_kind] == 'target'
-        params[:coll] << "evidence.#{item._id}"
-        # TODO: uncomment this
-        #params[:coll] << "grid.#{item._id}.files"
-        #params[:coll] << "grid.#{item._id}.chunks"
+      case item[:_kind]
+        when 'target'
+          params[:coll] << "evidence.#{item._id}"
+          # TODO: uncomment this
+          #params[:coll] << "grid.#{item._id}.files"
+          #params[:coll] << "grid.#{item._id}.chunks"
+
+        when 'agent'
+          item.upload_requests.each do |up|
+            params[:gfilter] += "ObjectId(\"#{up[:_grid].first}\"),"
+          end
+          item.upgrade_requests.each do |up|
+            params[:gfilter] += "ObjectId(\"#{up[:_grid].first}\"),"
+          end
       end
     end
     params[:ifilter] += "0]}}"
+    params[:gfilter] += "0]}}"
 
   end
 

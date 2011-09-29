@@ -47,7 +47,7 @@ class BackupjobController < RESTController
 
       @params.each_pair do |key, value|
         if backup[key.to_s] != value
-          Audit.log :actor => @session[:user][:name], :action => 'backupjob.update', :desc => "Updated '#{key}' to '#{value}' for backup #{backup[:_id]}"
+          Audit.log :actor => @session[:user][:name], :action => 'backupjob.update', :desc => "Updated '#{key}' to '#{value}' for backup #{backup[:name]}"
         end
       end
 
@@ -62,7 +62,7 @@ class BackupjobController < RESTController
     
     mongoid_query do
       backup = ::Backup.find(@params['_id'])
-      Audit.log :actor => @session[:user][:name], :action => 'backupjob.destroy', :desc => "Deleted the backup job [#{@params['what']} on #{@params['when']}]"
+      Audit.log :actor => @session[:user][:name], :action => 'backupjob.destroy', :desc => "Deleted the backup job [#{bakcup[:name]}]"
       backup.destroy
 
       return RESTController.reply.ok

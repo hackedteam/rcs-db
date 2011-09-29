@@ -106,7 +106,9 @@ class HTTPHandler < EM::Connection
     
     # Block which fulfills the request
     operation = proc do
-      
+
+      start_time = Time.now
+
       # parse all the request params
       request = prepare_request @http_request_method, @http_request_uri, @http_query_string, @http_cookie, @http_post_content
       request[:peer] = peer
@@ -118,7 +120,11 @@ class HTTPHandler < EM::Connection
       responder = controller.act!
       reply = responder.prepare_response(self)
       reply.send_response
-      
+
+      elapsed_time = Time.now - start_time
+
+      trace :debug, "[#{@peer}] Request: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{elapsed_time})"
+
       # the controller job has finished, call the cleanup hook
       controller.cleanup
     end

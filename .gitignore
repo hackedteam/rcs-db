@@ -70,3 +70,5 @@ nsis/*.exe
 scripts/*.xml
 scripts/*.json
 scripts/*.bson
+
+backups/
