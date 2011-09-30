@@ -12,6 +12,7 @@ class ProxyController < RESTController
 
     mongoid_query do
       result = ::Proxy.all
+      #TODO: filter on target if you have the right access
       return RESTController.reply.ok(result)
     end
   end
@@ -210,7 +211,7 @@ class ProxyController < RESTController
   end
 
   def update_rule
-    require_auth_level :tech
+    require_auth_level :tech, :sys
 
     mongoid_query do
 
