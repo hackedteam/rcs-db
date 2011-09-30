@@ -38,8 +38,11 @@ class OperationController < RESTController
       item = Item.create(name: @params['name']) do |doc|
         doc[:_kind] = :operation
         doc[:path] = []
-        doc[:stat] = Stat.new
-        
+        doc.stat = ::Stat.new
+        doc.stat.evidence = {}
+        doc.stat.size = 0
+        doc.stat.grid_size = 0
+
         doc[:desc] = @params['desc']
         doc[:status] = :open
         doc[:contact] = @params['contact']

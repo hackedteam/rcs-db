@@ -191,7 +191,7 @@ class TaskManager
   end
   
   def list(user)
-    trace :debug, "List of tasks for user '#{user}': #{@tasks[user]}"
+    #trace :debug, "List of tasks for user '#{user}': #{@tasks[user]}"
     
     tasks = @tasks[user]
     tasks ||= {}

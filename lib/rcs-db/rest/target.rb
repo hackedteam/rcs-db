@@ -46,7 +46,11 @@ class TargetController < RESTController
       item = Item.create(name: @params['name']) do |doc|
         doc[:_kind] = :target
         doc[:path] = [operation._id]
-        doc[:stat] = Stat.new
+        doc.stat = ::Stat.new
+        doc.stat.evidence = {}
+        doc.stat.size = 0
+        doc.stat.grid_size = 0
+
         doc[:status] = :open
         doc[:desc] = @params['desc']
       end

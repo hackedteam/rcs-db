@@ -123,7 +123,7 @@ class HTTPHandler < EM::Connection
 
       elapsed_time = Time.now - start_time
 
-      trace :debug, "[#{@peer}] Request: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{elapsed_time})"
+      trace :warn, "[#{@peer}] Request: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{elapsed_time})" if Config.instance.global['PERF']
 
       # the controller job has finished, call the cleanup hook
       controller.cleanup
