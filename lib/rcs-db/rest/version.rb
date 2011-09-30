@@ -8,8 +8,6 @@ module DB
 class VersionController < RESTController
 
   def index
-    require_auth_level :admin, :sys, :tech, :view
-
     db_version = File.read(Dir.pwd + '/config/version.txt')
     console_version = "-1"
 
@@ -25,8 +23,6 @@ class VersionController < RESTController
   end
 
   def show
-    require_auth_level :admin, :sys, :tech, :view
-
     console_file = Dir.pwd + "/console/rcs-console-#{@params['_id']}.air"
 
     return RESTController.reply.not_found() unless File.exist?(console_file)

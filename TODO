@@ -6,6 +6,7 @@ HIGH PRIORITY:
 
     certificate creation on startup and utility
 
+    check the privs for the console
 
 MEDIUM PRIORITY:
 

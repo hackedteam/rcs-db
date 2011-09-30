@@ -41,7 +41,7 @@ end
 
       items.each do |item|
         e = {}
-        e[:start] = item['action'].to_i
+        e[:start] = item['action'].to_i unless item['action'].to_i == -1
         e[:enabled] = true
         #e[:repeat] = -1
         #e[:end] = -1
@@ -325,7 +325,7 @@ end
           events << event
           m.delete('interval')
           if m[:module] == 'snapshot'
-            if m['newwindow']
+            if m['newwindow'] == 'true'
               event = {:event => 'window', :desc => "new win #{m[:module]}", :enabled => true, :start => actions.size - 1}
               events << event
             end

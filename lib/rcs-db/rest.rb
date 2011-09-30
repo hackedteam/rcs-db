@@ -18,7 +18,7 @@ module DB
 
 class NotAuthorized < StandardError
   def initialize(actual, required)
-    @message = "#{required} not in #{actual}"
+    @message = "#{actual} not in #{required}"
     super @message
   end
 end
@@ -101,7 +101,7 @@ class RESTController
     return RESTController.reply.server_error('CONTROLLER_ERROR') if response.nil?
     return response
   rescue NotAuthorized => e
-    trace :error, "Request not authorized: #{e.message}"
+    trace :error, "[#{@request[:peer]}] Request not authorized: #{e.message}"
     return RESTController.reply.not_authorized(e.message)
   rescue Exception => e
     trace :error, "Server error: #{e.message}"
