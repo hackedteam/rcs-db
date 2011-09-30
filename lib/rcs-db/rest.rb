@@ -131,6 +131,22 @@ class RESTController
     # TODO: checking auth level should be done by SessionManager, refactor
     raise NotAuthorized.new(@session[:level], levels) if (levels & @session[:level]).empty?
   end
+
+  def admin?
+    return @session[:level].include? :admin
+  end
+
+  def system?
+    return @session[:level].include? :sys
+  end
+
+  def tech?
+    return @session[:level].include? :tech
+  end
+
+  def view?
+    return @session[:level].include? :view
+  end
   
   # TODO: mongoid_query doesn't belong here
   def mongoid_query(&block)
