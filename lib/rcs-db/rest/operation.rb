@@ -2,17 +2,17 @@ module RCS
 module DB
 
 class OperationController < RESTController
-
+  
   def index
     require_auth_level :admin, :tech, :view
-
+      
     filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
     filter ||= {}
     
     mongoid_query do
       items = ::Item.operations.where(filter)
-        .any_in(_id: @session[:accessible])
-        .only(:name, :desc, :status, :_kind, :path, :stat)
+      items = items.any_in(_id: @session[:accessible]) unless (admin? and @params['all'] == "true")
+      items = items.only(:name, :desc, :status, :_kind, :path, :stat)
       
       RESTController.reply.ok(items)
     end
