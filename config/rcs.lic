@@ -3,6 +3,7 @@
 :version: "8.0"
 :type: "reusable"
 :expiry: "2011-12-31 00:00:00 UTC"
+:maintenance: "2011-12-31 00:00:00 UTC"
 :users: .Inf
 :agents:
   :total: .Inf
@@ -25,4 +26,4 @@
   :anonymizers: 20
 :shards: 1
 :exploits: "5bd90a7ac2e8e5fdc4e92c90c0c900b5948517f7"
-:integrity: "a467590582244b1278dc4f33c03d4e1925f2173f418e1cf7950c09be70cf6cab"
+:integrity: "4d50280ebea638aeb6e253cf97baf1d74e6d0979b3c398aa31adf0f22ac6d677"

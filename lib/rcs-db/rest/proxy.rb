@@ -13,6 +13,7 @@ class ProxyController < RESTController
     mongoid_query do
       result = ::Proxy.all
       #TODO: filter on target if you have the right access
+
       return RESTController.reply.ok(result)
     end
   end

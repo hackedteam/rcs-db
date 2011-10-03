@@ -6,11 +6,12 @@ HIGH PRIORITY:
 
     certificate creation on startup and utility
 
-    rules migration for agent
+    complete the worker decoding
+
+    distributed workers (same as shards)
+        - mongos should be accessible by all the workers
 
 MEDIUM PRIORITY:
-
-    the worker !!
 
     hook points?
 
@@ -20,10 +21,11 @@ MEDIUM PRIORITY:
 
     Local Exploit portal
 
+    modify the NSIS to install the worker together with the shards
 
 LOW PRIORITY:
 
-    evidence method
+    evidence methods
 
     config
 

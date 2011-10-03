@@ -23,6 +23,13 @@ class Group
     user.save
     self.save
   end
+
+  def remove_operation(operation)
+    operation.groups.delete(self)
+    self.items.delete(operation)
+    operation.save
+    self.save
+  end
 end
 
 #end # ::DB

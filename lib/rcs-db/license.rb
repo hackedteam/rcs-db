@@ -338,7 +338,8 @@ class LicenseManager
     content = hash.reject {|k,v| k == :integrity}.to_s
     # calculate the encrypted SHA1
     check = aes_encrypt(Digest::SHA1.digest(content), Digest::SHA1.digest("€ ∫∑x=1 ∆t π™")).unpack('H*').first
-    #trace :debug, check
+    # TODO: remove this for release
+    trace :debug, check
     return hash[:integrity] == check
   end
 

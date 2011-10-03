@@ -103,6 +103,38 @@ class GroupController < RESTController
     end
   end
 
+  def add_operation
+    require_auth_level :admin
+
+    mongoid_query do
+      group = Group.find(@params['_id'])
+      oper = Item.find(@params['operation']['_id'])
+      return RESTController.reply.not_found if oper.nil? or group.nil?
+
+      group.items << oper
+
+      Audit.log :actor => @session[:user][:name], :action => 'group.add_operation', :group => @params['name'], :desc => "Added operation '#{oper.name}' to group '#{group.name}'"
+
+      return RESTController.reply.ok
+    end
+  end
+
+  def del_operation
+    require_auth_level :admin
+
+    mongoid_query do
+      group = Group.find(@params['_id'])
+      oper = Item.find(@params['operation']['_id'])
+      return RESTController.reply.not_found if oper.nil? or group.nil?
+
+      group.remove_operation(oper)
+
+      Audit.log :actor => @session[:user][:name], :action => 'group.remove_operation', :group => @params['name'], :desc => "Removed operation '#{oper.name}' from group '#{group.name}'"
+
+      return RESTController.reply.ok
+    end
+  end
+
   def alert
     require_auth_level :admin
     
