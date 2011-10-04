@@ -20,8 +20,8 @@ http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
 # login
 account = {
-  :user => 'alor', 
-  :pass => 'demorcss'
+  :user => 'admin', 
+  :pass => 'adminp123'
   }
 resp = http.request_post('/auth/login', account.to_json, nil)
 puts "auth.login"
@@ -89,7 +89,7 @@ puts
 end
 
 # group
-if false
+if true
 # group.create
 group = {'name' => 'test'}
 res = http.request_post('/group', group.to_json, {'Cookie' => cookie}) 
@@ -839,7 +839,7 @@ if false
 end
 
 # backup
-if true
+if false
   # backup.index
   puts "backup.index" 
   res = http.request_get('/backupjob', {'Cookie' => cookie})

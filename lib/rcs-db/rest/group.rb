@@ -95,7 +95,7 @@ class GroupController < RESTController
       user = User.find(@params['user']['_id'])
       return RESTController.reply.not_found if user.nil? or group.nil?
 
-      group.remove_user(user)
+      group.users.delete(user)
       
       Audit.log :actor => @session[:user][:name], :action => 'group.remove_user', :group => @params['name'], :desc => "Removed user '#{user.name}' from group '#{group.name}'"
       
@@ -127,7 +127,7 @@ class GroupController < RESTController
       oper = Item.find(@params['operation']['_id'])
       return RESTController.reply.not_found if oper.nil? or group.nil?
 
-      group.remove_operation(oper)
+      group.items.delete(oper)
 
       Audit.log :actor => @session[:user][:name], :action => 'group.remove_operation', :group => @params['name'], :desc => "Removed operation '#{oper.name}' from group '#{group.name}'"
 

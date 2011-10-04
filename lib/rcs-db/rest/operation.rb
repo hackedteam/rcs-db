@@ -69,7 +69,7 @@ class OperationController < RESTController
       item = Item.operations.any_in(_id: @session[:accessible]).find(@params['_id'])
       
       @params.delete_if {|k, v| not updatable_fields.include? k }
-      
+
       @params.each_pair do |key, value|
         if item[key.to_s] != value and not key['_ids']
           Audit.log :actor => @session[:user][:name],
