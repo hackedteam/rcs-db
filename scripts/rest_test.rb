@@ -89,7 +89,7 @@ puts
 end
 
 # group
-if true
+if false
 # group.create
 group = {'name' => 'test'}
 res = http.request_post('/group', group.to_json, {'Cookie' => cookie}) 
@@ -579,28 +579,36 @@ end
 
 # operations
 if false
-  puts "operation.index" 
-  res = http.request_get('/operation', {'Cookie' => cookie})
-  puts res.body
-  operations = JSON.parse(res.body)
-  puts operations
-  puts
+  #puts "operation.index" 
+  #res = http.request_get('/operation', {'Cookie' => cookie})
+  #puts res.body
+  #operations = JSON.parse(res.body)
+  #puts operations
+  #puts
   
-  puts "operation.show"
-  res = http.request_get("/operation/#{operations.first['_id']}", {'Cookie' => cookie})
-  operation = JSON.parse(res.body)
-  puts operation
+  #puts "operation.show"
+  #res = http.request_get("/operation/#{operations.first['_id']}", {'Cookie' => cookie})
+  #operation = JSON.parse(res.body)
+  #puts operation
+  #puts 
   
   puts "operation.create"
   operation_post = {
     name: "test operation", 
     desc: "this is a test operation", 
-    contact: "billg@microsoft.com"
+    contact: "billg@microsoft.com",
+    group_ids: ['4e8ac48b2afb65289500000b']
   }
   res = http.request_post("/operation/create", operation_post.to_json, {'Cookie' => cookie})
-  puts res.body
+  #puts res.body
   operation = JSON.parse(res.body)
   puts operation
+  puts
+  
+  # group.show
+  res = http.request_get("/group/4e8ac48b2afb65289500000b", {'Cookie' => cookie})
+  puts "group.show"
+  puts res
   puts
   
   puts "operation.update"
@@ -608,17 +616,30 @@ if false
     _id: operation['_id'],
     name: "RENAMED!!!", 
     desc: "whoa! this is our renamed operation", 
-    contact: "ballmer@microsoft.com"
+    contact: "ballmer@microsoft.com",
+    group_ids: ['4e8ac4612afb652936000006']
   }
   res = http.request_post("/operation/update", operation_post.to_json, {'Cookie' => cookie})
-  puts res.body
+  #puts res.body
   operation = JSON.parse(res.body)
   puts operation
+  puts
+  
+  # group.show
+  res = http.request_get("/group/4e8ac48b2afb65289500000b", {'Cookie' => cookie})
+  puts "group.show"
+  puts res
   puts
   
   puts "operation.delete"
   res = http.request_post("/operation/destroy", {_id: operation['_id']}.to_json, {'Cookie' => cookie})
   puts res.body
+  puts
+  
+  # group.show
+  res = http.request_get("/group/4e8ac48b2afb65289500000b", {'Cookie' => cookie})
+  puts "group.show"
+  puts res
   puts
 end
 

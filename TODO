@@ -40,3 +40,9 @@ LOW PRIORITY:
     Alerting daemon
 
     Documentation
+
+FUTURE:
+
+    correlation hooks
+
+    forwarding hooks

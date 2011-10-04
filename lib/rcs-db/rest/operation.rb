@@ -47,7 +47,12 @@ class OperationController < RESTController
         doc[:status] = :open
         doc[:contact] = @params['contact']
       end
-      
+
+      @params['group_ids'].each do |gid|
+        group = ::Group.find(gid)
+        item.groups << group
+      end
+
       # make item accessible to this user
       @session[:accessible] << item._id
       
@@ -67,7 +72,14 @@ class OperationController < RESTController
     
     mongoid_query do
       item = Item.operations.any_in(_id: @session[:accessible]).find(@params['_id'])
-      
+
+      # recreate the groups associations
+      item.groups = nil
+      @params['group_ids'].each do |gid|
+        group = ::Group.find(gid)
+        item.groups << group
+      end
+
       @params.delete_if {|k, v| not updatable_fields.include? k }
 
       @params.each_pair do |key, value|
