@@ -35,82 +35,88 @@ class BackupManager
       # check if the day of the week is right
       next if (not btime['week'].empty? and not btime['week'].include? now.wday)
 
-      trace :info, "Performing backup [#{backup.name}]..."
+      # perform the actual backup
+      do_backup now, backup
 
-      Audit.log :actor => '<system>', :action => 'backup.start', :desc => "Performing backup #{backup.name}"
+    end
+  end
 
-      backup.lastrun = Time.now.getutc.to_i
-      backup.status = 'RUNNING'
-      backup.save
+  def self.do_backup(now, backup)
 
-      begin
+    trace :info, "Performing backup [#{backup.name}]..."
 
-        raise "invalid backup directory" unless File.directory? Config.instance.global['BACKUP_DIR']
-        
-        # retrieve the list of collection and iterate on it to create a backup
-        # the 'what' property of a backup decides which collections have to be backed up
-        collections = Mongoid::Config.master.collection_names
+    Audit.log :actor => '<system>', :action => 'backup.start', :desc => "Performing backup #{backup.name}"
 
-        # don't backup the statuses of the components
-        collections.delete('statuses')
-        # don't backup the logs of the components
-        collections.delete_if {|x| x['logs.']}
+    backup.lastrun = Time.now.getutc.to_i
+    backup.status = 'RUNNING'
+    backup.save
 
-        # remove it here, it will not be dumped in the main cycle
-        # we call a dump on it later with grid_filter applied on it
-        collections.delete_if {|x| x['fs.']}
+    begin
 
-        grid_filter = "{}"
-        item_filter = "{}"
-        params = {what: backup.what, coll: collections, ifilter: item_filter, gfilter: grid_filter}
+      raise "invalid backup directory" unless File.directory? Config.instance.global['BACKUP_DIR']
 
-        case backup.what
-          when 'metadata'
-            # don't backup evidence collections
-            params[:coll].delete_if {|x| x['evidence.'] || x['grid.']}
-          when 'full'
-            # we backup everything... woah !!
-          else
-            # backup single item (operation or target)
-            partial_backup(params)
-        end
+      # retrieve the list of collection and iterate on it to create a backup
+      # the 'what' property of a backup decides which collections have to be backed up
+      collections = Mongoid::Config.master.collection_names
 
-        # the command of the mongodump
-        mongodump = Config.mongo_exec_path('mongodump')
-        mongodump += " -o #{Config.instance.global['BACKUP_DIR']}/#{backup.name}-#{now.strftime('%Y-%m-%d-%H:%M')}"
-        mongodump += " -d rcs"
+      # don't backup the statuses of the components
+      collections.delete('statuses')
+      # don't backup the logs of the components
+      collections.delete_if {|x| x['logs.']}
 
-        # create the backup of the collection (common)
-        params[:coll].each do |coll|
-          if coll == 'items'
-            system mongodump + " -c #{coll} -q '#{params[:ifilter]}'"
-          else
-            system mongodump + " -c #{coll}"
-          end
-        end
+      # remove it here, it will not be dumped in the main cycle
+      # we call a dump on it later with grid_filter applied on it
+      collections.delete_if {|x| x['fs.']}
 
-        # gridfs entries linked to backed up collections
-        system mongodump + " -c fs.files -q '#{params[:gfilter]}'"
-        # use the same query to retrieve the chunk list
-        params[:gfilter]['_id'] = 'files_id' unless params[:gfilter]['_id'].nil?
-        system mongodump + " -c fs.chunks -q '#{params[:gfilter]}'"
+      grid_filter = "{}"
+      item_filter = "{}"
+      params = {what: backup.what, coll: collections, ifilter: item_filter, gfilter: grid_filter}
 
-        Audit.log :actor => '<system>', :action => 'backup.end', :desc => "Backup #{backup.name} completed"
-
-      rescue Exception => e
-        Audit.log :actor => '<system>', :action => 'backup.end', :desc => "Backup #{backup.name} failed"
-        trace :error, "Backup #{backup.name} failed: #{e.message}"
-        backup.lastrun = Time.now.getutc.to_i
-        backup.status = 'ERROR'
-        backup.save
-        return
+      case backup.what
+        when 'metadata'
+          # don't backup evidence collections
+          params[:coll].delete_if {|x| x['evidence.'] || x['grid.']}
+        when 'full'
+          # we backup everything... woah !!
+        else
+          # backup single item (operation or target)
+          partial_backup(params)
       end
 
+      # the command of the mongodump
+      mongodump = Config.mongo_exec_path('mongodump')
+      mongodump += " -o #{Config.instance.global['BACKUP_DIR']}/#{backup.name}-#{now.strftime('%Y-%m-%d-%H:%M')}"
+      mongodump += " -d rcs"
+
+      # create the backup of the collection (common)
+      params[:coll].each do |coll|
+        if coll == 'items'
+          system mongodump + " -c #{coll} -q '#{params[:ifilter]}'"
+        else
+          system mongodump + " -c #{coll}"
+        end
+      end
+
+      # gridfs entries linked to backed up collections
+      system mongodump + " -c fs.files -q '#{params[:gfilter]}'"
+      # use the same query to retrieve the chunk list
+      params[:gfilter]['_id'] = 'files_id' unless params[:gfilter]['_id'].nil?
+      system mongodump + " -c fs.chunks -q '#{params[:gfilter]}'"
+
+      Audit.log :actor => '<system>', :action => 'backup.end', :desc => "Backup #{backup.name} completed"
+
+    rescue Exception => e
+      Audit.log :actor => '<system>', :action => 'backup.end', :desc => "Backup #{backup.name} failed"
+      trace :error, "Backup #{backup.name} failed: #{e.message}"
       backup.lastrun = Time.now.getutc.to_i
-      backup.status = 'COMPLETED'
+      backup.status = 'ERROR'
       backup.save
+      return
     end
 
+    backup.lastrun = Time.now.getutc.to_i
+    backup.status = 'COMPLETED'
+    backup.save
   end
 
   def self.partial_backup(params)

@@ -38,6 +38,17 @@ class BackupjobController < RESTController
     end    
   end
 
+  def run
+    require_auth_level :sys
+    mongoid_query do
+      backup = ::Backup.find(@params['_id'])
+
+      BackupManager.do_backup Time.now.getutc, backup
+
+      return RESTController.reply.ok(backup)
+    end
+  end
+
   def update
     require_auth_level :sys
 
