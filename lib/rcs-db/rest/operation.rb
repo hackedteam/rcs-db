@@ -12,7 +12,7 @@ class OperationController < RESTController
     mongoid_query do
       items = ::Item.operations.where(filter)
       items = items.any_in(_id: @session[:accessible]) unless (admin? and @params['all'] == "true")
-      items = items.only(:name, :desc, :status, :_kind, :path, :stat)
+      items = items.only(:name, :desc, :status, :_kind, :path, :stat, :group_ids)
       
       RESTController.reply.ok(items)
     end
@@ -24,7 +24,7 @@ class OperationController < RESTController
     mongoid_query do
       item = Item.operations
         .any_in(_id: @session[:accessible])
-        .only(:name, :desc, :status, :_kind, :path, :stat)
+        .only(:name, :desc, :status, :_kind, :path, :stat, :group_ids)
         .find(@params['_id'])
       
       RESTController.reply.ok(item)
@@ -48,9 +48,11 @@ class OperationController < RESTController
         doc[:contact] = @params['contact']
       end
 
-      @params['group_ids'].each do |gid|
-        group = ::Group.find(gid)
-        item.groups << group
+      if @params.has_key? 'group_ids'
+        @params['group_ids'].each do |gid|
+          group = ::Group.find(gid)
+          item.groups << group
+        end
       end
 
       # make item accessible to this user
@@ -69,15 +71,17 @@ class OperationController < RESTController
     require_auth_level :admin
     
     updatable_fields = ['name', 'desc', 'status', 'contact']
-    
+
     mongoid_query do
       item = Item.operations.any_in(_id: @session[:accessible]).find(@params['_id'])
 
       # recreate the groups associations
-      item.groups = nil
-      @params['group_ids'].each do |gid|
-        group = ::Group.find(gid)
-        item.groups << group
+      if @params.has_key? 'group_ids'
+        item.groups = nil
+        @params['group_ids'].each do |gid|
+          group = ::Group.find(gid)
+          item.groups << group
+        end
       end
 
       @params.delete_if {|k, v| not updatable_fields.include? k }

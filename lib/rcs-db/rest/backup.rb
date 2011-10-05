@@ -73,7 +73,7 @@ class BackupjobController < RESTController
     
     mongoid_query do
       backup = ::Backup.find(@params['_id'])
-      Audit.log :actor => @session[:user][:name], :action => 'backupjob.destroy', :desc => "Deleted the backup job [#{bakcup[:name]}]"
+      Audit.log :actor => @session[:user][:name], :action => 'backupjob.destroy', :desc => "Deleted the backup job [#{backup[:name]}]"
       backup.destroy
 
       return RESTController.reply.ok
