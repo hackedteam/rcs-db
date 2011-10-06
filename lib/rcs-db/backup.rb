@@ -19,26 +19,31 @@ class BackupManager
 
     now = Time.now.getutc
 
-    ::Backup.all.each do |backup|
+    begin
+      ::Backup.all.each do |backup|
 
-      btime = backup.when
+        btime = backup.when
 
-      # skip disabled backups
-      next unless backup.enabled
+        # skip disabled backups
+        next unless backup.enabled
 
-      # process the backup only if the time is right
-      next unless now.strftime('%H:%M') == btime['time']
+        # process the backup only if the time is right
+        next unless now.strftime('%H:%M') == btime['time']
 
-      # check if the day of the month is right
-      next if (not btime['month'].empty? and not btime['month'].include? now.mday)
+        # check if the day of the month is right
+        next if (not btime['month'].empty? and not btime['month'].include? now.mday)
 
-      # check if the day of the week is right
-      next if (not btime['week'].empty? and not btime['week'].include? now.wday)
+        # check if the day of the week is right
+        next if (not btime['week'].empty? and not btime['week'].include? now.wday)
 
-      # perform the actual backup
-      do_backup now, backup
+        # perform the actual backup
+        do_backup now, backup
 
+      end
+    rescue Exception => e
+      trace :fatal, "Cannot perform backup: #{e.message}"
     end
+
   end
 
   def self.do_backup(now, backup)

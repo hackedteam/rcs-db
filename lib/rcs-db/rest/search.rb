@@ -25,10 +25,12 @@ class SearchController < RESTController
   
   def show
     require_auth_level :admin, :tech, :view
-    
+
+    RESTController.reply.not_found() unless @session[:accessible].include? BSON::ObjectId.from_string(@params['_id'])
+
     mongoid_query do
-      item = ::Item.find(@params['_id']).any_in(_id: @session[:accessible])
-      RESTController.reply.ok(item)
+      item = ::Item.where({:_id => @params['_id']}).only(:name, :desc, :status, :_kind, :path, :stat)
+      RESTController.reply.ok(item.first)
     end
   end
   

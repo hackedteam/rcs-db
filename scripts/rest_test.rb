@@ -787,7 +787,7 @@ if false
 end
 
 # search
-if false
+if true
   # search.index
   puts "search.index" 
   res = http.request_get('/search', {'Cookie' => cookie})
@@ -801,6 +801,13 @@ if false
   rcs_10 = JSON.parse(res.body)
   puts rcs_10
   puts
+
+  puts "search.show"
+  res = http.request_get('/search/4e8c47512afb653dc10000bf', {'Cookie' => cookie})
+  puts res.body
+  puts
+  
+  
 end
 
 #upload

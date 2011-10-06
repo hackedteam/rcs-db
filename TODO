@@ -4,6 +4,8 @@ HIGH PRIORITY:
 
     integrity check on Items
 
+    check the utc time of the backups
+
     certificate creation on startup and utility
 
     complete the worker decoding
