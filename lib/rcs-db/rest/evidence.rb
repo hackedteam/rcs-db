@@ -53,6 +53,7 @@ class EvidenceController < RESTController
     
     # retrieve the key from the db
     agent = Item.where({_id: session[:bid]}).first
+    return RESTController.reply.not_found if agent.nil?
     key = agent[:logkey]
     
     # convert the string time to a time object to be passed to 'sync_start'

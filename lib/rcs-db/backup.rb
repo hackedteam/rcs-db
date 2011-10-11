@@ -52,7 +52,7 @@ class BackupManager
 
     Audit.log :actor => '<system>', :action => 'backup.start', :desc => "Performing backup #{backup.name}"
 
-    backup.lastrun = Time.now.getutc.to_i
+    backup.lastrun = Time.now.getutc.strftime('%Y-%m-%d %H:%M')
     backup.status = 'RUNNING'
     backup.save
 
@@ -113,13 +113,13 @@ class BackupManager
     rescue Exception => e
       Audit.log :actor => '<system>', :action => 'backup.end', :desc => "Backup #{backup.name} failed"
       trace :error, "Backup #{backup.name} failed: #{e.message}"
-      backup.lastrun = Time.now.getutc.to_i
+      backup.lastrun = Time.now.getutc.strftime('%Y-%m-%d %H:%M')
       backup.status = 'ERROR'
       backup.save
       return
     end
 
-    backup.lastrun = Time.now.getutc.to_i
+    backup.lastrun = Time.now.getutc.strftime('%Y-%m-%d %H:%M')
     backup.status = 'COMPLETED'
     backup.save
   end

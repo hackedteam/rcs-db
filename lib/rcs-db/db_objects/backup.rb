@@ -11,7 +11,7 @@ class Backup
   field :what, type: String
   field :when, type: Hash
   field :name, type: String
-  field :lastrun, type: Integer
+  field :lastrun, type: String
   field :status, type: String
 
   store_in :backups

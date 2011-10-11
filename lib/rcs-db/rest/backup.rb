@@ -28,7 +28,7 @@ class BackupjobController < RESTController
       b.what = @params['what']
       b.when = @params['when']
       b.name = @params['name']
-      b.lastrun = 0
+      b.lastrun = ""
       b.status = 'QUEUED'
       b.save
       
@@ -93,7 +93,7 @@ class BackuparchiveController < RESTController
       dirsize = 0
       Find.find(dir + '/rcs') { |f| dirsize += File.stat(f).size }
       name = File.basename(dir).split('-')[0]
-      time = File.stat(dir).ctime
+      time = File.stat(dir).ctime.getutc
       index << {_id: File.basename(dir), name: name, when: time.strftime('%Y-%m-%d %H:%M'), size: dirsize}
     end
 
