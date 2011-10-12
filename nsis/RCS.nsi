@@ -153,6 +153,7 @@ Section "Install Section" SecInstall
     
     SetOutPath "$INSTDIR\DB\config"
     File "config\mongoid.yaml"
+    File "config\openssl.cnf"
     File "config\trace.yaml"
     File "config\version.txt"
     SetDetailsPrint "both"

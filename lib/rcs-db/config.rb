@@ -133,7 +133,7 @@ class Config
     @global['BACKUP_DIR'] = options[:backup] unless options[:backup].nil?
 
     if options[:gen_cert]
-      generate_certificates
+      generate_certificates options
     end
 
     trace :info, ""
@@ -182,7 +182,7 @@ class Config
     http.request_post('/auth/logout', nil, {'Cookie' => cookie})
   end
 
-  def generate_certificates
+  def generate_certificates(options)
     trace :info, "Generating ssl certificates..."
 
     old_dir = Dir.pwd
@@ -192,17 +192,35 @@ class Config
     File.open('serial.txt', 'wb+') { |f| f.write '01' }
 
     # to create the CA
-    system "openssl req -subj /CN='RCS Certification Authority'/O='HT srl'/OU='Remote Control System' -batch -days 3650 -nodes -new -x509 -keyout rcs-ca.key -out rcs-ca.crt"
+    if options[:gen_ca] or !File.exist?('rcs-ca.crt')
+      trace :info, "Generating a new CA authority..."
+      system "openssl req -subj /CN='RCS Certification Authority'/O='HT srl'/OU='Remote Control System' -batch -days 3650 -nodes -new -x509 -keyout rcs-ca.key -out rcs-ca.crt"
+    end
 
+    return unless File.exist? 'rcs-ca.crt'
+
+    trace :info, "Generating db certificate..."
     # the cert for the db server
     system "openssl req -subj /CN='#{@global['CN']}' -batch -days 3650 -nodes -new -keyout #{@global['DB_KEY']} -out rcs-db.csr"
+
+    return unless File.exist? @global['DB_KEY']
+
+    trace :info, "Generating collector certificate..."
     # the cert used by the collectors
     system "openssl req -subj /CN='collector' -batch -days 3650 -nodes -new -keyout rcs-collector.key -out rcs-collector.csr"
 
+    return unless File.exist? 'rcs-collector.key'
+
+    trace :info, "Signing certificates..."
     # signing process
     system "openssl ca -batch -days 3650 -out #{@global['DB_CERT']} -in rcs-db.csr -extensions server -config openssl.cnf"
     system "openssl ca -batch -days 3650 -out rcs-collector.crt -in rcs-collector.csr -config openssl.cnf"
 
+    return unless File.exist? @global['DB_CERT']
+
+    trace :info, "Creating certificates bundles..."
+    File.open(@global['DB_CERT'], 'ab+') {|f| f.write File.read('rcs-ca.crt')}
+    
     # create the PEM file for all the collectors
     File.open(@global['CA_PEM'], 'wb+') do |f|
       f.write File.read('rcs-collector.crt')
@@ -210,6 +228,7 @@ class Config
       f.write File.read('rcs-ca.crt')
     end
 
+    trace :info, "Removing temporary files..."
     # CA related files
     ['index.txt', 'index.txt.old', 'index.txt.attr', 'index.txt.attr.old', 'serial.txt', 'serial.txt.old'].each do |f|
       File.delete f
@@ -221,6 +240,7 @@ class Config
     end
 
     Dir.chdir old_dir
+    trace :info, "done."
   end
 
   def self.mongo_exec_path(file)
@@ -271,8 +291,11 @@ class Config
 
       opts.separator ""
       opts.separator "Certificates options:"
-      opts.on( '-G', '--generate', 'Generate the SSL certificates needed by the system' ) do
+      opts.on( '-g', '--generate', 'Generate the SSL certificates needed by the system' ) do
         options[:gen_cert] = true
+      end
+      opts.on( '-G', '--generate-ca', 'Generate a new CA authority for SSL certificates' ) do
+        options[:gen_ca] = true
       end
       opts.on( '-c', '--ca-pem FILE', 'The certificate file (pem) of the issuing CA' ) do |file|
         options[:ca_pem] = file
