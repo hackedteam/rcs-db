@@ -21,7 +21,7 @@ class Config
   CONF_FILE = 'config.yaml'
 
   DEFAULT_CONFIG = {'CN' => 'localhost',
-                    'CA_PEM' => 'rcs-ca.pem',
+                    'CA_PEM' => 'rcs.pem',
                     'DB_CERT' => 'rcs-db.crt',
                     'DB_KEY' => 'rcs-db.key',
                     'LISTENING_PORT' => 4444,
@@ -192,12 +192,12 @@ class Config
     File.open('serial.txt', 'wb+') { |f| f.write '01' }
 
     # to create the CA
-    system "openssl req -subj /CN='RCS Certification Authority'/O='HT srl'/OU='Remote Control System' -batch -days 3650 -nodes -new -x509 -keyout rcs-ca.key -out rcs-ca.crt"
+    system "openssl req -subj /CN=\"RCS Certification Authority\"/O=\"HT srl\" -batch -days 3650 -nodes -new -x509 -keyout rcs-ca.key -out rcs-ca.crt -config openssl.cnf"
 
     # the cert for the db server
-    system "openssl req -subj /CN='#{@global['CN']}' -batch -days 3650 -nodes -new -keyout #{@global['DB_KEY']} -out rcs-db.csr"
+    system "openssl req -subj /CN='#{@global['CN']}' -batch -days 3650 -nodes -new -keyout #{@global['DB_KEY']} -out rcs-db.csr -config openssl.cnf"
     # the cert used by the collectors
-    system "openssl req -subj /CN='collector' -batch -days 3650 -nodes -new -keyout rcs-collector.key -out rcs-collector.csr"
+    system "openssl req -subj /CN='collector' -batch -days 3650 -nodes -new -keyout rcs-collector.key -out rcs-collector.csr -config openssl.cnf"
 
     # signing process
     system "openssl ca -batch -days 3650 -out #{@global['DB_CERT']} -in rcs-db.csr -extensions server -config openssl.cnf"
