@@ -102,10 +102,10 @@ class AuthController < RESTController
   
   # private method to authenticate a server
   def auth_server(user, pass)
-    server_sig = File.read(Config.instance.file('SERVER_SIG')).chomp
+    server_sig = ::Signature.where({scope: 'server'}).first
 
     # the Collectors are authenticated only by the server signature
-    if pass.eql? server_sig
+    if pass.eql? server_sig['value']
       
       Collector.collector_login user, @request[:peer]
       

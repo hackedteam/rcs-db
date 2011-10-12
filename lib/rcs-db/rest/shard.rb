@@ -26,6 +26,9 @@ class ShardController < RESTController
   def create
     require_auth_level :sys
 
+    # take the peer address as host if requested automatic discovery
+    @params['host'] = @params['peer'] if @params['host'] == 'auto'
+    
     output = Shard.create @params['host']
     return RESTController.reply.ok(output)
   end

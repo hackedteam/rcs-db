@@ -19,6 +19,8 @@ class SignatureMigration
       # skip item if already migrated
       next if Signature.count(conditions: {scope: sign[:scope]}) != 0
 
+      sign[:scope] = 'agent' if sign[:scope] == 'backdoor'
+      
       trace :info, "Migrating signature '#{sign[:scope]}'." if verbose
       print "." unless verbose
       

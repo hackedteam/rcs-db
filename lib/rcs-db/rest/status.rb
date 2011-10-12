@@ -9,7 +9,7 @@ class StatusController < RESTController
 
   # retrieve the list of all components with their status
   def index
-    require_auth_level :admin, :sys, :tech, :view
+    require_auth_level :admin, :sys
 
     mongoid_query do
       result = ::Status.all
@@ -53,7 +53,7 @@ class StatusController < RESTController
 
   # returns the counters grouped by status
   def counters
-    require_auth_level :admin, :sys, :tech, :view
+    require_auth_level :admin, :sys
     
     counters = {:ok => 0, :warn => 0, :error => 0}
 

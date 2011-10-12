@@ -7,6 +7,7 @@ require_relative 'heartbeat'
 require_relative 'parser'
 require_relative 'rest'
 require_relative 'sessions'
+require_relative 'backup'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -105,7 +106,9 @@ class HTTPHandler < EM::Connection
     
     # Block which fulfills the request
     operation = proc do
-      
+
+      start_time = Time.now
+
       # parse all the request params
       request = prepare_request @http_request_method, @http_request_uri, @http_query_string, @http_cookie, @http_post_content
       request[:peer] = peer
@@ -117,7 +120,11 @@ class HTTPHandler < EM::Connection
       responder = controller.act!
       reply = responder.prepare_response(self)
       reply.send_response
-      
+
+      elapsed_time = Time.now - start_time
+
+      trace :warn, "[#{@peer}] Request: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{elapsed_time})" if Config.instance.global['PERF']
+
       # the controller job has finished, call the cleanup hook
       controller.cleanup
     end
@@ -162,9 +169,12 @@ class Events
         # timeout for the sessions (will destroy inactive sessions)
         EM::PeriodicTimer.new(60) { SessionManager.instance.timeout }
 
-        # recalculate size statistics for operations, targets and backdoors
+        # recalculate size statistics for operations, targets and agents
         Item.restat
-        EM::PeriodicTimer.new(60) { Item.restat }
+        EM::PeriodicTimer.new(60) { EM.defer(proc{Item.restat}) }
+
+        # perform the backups
+        EM::PeriodicTimer.new(60) { EM.defer(proc{ BackupManager.perform }) }
       end
     rescue RuntimeError => e
       # bind error

@@ -20,8 +20,8 @@ http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
 # login
 account = {
-  :user => 'alor', 
-  :pass => 'demorcss'
+  :user => 'admin', 
+  :pass => 'adminp123'
   }
 resp = http.request_post('/auth/login', account.to_json, nil)
 puts "auth.login"
@@ -579,28 +579,36 @@ end
 
 # operations
 if false
-  puts "operation.index" 
-  res = http.request_get('/operation', {'Cookie' => cookie})
-  puts res.body
-  operations = JSON.parse(res.body)
-  puts operations
-  puts
+  #puts "operation.index" 
+  #res = http.request_get('/operation', {'Cookie' => cookie})
+  #puts res.body
+  #operations = JSON.parse(res.body)
+  #puts operations
+  #puts
   
-  puts "operation.show"
-  res = http.request_get("/operation/#{operations.first['_id']}", {'Cookie' => cookie})
-  operation = JSON.parse(res.body)
-  puts operation
+  #puts "operation.show"
+  #res = http.request_get("/operation/#{operations.first['_id']}", {'Cookie' => cookie})
+  #operation = JSON.parse(res.body)
+  #puts operation
+  #puts 
   
   puts "operation.create"
   operation_post = {
     name: "test operation", 
     desc: "this is a test operation", 
-    contact: "billg@microsoft.com"
+    contact: "billg@microsoft.com",
+    group_ids: ['4e8ac48b2afb65289500000b']
   }
   res = http.request_post("/operation/create", operation_post.to_json, {'Cookie' => cookie})
-  puts res.body
+  #puts res.body
   operation = JSON.parse(res.body)
   puts operation
+  puts
+  
+  # group.show
+  res = http.request_get("/group/4e8ac48b2afb65289500000b", {'Cookie' => cookie})
+  puts "group.show"
+  puts res
   puts
   
   puts "operation.update"
@@ -608,17 +616,30 @@ if false
     _id: operation['_id'],
     name: "RENAMED!!!", 
     desc: "whoa! this is our renamed operation", 
-    contact: "ballmer@microsoft.com"
+    contact: "ballmer@microsoft.com",
+    group_ids: ['4e8ac4612afb652936000006']
   }
   res = http.request_post("/operation/update", operation_post.to_json, {'Cookie' => cookie})
-  puts res.body
+  #puts res.body
   operation = JSON.parse(res.body)
   puts operation
+  puts
+  
+  # group.show
+  res = http.request_get("/group/4e8ac48b2afb65289500000b", {'Cookie' => cookie})
+  puts "group.show"
+  puts res
   puts
   
   puts "operation.delete"
   res = http.request_post("/operation/destroy", {_id: operation['_id']}.to_json, {'Cookie' => cookie})
   puts res.body
+  puts
+  
+  # group.show
+  res = http.request_get("/group/4e8ac48b2afb65289500000b", {'Cookie' => cookie})
+  puts "group.show"
+  puts res
   puts
 end
 
@@ -672,7 +693,7 @@ if false
   puts
 end
 
-# backdoors
+# agents
 if false
   res = http.request_get('/operation', {'Cookie' => cookie})
   operations = JSON.parse(res.body)
@@ -680,35 +701,35 @@ if false
   res = http.request_get('/target', {'Cookie' => cookie})
   targets = JSON.parse(res.body)
   
-  puts "backdoor.index"
-  res = http.request_get('/backdoor', {'Cookie' => cookie})
+  puts "agent.index"
+  res = http.request_get('/agent', {'Cookie' => cookie})
   puts res.body
-  backdoors = JSON.parse(res.body)
-  puts "You got #{backdoors.size} backdoors."
+  agents = JSON.parse(res.body)
+  puts "You got #{agents.size} agents."
   puts
   
-  puts "backdoor.show"
-  res = http.request_get("/backdoor/#{backdoors.first['_id']}", {'Cookie' => cookie})
+  puts "agent.show"
+  res = http.request_get("/agent/#{agents.first['_id']}", {'Cookie' => cookie})
   puts res.body
-  backdoor = JSON.parse(res.body)
-  puts backdoor
+  agent = JSON.parse(res.body)
+  puts agent
   puts
   
-  puts "backdoor.update"
-  backdoor_post = {
-     _id: backdoor['_id'],
+  puts "agent.update"
+  agent_post = {
+     _id: agent['_id'],
      name: "RENAMED!!!", 
-     desc: "whoa! this is our renamed backdoor", 
+     desc: "whoa! this is our renamed agent", 
      ident: "this field MUST NOT be updated!!!!!!!!!!!!"
    }
-  res = http.request_post("/backdoor/update", backdoor_post.to_json, {'Cookie' => cookie})
+  res = http.request_post("/agent/update", agent_post.to_json, {'Cookie' => cookie})
   puts res.body
-  backdoor = JSON.parse(res.body)
-  puts backdoor
+  agent = JSON.parse(res.body)
+  puts agent
   puts
    
-  puts "backdoor.delete"
-  res = http.request_post("/backdoor/destroy", {_id: backdoor['_id']}.to_json, {'Cookie' => cookie})
+  puts "agent.delete"
+  res = http.request_post("/agent/destroy", {_id: agent['_id']}.to_json, {'Cookie' => cookie})
   puts res.body
   puts
 end
@@ -747,13 +768,13 @@ if false
   puts
   
   puts "factory.update"
-  backdoor_post = {
+  agent_post = {
      _id: factory['_id'],
      name: "RENAMED!!!", 
      desc: "whoa! this is our renamed factory", 
      ident: "this field MUST NOT be updated!!!!!!!!!!!!"
    }
-  res = http.request_post("/factory/update", backdoor_post.to_json, {'Cookie' => cookie})
+  res = http.request_post("/factory/update", agent_post.to_json, {'Cookie' => cookie})
   puts res.body
   factory = JSON.parse(res.body)
   puts factory
@@ -780,6 +801,13 @@ if false
   rcs_10 = JSON.parse(res.body)
   puts rcs_10
   puts
+
+  puts "search.show"
+  res = http.request_get('/search/4e8c47512afb653dc10000bf', {'Cookie' => cookie})
+  puts res.body
+  puts
+  
+  
 end
 
 #upload
@@ -810,7 +838,7 @@ if false
 end
 
 # shards
-if true
+if false
   # shard.index
   puts "shard.index" 
   res = http.request_get('/shard', {'Cookie' => cookie})
@@ -836,6 +864,51 @@ if true
   #res = http.request_get('/shard', {'Cookie' => cookie})
   #puts res.body
   #puts
+end
+
+# backup
+if false
+  # backup.index
+  puts "backup.index" 
+  res = http.request_get('/backupjob', {'Cookie' => cookie})
+  shards = JSON.parse(res.body)
+  puts res.body
+  puts
+  
+  # backup.create
+  #backup = {what: 'operation: 4e80369d2afb6509cc000026', enabled: true, when: {week: [], month: [], time: '09:20'}, name: 'ALoR Test'}
+  #res = http.request_post('/backupjob/create', backup.to_json, {'Cookie' => cookie})
+  #puts "backup.create"
+  #puts res.body
+  #puts
+  
+  #id = JSON.parse(res.body)['_id']
+  
+  # backup.delete
+  #puts "backup.delete"
+  #res = http.delete("/backup/#{id}", {'Cookie' => cookie})
+  #puts res
+  #puts
+  
+  # backuparchive.index
+  puts "backuparchive.index" 
+  res = http.request_get('/backuparchive', {'Cookie' => cookie})
+  puts res.body
+  puts
+  
+  # backuparchive.delete
+  #puts "backuparchive.delete" 
+  #res = http.delete('/backuparchive/metadata-2011-09-26-15:30', {'Cookie' => cookie})
+  #puts res.body
+  #puts
+
+  # backuparchive.restore
+  #puts "backuparchive.restore" 
+  #res = http.request_post('/backuparchive/restore', {_id: 'metadata-2011-09-26-11:03'}.to_json, {'Cookie' => cookie})
+  #puts res.body
+  #puts
+  
+  
 end
 
 # logout

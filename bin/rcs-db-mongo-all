@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+require 'yaml'
+
 # ensure the working dir is correct
 Dir.chdir File.dirname(File.dirname(File.realpath(__FILE__)))
 
@@ -17,6 +19,11 @@ datadir = Dir.pwd + '/data'
 configdir = datadir + '/config'
 logdir = Dir.pwd + '/log'
 
+rcs_config = {CN: 'localhost'}
+File.open(Dir.pwd + '/config/config.yaml', "r") do |f|
+  rcs_config = YAML.load(f.read)
+end
+
 # ensure the data directory is present
 Dir::mkdir(datadir) if not File.directory?(datadir)
 Dir::mkdir(configdir) if not File.directory?(configdir)
@@ -25,21 +32,21 @@ Dir::mkdir(configdir) if not File.directory?(configdir)
 mongod = Dir.pwd + '/mongodb/' + os + '/mongod' + ext
 mongos = Dir.pwd + '/mongodb/' + os + '/mongos' + ext
 
-puts "Starting the config server..."
+puts "Starting the config server (#{rcs_config['CN']})..."
 # the config server
-parameters = "--dbpath #{configdir} --fork --logpath #{logdir}/mongoc.log --configsvr --rest --bind_ip localhost"
+parameters = "--dbpath #{configdir} --fork --nssize 64 --logpath #{logdir}/mongoc.log --configsvr --rest"
 `#{mongod} #{parameters}`
 
 sleep 1
 
 puts "Starting the router..."
 # the shard router
-parameters = "--logpath #{logdir}/mongos.log --fork --configdb localhost --bind_ip localhost"
+parameters = "--logpath #{logdir}/mongos.log --fork --configdb #{rcs_config['CN']} --bind_ip localhost"
 `#{mongos} #{parameters}`
 
 sleep 1
 
 puts "Starting the shard server..."
 # the shard server
-parameters = "--dbpath #{datadir} --journal --fork --logpath #{logdir}/mongod.log --shardsvr --rest --bind_ip localhost"
+parameters = "--dbpath #{datadir} --journal --fork  --nssize 64 --logpath #{logdir}/mongod.log --shardsvr --rest"
 `#{mongod} #{parameters}`

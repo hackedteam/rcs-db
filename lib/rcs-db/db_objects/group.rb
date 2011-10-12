@@ -17,12 +17,6 @@ class Group
 
   store_in :groups
 
-  def remove_user(user)
-    user.groups.delete(self)
-    self.users.delete(user)
-    user.save
-    self.save
-  end
 end
 
 #end # ::DB

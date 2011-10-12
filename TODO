@@ -1,29 +1,46 @@
 HIGH PRIORITY:
 
-    rest methods for items
+    split gridfs? + sharding
+
     integrity check on Items
 
-    Windows Installers (NSIS)
+    complete the worker decoding
 
-    certificate creation on startup and utility
+    distributed workers (same as shards)
+        - mongos should be accessible by all the workers
+
+    evidence methods
 
 MEDIUM PRIORITY:
 
-    get time via http (collector)
+    hook points?
+
+    rename proxy -> injector
 
     proxy config methods
 
     Local Exploit portal
 
+    modify the NSIS to install the worker together with the shards
+
 LOW PRIORITY:
 
-    Sharding on dynamic collections (evidence)
+    config
+
+    build
+
+    get time via http (collector)
+
+    dongle dll 
 
     mongo authentication
-    Backup Procedures
-        - full
-        - per operation
 
     Alerting daemon
 
     Documentation
+
+FUTURE:
+
+    correlation hooks
+
+    forwarding hooks

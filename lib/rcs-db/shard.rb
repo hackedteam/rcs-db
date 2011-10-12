@@ -56,13 +56,26 @@ class Shard
     end
   end
 
-  def self.enable(collection)
+  def self.enable(database)
     begin
       db = Mongo::Connection.new("localhost").db("admin")
-      db.command({ enablesharding: collection })
+      db.command({ enablesharding: database })
     rescue Exception => e
       error = db.command({ getlasterror: 1})
       error['err']
+    end
+  end
+
+  def self.set_key(collection, key)
+    #trace :info, "Enabling shard key #{key.inspect} on #{collection.stats['ns']}"
+    begin
+      # we need an index before the creation of the shard
+      collection.create_index(key.to_a)
+      # switch to 'admin' and create the shard
+      db = Mongo::Connection.new("localhost").db("admin")
+      db.command({ shardcollection: collection.stats['ns'], key: key })
+    rescue Exception => e
+      e.message
     end
   end
   

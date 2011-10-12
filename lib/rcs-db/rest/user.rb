@@ -58,7 +58,7 @@ class UserController < RESTController
     mongoid_query do
       user = User.find(@params['_id'])
       return RESTController.reply.not_found if user.nil?
-      @params.delete('user')
+      @params.delete('_id')
       
       # if non-admin you can modify only yourself
       unless @session[:level].include? :admin
@@ -72,7 +72,7 @@ class UserController < RESTController
 
       # if pass is modified, treat it separately
       if @params.has_key? 'pass'
-        @params['pass'] = Digest::SHA1.hexdigest('.:RCS:.' + params['pass'])
+        @params['pass'] = Digest::SHA1.hexdigest('.:RCS:.' + @params['pass'])
         Audit.log :actor => @session[:user][:name], :action => 'user.update', :user => user['name'], :desc => "Changed password for user '#{user['name']}'"
       else
         @params.each_pair do |key, value|

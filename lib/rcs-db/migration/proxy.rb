@@ -63,10 +63,15 @@ class ProxyMigration
       mr.ident_param = rule[:user_pattern]
       mr.resource = rule[:resource_pattern]
       mr.action = rule[:action_type]
-      mr.action_param = rule[:action_param]
 
       if mr.action == 'REPLACE'
-        mr[:_grid] = [ GridFS.instance.put(rule[:content]) ] if rule[:content].bytesize > 0
+        mr.action_param_name = rule[:action_param]
+        mr[:_grid] = [ GridFS.instance.put(rule[:content], {filename: rule[:action_param]}) ] if rule[:content].bytesize > 0
+      else
+        agent = ::Item.where({ident: rule[:action_param]}).first
+        next if agent.nil?
+        mr.action_param = agent._id
+        mr.action_param_name = agent._id
       end
 
       print "." unless verbose

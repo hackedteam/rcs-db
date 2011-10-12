@@ -43,7 +43,6 @@ log/*
 
 # certs
 config/*.pem
-config/*.sig
 config/*.crt
 config/*.key
 
@@ -65,3 +64,10 @@ data/
 
 #NSIS setup
 nsis/*.exe
+
+#configs
+scripts/*.xml
+scripts/*.json
+scripts/*.bson
+
+backups/
