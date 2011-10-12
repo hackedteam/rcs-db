@@ -4,14 +4,12 @@ HIGH PRIORITY:
 
     integrity check on Items
 
-    check the utc time of the backups
-
-    certificate creation on startup and utility
-
     complete the worker decoding
 
     distributed workers (same as shards)
         - mongos should be accessible by all the workers
+
+    evidence methods
 
 MEDIUM PRIORITY:
 
@@ -26,8 +24,6 @@ MEDIUM PRIORITY:
     modify the NSIS to install the worker together with the shards
 
 LOW PRIORITY:
-
-    evidence methods
 
     config
 

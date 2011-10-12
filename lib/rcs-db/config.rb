@@ -64,7 +64,7 @@ class Config
 
     if not @global['CA_PEM'].nil? then
       if not File.exist?(Config.instance.file('CA_PEM')) then
-        trace :fatal, "Cannot open CA file [#{@global['CA_PEM']}]"
+        trace :fatal, "Cannot open PEM file [#{@global['CA_PEM']}]"
         return false
       end
     end
@@ -132,6 +132,10 @@ class Config
     @global['WORKER_PORT'] = options[:worker_port] unless options[:worker_port].nil?
     @global['BACKUP_DIR'] = options[:backup] unless options[:backup].nil?
 
+    if options[:gen_cert]
+      generate_certificates
+    end
+
     trace :info, ""
     trace :info, "Final configuration:"
     pp @global
@@ -176,6 +180,47 @@ class Config
 
     # logout
     http.request_post('/auth/logout', nil, {'Cookie' => cookie})
+  end
+
+  def generate_certificates
+    trace :info, "Generating ssl certificates..."
+
+    old_dir = Dir.pwd
+    Dir.chdir File.join(Dir.pwd, CONF_DIR)
+
+    File.open('index.txt', 'wb+') { |f| f.write '' }
+    File.open('serial.txt', 'wb+') { |f| f.write '01' }
+
+    # to create the CA
+    system "openssl req -subj /CN='RCS Certification Authority'/O='HT srl'/OU='Remote Control System' -batch -days 3650 -nodes -new -x509 -keyout rcs-ca.key -out rcs-ca.crt"
+
+    # the cert for the db server
+    system "openssl req -subj /CN='#{@global['CN']}' -batch -days 3650 -nodes -new -keyout #{@global['DB_KEY']} -out rcs-db.csr"
+    # the cert used by the collectors
+    system "openssl req -subj /CN='collector' -batch -days 3650 -nodes -new -keyout rcs-collector.key -out rcs-collector.csr"
+
+    # signing process
+    system "openssl ca -batch -days 3650 -out #{@global['DB_CERT']} -in rcs-db.csr -extensions server -config openssl.cnf"
+    system "openssl ca -batch -days 3650 -out rcs-collector.crt -in rcs-collector.csr -config openssl.cnf"
+
+    # create the PEM file for all the collectors
+    File.open(@global['CA_PEM'], 'wb+') do |f|
+      f.write File.read('rcs-collector.crt')
+      f.write File.read('rcs-collector.key')
+      f.write File.read('rcs-ca.crt')
+    end
+
+    # CA related files
+    ['index.txt', 'index.txt.old', 'index.txt.attr', 'index.txt.attr.old', 'serial.txt', 'serial.txt.old'].each do |f|
+      File.delete f
+    end
+
+    # intermediate certificate files
+    ['01.pem', '02.pem', 'rcs-collector.csr', 'rcs-collector.crt', 'rcs-collector.key', 'rcs-db.csr'].each do |f|
+      File.delete f
+    end
+
+    Dir.chdir old_dir
   end
 
   def self.mongo_exec_path(file)
@@ -226,6 +271,9 @@ class Config
 
       opts.separator ""
       opts.separator "Certificates options:"
+      opts.on( '-G', '--generate', 'Generate the SSL certificates needed by the system' ) do
+        options[:gen_cert] = true
+      end
       opts.on( '-c', '--ca-pem FILE', 'The certificate file (pem) of the issuing CA' ) do |file|
         options[:ca_pem] = file
       end
