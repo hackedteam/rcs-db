@@ -66,7 +66,10 @@ class Migration
     end
 
     DB.instance.mysql_connect options[:user], options[:pass], options[:db_address]
-    
+
+    # ensure the sharding is enabled
+    DB.instance.enable_sharding
+
     # start the migration
     unless options[:log] then
       Audit.log actor: '<system>', action: 'migration', desc: "Migrating data from #{options[:db_address]}..."
