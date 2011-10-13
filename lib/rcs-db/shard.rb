@@ -71,10 +71,13 @@ class Shard
     begin
       # we need an index before the creation of the shard
       collection.create_index(key.to_a)
+
       # switch to 'admin' and create the shard
       db = Mongo::Connection.new("localhost").db("admin")
       db.command({ shardcollection: collection.stats['ns'], key: key })
+
     rescue Exception => e
+      trace :error, "Cannot enable shard key: #{e.message} " #+ db.command({ getlasterror: 1})
       e.message
     end
   end

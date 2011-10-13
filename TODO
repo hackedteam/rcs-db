@@ -1,6 +1,6 @@
 HIGH PRIORITY:
 
-    split gridfs? + sharding
+    evidence methods
 
     integrity check on Items
 
@@ -9,8 +9,6 @@ HIGH PRIORITY:
     distributed workers (same as shards)
         - mongos should be accessible by all the workers
 
-    evidence methods
-
 MEDIUM PRIORITY:
 
     hook points?
@@ -18,6 +16,8 @@ MEDIUM PRIORITY:
     rename proxy -> injector
 
     proxy config methods
+
+    import evidence from rest (offline)
 
     Local Exploit portal
 

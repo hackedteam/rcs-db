@@ -24,7 +24,7 @@ class Core
     if options[:list]
       trace :info, "List of available cores: "
       ::Core.all.each do |core|
-        file = GridFS.instance.get core[:_grid].first
+        file = GridFS.get core[:_grid].first
         trace :info, "#{core.platform.ljust(15)} #{core.name.ljust(15)} #{core.version.to_s.ljust(10)} #{file.file_length.to_s.rjust(15)} bytes"
       end
     end
@@ -37,7 +37,7 @@ class Core
       # make sure to delete the old one
       core = ::Core.where({platform: args[0], name: args[1]}).first
       unless core.nil?
-        GridFS.instance.delete core[:_grid].first
+        GridFS.delete core[:_grid].first
         core.destroy
       end
 
@@ -52,7 +52,7 @@ class Core
       else
         trace :fatal, "Cannot open file: #{args[3]}"
       end
-      nc[:_grid] = [ GridFS.instance.put(content, {filename: "#{args[0]}-#{args[1]}"}) ]
+      nc[:_grid] = [ GridFS.put(content, {filename: "#{args[0]}-#{args[1]}"}) ]
 
       trace :info, "Storing #{args[0]}-#{args[1]} #{args[2]} (#{content.bytesize} bytes) into the DB"
       nc.save
@@ -63,7 +63,7 @@ class Core
 
       core = ::Core.where({platform: args[0], name: args[1]}).first
       unless core.nil?
-        file = GridFS.instance.get core[:_grid].first
+        file = GridFS.get core[:_grid].first
         File.open("#{core.platform}-#{core.name}-#{core.version}", 'wb') {|f| f.write file.read}
         trace :info, "Exporting #{core.platform}-#{core.name} #{core.version} (#{file.file_length} bytes)"
       else

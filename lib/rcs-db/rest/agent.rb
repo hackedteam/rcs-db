@@ -227,7 +227,7 @@ class AgentController < RESTController
       when 'GET'
         agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
         upl = agent.upload_requests.where({ _id: @params['upload']}).first
-        content = GridFS.instance.get upl[:_grid].first
+        content = GridFS.get upl[:_grid].first
         trace :info, "[#{@request[:peer]}] Requested the UPLOAD #{@params['upload']} -- #{content.file_length.to_s_bytes}"
         return RESTController.reply.ok(content.read, {content_type: content.content_type})
       when 'DELETE'
@@ -257,7 +257,7 @@ class AgentController < RESTController
       when 'GET'
         agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
         upl = agent.upgrade_requests.where({ _id: @params['upgrade']}).first
-        content = GridFS.instance.get upl[:_grid].first
+        content = GridFS.get upl[:_grid].first
         trace :info, "[#{@request[:peer]}] Requested the UPGRADE #{@params['upgrade']} -- #{content.file_length.to_s_bytes}"
         return RESTController.reply.ok(content.read, {content_type: content.content_type})
       when 'DELETE'

@@ -66,7 +66,7 @@ class ProxyController < RESTController
       proxy_name = proxy.name
 
       proxy.rules.each do |rule|
-        GridFS.instance.delete rule[:_grid].first unless rule[:_grid].nil?
+        GridFS.delete rule[:_grid].first unless rule[:_grid].nil?
       end
       
       proxy.destroy
@@ -175,7 +175,7 @@ class ProxyController < RESTController
       if rule.action == 'REPLACE' and not @params['rule']['action_param'].nil?
         path = File.join Dir.tmpdir, @params['rule']['action_param']
         if File.exist?(path) and File.file?(path)
-          rule[:_grid] = [GridFS.instance.put(File.binread(path), {filename: @params['rule']['action_param']})]
+          rule[:_grid] = [GridFS.put(File.binread(path), {filename: @params['rule']['action_param']})]
           File.unlink(path)
         end
       end
@@ -202,7 +202,7 @@ class ProxyController < RESTController
                 :desc => "Deleted a rule from the injection proxy '#{proxy.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
 
       # delete any pending file in the grid
-      GridFS.instance.delete rule[:_grid].first unless rule[:_grid].nil?
+      GridFS.delete rule[:_grid].first unless rule[:_grid].nil?
 
       proxy.rules.delete_all(conditions: { _id: rule[:_id]})
       proxy.save
@@ -229,7 +229,7 @@ class ProxyController < RESTController
 
       # remove any grid pointer if we are changing the type of action
       if rule.action != 'REPLACE'
-        GridFS.instance.delete rule[:_grid].first unless rule[:_grid].nil?
+        GridFS.delete rule[:_grid].first unless rule[:_grid].nil?
         rule[:_grid] = nil
       end
       
@@ -238,8 +238,8 @@ class ProxyController < RESTController
         path = File.join Dir.tmpdir, @params['rule']['action_param']
         if File.exist?(path) and File.file?(path)
           # delete any previous file in the grid
-          GridFS.instance.delete rule[:_grid].first unless rule[:_grid].nil?
-          rule[:_grid] = [GridFS.instance.put(File.binread(path), {filename: @params['rule']['action_param']})]
+          GridFS.delete rule[:_grid].first unless rule[:_grid].nil?
+          rule[:_grid] = [GridFS.put(File.binread(path), {filename: @params['rule']['action_param']})]
           File.unlink(path)
         end
       end

@@ -45,14 +45,14 @@ class LogMigration
     end
   end
 
-  def self.migrate_single_target(id)
+  def self.migrate_single_target(target_id)
 
     # delete evidence if already present
     db = Mongoid.database
-    db.drop_collection Evidence.collection_name(id.to_s)
+    db.drop_collection Evidence.collection_name(target_id.to_s)
 
     # migrate evidence for each agent
-    agents = Item.where({_kind: 'agent'}).also_in({path: [id]})
+    agents = Item.where({_kind: 'agent'}).also_in({path: [target_id]})
     agents.each do |a|
       
       # clear stats for the backdoor
@@ -62,7 +62,7 @@ class LogMigration
       a.save
       
       # delete all files related to the backdoor
-      GridFS.instance.delete_by_agent(a[:_id].to_s)
+      GridFS.delete_by_agent(a[:_id].to_s, target_id.to_s)
 
       puts "      * #{a.name}"
 
@@ -104,7 +104,7 @@ class LogMigration
           size = 0
         end
         
-        migrate_single_log(log, id.to_s, a[:_id])
+        migrate_single_log(log, target_id.to_s, a[:_id])
         
         # report the status
         print "         #{current} of #{count}  %2.1f %% | #{processed}/sec  #{speed.to_s_bytes}/sec | #{@@size.to_s_bytes}      \r" % percentage
@@ -132,7 +132,7 @@ class LogMigration
     # save the binary data
     if log[:longblob1].bytesize > 0
       ev.data[:_grid_size] = log[:longblob1].bytesize
-      ev.data[:_grid] = GridFS.instance.put(log[:longblob1], {filename: agent_id.to_s})
+      ev.data[:_grid] = GridFS.put(log[:longblob1], {filename: agent_id.to_s}, target_id.to_s)
     end
     
     ev.save

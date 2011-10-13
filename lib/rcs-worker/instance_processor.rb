@@ -189,7 +189,7 @@ class InstanceProcessor
     # save the binary data (if any)
     unless evidence.info[:grid_content].nil?
       ev.data[:_grid_size] = evidence.info[:grid_content].bytesize
-      ev.data[:_grid] = GridFS.instance.put(evidence.info[:grid_content], {filename: agent[:_id].to_s}) unless evidence.info[:grid_content].nil?
+      ev.data[:_grid] = GridFS.put(evidence.info[:grid_content], {filename: agent[:_id].to_s}, target[:_id].to_s) unless evidence.info[:grid_content].nil?
     end
 
     ev.save
