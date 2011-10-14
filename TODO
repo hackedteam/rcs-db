@@ -9,6 +9,10 @@ HIGH PRIORITY:
     distributed workers (same as shards)
         - mongos should be accessible by all the workers
 
+    config
+
+    build
+
 MEDIUM PRIORITY:
 
     hook points?
@@ -24,10 +28,6 @@ MEDIUM PRIORITY:
     modify the NSIS to install the worker together with the shards
 
 LOW PRIORITY:
-
-    config
-
-    build
 
     get time via http (collector)
 

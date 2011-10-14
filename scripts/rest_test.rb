@@ -476,6 +476,8 @@ if false
   ret = http.delete("/proxy/#{proxy_id}", {'Cookie' => cookie})
   puts ret
   
+  
+  
 end
 
 # collector
@@ -694,7 +696,7 @@ if false
 end
 
 # agents
-if true
+if false
   res = http.request_get('/operation', {'Cookie' => cookie})
   operations = JSON.parse(res.body)
   
@@ -950,7 +952,8 @@ if false
   
   
 end
-
+  
+  
 # logout
 res = http.request_post('/auth/logout', nil, {'Cookie' => cookie})
 puts

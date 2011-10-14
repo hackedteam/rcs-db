@@ -42,7 +42,7 @@ class RESTController
     return nil if name.nil?
     begin
       controller = eval("#{name}").new
-    rescue NameError => e
+    rescue Exception => e
       controller = InvalidController.new
     end
       controller.request = request
