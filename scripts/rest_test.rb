@@ -20,8 +20,8 @@ http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
 # login
 account = {
-  :user => 'admin', 
-  :pass => 'adminp123'
+  :user => 'daniele', 
+  :pass => 'danielep123'
   }
 resp = http.request_post('/auth/login', account.to_json, nil)
 puts "auth.login"
@@ -694,7 +694,7 @@ if false
 end
 
 # agents
-if false
+if true
   res = http.request_get('/operation', {'Cookie' => cookie})
   operations = JSON.parse(res.body)
   
@@ -727,7 +727,27 @@ if false
   agent = JSON.parse(res.body)
   puts agent
   puts
-   
+  
+  puts "agent.add_config"
+  agent_post = {
+    _id: agent['_id'],
+    config: "{active: true}"
+  }
+  res = http.request_post("/agent/add_config", agent_post.to_json, {'Cookie' => cookie})
+  puts res.body
+  config = JSON.parse(res.body)
+  puts config['config']
+  puts
+  
+  puts "agent.del_config"
+  agent_post = {
+    _id: agent['_id'],
+    config_id: config['_id']
+  }
+  res = http.request_post("/agent/del_config", agent_post.to_json, {'Cookie' => cookie})
+  puts res.body
+  puts
+  
   puts "agent.delete"
   res = http.request_post("/agent/destroy", {_id: agent['_id']}.to_json, {'Cookie' => cookie})
   puts res.body
@@ -778,6 +798,26 @@ if false
   puts res.body
   factory = JSON.parse(res.body)
   puts factory
+  puts
+  
+  puts "factory.add_config"
+  agent_post = {
+    _id: factory['_id'],
+    config: "{active: true}"
+  }
+  res = http.request_post("/factory/add_config", agent_post.to_json, {'Cookie' => cookie})
+  puts res.body
+  config = JSON.parse(res.body)
+  puts config['config']
+  puts
+  
+  puts "factory.del_config"
+  agent_post = {
+    _id: factory['_id'],
+    config_id: config['_id']
+  }
+  res = http.request_post("/factory/del_config", agent_post.to_json, {'Cookie' => cookie})
+  puts res.body
   puts
   
   puts "factory.delete"
