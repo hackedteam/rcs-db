@@ -2,6 +2,6 @@
 $LOAD_PATH.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 
 require 'bundler/setup'
-require 'rcs-common/evidence_manager'
+require 'rcs-db/evidence_manager'
 
-exit RCS::EvidenceManager.run!(*ARGV)
+exit RCS::DB::EvidenceManager.run!(*ARGV)
