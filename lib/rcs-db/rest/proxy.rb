@@ -264,11 +264,11 @@ class ProxyController < RESTController
       Audit.log :actor => @session[:user][:name], :action => 'proxy.apply_rules',
                 :desc => "Applied the rules to the injection proxy '#{proxy.name}'"
 
-      # push the rules
-      RCS::DB::NetworkController.push proxy.address
-
       proxy.configured = false
       proxy.save
+
+      # push the rules
+      return RESTController.reply.server_error("Cannot push rules via NC") unless RCS::DB::NetworkController.push(proxy.address)
 
       return RESTController.reply.ok
     end

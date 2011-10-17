@@ -13,9 +13,9 @@ class NetworkController
   def self.push(address)
     begin
       # find a network controller in the status list
-      nc = ::Status.where({nc: true}).first
+      nc = ::Status.where({nc: true, status: ::Status::OK}).first
 
-      return if nc.nil?
+      return false if nc.nil?
 
       trace :info, "NetworkController: Pushing configuration to #{address}"
 
@@ -25,8 +25,10 @@ class NetworkController
       
     rescue Exception => e
       trace :error, "NetworkController: #{e.message}"
+      return false
     end
 
+    return true
   end
   
 end
