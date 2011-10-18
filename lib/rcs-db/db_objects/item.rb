@@ -200,6 +200,7 @@ class Stat
   field :user, type: String
   field :device, type: String
   field :last_sync, type: Integer
+  field :last_sync_status, type: Integer
   field :size, type: Integer, :default => 0
   field :grid_size, type: Integer, :default => 0
   field :evidence, type: Hash, :default => {}

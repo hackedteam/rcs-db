@@ -31,7 +31,6 @@ class GridFS
         return grid_id
       rescue Exception => e
         trace :error, "Cannot put content into the Grid: #{collection_name(collection)} #{opts.inspect} #{e.message}"
-        # TODO handle the correct exception
         return nil
       end
     end
@@ -43,7 +42,6 @@ class GridFS
         return grid.get id
       rescue Exception => e
         trace :error, "Cannot get content from the Grid: #{collection_name(collection)}"
-        # TODO handle the correct exception
         return nil
       end
     end
@@ -55,11 +53,8 @@ class GridFS
         return grid.delete id
       rescue Exception => e
         trace :error, "Cannot delete content from the Grid: #{collection_name(collection)}"
-        # TODO handle the correct exception
         return nil
       end
-
-      return false
     end
 
     def delete_by_agent(agent, collection = nil)
@@ -74,8 +69,18 @@ class GridFS
       rescue Exception => e
         # TODO handle the correct exception
         puts e.message
-        #connect
       end
+    end
+
+    def get_distinct_filenames(collection = nil)
+      begin
+        files = Mongoid.database.collection( collection_name(collection) + ".files")
+        return files.distinct("filename")
+      rescue Exception => e
+        # TODO handle the correct exception
+        puts e.message
+      end
+
     end
 
   end
