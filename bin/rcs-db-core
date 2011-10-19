@@ -2,6 +2,6 @@
 $LOAD_PATH.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 
 require 'bundler/setup'
-require 'rcs-db'
+require_relative '../lib/rcs-db'
 
 exit RCS::DB::Core.run!(*ARGV)
