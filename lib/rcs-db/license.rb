@@ -27,6 +27,8 @@ class LicenseManager
   LICENSE_VERSION = '8.0'
   LICENSE_FILE = 'rcs.lic'
 
+  DONT_STEAL_RCS = "Ò€‹›ﬁﬂ‡°·‚æ…¬˚∆˙©ƒ∂ß´®†¨ˆøΩ≈ç√∫˜µ≤¡™£¢∞§¶•ªº"
+
   attr_reader :limits
 
   def initialize

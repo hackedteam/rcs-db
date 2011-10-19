@@ -30,6 +30,7 @@ end
       globals[:migrated] = true
       globals[:version] = 20111231
       globals[:nohide] = []
+      globals[:advanced] = true
 
       return globals
     end
