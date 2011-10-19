@@ -1,7 +1,7 @@
 #
 # Controller for the Agent objects
 #
-require 'rcs-db/license'
+require_relative '../license'
 require 'rcs-common/crypt'
 
 module RCS

@@ -65,7 +65,7 @@ class GridFS
     def get_by_filename(filename, collection = nil)
       begin
         files = Mongoid.database.collection( collection_name(collection) + ".files")
-        return files.find({"filename" => filename}, :fields => ["_id"])
+        return files.find({"filename" => filename}, :fields => ["_id", "length"])
       rescue Exception => e
         # TODO handle the correct exception
         puts e.message

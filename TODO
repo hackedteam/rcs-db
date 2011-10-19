@@ -2,6 +2,8 @@ HIGH PRIORITY:
 
     evidence methods
 
+    offline rest methods
+
     integrity check on Items
 
     complete the worker decoding
@@ -12,6 +14,10 @@ HIGH PRIORITY:
     config
 
     build
+
+    modify all the require rcs-db/* to relative
+
+    check che protected code (insert the MAGIC_CANARY into license)
 
 MEDIUM PRIORITY:
 
