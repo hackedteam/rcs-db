@@ -10,17 +10,17 @@ class SignatureMigration
   
     print "Migrating signatures "
 
+    # make sure there are no conflicts
+    ::Signature.delete_all
+
     signs = DB.instance.mysql_query('SELECT * from `sign`;').to_a
     signs.each do |sign|
-
-      # make sure there are no conflicts
-      ::Signature.where(scope: sign[:scope]).delete_all
 
       # skip item if already migrated
       next if Signature.count(conditions: {scope: sign[:scope]}) != 0
 
       sign[:scope] = 'agent' if sign[:scope] == 'backdoor'
-      
+
       trace :info, "Migrating signature '#{sign[:scope]}'." if verbose
       print "." unless verbose
       

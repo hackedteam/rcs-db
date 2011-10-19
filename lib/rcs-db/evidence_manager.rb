@@ -24,11 +24,8 @@ class EvidenceManager
 
   def run(options)
 
-    # setup the trace facility
-    RCS::DB::Application.trace_setup
-
     # config file parsing
-    return 1 unless Config.instance.load_from_file
+    #return 1 unless Config.instance.load_from_file
 
     # connect to MongoDB
     return 1 unless DB.instance.connect
@@ -77,6 +74,12 @@ class EvidenceManager
     # reopen the class and declare any empty trace method
     # if called from command line, we don't have the trace facility
     self.class_eval do
+      def trace(level, message)
+        puts message
+      end
+    end
+
+    DB.class_eval do
       def trace(level, message)
         puts message
       end
