@@ -1,9 +1,5 @@
 HIGH PRIORITY:
 
-    evidence methods
-
-    offline rest methods
-
     integrity check on Items
 
     complete the worker decoding
@@ -20,6 +16,8 @@ HIGH PRIORITY:
     check che protected code (insert the MAGIC_CANARY into license)
 
 MEDIUM PRIORITY:
+
+    evidence analysis methods
 
     hook points?
 

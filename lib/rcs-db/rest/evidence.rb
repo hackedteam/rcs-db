@@ -24,7 +24,7 @@ class EvidenceController < RESTController
   # the instance is passed as parameter to the uri
   # the content is passed as body of the request
   def create
-    require_auth_level :server
+    require_auth_level :server, :tech
 
     ident = @params['_id'].slice(0..13)
     instance = @params['_id'].slice(15..-1)

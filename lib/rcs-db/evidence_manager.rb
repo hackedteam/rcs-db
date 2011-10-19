@@ -64,8 +64,6 @@ class EvidenceManager
       time = time.to_s.split(' +').first
 
       puts "| #{key} |#{agent[:platform].center(12)}| #{time} |#{value[:count].to_s.rjust(5)} | #{value[:size].to_s_bytes.rjust(11)} |"
-      #puts agent.inspect
-      #puts "|#{key}|#{e['subtype'].center(12)}| #{time} |#{status.center(13)}|#{count.rjust(5)} |#{size.to_s_bytes.rjust(11)} |"
     end
 
     puts table_line
@@ -88,15 +86,7 @@ class EvidenceManager
     options = {}
 
     optparse = OptionParser.new do |opts|
-      opts.banner = "Usage: rcs-db-evidence-queue [options] [instance]"
-
-      opts.on( '-i', '--instance INSTANCE', String, 'Show statistics only for this INSTANCE' ) do |inst|
-        options[:instance] = inst
-      end
-
-      opts.on( '-p', '--purge', 'Purge all the instance with no pending tasks' ) do
-        options[:purge] = true
-      end
+      opts.banner = "Usage: rcs-db-evidence-queue [options] "
 
       opts.on( '-h', '--help', 'Display this screen' ) do
         puts opts
