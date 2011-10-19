@@ -110,7 +110,7 @@ class DB
     if User.count(conditions: {enabled: true, privs: 'ADMIN'}) == 0
       trace :warn, "No ADMIN found, creating a default admin user..."
       User.where(name: 'admin').delete_all
-      User.create(name: 'admin') do |u|
+      user = User.create(name: 'admin') do |u|
         u[:pass] = Digest::SHA1.hexdigest('.:RCS:.' + 'adminp123')
         u[:enabled] = true
         u[:desc] = 'Default admin user'
@@ -119,6 +119,10 @@ class DB
         u[:timezone] = 0
       end
       Audit.log :actor => '<system>', :action => 'user.create', :user => 'admin', :desc => "Created the default user 'admin'"
+      Group.create(name: "administrators") do |g|
+        g.users << user
+      end
+      Audit.log :actor => '<system>', :action => 'group.create', :group => 'administrators', :desc => "Created the default group 'administrators'"
     end
   end
 
