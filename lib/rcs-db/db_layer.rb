@@ -119,9 +119,10 @@ class DB
         u[:timezone] = 0
       end
       Audit.log :actor => '<system>', :action => 'user.create', :user => 'admin', :desc => "Created the default user 'admin'"
-      Group.create(name: "administrators") do |g|
-        g.users << user
-      end
+
+      group = Group.create(name: "administrators")
+      group.users << user
+      group.save
       Audit.log :actor => '<system>', :action => 'group.create', :group => 'administrators', :desc => "Created the default group 'administrators'"
     end
   end

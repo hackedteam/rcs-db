@@ -49,6 +49,16 @@ class GroupMigration
       
     end
 
+    # purge the invalid associations
+    Group.all.each do |group|
+      group.user_ids.each do |user_id|
+        if User.where({_id: user_id}).first.nil?
+          group.user_ids.delete(user_id)
+          group.save
+        end
+      end
+    end
+
     puts " done."
     
   end
