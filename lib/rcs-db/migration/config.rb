@@ -1,4 +1,4 @@
-require 'rcs-db/db_layer'
+require_relative '../db_layer'
 require 'xmlsimple'
 require 'json'
 

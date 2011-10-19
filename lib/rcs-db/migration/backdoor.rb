@@ -1,5 +1,5 @@
-require 'rcs-db/db_layer'
-require 'rcs-db/grid'
+require_relative '../db_layer'
+require_relative '../grid'
 
 module RCS
 module DB

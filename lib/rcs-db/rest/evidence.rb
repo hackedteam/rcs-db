@@ -2,9 +2,9 @@
 # Controller for the Evidence objects
 #
 
-require 'rcs-db/db_layer'
-require 'rcs-db/evidence_manager'
-require 'rcs-db/evidence_dispatcher'
+require_relative '../db_layer'
+require_relative '../evidence_manager'
+require_relative '../evidence_dispatcher'
 
 # rcs-common
 require 'rcs-common/symbolize'

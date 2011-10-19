@@ -3,6 +3,6 @@ $LOAD_PATH.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 
 require 'bundler/setup'
 require 'rcs-db'
-require 'rcs-db/migration'
+require_relative '../lib/rcs-db/migration'
 
 exit RCS::DB::Migration.run!(*ARGV)
