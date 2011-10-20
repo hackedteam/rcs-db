@@ -29,6 +29,8 @@ class EvidenceController < RESTController
     ident = @params['_id'].slice(0..13)
     instance = @params['_id'].slice(15..-1)
 
+    # TODO: handle the multipart-form from console
+
     # save the evidence in the db
     begin
       id = RCS::DB::EvidenceManager.instance.store_evidence ident, instance, @request[:content]
