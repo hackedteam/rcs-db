@@ -481,7 +481,7 @@ if false
 end
 
 # proxy config
-if true
+if false
   
   # proxy.config
   res = http.request_get("/proxy/config/4e9ec80d2afb657230001012", {'Cookie' => cookie})

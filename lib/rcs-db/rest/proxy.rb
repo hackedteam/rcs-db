@@ -34,7 +34,7 @@ class ProxyController < RESTController
 
     return RESTController.reply.conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :proxies
 
-    result = Proxy.create(name: @params['name'], port: 4444, poll: false, configured: false, redirect: 'auto')
+    result = Proxy.create(name: @params['name'], port: 4444, poll: false, configured: false, redirect: 'auto', redirection_tag: 'ww')
 
     Audit.log :actor => @session[:user][:name], :action => 'proxy.create', :desc => "Created the injection proxy '#{@params['name']}'"
 
@@ -144,8 +144,12 @@ class ProxyController < RESTController
     mongoid_query do
       proxy = Proxy.find(@params['_id'])
 
-      klass = CappedLog.collection_class proxy[:_id]
-      klass.destroy_all
+      # we cannot call delete_all on a capped collection
+      # we must drop it:
+      # http://www.mongodb.org/display/DOCS/Capped+Collections#CappedCollections-UsageandRestrictions
+      db = Mongoid.database
+      logs = db.collection(CappedLog.collection_name(proxy[:_id]))
+      logs.drop
 
       return RESTController.reply.ok
     end
