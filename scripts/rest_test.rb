@@ -496,7 +496,6 @@ if false
 
 end
 
-
 # collector
 if false
   # collector.index

@@ -87,7 +87,22 @@ class UserController < RESTController
       return RESTController.reply.ok(user)
     end
   end
-  
+
+  def add_recent
+    require_auth_level :admin, :sys, :tech, :view
+
+    mongoid_query do
+      user = User.find(@params['_id'])
+      
+      user.recent_ids.insert(0, @params['item_id'])
+      user.recent_ids.uniq!
+      user.recent_ids = user.recent_ids[0..4]
+      user.save
+
+      return RESTController.reply.ok(user)
+    end
+  end
+
   def destroy
     require_auth_level :admin
     

@@ -34,6 +34,7 @@ class UserMigration
       mu.timezone = 0
       mu.enabled = user[:disabled] == 0 ? true : false
       mu.dashboard_ids = []
+      mu.recent_ids = []
       mu.privs = []
 
       if user[:level] & 0x80 != 0
