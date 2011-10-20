@@ -42,6 +42,8 @@ class UserController < RESTController
       doc[:enabled] = @params['enabled']
       doc[:locale] = @params['locale']
       doc[:timezone] = @params['timezone']
+      doc[:dashboard_ids] = []
+      doc[:recent_ids] = []
     end
     
     return RESTController.reply.conflict(result.errors[:name]) unless result.persisted?
@@ -96,7 +98,7 @@ class UserController < RESTController
       
       user.recent_ids.insert(0, @params['item_id'])
       user.recent_ids.uniq!
-      user.recent_ids = user.recent_ids[0..4]
+      user.recent_ids = user.recent_ids[0..9]
       user.save
 
       return RESTController.reply.ok(user)

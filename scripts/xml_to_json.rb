@@ -1,7 +1,6 @@
 #! /usr/bin/env ruby
 
 require 'json'
-require 'bson'
 require 'optparse'
 require 'pp'
 require 'xmlsimple'
@@ -398,7 +397,7 @@ options = {}
 
 optparse = OptionParser.new do |opts|
   # Set a banner, displayed at the top of the help screen.
-  opts.banner = "Usage: xml_to_bson [options]"
+  opts.banner = "Usage: xml_to_json [options]"
 
   opts.separator ""
   opts.on( '-x', '--xml FILE', String, 'INPUT xml file' ) do |file|
@@ -406,9 +405,6 @@ optparse = OptionParser.new do |opts|
   end
   opts.on( '-j', '--json FILE', String, 'OUTPUT json file' ) do |file|
     options[:json] = file
-  end
-  opts.on( '-b', '--bson FILE', String, 'OUTPUT bson file' ) do |file|
-    options[:bson] = file
   end
   opts.separator ""
   opts.on( '-v', '--verbose', 'verbose mode' ) do
@@ -428,7 +424,6 @@ File.open(options[:xml], 'rb') { |f| content = f.read }
 
 json_config = xml_to_json(content)
 config = JSON.parse(json_config)
-bconfig = BSON.serialize(config)
 
 if options[:verbose]
   puts "JSON CONFIG: "
@@ -438,11 +433,6 @@ end
 if options[:json]
   File.open(options[:json], 'wb+') { |f| f.write json_config }
   puts "\nJSON CONFIG SIZE: #{json_config.size}"
-end
-
-if options[:bson]
-  File.open(options[:bson], 'wb+') { |f| f.write bconfig }
-  puts "\nBSON CONFIG SIZE: #{bconfig.size}"
 end
 
 
