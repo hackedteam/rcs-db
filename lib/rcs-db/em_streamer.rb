@@ -34,12 +34,12 @@ module EventMachine
 	    @headers["Content-Type"] = RCS::MimeType.get @filename
 	    http_headers = @connection.instance_variable_get :@http_headers
 	    if http_headers.split("\x00").index {|h| h['Connection: keep-alive'] || h['Connection: Keep-Alive']} then
-            # keep the connection open to allow multiple requests on the same connection
-            # this will increase the speed of sync since it decrease the latency on the net
-            keep_connection_open true
-            @headers['Connection'] = 'keep-alive'
-          else
-            @headers['Connection'] = 'close'
+        # keep the connection open to allow multiple requests on the same connection
+        # this will increase the speed of sync since it decrease the latency on the net
+        keep_connection_open true
+        @headers['Connection'] = 'keep-alive'
+      else
+        @headers['Connection'] = 'close'
       end
 	  end
 		
@@ -58,8 +58,8 @@ module EventMachine
         break if @connection.closed?
         if @position < @size
           if @connection.get_outbound_data_size > BackpressureLevel
-              EventMachine::next_tick {stream_one_chunk}
-              break
+            EventMachine::next_tick {stream_one_chunk}
+            break
           else
             break unless @position < @size
             len = @size - @position
@@ -107,12 +107,12 @@ module EventMachine
 	    
 	    http_headers = @connection.instance_variable_get :@http_headers
 	    if http_headers.split("\x00").index {|h| h['Connection: keep-alive'] || h['Connection: Keep-Alive']} then
-            # keep the connection open to allow multiple requests on the same connection
-            # this will increase the speed of sync since it decrease the latency on the net
-            keep_connection_open true
-            @headers['Connection'] = 'keep-alive'
-          else
-            @headers['Connection'] = 'close'
+        # keep the connection open to allow multiple requests on the same connection
+        # this will increase the speed of sync since it decrease the latency on the net
+        keep_connection_open true
+        @headers['Connection'] = 'keep-alive'
+      else
+        @headers['Connection'] = 'close'
       end
 	  end
 		

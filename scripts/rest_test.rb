@@ -480,6 +480,23 @@ if false
   
 end
 
+# proxy config
+if true
+  
+  # proxy.config
+  res = http.request_get("/proxy/config/4e9ec80d2afb657230001012", {'Cookie' => cookie})
+  puts "proxy.config"
+  puts res.body
+  
+  File.open('config.zip', 'wb+') do |f|
+    f.write res.body
+  end
+
+  puts "File saved (#{res.body.size})"
+
+end
+
+
 # collector
 if false
   # collector.index
@@ -954,6 +971,7 @@ if false
 end
   
   
+
 # logout
 res = http.request_post('/auth/logout', nil, {'Cookie' => cookie})
 puts

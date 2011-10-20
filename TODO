@@ -1,5 +1,7 @@
 HIGH PRIORITY:
 
+    sync / async file transfers !!!
+
     integrity check on Items
 
     complete the worker decoding
@@ -10,8 +12,6 @@ HIGH PRIORITY:
     config
 
     build
-
-    modify all the require rcs-db/* to relative
 
 MEDIUM PRIORITY:
 

@@ -93,19 +93,20 @@ class ProxyController < RESTController
   end
 
   def config
-    require_auth_level :server
+    require_auth_level :server, :sys
     
     mongoid_query do
       proxy = ::Proxy.find(@params['_id'])
 
-      #TODO: implement config retrieval
-      proxy.rules.each do |rule|
-        puts rule.inspect
-      end
+      # generate the rules file to be sent as ZIP
+      filename = proxy.config
 
+      # reset the flag for the "configuration needed"
       proxy.configured = true
       proxy.save
 
+      return RESTController.reply.stream_file(filename) unless filename.nil?
+      
       return RESTController.reply.not_found
     end
   end

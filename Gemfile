@@ -19,6 +19,7 @@ gem 'bson'
 gem 'bson_ext'
 gem 'mysql2', "= 0.3.3"
 gem 'xml-simple'
+gem 'rubyzip'
 
 # MIME decoding
 gem 'mail'
