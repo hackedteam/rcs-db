@@ -20,6 +20,7 @@ gem 'bson_ext'
 gem 'mysql2', "= 0.3.3"
 gem 'xml-simple'
 gem 'rubyzip'
+gem 'bcrypt-ruby'
 
 # MIME decoding
 gem 'mail'

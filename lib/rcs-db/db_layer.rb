@@ -111,7 +111,7 @@ class DB
       trace :warn, "No ADMIN found, creating a default admin user..."
       User.where(name: 'admin').delete_all
       user = User.create(name: 'admin') do |u|
-        u[:pass] = Digest::SHA1.hexdigest('.:RCS:.' + 'adminp123')
+        u[:pass] = u.create_password('adminp123')
         u[:enabled] = true
         u[:desc] = 'Default admin user'
         u[:privs] = ['ADMIN', 'SYS', 'TECH', 'VIEW']
