@@ -8,6 +8,7 @@ HIGH PRIORITY:
 
     distributed workers (same as shards)
         - mongos should be accessible by all the workers
+        - modify the NSIS to install the worker together with the shards
 
     config
 
@@ -21,13 +22,7 @@ MEDIUM PRIORITY:
 
     rename proxy -> injector
 
-    proxy config methods
-
-    import evidence from rest (offline)
-
     Local Exploit portal
-
-    modify the NSIS to install the worker together with the shards
 
 LOW PRIORITY:
 
@@ -39,7 +34,7 @@ LOW PRIORITY:
 
     Alerting daemon
 
-    Documentation
+
 
 FUTURE:
 

@@ -84,8 +84,9 @@ class HeartBeat
   end
 
   def self.dont_steal_rcs
-    if LicenseManager::DONT_STEAL_RCS != "Ò€‹›ﬁﬂ‡°·‚æ…¬˚∆˙©ƒ∂ß´®†¨ˆøΩ≈ç√∫˜µ≤¡™£¢∞§¶•ªº"
-      trace :fatal, "TAMPERED SOURCE CODE: don't steal RCS, you are now in trouble..."
+    if LicenseManager::DONT_STEAL_RCS != "Ò€‹›ﬁﬂ‡°·‚æ…¬˚∆˙©ƒ∂ß´®†¨ˆøΩ≈ç√∫˜µ≤¡™£¢∞§¶•ªº" or
+       Dongle::DONT_STEAL_RCS != "∆©ƒø†£¢∂øª˚¶∞¨˚˚˙†´ßµ∫√Ïﬁˆ¨Øˆ·‰ﬁÎ¨"
+      trace :fatal, "TAMPERED SOURCE CODE: don't steal RCS, now you are in trouble..."
       exit!
     end
   end
