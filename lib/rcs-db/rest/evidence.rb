@@ -138,7 +138,7 @@ class EvidenceController < RESTController
       # copy remaining filtering criteria (if any)
       filtering = Evidence.collection_class(target[:_id])
       filter.each_key do |k|
-        filtering = filtering.any_in(k.to_sym => [filter[k]])
+        filtering = filtering.any_in(k.to_sym => filter[k])
       end
 
       # paging
@@ -193,7 +193,7 @@ class EvidenceController < RESTController
       # copy remaining filtering criteria (if any)
       filtering = Evidence.collection_class(target[:_id])
       filter.each_key do |k|
-        filtering = filtering.any_in(k.to_sym => [filter[k]])
+        filtering = filtering.any_in(k.to_sym => filter[k])
       end
 
       num_evidence = filtering.where(filter_hash).count
