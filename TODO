@@ -2,8 +2,6 @@ HIGH PRIORITY:
 
     sync / async file transfers !!!  (daniele)
 
-    integrity check on Items
-
     complete the worker decoding
 
     distributed workers (same as shards)

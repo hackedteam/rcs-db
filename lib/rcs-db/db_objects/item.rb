@@ -166,6 +166,7 @@ class Item
     self.cs = calculate_checksum
   end
 
+  public 
   def calculate_checksum
     # take the fields that are relevant and calculate the checksum on it
     hash = [self._id, self.name, self.counter, self.status, self._kind, self.path]
