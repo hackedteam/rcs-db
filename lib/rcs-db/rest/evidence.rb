@@ -104,6 +104,62 @@ class EvidenceController < RESTController
     return RESTController.reply.ok
   end
 
+  def index
+    require_auth_level :view
+
+    # filtering
+    filter = {}
+    filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
+
+    filter_hash = {}
+
+    # filter by target
+    target_id = filter['target']
+    filter.delete('target')
+    target = Item.where({_id: target_id}).first
+    return RESTController.reply.not_found() if target.nil?
+
+    # filter by agent
+    if filter['agent']
+      agent_id = filter['agent']
+      filter.delete('agent')
+      agent = Item.where({_id: agent_id}).first
+      return RESTController.reply.not_found() if agent.nil?
+      filter_hash[:item] = agent[:_id]
+    end
+
+    # date filters must be treated separately
+    if filter.has_key? 'from' and filter.has_key? 'to'
+      filter_hash[:acquired.gte] = filter.delete('from')
+      filter_hash[:acquired.lte] = filter.delete('to')
+    end
+
+    mongoid_query do
+      # copy remaining filtering criteria (if any)
+      filtering = Evidence.collection_class(target[:_id])
+      filter.each_key do |k|
+        filtering = filtering.any_in(k.to_sym => [filter[k]])
+      end
+
+      # paging
+      if @params.has_key? 'startIndex' and @params.has_key? 'numItems'
+        start_index = @params['startIndex'].to_i
+        num_items = @params['numItems'].to_i
+        #trace :debug, "Querying with filter #{filter_hash}."
+        query = filtering.where(filter_hash).order_by([[:acquired, :asc]]).skip(start_index).limit(num_items)
+
+        #trace :debug, query.inspect
+
+      else
+        # without paging, return everything
+        query = filtering.where(filter_hash).order_by([[:acquired, :asc]])
+      end
+
+      return RESTController.reply.ok(query)
+    end
+  end
+
+
 end
 
 end #DB::

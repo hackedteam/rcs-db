@@ -120,6 +120,10 @@ class LogMigration
     ev = Evidence.dynamic_new target_id
     ev.acquired = log[:acquired].to_i
     ev.received = log[:received].to_i
+
+    # avoid windows epoch (1601-01-01) replacing with unix epoch (1970-01-01)
+    ev.acquired = 0 if ev.acquired < 0
+
     ev.type = log[:type].downcase
     ev.relevance = log[:tag]
     ev.blotter = true unless log[:blotter_id].nil?

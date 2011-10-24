@@ -969,8 +969,24 @@ if false
   
 end
   
+# evidence
+if false
+  # evidence.index
+  filter = {target: '4ea526392afb656f0600003e'}.to_json
+  res = http.request_get(URI.escape("/evidence?filter=#{filter}&startIndex=0&numItems=10"), {'Cookie' => cookie})
+  puts "evidence.index"
+  puts res
+  puts
   
+  # evidence.index
+  filter = {target: '4ea526392afb656f0600003e', agent: '4ea526392afb656f06000133', type: 'keylog'}.to_json
+  res = http.request_get(URI.escape("/evidence?filter=#{filter}&startIndex=0&numItems=10"), {'Cookie' => cookie})
+  puts "evidence.index"
+  puts res
+  puts
 
+end
+    
 # logout
 res = http.request_post('/auth/logout', nil, {'Cookie' => cookie})
 puts
