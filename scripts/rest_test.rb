@@ -970,7 +970,7 @@ if false
 end
   
 # evidence
-if true
+if false
   # evidence.index
   filter = {target: '4ea526392afb656f0600003e'}.to_json
   res = http.request_get(URI.escape("/evidence?filter=#{filter}&startIndex=0&numItems=10"), {'Cookie' => cookie})

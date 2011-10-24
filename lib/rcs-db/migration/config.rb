@@ -360,7 +360,7 @@ class ConfigMigration
       subactions = []
 
       modules.each do |m|
-        if m[:enabled] and not ['snapshot', 'camera', 'location'].include? m[:module]
+        if m[:enabled] and not ['snapshot', 'camera', 'position'].include? m[:module]
           subactions << {:action => 'module', :status => 'start', :module => m[:module]}
         end
         m.delete(:enabled)
