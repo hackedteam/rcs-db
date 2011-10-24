@@ -159,6 +159,50 @@ class EvidenceController < RESTController
     end
   end
 
+  def count
+    require_auth_level :view
+
+    # filtering
+    filter = {}
+    filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
+
+    filter_hash = {}
+
+    # filter by target
+    target_id = filter['target']
+    filter.delete('target')
+    target = Item.where({_id: target_id}).first
+    return RESTController.reply.not_found() if target.nil?
+
+    # filter by agent
+    if filter['agent']
+      agent_id = filter['agent']
+      filter.delete('agent')
+      agent = Item.where({_id: agent_id}).first
+      return RESTController.reply.not_found() if agent.nil?
+      filter_hash[:item] = agent[:_id]
+    end
+
+    # date filters must be treated separately
+    if filter.has_key? 'from' and filter.has_key? 'to'
+      filter_hash[:acquired.gte] = filter.delete('from')
+      filter_hash[:acquired.lte] = filter.delete('to')
+    end
+
+    mongoid_query do
+      # copy remaining filtering criteria (if any)
+      filtering = Evidence.collection_class(target[:_id])
+      filter.each_key do |k|
+        filtering = filtering.any_in(k.to_sym => [filter[k]])
+      end
+
+      num_evidence = filtering.where(filter_hash).count
+
+      # Flex RPC does not accept 0 (zero) as return value for a pagination (-1 is a safe alternative)
+      num_evidence = -1 if num_evidence == 0
+      return RESTController.reply.ok(num_evidence)
+    end
+  end
 
 end
 

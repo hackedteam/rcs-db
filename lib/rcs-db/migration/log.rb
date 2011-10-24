@@ -126,7 +126,7 @@ class LogMigration
 
     ev.type = log[:type].downcase
     ev.relevance = log[:tag]
-    ev.blotter = true unless log[:blotter_id].nil?
+    ev.blotter = log[:blotter_id].nil? ? false : true
     ev.note = log[:content] unless log[:content].nil?
     ev.item = [ agent_id ]
 
