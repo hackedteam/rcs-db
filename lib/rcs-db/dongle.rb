@@ -1,3 +1,4 @@
+# encoding: utf-8
 #
 #  Hardware dongle handling stuff
 #
@@ -17,6 +18,8 @@ end
 
 class Dongle
   include RCS::Tracer
+
+  DONT_STEAL_RCS = "∆©ƒø†£¢∂øª˚¶∞¨˚˚˙†´ßµ∫√Ïﬁˆ¨Øˆ·‰ﬁÎ¨"
 
   @@serial = '1234567890'
   @@count = 5

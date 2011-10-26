@@ -52,6 +52,9 @@ class Application
       version = File.read(Dir.pwd + '/config/version.txt')
       trace :info, "Starting the RCS Database #{version}..."
 
+      # check the integrity of the code
+      HeartBeat.dont_steal_rcs
+
       # load the license limits
       return 1 unless LicenseManager.instance.load_license
 

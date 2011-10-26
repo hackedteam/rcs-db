@@ -34,7 +34,7 @@ class UserController < RESTController
       doc[:pass] = ''
 
       password = @params['pass']
-      doc[:pass] = Digest::SHA1.hexdigest('.:RCS:.' + password) if password != '' and not password.nil?
+      doc[:pass] = doc.create_password(password) if password != '' and not password.nil?
 
       doc[:desc] = @params['desc']
       doc[:contact] = @params['contact']
@@ -42,6 +42,8 @@ class UserController < RESTController
       doc[:enabled] = @params['enabled']
       doc[:locale] = @params['locale']
       doc[:timezone] = @params['timezone']
+      doc[:dashboard_ids] = []
+      doc[:recent_ids] = []
     end
     
     return RESTController.reply.conflict(result.errors[:name]) unless result.persisted?
@@ -72,7 +74,7 @@ class UserController < RESTController
 
       # if pass is modified, treat it separately
       if @params.has_key? 'pass'
-        @params['pass'] = Digest::SHA1.hexdigest('.:RCS:.' + @params['pass'])
+        @params['pass'] = user.create_password(@params['pass'])
         Audit.log :actor => @session[:user][:name], :action => 'user.update', :user => user['name'], :desc => "Changed password for user '#{user['name']}'"
       else
         @params.each_pair do |key, value|
@@ -87,7 +89,22 @@ class UserController < RESTController
       return RESTController.reply.ok(user)
     end
   end
-  
+
+  def add_recent
+    require_auth_level :admin, :sys, :tech, :view
+
+    mongoid_query do
+      user = User.find(@params['_id'])
+      
+      user.recent_ids.insert(0, @params['item_id'])
+      user.recent_ids.uniq!
+      user.recent_ids = user.recent_ids[0..9]
+      user.save
+
+      return RESTController.reply.ok(user)
+    end
+  end
+
   def destroy
     require_auth_level :admin
     

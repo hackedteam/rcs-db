@@ -1,7 +1,6 @@
 #! /usr/bin/env ruby
 
 require 'json'
-require 'bson'
 require 'optparse'
 require 'pp'
 require 'xmlsimple'
@@ -96,12 +95,13 @@ end
                   e[:ts] = "%02d:%02d:%02d" % [params['hour'].first.to_i, params['minute'].first.to_i, params['second'].first.to_i]
                   e[:te] = "%02d:%02d:%02d" % [params['endhour'].first.to_i, params['endminute'].first.to_i, params['endsecond'].first.to_i]
                 when 'loop'
-                  e.delete(:start)
                   e[:event] = 'timer'
                   e[:ts] = "00:00:00"
                   e[:te] = "23:59:59"
                   e[:repeat] = e[:start]
+                  e[:loop] = true
                   e[:delay] = params['hour'].first.to_i * 3600 + params['minute'].first.to_i * 60 + params['second'].first.to_i
+                  e.delete(:start)
                 when 'after startup'
                   e[:event] = 'timer'
                   e[:ts] = "00:00:00"
@@ -294,7 +294,7 @@ end
       subactions = []
           
       modules.each do |m|
-        if m[:enabled] and not ['snapshot', 'camera', 'location'].include? m[:module]
+        if m[:enabled] and not ['snapshot', 'camera', 'position'].include? m[:module]
           subactions << {:action => 'module', :status => 'start', :module => m[:module]}
         end
         m.delete(:enabled)
@@ -398,7 +398,7 @@ options = {}
 
 optparse = OptionParser.new do |opts|
   # Set a banner, displayed at the top of the help screen.
-  opts.banner = "Usage: xml_to_bson [options]"
+  opts.banner = "Usage: xml_to_json [options]"
 
   opts.separator ""
   opts.on( '-x', '--xml FILE', String, 'INPUT xml file' ) do |file|
@@ -406,9 +406,6 @@ optparse = OptionParser.new do |opts|
   end
   opts.on( '-j', '--json FILE', String, 'OUTPUT json file' ) do |file|
     options[:json] = file
-  end
-  opts.on( '-b', '--bson FILE', String, 'OUTPUT bson file' ) do |file|
-    options[:bson] = file
   end
   opts.separator ""
   opts.on( '-v', '--verbose', 'verbose mode' ) do
@@ -428,7 +425,6 @@ File.open(options[:xml], 'rb') { |f| content = f.read }
 
 json_config = xml_to_json(content)
 config = JSON.parse(json_config)
-bconfig = BSON.serialize(config)
 
 if options[:verbose]
   puts "JSON CONFIG: "
@@ -438,11 +434,6 @@ end
 if options[:json]
   File.open(options[:json], 'wb+') { |f| f.write json_config }
   puts "\nJSON CONFIG SIZE: #{json_config.size}"
-end
-
-if options[:bson]
-  File.open(options[:bson], 'wb+') { |f| f.write bconfig }
-  puts "\nBSON CONFIG SIZE: #{bconfig.size}"
 end
 
 

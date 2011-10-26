@@ -496,7 +496,6 @@ if false
 
 end
 
-
 # collector
 if false
   # collector.index
@@ -970,7 +969,45 @@ if false
   
 end
   
+# evidence
+if false
+  # evidence.index
+  filter = {target: '4ea526392afb656f0600003e'}.to_json
+  res = http.request_get(URI.escape("/evidence?filter=#{filter}&startIndex=0&numItems=10"), {'Cookie' => cookie})
+  puts "evidence.index"
+  puts res
+  puts
   
+  # evidence.index
+  filter = {target: '4ea526392afb656f0600003e', agent: '4ea526392afb656f06000133', type: ['keylog']}.to_json
+  res = http.request_get(URI.escape("/evidence?filter=#{filter}&startIndex=0&numItems=10"), {'Cookie' => cookie})
+  puts "evidence.index"
+  puts res
+  puts
+
+end
+    
+# config    
+if true
+  
+  puts "agent.add_config"
+  agent_post = {
+    _id: '4ea526392afb656f06000097',
+    desc: "nuova config via rest",
+    config: "{active: true}"
+  }
+  res = http.request_post("/agent/add_config", agent_post.to_json, {'Cookie' => cookie})
+  puts res.body
+  config = JSON.parse(res.body)
+  puts config['config']
+  puts
+  
+  puts "agent.show"
+  res = http.request_get("/agent/4ea526392afb656f06000097", {'Cookie' => cookie})
+  puts res.body
+  puts
+  
+end
 
 # logout
 res = http.request_post('/auth/logout', nil, {'Cookie' => cookie})

@@ -1,33 +1,30 @@
 HIGH PRIORITY:
 
-    sync / async file transfers !!!
-
-    integrity check on Items
+    sync / async file transfers !!!  (daniele)
 
     complete the worker decoding
 
     distributed workers (same as shards)
         - mongos should be accessible by all the workers
-
-    config
+        - modify the NSIS to install the worker together with the shards
 
     build
 
-MEDIUM PRIORITY:
+    cores
 
-    evidence analysis methods
+    evidence grid methods
+
+    remove objects that references an item on deletion (rules, alerts, dashboard, recent)
+
+MEDIUM PRIORITY:
 
     hook points?
 
     rename proxy -> injector
 
-    proxy config methods
-
-    import evidence from rest (offline)
-
     Local Exploit portal
 
-    modify the NSIS to install the worker together with the shards
+    Alerting daemon
 
 LOW PRIORITY:
 
@@ -37,9 +34,7 @@ LOW PRIORITY:
 
     mongo authentication
 
-    Alerting daemon
 
-    Documentation
 
 FUTURE:
 

@@ -13,7 +13,7 @@ class FactoryController < RESTController
       items = ::Item.factories
         .where(filter)
         .any_in(_id: @session[:accessible])
-        .only(:name, :desc, :status, :_kind, :path)
+        .only(:name, :desc, :status, :_kind, :path, :type)
       
       RESTController.reply.ok(items)
     end
@@ -140,6 +140,8 @@ class FactoryController < RESTController
     
     mongoid_query do
       item = Item.factories.any_in(_id: @session[:accessible]).find(@params['_id'])
+      # the factory can have one and only one config at a give time
+      item.configs.delete_all
       config = item.configs.create!(config: @params['config'])
       
       Audit.log :actor => @session[:user][:name],
@@ -150,22 +152,7 @@ class FactoryController < RESTController
       return RESTController.reply.ok(config)
     end
   end
-  
-  def del_config
-    require_auth_level :tech
-    
-    mongoid_query do
-      item = Item.factories.any_in(_id: @session[:accessible]).find(@params['_id'])
-      item.configs.find(@params['config_id']).destroy
-      
-      Audit.log :actor => @session[:user][:name],
-                :action => "#{item._kind}.del_config",
-                item._kind.to_sym => @params['name'],
-                :desc => "Deleted configuration for factory '#{item['name']}'"
-      
-      return RESTController.reply.ok
-    end
-  end
+
 end
 
 end

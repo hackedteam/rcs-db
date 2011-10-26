@@ -19,7 +19,7 @@ class AgentController < RESTController
     mongoid_query do
       items = ::Item.agents.where(filter)
         .any_in(_id: @session[:accessible])
-        .only(:name, :desc, :status, :_kind, :path, :stat)
+        .only(:name, :desc, :status, :_kind, :path, :stat, :type, :platform, :uninstalled)
       
       RESTController.reply.ok(items)
     end
@@ -31,7 +31,7 @@ class AgentController < RESTController
     mongoid_query do
       item = Item.agents
         .any_in(_id: @session[:accessible])
-        .only(:name, :desc, :status, :_kind, :path, :stat, :ident, :upgradable, :group_ids, :counter)
+        .only(:name, :desc, :status, :_kind, :path, :stat, :ident, :instance, :platform, :upgradable, :uninstalled, :deleted, :demo, :type, :version)
         .find(@params['_id'])
 
       RESTController.reply.ok(item)
@@ -84,8 +84,20 @@ class AgentController < RESTController
 
     mongoid_query do
       agent = Item.any_in(_id: @session[:accessible]).where(_kind: 'agent').find(@params['_id'])
-      config = agent.configs.create!(config: @params['config'])
-      
+
+      # the config was not sent, replace it
+      if agent.configs.last.sent.nil? or agent.configs.last.sent == 0
+        @params.delete('_id')
+        agent.configs.last.update_attributes(@params)
+        config = agent.configs.last
+      else
+        config = agent.configs.create!(config: @params['config'], desc: @params['desc'])
+      end
+
+      config.saved = Time.now.getutc.to_i
+      config.user = @session[:user][:name]
+      config.save
+
       Audit.log :actor => @session[:user][:name],
                 :action => "#{agent._kind}.add_config",
                 agent._kind.to_sym => @params['name'],
