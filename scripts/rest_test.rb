@@ -987,6 +987,23 @@ if false
 
 end
     
+# config    
+if false
+  
+  puts "agent.add_config"
+  agent_post = {
+    _id: '4ea526392afb656f06000097',
+    desc: "nuova config via rest",
+    config: "{active: true}"
+  }
+  res = http.request_post("/agent/add_config", agent_post.to_json, {'Cookie' => cookie})
+  puts res.body
+  config = JSON.parse(res.body)
+  puts config['config']
+  puts
+  
+end
+
 # logout
 res = http.request_post('/auth/logout', nil, {'Cookie' => cookie})
 puts

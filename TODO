@@ -8,9 +8,11 @@ HIGH PRIORITY:
         - mongos should be accessible by all the workers
         - modify the NSIS to install the worker together with the shards
 
-    config
-
     build
+
+    cores
+
+    evidence grid methods
 
 MEDIUM PRIORITY:
 
@@ -20,6 +22,8 @@ MEDIUM PRIORITY:
 
     Local Exploit portal
 
+    Alerting daemon
+
 LOW PRIORITY:
 
     get time via http (collector)
@@ -27,8 +31,6 @@ LOW PRIORITY:
     dongle dll 
 
     mongo authentication
-
-    Alerting daemon
 
 
 
