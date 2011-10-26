@@ -17,7 +17,7 @@ class SearchController < RESTController
     mongoid_query do
       items = ::Item.where(filter)
         .any_in(_id: @session[:accessible])
-        .only(:name, :desc, :status, :_kind, :path, :stat)
+        .only(:name, :desc, :status, :_kind, :path, :stat, :type, :platform, :instance, :version, :demo)
       
       RESTController.reply.ok(items)
     end

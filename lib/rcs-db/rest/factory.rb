@@ -13,7 +13,7 @@ class FactoryController < RESTController
       items = ::Item.factories
         .where(filter)
         .any_in(_id: @session[:accessible])
-        .only(:name, :desc, :status, :_kind, :path)
+        .only(:name, :desc, :status, :_kind, :path, :type)
       
       RESTController.reply.ok(items)
     end

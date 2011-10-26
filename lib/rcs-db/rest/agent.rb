@@ -19,7 +19,7 @@ class AgentController < RESTController
     mongoid_query do
       items = ::Item.agents.where(filter)
         .any_in(_id: @session[:accessible])
-        .only(:name, :desc, :status, :_kind, :path, :stat)
+        .only(:name, :desc, :status, :_kind, :path, :stat, :type, :platform, :uninstalled)
       
       RESTController.reply.ok(items)
     end
@@ -31,7 +31,7 @@ class AgentController < RESTController
     mongoid_query do
       item = Item.agents
         .any_in(_id: @session[:accessible])
-        .only(:name, :desc, :status, :_kind, :path, :stat, :ident, :upgradable, :group_ids, :counter)
+        .only(:name, :desc, :status, :_kind, :path, :stat, :ident, :instance, :platform, :upgradable, :uninstalled, :deleted, :demo, :type, :version)
         .find(@params['_id'])
 
       RESTController.reply.ok(item)

@@ -95,12 +95,13 @@ end
                   e[:ts] = "%02d:%02d:%02d" % [params['hour'].first.to_i, params['minute'].first.to_i, params['second'].first.to_i]
                   e[:te] = "%02d:%02d:%02d" % [params['endhour'].first.to_i, params['endminute'].first.to_i, params['endsecond'].first.to_i]
                 when 'loop'
-                  e.delete(:start)
                   e[:event] = 'timer'
                   e[:ts] = "00:00:00"
                   e[:te] = "23:59:59"
                   e[:repeat] = e[:start]
+                  e[:loop] = true
                   e[:delay] = params['hour'].first.to_i * 3600 + params['minute'].first.to_i * 60 + params['second'].first.to_i
+                  e.delete(:start)
                 when 'after startup'
                   e[:event] = 'timer'
                   e[:ts] = "00:00:00"

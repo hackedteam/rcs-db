@@ -988,7 +988,7 @@ if false
 end
     
 # config    
-if false
+if true
   
   puts "agent.add_config"
   agent_post = {
@@ -1000,6 +1000,11 @@ if false
   puts res.body
   config = JSON.parse(res.body)
   puts config['config']
+  puts
+  
+  puts "agent.show"
+  res = http.request_get("/agent/4ea526392afb656f06000097", {'Cookie' => cookie})
+  puts res.body
   puts
   
 end
