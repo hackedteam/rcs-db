@@ -116,7 +116,7 @@ module EventMachine
 	  end
 		
 		def send_body
-		  stream_with_mapping
+		  stream_with_mapping @grid_io
 	  end
 	  
 	  def stream_with_mapping filename # :nodoc:
