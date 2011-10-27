@@ -69,5 +69,7 @@ nsis/*.exe
 scripts/*.xml
 scripts/*.json
 scripts/*.bson
+scripts/cores
 
+# backup dir
 backups/

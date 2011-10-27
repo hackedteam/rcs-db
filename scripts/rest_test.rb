@@ -988,7 +988,7 @@ if false
 end
     
 # config    
-if true
+if false
   
   puts "agent.add_config"
   agent_post = {

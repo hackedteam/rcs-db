@@ -25,13 +25,13 @@ class Core
       trace :info, "List of available cores: "
       ::Core.all.each do |core|
         file = GridFS.get core[:_grid].first
-        trace :info, "#{core.platform.ljust(15)} #{core.name.ljust(15)} #{core.version.to_s.ljust(10)} #{file.file_length.to_s.rjust(15)} bytes"
+        trace :info, "#{core.name.ljust(15)} #{core.version.to_s.ljust(10)} #{file.file_length.to_s.rjust(15)} bytes"
       end
     end
 
     if options[:put]
       # split the argument list
-      # the format is:  platform,name,version,file
+      # the format is:  name,version,file
       args = options[:put].split(',')
 
       # make sure to delete the old one
@@ -43,18 +43,18 @@ class Core
 
       # save the new core
       nc = ::Core.new
-      nc[:platform] = args[0]
-      nc[:name] = args[1]
-      nc[:version] = args[2]
+      nc[:name] = args[0]
+      nc[:version] = args[1]
 
-      if File.exist?(args[3]) and File.file?(args[3])
-        content = File.open(args[3], 'rb') {|f| f.read}
+      if File.exist?(args[2]) and File.file?(args[2])
+        content = File.open(args[2], 'rb') {|f| f.read}
       else
-        trace :fatal, "Cannot open file: #{args[3]}"
+        trace :fatal, "Cannot open file: #{args[2]}"
       end
-      nc[:_grid] = [ GridFS.put(content, {filename: "#{args[0]}-#{args[1]}"}) ]
-
-      trace :info, "Storing #{args[0]}-#{args[1]} #{args[2]} (#{content.bytesize} bytes) into the DB"
+      nc[:_grid] = [ GridFS.put(content, {filename: "#{args[0]}"}) ]
+      nc[:_grid_size] = content.bytesize
+      
+      trace :info, "Storing #{args[0]}-#{args[1]} (#{content.bytesize} bytes) into the DB"
       nc.save
     end
 
