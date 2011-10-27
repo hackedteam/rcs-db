@@ -85,7 +85,7 @@ class CoreDeveloper
     puts "Content of core #{@name}"
     list = JSON.parse(resp.body)
     list.each do |file|
-      puts "-> #{file['name'].ljust(15)} #{file['size'].to_s.rjust(15)} bytes  #{file['date'].ljust(15)}"
+      puts "-> #{file['name'].ljust(20)} #{file['size'].to_s.rjust(15)} bytes  #{file['date'].ljust(15)}"
     end
   end
 

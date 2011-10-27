@@ -71,7 +71,7 @@ class CoreController < RESTController
       core[:_grid_size] = @request[:content].bytesize
       core.save
 
-      Audit.log :actor => @session[:user][:name], :action => 'core.replace', :desc => "Replaced the core #{@params['_id']}"
+      Audit.log :actor => @session[:user][:name], :action => 'core.replace', :desc => "Replaced the #{@params['_id']} core"
 
       return RESTController.reply.ok(core)
     end
