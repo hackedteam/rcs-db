@@ -99,11 +99,10 @@ module EventMachine
 		end
 		
 		def fixup_headers
-		  puts @grid_io.content_type
+      
 	    @headers["Content-length"] = @grid_io.file_length
-	    
-	    @headers["Content-Type"] = 'binary/octet-stream'
-	    @headers["Content-Type"] = @grid_io.content_type unless @grid_io.content_type == ''
+	    @headers["Content-Type"] = @grid_io.content_type
+      @headers["Content-Type"] ||= 'binary/octet-stream'
 	    
 	    http_headers = @connection.instance_variable_get :@http_headers
 	    if http_headers.split("\x00").index {|h| h['Connection: keep-alive'] || h['Connection: Keep-Alive']} then
@@ -117,11 +116,10 @@ module EventMachine
 	  end
 		
 		def send_body
-		  stream_with_mapping @filename
+		  stream_with_mapping
 	  end
 	  
 	  def stream_with_mapping filename # :nodoc:
-      @position = 0
       @size = @grid_io.file_length
       stream_one_chunk
     end
@@ -129,7 +127,7 @@ module EventMachine
     def stream_one_chunk
       loop {
         break if @connection.closed?
-        if @position < @size
+        if @grid_io.file_position < @grid_io.file_length
           if @connection.get_outbound_data_size > BackpressureLevel
               EventMachine::next_tick {stream_one_chunk}
               break
