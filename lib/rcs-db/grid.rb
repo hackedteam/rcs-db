@@ -57,6 +57,14 @@ class GridFS
       end
     end
 
+    def to_tmp(id, collection = nil)
+      file = self.get id, collection
+      temp = Tempfile.new('core')
+      temp.write file.read
+      temp.flush
+      return temp
+    end
+
     def delete_by_agent(agent, collection = nil)
       items = get_by_filename(agent, collection_name(collection))
       items.each {|item| delete(item["_id"], collection_name(collection))}

@@ -374,7 +374,7 @@ class ConfigMigration
       actions << start_action
 
       event = {:event => 'timer', :desc => 'On Startup', :enabled => true,
-               :ts => '00:00:00', :te => '23:59:59',
+               :ts => '00:00:00', :te => '23:59:59', :subtype => 'startup',
                :start => actions.size - 1}
 
       events << event
@@ -385,7 +385,7 @@ class ConfigMigration
         if m.has_key?('interval')
           action = {:desc => "#{m[:module]} iteration", :_mig => true, :subactions => [{:action => 'module', :status => 'start', :module => m[:module]}] }
           actions << action
-          event = {:event => 'timer', :_mig => true, :desc => "#{m[:module]} loop", :enabled => m[:_ena],
+          event = {:event => 'timer', :_mig => true, :desc => "#{m[:module]} loop", :subtype => 'loop', :enabled => m[:_ena],
                    :ts => '00:00:00', :te => '23:59:59',
                    :repeat => actions.size - 1, :delay => m['interval'].to_i}
           m.delete(:_ena)

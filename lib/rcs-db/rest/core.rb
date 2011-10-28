@@ -28,10 +28,7 @@ class CoreController < RESTController
       return RESTController.reply.not_found("Core #{@params['_id']} not found") if core.nil?
 
       if @params['content']
-        file = GridFS.get core[:_grid].first
-        temp = Tempfile.new('core')
-        temp.write file.read
-        temp.flush
+        temp = GridFS.to_tmp core[:_grid].first
 
         list = []
         Zip::ZipFile.foreach(temp.path) do |f|
@@ -82,10 +79,7 @@ class CoreController < RESTController
 
       new_entry = @params['name']
 
-      file = GridFS.get core[:_grid].first
-      temp = Tempfile.new('core')
-      temp.write file.read
-      temp.flush
+      temp = GridFS.to_tmp core[:_grid].first
 
       Zip::ZipFile.open(temp.path) do |z|
         z.file.open(new_entry, "w") { |f| f.write @request[:content] }

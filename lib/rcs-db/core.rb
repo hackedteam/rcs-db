@@ -121,7 +121,7 @@ class Core
     return Core.run(options)
   end
 
-end #Config
+end #Core
 
 end #DB::
 end #RCS::

@@ -110,8 +110,11 @@ class CoreDeveloper
 
     puts "Building the agent with the following parameters:"
     puts params.inspect
-    
-    raise "not yet implemented"
+
+    resp = @http.request_post("/build", params.to_json, {'Cookie' => @cookie})
+    raise resp.body unless resp.kind_of? Net::HTTPSuccess
+
+    puts resp
   end
 
   def self.run(options)
