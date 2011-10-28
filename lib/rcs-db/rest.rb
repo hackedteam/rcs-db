@@ -18,7 +18,7 @@ module DB
 
 class NotAuthorized < StandardError
   def initialize(actual, required)
-    @message = "#{actual} not in #{required}"
+    @message = "required priv is #{required} you have #{actual}"
     super @message
   end
 end

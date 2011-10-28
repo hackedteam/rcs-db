@@ -21,22 +21,26 @@ class CoreDeveloper
     account = { user: user, pass: pass }
     resp = @http.request_post('/auth/login', account.to_json, nil)
     puts "Performing login to #{host}:#{port}"
-    puts resp unless resp.kind_of? Net::HTTPSuccess
+    raise resp.body unless resp.kind_of? Net::HTTPSuccess
     @cookie = resp['Set-Cookie'] unless resp['Set-Cookie'].nil?
-    puts 
-    return @cookie ? true : false
+    puts
   end
 
   def logout
-    @http.request_post('/auth/logout', nil, {'Cookie' => @cookie})
+    begin
+      @http.request_post('/auth/logout', nil, {'Cookie' => @cookie})
+    rescue
+      # do nothing
+    end
     puts
-    puts "Logged out."
+    puts "Done."
   end
 
   def list
     puts "List of cores:"
     puts "#{"name".ljust(15)} #{"version".ljust(10)} #{"size".rjust(15)}"
     resp = @http.request_get('/core', {'Cookie' => @cookie})
+    raise resp.body unless resp.kind_of? Net::HTTPSuccess
     list = JSON.parse(resp.body)
     list.each do |core|
       puts "- #{core['name'].ljust(15)} #{core['version'].to_s.ljust(10)} #{core['_grid_size'].to_s.rjust(15)} bytes"
@@ -44,23 +48,36 @@ class CoreDeveloper
   end
 
   def get(output)
+    raise "Must specify a core name" if @name.nil?
     puts "Retrieving [#{@name}] core..."
     resp = @http.request_get("/core/#{@name}", {'Cookie' => @cookie})
+    raise resp.body unless resp.kind_of? Net::HTTPSuccess
 
-    if resp.kind_of? Net::HTTPSuccess
-      File.open(output, 'wb') {|f| f.write(resp.body)}
-      puts "  --> #{output} saved (#{resp.body.bytesize} bytes)"
-    else
-      raise resp
+    File.open(output, 'wb') {|f| f.write(resp.body)}
+    puts "  --> #{output} saved (#{resp.body.bytesize} bytes)"
+  end
+
+  def content
+    raise "Must specify a core name" if @name.nil?
+    resp = @http.request_get("/core/#{@name}?content=true", {'Cookie' => @cookie})
+    raise resp.body unless resp.kind_of? Net::HTTPSuccess
+
+    puts "Content of core #{@name}"
+    list = JSON.parse(resp.body)
+    list.each do |file|
+      puts "-> #{file['name'].ljust(35)} #{file['size'].to_s.rjust(15)} bytes  #{file['date'].ljust(15)}"
     end
   end
 
   def version(version)
+    raise "Must specify a core name" if @name.nil?
     puts "Setting version [#{version}] for [#{@name}] core..."
-    @http.request_post("/core/version", {_id: @name, version: version}.to_json, {'Cookie' => @cookie})
+    resp = @http.request_post("/core/version", {_id: @name, version: version}.to_json, {'Cookie' => @cookie})
+    raise resp.body unless resp.kind_of? Net::HTTPSuccess
   end
 
   def replace(file)
+    raise "Must specify a core name" if @name.nil?
     content = ''
     File.open(file, 'rb') {|f| content = f.read}
     puts "Replacing [#{@name}] core with new file (#{content.bytesize} bytes)"
@@ -70,6 +87,7 @@ class CoreDeveloper
   end
 
   def add(file)
+    raise "Must specify a core name" if @name.nil?
     content = ''
     File.open(file, 'rb') {|f| content = f.read}
     puts "Adding [#{file}] to the [#{@name}] core (#{content.bytesize} bytes)"
@@ -78,21 +96,22 @@ class CoreDeveloper
     raise resp.body unless resp.kind_of? Net::HTTPSuccess
   end
 
-  def content
-    resp = @http.request_get("/core/#{@name}?content=true", {'Cookie' => @cookie})
-    raise resp.body unless resp.kind_of? Net::HTTPSuccess
-    
-    puts "Content of core #{@name}"
-    list = JSON.parse(resp.body)
-    list.each do |file|
-      puts "-> #{file['name'].ljust(20)} #{file['size'].to_s.rjust(15)} bytes  #{file['date'].ljust(15)}"
-    end
-  end
-
   def delete
+    raise "Must specify a core name" if @name.nil?
     puts "Deleting [#{@name}] core"
     resp = @http.delete("/core/#{@name}", {'Cookie' => @cookie})
     raise resp.body unless resp.kind_of? Net::HTTPSuccess
+  end
+
+  def build(param_file)
+    jcontent = ''
+    File.open(param_file, 'r') {|f| jcontent = f.read}
+    params = JSON.parse(jcontent)
+
+    puts "Building the agent with the following parameters:"
+    puts params.inspect
+    
+    raise "not yet implemented"
   end
 
   def self.run(options)
@@ -101,11 +120,7 @@ class CoreDeveloper
       c = CoreDeveloper.new
       c.name = options[:name]
 
-      if c.name.nil? and (options[:version] or options[:get])
-        raise "Must specify a core name"
-      end
-
-      raise "Cannot login" unless c.login(options[:db_address], options[:db_port], options[:user], options[:pass])
+      c.login(options[:db_address], options[:db_port], options[:user], options[:pass])
 
       c.delete if options[:delete]
       c.replace(options[:replace]) if options[:replace]
@@ -117,11 +132,13 @@ class CoreDeveloper
       # list at the end to reflect changes made by the above operations
       c.list if options[:list]
 
-      raise "not yet implemented" if options[:build]
+      c.build(options[:build]) if options[:build]
 
-      c.logout
     rescue Exception => e
       puts "FATAL: #{e.message}"
+    ensure
+      # clean the session
+      c.logout
     end
     
   end
@@ -170,7 +187,7 @@ optparse = OptionParser.new do |opts|
 
   opts.separator ""
   opts.separator "Core building:"
-  opts.on( '-b', '--build PARAMS', String, 'build the core with PARAMS' ) do |params|
+  opts.on( '-b', '--build PARAMS_FILE', String, 'build the agent. PARAMS_FILE is a json file with the parameters' ) do |params|
     options[:build] = params
   end
 

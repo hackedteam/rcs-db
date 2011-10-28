@@ -34,14 +34,10 @@ class CoreController < RESTController
         temp.flush
 
         list = []
-        Zip::ZipFile.open(temp.path) do |z|
-          z.dir.entries('.').each do |e|
-            size = z.file.size(e)
-            date = z.file.mtime(e)
-            list << {name: e, size: size, date: date}
-          end
+        Zip::ZipFile.foreach(temp.path) do |f|
+          list << {name: f.name, size: f.size, date: f.time}
         end
-        
+
         return RESTController.reply.ok(list)
       else
         file = GridFS.get core[:_grid].first
