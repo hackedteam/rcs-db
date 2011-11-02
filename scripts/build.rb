@@ -2,7 +2,7 @@
 
 require 'json'
 
-params = {platform: 'blackberry', 
+params = {platform: 'symbian',
           factory: {ident: 'RCS_0000000001'},
           binary: {demo: true}}
 

