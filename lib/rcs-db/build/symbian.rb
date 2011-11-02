@@ -1,5 +1,5 @@
 #
-#  Agent creation for windows
+#  Agent creation for symbian
 #
 
 # from RCS::Common
@@ -8,11 +8,11 @@ require 'rcs-common/trace'
 module RCS
 module DB
 
-class BuildWindows < Build
+class BuildSymbian < Build
 
   def initialize
     super
-    @platform = 'windows'
+    @platform = 'symbian'
   end
 
   def patch(params)

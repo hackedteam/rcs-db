@@ -1,5 +1,7 @@
 #!/usr/bin/env ruby
 
+require 'yaml'
+
 # ensure the working dir is correct
 Dir.chdir File.dirname(File.dirname(File.realpath(__FILE__)))
 

@@ -1,5 +1,5 @@
 #
-#  Agent creation for windows
+#  Agent creation for iOS
 #
 
 # from RCS::Common
@@ -8,11 +8,11 @@ require 'rcs-common/trace'
 module RCS
 module DB
 
-class BuildWindows < Build
+class BuildIOS < Build
 
   def initialize
     super
-    @platform = 'windows'
+    @platform = 'ios'
   end
 
   def patch(params)

@@ -2,7 +2,7 @@
 
 require 'json'
 
-params = {platform: 'windows', 
+params = {platform: 'blackberry', 
           factory: {ident: 'RCS_0000000001'},
           binary: {demo: true}}
 
