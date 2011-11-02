@@ -23,11 +23,6 @@ require 'net/http'
 module RCS
 module DB
 
-# require all the controllers
-Dir[File.dirname(__FILE__) + '/rest/*.rb'].each do |file|
-  require file
-end
-
 class HTTPHandler < EM::Connection
   include RCS::Tracer
   include EM::HttpServer
