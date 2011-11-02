@@ -1,6 +1,8 @@
 require_relative 'helper'
 require_db 'tasks'
 
+=begin
+
 module RCS
 module DB
 
@@ -29,3 +31,5 @@ class TestTaskProcessor < Test::Unit::TestCase
     assert_nil RCS::DB::TaskProcessor.get 'invalid'
   end
 end
+
+=end

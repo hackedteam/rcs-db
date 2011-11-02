@@ -26,7 +26,7 @@ class RESTGeneric < Test::Unit::TestCase
   def test_get_invalid_controller
     request = {controller: 'InvalidController', method: 'GET', uri_params: []}
     controller = RCS::DB::RESTController.get request
-    assert_nil controller
+    assert_equal RCS::DB::InvalidController, controller.class
   end
 
   def test_GET_to_index_action
@@ -100,7 +100,7 @@ class RESTValidSession < Test::Unit::TestCase
 
     assert_not_nil response
     assert_equal 500, response.status
-    assert_equal 'SERVER_ERROR', response.content
+    assert_equal 'This should be trapped', response.content
   end
 
   def test_method_called_with_nil_response
