@@ -3,7 +3,10 @@ require 'uuidtools'
 require 'rcs-common/trace'
 require 'rcs-common/temporary'
 
-require_relative 'tasks/audit'
+# require all the controllers
+Dir[File.dirname(__FILE__) + '/tasks/*.rb'].each do |file|
+  require_relative file
+end
 
 module RCS
 module DB
