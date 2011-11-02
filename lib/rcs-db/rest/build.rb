@@ -2,7 +2,7 @@
 # Controller for Build
 #
 
-require_relative '../build/windows'
+require_relative '../build'
 
 module RCS
 module DB
@@ -16,7 +16,7 @@ class BuildController < RESTController
 
     # instantiate the correct builder
     begin
-      build = eval("Build#{platform.capitalize}.new")
+      build = Build.factory(platform.to_sym)
     rescue Exception => e
       return RESTController.reply.not_found(e.message)
     end

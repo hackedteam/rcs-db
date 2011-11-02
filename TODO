@@ -10,6 +10,8 @@ HIGH PRIORITY:
 
     build
 
+    replace eval with hash { :Bike => Bike, :Car => Car }[vt].new
+
     cores
 
     evidence grid methods

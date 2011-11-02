@@ -189,7 +189,7 @@ Dir[File.dirname(__FILE__) + '/rest/*.rb'].each do |file|
 end
 
 # register all controllers into RESTController
-RCS::DB.constants.each do |klass|
+RCS::DB.constants.keep_if{|x| x.to_s.end_with? 'Controller'}.each do |klass|
   RCS::DB::RESTController.register klass
 end
 
