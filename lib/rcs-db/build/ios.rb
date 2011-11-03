@@ -30,10 +30,22 @@ class BuildIOS < Build
   end
 
   def scramble
-    trace :debug, "#{self.class} #{__method__}"
+    trace :debug, "Build: scrambling"
+
+    core = scramble_name(@factory.seed, 3)
+    core_backup = scramble_name(core, 32)
+    dir = scramble_name(core[0..7], 7) + '.app'
+    config = scramble_name(core[0] < core_backup[0] ? core : core_backup, 1)
+    dylib = scramble_name(config, 2)
+
+    @scrambled = {core: core, dir: dir, config: config, dylib: dylib}
+
+    # call the super which will actually do the renaming
+    # starting from @outputs and @scrambled
+    super
   end
 
-  def melt
+  def melt(params)
     trace :debug, "#{self.class} #{__method__}"
   end
 

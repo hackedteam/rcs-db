@@ -48,7 +48,7 @@ class FactoryController < RESTController
       return RESTController.reply.bad_request('INVALID_TARGET') if target.nil?
 
       # used to generate log/conf keys and seed
-      r = Random.new
+      alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-'
 
       item = Item.create!(desc: @params['desc']) do |doc|
         doc[:_kind] = :factory
@@ -58,11 +58,11 @@ class FactoryController < RESTController
         doc[:name] = @params['name']
         doc[:name] ||= doc[:ident]
         doc[:counter] = 0
-        seed = Digest::MD5.hexdigest(r.rand.to_s).slice(1,12)
+        seed = (0..11).inject('') {|x,y| x += alphabet[rand(0..alphabet.size)]}
         seed.setbyte(8, 46)
         doc[:seed] = seed
-        doc[:confkey] = Digest::MD5.hexdigest(r.rand.to_s)
-        doc[:logkey] = Digest::MD5.hexdigest(r.rand.to_s)
+        doc[:confkey] = (0..31).inject('') {|x,y| x += alphabet[rand(0..alphabet.size)]}
+        doc[:logkey] = (0..31).inject('') {|x,y| x += alphabet[rand(0..alphabet.size)]}
         doc[:configs] = []
       end
 

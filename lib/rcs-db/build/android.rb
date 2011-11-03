@@ -25,9 +25,13 @@ class BuildAndroid < Build
     apktool = File.join @tmpdir, 'apktool.jar'
     core = File.join @tmpdir, 'core'
 
-    system "java -jar #{apktool} d #{core} #{@tmpdir}/apk"
+    system "java -jar #{apktool} d #{core} #{@tmpdir}/apk" || raise("cannot unpack with apktool")
 
-    @outputs << ['apk/res/raw/resources.bin', 'apk/res/raw/config.bin']
+    if File.exist?(File.join(@tmpdir, 'apk/res/raw/resources.bin'))
+      @outputs << ['apk/res/raw/resources.bin', 'apk/res/raw/config.bin']
+    else
+      raise "unpack failed. needed file not found"
+    end
   end
 
   def patch(params)
