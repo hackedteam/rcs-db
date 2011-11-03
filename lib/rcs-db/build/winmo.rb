@@ -30,7 +30,17 @@ class BuildWinMo < Build
   end
 
   def scramble
-    trace :debug, "#{self.class} #{__method__}"
+    trace :debug, "Build: scrambling"
+
+    # the only file that is scrambled on winmo
+    config = 'cptm511.dql'
+
+    @scrambled = {config: config}
+
+    # call the super which will actually do the renaming
+    # starting from @outputs and @scrambled
+    super
+
   end
 
   def melt

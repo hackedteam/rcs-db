@@ -34,11 +34,7 @@ class BuildSymbian < Build
 
   end
 
-  def scramble
-    trace :debug, "#{self.class} #{__method__}"
-  end
-
-  def melt
+  def melt(params)
     trace :debug, "#{self.class} #{__method__}"
   end
 

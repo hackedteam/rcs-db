@@ -29,8 +29,7 @@ class BuildBlackberry < Build
     trace :debug, "Build: adding config to [#{params[:core]}] file"
 
     # blackberry has the config inside the lib file, binary patch it instead of creating a new file
-    core_file = File.join @tmpdir, params[:core]
-    file = File.open(core_file, 'rb+')
+    file = File.open(path(params[:core]), 'rb+')
     file.pos = file.read.index 'XW15TZlwZwpaWGPZ1wtL0f591tJe2b9'
     config = @factory.configs.first.encrypted_config(@factory.confkey)
     # write the size of the config
@@ -42,12 +41,11 @@ class BuildBlackberry < Build
     
   end
 
-  def scramble
+  def melt(params)
     trace :debug, "#{self.class} #{__method__}"
-  end
 
-  def melt
-    trace :debug, "#{self.class} #{__method__}"
+    #puts File.read(path('jad'))
+
   end
 
 end

