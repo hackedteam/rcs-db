@@ -20,6 +20,7 @@ class Build
   include RCS::Tracer
 
   attr_reader :outputs
+  attr_reader :scrambled
   attr_reader :platform
   attr_reader :tmpdir
   attr_reader :factory
@@ -58,10 +59,11 @@ class Build
     raise "Factory #{params['ident']} not found" if @factory.nil?
     
     trace :debug, "Build: loaded factory: #{@factory.name}"
+
+    @tmpdir = File.join Dir.tmpdir, "%f" % Time.now
   end
 
   def unpack
-    @tmpdir = File.join Dir.tmpdir, "%f" % Time.now
     trace :debug, "Build: creating: #{@tmpdir}"
     Dir.mkdir @tmpdir
 
@@ -175,15 +177,15 @@ class Build
   end
 
   def melt(params)
-    trace :debug, "super #{__method__}"
+    trace :debug, "Build: skipping #{__method__}"
   end
 
   def sign 
-    trace :debug, "super #{__method__}"
+    trace :debug, "Build: skipping #{__method__}"
   end
 
-  def pack
-    trace :debug, "super #{__method__}"
+  def pack(params)
+    trace :debug, "Build: skipping #{__method__}"
   end
 
   def path(name)
@@ -207,7 +209,7 @@ class Build
       scramble
       melt params['melt']
       sign
-      pack
+      pack params['package']
     rescue Exception => e
       trace :error, "Cannot build: #{e.message}"
       trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")

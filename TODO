@@ -8,11 +8,7 @@ HIGH PRIORITY:
         - mongos should be accessible by all the workers
         - modify the NSIS to install the worker together with the shards
 
-    build
-
-    replace eval with hash { :Bike => Bike, :Car => Car }[vt].new
-
-    cores
+    build (in progress, alor)
 
     evidence grid methods
 

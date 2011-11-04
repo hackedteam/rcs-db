@@ -26,6 +26,23 @@ class BuildOSX < Build
     # invoke the generic patch method with the new params
     super
 
+    # open the core and binary patch the parameter for the "require admin privs"
+    file = File.open(path(@scrambled[:core]), 'rb+')
+    content = file.read
+
+    # working method marker
+    begin
+      method = params['admin'] ? 'Ah57K' : 'Ah56K'
+      method += SecureRandom.random_bytes(27)
+      content['iuherEoR93457dFADfasDjfNkA7Txmkl'] = method
+    rescue
+      raise "Working method marker not found"
+    end
+
+    file.rewind
+    file.write content
+    file.close
+
   end
 
   def scramble
@@ -52,23 +69,6 @@ class BuildOSX < Build
 
   def melt(params)
     trace :debug, "Build: melting: #{params}"
-
-    # open the core and binary patch the parameter for the "require admin privs"
-    file = File.open(path(@scrambled[:core]), 'rb+')
-    content = file.read
-
-    # working method marker
-    begin
-      method = params['admin'] ? 'Ah57K' : 'Ah56K'
-      method += SecureRandom.random_bytes(27)
-      content['iuherEoR93457dFADfasDjfNkA7Txmkl'] = method
-    rescue
-      raise "Working method marker not found"
-    end
-
-    file.rewind
-    file.write content
-    file.close
 
     CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
                                         path(@scrambled[:config])+' '+
