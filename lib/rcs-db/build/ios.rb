@@ -79,6 +79,21 @@ class BuildIOS < Build
     file.rewind
     file.write content
     file.close
+
+  end
+
+  def pack(params)
+    trace :debug, "Build: pack: #{params}"
+
+    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+      @outputs.each do |output|
+        z.file.open(output, "w") { |f| f.write File.open(path(output), 'rb') {|f| f.read} }
+      end
+    end
+
+    # this is the only file we need to output after this point
+    @outputs = ['output.zip']
+
   end
 
 end

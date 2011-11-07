@@ -27,7 +27,7 @@ class BuildOSX < Build
     super
 
     # open the core and binary patch the parameter for the "require admin privs"
-    file = File.open(path(@scrambled[:core]), 'rb+')
+    file = File.open(path(params[:core]), 'rb+')
     content = file.read
 
     # working method marker
@@ -85,6 +85,46 @@ class BuildOSX < Build
     trace :debug, "Build: dropper output is: #{File.size(path('output'))} bytes"
 
     @outputs << 'output'
+  end
+
+  def pack(params)
+    trace :debug, "Build: pack: #{params}"
+
+    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+      z.file.open('install', "w") { |f| f.write File.open(path('output'), 'rb') {|f| f.read} }
+
+      # TODO: fix this!!! it is really broken and does not work.
+      z.file.chmod(0755, 'install')
+    end
+
+    # this is to check if the permission are set correctly
+    # TODO: remove when the bug above has been fixed
+    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+      puts "%o" % z.file.stat('install').mode
+      z.file.chmod(0755, 'install')
+      puts "%o" % z.file.stat('install').mode
+      puts z.commit_required?
+      z.commit
+      puts z.class
+      puts z.inspect
+    end
+
+=begin
+      $zip = file_get_contents($files['user']);
+      if(($offset = strripos($zip, $mainname) - 46) < 0) return false;
+      if(substr($zip, $offset, 4) != "\x50\x4b\x01\x02") return false;
+      $zip[$offset + 4] = "\x17";
+      $zip[$offset + 5] = "\x03";
+      $zip[$offset + 38] = "\x00";
+      $zip[$offset + 39] = "\x00";
+      $zip[$offset + 40] = "\xed";
+      $zip[$offset + 41] = "\x81";
+      file_put_contents($buildfile, $zip);
+=end
+
+    # this is the only file we need to output after this point
+    @outputs = ['output.zip']
+
   end
 
 end

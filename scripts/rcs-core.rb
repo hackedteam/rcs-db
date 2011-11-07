@@ -169,7 +169,7 @@ class CoreDeveloper
       c.list if options[:list]
 
       # building options
-      c.retrieve_factory(options[:factory])
+      c.retrieve_factory(options[:factory]) if options[:factory]
       c.output = options[:output]
       c.config(options[:config]) if options[:config]
       c.build(options[:build]) if options[:build]

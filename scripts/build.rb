@@ -2,7 +2,7 @@
 
 require 'json'
 
-params = {platform: 'blackberry',
+params = {platform: 'winmo',
           binary: {demo: true, admin: true},
           melt: {admin: true,
                  jadname: 'facebook',
