@@ -10,7 +10,9 @@ require 'optparse'
 class CoreDeveloper
 
   attr_accessor :name
-  
+  attr_accessor :factory
+  attr_accessor :output
+
   def login(host, port, user, pass)
     host ||= 'localhost'
     port ||= 4444
@@ -21,7 +23,7 @@ class CoreDeveloper
     account = { user: user, pass: pass }
     resp = @http.request_post('/auth/login', account.to_json, nil)
     puts "Performing login to #{host}:#{port}"
-    raise resp.body unless resp.kind_of? Net::HTTPSuccess
+    resp.kind_of? Net::HTTPSuccess || raise(resp.body)
     @cookie = resp['Set-Cookie'] unless resp['Set-Cookie'].nil?
     puts
   end
@@ -40,7 +42,7 @@ class CoreDeveloper
     puts "List of cores:"
     puts "#{"name".ljust(15)} #{"version".ljust(10)} #{"size".rjust(15)}"
     resp = @http.request_get('/core', {'Cookie' => @cookie})
-    raise resp.body unless resp.kind_of? Net::HTTPSuccess
+    resp.kind_of? Net::HTTPSuccess || raise(resp.body)
     list = JSON.parse(resp.body)
     list.each do |core|
       puts "- #{core['name'].ljust(15)} #{core['version'].to_s.ljust(10)} #{core['_grid_size'].to_s.rjust(15)} bytes"
@@ -51,7 +53,7 @@ class CoreDeveloper
     raise "Must specify a core name" if @name.nil?
     puts "Retrieving [#{@name}] core..."
     resp = @http.request_get("/core/#{@name}", {'Cookie' => @cookie})
-    raise resp.body unless resp.kind_of? Net::HTTPSuccess
+    resp.kind_of? Net::HTTPSuccess || raise(resp.body)
 
     File.open(output, 'wb') {|f| f.write(resp.body)}
     puts "  --> #{output} saved (#{resp.body.bytesize} bytes)"
@@ -60,7 +62,7 @@ class CoreDeveloper
   def content
     raise "Must specify a core name" if @name.nil?
     resp = @http.request_get("/core/#{@name}?content=true", {'Cookie' => @cookie})
-    raise resp.body unless resp.kind_of? Net::HTTPSuccess
+    resp.kind_of? Net::HTTPSuccess || raise(resp.body)
 
     puts "Content of core #{@name}"
     list = JSON.parse(resp.body)
@@ -73,7 +75,7 @@ class CoreDeveloper
     raise "Must specify a core name" if @name.nil?
     puts "Setting version [#{version}] for [#{@name}] core..."
     resp = @http.request_post("/core/version", {_id: @name, version: version}.to_json, {'Cookie' => @cookie})
-    raise resp.body unless resp.kind_of? Net::HTTPSuccess
+    resp.kind_of? Net::HTTPSuccess || raise(resp.body)
   end
 
   def replace(file)
@@ -83,7 +85,7 @@ class CoreDeveloper
     puts "Replacing [#{@name}] core with new file (#{content.bytesize} bytes)"
 
     resp = @http.request_post("/core/#{@name}", content, {'Cookie' => @cookie})
-    raise resp.body unless resp.kind_of? Net::HTTPSuccess
+    resp.kind_of? Net::HTTPSuccess || raise(resp.body)
   end
 
   def add(file)
@@ -93,29 +95,60 @@ class CoreDeveloper
     puts "Adding [#{file}] to the [#{@name}] core (#{content.bytesize} bytes)"
 
     resp = @http.request_put("/core/#{@name}?name=#{file}", content, {'Cookie' => @cookie})
-    raise resp.body unless resp.kind_of? Net::HTTPSuccess
+    resp.kind_of? Net::HTTPSuccess || raise(resp.body)
   end
 
   def delete
     raise "Must specify a core name" if @name.nil?
     puts "Deleting [#{@name}] core"
     resp = @http.delete("/core/#{@name}", {'Cookie' => @cookie})
-    raise resp.body unless resp.kind_of? Net::HTTPSuccess
+    resp.kind_of? Net::HTTPSuccess || raise(resp.body)
+  end
+
+  def retrieve_factory(ident)
+    raise("you must specify a factory") if ident.nil?
+
+    res = @http.request_get('/factory', {'Cookie' => @cookie})
+    factories = JSON.parse(res.body)
+
+    factories.keep_if {|f| f['ident'] == ident}
+
+    @factory = factories.first
+
+    puts "Using factory: #{@factory['ident']} #{@factory['name']}"
+    puts
   end
 
   def build(param_file)
-    jcontent = ''
-    File.open(param_file, 'r') {|f| jcontent = f.read}
+    jcontent = File.open(param_file, 'r') {|f| f.read}
     params = JSON.parse(jcontent)
 
+    raise("factory not found") if factory.nil?
+    raise("you must specify an output file") if output.nil?
+
+    params[:factory] = {_id: @factory['_id']}
+    
     puts "Building the agent with the following parameters:"
     puts params.inspect
 
     resp = @http.request_post("/build", params.to_json, {'Cookie' => @cookie})
-    raise resp.body unless resp.kind_of? Net::HTTPSuccess
+    resp.kind_of? Net::HTTPSuccess || raise(resp.body)
 
-    puts resp
+    File.open(@output, 'wb') {|f| f.write resp.body}
+
+    puts
+    puts "#{resp.body.bytesize} bytes saved to #{@output}"
   end
+
+  def config(param_file)
+    jcontent = File.open(param_file, 'r') {|f| f.read}
+
+    resp = @http.request_post("/factory/add_config", {_id: @factory['_id'], config: jcontent}.to_json, {'Cookie' => @cookie})
+    resp.kind_of? Net::HTTPSuccess || raise(resp.body)
+
+    puts "Configuration saved"
+  end
+
 
   def self.run(options)
 
@@ -135,6 +168,10 @@ class CoreDeveloper
       # list at the end to reflect changes made by the above operations
       c.list if options[:list]
 
+      # building options
+      c.retrieve_factory(options[:factory])
+      c.output = options[:output]
+      c.config(options[:config]) if options[:config]
       c.build(options[:build]) if options[:build]
 
     rescue Exception => e
@@ -178,7 +215,7 @@ optparse = OptionParser.new do |opts|
   opts.on( '-a', '--add FILE', 'add or replace FILE to the core on the db' ) do |file|
     options[:add] = file
   end
-  opts.on( '-c', '--content', 'show the content of a core' ) do 
+  opts.on( '-s', '--show', 'show the content of a core' ) do
     options[:content] = true
   end
   opts.on( '-D', '--delete', 'delete the core from the db' ) do
@@ -190,10 +227,18 @@ optparse = OptionParser.new do |opts|
 
   opts.separator ""
   opts.separator "Core building:"
-  opts.on( '-b', '--build PARAMS_FILE', String, 'build the agent. PARAMS_FILE is a json file with the parameters' ) do |params|
+  opts.on( '-f', '--factory IDENT', String, 'factory to be used' ) do |ident|
+    options[:factory] = ident
+  end
+  opts.on( '-b', '--build PARAMS_FILE', String, 'build the factory. PARAMS_FILE is a json file with the parameters' ) do |params|
     options[:build] = params
   end
-
+  opts.on( '-c', '--config CONFIG_FILE', String, 'save the config to the specified factory' ) do |config|
+    options[:config] = config
+  end
+  opts.on( '-o', '--output FILE', String, 'the output of the build' ) do |file|
+    options[:output] = file
+  end
 
   opts.separator ""
   opts.separator "Account:"

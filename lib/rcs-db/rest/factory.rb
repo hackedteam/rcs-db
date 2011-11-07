@@ -13,7 +13,7 @@ class FactoryController < RESTController
       items = ::Item.factories
         .where(filter)
         .any_in(_id: @session[:accessible])
-        .only(:name, :desc, :status, :_kind, :path, :type)
+        .only(:name, :desc, :status, :_kind, :path, :type, :ident)
       
       RESTController.reply.ok(items)
     end
@@ -142,7 +142,7 @@ class FactoryController < RESTController
       item = Item.factories.any_in(_id: @session[:accessible]).find(@params['_id'])
       # the factory can have one and only one config at a give time
       item.configs.delete_all
-      config = item.configs.create!(config: @params['config'])
+      config = item.configs.create!(config: @params['config'], user: @session[:user][:name], saved: Time.now.getutc.to_i)
       
       Audit.log :actor => @session[:user][:name],
                 :action => "#{item._kind}.add_config",

