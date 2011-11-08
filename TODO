@@ -1,7 +1,8 @@
 HIGH PRIORITY:
 
     sync / async file transfers !!!  (daniele)
-
+        - even from the public on the collector
+         
     complete the worker decoding
 
     distributed workers (same as shards)

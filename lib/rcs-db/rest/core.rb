@@ -37,9 +37,19 @@ class CoreController < RESTController
 
         return RESTController.reply.ok(list)
       else
-        file = GridFS.get core[:_grid].first
         Audit.log :actor => @session[:user][:name], :action => 'core.get', :desc => "Downloaded the core #{@params['_id']}"
-        return RESTController.reply.stream_grid(file)
+
+        #TODO: why this is not working ?  it stops at 65535 bytes on the client
+        #file = GridFS.get core[:_grid].first
+        #return RESTController.reply.stream_grid(file)
+
+        # TODO: same as above
+        #temp = GridFS.to_tmp core[:_grid].first
+        #return RESTController.reply.stream_file(temp.path)
+
+        # TODO: this is not streamed...
+        file = GridFS.get core[:_grid].first
+        return RESTController.reply.ok(file.read, {content_type: 'binary/octet-stream'})
       end
     end
   end
@@ -57,7 +67,6 @@ class CoreController < RESTController
 
       # replace the new one
       core = ::Core.new
-
       core.name = @params['_id']
 
       core[:_grid] = [ GridFS.put(@request[:content], {filename: @params['_id']}) ]
@@ -105,15 +114,40 @@ class CoreController < RESTController
     require_auth_level :sys
 
     mongoid_query do
+
       core = ::Core.where({name: @params['_id']}).first
       return RESTController.reply.not_found("Core #{@params['_id']} not found") if core.nil?
 
-      GridFS.delete core[:_grid].first
-      core.destroy
+      if @params['name']
 
-      Audit.log :actor => @session[:user][:name], :action => 'core.delete', :desc => "Deleted the core #{@params['_id']}"
+        # get the core, save to tmp and edit it
+        temp = GridFS.to_tmp core[:_grid].first
+        Zip::ZipFile.open(temp.path, Zip::ZipFile::CREATE) do |z|
+          return RESTController.reply.not_found("File #{@params['name']} not found") unless z.file.exist?(@params['name'])
+          z.file.delete(@params['name'])
+        end
 
-      return RESTController.reply.ok()
+        # delete the old one and replace with the new
+        GridFS.delete core[:_grid].first
+
+        content = File.open(temp.path, 'rb') {|f| f.read}
+
+        core[:_grid] = [ GridFS.put(content, {filename: @params['_id']}) ]
+        core[:_grid_size] = content.bytesize
+        core.save
+
+        Audit.log :actor => @session[:user][:name], :action => 'core.remove', :desc => "Removed the file [#{@params['name']}] from the core #{@params['_id']}"
+
+        return RESTController.reply.ok()
+      else
+        GridFS.delete core[:_grid].first
+        core.destroy
+
+        Audit.log :actor => @session[:user][:name], :action => 'core.delete', :desc => "Deleted the core #{@params['_id']}"
+
+        return RESTController.reply.ok()
+      end
+
     end
   end
 

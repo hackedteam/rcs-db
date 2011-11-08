@@ -25,7 +25,9 @@ class BuildAndroid < Build
     apktool = path('apktool.jar')
     core = path('core')
 
-    system "java -jar #{apktool} d #{core} #{@tmpdir}/apk" || raise("cannot unpack with apktool")
+    system "java -jar #{apktool} d #{core} #{@tmpdir}/apk" or raise("cannot unpack with apktool")
+    #output = %x["java -jar #{apktool} d #{core} #{@tmpdir}/apk"]
+    #$?.success? || raise("cannot unpack with apktool")
 
     if File.exist?(path('apk/res/raw/resources.bin'))
       @outputs << ['apk/res/raw/resources.bin', 'apk/res/raw/config.bin']
@@ -43,15 +45,44 @@ class BuildAndroid < Build
     params[:core] = 'apk/res/raw/resources.bin'
     params[:config] = 'apk/res/raw/config.bin'
 
-    puts File.read path('apk/res/raw/resources.bin')
-    
     # invoke the generic patch method with the new params
     super
 
   end
 
   def melt(params)
-    trace :debug, "#{self.class} #{__method__}"
+    trace :debug, "Build: melting: #{params}"
+
+    apktool = path('apktool.jar')
+    core = path('output.apk')
+
+    File.chmod(0755, path('aapt'))
+    
+    system("java -jar #{apktool} b #{@tmpdir}/apk #{core}", {:chdir => @tmpdir})
+    #or raise("cannot pack with apktool")
+    #output = %x["java -jar #{apktool} b #{@tmpdir}/apk #{core}"]
+    #$?.success? || raise("cannot pack with apktool")
+
+    if File.exist?(core)
+      @outputs = ['output.apk']
+    else
+      raise "pack failed."
+      trace :error, output
+    end
+
+  end
+
+
+  def pack(params)
+    trace :debug, "Build: pack: #{params}"
+
+    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+      z.file.open('install.apk', "w") { |f| f.write File.open(path('output.apk'), 'rb') {|f| f.read} }
+    end
+
+    # this is the only file we need to output after this point
+    @outputs = ['output.zip']
+
   end
 
 end

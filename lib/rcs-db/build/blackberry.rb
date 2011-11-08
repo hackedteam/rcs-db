@@ -88,9 +88,16 @@ class BuildBlackberry < Build
     jad.puts "RIM-COD-Creation-Time: #{Time.now.to_i}"
 
     num = 0
+    # keep only the cores
+    jadfiles = @outputs.dup.keep_if {|x| x['net_rim_bb_lib'] and not x['res']}
+
+    # sort but ignore the extension.
+    # this is mandatory to have blabla-1.cod after blabla.cod
+    jadfiles.sort! {|x,y| x[0..-5] <=> y[0..-5]}
+
     # each part of the core must be renamed to the new jadname
     # and added to the body of the jad file
-    @outputs.dup.keep_if {|x| x['net_rim_bb_lib'] and not x['res']}.sort.each do |file|
+    jadfiles.each do |file|
       old_name = file.dup
       file['net_rim_bb_lib'] = params['jadname']
       @outputs[@outputs.index(file)] = file
@@ -126,8 +133,12 @@ class BuildBlackberry < Build
         end
       when 'local'
         Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-          @outputs.keep_if {|o| o['res'] || o['install.bat'] || o['bin']}.each do |output|
-            z.file.open(output, "w") { |f| f.write File.open(path(output), 'rb') {|f| f.read} }
+          @outputs.keep_if {|o| o['res'] || o['install.bat'] || o['bin'] || o['base']}.each do |output|
+            if output['base']
+              z.file.open('/res/net_rim_bb_lib_base.cod', "w") { |f| f.write File.open(path(output), 'rb') {|f| f.read} }
+            else
+              z.file.open(output, "w") { |f| f.write File.open(path(output), 'rb') {|f| f.read} }
+            end
           end
         end
     end

@@ -6,6 +6,8 @@ require 'open-uri'
 require 'pp'
 require 'cgi'
 require 'optparse'
+require 'zip/zip'
+require 'zip/zipfilesystem'
 
 class CoreDeveloper
 
@@ -23,7 +25,7 @@ class CoreDeveloper
     account = { user: user, pass: pass }
     resp = @http.request_post('/auth/login', account.to_json, nil)
     puts "Performing login to #{host}:#{port}"
-    resp.kind_of? Net::HTTPSuccess || raise(resp.body)
+    resp.kind_of? Net::HTTPSuccess or raise(resp.body)
     @cookie = resp['Set-Cookie'] unless resp['Set-Cookie'].nil?
     puts
   end
@@ -42,7 +44,7 @@ class CoreDeveloper
     puts "List of cores:"
     puts "#{"name".ljust(15)} #{"version".ljust(10)} #{"size".rjust(15)}"
     resp = @http.request_get('/core', {'Cookie' => @cookie})
-    resp.kind_of? Net::HTTPSuccess || raise(resp.body)
+    resp.kind_of? Net::HTTPSuccess or raise(resp.body)
     list = JSON.parse(resp.body)
     list.each do |core|
       puts "- #{core['name'].ljust(15)} #{core['version'].to_s.ljust(10)} #{core['_grid_size'].to_s.rjust(15)} bytes"
@@ -53,7 +55,7 @@ class CoreDeveloper
     raise "Must specify a core name" if @name.nil?
     puts "Retrieving [#{@name}] core..."
     resp = @http.request_get("/core/#{@name}", {'Cookie' => @cookie})
-    resp.kind_of? Net::HTTPSuccess || raise(resp.body)
+    resp.kind_of? Net::HTTPSuccess or raise(resp.body)
 
     File.open(output, 'wb') {|f| f.write(resp.body)}
     puts "  --> #{output} saved (#{resp.body.bytesize} bytes)"
@@ -62,7 +64,7 @@ class CoreDeveloper
   def content
     raise "Must specify a core name" if @name.nil?
     resp = @http.request_get("/core/#{@name}?content=true", {'Cookie' => @cookie})
-    resp.kind_of? Net::HTTPSuccess || raise(resp.body)
+    resp.kind_of? Net::HTTPSuccess or raise(resp.body)
 
     puts "Content of core #{@name}"
     list = JSON.parse(resp.body)
@@ -75,41 +77,48 @@ class CoreDeveloper
     raise "Must specify a core name" if @name.nil?
     puts "Setting version [#{version}] for [#{@name}] core..."
     resp = @http.request_post("/core/version", {_id: @name, version: version}.to_json, {'Cookie' => @cookie})
-    resp.kind_of? Net::HTTPSuccess || raise(resp.body)
+    resp.kind_of? Net::HTTPSuccess or raise(resp.body)
   end
 
   def replace(file)
     raise "Must specify a core name" if @name.nil?
-    content = ''
-    File.open(file, 'rb') {|f| content = f.read}
+    content = File.open(file, 'rb') {|f| f.read}
     puts "Replacing [#{@name}] core with new file (#{content.bytesize} bytes)"
 
     resp = @http.request_post("/core/#{@name}", content, {'Cookie' => @cookie})
-    resp.kind_of? Net::HTTPSuccess || raise(resp.body)
+    resp.kind_of? Net::HTTPSuccess or raise(resp.body)
   end
 
   def add(file)
     raise "Must specify a core name" if @name.nil?
-    content = ''
-    File.open(file, 'rb') {|f| content = f.read}
+    content = File.open(file, 'rb') {|f| f.read}
     puts "Adding [#{file}] to the [#{@name}] core (#{content.bytesize} bytes)"
 
     resp = @http.request_put("/core/#{@name}?name=#{file}", content, {'Cookie' => @cookie})
-    resp.kind_of? Net::HTTPSuccess || raise(resp.body)
+    resp.kind_of? Net::HTTPSuccess or raise(resp.body)
+  end
+
+  def remove(file)
+    raise "Must specify a core name" if @name.nil?
+    puts "Removing [#{file}] from the [#{@name}] core"
+
+    resp = @http.delete("/core/#{@name}?name=#{file}", {'Cookie' => @cookie})
+    resp.kind_of? Net::HTTPSuccess or raise(resp.body)
   end
 
   def delete
     raise "Must specify a core name" if @name.nil?
     puts "Deleting [#{@name}] core"
     resp = @http.delete("/core/#{@name}", {'Cookie' => @cookie})
-    resp.kind_of? Net::HTTPSuccess || raise(resp.body)
+    resp.kind_of? Net::HTTPSuccess or raise(resp.body)
   end
 
   def retrieve_factory(ident)
     raise("you must specify a factory") if ident.nil?
 
-    res = @http.request_get('/factory', {'Cookie' => @cookie})
-    factories = JSON.parse(res.body)
+    resp = @http.request_get('/factory', {'Cookie' => @cookie})
+    resp.kind_of? Net::HTTPSuccess or raise(resp.body)
+    factories = JSON.parse(resp.body)
 
     factories.keep_if {|f| f['ident'] == ident}
 
@@ -117,6 +126,15 @@ class CoreDeveloper
 
     puts "Using factory: #{@factory['ident']} #{@factory['name']}"
     puts
+  end
+
+  def config(param_file)
+    jcontent = File.open(param_file, 'r') {|f| f.read}
+
+    resp = @http.request_post("/factory/add_config", {_id: @factory['_id'], config: jcontent}.to_json, {'Cookie' => @cookie})
+    resp.kind_of? Net::HTTPSuccess or raise(resp.body)
+
+    puts "Configuration saved"
   end
 
   def build(param_file)
@@ -132,21 +150,20 @@ class CoreDeveloper
     puts params.inspect
 
     resp = @http.request_post("/build", params.to_json, {'Cookie' => @cookie})
-    resp.kind_of? Net::HTTPSuccess || raise(resp.body)
+    resp.kind_of? Net::HTTPSuccess or raise(resp.body)
 
     File.open(@output, 'wb') {|f| f.write resp.body}
 
     puts
     puts "#{resp.body.bytesize} bytes saved to #{@output}"
-  end
+    puts
 
-  def config(param_file)
-    jcontent = File.open(param_file, 'r') {|f| f.read}
+    Zip::ZipFile.open(@output) do |z|
+      z.each do |f|
+        puts "#{f.name.ljust(40)} #{f.size.to_s.rjust(10)} #{f.time}"
+      end
+    end
 
-    resp = @http.request_post("/factory/add_config", {_id: @factory['_id'], config: jcontent}.to_json, {'Cookie' => @cookie})
-    resp.kind_of? Net::HTTPSuccess || raise(resp.body)
-
-    puts "Configuration saved"
   end
 
 
@@ -161,6 +178,7 @@ class CoreDeveloper
       c.delete if options[:delete]
       c.replace(options[:replace]) if options[:replace]
       c.add(options[:add]) if options[:add]
+      c.remove(options[:remove]) if options[:remove]
       c.content if options[:content]
       c.version(options[:version]) if options[:version]
       c.get(options[:get]) if options[:get]
@@ -176,6 +194,7 @@ class CoreDeveloper
 
     rescue Exception => e
       puts "FATAL: #{e.message}"
+      #puts "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
     ensure
       # clean the session
       c.logout
@@ -209,11 +228,14 @@ optparse = OptionParser.new do |opts|
   opts.on( '-g', '--get FILE', 'get the core from the db and store it in FILE' ) do |file|
     options[:get] = file
   end
-  opts.on( '-r', '--replace CORE', 'replace the core in the db (CORE must be a zip file)' ) do |file|
+  opts.on( '-R', '--replace CORE', 'replace the core in the db (CORE must be a zip file)' ) do |file|
     options[:replace] = file
   end
   opts.on( '-a', '--add FILE', 'add or replace FILE to the core on the db' ) do |file|
     options[:add] = file
+  end
+  opts.on( '-r', '--remove FILE', 'remove FILE from the core on the db' ) do |file|
+    options[:remove] = file
   end
   opts.on( '-s', '--show', 'show the content of a core' ) do
     options[:content] = true
