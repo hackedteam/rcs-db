@@ -66,6 +66,7 @@ class BuildWindows < Build
                                         path('default')+' '+
                                         path('output')
 
+
     File.exist? path('output') || raise("output file not created by dropper")
 
     trace :debug, "Build: dropper output is: #{File.size(path('output'))} bytes"

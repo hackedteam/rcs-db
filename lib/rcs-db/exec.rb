@@ -34,7 +34,7 @@ class CrossPlatform
       @ext
     end
 
-    def exec(command, params)
+    def exec(command, params = "", options = {})
 
       # append the specific extension for this platform
       command += ext
@@ -59,10 +59,25 @@ class CrossPlatform
 
       command += " " + params
 
-      #trace :debug, "Executing: #{command}"
+      # setup the pipe to read the ouput of the child command
+      # redirect stderr to stdout and read only stdout
+      rd, wr = IO.pipe
+      options[:err] = :out
+      options[:out] = wr
+      
+      #trace :debug, "Executing [#{options}]: #{command}"
 
       # execute the whole command and catch the output
-      output = %x[#{command}]
+      #output = %x[#{command}]
+      spawn(command, options)
+
+      # wait for the child to die
+      Process.wait
+
+      # read its output from the pipe
+      wr.close
+      output = rd.read
+
       $?.success? || raise("failed to execute command [#{File.basename(original_command)}] output: #{output}")
 
     end

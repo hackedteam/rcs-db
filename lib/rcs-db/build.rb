@@ -180,7 +180,7 @@ class Build
     trace :debug, "Build: skipping #{__method__}"
   end
 
-  def sign 
+  def sign(params)
     trace :debug, "Build: skipping #{__method__}"
   end
 
@@ -208,7 +208,7 @@ class Build
       patch params['binary']
       scramble
       melt params['melt']
-      sign
+      sign params['sign']
       pack params['package']
     rescue Exception => e
       trace :error, "Cannot build: #{e.message}"
