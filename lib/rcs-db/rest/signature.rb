@@ -16,7 +16,7 @@ class SignatureController < RESTController
       if @params['_id'] == 'cert'
         sig = {}
         sig[:filename] = Config.instance.global['CA_PEM']
-        sig[:value] = File.open(Config.instance.file('CA_PEM'), 'rb') {|f| f.read}
+        sig[:value] = File.open(Config.instance.cert('CA_PEM'), 'rb') {|f| f.read}
         trace :info, "[#{@request[:peer]}] Requested the CA certificate"
       else
         sig = ::Signature.where({scope: @params['_id']}).first

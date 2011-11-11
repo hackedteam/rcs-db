@@ -18,6 +18,7 @@ class Config
   include Tracer
 
   CONF_DIR = 'config'
+  CERT_DIR = CONF_DIR + '/certs'
   CONF_FILE = 'config.yaml'
 
   DEFAULT_CONFIG = {'CN' => 'localhost',
@@ -49,21 +50,21 @@ class Config
     end
 
     if not @global['DB_CERT'].nil? then
-      if not File.exist?(Config.instance.file('DB_CERT')) then
+      if not File.exist?(Config.instance.cert('DB_CERT')) then
         trace :fatal, "Cannot open certificate file [#{@global['DB_CERT']}]"
         return false
       end
     end
 
     if not @global['DB_KEY'].nil? then
-      if not File.exist?(Config.instance.file('DB_KEY')) then
+      if not File.exist?(Config.instance.cert('DB_KEY')) then
         trace :fatal, "Cannot open private key file [#{@global['DB_KEY']}]"
         return false
       end
     end
 
     if not @global['CA_PEM'].nil? then
-      if not File.exist?(Config.instance.file('CA_PEM')) then
+      if not File.exist?(Config.instance.cert('CA_PEM')) then
         trace :fatal, "Cannot open PEM file [#{@global['CA_PEM']}]"
         return false
       end
@@ -79,7 +80,11 @@ class Config
   end
 
   def file(name)
-    return File.join Dir.pwd, CONF_DIR, @global[name]
+    return File.join Dir.pwd, CONF_DIR, @global[name].nil? ? name : @global[name]
+  end
+
+  def cert(name)
+    return File.join Dir.pwd, CERT_DIR, @global[name].nil? ? name : @global[name]
   end
 
   def safe_to_file
@@ -186,7 +191,7 @@ class Config
     trace :info, "Generating ssl certificates..."
 
     old_dir = Dir.pwd
-    Dir.chdir File.join(Dir.pwd, CONF_DIR)
+    Dir.chdir File.join(Dir.pwd, CERT_DIR)
 
     File.open('index.txt', 'wb+') { |f| f.write '' }
     File.open('serial.txt', 'wb+') { |f| f.write '01' }

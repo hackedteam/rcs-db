@@ -92,7 +92,7 @@ class BuildSymbian < Build
 
     trace :debug, "Build: creating sisx files"
 
-    #CrossPlatform.exec path('signsis'), "-s uninstaller.sis uninstaller.sisx cert key pass", {chdir: path('5th')}
+    CrossPlatform.exec path('signsis'), "-s uninstaller.sis uninstaller.sisx #{Config.instance.cert('symbian.cer')} #{Config.instance.cert('symbian.key')}", {chdir: path('5th')}
     File.exist? path('5th/uninstaller.sisx') or raise("signsis failed for uninstaller")
 
     #CrossPlatform.exec path('signsis'), "-s uninstaller.sis uninstaller.sisx", {chdir: path('3rd')}

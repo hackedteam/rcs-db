@@ -39,8 +39,8 @@ class HTTPHandler < EM::Connection
     set_comm_inactivity_timeout 60
 
     # we want the connection to be encrypted with ssl
-    start_tls(:private_key_file => Config.instance.file('DB_KEY'),
-              :cert_chain_file => Config.instance.file('DB_CERT'),
+    start_tls(:private_key_file => Config.instance.cert('DB_KEY'),
+              :cert_chain_file => Config.instance.cert('DB_CERT'),
               :verify_peer => false)
 
 
