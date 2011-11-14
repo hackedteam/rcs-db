@@ -25,6 +25,8 @@ MEDIUM PRIORITY:
 
     Alerting daemon
 
+    Blotter (browsing like console)
+
 LOW PRIORITY:
 
     get time via http (collector)
@@ -33,6 +35,7 @@ LOW PRIORITY:
 
     mongo authentication
 
+    443 is the default port
 
 
 FUTURE:
