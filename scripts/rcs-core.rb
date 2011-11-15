@@ -15,6 +15,7 @@ class CoreDeveloper
   attr_accessor :factory
   attr_accessor :output
   attr_accessor :input
+  attr_accessor :cert
 
   def login(host, port, user, pass)
     host ||= 'localhost'
@@ -138,15 +139,15 @@ class CoreDeveloper
     puts "Configuration saved"
   end
 
-  def input=(param_file)
+  def upload(param_file)
     content = File.open(param_file, 'rb') {|f| f.read}
 
-    puts "Uploading input file [#{param_file}]..."
+    puts "Uploading file [#{param_file}]..."
 
     resp = @http.request_post("/upload", content, {'Cookie' => @cookie})
     resp.kind_of? Net::HTTPSuccess or raise(resp.body)
 
-    @input = resp.body
+    return resp.body
   end
 
   def build(param_file)
@@ -161,6 +162,9 @@ class CoreDeveloper
     # set the input file for the melting process
     params['melt'][:input] = @input unless @input.nil?
 
+    # set the cert file for the signing process
+    params['sign'][:cert] = @cert unless @cert.nil?
+    
     puts "Building the agent with the following parameters:"
     puts params.inspect
 
@@ -205,7 +209,8 @@ class CoreDeveloper
       c.retrieve_factory(options[:factory]) if options[:factory]
       c.output = options[:output]
       c.config(options[:config]) if options[:config]
-      c.input = options[:input]
+      c.cert = c.upload(options[:cert]) if options[:cert]
+      c.input = c.upload(options[:input]) if options[:input]
       c.build(options[:build]) if options[:build]
 
     rescue Exception => e
@@ -274,6 +279,9 @@ optparse = OptionParser.new do |opts|
   opts.on( '-c', '--config CONFIG_FILE', String, 'save the config to the specified factory' ) do |config|
     options[:config] = config
   end
+  opts.on( '-C', '--cert FILE', String, 'certificate for the signing phase' ) do |file|
+    options[:cert] = file
+  end  
   opts.on( '-i', '--input FILE', String, 'the input file for the melting phase of the build' ) do |file|
     options[:input] = file
   end

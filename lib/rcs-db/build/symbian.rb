@@ -51,7 +51,6 @@ class BuildSymbian < Build
     # substitute the UIDS into every file
     Find.find(@tmpdir).each do |file|
       if File.file?(file)
-        puts file
         content = File.open(file, 'rb') {|f| f.read}
         content.gsub! '[:UID1:]', uids[0]
         content.gsub! '[:UID2:]', uids[1]
@@ -93,8 +92,9 @@ class BuildSymbian < Build
 
     trace :debug, "Build: creating sisx files"
 
-    # TODO: this file is provided by the console
-    FileUtils.cp(Config.instance.cert('symbian.cer'), @tmpdir)
+    # this file is provided by the console
+    FileUtils.mv(File.join(Dir.tmpdir, params['cert']), path('symbian.cer'))
+    # this is global
     FileUtils.cp(Config.instance.cert('symbian.key'), @tmpdir)
 
     CrossPlatform.exec path('signsis'), "-s uninstaller.sis uninstaller.sisx ../symbian.cer ../symbian.key", {chdir: path('5th')}
