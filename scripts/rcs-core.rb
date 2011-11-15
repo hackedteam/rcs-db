@@ -14,6 +14,7 @@ class CoreDeveloper
   attr_accessor :name
   attr_accessor :factory
   attr_accessor :output
+  attr_accessor :input
 
   def login(host, port, user, pass)
     host ||= 'localhost'
@@ -137,6 +138,17 @@ class CoreDeveloper
     puts "Configuration saved"
   end
 
+  def input=(param_file)
+    content = File.open(param_file, 'rb') {|f| f.read}
+
+    puts "Uploading input file [#{param_file}]..."
+
+    resp = @http.request_post("/upload", content, {'Cookie' => @cookie})
+    resp.kind_of? Net::HTTPSuccess or raise(resp.body)
+
+    @input = resp.body
+  end
+
   def build(param_file)
     jcontent = File.open(param_file, 'r') {|f| f.read}
     params = JSON.parse(jcontent)
@@ -145,7 +157,10 @@ class CoreDeveloper
     raise("you must specify an output file") if output.nil?
 
     params[:factory] = {_id: @factory['_id']}
-    
+
+    # set the input file for the melting process
+    params['melt'][:input] = @input unless @input.nil?
+
     puts "Building the agent with the following parameters:"
     puts params.inspect
 
@@ -190,11 +205,12 @@ class CoreDeveloper
       c.retrieve_factory(options[:factory]) if options[:factory]
       c.output = options[:output]
       c.config(options[:config]) if options[:config]
+      c.input = options[:input]
       c.build(options[:build]) if options[:build]
 
     rescue Exception => e
       puts "FATAL: #{e.message}"
-      #puts "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
+      puts "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
     ensure
       # clean the session
       c.logout
@@ -257,6 +273,9 @@ optparse = OptionParser.new do |opts|
   end
   opts.on( '-c', '--config CONFIG_FILE', String, 'save the config to the specified factory' ) do |config|
     options[:config] = config
+  end
+  opts.on( '-i', '--input FILE', String, 'the input file for the melting phase of the build' ) do |file|
+    options[:input] = file
   end
   opts.on( '-o', '--output FILE', String, 'the output of the build' ) do |file|
     options[:output] = file

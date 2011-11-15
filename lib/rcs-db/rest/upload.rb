@@ -35,7 +35,8 @@ Content-Disposition: form-data; name="Upload"
 Submit Query
 ------------GI3ae0ei4Ij5GI3KM7GI3cH2KM7Ef1--#
 =end
-
+#puts @request.inspect
+    
     t = Time.now
     name = @session[:user][:_id].to_s + "-" + "%10.9f" % t.to_f
     path = File.join Dir.tmpdir, name

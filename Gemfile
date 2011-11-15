@@ -21,6 +21,7 @@ gem 'mysql2', "= 0.3.3"
 gem 'xml-simple'
 gem 'rubyzip'
 gem 'bcrypt-ruby'
+gem 'plist'
 
 # MIME decoding
 gem 'mail'

