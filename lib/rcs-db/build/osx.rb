@@ -74,6 +74,7 @@ class BuildOSX < Build
 
     # TODO: make the default exe an actual default app
     executable = path('default')
+    @executable_name = 'install'
 
     # the user has provided a file to melt with
     if params['input']
@@ -143,40 +144,36 @@ class BuildOSX < Build
 
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      z.file.open('install', "w") { |f| f.write File.open(path('output'), 'rb') {|f| f.read} }
+      z.file.open(@executable_name, "w") { |f| f.write File.open(path('output'), 'rb') {|f| f.read} }
 
       # TODO: fix this!!! it is really broken and does not work.
-      z.file.chmod(0755, 'install')
+      z.file.chmod(0755, @executable_name)
     end
 
-    # this is to check if the permission are set correctly
-    # TODO: remove when the bug above has been fixed
-    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      puts "%o" % z.file.stat('install').mode
-      z.file.chmod(0755, 'install')
-      puts "%o" % z.file.stat('install').mode
-      puts z.commit_required?
-      z.commit
-      puts z.class
-      puts z.inspect
-    end
-
-=begin
-      $zip = file_get_contents($files['user']);
-      if(($offset = strripos($zip, $mainname) - 46) < 0) return false;
-      if(substr($zip, $offset, 4) != "\x50\x4b\x01\x02") return false;
-      $zip[$offset + 4] = "\x17";
-      $zip[$offset + 5] = "\x03";
-      $zip[$offset + 38] = "\x00";
-      $zip[$offset + 39] = "\x00";
-      $zip[$offset + 40] = "\xed";
-      $zip[$offset + 41] = "\x81";
-      file_put_contents($buildfile, $zip);
-=end
+    # TODO: remove this when the correct method has been found
+    binary_patch_exec_bit('output.zip', @executable_name)
 
     # this is the only file we need to output after this point
     @outputs = ['output.zip']
 
+  end
+
+
+  def binary_patch_exec_bit(zipfile, filename)
+    content = File.open(path(zipfile), 'rb') {|f| f.read}
+
+    # magic voodoo by Fabio
+    offset = content.rindex(filename) - 46
+    if offset > 0 and content.byteslice(offset, 4) == "\x50\x4b\x01\x02"
+      content[offset + 4] = "\x17"
+      content[offset + 5] = "\x03"    # FS_TYPE_UNIX
+      content[offset + 38] = "\x00"   # extended attributes  0755
+      content[offset + 39] = "\x00"
+      content[offset + 40] = "\xed"
+      content[offset + 41] = "\x81"
+    end
+
+    File.open(path('output.zip'), 'wb') {|f| f.write content}
   end
 
 end

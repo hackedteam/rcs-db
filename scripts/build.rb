@@ -2,7 +2,7 @@
 
 require 'json'
 
-params = {platform: 'symbian',
+params = {platform: 'osx',
           binary: {demo: true, admin: true},
           melt: {admin: true,
                  jadname: 'facebook',

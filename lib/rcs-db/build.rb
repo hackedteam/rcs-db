@@ -83,6 +83,9 @@ class Build
   end
 
   def patch(params)
+    # skip the phase if not needed
+    return if params[:core].nil?
+
     trace :debug, "Build: patching [#{params[:core]}] file"
 
     # open the core and binary patch the parameters
@@ -165,7 +168,9 @@ class Build
   end
 
   def scramble
+    # skip the phase if not needed
     return if @scrambled.empty?
+
     # rename the outputs with the scrambled names
     @outputs.each do |file|
       if @scrambled[file.to_sym]
@@ -180,6 +185,10 @@ class Build
     trace :debug, "Build: skipping #{__method__}"
   end
 
+  def generate(params)
+    trace :debug, "Build: skipping #{__method__}"
+  end
+
   def sign(params)
     trace :debug, "Build: skipping #{__method__}"
   end
@@ -188,6 +197,10 @@ class Build
     trace :debug, "Build: skipping #{__method__}"
   end
 
+  def deliver(params)
+    trace :debug, "Build: skipping #{__method__}"
+  end
+  
   def path(name)
     File.join @tmpdir, name
   end
@@ -208,8 +221,10 @@ class Build
       patch params['binary']
       scramble
       melt params['melt']
+      generate params['generate']
       sign params['sign']
       pack params['package']
+      deliver params['deliver']
     rescue Exception => e
       trace :error, "Cannot build: #{e.message}"
       trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
