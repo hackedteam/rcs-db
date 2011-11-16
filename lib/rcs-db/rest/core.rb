@@ -69,8 +69,8 @@ class CoreController < RESTController
       core = ::Core.new
       core.name = @params['_id']
 
-      core[:_grid] = [ GridFS.put(@request[:content], {filename: @params['_id']}) ]
-      core[:_grid_size] = @request[:content].bytesize
+      core[:_grid] = [ GridFS.put(@request[:content]['content'], {filename: @params['_id']}) ]
+      core[:_grid_size] = @request[:content]['content'].bytesize
       core.save
 
       Audit.log :actor => @session[:user][:name], :action => 'core.replace', :desc => "Replaced the #{@params['_id']} core"
@@ -91,7 +91,7 @@ class CoreController < RESTController
       temp = GridFS.to_tmp core[:_grid].first
 
       Zip::ZipFile.open(temp.path) do |z|
-        z.file.open(new_entry, "w") { |f| f.write @request[:content] }
+        z.file.open(new_entry, "w") { |f| f.write @request[:content]['content'] }
       end
 
       content = File.open(temp.path, 'rb') {|f| f.read}

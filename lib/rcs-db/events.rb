@@ -103,25 +103,35 @@ class HTTPHandler < EM::Connection
     operation = proc do
 
       start_time = Time.now
-
-      # parse all the request params
-      request = prepare_request @http_request_method, @http_request_uri, @http_query_string, @http_cookie, @http_post_content
-      request[:peer] = peer
       
-      # get the correct controller
-      controller = HTTPHandler.restcontroller.get request
-      
-      # do the dirty job :)
-      responder = controller.act!
-      reply = responder.prepare_response(self)
-      reply.send_response
+      begin
+        # parse all the request params
+        request = prepare_request @http_request_method, @http_request_uri, @http_query_string, @http_cookie, @http_content_type, @http_post_content
+        request[:peer] = peer
 
-      elapsed_time = Time.now - start_time
+        # get the correct controller
+        controller = HTTPHandler.restcontroller.get request
 
-      trace :warn, "[#{@peer}] Request: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{elapsed_time}) #{reply.headers['Content-length'].to_s_bytes}" if Config.instance.global['PERF']
+        # do the dirty job :)
+        responder = controller.act!
+        reply = responder.prepare_response(self)
+        reply.send_response
 
-      # the controller job has finished, call the cleanup hook
-      controller.cleanup
+        elapsed_time = Time.now - start_time
+
+        trace :warn, "[#{@peer}] Request: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{elapsed_time}) #{reply.headers['Content-length'].to_s_bytes}" if Config.instance.global['PERF']
+
+        # the controller job has finished, call the cleanup hook
+        controller.cleanup
+      rescue Exception => e
+        trace :error, e.message
+        trace :fatal, "EXCEPTION(#{e.class}): " + e.backtrace.join("\n")
+        
+        responder = RESTController.reply.server_error('CONTROLLER_ERROR')
+        reply = responder.prepare_response(self)
+        reply.send_response
+      end
+
     end
     
     # Let the thread pool handle request

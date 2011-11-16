@@ -18,9 +18,9 @@ class CoreDeveloper
   attr_accessor :cert
 
   def login(host, port, user, pass)
-    host ||= 'localhost'
-    port ||= 4444
-    @http = Net::HTTP.new(host, port)
+    @host = host || 'localhost'
+    @port = port || 4444
+    @http = Net::HTTP.new(@host, @port)
     @http.use_ssl = true
     @http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
@@ -29,6 +29,11 @@ class CoreDeveloper
     puts "Performing login to #{host}:#{port}"
     resp.kind_of? Net::HTTPSuccess or raise(resp.body)
     @cookie = resp['Set-Cookie'] unless resp['Set-Cookie'].nil?
+
+    re = '.*?(session=)([A-Z0-9]{8}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{12})'
+    m = Regexp.new(re, Regexp::IGNORECASE).match(@cookie)
+    @session = m[2] unless m.nil?
+
     puts
   end
 
@@ -143,6 +148,8 @@ class CoreDeveloper
     content = File.open(param_file, 'rb') {|f| f.read}
 
     puts "Uploading file [#{param_file}]..."
+
+    #RestClient.post('https://#{@host}}:#{@port}/upload', {:Filename => 'upfile', :content => File.new(param_file, 'rb')}, {:cookies => {:session => @session}})
 
     resp = @http.request_post("/upload", content, {'Cookie' => @cookie})
     resp.kind_of? Net::HTTPSuccess or raise(resp.body)

@@ -29,11 +29,9 @@ class EvidenceController < RESTController
     ident = @params['_id'].slice(0..13)
     instance = @params['_id'].slice(15..-1)
 
-    # TODO: handle the multipart-form from console
-
     # save the evidence in the db
     begin
-      id = RCS::DB::EvidenceManager.instance.store_evidence ident, instance, @request[:content]
+      id = RCS::DB::EvidenceManager.instance.store_evidence ident, instance, @request[:content]['content']
       # notify the worker
       RCS::DB::EvidenceDispatcher.instance.notify id, ident, instance
     rescue Exception => e
@@ -42,7 +40,7 @@ class EvidenceController < RESTController
     end
 
     trace :info, "Evidence saved. Dispatching evidence of [#{ident}::#{instance}][#{id}]"
-    return RESTController.reply.ok({:bytes => @request[:content].size})
+    return RESTController.reply.ok({:bytes => @request[:content]['content'].size})
   end
   
   # used to report that the activity of an instance is starting
