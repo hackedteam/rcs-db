@@ -132,6 +132,7 @@ class BuildOSX < Build
 
       Zip::ZipFile.open(path('input')) do |z|
         z.file.open(@executable_name, 'w') {|f| f.write File.open(path('output'), 'rb') {|f| f.read} }
+        z.file.chmod(0755, @executable_name)
       end
 
       FileUtils.mv(path('input'), path('output.zip'))
@@ -142,16 +143,13 @@ class BuildOSX < Build
       return
     end
 
-
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
       z.file.open(@executable_name, "w") { |f| f.write File.open(path('output'), 'rb') {|f| f.read} }
-
-      # TODO: fix this!!! it is really broken and does not work.
       z.file.chmod(0755, @executable_name)
     end
 
     # TODO: remove this when the correct method has been found
-    binary_patch_exec_bit('output.zip', @executable_name)
+    #binary_patch_exec_bit('output.zip', @executable_name)
 
     # this is the only file we need to output after this point
     @outputs = ['output.zip']

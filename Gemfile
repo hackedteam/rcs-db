@@ -19,7 +19,10 @@ gem 'bson'
 gem 'bson_ext'
 gem 'mysql2', "= 0.3.3"
 gem 'xml-simple'
-gem 'rubyzip'
+#gem 'rubyzip', ">= 0.9.5"
+git "git@github.com:alor/rubyzip.git", :branch => "master" do
+  gem 'rubyzip'
+end
 gem 'bcrypt-ruby'
 gem 'plist'
 
@@ -27,14 +30,9 @@ gem 'plist'
 gem 'mail'
 
 # TAR/GZIP compression
-#git "git://github.com/danielemilan/minitar.git", :branch => "master" do
-#	gem 'minitar', :require => 'archive/tar/minitar'
-#end
-
 git "git://github.com/danielemilan/minitar.git", :branch => "master" do
   gem "minitar"
 end
-#gem 'minitar', :path => "../minitar"
 
 # Add dependencies to develop your gem here.
 # Include everything needed to run rake, tests, features, etc.
