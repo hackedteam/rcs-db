@@ -20,13 +20,14 @@ class Status
   field :pcpu, type: Integer
   field :cpu, type: Integer
   field :disk, type: Integer
+  field :nc, type: Boolean
   
   store_in :statuses
 
   class << self
 
     # updates or insert the status of a component
-    def status_update(name, address, status, info, stats)
+    def status_update(name, address, status, info, stats, nc = false)
 
       #trace :debug, "#{name}, #{address}, #{status}, #{info}, #{stats}"
 
@@ -37,6 +38,7 @@ class Status
       monitor[:cpu] = stats[:cpu]
       monitor[:disk] = stats[:disk]
       monitor[:time] = Time.now.getutc.to_i
+      monitor[:nc] = nc
       case(status)
         when 'OK'
           monitor[:status] = OK

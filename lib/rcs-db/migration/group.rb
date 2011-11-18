@@ -1,4 +1,4 @@
-require 'rcs-db/db_layer'
+require_relative '../db_layer'
 
 module RCS
 module DB
@@ -47,6 +47,16 @@ class GroupMigration
       trace :info, "Association user '#{user.name}' to group '#{group.name}'." if verbose
       print "." unless verbose
       
+    end
+
+    # purge the invalid associations
+    Group.all.each do |group|
+      group.user_ids.each do |user_id|
+        if User.where({_id: user_id}).first.nil?
+          group.user_ids.delete(user_id)
+          group.save
+        end
+      end
     end
 
     puts " done."

@@ -18,6 +18,7 @@ class Config
   include Tracer
 
   CONF_DIR = 'config'
+  CERT_DIR = CONF_DIR + '/certs'
   CONF_FILE = 'config.yaml'
 
   DEFAULT_CONFIG = {'CN' => 'localhost',
@@ -49,21 +50,21 @@ class Config
     end
 
     if not @global['DB_CERT'].nil? then
-      if not File.exist?(Config.instance.file('DB_CERT')) then
+      if not File.exist?(Config.instance.cert('DB_CERT')) then
         trace :fatal, "Cannot open certificate file [#{@global['DB_CERT']}]"
         return false
       end
     end
 
     if not @global['DB_KEY'].nil? then
-      if not File.exist?(Config.instance.file('DB_KEY')) then
+      if not File.exist?(Config.instance.cert('DB_KEY')) then
         trace :fatal, "Cannot open private key file [#{@global['DB_KEY']}]"
         return false
       end
     end
 
     if not @global['CA_PEM'].nil? then
-      if not File.exist?(Config.instance.file('CA_PEM')) then
+      if not File.exist?(Config.instance.cert('CA_PEM')) then
         trace :fatal, "Cannot open PEM file [#{@global['CA_PEM']}]"
         return false
       end
@@ -79,7 +80,11 @@ class Config
   end
 
   def file(name)
-    return File.join Dir.pwd, CONF_DIR, @global[name]
+    return File.join Dir.pwd, CONF_DIR, @global[name].nil? ? name : @global[name]
+  end
+
+  def cert(name)
+    return File.join Dir.pwd, CERT_DIR, @global[name].nil? ? name : @global[name]
   end
 
   def safe_to_file
@@ -133,7 +138,7 @@ class Config
     @global['BACKUP_DIR'] = options[:backup] unless options[:backup].nil?
 
     if options[:gen_cert]
-      generate_certificates
+      generate_certificates options
     end
 
     trace :info, ""
@@ -182,27 +187,45 @@ class Config
     http.request_post('/auth/logout', nil, {'Cookie' => cookie})
   end
 
-  def generate_certificates
+  def generate_certificates(options)
     trace :info, "Generating ssl certificates..."
 
     old_dir = Dir.pwd
-    Dir.chdir File.join(Dir.pwd, CONF_DIR)
+    Dir.chdir File.join(Dir.pwd, CERT_DIR)
 
     File.open('index.txt', 'wb+') { |f| f.write '' }
     File.open('serial.txt', 'wb+') { |f| f.write '01' }
 
     # to create the CA
-    system "openssl req -subj /CN=\"RCS Certification Authority\"/O=\"HT srl\" -batch -days 3650 -nodes -new -x509 -keyout rcs-ca.key -out rcs-ca.crt -config openssl.cnf"
+    if options[:gen_ca] or !File.exist?('rcs-ca.crt')
+      trace :info, "Generating a new CA authority..."
+      system "openssl req -subj /CN=\"RCS Certification Authority\"/O=\"HT srl\" -batch -days 3650 -nodes -new -x509 -keyout rcs-ca.key -out rcs-ca.crt -config openssl.cnf"
+    end
 
+    return unless File.exist? 'rcs-ca.crt'
+
+    trace :info, "Generating db certificate..."
     # the cert for the db server
     system "openssl req -subj /CN='#{@global['CN']}' -batch -days 3650 -nodes -new -keyout #{@global['DB_KEY']} -out rcs-db.csr -config openssl.cnf"
+
+    return unless File.exist? @global['DB_KEY']
+
+    trace :info, "Generating collector certificate..."
     # the cert used by the collectors
     system "openssl req -subj /CN='collector' -batch -days 3650 -nodes -new -keyout rcs-collector.key -out rcs-collector.csr -config openssl.cnf"
 
+    return unless File.exist? 'rcs-collector.key'
+
+    trace :info, "Signing certificates..."
     # signing process
     system "openssl ca -batch -days 3650 -out #{@global['DB_CERT']} -in rcs-db.csr -extensions server -config openssl.cnf"
     system "openssl ca -batch -days 3650 -out rcs-collector.crt -in rcs-collector.csr -config openssl.cnf"
 
+    return unless File.exist? @global['DB_CERT']
+
+    trace :info, "Creating certificates bundles..."
+    File.open(@global['DB_CERT'], 'ab+') {|f| f.write File.read('rcs-ca.crt')}
+    
     # create the PEM file for all the collectors
     File.open(@global['CA_PEM'], 'wb+') do |f|
       f.write File.read('rcs-collector.crt')
@@ -210,6 +233,7 @@ class Config
       f.write File.read('rcs-ca.crt')
     end
 
+    trace :info, "Removing temporary files..."
     # CA related files
     ['index.txt', 'index.txt.old', 'index.txt.attr', 'index.txt.attr.old', 'serial.txt', 'serial.txt.old'].each do |f|
       File.delete f
@@ -221,6 +245,7 @@ class Config
     end
 
     Dir.chdir old_dir
+    trace :info, "done."
   end
 
   def self.mongo_exec_path(file)
@@ -271,8 +296,11 @@ class Config
 
       opts.separator ""
       opts.separator "Certificates options:"
-      opts.on( '-G', '--generate', 'Generate the SSL certificates needed by the system' ) do
+      opts.on( '-g', '--generate', 'Generate the SSL certificates needed by the system' ) do
         options[:gen_cert] = true
+      end
+      opts.on( '-G', '--generate-ca', 'Generate a new CA authority for SSL certificates' ) do
+        options[:gen_ca] = true
       end
       opts.on( '-c', '--ca-pem FILE', 'The certificate file (pem) of the issuing CA' ) do |file|
         options[:ca_pem] = file

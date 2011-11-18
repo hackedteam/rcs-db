@@ -86,7 +86,7 @@ class AuthController < RESTController
       
       trace :info, "Resetting password for user 'admin'"
       Audit.log :actor => '<system>', :action => 'auth.reset', :user => 'admin', :desc => "Password reset"
-      user.pass = Digest::SHA1.hexdigest('.:RCS:.' + @params['pass'])
+      user.create_password(@params['pass'])
       user.save
     end
     

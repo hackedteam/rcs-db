@@ -1,11 +1,14 @@
 require 'mongoid'
 
+require 'rcs-common/crypt'
+
 #module RCS
 #module DB
 
 class Configuration
   include Mongoid::Document
   include Mongoid::Timestamps
+  include RCS::Crypt
 
   field :desc, type: String
   field :user, type: String
@@ -16,6 +19,11 @@ class Configuration
   field :config, type: String
   
   embedded_in :item
+
+  def encrypted_config(confkey)
+    # encrypt the config for the agent using the confkey
+    aes_encrypt(self.config + Digest::SHA1.digest(self.config), Digest::MD5.digest(confkey))
+  end
 end
 
 

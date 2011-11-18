@@ -1,4 +1,4 @@
-require 'rcs-db/db_layer'
+require_relative '../db_layer'
 require 'xmlsimple'
 require 'json'
 
@@ -96,6 +96,7 @@ class ConfigMigration
       globals[:migrated] = true
       globals[:version] = 20111231
       globals[:nohide] = []
+      globals[:advanced] = true
 
       return globals
     end
@@ -158,14 +159,18 @@ class ConfigMigration
                   e[:event] = 'date'
                   e[:datefrom] = params['content']
                 when 'daily'
+                  e[:event] = 'timer'
+                  e[:subtype] = "daily"
                   e[:ts] = "%02d:%02d:%02d" % [params['hour'].first.to_i, params['minute'].first.to_i, params['second'].first.to_i]
                   e[:te] = "%02d:%02d:%02d" % [params['endhour'].first.to_i, params['endminute'].first.to_i, params['endsecond'].first.to_i]
                 when 'loop'
                   e[:event] = 'timer'
+                  e[:subtype] = "loop"
                   e[:ts] = "00:00:00"
                   e[:te] = "23:59:59"
                   e[:repeat] = e[:start]
                   e[:delay] = params['hour'].first.to_i * 3600 + params['minute'].first.to_i * 60 + params['second'].first.to_i
+                  e.delete(:start)
                 when 'after startup'
                   e[:event] = 'timer'
                   e[:ts] = "00:00:00"
@@ -358,7 +363,7 @@ class ConfigMigration
       subactions = []
 
       modules.each do |m|
-        if m[:enabled] and not ['snapshot', 'camera', 'location'].include? m[:module]
+        if m[:enabled] and not ['snapshot', 'camera', 'position'].include? m[:module]
           subactions << {:action => 'module', :status => 'start', :module => m[:module]}
         end
         m.delete(:enabled)
@@ -369,7 +374,7 @@ class ConfigMigration
       actions << start_action
 
       event = {:event => 'timer', :desc => 'On Startup', :enabled => true,
-               :ts => '00:00:00', :te => '23:59:59',
+               :ts => '00:00:00', :te => '23:59:59', :subtype => 'startup',
                :start => actions.size - 1}
 
       events << event
@@ -380,7 +385,7 @@ class ConfigMigration
         if m.has_key?('interval')
           action = {:desc => "#{m[:module]} iteration", :_mig => true, :subactions => [{:action => 'module', :status => 'start', :module => m[:module]}] }
           actions << action
-          event = {:event => 'timer', :_mig => true, :desc => "#{m[:module]} loop", :enabled => m[:_ena],
+          event = {:event => 'timer', :_mig => true, :desc => "#{m[:module]} loop", :subtype => 'loop', :enabled => m[:_ena],
                    :ts => '00:00:00', :te => '23:59:59',
                    :repeat => actions.size - 1, :delay => m['interval'].to_i}
           m.delete(:_ena)

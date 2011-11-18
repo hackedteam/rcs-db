@@ -100,7 +100,7 @@ class RESTResponse
     resp.status_string = ::Net::HTTPResponse::CODE_TO_OBJ["#{resp.status}"].name.gsub(/Net::HTTP/, '')
 
     begin
-      resp.content = (content_type == 'application/json') ? @content.to_json : @content
+      resp.content = (@content_type == 'application/json') ? @content.to_json : @content
     rescue Exception
       resp.status = STATUS_SERVER_ERROR
       resp.content = 'JSON_SERIALIZATION_ERROR'

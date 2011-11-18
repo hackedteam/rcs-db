@@ -126,8 +126,12 @@ class CollectorController < RESTController
     mongoid_query do
       collector = Collector.find(@params['_id'])
 
-      klass = CappedLog.collection_class collector[:_id]
-      klass.destroy_all
+      # we cannot call delete_all on a capped collection
+      # we must drop it:
+      # http://www.mongodb.org/display/DOCS/Capped+Collections#CappedCollections-UsageandRestrictions
+      db = Mongoid.database
+      logs = db.collection(CappedLog.collection_name(collector[:_id]))
+      logs.drop
 
       return RESTController.reply.ok
     end

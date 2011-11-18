@@ -1,15 +1,19 @@
 HIGH PRIORITY:
 
-    split gridfs? + sharding
-
-    integrity check on Items
-
+    sync / async file transfers !!!  (daniele)
+        - even from the public on the collector
+         
     complete the worker decoding
 
     distributed workers (same as shards)
         - mongos should be accessible by all the workers
+        - modify the NSIS to install the worker together with the shards
 
-    evidence methods
+    build (in progress, alor)
+
+    evidence grid methods
+
+    remove objects that references an item on deletion (rules, alerts, dashboard, recent)
 
 MEDIUM PRIORITY:
 
@@ -17,27 +21,24 @@ MEDIUM PRIORITY:
 
     rename proxy -> injector
 
-    proxy config methods
-
     Local Exploit portal
 
-    modify the NSIS to install the worker together with the shards
+    Alerting daemon
+
+    Blotter (browsing like console)
 
 LOW PRIORITY:
-
-    config
-
-    build
 
     get time via http (collector)
 
     dongle dll 
 
+    rubyencoder for 1.9.3 does NOT exist yet... :(
+
     mongo authentication
 
-    Alerting daemon
+    443 is the default port
 
-    Documentation
 
 FUTURE:
 

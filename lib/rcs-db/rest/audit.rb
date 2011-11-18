@@ -13,36 +13,6 @@ module DB
 
 class AuditController < RESTController
 
-  # TODO: remove this method, audit export should be created by task/create based on type
-  def create
-    require_auth_level :view
-    
-    file_name = "#{@params['file_name']}.tar.gz"
-    
-    trace :debug, "Exporting logs with filename #{file_name} and filter #{@params['filter']}"
-    
-    # export audit logs
-    
-    audits = ::Audit.filter(@params['filter'])
-    audits ||= ::Audit.all
-
-    # TODO: temporary file directory creation should be dictated by generator
-    tmpfile = Temporary.file('temp', @params['file_name'])
-    begin
-      trace :debug, "storing temporary audit export in #{tmpfile.path}"
-      # write headers
-      tmpfile.write ::Audit.field_names.to_csv
-      audits.each do |p|
-        tmpfile.write p.to_flat_array.to_csv
-      end
-    ensure
-      tmpfile.close
-    end
-    
-    return RESTController.reply.not_found if tmpfile.nil?
-    return RESTController.reply.stream_file(tmpfile.path)
-  end
-
   def index
     require_auth_level :admin
     

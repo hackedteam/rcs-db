@@ -13,10 +13,12 @@ class UploadController < RESTController
     path = File.join Dir.tmpdir, name
 
     File.open(path, "wb+") do |f|
-      f.write @request[:content]
+      # pay attention to multipart uploaded files.
+      # this works if the client send the part named 'content' inside the query.
+      f.write @request[:content]['content']
     end
 
-    Audit.log :actor => @session[:user][:name], :action => 'upload.create', :desc => "Uploaded #{@request[:content].size.to_s_bytes} bytes"
+    Audit.log :actor => @session[:user][:name], :action => 'upload.create', :desc => "Uploaded #{@request[:content]['content'].size.to_s_bytes} bytes"
 
     return RESTController.reply.ok(name, {:content_type => 'text/plain'})
   end

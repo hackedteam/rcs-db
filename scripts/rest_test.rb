@@ -20,8 +20,8 @@ http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
 # login
 account = {
-  :user => 'admin', 
-  :pass => 'adminp123'
+  :user => 'daniele', 
+  :pass => 'danielep123'
   }
 resp = http.request_post('/auth/login', account.to_json, nil)
 puts "auth.login"
@@ -476,6 +476,24 @@ if false
   ret = http.delete("/proxy/#{proxy_id}", {'Cookie' => cookie})
   puts ret
   
+  
+  
+end
+
+# proxy config
+if false
+  
+  # proxy.config
+  res = http.request_get("/proxy/config/4e9ec80d2afb657230001012", {'Cookie' => cookie})
+  puts "proxy.config"
+  puts res.body
+  
+  File.open('config.zip', 'wb+') do |f|
+    f.write res.body
+  end
+
+  puts "File saved (#{res.body.size})"
+
 end
 
 # collector
@@ -727,7 +745,27 @@ if false
   agent = JSON.parse(res.body)
   puts agent
   puts
-   
+  
+  puts "agent.add_config"
+  agent_post = {
+    _id: agent['_id'],
+    config: "{active: true}"
+  }
+  res = http.request_post("/agent/add_config", agent_post.to_json, {'Cookie' => cookie})
+  puts res.body
+  config = JSON.parse(res.body)
+  puts config['config']
+  puts
+  
+  puts "agent.del_config"
+  agent_post = {
+    _id: agent['_id'],
+    config_id: config['_id']
+  }
+  res = http.request_post("/agent/del_config", agent_post.to_json, {'Cookie' => cookie})
+  puts res.body
+  puts
+  
   puts "agent.delete"
   res = http.request_post("/agent/destroy", {_id: agent['_id']}.to_json, {'Cookie' => cookie})
   puts res.body
@@ -778,6 +816,26 @@ if false
   puts res.body
   factory = JSON.parse(res.body)
   puts factory
+  puts
+  
+  puts "factory.add_config"
+  agent_post = {
+    _id: factory['_id'],
+    config: "{active: true}"
+  }
+  res = http.request_post("/factory/add_config", agent_post.to_json, {'Cookie' => cookie})
+  puts res.body
+  config = JSON.parse(res.body)
+  puts config['config']
+  puts
+  
+  puts "factory.del_config"
+  agent_post = {
+    _id: factory['_id'],
+    config_id: config['_id']
+  }
+  res = http.request_post("/factory/del_config", agent_post.to_json, {'Cookie' => cookie})
+  puts res.body
   puts
   
   puts "factory.delete"
@@ -908,6 +966,46 @@ if false
   #puts res.body
   #puts
   
+  
+end
+  
+# evidence
+if false
+  # evidence.index
+  filter = {target: '4ea526392afb656f0600003e'}.to_json
+  res = http.request_get(URI.escape("/evidence?filter=#{filter}&startIndex=0&numItems=10"), {'Cookie' => cookie})
+  puts "evidence.index"
+  puts res
+  puts
+  
+  # evidence.index
+  filter = {target: '4ea526392afb656f0600003e', agent: '4ea526392afb656f06000133', type: ['keylog']}.to_json
+  res = http.request_get(URI.escape("/evidence?filter=#{filter}&startIndex=0&numItems=10"), {'Cookie' => cookie})
+  puts "evidence.index"
+  puts res
+  puts
+
+end
+    
+# config    
+if false
+  
+  puts "agent.add_config"
+  agent_post = {
+    _id: '4ea526392afb656f06000097',
+    desc: "nuova config via rest",
+    config: "{active: true}"
+  }
+  res = http.request_post("/agent/add_config", agent_post.to_json, {'Cookie' => cookie})
+  puts res.body
+  config = JSON.parse(res.body)
+  puts config['config']
+  puts
+  
+  puts "agent.show"
+  res = http.request_get("/agent/4ea526392afb656f06000097", {'Cookie' => cookie})
+  puts res.body
+  puts
   
 end
 

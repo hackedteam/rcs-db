@@ -1,2 +1,0 @@
---- 
-BUNDLE_BUILD__MYSQL2: --with-mysql-include=c:\mysql\include --with-mysql-lib=c:\mysql\lib\opt

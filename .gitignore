@@ -42,9 +42,12 @@ Gemfile.lock
 log/*
 
 # certs
-config/*.pem
-config/*.crt
-config/*.key
+rcs-db.crt
+rcs-db.key
+rcs.pem
+config/certs/symbian.key
+config/certs/symbian.cer
+
 
 # config
 config/config.yaml
@@ -69,5 +72,10 @@ nsis/*.exe
 scripts/*.xml
 scripts/*.json
 scripts/*.bson
+scripts/*.zip
 
+# backup dir
 backups/
+
+# cores
+cores/

@@ -1,3 +1,4 @@
+# encoding: utf-8
 #
 #  Heartbeat to update the status of the component in the db
 #
@@ -31,6 +32,9 @@ class HeartBeat
 
     # check the status of the DB shards
     check_shards
+
+    # check if someone has tampered with the license.rb file
+    dont_steal_rcs
 
     # report our status to the db
     component = "RCS::DB"
@@ -78,6 +82,15 @@ class HeartBeat
       trace :fatal, "Cannot perform shard check: #{e.message}"
     end
   end
+
+  def self.dont_steal_rcs
+    if LicenseManager::DONT_STEAL_RCS != "Ò€‹›ﬁﬂ‡°·‚æ…¬˚∆˙©ƒ∂ß´®†¨ˆøΩ≈ç√∫˜µ≤¡™£¢∞§¶•ªº" or
+       Dongle::DONT_STEAL_RCS != "∆©ƒø†£¢∂øª˚¶∞¨˚˚˙†´ßµ∫√Ïﬁˆ¨Øˆ·‰ﬁÎ¨"
+      trace :fatal, "TAMPERED SOURCE CODE: don't steal RCS, now you are in trouble..."
+      exit!
+    end
+  end
+
 end
 
 end #Collector::

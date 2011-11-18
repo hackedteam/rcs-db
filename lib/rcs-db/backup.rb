@@ -103,10 +103,10 @@ class BackupManager
       end
 
       # gridfs entries linked to backed up collections
-      system mongodump + " -c fs.files -q '#{params[:gfilter]}'"
+      system mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.files -q '#{params[:gfilter]}'"
       # use the same query to retrieve the chunk list
       params[:gfilter]['_id'] = 'files_id' unless params[:gfilter]['_id'].nil?
-      system mongodump + " -c fs.chunks -q '#{params[:gfilter]}'"
+      system mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.chunks -q '#{params[:gfilter]}'"
 
       Audit.log :actor => '<system>', :action => 'backup.end', :desc => "Backup #{backup.name} completed"
 
@@ -148,9 +148,8 @@ class BackupManager
       case item[:_kind]
         when 'target'
           params[:coll] << "evidence.#{item._id}"
-          # TODO: uncomment this
-          #params[:coll] << "grid.#{item._id}.files"
-          #params[:coll] << "grid.#{item._id}.chunks"
+          params[:coll] << "grid.#{item._id}.files"
+          params[:coll] << "grid.#{item._id}.chunks"
 
         when 'agent'
           item.upload_requests.each do |up|

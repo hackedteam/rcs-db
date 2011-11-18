@@ -66,7 +66,7 @@ class Evidence
           agent.save
           
           # drop the file (if any) in grid
-          GridFS.instance.delete self.data[:_grid].first unless self.data[:_grid].nil?
+          GridFS.delete(self.data[:_grid].first, agent.path.last.to_s) unless self.data[:_grid].nil?
         end
       end
     END

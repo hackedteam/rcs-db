@@ -18,7 +18,7 @@ module DB
 
 class NotAuthorized < StandardError
   def initialize(actual, required)
-    @message = "#{actual} not in #{required}"
+    @message = "required priv is #{required} you have #{actual}"
     super @message
   end
 end
@@ -28,6 +28,12 @@ class RESTController
   
   # the parameters passed on the REST request
   attr_reader :session, :request
+  
+  @controllers = {}
+  
+  def self.register(klass)
+    @controllers[klass.to_s] = RCS::DB.const_get(klass) if klass.to_s.end_with? "Controller"
+  end
   
   def self.sessionmanager
     @session_manager || SessionManager.instance
@@ -41,8 +47,8 @@ class RESTController
     name = request[:controller]
     return nil if name.nil?
     begin
-      controller = eval("#{name}").new
-    rescue NameError => e
+      controller = @controllers["#{name}"].new
+    rescue Exception => e
       controller = InvalidController.new
     end
       controller.request = request
@@ -175,6 +181,16 @@ class InvalidController < RESTController
     trace :error, "Invalid controller invoked: #{@request[:controller]}/#{@request[:action]}. Replied 404."
     RESTController.reply.not_found
   end
+end
+
+# require all the controllers
+Dir[File.dirname(__FILE__) + '/rest/*.rb'].each do |file|
+  require file
+end
+
+# register all controllers into RESTController
+RCS::DB.constants.keep_if{|x| x.to_s.end_with? 'Controller'}.each do |klass|
+  RCS::DB::RESTController.register klass
 end
 
 end #DB::

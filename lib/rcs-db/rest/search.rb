@@ -9,7 +9,7 @@ module DB
 class SearchController < RESTController
   
   def index
-    require_auth_level :admin, :tech, :view
+    require_auth_level :admin, :tech, :view, :sys
     
     filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
     filter ||= {}
@@ -17,7 +17,7 @@ class SearchController < RESTController
     mongoid_query do
       items = ::Item.where(filter)
         .any_in(_id: @session[:accessible])
-        .only(:name, :desc, :status, :_kind, :path, :stat)
+        .only(:name, :desc, :status, :_kind, :path, :stat, :type, :platform, :instance, :version, :demo)
       
       RESTController.reply.ok(items)
     end

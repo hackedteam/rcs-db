@@ -37,14 +37,14 @@ puts "Starting the config server (#{rcs_config['CN']})..."
 parameters = "--dbpath #{configdir} --fork --nssize 64 --logpath #{logdir}/mongoc.log --configsvr --rest"
 `#{mongod} #{parameters}`
 
-sleep 1
+sleep 4
 
 puts "Starting the router..."
 # the shard router
 parameters = "--logpath #{logdir}/mongos.log --fork --configdb #{rcs_config['CN']} --bind_ip localhost"
 `#{mongos} #{parameters}`
 
-sleep 1
+sleep 2
 
 puts "Starting the shard server..."
 # the shard server

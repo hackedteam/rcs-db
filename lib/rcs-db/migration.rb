@@ -29,44 +29,20 @@ class Migration
   
   def run(options)
 
-    # if we can't find the trace config file, default to the system one
-    if File.exist? 'trace.yaml' then
-      typ = Dir.pwd
-      ty = 'trace.yaml'
-    else
-      typ = File.dirname(File.dirname(File.dirname(__FILE__)))
-      ty = typ + "/config/trace.yaml"
-      #puts "Cannot find 'trace.yaml' using the default one (#{ty})"
-    end
-
-    # ensure the log directory is present
-    Dir::mkdir(Dir.pwd + '/log') if not File.directory?(Dir.pwd + '/log')
-
-    # initialize the tracing facility
-    begin
-      trace_init typ, ty
-    rescue Exception => e
-      puts e
-      exit
-    end
+    # setup the trace facility
+    RCS::DB::Application.trace_setup
     
     # config file parsing
     return 1 unless Config.instance.load_from_file
     
     # connect to MongoDB
-    begin
-      Mongoid.load!(Dir.pwd + '/config/mongoid.yaml')
-      Mongoid.configure do |config|
-        config.master = Mongo::Connection.new.db('rcs')
-        #config.logger = Logger.new $stdout
-      end
-    rescue Exception => e
-      trace :fatal, e
-      exit
-    end
+    return 1 unless DB.instance.connect
 
     DB.instance.mysql_connect options[:user], options[:pass], options[:db_address]
-    
+
+    # ensure the sharding is enabled
+    DB.instance.enable_sharding
+
     # start the migration
     unless options[:log] then
       Audit.log actor: '<system>', action: 'migration', desc: "Migrating data from #{options[:db_address]}..."
