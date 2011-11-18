@@ -55,8 +55,7 @@ class Build
     core = ::Core.where({name: @platform}).first
     raise "Core for #{@platform} not found" if core.nil?
 
-    tmp = GridFS.to_tmp core[:_grid].first
-    @core = File.open(tmp, 'rb')
+    @core = GridFS.to_tmp core[:_grid].first
     trace :debug, "Build: loaded core: #{@platform} #{core.version} #{@core.size} bytes"
 
     @factory = ::Item.where({_kind: 'factory', _id: params['_id']}).first
@@ -66,9 +65,9 @@ class Build
   end
 
   def unpack
-    trace :debug, "Build: unpack: #{@core.path}"
+    trace :debug, "Build: unpack: #{@core}"
 
-    Zip::ZipFile.open(@core.path) do |z|
+    Zip::ZipFile.open(@core) do |z|
       z.each do |f|
         f_path = path(f.name)
         FileUtils.mkdir_p(File.dirname(f_path))
@@ -78,7 +77,7 @@ class Build
     end
 
     # delete the tmpfile of the core
-    FileUtils.rm_rf @core.path
+    FileUtils.rm_rf @core
   end
 
   def patch(params)
