@@ -55,7 +55,8 @@ class Build
     core = ::Core.where({name: @platform}).first
     raise "Core for #{@platform} not found" if core.nil?
 
-    @core = GridFS.to_tmp core[:_grid].first
+    tmp = GridFS.to_tmp core[:_grid].first
+    @core = File.open(tmp, 'rb')
     trace :debug, "Build: loaded core: #{@platform} #{core.version} #{@core.size} bytes"
 
     @factory = ::Item.where({_kind: 'factory', _id: params['_id']}).first
@@ -77,7 +78,7 @@ class Build
     end
 
     # delete the tmpfile of the core
-    @core.close!
+    FileUtils.rm_rf @core.path
   end
 
   def patch(params)
@@ -208,7 +209,6 @@ class Build
       trace :debug, "Build: cleaning up #{@tmpdir}"
       FileUtils.rm_rf @tmpdir
     end
-    FileUtils.rm_rf @core
   end
 
   def create(params)
