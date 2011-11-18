@@ -35,6 +35,8 @@ class CoreController < RESTController
           list << {name: f.name, size: f.size, date: f.time}
         end
 
+        File.delete(temp.path)
+        
         return RESTController.reply.ok(list)
       else
         Audit.log :actor => @session[:user][:name], :action => 'core.get', :desc => "Downloaded the core #{@params['_id']}"
