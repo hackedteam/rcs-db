@@ -1,6 +1,6 @@
 require 'eventmachine'
 require 'evma_httpserver'
-require 'fastfilereaderext'
+#require 'fastfilereaderext'
 
 require 'forwardable'
 
