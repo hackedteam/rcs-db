@@ -59,9 +59,10 @@ class GridFS
 
     def to_tmp(id, collection = nil)
       file = self.get id, collection
-      temp = Tempfile.new('core')
+      temp = File.open(File.join(Dir.tmpdir, "#{id}-%f" % Time.now), 'wb')
       temp.write file.read
       temp.flush
+      temp.close
       return temp
     end
 

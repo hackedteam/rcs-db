@@ -208,6 +208,7 @@ class Build
       trace :debug, "Build: cleaning up #{@tmpdir}"
       FileUtils.rm_rf @tmpdir
     end
+    FileUtils.rm_rf @core
   end
 
   def create(params)
