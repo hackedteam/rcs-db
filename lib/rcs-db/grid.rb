@@ -63,7 +63,7 @@ class GridFS
       temp.write file.read
       temp.flush
       temp.close
-      return temp
+      return temp.path
     end
 
     def delete_by_agent(agent, collection = nil)
