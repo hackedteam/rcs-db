@@ -38,6 +38,9 @@ class Build
   def initialize
     @outputs = []
     @scrambled = {}
+    @tmpdir = File.join Dir.tmpdir, "%f" % Time.now
+    trace :debug, "Build: init: #{@tmpdir}"
+    Dir.mkdir @tmpdir
   end
 
   def self.factory(platform)
@@ -59,14 +62,9 @@ class Build
     raise "Factory #{params['ident']} not found" if @factory.nil?
     
     trace :debug, "Build: loaded factory: #{@factory.name}"
-
-    @tmpdir = File.join Dir.tmpdir, "%f" % Time.now
   end
 
   def unpack
-    trace :debug, "Build: creating: #{@tmpdir}"
-    Dir.mkdir @tmpdir
-
     trace :debug, "Build: unpack: #{@core.path}"
 
     Zip::ZipFile.open(@core.path) do |z|
@@ -84,7 +82,7 @@ class Build
 
   def patch(params)
     # skip the phase if not needed
-    return if params[:core].nil?
+    return if params.nil? or params[:core].nil?
 
     trace :debug, "Build: patching [#{params[:core]}] file"
 

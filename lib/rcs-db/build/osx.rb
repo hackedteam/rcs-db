@@ -77,7 +77,7 @@ class BuildOSX < Build
     @executable_name = 'install'
 
     # the user has provided a file to melt with
-    if params['input']
+    if params and params['input']
       FileUtils.mv File.join(Dir.tmpdir, params['input']), path('input')
 
       exe = ''

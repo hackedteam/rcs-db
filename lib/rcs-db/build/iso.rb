@@ -8,7 +8,7 @@ require 'rcs-common/trace'
 module RCS
 module DB
 
-class BuildIOS < Build
+class BuildISO < Build
 
   def initialize
     super

