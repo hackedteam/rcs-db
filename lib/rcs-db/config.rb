@@ -76,6 +76,11 @@ class Config
       return false
     end
 
+    if Config.instance.global['BACKUP_DIR'].nil? or not File.exist? Config.instance.global['BACKUP_DIR'] then
+      trace :fatal, "Backup dir not configured, please configure it"
+      return false
+    end
+
     return true
   end
 
