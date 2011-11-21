@@ -59,27 +59,18 @@ class CrossPlatform
 
       command += " " + params
 
-      # setup the pipe to read the ouput of the child command
-      # redirect stderr to stdout and read only stdout
-      rd, wr = IO.pipe
-      options[:err] = :out
-      options[:out] = wr
-      
+      # redirect the output
+      cmd_run = command + " 2>&1" unless command =~ /2>&1/
+      process = ''
+      output = ''
+
       #trace :debug, "Executing [#{options}]: #{command}"
 
-      # execute the whole command and catch the output
-      #output = %x[#{command}]
-      spawn(command, options)
-
-      # wait for the child to die
-      Process.wait
-
-      # read its output from the pipe
-      wr.close
-      output = rd.read
-
-      $?.success? || raise("failed to execute command [#{File.basename(original_command)}] output: #{output}")
-
+      IO.popen(cmd_run) {|f|
+        output = f.read
+        process = Process.waitpid2(f.pid)[1]
+      }
+      process.success? || raise("failed to execute command [#{File.basename(original_command)}] output: #{output}")
     end
 
   end

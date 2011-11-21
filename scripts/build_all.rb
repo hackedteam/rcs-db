@@ -66,7 +66,7 @@ if RUBY_PLATFORM =~ /mingw/
   system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o winmo_local.zip" or raise("Failed")
   params[:package][:type] = 'remote'
   File.open('build.json', 'w') {|f| f.write params.to_json}
-  system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o blackberry_remote.zip" or raise("Failed")
+  system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o winmo_remote.zip" or raise("Failed")
 end
 ###################################################################################################
 ###################################################################################################
