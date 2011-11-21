@@ -31,11 +31,11 @@ class CoreController < RESTController
         temp = GridFS.to_tmp core[:_grid].first
 
         list = []
-        Zip::ZipFile.foreach(temp.path) do |f|
+        Zip::ZipFile.foreach(temp) do |f|
           list << {name: f.name, size: f.size, date: f.time}
         end
 
-        File.delete(temp.path)
+        File.delete(temp)
         
         return RESTController.reply.ok(list)
       else
