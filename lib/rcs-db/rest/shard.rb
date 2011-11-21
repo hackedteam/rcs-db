@@ -19,7 +19,6 @@ class ShardController < RESTController
     require_auth_level :sys
 
     stats = Shard.find(@params['_id'])
-
     return RESTController.reply.ok(stats)
   end
 

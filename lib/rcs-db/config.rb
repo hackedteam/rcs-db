@@ -21,7 +21,7 @@ class Config
   CERT_DIR = CONF_DIR + '/certs'
   CONF_FILE = 'config.yaml'
 
-  DEFAULT_CONFIG = {'CN' => 'localhost',
+  DEFAULT_CONFIG = {'CN' => '127.0.0.1',
                     'CA_PEM' => 'rcs.pem',
                     'DB_CERT' => 'rcs-db.crt',
                     'DB_KEY' => 'rcs-db.key',
@@ -154,7 +154,7 @@ class Config
   def reset_admin(options)
     trace :info, "Resetting 'admin' password..."
 
-    http = Net::HTTP.new('localhost', 4444)
+    http = Net::HTTP.new('127.0.0.1', 4444)
     http.use_ssl = true
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
@@ -165,7 +165,7 @@ class Config
   def add_shard(options)
     trace :info, "Adding this host as db shard..."
 
-    http = Net::HTTP.new(options[:db_address] || 'localhost', options[:db_port] || 4444)
+    http = Net::HTTP.new(options[:db_address] || '127.0.0.1', options[:db_port] || 4444)
     http.use_ssl = true
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 

@@ -11,20 +11,21 @@ class Shard
   extend RCS::Tracer
 
   def self.count
-    db = Mongo::Connection.new("localhost").db("admin")
+    db = Mongo::Connection.new("127.0.0.1").db("admin")
     list = db.command({ listshards: 1 })
     list['shards'].size
   end
 
   def self.all
-    db = Mongo::Connection.new("localhost").db("admin")
+    t = Time.now
+    db = Mongo::Connection.new("127.0.0.1").db("admin")
     db.command({ listshards: 1 })
   end
 
   def self.create(host)
     trace :info, "Creating new shard: #{host}"
     begin
-      db = Mongo::Connection.new("localhost").db("admin")
+      db = Mongo::Connection.new("127.0.0.1").db("admin")
       db.command({ addshard: host })
     rescue Exception => e
       {'errmsg' => e.message, 'ok' => 0}
@@ -34,7 +35,7 @@ class Shard
   def self.destroy(host)
     trace :info, "Destroying shard: #{host}"
     begin
-      db = Mongo::Connection.new("localhost").db("admin")
+      db = Mongo::Connection.new("127.0.0.1").db("admin")
       db.command({ removeshard: host })
     rescue Exception => e
       {'errmsg' => e.message, 'ok' => 0}
@@ -58,7 +59,7 @@ class Shard
 
   def self.enable(database)
     begin
-      db = Mongo::Connection.new("localhost").db("admin")
+      db = Mongo::Connection.new("127.0.0.1").db("admin")
       db.command({ enablesharding: database })
     rescue Exception => e
       error = db.command({ getlasterror: 1})
@@ -73,7 +74,7 @@ class Shard
       collection.create_index(key.to_a)
 
       # switch to 'admin' and create the shard
-      db = Mongo::Connection.new("localhost").db("admin")
+      db = Mongo::Connection.new("127.0.0.1").db("admin")
       db.command({ shardcollection: collection.stats['ns'], key: key })
 
     rescue Exception => e

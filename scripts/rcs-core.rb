@@ -18,7 +18,7 @@ class CoreDeveloper
   attr_accessor :cert
 
   def login(host, port, user, pass)
-    @host = host || 'localhost'
+    @host = host || '127.0.0.1'
     @port = port || 4444
     @http = Net::HTTP.new(@host, @port)
     @http.use_ssl = true
@@ -172,6 +172,7 @@ class CoreDeveloper
     params['melt'][:input] = @input unless @input.nil?
 
     # set the cert file for the signing process
+    params['sign'] ||= {}
     params['sign'][:cert] = @cert unless @cert.nil?
     
     puts "Building the agent with the following parameters:"
