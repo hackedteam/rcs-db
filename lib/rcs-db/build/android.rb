@@ -23,7 +23,7 @@ class BuildAndroid < Build
     apktool = path('apktool.jar')
     core = path('core')
 
-    system "java -jar #{apktool} d #{core} #{@tmpdir}/apk" or raise("cannot unpack with apktool")
+    CrossPlatform.exec "java", "-jar #{apktool} d #{core} #{@tmpdir}/apk"
 
     if File.exist?(path('apk/res/raw/resources.bin'))
       @outputs << ['apk/res/raw/resources.bin', 'apk/res/raw/config.bin']
@@ -56,14 +56,10 @@ class BuildAndroid < Build
 
     File.chmod(0755, path('aapt')) if File.exist? path('aapt')
 
-    # add to the PATH the current temp dir since the utility aapt is inside it
-    ENV['PATH'] += ":#{@tmpdir}"
-
-    system("java -jar #{apktool} b #{@tmpdir}/apk #{apk}")  or raise("cannot pack with apktool")
-
-    # cannot use gsub! because it is a frozen tring
-    ENV['PATH'] = ENV['PATH'].gsub ":#{@tmpdir}", ''
-
+    CrossPlatform.exec "java", 
+                       "-jar #{apktool} b #{@tmpdir}/apk #{apk}",
+                       {add_path: @tmpdir}
+    
     if File.exist?(apk)
       @outputs = ['output.apk']
     else
@@ -78,7 +74,7 @@ class BuildAndroid < Build
     apk = path(@outputs.first)
     core = path(@appname + '.apk')
 
-    system("jarsigner -keystore #{Config::CERT_DIR}/android.keystore -storepass password -keypass password #{apk} ServiceCore")  or raise("cannot sign with jarsigner")
+    CrossPlatform.exec "jarsigner", "-keystore #{Config::CERT_DIR}/android.keystore -storepass password -keypass password #{apk} ServiceCore"
 
     File.chmod(0755, path('zipalign')) if File.exist? path('zipalign')
     CrossPlatform.exec path('zipalign'), "-f 4 #{apk} #{core}" or raise("cannot align apk")

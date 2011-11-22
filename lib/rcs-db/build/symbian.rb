@@ -112,6 +112,8 @@ class BuildSymbian < Build
 
     trace :debug, "Build: final installer #{params['edition']}"
 
+    raise "invalid edition" if params['edition'].nil?
+    
     CrossPlatform.exec path('makesis'), "installer-#{params['edition']}.pkg installer.sis", {chdir: path('')}
     File.exist? path('installer.sis') or raise("makesis failed for installer")
 

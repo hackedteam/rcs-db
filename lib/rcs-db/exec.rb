@@ -18,9 +18,11 @@ class CrossPlatform
         when /darwin/
           @platform = 'osx'
           @ext = ''
+          @separator = ':'
         when /mingw/
           @platform = 'win'
           @ext = '.exe'
+          @separator = ';'
       end
     end
 
@@ -34,17 +36,17 @@ class CrossPlatform
       @ext
     end
 
-    def exec(command, params = "", options = {})
+    def separator
+      @separator || init
+      @separator
+    end
 
-      # append the specific extension for this platform
-      command += ext
+    def exec(command, params = "", options = {})
 
       original_command = command
 
-      # if the file does not exist on windows, we have huge problems
-      if platform == 'win' and not File.exist? command
-        raise "File not found: #{command}"
-      end
+      # append the specific extension for this platform
+      command += ext
 
       # if it does not exists on osx, try to execute the windows one with wine
       if platform == 'osx' and not File.exist? command
@@ -52,25 +54,60 @@ class CrossPlatform
         if File.exist? command
           trace :debug, "Using wine to execute a windows command..."
           command.prepend("wine ")
-        else
-          raise "File not found: #{command}"
         end
+      end
+
+      # if the file does not exists, search in the path falling back to 'system'
+      unless File.exist? command
+        # if needed add the path specified to the Environment
+        ENV['PATH'] = "#{options[:add_path]}#{separator}" + ENV['PATH']  if options[:add_path]
+
+        success = system command + " " + params
+
+        # restore the environment
+        ENV['PATH'] = ENV['PATH'].gsub("#{options[:add_path]}#{separator}", '') if options[:add_path]
+
+        success or raise("failed to execute command [#{File.basename(original_command)}]")
+        return
       end
 
       command += " " + params
 
-      # redirect the output
-      cmd_run = command + " 2>&1" unless command =~ /2>&1/
-      process = ''
-      output = ''
+      # without options we can use POPEN (needed by the windows dropper)
+      if options == {} then
+        # redirect the output
+        cmd_run = command + " 2>&1" unless command =~ /2>&1/
+        process = ''
+        output = ''
 
-      #trace :debug, "Executing [#{options}]: #{command}"
+        #trace :debug, "Executing : #{command}"
 
-      IO.popen(cmd_run) {|f|
-        output = f.read
-        process = Process.waitpid2(f.pid)[1]
-      }
-      process.success? || raise("failed to execute command [#{File.basename(original_command)}] output: #{output}")
+        IO.popen(cmd_run) {|f|
+          output = f.read
+          process = Process.waitpid2(f.pid)[1]
+        }
+        process.success? || raise("failed to execute command [#{File.basename(original_command)}] output: #{output}")
+      else
+        # setup the pipe to read the ouput of the child command
+        # redirect stderr to stdout and read only stdout
+        rd, wr = IO.pipe
+        options[:err] = :out
+        options[:out] = wr
+
+        #trace :debug, "Executing [#{options}]: #{command}"
+
+        # execute the whole command and catch the output
+        pid = spawn(command, options)
+
+        # wait for the child to die
+        Process.waitpid(pid)
+
+        # read its output from the pipe
+        wr.close
+        output = rd.read
+
+        $?.success? || raise("failed to execute command [#{File.basename(original_command)}] output: #{output}")
+      end
     end
 
   end
