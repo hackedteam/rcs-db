@@ -39,6 +39,8 @@ LOW PRIORITY:
 
     443 is the default port
 
+    regsrv32 capicom.dll  (or run ruby as system)
+
     bundle config build.mysql2 --with-mysql-dir=c:\mysql --with-mysql-lib=c:\mysql\lib\opt
     gem install mysql2 --platform=ruby -- --with-mysql-dir=c:\mysql --with-mysql-lib=c:\mysql\lib\opt
 

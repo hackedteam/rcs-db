@@ -50,18 +50,18 @@ class CrossPlatform
 
       # if it does not exists on osx, try to execute the windows one with wine
       if platform == 'osx' and not File.exist? command
-        command += '.exe'
-        if File.exist? command
+        if File.exist? command + '.exe'
           trace :debug, "Using wine to execute a windows command..."
-          command.prepend("wine ")
+          command = "wine #{command}.exe"
         end
       end
 
       # if the file does not exists, search in the path falling back to 'system'
-      unless File.exist? command
+      if not File.exist? command and not command.start_with?('wine')
         # if needed add the path specified to the Environment
         ENV['PATH'] = "#{options[:add_path]}#{separator}" + ENV['PATH']  if options[:add_path]
 
+        #trace :debug, "Executing(system): #{command} #{params}"
         success = system command + " " + params
 
         # restore the environment
@@ -80,7 +80,7 @@ class CrossPlatform
         process = ''
         output = ''
 
-        #trace :debug, "Executing : #{command}"
+        #trace :debug, "Executing(popen): #{command}"
 
         IO.popen(cmd_run) {|f|
           output = f.read
@@ -88,13 +88,13 @@ class CrossPlatform
         }
         process.success? || raise("failed to execute command [#{File.basename(original_command)}] output: #{output}")
       else
-        # setup the pipe to read the ouput of the child command
+        # setup the pipe to read the output of the child command
         # redirect stderr to stdout and read only stdout
         rd, wr = IO.pipe
         options[:err] = :out
         options[:out] = wr
 
-        #trace :debug, "Executing [#{options}]: #{command}"
+        #trace :debug, "Executing(spawn) [#{options}]: #{command}"
 
         # execute the whole command and catch the output
         pid = spawn(command, options)
