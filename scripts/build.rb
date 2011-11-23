@@ -5,7 +5,7 @@ require 'json'
 USER = 'alor'
 PASS = 'demorcss'
 FACTORY = 'RCS_0000000001'
-PLATFORM = 'applet'
+PLATFORM = 'card'
 
 ###################################################################################################
 =begin
@@ -41,11 +41,9 @@ system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o 
 ###################################################################################################
 begin
 params = {platform: PLATFORM,
-          generate: {platforms: ['osx'],
-                     binary: {demo: true, admin: false},
-                     melt: {admin: false}
-                    },
-          melt: {appname: 'gino'}
+          generate: {platforms: ['winmo'],
+                     binary: {demo: true}
+                    }
           }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
