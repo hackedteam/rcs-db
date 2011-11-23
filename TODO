@@ -46,6 +46,8 @@ LOW PRIORITY:
 
 FUTURE:
 
+    jruby?
+
     correlation hooks
 
     forwarding hooks

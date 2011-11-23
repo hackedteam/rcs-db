@@ -49,34 +49,34 @@ class Config
       return false
     end
 
-    if not @global['DB_CERT'].nil? then
-      if not File.exist?(Config.instance.cert('DB_CERT')) then
+    if not @global['DB_CERT'].nil?
+      if not File.exist?(Config.instance.cert('DB_CERT'))
         trace :fatal, "Cannot open certificate file [#{@global['DB_CERT']}]"
         return false
       end
     end
 
-    if not @global['DB_KEY'].nil? then
-      if not File.exist?(Config.instance.cert('DB_KEY')) then
+    if not @global['DB_KEY'].nil?
+      if not File.exist?(Config.instance.cert('DB_KEY'))
         trace :fatal, "Cannot open private key file [#{@global['DB_KEY']}]"
         return false
       end
     end
 
-    if not @global['CA_PEM'].nil? then
-      if not File.exist?(Config.instance.cert('CA_PEM')) then
+    if not @global['CA_PEM'].nil?
+      if not File.exist?(Config.instance.cert('CA_PEM'))
         trace :fatal, "Cannot open PEM file [#{@global['CA_PEM']}]"
         return false
       end
     end
 
     # to avoid problems with checks too frequent
-    if (@global['HB_INTERVAL'] and @global['HB_INTERVAL'] < 10) then
+    if (@global['HB_INTERVAL'] and @global['HB_INTERVAL'] < 10)
       trace :fatal, "Interval too short, please increase it"
       return false
     end
 
-    if Config.instance.global['BACKUP_DIR'].nil? or not File.exist? Config.instance.global['BACKUP_DIR'] then
+    if Config.instance.global['BACKUP_DIR'].nil? or not File.exist? Config.instance.global['BACKUP_DIR']
       trace :fatal, "Backup dir not configured, please configure it"
       return false
     end
@@ -110,12 +110,12 @@ class Config
 
   def run(options)
 
-    if options[:reset] then
+    if options[:reset]
       reset_admin options
       return 0
     end
 
-    if options[:shard] then
+    if options[:shard]
       add_shard options
       return 0
     end
@@ -128,7 +128,7 @@ class Config
     pp @global
 
     # use the default values
-    if options[:defaults] then
+    if options[:defaults]
       @global = DEFAULT_CONFIG
     end
 

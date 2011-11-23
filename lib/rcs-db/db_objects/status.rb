@@ -64,7 +64,7 @@ class Status
         end
 
         # check disk and CPU usage
-        if m[:status] == OK and (m[:disk] <= 15 or m[:cpu] >= 85 or m[:pcpu] >= 85) then
+        if m[:status] == OK and (m[:disk] <= 15 or m[:cpu] >= 85 or m[:pcpu] >= 85)
           m[:status] = WARN
           trace :warn, "Component #{m[:name]} has low resources, raising a warning..."
           m.save

@@ -183,7 +183,7 @@ class Events
       end
     rescue RuntimeError => e
       # bind error
-      if e.message.start_with? 'no acceptor' then
+      if e.message.start_with? 'no acceptor'
         trace :fatal, "Cannot bind port #{Config.instance.global['LISTENING_PORT']}"
         return 1
       end

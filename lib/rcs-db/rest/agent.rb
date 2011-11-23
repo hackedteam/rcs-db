@@ -132,7 +132,7 @@ class AgentController < RESTController
     classes = {}
     
     # request for a specific instance
-    if @params['_id'] then
+    if @params['_id']
       Item.where({_kind: 'factory', ident: @params['_id']}).each do |entry|
           classes[entry[:ident]] = entry[:confkey]
       end
@@ -175,7 +175,7 @@ class AgentController < RESTController
 
       # if the agent was queued, but now we have a license, use it and set the status to open
       # a demo agent will never be queued
-      if agent[:status] == 'queued' and LicenseManager.instance.burn_one_license(agent.type.to_sym, agent.platform.to_sym) then
+      if agent[:status] == 'queued' and LicenseManager.instance.burn_one_license(agent.type.to_sym, agent.platform.to_sym)
         agent.status = 'open'
         agent.save
       end
@@ -213,7 +213,7 @@ class AgentController < RESTController
     agent.status = 'open' if demo
 
     # check the license to see if we have room for another agent
-    if demo == false and LicenseManager.instance.burn_one_license(agent.type.to_sym, agent.platform.to_sym) then
+    if demo == false and LicenseManager.instance.burn_one_license(agent.type.to_sym, agent.platform.to_sym)
       agent.status = 'open'
     end
 

@@ -32,7 +32,7 @@ module EventMachine
 	    # TODO: remove RCS dependency 
 	    @headers["Content-Type"] = RCS::MimeType.get @filename
 	    http_headers = @connection.instance_variable_get :@http_headers
-	    if http_headers.split("\x00").index {|h| h['Connection: keep-alive'] || h['Connection: Keep-Alive']} then
+	    if http_headers.split("\x00").index {|h| h['Connection: keep-alive'] || h['Connection: Keep-Alive']}
         # keep the connection open to allow multiple requests on the same connection
         # this will increase the speed of sync since it decrease the latency on the net
         keep_connection_open true
@@ -104,7 +104,7 @@ module EventMachine
       @headers["Content-Type"] ||= 'binary/octet-stream'
 	    
 	    http_headers = @connection.instance_variable_get :@http_headers
-	    if http_headers.split("\x00").index {|h| h['Connection: keep-alive'] || h['Connection: Keep-Alive']} then
+	    if http_headers.split("\x00").index {|h| h['Connection: keep-alive'] || h['Connection: Keep-Alive']}
         # keep the connection open to allow multiple requests on the same connection
         # this will increase the speed of sync since it decrease the latency on the net
         keep_connection_open true

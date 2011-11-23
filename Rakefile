@@ -39,7 +39,7 @@ task :default => :test
 def execute(message)
   print message + '...'
   STDOUT.flush
-  if block_given? then
+  if block_given?
     yield
   end
   puts ' ok'

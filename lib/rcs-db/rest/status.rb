@@ -24,7 +24,7 @@ class StatusController < RESTController
     require_auth_level :server
     
     # the ip address is not specified, we take the peer address
-    if @params['address'] == '' then
+    if @params['address'] == ''
       @params['address'] = @request[:peer]
     end
     

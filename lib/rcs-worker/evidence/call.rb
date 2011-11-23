@@ -13,11 +13,11 @@ module CallProcessing
     
     # enable enhancement
     enhancement_ptr = FFI::MemoryPointer.new(:int32).write_uint 1
-    Speex.decoder_ctl(decoder, Speex::SET_ENH, enhancement_ptr);
+    Speex.decoder_ctl(decoder, Speex::SET_ENH, enhancement_ptr)
     
     # get frame size
     frame_size_ptr = FFI::MemoryPointer.new(:int32).write_uint 0
-    Speex.decoder_ctl(decoder, Speex::GET_FRAME_SIZE, frame_size_ptr);
+    Speex.decoder_ctl(decoder, Speex::GET_FRAME_SIZE, frame_size_ptr)
     frame_size = frame_size_ptr.get_uint(0)
     
     raw_content = StringIO.new @content

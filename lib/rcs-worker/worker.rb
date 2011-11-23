@@ -140,7 +140,7 @@ class Worker
       return 0
     rescue Exception => e
       # bind error
-      if e.message.eql? 'no acceptor' then
+      if e.message.eql? 'no acceptor'
         trace :fatal, "Cannot bind port #{Config.instance.global['LISTENING_PORT']}"
         return 1
       end
@@ -158,7 +158,7 @@ class Application
   def run(options) #, file)
     
     # if we can't find the trace config file, default to the system one
-    if File.exist? 'trace.yaml' then
+    if File.exist? 'trace.yaml'
       typ = Dir.pwd
       ty = 'trace.yaml'
     else

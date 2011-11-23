@@ -13,7 +13,7 @@ class LogMigration
   
     puts "Migrating logs for:"
 
-    if activity.upcase == 'ALL' then
+    if activity.upcase == 'ALL'
       activities = Item.where({_kind: 'operation'})
     else
       activities = Item.where({_kind: 'operation', name: activity})
@@ -95,7 +95,7 @@ class LogMigration
 
         # calculate how many logs processed in a second or in a processing time of one log (whichever is lower)
         time = Time.now.to_i
-        if time != prev_time then
+        if time != prev_time
           processed = (current - prev_current) / (time - prev_time)
           speed = size / (time - prev_time)
           percentage = current.to_f / count * 100 if count != 0

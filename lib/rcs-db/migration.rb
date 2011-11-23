@@ -44,7 +44,7 @@ class Migration
     DB.instance.enable_sharding
 
     # start the migration
-    unless options[:log] then
+    unless options[:log]
       Audit.log actor: '<system>', action: 'migration', desc: "Migrating data from #{options[:db_address]}..."
       SignatureMigration.migrate options[:verbose]
 

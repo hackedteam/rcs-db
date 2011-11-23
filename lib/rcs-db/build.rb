@@ -138,7 +138,7 @@ class Build
     file.write content
     file.close
     
-    if params[:config] then
+    if params[:config]
       trace :debug, "Build: saving config to [#{params[:config]}] file"
 
       # retrieve the config and save it to a file

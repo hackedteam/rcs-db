@@ -74,7 +74,7 @@ class CrossPlatform
       command += " " + params
 
       # without options we can use POPEN (needed by the windows dropper)
-      if options == {} then
+      if options == {} 
         # redirect the output
         cmd_run = command + " 2>&1" unless command =~ /2>&1/
         process = ''

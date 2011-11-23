@@ -21,7 +21,7 @@ class Application
 
   def self.trace_setup
     # if we can't find the trace config file, default to the system one
-    if File.exist? 'trace.yaml' then
+    if File.exist? 'trace.yaml'
       typ = Dir.pwd
       ty = 'trace.yaml'
     else

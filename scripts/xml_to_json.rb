@@ -18,11 +18,11 @@ end
     def parse_globals(items)
       globals = {}
       items.each_pair do |key, value|
-        if key == 'quota' then
+        if key == 'quota'
           globals[:quota] = {:min => value.first['mindisk'].to_i*1024*1024, :max => value.first['maxlog'].to_i*1024*1024}
           globals[:wipe] = value.first['wipe'] == 'false' ? false : true
         end
-        if key == 'template' then
+        if key == 'template'
           globals[:type] = value.first['type']
         end
       end

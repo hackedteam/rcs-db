@@ -80,7 +80,7 @@ class SessionManager
     size = @sessions.length
     # search for timed out sessions
     @sessions.each_pair do |key, value|
-      if Time.now.getutc.to_i - value[:time] >= delta then
+      if Time.now.getutc.to_i - value[:time] >= delta
         
         # don't log timeout for the server
         unless value[:level].include? :server

@@ -46,7 +46,7 @@ class AuthController < RESTController
           # we have to check if it was already logged in
           # in this case, invalidate the previous session
           sess = SessionManager.instance.get_by_user(user)
-          unless sess.nil? then
+          unless sess.nil?
             Audit.log :actor => user, :action => 'logout', :user => user, :desc => "User '#{user}' forcibly logged out by system"
             SessionManager.instance.delete(sess[:cookie])
           end
@@ -129,7 +129,7 @@ class AuthController < RESTController
     end
 
     # the account is valid
-    if @user.verify_password(pass) then
+    if @user.verify_password(pass)
       # symbolize the privs array
       @user[:privs].each do |p|
         @auth_level << p.downcase.to_sym
