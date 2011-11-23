@@ -56,7 +56,7 @@ class Build
     raise "Core for #{@platform} not found" if core.nil?
 
     @core = GridFS.to_tmp core[:_grid].first
-    trace :debug, "Build: loaded core: #{@platform} #{core.version} #{@core.size} bytes"
+    trace :debug, "Build: loaded core: #{@platform} #{core.version} #{File.size(@core)} bytes"
 
     @factory = ::Item.where({_kind: 'factory', _id: params['_id']}).first
     raise "Factory #{params['ident']} not found" if @factory.nil?
@@ -216,10 +216,10 @@ class Build
     begin
       load params['factory']
       unpack
+      generate params['generate']
       patch params['binary']
       scramble
       melt params['melt']
-      generate params['generate']
       sign params['sign']
       pack params['package']
       deliver params['deliver']

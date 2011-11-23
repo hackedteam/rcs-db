@@ -76,6 +76,8 @@ class BuildAndroid < Build
 
     CrossPlatform.exec "jarsigner", "-keystore #{Config::CERT_DIR}/android.keystore -storepass password -keypass password #{apk} ServiceCore"
 
+    raise "jarsigner failed" unless File.exist? apk
+    
     File.chmod(0755, path('zipalign')) if File.exist? path('zipalign')
     CrossPlatform.exec path('zipalign'), "-f 4 #{apk} #{core}" or raise("cannot align apk")
 

