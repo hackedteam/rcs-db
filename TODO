@@ -2,6 +2,7 @@ HIGH PRIORITY:
 
     sync / async file transfers !!!  (daniele)
         - even from the public on the collector
+        - check to see if two upload from different backdoors are actually concurrent
 
     distributed workers, same as shards (daniele)
         - mongos should be accessible by all the workers (alor)

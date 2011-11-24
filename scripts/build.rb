@@ -4,6 +4,7 @@ require 'json'
 
 USER = 'alor'
 PASS = 'demorcss'
+HOST = '127.0.0.1'
 FACTORY = 'RCS_0000000001'
 PLATFORM = 'iso'
 
@@ -48,6 +49,6 @@ params = {platform: PLATFORM,
           }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
-system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o #{PLATFORM}.zip"
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{HOST} -f #{FACTORY} -b build.json -o #{PLATFORM}.zip"
 end
 ###################################################################################################
