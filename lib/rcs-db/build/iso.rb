@@ -25,8 +25,12 @@ class BuildISO < Build
   def generate(params)
     trace :debug, "Build: generate: #{params}"
 
+    # TODO: remove this !!
+    @outputs = ['winpe/sources/boot.wim']
+    return
+
     names = {}
-    
+
     params['platforms'].each do |platform|
       build = Build.factory(platform.to_sym)
 
@@ -84,10 +88,6 @@ class BuildISO < Build
 
     # this is the only file we need to output after this point
     @outputs = ['output.zip']
-  end
-
-  def deliver(params)
-    trace :debug, "Build: deliver: #{params}"
   end
 
 end

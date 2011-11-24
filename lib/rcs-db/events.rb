@@ -115,7 +115,12 @@ class HTTPHandler < EM::Connection
         # do the dirty job :)
         responder = controller.act!
         reply = responder.prepare_response(self)
+
+        puts "PREPARE RESPONSE: #{reply.class}"
+
         reply.send_response
+
+        puts "SEND RESPONSE"
 
         elapsed_time = Time.now - start_time
 
