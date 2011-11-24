@@ -48,7 +48,7 @@ class HTTPHandler < EM::Connection
     self.no_environment_strings
 
     # set the max content length of the POST
-    self.max_content_length = 30 * 1024 * 1024
+    self.max_content_length = 200 * 1024 * 1024
 
     # get the peer name
     @peer_port, @peer = Socket.unpack_sockaddr_in(get_peername)

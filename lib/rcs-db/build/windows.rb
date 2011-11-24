@@ -40,9 +40,10 @@ class BuildWindows < Build
     driver = scramble_name(config, 4)
     driver64 = scramble_name(config, 16)
     core64 = scramble_name(config, 15)
+    reg = '*' + scramble_name(dir, 1)[1..-1]
 
     @scrambled = {core: core, core64: core64, driver: driver, driver64: driver64,
-                  dir: dir, config: config, codec: codec }
+                  dir: dir, reg: reg, config: config, codec: codec }
 
     # call the super which will actually do the renaming
     # starting from @outputs and @scrambled
