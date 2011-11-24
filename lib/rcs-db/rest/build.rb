@@ -29,6 +29,8 @@ class BuildController < RESTController
       # TODO: convert to stream and pass the object to clean the file later
       content = File.open(build.path(build.outputs.first), 'rb') {|f| f.read}
 
+      trace :debug, "Output size: #{content.bytesize}"
+
       build.clean
       
       return RESTController.reply.ok(content, {content_type: 'binary/octet-stream'})

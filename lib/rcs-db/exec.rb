@@ -45,6 +45,8 @@ class CrossPlatform
 
       original_command = command
 
+      trace :debug, "Executing: #{File.basename(command)}"
+
       # append the specific extension for this platform
       command += ext
 

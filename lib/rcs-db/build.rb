@@ -38,7 +38,7 @@ class Build
   def initialize
     @outputs = []
     @scrambled = {}
-    @tmpdir = File.join Dir.tmpdir, "%f" % Time.now
+    @tmpdir = File.join Dir.tmpdir, "%f-%s" % [Time.now, SecureRandom.hex(8)]
     trace :debug, "Build: init: #{@tmpdir}"
     Dir.mkdir @tmpdir
   end
@@ -47,7 +47,7 @@ class Build
     begin
       @builders[platform].new
     rescue Exception => e
-      raise "Builder for #{platform} not found"
+      raise "Builder for #{platform} : #{e.message}"
     end
   end
 
