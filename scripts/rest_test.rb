@@ -1009,6 +1009,8 @@ if false
   
 end
 
+
+
 # logout
 res = http.request_post('/auth/logout', nil, {'Cookie' => cookie})
 puts

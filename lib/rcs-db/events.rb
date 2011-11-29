@@ -38,6 +38,8 @@ class HTTPHandler < EM::Connection
     # timeout on the socket
     set_comm_inactivity_timeout 60
 
+    @request_time = Time.now
+
     # we want the connection to be encrypted with ssl
     start_tls(:private_key_file => Config.instance.cert('DB_KEY'),
               :cert_chain_file => Config.instance.cert('DB_CERT'),
@@ -57,7 +59,7 @@ class HTTPHandler < EM::Connection
   end
 
   def ssl_handshake_completed
-    trace :debug, "SSL Handshake completed successfully"
+    trace :debug, "[#{@peer}] SSL Handshake completed successfully (#{Time.now - @request_time})"
   end
 
   def closed?
@@ -69,6 +71,7 @@ class HTTPHandler < EM::Connection
   end
 
   def unbind
+    trace :debug, "[#{@peer}] REP: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time}) #{@response_size.to_s_bytes}" if Config.instance.global['PERF']
     trace :debug, "Connection closed #{@peer}:#{@peer_port}"
     @closed = true
   end
@@ -95,14 +98,15 @@ class HTTPHandler < EM::Connection
     #   @http_headers
     
     #trace :debug, "[#{@peer}] Incoming HTTP Connection"
-    trace :debug, "[#{@peer}] Request: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string}"
+    size = (@http_post_content) ? @http_post_content.bytesize : 0
+    trace :debug, "[#{@peer}] REQ: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string}  #{size.to_s_bytes}"
     
     responder = nil
     
-    # Block which fulfills the request
+    # Block which fulfills the request (generate the data)
     operation = proc do
 
-      start_time = Time.now
+      generation_time = Time.now
       
       begin
         # parse all the request params
@@ -114,33 +118,61 @@ class HTTPHandler < EM::Connection
 
         # do the dirty job :)
         responder = controller.act!
+
+        # create the response object to be used in the EM::defer callback
         reply = responder.prepare_response(self)
 
-        puts "PREPARE RESPONSE: #{reply.class}"
+        # keep the size of the reply to be used in the closing method
+        @response_size = reply.content ? reply.content.bytesize : 0
 
-        reply.send_response
+        trace :debug, "[#{@peer}] GEN: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - generation_time}) #{@response_size.to_s_bytes}" if Config.instance.global['PERF']
 
-        puts "SEND RESPONSE"
+        reply
 
-        elapsed_time = Time.now - start_time
-
-        trace :warn, "[#{@peer}] Request: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{elapsed_time}) #{reply.headers['Content-length'].to_s_bytes}" if Config.instance.global['PERF']
-
-        # the controller job has finished, call the cleanup hook
-        controller.cleanup
       rescue Exception => e
         trace :error, e.message
         trace :fatal, "EXCEPTION(#{e.class}): " + e.backtrace.join("\n")
         
         responder = RESTController.reply.server_error('CONTROLLER_ERROR')
         reply = responder.prepare_response(self)
-        reply.send_response
+
+        reply
       end
 
     end
-    
+
+    # Block which fulfills the reply (send back the data to the client)
+    response = proc do |reply|
+        puts "SENDING RESPONSE"
+
+        if reply.class == EventMachine::DelegatedHttpFileResponse
+          puts "DELEGATED FILE RESPONSE"
+
+          stream = proc do
+            file = '/Volumes/RCS_DATA/RCS/rcs-db/cores/offline.zip'
+            reply.size = File.size(file)
+            reply.send_headers
+            puts "STREAM FILE DATA"
+            stream_file_data(file, :http_chunks => true)
+            puts "STREAM FILE DATA: DONE"
+          end
+
+          EM::Deferrable.future( stream ) {
+            close_connection_after_writing
+          }
+
+        else
+          reply.send_response
+        end
+
+        # keep the size of the reply to be used in the closing method
+        @response_size = reply.headers['Content-length'] || 0
+
+        puts "RESPONSE SENT (#{Time.now - @request_time})"
+    end
+
     # Let the thread pool handle request
-    EM.defer(operation)
+    EM.defer(operation, response)
   end
   
 end #HTTPHandler

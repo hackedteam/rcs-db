@@ -90,7 +90,7 @@ class RESTResponse
   
   #
   # BEWARE: for any reason this method should raise an exception!
-  # An exception raised here WILL NOT be catched, resulting in a crash.
+  # An exception raised here WILL NOT be cough, resulting in a crash.
   #
   def prepare_response(connection)
     

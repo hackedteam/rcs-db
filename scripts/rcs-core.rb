@@ -92,10 +92,12 @@ class CoreDeveloper
   def replace(file)
     raise "Must specify a core name" if @name.nil?
     content = File.open(file, 'rb') {|f| f.read}
-    puts "Replacing [#{@name}] core with new file (#{content.bytesize} bytes)"
+    puts "Replacing [#{@name}] core with new file (#{content.bytesize} bytes)..."
 
     resp = @http.request_post("/core/#{@name}", content, {'Cookie' => @cookie})
     resp.kind_of? Net::HTTPSuccess or raise(resp.body)
+
+    puts "Replaced."
   end
 
   def add(file)
@@ -188,11 +190,11 @@ class CoreDeveloper
     puts "#{resp.body.bytesize} bytes saved to #{@output}"
     puts
 
-    Zip::ZipFile.open(@output) do |z|
-      z.each do |f|
-        puts "#{f.name.ljust(40)} #{f.size.to_s.rjust(10)} #{f.time}"
-      end
-    end
+    #Zip::ZipFile.open(@output) do |z|
+    #  z.each do |f|
+    #    puts "#{f.name.ljust(40)} #{f.size.to_s.rjust(10)} #{f.time}"
+    #  end
+    #end
 
   end
 

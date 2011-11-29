@@ -26,6 +26,8 @@ class BuildController < RESTController
 
       trace :debug, "Output: #{build.outputs}"
 
+      return RESTController.reply.stream_file(build.path(build.outputs.first))
+      
       # TODO: convert to stream and pass the object to clean the file later
       content = File.open(build.path(build.outputs.first), 'rb') {|f| f.read}
 
@@ -39,7 +41,6 @@ class BuildController < RESTController
     end
 
   end
-
 
 end
 
