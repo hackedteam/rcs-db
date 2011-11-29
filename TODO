@@ -2,7 +2,6 @@ HIGH PRIORITY:
 
     sync / async file transfers !!!  (daniele)
         - even from the public on the collector
-        - check to see if two upload from different backdoors are actually concurrent
 
     distributed workers, same as shards (daniele)
         - mongos should be accessible by all the workers (alor)
@@ -10,7 +9,6 @@ HIGH PRIORITY:
 
     connect the build process with tasks (daniele)
 
-    build (in progress, alor)
     Local Exploit portal (alor)
 
     evidence grid methods
@@ -28,6 +26,8 @@ MEDIUM PRIORITY:
     Alerting daemon
 
     Blotter (browsing like console)
+
+    export logs
 
 LOW PRIORITY:
 

@@ -92,7 +92,7 @@ class RESTController
     # check we have a valid session and an action
     return RESTController.reply.not_authorized('INVALID_COOKIE') unless valid_session?
     return RESTController.reply.server_error('NULL_ACTION') if @request[:action].nil?
-    
+
     # make a copy of the params, handy for access and mongoid queries
     # consolidate URI parameters
     @params = @request[:params].clone unless @request[:params].nil?
@@ -100,10 +100,10 @@ class RESTController
     unless @params.has_key? '_id'
       @params['_id'] = @request[:uri_params].first unless @request[:uri_params].first.nil?
     end
-    
+
     # GO!
     response = send(@request[:action])
-    
+
     return RESTController.reply.server_error('CONTROLLER_ERROR') if response.nil?
     return response
   rescue NotAuthorized => e

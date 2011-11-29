@@ -99,13 +99,15 @@ class HTTPHandler < EM::Connection
     
     #trace :debug, "[#{@peer}] Incoming HTTP Connection"
     size = (@http_post_content) ? @http_post_content.bytesize : 0
-    trace :debug, "[#{@peer}] REQ: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string}  #{size.to_s_bytes}"
+    trace :debug, "[#{@peer}] REQ: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time}) #{size.to_s_bytes}"
     
     responder = nil
     
     # Block which fulfills the request (generate the data)
     operation = proc do
 
+      trace :debug, "[#{@peer}] QUE: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time})" if Config.instance.global['PERF']
+          
       generation_time = Time.now
       
       begin
@@ -148,13 +150,11 @@ class HTTPHandler < EM::Connection
         if reply.class == EventMachine::DelegatedHttpFileResponse
           puts "DELEGATED FILE RESPONSE"
 
+          # TODO: move this into the send_response of RESTFileStream
           stream = proc do
-            file = '/Volumes/RCS_DATA/RCS/rcs-db/cores/offline.zip'
-            reply.size = File.size(file)
             reply.send_headers
-            puts "STREAM FILE DATA"
-            stream_file_data(file, :http_chunks => true)
-            puts "STREAM FILE DATA: DONE"
+            EventMachine::FileStreamer.new(self, reply.filename, :http_chunks => true )
+            #EventMachine::GridStreamer.new(self, reply.filename, :http_chunks => true )
           end
 
           EM::Deferrable.future( stream ) {
@@ -162,6 +162,7 @@ class HTTPHandler < EM::Connection
           }
 
         else
+          puts "NORMAL RESPONSE"
           reply.send_response
         end
 

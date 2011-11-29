@@ -72,17 +72,6 @@ class RESTResponse
     @cookie ||= opts[:cookie]
   end
   
-  def get_em_response(type, connection, opt=nil)
-    case type
-      when :http
-        return EM::DelegatedHttpResponse.new connection
-      when :grid
-        return EM::DelegatedGridResponse.new connection, opt
-      when :file
-        return EM::DelegatedFileResponse.new connection, opt
-    end
-  end
-
   def keep_alive?(connection)
     http_headers = connection.instance_variable_get :@http_headers
     http_headers.split("\x00").index {|h| h['Connection: keep-alive'] || h['Connection: Keep-Alive']}
@@ -94,7 +83,7 @@ class RESTResponse
   #
   def prepare_response(connection)
     
-    resp = get_em_response :http, connection
+    resp = EM::DelegatedHttpResponse.new connection
     
     resp.status = @status
     resp.status_string = ::Net::HTTPResponse::CODE_TO_OBJ["#{resp.status}"].name.gsub(/Net::HTTP/, '')
@@ -145,12 +134,14 @@ class RESTFileStream
   end
   
   def prepare_response(connection)
+    #TODO: change this...
     response = EM::DelegatedHttpFileResponse.new connection, @filename
     return response
   end
 
   def send_response
     response.send_headers
+    #TODO: perhaps a stream_body method?
     response.send_body
   end
 end # RESTFileStream
