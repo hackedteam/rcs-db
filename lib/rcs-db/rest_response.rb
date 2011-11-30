@@ -129,8 +129,9 @@ class RESTGridStream
 end # RESTGridStream
 
 class RESTFileStream
-  def initialize(filename)
+  def initialize(filename, callback=nil)
     @filename = filename
+    @callback = callback
   end
   
   def prepare_response(connection)
@@ -143,6 +144,7 @@ class RESTFileStream
     response.send_headers
     #TODO: perhaps a stream_body method?
     response.send_body
+    # TDOD: invoke the callback
   end
 end # RESTFileStream
 

@@ -158,11 +158,13 @@ class HTTPHandler < EM::Connection
           end
 
           EM::Deferrable.future( stream ) {
+            call
             close_connection_after_writing
           }
 
         else
           puts "NORMAL RESPONSE"
+          #TODO: keep only this generic
           reply.send_response
         end
 

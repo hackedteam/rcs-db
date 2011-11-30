@@ -24,20 +24,12 @@ class BuildController < RESTController
     begin
       build.create @params
 
-      trace :debug, "Output: #{build.outputs}"
+      trace :debug, "Output: #{build.outputs} #{File.size(build.path(build.outputs.first))}"
 
-      # TODO: convert to stream and pass the object to clean the file later
-      content = File.open(build.path(build.outputs.first), 'rb') {|f| f.read}
-
-      trace :debug, "Output size: #{content.bytesize}"
-
-      build.clean
-
-      #content = File.open('/Volumes/RCS_DATA/RCS/rcs-db/cores/offline.zip', 'rb') {|f| f.read}
-      #return RESTController.reply.ok(content, {content_type: 'binary/octet-stream'})
+      # TODO: remove this ZINGARA!!!
       return RESTController.reply.stream_file('/Volumes/RCS_DATA/RCS/rcs-db/cores/offline.zip')
 
-      return RESTController.reply.ok(content, {content_type: 'binary/octet-stream'})
+      return RESTController.reply.stream_file(build.path(build.outputs.first), build.clean)
     rescue Exception => e
       return RESTController.reply.server_error(e.message)
     end
