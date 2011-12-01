@@ -5,6 +5,7 @@ require 'forwardable'
 
 require 'rcs-common/mime'
 
+=begin
 module EventMachine
 
   class DelegatedHttpFileResponse < HttpResponse
@@ -154,3 +155,4 @@ module EventMachine
   end # DelegatedHttpGridResponse
 
 end # ::EventMachine
+=end
