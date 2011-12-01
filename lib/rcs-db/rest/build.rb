@@ -27,9 +27,9 @@ class BuildController < RESTController
       trace :debug, "Output: #{build.outputs} #{File.size(build.path(build.outputs.first))}"
 
       # TODO: remove this ZINGARA!!!
-      return RESTController.reply.stream_file('/Volumes/RCS_DATA/RCS/rcs-db/cores/offline.zip')
+      #return RESTController.reply.stream_file('/Volumes/RCS_DATA/RCS/rcs-db/cores/offline.zip')
 
-      return RESTController.reply.stream_file(build.path(build.outputs.first), build.clean)
+      return RESTController.reply.stream_file(build.path(build.outputs.first))
     rescue Exception => e
       return RESTController.reply.server_error(e.message)
     end

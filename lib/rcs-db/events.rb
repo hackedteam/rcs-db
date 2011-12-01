@@ -158,7 +158,6 @@ class HTTPHandler < EM::Connection
           end
 
           EM::Deferrable.future( stream ) {
-            call
             close_connection_after_writing
           }
 

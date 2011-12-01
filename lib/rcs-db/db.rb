@@ -52,6 +52,10 @@ class Application
       version = File.read(Dir.pwd + '/config/version.txt')
       trace :info, "Starting the RCS Database #{version}..."
 
+      # ensure the temp directory is empty and present
+      FileUtils.rm_rf(Config.instance.temp)
+      Dir::mkdir(Config.instance.temp) if not File.directory?(Config.instance.temp)
+
       # check the integrity of the code
       HeartBeat.dont_steal_rcs
 

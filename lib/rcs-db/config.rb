@@ -84,6 +84,12 @@ class Config
     return true
   end
 
+  def temp(name=nil)
+    temp = File.join Dir.pwd, 'temp'
+    temp = File.join temp, name if name
+    return temp
+  end
+  
   def file(name)
     return File.join Dir.pwd, CONF_DIR, @global[name].nil? ? name : @global[name]
   end
