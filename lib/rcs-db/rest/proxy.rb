@@ -180,7 +180,7 @@ class ProxyController < RESTController
 
       # the file is uploaded to the grid before calling this method
       if rule.action == 'REPLACE' and not @params['rule']['action_param'].nil?
-        path = File.join Dir.tmpdir, @params['rule']['action_param']
+        path = Config.instance.temp(@params['rule']['action_param'])
         if File.exist?(path) and File.file?(path)
           rule[:_grid] = [GridFS.put(File.binread(path), {filename: @params['rule']['action_param']})]
           File.unlink(path)
@@ -242,7 +242,7 @@ class ProxyController < RESTController
       
       # the file is uploaded to the grid before calling this method
       if rule.action == 'REPLACE' and not @params['rule']['action_param'].nil?
-        path = File.join Dir.tmpdir, @params['rule']['action_param']
+        path = Config.instance.temp(@params['rule']['action_param'])
         if File.exist?(path) and File.file?(path)
           # delete any previous file in the grid
           GridFS.delete rule[:_grid].first unless rule[:_grid].nil?

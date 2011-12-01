@@ -62,7 +62,7 @@ class BuildWindows < Build
 
     # use the user-provided file to melt with
     if params['input']
-      FileUtils.mv File.join(Dir.tmpdir, params['input']), path('input')
+      FileUtils.mv Config.instance.temp(params['input']), path('input')
       executable = path('input')
     end
 

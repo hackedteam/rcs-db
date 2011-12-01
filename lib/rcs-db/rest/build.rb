@@ -27,6 +27,7 @@ class BuildController < RESTController
       trace :debug, "Output: #{build.outputs} #{File.size(build.path(build.outputs.first))}"
 
       return RESTController.reply.stream_file(build.path(build.outputs.first), build.clean)
+
     rescue Exception => e
       return RESTController.reply.server_error(e.message)
     end

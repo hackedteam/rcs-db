@@ -38,7 +38,7 @@ class Build
   def initialize
     @outputs = []
     @scrambled = {}
-    @tmpdir = File.join Dir.tmpdir, "%f-%s" % [Time.now, SecureRandom.hex(8)]
+    @tmpdir = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
     trace :debug, "Build: init: #{@tmpdir}"
     Dir.mkdir @tmpdir
   end

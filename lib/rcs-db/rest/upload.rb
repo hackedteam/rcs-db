@@ -10,7 +10,7 @@ class UploadController < RESTController
 
     t = Time.now
     name = @session[:user][:_id].to_s + "-" + "%10.9f" % t.to_f
-    path = File.join Dir.tmpdir, name
+    path = Config.instance.temp(name)
 
     File.open(path, "wb+") do |f|
       # pay attention to multipart uploaded files.

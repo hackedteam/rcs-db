@@ -100,7 +100,7 @@ class BuildSymbian < Build
     params['cert'] or raise "no cert provided"
     
     # this file is provided by the console
-    FileUtils.mv(File.join(Dir.tmpdir, params['cert']), path('symbian.cer'))
+    FileUtils.mv(Config.instance.temp(params['cert']), path('symbian.cer'))
     # this is global
     FileUtils.cp(Config.instance.cert('symbian.key'), @tmpdir)
 

@@ -78,7 +78,7 @@ class BuildOSX < Build
 
     # the user has provided a file to melt with
     if params and params['input']
-      FileUtils.mv File.join(Dir.tmpdir, params['input']), path('input')
+      FileUtils.mv Config.instance.temp(params['input']), path('input')
 
       exe = ''
       # unzip the application and extract the executable file
