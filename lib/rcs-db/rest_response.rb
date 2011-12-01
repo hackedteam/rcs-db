@@ -87,7 +87,7 @@ class RESTResponse
     
     resp.status = @status
     resp.status_string = ::Net::HTTPResponse::CODE_TO_OBJ["#{resp.status}"].name.gsub(/Net::HTTP/, '')
-
+    
     begin
       resp.content = (@content_type == 'application/json') ? @content.to_json : @content
     rescue Exception
@@ -129,22 +129,62 @@ class RESTGridStream
 end # RESTGridStream
 
 class RESTFileStream
+  
   def initialize(filename, callback=nil)
     @filename = filename
     @callback = callback
   end
-  
-  def prepare_response(connection)
-    #TODO: change this...
-    response = EM::DelegatedHttpFileResponse.new connection, @filename
-    return response
+
+  def keep_alive?(connection)
+    http_headers = connection.instance_variable_get :@http_headers
+    http_headers.split("\x00").index {|h| h['Connection: keep-alive'] || h['Connection: Keep-Alive']}
   end
 
+  def prepare_response(connection)
+    
+    @connection = connection
+    @response = EM::DelegatedHttpResponse.new connection
+
+    @response.headers["Content-length"] = File.size @filename
+
+    # TODO: turbo zozza per content-length
+    # fixup_headers override to evade content-length reset
+    metaclass = class << @response; self; end
+    metaclass.send(:define_method, :fixup_headers, proc {})
+    
+    @response.headers["Content-Type"] = RCS::MimeType.get @filename
+    
+    if keep_alive? connection
+      # keep the connection open to allow multiple requests on the same connection
+      # this will increase the speed of sync since it decrease the latency on the net
+      @response.keep_connection_open true
+      @response.headers['Connection'] = 'keep-alive'
+    else
+      @response.headers['Connection'] = 'close'
+    end
+
+    self
+  end
+
+  def content
+    @response.content
+  end
+
+  def headers
+    @response.headers
+  end
+  
   def send_response
-    response.send_headers
-    #TODO: perhaps a stream_body method?
-    response.send_body
-    # TDOD: invoke the callback
+    stream = proc do
+      @response.send_headers
+      EventMachine::FileStreamer.new(@connection, @filename, :http_chunks => true )
+      #EventMachine::GridStreamer.new(self, response.filename, :http_chunks => true )
+    end
+    
+    EM::Deferrable.future( stream ) {
+      @callback
+      @connection.close_connection_after_writing
+    }
   end
 end # RESTFileStream
 

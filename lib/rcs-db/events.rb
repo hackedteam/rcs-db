@@ -145,33 +145,11 @@ class HTTPHandler < EM::Connection
 
     # Block which fulfills the reply (send back the data to the client)
     response = proc do |reply|
-        puts "SENDING RESPONSE"
 
-        if reply.class == EventMachine::DelegatedHttpFileResponse
-          puts "DELEGATED FILE RESPONSE"
-
-          # TODO: move this into the send_response of RESTFileStream
-          stream = proc do
-            reply.send_headers
-            EventMachine::FileStreamer.new(self, reply.filename, :http_chunks => true )
-            #EventMachine::GridStreamer.new(self, reply.filename, :http_chunks => true )
-          end
-
-          EM::Deferrable.future( stream ) {
-            call
-            close_connection_after_writing
-          }
-
-        else
-          puts "NORMAL RESPONSE"
-          #TODO: keep only this generic
-          reply.send_response
-        end
-
+        reply.send_response
+  
         # keep the size of the reply to be used in the closing method
         @response_size = reply.headers['Content-length'] || 0
-
-        puts "RESPONSE SENT (#{Time.now - @request_time})"
     end
 
     # Let the thread pool handle request
