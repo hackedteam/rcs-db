@@ -44,6 +44,7 @@ class Collector
       coll.instance = instance
       coll.name = 'Collector Node'
       coll.desc = address
+      coll.address = address
       coll.poll = false
       coll.save
       
