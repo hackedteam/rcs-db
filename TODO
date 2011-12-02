@@ -1,32 +1,33 @@
 HIGH PRIORITY:
 
+    PERFORMANCE TEST !!!!
+
     sync / async file transfers !!!  (daniele)
-        - even from the public on the collector
+        - even from the public on the collector (daniele)
 
     distributed workers, same as shards (daniele)
         - mongos should be accessible by all the workers (alor)
         - modify the NSIS to install the worker together with the shards (alor)
 
-    connect the build process with tasks (daniele)
+    connect the build process with tasks ( together )
 
     Local Exploit portal (alor)
 
     evidence grid methods
 
-    remove objects that references an item on deletion (rules, alerts, dashboard, recent)
+    remove objects that references an item on deletion (rules, alerts, dashboard, recent)  (alor)
 
 MEDIUM PRIORITY:
 
     complete the worker decoding (daniele)
 
-    hook points?
-
     rename proxy -> injector
 
-    Alerting daemon
+    Alerting daemon (worker)
+
+    Forwarder (worker)
 
     Blotter (browsing like console)
-
     export logs
 
 LOW PRIORITY:
@@ -51,5 +52,3 @@ FUTURE:
     jruby?
 
     correlation hooks
-
-    forwarding hooks

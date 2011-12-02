@@ -63,7 +63,7 @@ class CrossPlatform
         # if needed add the path specified to the Environment
         ENV['PATH'] = "#{options[:add_path]}#{separator}" + ENV['PATH']  if options[:add_path]
 
-        #trace :debug, "Executing(system): #{command} #{params}"
+        trace :debug, "Executing(system): #{command} #{params}"
         success = system command + " " + params
 
         # restore the environment
@@ -82,7 +82,7 @@ class CrossPlatform
         process = ''
         output = ''
 
-        #trace :debug, "Executing(popen): #{command}"
+        trace :debug, "Executing(popen): #{command}"
 
         IO.popen(cmd_run) {|f|
           output = f.read
@@ -96,7 +96,7 @@ class CrossPlatform
         options[:err] = :out
         options[:out] = wr
 
-        #trace :debug, "Executing(spawn) [#{options}]: #{command}"
+        trace :debug, "Executing(spawn) [#{options}]: #{command}"
 
         # execute the whole command and catch the output
         pid = spawn(command, options)

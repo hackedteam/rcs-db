@@ -24,11 +24,12 @@ class BuildController < RESTController
     begin
       build.create @params
 
-      trace :debug, "Output: #{build.outputs} #{File.size(build.path(build.outputs.first))}"
+      trace :info, "Output: #{build.outputs} #{File.size(build.path(build.outputs.first)).to_s_bytes}"
 
-      return RESTController.reply.stream_file(build.path(build.outputs.first), build.clean)
+      return RESTController.reply.stream_file(build.path(build.outputs.first))
 
     rescue Exception => e
+      trace :error, "Cannot send build result: #{e.message}"
       return RESTController.reply.server_error(e.message)
     end
 

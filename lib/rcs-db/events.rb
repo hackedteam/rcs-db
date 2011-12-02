@@ -71,7 +71,7 @@ class HTTPHandler < EM::Connection
   end
 
   def unbind
-    trace :debug, "[#{@peer}] REP: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time}) #{@response_size.to_s_bytes}" if Config.instance.global['PERF']
+    trace :debug, "[#{@peer}] REP: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time}) #{@response_size.to_s_bytes}" if Config.instance.global['PERF'] and not @response_size.nil?
     trace :debug, "Connection closed #{@peer}:#{@peer_port}"
     @closed = true
   end

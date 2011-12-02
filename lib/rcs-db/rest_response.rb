@@ -177,8 +177,8 @@ class RESTFileStream
   def send_response
     stream = proc do
       @response.send_headers
-      EventMachine::FileStreamer.new(@connection, @filename, :http_chunks => true )
-      #EventMachine::GridStreamer.new(self, response.filename, :http_chunks => true )
+      EventMachine::FileStreamer.new(@connection, @filename, :http_chunks => false )
+      #EventMachine::GridStreamer.new(self, response.filename, :http_chunks => false )
     end
     
     EM::Deferrable.future( stream ) {

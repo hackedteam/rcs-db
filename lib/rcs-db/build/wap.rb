@@ -1,5 +1,5 @@
 #
-#
+# Wap PUSH messages
 #
 
 # from RCS::Common
