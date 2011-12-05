@@ -243,7 +243,7 @@ if false
 end
 
 # monitor
-if true
+if false
   # status.index
   res = http.request_get('/status', {'Cookie' => cookie})
   puts "status.index"
@@ -1009,6 +1009,15 @@ if false
   
 end
 
+# exploit
+if true
+  # exploit.index
+  puts "exploit.index" 
+  res = http.request_get('/exploit', {'Cookie' => cookie})
+  shards = JSON.parse(res.body)
+  puts res.body
+  puts
+end
 
 
 # logout

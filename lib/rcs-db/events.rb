@@ -96,11 +96,15 @@ class HTTPHandler < EM::Connection
     #   @http_query_string
     #   @http_post_content
     #   @http_headers
-    
+
     #trace :debug, "[#{@peer}] Incoming HTTP Connection"
     size = (@http_post_content) ? @http_post_content.bytesize : 0
     trace :debug, "[#{@peer}] REQ: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time}) #{size.to_s_bytes}"
-    
+
+    # get it again since if the connection is keep-alived we need a fresh timing for each
+    # request and not the total from the beginning of the connection
+    @request_time = Time.now
+
     responder = nil
     
     # Block which fulfills the request (generate the data)
