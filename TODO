@@ -20,6 +20,8 @@ HIGH PRIORITY:
 MEDIUM PRIORITY:
 
     complete the worker decoding (daniele)
+	- audio
+	- geolocation
 
     rename proxy -> injector
 
