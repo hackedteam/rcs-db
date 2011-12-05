@@ -23,6 +23,8 @@ MEDIUM PRIORITY:
 
     rename proxy -> injector
 
+    Crawler for geo
+    
     Alerting daemon (worker)
 
     Forwarder (worker)

@@ -7,13 +7,13 @@ require 'net/http'
 module RCS
 module DB
 
-class NetworkController
+class Frontend
   extend RCS::Tracer
 
-  def self.push(address)
+  def self.rnc_push(address)
     begin
       # find a network controller in the status list
-      nc = ::Status.where({nc: true, status: ::Status::OK}).first
+      nc = ::Status.where({type: 'nc', status: ::Status::OK}).first
 
       return false if nc.nil?
 
@@ -24,29 +24,29 @@ class NetworkController
       http.request_put("/RCS-NC_#{address}", '', {})
       
     rescue Exception => e
-      trace :error, "NetworkController PUSH: #{e.message}"
+      trace :error, "Frontend RNC PUSH: #{e.message}"
       return false
     end
 
     return true
   end
 
-  def self.put(filename, content)
+  def self.collector_put(filename, content)
     begin
       # put the file on every collector, we cannot know where it will be requested
-      ::Collector.where({type: 'local'}).all.each do |collector|
+      ::Status.where({type: 'collector', status: ::Status::OK}).all.each do |collector|
 
-        next if collector.address.nil?
+        next if collector.internal_address.nil?
         
-        trace :info, "NetworkController: Putting #{filename} to #{collector.name} (#{collector.address})"
+        trace :info, "NetworkController: Putting #{filename} to #{collector.name} (#{collector.internal_address})"
 
         # send the push request
-        http = Net::HTTP.new(collector.address, 80)
+        http = Net::HTTP.new(collector.internal_address, 80)
         http.request_put("/#{filename}", content, {})
 
       end
     rescue Exception => e
-      trace :error, "NetworkController PUT: #{e.message}"
+      trace :error, "Frontend Collector PUT: #{e.message}"
       raise "Cannot put file on collector"
     end
   end

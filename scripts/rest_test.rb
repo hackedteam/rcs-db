@@ -243,12 +243,12 @@ if false
 end
 
 # monitor
-if false
+if true
   # status.index
   res = http.request_get('/status', {'Cookie' => cookie})
   puts "status.index"
   puts res
-  puts
+  puts res.body
   
   #monitor = JSON.parse(res.body)[0]
   
@@ -515,7 +515,7 @@ if false
     ret = http.delete("/collector/#{coll['_id']}", {'Cookie' => cookie})
     puts ret
   end
-=end  
+
   # collector.create
   coll = {name: 'test'}
   res = http.request_post('/collector', coll.to_json, {'Cookie' => cookie})
@@ -531,7 +531,7 @@ if false
   puts "collector.update "
   puts res
   puts
-  
+=end    
 end
 
 # alerts

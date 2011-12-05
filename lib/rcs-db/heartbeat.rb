@@ -59,7 +59,7 @@ class HeartBeat
 
     begin
     # send the status to the db
-    ::Status.status_update component, ip, status, message, stats
+    ::Status.status_update component, ip, status, message, stats, 'db'
     # check the status of other components
     ::Status.status_check
     rescue Exception => e

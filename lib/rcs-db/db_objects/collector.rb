@@ -11,6 +11,7 @@ class Collector
   field :desc, type: String
   field :type, type: String
   field :address, typs: String
+  field :internal_address, typs: String
   field :port, type: Integer
   field :instance, type: String
   field :poll, type: Boolean
@@ -44,7 +45,7 @@ class Collector
       coll.instance = instance
       coll.name = 'Collector Node'
       coll.desc = address
-      coll.address = address
+      coll.internal_address = address
       coll.poll = false
       coll.save
       

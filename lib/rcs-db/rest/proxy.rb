@@ -2,7 +2,7 @@
 # Controller for the Proxy objects
 #
 
-require_relative '../network_controller'
+require_relative '../frontend'
 
 module RCS
 module DB
@@ -273,7 +273,7 @@ class ProxyController < RESTController
       proxy.save
 
       # push the rules
-      return RESTController.reply.server_error("Cannot push rules via NC") unless RCS::DB::NetworkController.push(proxy.address)
+      return RESTController.reply.server_error("Cannot push rules via NC") unless RCS::DB::Frontend.rnc_push(proxy.address)
 
       return RESTController.reply.ok
     end
