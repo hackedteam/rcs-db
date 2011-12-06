@@ -84,6 +84,37 @@ class HTTPHandler < EM::Connection
     @rest_controller || RESTController
   end
 
+  def prepare_response(connection, responder)
+    reply = EM::DelegatedHttpResponse.new connection
+    
+    # status & status_string
+    reply.status = responder.status
+    reply.status_string = ::Net::HTTPResponse::CODE_TO_OBJ["#{reply.status}"].name.gsub(/Net::HTTP/, '')
+
+    # content & content_type
+    reply.headers['Content-Type'] = responder.content_type
+    begin
+      reply.content = (responder.content_type == 'application/json') ? responder.content.to_json : responder.content
+    rescue Exception
+      reply.status = STATUS_SERVER_ERROR
+      reply.content = 'JSON_SERIALIZATION_ERROR'
+    end
+    
+    # cookie
+    reply.headers['Set-Cookie'] = responder.cookie unless responder.cookie.nil?
+    
+    if keep_alive? connection
+      # keep the connection open to allow multiple requests on the same connection
+      # this will increase the speed of sync since it decrease the latency on the net
+      reply.keep_connection_open true
+      reply.headers['Connection'] = 'keep-alive'
+    else
+      reply.headers['Connection'] = 'close'
+    end
+
+    reply
+  end
+
   def process_http_request
     # the http request details are available via the following instance variables:
     #   @http_protocol
@@ -105,51 +136,49 @@ class HTTPHandler < EM::Connection
     
     # Block which fulfills the request (generate the data)
     operation = proc do
-
+      
       trace :debug, "[#{@peer}] QUE: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time})" if Config.instance.global['PERF']
-          
+
       generation_time = Time.now
       
       begin
         # parse all the request params
         request = prepare_request @http_request_method, @http_request_uri, @http_query_string, @http_cookie, @http_content_type, @http_post_content
         request[:peer] = peer
-
+        
         # get the correct controller
         controller = HTTPHandler.restcontroller.get request
-
+        
         # do the dirty job :)
         responder = controller.act!
 
         # create the response object to be used in the EM::defer callback
-        reply = responder.prepare_response(self)
 
+        reply = prepare_response(self, responder)
+        
         # keep the size of the reply to be used in the closing method
         @response_size = reply.content ? reply.content.bytesize : 0
-
         trace :debug, "[#{@peer}] GEN: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - generation_time}) #{@response_size.to_s_bytes}" if Config.instance.global['PERF']
-
+        
         reply
-
       rescue Exception => e
         trace :error, e.message
         trace :fatal, "EXCEPTION(#{e.class}): " + e.backtrace.join("\n")
         
         responder = RESTController.reply.server_error('CONTROLLER_ERROR')
-        reply = responder.prepare_response(self)
-
+        reply = prepare_response(self, responder)
         reply
       end
-
+      
     end
 
     # Block which fulfills the reply (send back the data to the client)
     response = proc do |reply|
 
-        reply.send_response
-  
-        # keep the size of the reply to be used in the closing method
-        @response_size = reply.headers['Content-length'] || 0
+      reply.send_response
+      
+      # keep the size of the reply to be used in the closing method
+      @response_size = reply.headers['Content-length'] || 0
     end
 
     # Let the thread pool handle request
