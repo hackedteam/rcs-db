@@ -14,7 +14,7 @@ class OperationController < RESTController
       items = items.any_in(_id: @session[:accessible]) unless (admin? and @params['all'] == "true")
       items = items.only(:name, :desc, :status, :_kind, :path, :stat, :group_ids)
       
-      RESTController.reply.ok(items)
+      ok(items)
     end
   end
   
@@ -27,7 +27,7 @@ class OperationController < RESTController
         .only(:name, :desc, :status, :_kind, :path, :stat, :group_ids)
         .find(@params['_id'])
       
-      RESTController.reply.ok(item)
+      ok(item)
     end
   end
   
@@ -63,7 +63,7 @@ class OperationController < RESTController
                 :operation => item['name'],
                 :desc => "Created operation '#{item['name']}'"
 
-      RESTController.reply.ok(item)
+      ok(item)
     end
   end
   
@@ -97,7 +97,7 @@ class OperationController < RESTController
       
       item.update_attributes(@params)
       
-      return RESTController.reply.ok(item)
+      return ok(item)
     end
   end
   
@@ -116,7 +116,7 @@ class OperationController < RESTController
                 :operation => name,
                 :desc => "Deleted operation '#{name}'"
       
-      return RESTController.reply.ok
+      return ok
     end
   end
 

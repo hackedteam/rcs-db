@@ -10,55 +10,6 @@ module DB
 class RESTResponse
   include RCS::Tracer
   
-  STATUS_OK = 200
-  STATUS_BAD_REQUEST = 400
-  STATUS_NOT_FOUND = 404
-  STATUS_NOT_AUTHORIZED = 403
-  STATUS_CONFLICT = 409
-  STATUS_SERVER_ERROR = 500
-  
-  def self.not_found(message=nil)
-    message ||= ''
-    return RESTResponse.new(STATUS_NOT_FOUND, message)
-  end
-
-  def self.not_authorized(message=nil)
-    message ||= ''
-    return RESTResponse.new(STATUS_NOT_AUTHORIZED, message)
-  end
-
-  def self.conflict(message=nil)
-    message ||= ''
-    return RESTResponse.new(STATUS_CONFLICT, message)
-  end
-
-  def self.bad_request(message=nil)
-    message ||= ''
-    return RESTResponse.new(STATUS_BAD_REQUEST, message)
-  end
-
-  def self.server_error(message=nil)
-    message ||= ''
-    return RESTResponse.new(STATUS_SERVER_ERROR, message)
-  end
-
-  # helper method for REST replies
-  def self.ok(*args)
-    return RESTResponse.new STATUS_OK, *args
-  end
-  
-  def self.generic(*args)
-    return RESTResponse.new *args
-  end
-
-  def self.stream_file(filename, callback=nil)
-    return RESTFileStream.new(filename, callback)
-  end
-
-  def self.stream_grid(grid_io, callback=nil)
-    return RESTGridStream.new(grid_io, callback)
-  end
-  
   attr_accessor :status, :content, :content_type, :cookie
   
   def initialize(status, content = '', opts = {}, callback=proc{})

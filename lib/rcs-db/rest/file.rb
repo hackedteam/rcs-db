@@ -11,8 +11,8 @@ class FileController < RESTController
     file_name = @params['_id']
     file_path = File.join('temp', file_name)
     
-    RESTController.reply.not_found unless File.exists? file_path
-    RESTController.reply.stream_file(file_path)
+    not_found unless File.exists? file_path
+    stream_file(file_path)
   end
 
   def destroy
@@ -22,7 +22,7 @@ class FileController < RESTController
     file_path = File.join('temp', file_name)
     File.unlink file_path
     
-    RESTController.reply.ok
+    ok
   end
   
 end

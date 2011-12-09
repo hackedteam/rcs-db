@@ -14,7 +14,7 @@ class StatusController < RESTController
     mongoid_query do
       result = ::Status.all
 
-      return RESTController.reply.ok(result)
+      return ok(result)
     end
   end
 
@@ -32,7 +32,7 @@ class StatusController < RESTController
     stats = {:disk => @params['disk'], :cpu => @params['cpu'], :pcpu => @params['pcpu']}
     ::Status.status_update @params['name'], @params['address'], @params['status'], @params['info'], stats, @params['nc']
     
-    return RESTController.reply.ok
+    return ok
   end
 
   # delete an entry in the DB,
@@ -47,7 +47,7 @@ class StatusController < RESTController
 
       Audit.log :actor => @session[:user][:name], :action => 'monitor.delete', :desc => "Component '#{name}' was deleted from db"
 
-      return RESTController.reply.ok
+      return ok
     end
   end
 
@@ -62,7 +62,7 @@ class StatusController < RESTController
       counters[:warn] = ::Status.count(conditions: {status: '1'})
       counters[:error] = ::Status.count(conditions: {status: '2'})
 
-      return RESTController.reply.ok(counters)
+      return ok(counters)
     end
   end
 

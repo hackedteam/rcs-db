@@ -11,8 +11,8 @@ class GridController < RESTController
     grid_id = @params['_id']
     file = GridFS.get BSON::ObjectId.from_string(grid_id), @params['target_id']
     
-    return RESTController.reply.not_found if file.nil?
-    return RESTController.reply.stream_grid(file)
+    return not_found if file.nil?
+    return stream_grid(file)
   end
 
   def create
@@ -21,7 +21,7 @@ class GridController < RESTController
     grid_id = GridFS.put @request[:content]['content']
     Audit.log :actor => @session[:user][:name], :action => 'grid.upload', :desc => "Uploaded #{@request[:content]['content'].to_s_bytes} bytes into #{grid_id}."
        
-    return RESTController.reply.ok({_grid: grid_id.to_s})
+    return ok({_grid: grid_id.to_s})
   end
 
   # TODO: verify Grid REST destroy is ever called, otherwise remove
@@ -31,7 +31,7 @@ class GridController < RESTController
     grid_id = @params['_id']
     GridFS.delete grid_id
     
-    return RESTController.reply.ok
+    return ok
   end
   
 end

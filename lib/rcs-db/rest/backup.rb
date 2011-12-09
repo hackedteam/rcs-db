@@ -15,7 +15,7 @@ class BackupjobController < RESTController
 
       backups = ::Backup.all
 
-      return RESTController.reply.ok(backups)
+      return ok(backups)
     end
   end
 
@@ -34,7 +34,7 @@ class BackupjobController < RESTController
       
       Audit.log :actor => @session[:user][:name], :action => 'backupjob.create', :desc => "#{@params['what']} on #{@params['when']} -> #{@params['name']}"
 
-      return RESTController.reply.ok(b)
+      return ok(b)
     end    
   end
 
@@ -45,7 +45,7 @@ class BackupjobController < RESTController
 
       BackupManager.do_backup Time.now.getutc, backup
 
-      return RESTController.reply.ok(backup)
+      return ok(backup)
     end
   end
 
@@ -64,7 +64,7 @@ class BackupjobController < RESTController
 
       backup.update_attributes(@params)
 
-      return RESTController.reply.ok(backup)
+      return ok(backup)
     end
   end
 
@@ -76,7 +76,7 @@ class BackupjobController < RESTController
       Audit.log :actor => @session[:user][:name], :action => 'backupjob.destroy', :desc => "Deleted the backup job [#{backup[:name]}]"
       backup.destroy
 
-      return RESTController.reply.ok
+      return ok
     end
   end
 
@@ -97,7 +97,7 @@ class BackuparchiveController < RESTController
       index << {_id: File.basename(dir), name: name, when: time.strftime('%Y-%m-%d %H:%M'), size: dirsize}
     end
 
-    return RESTController.reply.ok(index)
+    return ok(index)
   end
 
   def destroy
@@ -107,7 +107,7 @@ class BackuparchiveController < RESTController
 
     # prevent escaping from the directory
     if not real.start_with? Config.instance.global['BACKUP_DIR'] + "/" or not File.exist?(real)
-      return RESTController.reply.conflict("Invalid backup")
+      return conflict("Invalid backup")
     end
 
     # recursively delete the directory
@@ -115,7 +115,7 @@ class BackuparchiveController < RESTController
 
     Audit.log :actor => @session[:user][:name], :action => 'backup.destroy', :desc => "Deleted the backup #{@params['_id']} from the archive"
 
-    return RESTController.reply.ok()
+    return ok()
   end
 
   def restore
@@ -128,9 +128,9 @@ class BackuparchiveController < RESTController
     Audit.log :actor => @session[:user][:name], :action => 'backup.restore', :desc => "Restored the backup #{@params['_id']} from the archive"
 
     if system command
-      return RESTController.reply.ok()
+      return ok()
     else
-      return RESTController.reply.server_error("Cannot restore backup")
+      return server_error("Cannot restore backup")
     end
     
   end

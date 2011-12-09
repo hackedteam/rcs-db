@@ -15,7 +15,7 @@ class TargetController < RESTController
         .any_in(_id: @session[:accessible])
         .only(:name, :desc, :status, :_kind, :path, :stat)
 
-      RESTController.reply.ok(items)
+      ok(items)
     end
   end
   
@@ -28,7 +28,7 @@ class TargetController < RESTController
         .only(:name, :desc, :status, :_kind, :path, :stat)
         .find(@params['_id'])
       
-      RESTController.reply.ok(item)
+      ok(item)
     end
   end
   
@@ -36,12 +36,12 @@ class TargetController < RESTController
     require_auth_level :admin
     
     # to create a target, we need to owning operation
-    return RESTController.reply.bad_request('INVALID_OPERATION') unless @params.has_key? 'operation'
+    return bad_request('INVALID_OPERATION') unless @params.has_key? 'operation'
     
     mongoid_query do
       
       operation = ::Item.operations.find(@params['operation'])
-      return RESTController.reply.bad_request('INVALID_OPERATION') if operation.nil?
+      return bad_request('INVALID_OPERATION') if operation.nil?
       
       item = Item.create(name: @params['name']) do |doc|
         doc[:_kind] = :target
@@ -63,7 +63,7 @@ class TargetController < RESTController
                 :target => item['name'],
                 :desc => "Created target '#{item['name']}'"
       
-      RESTController.reply.ok(item)
+      ok(item)
     end
   end
 
@@ -88,7 +88,7 @@ class TargetController < RESTController
       
       item.update_attributes(@params)
       
-      return RESTController.reply.ok(item)
+      return ok(item)
     end
   end
 
@@ -105,7 +105,7 @@ class TargetController < RESTController
                 :action => "target.delete",
                 :target => name,
                 :desc => "Deleted target '#{name}'"
-      return RESTController.reply.ok
+      return ok
     end
   end
 

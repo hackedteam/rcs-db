@@ -17,8 +17,8 @@ class AuthController < RESTController
       # return the info about the current auth session
       when 'GET'
         sess = SessionManager.instance.get(@request[:cookie])
-        return RESTController.reply.not_authorized if sess.nil?
-        return RESTController.reply.ok(sess)
+        return not_authorized if sess.nil?
+        return ok(sess)
       
       # authenticate the user
       when 'POST'
@@ -34,11 +34,11 @@ class AuthController < RESTController
             # create the new auth sessions
             sess = SessionManager.instance.create({:name => user}, @auth_level, @request[:peer])
             # append the cookie to the other that may have been present in the request
-            return RESTController.reply.ok(sess, {cookie: 'session=' + sess[:cookie] + '; path=/;'})
+            return ok(sess, {cookie: 'session=' + sess[:cookie] + '; path=/;'})
           end
         rescue Exception => e
           # TODO: specialize LICENSE_LIMIT_REACHED exception
-          return RESTController.reply.conflict('LICENSE_LIMIT_REACHED')
+          return conflict('LICENSE_LIMIT_REACHED')
         end
         
         # normal user login
@@ -62,18 +62,18 @@ class AuthController < RESTController
           trace :debug, "Issued cookie with expiry time: #{expiry}"
           # don't return the accessible items (used only internally)
           session = sess.select {|k,v| k != :accessible}
-          return RESTController.reply.ok(session, {cookie: 'session=' + sess[:cookie] + "; path=/; expires=#{expiry}" })
+          return ok(session, {cookie: 'session=' + sess[:cookie] + "; path=/; expires=#{expiry}" })
         end
     end
     
-    return RESTController.reply.not_authorized("invalid account")
+    not_authorized("invalid account")
   end
 
   # this method is used to create (or recreate) the admin
   # it can be used without auth but only from localhost
   def reset
 
-    return RESTController.reply.not_authorized("can only be used locally") unless @request[:peer].eql? '127.0.0.1'
+    return not_authorized("can only be used locally") unless @request[:peer].eql? '127.0.0.1'
 
     mongoid_query do
       user = User.where(name: 'admin').first
@@ -90,14 +90,14 @@ class AuthController < RESTController
       user.save
     end
     
-    return RESTController.reply.ok("Password reset for user 'admin'")
+    ok("Password reset for user 'admin'")
   end
 
   # once the session is over you can explicitly logout
   def logout
     Audit.log :actor => @session[:user][:name], :action => 'logout', :user => @session[:user][:name], :desc => "User '#{@session[:user][:name]}' logged out"
     SessionManager.instance.delete(@request[:cookie])
-    return RESTController.reply.ok('', {cookie: "session=; path=/; expires=#{Time.at(0).strftime('%A, %d-%b-%y %H:%M:%S %Z')}" })
+    ok('', {cookie: "session=; path=/; expires=#{Time.at(0).strftime('%A, %d-%b-%y %H:%M:%S %Z')}" })
   end
   
   # private method to authenticate a server

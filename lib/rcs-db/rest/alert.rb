@@ -17,7 +17,7 @@ class AlertController < RESTController
 
       alerts = user.alerts
 
-      return RESTController.reply.ok(alerts)
+      return ok(alerts)
     end
   end
 
@@ -30,14 +30,14 @@ class AlertController < RESTController
 
       alert = user.alerts.find(@params['_id'])
 
-      return RESTController.reply.ok(alert)
+      return ok(alert)
     end
   end
 
   def create
     require_auth_level :view
 
-    return RESTController.reply.conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :alerting
+    return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :alerting
 
     mongoid_query do
       user = @session[:user].reload
@@ -55,7 +55,7 @@ class AlertController < RESTController
 
       Audit.log :actor => @session[:user][:name], :action => 'alert.create', :desc => "Created one alert"
 
-      return RESTController.reply.ok(na)
+      return ok(na)
     end    
   end
 
@@ -75,7 +75,7 @@ class AlertController < RESTController
 
       alert.update_attributes(@params)
 
-      return RESTController.reply.ok(alert)
+      return ok(alert)
     end
   end
 
@@ -90,7 +90,7 @@ class AlertController < RESTController
 
       user.reload
       
-      return RESTController.reply.ok
+      return ok
     end
   end
 
@@ -108,7 +108,7 @@ class AlertController < RESTController
         counter += a.logs.length
       end
 
-      return RESTController.reply.ok(counter)
+      return ok(counter)
     end
   end
 
@@ -121,7 +121,7 @@ class AlertController < RESTController
 
       alert.logs.destroy_all(conditions: {_id: @params['log']['_id']})
 
-      return RESTController.reply.ok
+      return ok
     end
   end
 
@@ -134,7 +134,7 @@ class AlertController < RESTController
       
       alert.logs.destroy_all
 
-      return RESTController.reply.ok
+      return ok
     end
   end
 
