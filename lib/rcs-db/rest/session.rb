@@ -12,7 +12,7 @@ class SessionController < RESTController
   def index
     require_auth_level :admin
 
-    return RESTController.reply.ok(SessionManager.instance.all)
+    return ok(SessionManager.instance.all)
   end
   
   def destroy
@@ -20,12 +20,12 @@ class SessionController < RESTController
     
     session_id = @params['_id']
     session = SessionManager.instance.get(session_id)
-    return RESTController.reply.not_found if session.nil?
+    return not_found if session.nil?
     
     Audit.log :actor => @session[:user][:name], :action => 'session.destroy', :desc => "Killed the session of the user '#{session[:user][:name]}'"
     
-    return RESTController.reply.not_found unless SessionManager.instance.delete(session_id)
-    return RESTController.reply.ok
+    return not_found unless SessionManager.instance.delete(session_id)
+    return ok
   end
 
 end

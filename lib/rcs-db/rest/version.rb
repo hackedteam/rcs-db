@@ -19,15 +19,15 @@ class VersionController < RESTController
 
     versions = {:console => console_version, :db => db_version}
 
-    return RESTController.reply.ok(versions)
+    return ok(versions)
   end
 
   def show
     console_file = Dir.pwd + "/console/rcs-console-#{@params['_id']}.air"
 
-    return RESTController.reply.not_found() unless File.exist?(console_file)
+    return not_found() unless File.exist?(console_file)
     
-    return RESTController.reply.ok(File.binread(console_file), {:content_type => 'binary/octet-stream'})
+    return ok(File.binread(console_file), {:content_type => 'binary/octet-stream'})
   end
   
 end

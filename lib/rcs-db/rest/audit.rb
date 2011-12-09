@@ -53,7 +53,7 @@ class AuditController < RESTController
         query = filtering.where(filter_hash).order_by([[:time, :asc]])
       end
 
-      RESTController.reply.ok(query)
+      ok(query)
     end
   end
   
@@ -92,7 +92,7 @@ class AuditController < RESTController
 
       # Flex RPC does not accept 0 (zero) as return value for a pagination (-1 is a safe alternative)
       num_audits = -1 if num_audits == 0
-      RESTController.reply.ok(num_audits)
+      ok(num_audits)
     end
   end
   
@@ -100,7 +100,7 @@ class AuditController < RESTController
     require_auth_level :admin
     
     search = ::AuditFilters.first
-    return RESTController.reply.ok(search)
+    return ok(search)
   end
   
 end

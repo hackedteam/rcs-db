@@ -91,6 +91,8 @@ module Parser
     request = Hash.new
     request[:controller] = controller
     request[:method] = method
+    request[:query] = query
+    request[:uri] = uri
     request[:uri_params] = uri_params
     request[:params] = params
     request[:cookie] = guid_from_cookie(cookie)

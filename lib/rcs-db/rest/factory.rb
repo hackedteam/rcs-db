@@ -15,7 +15,7 @@ class FactoryController < RESTController
         .any_in(_id: @session[:accessible])
         .only(:name, :desc, :status, :_kind, :path, :type, :ident)
       
-      RESTController.reply.ok(items)
+      ok(items)
     end
   end
   
@@ -28,7 +28,7 @@ class FactoryController < RESTController
         .only(:name, :desc, :status, :_kind, :path, :ident, :counter, :configs)
         .find(@params['_id'])
       
-      RESTController.reply.ok(item)
+      ok(item)
     end
   end
   
@@ -36,16 +36,16 @@ class FactoryController < RESTController
     require_auth_level :tech
     
     # to create a target, we need to owning operation
-    return RESTController.reply.bad_request('INVALID_OPERATION') unless @params.has_key? 'operation'
-    return RESTController.reply.bad_request('INVALID_TARGET') unless @params.has_key? 'target'
+    return bad_request('INVALID_OPERATION') unless @params.has_key? 'operation'
+    return bad_request('INVALID_TARGET') unless @params.has_key? 'target'
     
     mongoid_query do
 
       operation = ::Item.operations.find(@params['operation'])
-      return RESTController.reply.bad_request('INVALID_OPERATION') if operation.nil?
+      return bad_request('INVALID_OPERATION') if operation.nil?
 
       target = ::Item.targets.find(@params['target'])
-      return RESTController.reply.bad_request('INVALID_TARGET') if target.nil?
+      return bad_request('INVALID_TARGET') if target.nil?
 
       # used to generate log/conf keys and seed
       alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-'
@@ -79,7 +79,7 @@ class FactoryController < RESTController
         .only(:name, :desc, :status, :_kind, :path, :ident, :counter, :configs)
         .find(item._id)
 
-      RESTController.reply.ok(item)
+      ok(item)
     end
   end
 
@@ -115,7 +115,7 @@ class FactoryController < RESTController
         .only(:name, :desc, :status, :_kind, :path, :ident, :counter, :configs)
         .find(item._id)
       
-      return RESTController.reply.ok(item)
+      return ok(item)
     end
   end
   
@@ -131,7 +131,7 @@ class FactoryController < RESTController
                 item._kind.to_sym => @params['name'],
                 :desc => "Deleted #{item._kind} '#{item['name']}'"
       
-      return RESTController.reply.ok
+      return ok
     end
   end
   
@@ -149,7 +149,7 @@ class FactoryController < RESTController
                 item._kind.to_sym => @params['name'],
                 :desc => "Saved configuration for factory '#{item['name']}'"
 
-      return RESTController.reply.ok(config)
+      return ok(config)
     end
   end
 

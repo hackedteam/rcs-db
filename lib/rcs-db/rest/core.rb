@@ -16,7 +16,7 @@ class CoreController < RESTController
     mongoid_query do
       cores = ::Core.all
 
-      return RESTController.reply.ok(cores)
+      return ok(cores)
     end
   end
 
@@ -25,7 +25,7 @@ class CoreController < RESTController
 
     mongoid_query do
       core = ::Core.where({name: @params['_id']}).first
-      return RESTController.reply.not_found("Core #{@params['_id']} not found") if core.nil?
+      return not_found("Core #{@params['_id']} not found") if core.nil?
 
       if @params['content']
         temp = GridFS.to_tmp core[:_grid].first
@@ -37,21 +37,21 @@ class CoreController < RESTController
 
         File.delete(temp)
         
-        return RESTController.reply.ok(list)
+        return ok(list)
       else
         Audit.log :actor => @session[:user][:name], :action => 'core.get', :desc => "Downloaded the core #{@params['_id']}"
 
         #TODO: why this is not working ?  it stops at 65535 bytes on the client
         #file = GridFS.get core[:_grid].first
-        #return RESTController.reply.stream_grid(file)
+        #return stream_grid(file)
 
         # TODO: same as above
         #temp = GridFS.to_tmp core[:_grid].first
-        #return RESTController.reply.stream_file(temp.path)
+        #return stream_file(temp.path)
 
         # TODO: this is not streamed...
         file = GridFS.get core[:_grid].first
-        return RESTController.reply.ok(file.read, {content_type: 'binary/octet-stream'})
+        return ok(file.read, {content_type: 'binary/octet-stream'})
       end
     end
   end
@@ -77,7 +77,7 @@ class CoreController < RESTController
 
       Audit.log :actor => @session[:user][:name], :action => 'core.replace', :desc => "Replaced the #{@params['_id']} core"
 
-      return RESTController.reply.ok(core)
+      return ok(core)
     end
   end
 
@@ -86,7 +86,7 @@ class CoreController < RESTController
 
     mongoid_query do
       core = ::Core.where({name: @params['_id']}).first
-      return RESTController.reply.not_found("Core #{@params['_id']} not found") if core.nil?
+      return not_found("Core #{@params['_id']} not found") if core.nil?
 
       new_entry = @params['name']
 
@@ -109,7 +109,7 @@ class CoreController < RESTController
 
       Audit.log :actor => @session[:user][:name], :action => 'core.add', :desc => "Added [#{new_entry}] to the core #{core.name}"
 
-      return RESTController.reply.ok()
+      return ok()
     end
   end
 
@@ -119,14 +119,14 @@ class CoreController < RESTController
     mongoid_query do
 
       core = ::Core.where({name: @params['_id']}).first
-      return RESTController.reply.not_found("Core #{@params['_id']} not found") if core.nil?
+      return not_found("Core #{@params['_id']} not found") if core.nil?
 
       if @params['name']
 
         # get the core, save to tmp and edit it
         temp = GridFS.to_tmp core[:_grid].first
         Zip::ZipFile.open(temp, Zip::ZipFile::CREATE) do |z|
-          return RESTController.reply.not_found("File #{@params['name']} not found") unless z.file.exist?(@params['name'])
+          return not_found("File #{@params['name']} not found") unless z.file.exist?(@params['name'])
           z.file.delete(@params['name'])
         end
 
@@ -141,14 +141,14 @@ class CoreController < RESTController
 
         Audit.log :actor => @session[:user][:name], :action => 'core.remove', :desc => "Removed the file [#{@params['name']}] from the core #{@params['_id']}"
 
-        return RESTController.reply.ok()
+        return ok()
       else
         GridFS.delete core[:_grid].first
         core.destroy
 
         Audit.log :actor => @session[:user][:name], :action => 'core.delete', :desc => "Deleted the core #{@params['_id']}"
 
-        return RESTController.reply.ok()
+        return ok()
       end
 
     end
@@ -159,14 +159,14 @@ class CoreController < RESTController
 
     mongoid_query do
       core = ::Core.where({name: @params['_id']}).first
-      return RESTController.reply.not_found("Core #{@params['_id']} not found") if core.nil?
+      return not_found("Core #{@params['_id']} not found") if core.nil?
 
       core.version = @params['version']
       core.save
 
       Audit.log :actor => @session[:user][:name], :action => 'core.version', :desc => "Set the core #{@params['_id']} to version #{@params['version']}"
 
-      return RESTController.reply.ok()
+      return ok()
     end
   end
 

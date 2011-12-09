@@ -25,11 +25,54 @@ end
 
 class RESTController
   include RCS::Tracer
+
+  STATUS_OK = 200
+  STATUS_BAD_REQUEST = 400
+  STATUS_NOT_FOUND = 404
+  STATUS_NOT_AUTHORIZED = 403
+  STATUS_CONFLICT = 409
+  STATUS_SERVER_ERROR = 500
   
   # the parameters passed on the REST request
   attr_reader :session, :request
   
   @controllers = {}
+
+  def ok(*args)
+    RESTResponse.new STATUS_OK, *args
+  end
+
+  #def generic(*args)
+  #  return RESTResponse.new *args
+  #end
+
+  def not_found(message='', callback=nil)
+    RESTResponse.new(STATUS_NOT_FOUND, message, callback)
+  end
+
+  def not_authorized(message='', callback=nil)
+    RESTResponse.new(STATUS_NOT_AUTHORIZED, message, callback)
+  end
+
+  def conflict(message='', callback=nil)
+    RESTResponse.new(STATUS_CONFLICT, message, callback)
+  end
+
+  def bad_request(message='', callback=nil)
+    RESTResponse.new(STATUS_BAD_REQUEST, message, callback)
+  end
+
+  def server_error(message='', callback=nil)
+    RESTResponse.new(STATUS_SERVER_ERROR, message, callback)
+  end
+  
+  def stream_file(filename, callback=nil)
+    RESTFileStream.new(filename, callback)
+  end
+  
+  def stream_grid(grid_io, callback=nil)
+    RESTGridStream.new(grid_io, callback)
+  end
   
   def self.register(klass)
     @controllers[klass.to_s] = RCS::DB.const_get(klass) if klass.to_s.end_with? "Controller"
@@ -37,10 +80,6 @@ class RESTController
   
   def self.sessionmanager
     @session_manager || SessionManager.instance
-  end
-  
-  def self.reply
-    @response_class || RESTResponse
   end
   
   def self.get(request)
@@ -90,9 +129,9 @@ class RESTController
   
   def act!
     # check we have a valid session and an action
-    return RESTController.reply.not_authorized('INVALID_COOKIE') unless valid_session?
-    return RESTController.reply.server_error('NULL_ACTION') if @request[:action].nil?
-
+    return not_authorized('INVALID_COOKIE') unless valid_session?
+    return server_error('NULL_ACTION') if @request[:action].nil?
+    
     # make a copy of the params, handy for access and mongoid queries
     # consolidate URI parameters
     @params = @request[:params].clone unless @request[:params].nil?
@@ -100,19 +139,19 @@ class RESTController
     unless @params.has_key? '_id'
       @params['_id'] = @request[:uri_params].first unless @request[:uri_params].first.nil?
     end
-
+    
     # GO!
     response = send(@request[:action])
 
-    return RESTController.reply.server_error('CONTROLLER_ERROR') if response.nil?
+    return server_error('CONTROLLER_ERROR') if response.nil?
     return response
   rescue NotAuthorized => e
     trace :error, "[#{@request[:peer]}] Request not authorized: #{e.message}"
-    return RESTController.reply.not_authorized(e.message)
+    return not_authorized(e.message)
   rescue Exception => e
     trace :error, "Server error: #{e.message}"
     trace :fatal, "Backtrace   : #{e.backtrace}"
-    return RESTController.reply.server_error(e.message)
+    return server_error(e.message)
   end
   
   def cleanup
@@ -160,17 +199,17 @@ class RESTController
       yield
     rescue Mongoid::Errors::DocumentNotFound => e
       trace :error, "Document not found => #{e.message}"
-      return RESTController.reply.not_found(e.message)
+      return not_found(e.message)
     rescue Mongoid::Errors::InvalidOptions => e
       trace :error, "Invalid parameter => #{e.message}"
-      return RESTController.reply.bad_request(e.message)
+      return bad_request(e.message)
     rescue BSON::InvalidObjectId => e
       trace :error, "Bad request #{e.class} => #{e.message}"
-      return RESTController.reply.bad_request(e.message)
+      return bad_request(e.message)
     rescue Exception => e
       trace :error, e.message
       trace :fatal, "EXCEPTION(#{e.class}): " + e.backtrace.join("\n")
-      return RESTController.reply.not_found
+      return not_found
     end
   end
 
@@ -179,7 +218,7 @@ end # RESTController
 class InvalidController < RESTController
   def act!
     trace :error, "Invalid controller invoked: #{@request[:controller]}/#{@request[:action]}. Replied 404."
-    RESTController.reply.not_found
+    not_found
   end
 end
 

@@ -13,7 +13,7 @@ class CollectorController < RESTController
     mongoid_query do
       result = ::Collector.all
 
-      return RESTController.reply.ok(result)
+      return ok(result)
     end
   end
 
@@ -22,20 +22,20 @@ class CollectorController < RESTController
 
     mongoid_query do
       result = Collector.find(@params['_id'])
-      return RESTController.reply.ok(result)
+      return ok(result)
     end
   end
 
   def create
     require_auth_level :sys
 
-    return RESTController.reply.conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :anonymizers
+    return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :anonymizers
 
     result = Collector.create(name: @params['name'], type: 'remote', port: 4444, poll: false, configured: false)
 
     Audit.log :actor => @session[:user][:name], :action => 'collector.create', :desc => "Created the collector '#{@params['name']}'"
 
-    return RESTController.reply.ok(result)
+    return ok(result)
   end
 
   def update
@@ -53,7 +53,7 @@ class CollectorController < RESTController
 
       coll.update_attributes(@params)
       
-      return RESTController.reply.ok(coll)
+      return ok(coll)
     end
   end
   
@@ -66,7 +66,7 @@ class CollectorController < RESTController
       Audit.log :actor => @session[:user][:name], :action => 'collector.destroy', :desc => "Deleted the collector '#{collector[:name]}'"
 
       collector.destroy
-      return RESTController.reply.ok
+      return ok
     end    
   end
 
@@ -80,7 +80,7 @@ class CollectorController < RESTController
       collector.version = @params['version']
       collector.save
       
-      return RESTController.reply.ok
+      return ok
     end
   end
 
@@ -90,7 +90,7 @@ class CollectorController < RESTController
     #TODO: implement config retrieval
     #TODO: mark as configured...
 
-    return RESTController.reply.not_found
+    return not_found
   end
 
   def logs
@@ -103,7 +103,7 @@ class CollectorController < RESTController
 
           klass = CappedLog.collection_class collector[:_id]
           logs = klass.all
-          return RESTController.reply.ok(logs)
+          return ok(logs)
 
         when 'POST'
           require_auth_level :server
@@ -113,10 +113,10 @@ class CollectorController < RESTController
           entry.type = @params['type'].downcase
           entry.desc = @params['desc']
           entry.save
-          return RESTController.reply.ok
+          return ok
       end
 
-      return RESTController.reply.bad_request
+      return bad_request
     end
   end
 
@@ -133,7 +133,7 @@ class CollectorController < RESTController
       logs = db.collection(CappedLog.collection_name(collector[:_id]))
       logs.drop
 
-      return RESTController.reply.ok
+      return ok
     end
   end
 

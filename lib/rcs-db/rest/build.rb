@@ -18,7 +18,7 @@ class BuildController < RESTController
     begin
       build = Build.factory(platform.to_sym)
     rescue Exception => e
-      return RESTController.reply.not_found(e.message)
+      return not_found(e.message)
     end
 
     begin
@@ -26,12 +26,11 @@ class BuildController < RESTController
 
       trace :info, "Output: #{build.outputs} #{File.size(build.path(build.outputs.first)).to_s_bytes}"
 
-      # TODO: add the callback for build.clean
-      return RESTController.reply.stream_file(build.path(build.outputs.first))
+      #return stream_file(build.path(build.outputs.first), proc { build.clean })
+      return stream_file('cores/offline.zip', proc { build.clean })
 
     rescue Exception => e
-      trace :error, "Cannot send build result: #{e.message}"
-      return RESTController.reply.server_error(e.message)
+      return server_error(e.message)
     end
 
   end

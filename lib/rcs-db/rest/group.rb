@@ -13,7 +13,7 @@ class GroupController < RESTController
     require_auth_level :admin
 
     groups = Group.all
-    return RESTController.reply.ok(groups)
+    return ok(groups)
   end
 
   def show
@@ -21,8 +21,8 @@ class GroupController < RESTController
 
     mongoid_query do
       group = Group.find(@params['_id'])
-      return RESTController.reply.not_found if group.nil?
-      return RESTController.reply.ok(group)
+      return not_found if group.nil?
+      return ok(group)
     end
   end
   
@@ -30,11 +30,11 @@ class GroupController < RESTController
     require_auth_level :admin
     
     result = Group.create(name: @params['name'])
-    return RESTController.reply.conflict(result.errors[:name]) unless result.persisted?
+    return conflict(result.errors[:name]) unless result.persisted?
 
     Audit.log :actor => @session[:user][:name], :action => 'group.create', :group => @params['name'], :desc => "Created the group '#{@params['name']}'"
 
-    return RESTController.reply.ok(result)
+    return ok(result)
   end
   
   def update
@@ -43,7 +43,7 @@ class GroupController < RESTController
     mongoid_query do
       group = Group.find(@params['_id'])
       @params.delete('_id')
-      return RESTController.reply.not_found if group.nil?
+      return not_found if group.nil?
       
       @params.each_pair do |key, value|
         if group[key.to_s] != value and not key['_ids']
@@ -53,7 +53,7 @@ class GroupController < RESTController
       
       result = group.update_attributes(@params)
       
-      return RESTController.reply.ok(group)
+      return ok(group)
     end
   end
   
@@ -62,12 +62,12 @@ class GroupController < RESTController
 
     mongoid_query do
       group = Group.find(@params['_id'])
-      return RESTController.reply.not_found if group.nil?
+      return not_found if group.nil?
       
       Audit.log :actor => @session[:user][:name], :action => 'group.destroy', :group => @params['name'], :desc => "Deleted the group '#{group[:name]}'"
       
       group.destroy
-      return RESTController.reply.ok
+      return ok
     end
   end
 
@@ -77,13 +77,13 @@ class GroupController < RESTController
     mongoid_query do
       group = Group.find(@params['_id'])
       user = User.find(@params['user']['_id'])
-      return RESTController.reply.not_found if user.nil? or group.nil?
+      return not_found if user.nil? or group.nil?
       
       group.users << user
       
       Audit.log :actor => @session[:user][:name], :action => 'group.add_user', :group => @params['name'], :desc => "Added user '#{user.name}' to group '#{group.name}'"
       
-      return RESTController.reply.ok
+      return ok
     end
   end
   
@@ -93,13 +93,13 @@ class GroupController < RESTController
     mongoid_query do
       group = Group.find(@params['_id'])
       user = User.find(@params['user']['_id'])
-      return RESTController.reply.not_found if user.nil? or group.nil?
+      return not_found if user.nil? or group.nil?
 
       group.users.delete(user)
       
       Audit.log :actor => @session[:user][:name], :action => 'group.remove_user', :group => @params['name'], :desc => "Removed user '#{user.name}' from group '#{group.name}'"
       
-      return RESTController.reply.ok
+      return ok
     end
   end
 
@@ -109,13 +109,13 @@ class GroupController < RESTController
     mongoid_query do
       group = Group.find(@params['_id'])
       oper = Item.find(@params['operation']['_id'])
-      return RESTController.reply.not_found if oper.nil? or group.nil?
+      return not_found if oper.nil? or group.nil?
 
       group.items << oper
 
       Audit.log :actor => @session[:user][:name], :action => 'group.add_operation', :group => @params['name'], :desc => "Added operation '#{oper.name}' to group '#{group.name}'"
 
-      return RESTController.reply.ok
+      return ok
     end
   end
 
@@ -125,13 +125,13 @@ class GroupController < RESTController
     mongoid_query do
       group = Group.find(@params['_id'])
       oper = Item.find(@params['operation']['_id'])
-      return RESTController.reply.not_found if oper.nil? or group.nil?
+      return not_found if oper.nil? or group.nil?
 
       group.items.delete(oper)
 
       Audit.log :actor => @session[:user][:name], :action => 'group.remove_operation', :group => @params['name'], :desc => "Removed operation '#{oper.name}' from group '#{group.name}'"
 
-      return RESTController.reply.ok
+      return ok
     end
   end
 
@@ -156,7 +156,7 @@ class GroupController < RESTController
         Audit.log :actor => @session[:user][:name], :action => 'group.alert', :group => @params['name'], :desc => "Monitor alert group was removed"
       end
       
-      return RESTController.reply.ok
+      return ok
     end
   end
 

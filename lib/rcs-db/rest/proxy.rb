@@ -16,7 +16,7 @@ class ProxyController < RESTController
       result = ::Proxy.all
       #TODO: filter on target if you have the right access
 
-      return RESTController.reply.ok(result)
+      return ok(result)
     end
   end
 
@@ -25,20 +25,20 @@ class ProxyController < RESTController
 
     mongoid_query do
       proxy = ::Proxy.find(@params['_id'])
-      return RESTController.reply.ok(proxy)
+      return ok(proxy)
     end
   end
 
   def create
     require_auth_level :sys
 
-    return RESTController.reply.conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :proxies
+    return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :proxies
 
     result = Proxy.create(name: @params['name'], port: 4444, poll: false, configured: false, redirect: 'auto', redirection_tag: 'ww')
 
     Audit.log :actor => @session[:user][:name], :action => 'proxy.create', :desc => "Created the injection proxy '#{@params['name']}'"
 
-    return RESTController.reply.ok(result)
+    return ok(result)
   end
 
   def update
@@ -56,7 +56,7 @@ class ProxyController < RESTController
 
       proxy.update_attributes(@params)
 
-      return RESTController.reply.ok(proxy)
+      return ok(proxy)
     end
   end
 
@@ -74,7 +74,7 @@ class ProxyController < RESTController
       proxy.destroy
       Audit.log :actor => @session[:user][:name], :action => 'proxy.destroy', :desc => "Deleted the injection proxy '#{proxy_name}'"
       
-      return RESTController.reply.ok
+      return ok
     end
   end
 
@@ -88,7 +88,7 @@ class ProxyController < RESTController
       proxy.version = @params['version']
       proxy.save
 
-      return RESTController.reply.ok
+      return ok
     end
   end
 
@@ -105,9 +105,9 @@ class ProxyController < RESTController
       proxy.configured = true
       proxy.save
 
-      return RESTController.reply.stream_file(filename) unless filename.nil?
+      return stream_file(filename) unless filename.nil?
       
-      return RESTController.reply.not_found
+      return not_found
     end
   end
 
@@ -121,7 +121,7 @@ class ProxyController < RESTController
           
           klass = CappedLog.collection_class proxy[:_id]
           logs = klass.all
-          return RESTController.reply.ok(logs)
+          return ok(logs)
 
         when 'POST'
           require_auth_level :server
@@ -131,10 +131,10 @@ class ProxyController < RESTController
           entry.type = @params['type'].downcase
           entry.desc = @params['desc']
           entry.save
-          return RESTController.reply.ok
+          return ok
       end
 
-      return RESTController.reply.bad_request
+      return bad_request
     end
   end
 
@@ -151,7 +151,7 @@ class ProxyController < RESTController
       logs = db.collection(CappedLog.collection_name(proxy[:_id]))
       logs.drop
 
-      return RESTController.reply.ok
+      return ok
     end
   end
 
@@ -174,7 +174,7 @@ class ProxyController < RESTController
       rule.action_param_name = @params['rule']['action_param_name']
 
       target = ::Item.find(@params['rule']['target_id'].first)
-      return RESTController.reply.not_found("Target not found") if target.nil?
+      return not_found("Target not found") if target.nil?
 
       rule.target_id = [ target[:_id] ]
 
@@ -193,7 +193,7 @@ class ProxyController < RESTController
       proxy.rules << rule
       proxy.save
 
-      return RESTController.reply.ok(rule)
+      return ok(rule)
     end
   end
 
@@ -214,7 +214,7 @@ class ProxyController < RESTController
       proxy.rules.delete_all(conditions: { _id: rule[:_id]})
       proxy.save
 
-      return RESTController.reply.ok
+      return ok
     end
   end
 
@@ -256,7 +256,7 @@ class ProxyController < RESTController
       Audit.log :actor => @session[:user][:name], :action => 'proxy.update_rule', 
                 :desc => "Modified a rule on the injection proxy '#{proxy.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
 
-      return RESTController.reply.ok(rule)
+      return ok(rule)
     end
   end
 
@@ -273,9 +273,9 @@ class ProxyController < RESTController
       proxy.save
 
       # push the rules
-      return RESTController.reply.server_error("Cannot push rules via NC") unless RCS::DB::Frontend.rnc_push(proxy.address)
+      return server_error("Cannot push rules via NC") unless RCS::DB::NetworkController.push(proxy.address)
 
-      return RESTController.reply.ok
+      return ok
     end
   end
 

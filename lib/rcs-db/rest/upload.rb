@@ -20,7 +20,7 @@ class UploadController < RESTController
 
     Audit.log :actor => @session[:user][:name], :action => 'upload.create', :desc => "Uploaded #{@request[:content]['content'].size.to_s_bytes} bytes"
 
-    return RESTController.reply.ok(name, {:content_type => 'text/plain'})
+    return ok(name, {:content_type => 'text/plain'})
   end
 
 end

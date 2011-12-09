@@ -71,7 +71,6 @@ class HTTPHandler < EM::Connection
   end
 
   def unbind
-    trace :debug, "[#{@peer}] REP: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time}) #{@response_size.to_s_bytes}" if Config.instance.global['PERF'] and not @response_size.nil?
     trace :debug, "Connection closed #{@peer}:#{@peer_port}"
     @closed = true
   end
@@ -83,7 +82,7 @@ class HTTPHandler < EM::Connection
   def self.restcontroller
     @rest_controller || RESTController
   end
-
+  
   def process_http_request
     # the http request details are available via the following instance variables:
     #   @http_protocol
@@ -109,51 +108,50 @@ class HTTPHandler < EM::Connection
     
     # Block which fulfills the request (generate the data)
     operation = proc do
-
+      
       trace :debug, "[#{@peer}] QUE: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time})" if Config.instance.global['PERF']
-          
+
       generation_time = Time.now
       
       begin
         # parse all the request params
         request = prepare_request @http_request_method, @http_request_uri, @http_query_string, @http_cookie, @http_content_type, @http_post_content
         request[:peer] = peer
-
+        
         # get the correct controller
         controller = HTTPHandler.restcontroller.get request
-
+        
         # do the dirty job :)
         responder = controller.act!
-
+        
         # create the response object to be used in the EM::defer callback
-        reply = responder.prepare_response(self)
-
+        
+        reply = responder.prepare_response(self, request)
+        
         # keep the size of the reply to be used in the closing method
         @response_size = reply.content ? reply.content.bytesize : 0
-
-        trace :debug, "[#{@peer}] GEN: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - generation_time}) #{@response_size.to_s_bytes}" if Config.instance.global['PERF']
-
+        trace :debug, "[#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{request[:query]} (#{Time.now - generation_time}) #{@response_size.to_s_bytes}" if Config.instance.global['PERF']
+        
         reply
-
       rescue Exception => e
         trace :error, e.message
         trace :fatal, "EXCEPTION(#{e.class}): " + e.backtrace.join("\n")
         
-        responder = RESTController.reply.server_error('CONTROLLER_ERROR')
-        reply = responder.prepare_response(self)
-
+        # TODO: SERVER ERROR
+        responder = RESTResponse.new(500, e.message)
+        reply = responder.prepare_response(self, request)
         reply
       end
-
+      
     end
-
+    
     # Block which fulfills the reply (send back the data to the client)
     response = proc do |reply|
-
-        reply.send_response
-  
-        # keep the size of the reply to be used in the closing method
-        @response_size = reply.headers['Content-length'] || 0
+      
+      reply.send_response
+      
+      # keep the size of the reply to be used in the closing method
+      @response_size = reply.headers['Content-length'] || 0
     end
 
     # Let the thread pool handle request

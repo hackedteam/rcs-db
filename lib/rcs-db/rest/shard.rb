@@ -12,14 +12,14 @@ class ShardController < RESTController
     require_auth_level :sys
 
     shards = Shard.all
-    return RESTController.reply.ok(shards)
+    return ok(shards)
   end
 
   def show
     require_auth_level :sys
 
     stats = Shard.find(@params['_id'])
-    return RESTController.reply.ok(stats)
+    return ok(stats)
   end
 
   def create
@@ -29,14 +29,14 @@ class ShardController < RESTController
     @params['host'] = @params['peer'] if @params['host'] == 'auto'
     
     output = Shard.create @params['host']
-    return RESTController.reply.ok(output)
+    return ok(output)
   end
 
   def destroy
     require_auth_level :sys
 
     output = Shard.destroy @params['_id']
-    return RESTController.reply.ok(output)
+    return ok(output)
   end
 
 end
