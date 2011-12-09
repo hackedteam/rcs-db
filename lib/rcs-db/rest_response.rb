@@ -51,12 +51,12 @@ class RESTResponse
     return RESTResponse.new *args
   end
 
-  def self.stream_file(filename)
-    return RESTFileStream.new(filename)
+  def self.stream_file(filename, callback=nil)
+    return RESTFileStream.new(filename, callback)
   end
 
-  def self.stream_grid(grid_io)
-    return RESTGridStream.new(grid_io)
+  def self.stream_grid(grid_io, callback=nil)
+    return RESTGridStream.new(grid_io, callback)
   end
   
   attr_accessor :status, :content, :content_type, :cookie
@@ -83,40 +83,55 @@ class RESTResponse
   # BEWARE: for any reason this method should raise an exception!
   # An exception raised here WILL NOT be cough, resulting in a crash.
   #
-  def prepare_response(connection)
+  def prepare_response(connection, request)
+
+    @request = request
+    @connection = connection
+    @response = EM::DelegatedHttpResponse.new @connection
     
-    resp = EM::DelegatedHttpResponse.new connection
-    
-    resp.status = @status
-    resp.status_string = ::Net::HTTPResponse::CODE_TO_OBJ["#{resp.status}"].name.gsub(/Net::HTTP/, '')
+    @response.status = @status
+    @response.status_string = ::Net::HTTPResponse::CODE_TO_OBJ["#{@response.status}"].name.gsub(/Net::HTTP/, '')
     
     begin
-      resp.content = (@content_type == 'application/json') ? @content.to_json : @content
+      @response.content = (@content_type == 'application/json') ? @content.to_json : @content
     rescue Exception
-      resp.status = STATUS_SERVER_ERROR
-      resp.content = 'JSON_SERIALIZATION_ERROR'
+      @response.status = STATUS_SERVER_ERROR
+      @response.content = 'JSON_SERIALIZATION_ERROR'
     end
     
-    resp.headers['Content-Type'] = @content_type
-    resp.headers['Set-Cookie'] = @cookie unless @cookie.nil?
+    @response.headers['Content-Type'] = @content_type
+    @response.headers['Set-Cookie'] = @cookie unless @cookie.nil?
     
     if keep_alive? connection
       # keep the connection open to allow multiple requests on the same connection
       # this will increase the speed of sync since it decrease the latency on the net
-      resp.keep_connection_open true
-      resp.headers['Connection'] = 'keep-alive'
+      @response.keep_connection_open true
+      @response.headers['Connection'] = 'keep-alive'
     else
-      resp.headers['Connection'] = 'close'
+      @response.headers['Connection'] = 'close'
     end
     
-    resp
+    self
+  end
+
+  def content
+    @response.content
+  end
+
+  def headers
+    @response.headers
+  end
+
+  def send_response
+    @response.send_response
+    @callback
   end
 
 end # RESTResponse
 
 class RESTFileStream
   
-  def initialize(filename, callback=nil)
+  def initialize(filename, callback=proc{})
     @filename = filename
     @callback = callback
   end
@@ -126,10 +141,11 @@ class RESTFileStream
     http_headers.split("\x00").index {|h| h['Connection: keep-alive'] || h['Connection: Keep-Alive']}
   end
 
-  def prepare_response(connection)
-    
+  def prepare_response(connection, request)
+
+    @request = request
     @connection = connection
-    @response = EM::DelegatedHttpResponse.new connection
+    @response = EM::DelegatedHttpResponse.new @connection
 
     @response.headers["Content-length"] = File.size @filename
 
@@ -161,21 +177,14 @@ class RESTFileStream
   end
   
   def send_response
-    stream = proc do
-      @response.send_headers
-      EventMachine::FileStreamer.new(@connection, @filename, :http_chunks => false )
-      #EventMachine::GridStreamer.new(self, response.filename, :http_chunks => true )
-    end
-    
-    EM::Deferrable.future( stream ) {
-      @callback
-      @connection.close_connection_after_writing
-    }
+    @response.send_headers
+    streamer = EventMachine::FileStreamer.new(@connection, @filename, :http_chunks => false )
+    streamer.callback { @callback.call }
   end
 end # RESTFileStream
 
 class RESTGridStream
-  def initialize(id, collection, callback=nil)
+  def initialize(id, collection, callback=proc{})
     @id = id
     @collection = collection
     @grid_io = GridFS.get(id, collection)
@@ -187,9 +196,11 @@ class RESTGridStream
     http_headers.split("\x00").index {|h| h['Connection: keep-alive'] || h['Connection: Keep-Alive']}
   end
   
-  def prepare_response(connection)
+  def prepare_response(connection, request)
+
+    @request = request
     @connection = connection
-    @response = EM::DelegatedHttpResponse.new connection
+    @response = EM::DelegatedHttpResponse.new @connection
     
     @response.headers["Content-length"] = @grid_io.file_length
     
@@ -213,15 +224,9 @@ class RESTGridStream
   end
   
   def send_response
-    stream = proc do
-      @response.send_headers
-      EventMachine::GridStreamer.new(@connection, @grid_io, :http_chunks => false)
-    end
-    
-    EM::Deferrable.future( stream ) {
-      @callback
-      @connection.close_connection_after_writing
-    }
+    @response.send_headers
+    streamer = EventMachine::GridStreamer.new(@connection, @grid_io, :http_chunks => false)
+    streamer.callback { @callback.call }
   end
 end # RESTGridStream
 

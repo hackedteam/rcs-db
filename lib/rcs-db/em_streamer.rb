@@ -1,8 +1,9 @@
-require 'grid'
+require 'eventmachine'
+require_relative 'grid'
 
 module EventMachine
   class GridStreamer
-    include Deferrable
+    include EventMachine::Deferrable
       
       # Wait until next tick to send more data when 50k is still in the outgoing buffer
       BackpressureLevel = 50000
