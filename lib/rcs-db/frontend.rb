@@ -3,6 +3,7 @@
 #
 
 require 'net/http'
+require 'rcs-common/trace'
 
 module RCS
 module DB

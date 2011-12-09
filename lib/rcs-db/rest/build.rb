@@ -26,6 +26,7 @@ class BuildController < RESTController
 
       trace :info, "Output: #{build.outputs} #{File.size(build.path(build.outputs.first)).to_s_bytes}"
 
+      # TODO: add the callback for build.clean
       return RESTController.reply.stream_file(build.path(build.outputs.first))
 
     rescue Exception => e
