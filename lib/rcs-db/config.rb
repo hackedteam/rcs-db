@@ -25,7 +25,7 @@ class Config
                     'CA_PEM' => 'rcs.pem',
                     'DB_CERT' => 'rcs-db.crt',
                     'DB_KEY' => 'rcs-db.key',
-                    'LISTENING_PORT' => 4444,
+                    'LISTENING_PORT' => 443,
                     'HB_INTERVAL' => 30,
                     'WORKER_PORT' => 5150}
 
@@ -165,7 +165,7 @@ class Config
   def reset_admin(options)
     trace :info, "Resetting 'admin' password..."
 
-    http = Net::HTTP.new('127.0.0.1', 4444)
+    http = Net::HTTP.new(options[:db_address] || '127.0.0.1', options[:db_port] || 443)
     http.use_ssl = true
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
@@ -176,7 +176,7 @@ class Config
   def add_shard(options)
     trace :info, "Adding this host as db shard..."
 
-    http = Net::HTTP.new(options[:db_address] || '127.0.0.1', options[:db_port] || 4444)
+    http = Net::HTTP.new(options[:db_address] || '127.0.0.1', options[:db_port] || 443)
     http.use_ssl = true
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
