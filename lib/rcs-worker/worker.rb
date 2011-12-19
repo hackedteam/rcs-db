@@ -28,7 +28,7 @@ module Worker
 
 Thread.abort_on_exception=true
 
-class HTTPHandler < EM::Connection
+class HTTPHandler
   include RCS::Tracer
   include EM::HttpServer
   include Parser
