@@ -164,7 +164,7 @@ end #HTTPHandler
 class Events
   include RCS::Tracer
   
-  def setup(port = 4444)
+  def setup(port = 443)
 
     # main EventMachine loop
     begin

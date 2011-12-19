@@ -16,6 +16,15 @@ class GroupMigration
       # skip item if already migrated
       next if ::Group.count(conditions: {_mid: group[:group_id]}) != 0
 
+      # if the same group is imported multiple times, update the _mid and go on
+      #       (for multiple server migration)
+      g = ::Group.where(name: group[:group]).first
+      unless g.nil?
+        g[:_mid] = group[:group_id]
+        g.save
+        next
+      end
+
       trace :info, "Migrating group '#{group[:group]}'." if verbose
       print "." unless verbose
 

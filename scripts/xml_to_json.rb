@@ -79,10 +79,22 @@ end
               e[:latitude] = params['latitude'].to_f unless params['latitude'].nil?
               e[:longitude] = params['longitude'].to_f unless params['longitude'].nil?
               e[:distance] = params['distance'].to_i unless params['distance'].nil?
-              e[:id] = params['id'].to_i unless params['id'].nil?
-              e[:country] = params['country'].to_i unless params['country'].nil?
-              e[:network] = params['network'].to_i unless params['network'].nil?
-              e[:area] = params['area'].to_i unless params['area'].nil?
+              unless params['id'].nil?
+                e[:id] = params['id'].to_i
+                e[:id] = -1 if params['id'] == '*' or params['id'] == ''
+              end
+              unless params['country'].nil?
+                e[:country] = params['country'].to_i
+                e[:country] = -1 if params['country'] == '*' or params['country'] == ''
+              end
+              unless params['network'].nil?
+                e[:network] = params['network'].to_i
+                e[:network] = -1 if params['network'] == '*' or params['network'] == ''
+              end
+              unless params['area'].nil?
+                e[:area] = params['area'].to_i
+                e[:area] = -1 if params['area'] == '*' or params['area'] == ''
+              end
             when 'sms'
               e[:number] = params['number']
               e[:text] = params['text']
@@ -106,6 +118,7 @@ end
                   e.delete(:start)
                 when 'after startup'
                   e[:event] = 'timer'
+                  e[:subtype] = "startup"
                   e[:ts] = "00:00:00"
                   e[:te] = "23:59:59"
                 when 'after install'

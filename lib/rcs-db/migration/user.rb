@@ -20,7 +20,7 @@ class UserMigration
       #       (for multiple server migration)
       u = ::User.where(name: user[:user]).first
       unless u.nil?
-        u._mid = user[:user_id]
+        u[:_mid] = user[:user_id]
         u.save
         next
       end

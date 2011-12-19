@@ -19,7 +19,7 @@ class CoreDeveloper
 
   def login(host, port, user, pass)
     @host = host || '127.0.0.1'
-    @port = port || 4444
+    @port = port || 443
     @http = Net::HTTP.new(@host, @port)
     @http.use_ssl = true
     @http.verify_mode = OpenSSL::SSL::VERIFY_NONE
