@@ -55,8 +55,7 @@ system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o 
 ###################################################################################################
 params = {platform: 'iso',
           generate: {platforms: ['osx', 'windows'],
-                     binary: {demo: true, admin: false},
-                     melt: {admin: false}
+                     binary: {demo: true}
                     }
           }
 
