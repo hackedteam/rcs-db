@@ -47,23 +47,23 @@ class RESTController
   #end
 
   def not_found(message='', callback=nil)
-    RESTResponse.new(STATUS_NOT_FOUND, message, callback)
+    RESTResponse.new(STATUS_NOT_FOUND, message, {}, callback)
   end
 
   def not_authorized(message='', callback=nil)
-    RESTResponse.new(STATUS_NOT_AUTHORIZED, message, callback)
+    RESTResponse.new(STATUS_NOT_AUTHORIZED, message, {}, callback)
   end
 
   def conflict(message='', callback=nil)
-    RESTResponse.new(STATUS_CONFLICT, message, callback)
+    RESTResponse.new(STATUS_CONFLICT, message, {}, callback)
   end
 
   def bad_request(message='', callback=nil)
-    RESTResponse.new(STATUS_BAD_REQUEST, message, callback)
+    RESTResponse.new(STATUS_BAD_REQUEST, message, {}, callback)
   end
 
   def server_error(message='', callback=nil)
-    RESTResponse.new(STATUS_SERVER_ERROR, message, callback)
+    RESTResponse.new(STATUS_SERVER_ERROR, message, {}, callback)
   end
   
   def stream_file(filename, callback=nil)
