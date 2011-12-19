@@ -75,7 +75,7 @@ class RESTResponse
 
   def send_response
     @response.send_response
-    @callback
+    @callback unless @callback.nil?
   end
 
 end # RESTResponse
@@ -130,7 +130,7 @@ class RESTFileStream
   def send_response
     @response.send_headers
     streamer = EventMachine::FileStreamer.new(@connection, @filename, :http_chunks => false )
-    streamer.callback { @callback.call }
+    streamer.callback { @callback.call } unless @callback.nil?
   end
 end # RESTFileStream
 
@@ -177,7 +177,7 @@ class RESTGridStream
   def send_response
     @response.send_headers
     streamer = EventMachine::GridStreamer.new(@connection, @grid_io, :http_chunks => false)
-    streamer.callback { @callback.call }
+    streamer.callback { @callback.call } unless @callback.nil?
   end
 end # RESTGridStream
 
