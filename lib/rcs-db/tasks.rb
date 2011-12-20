@@ -258,7 +258,7 @@ class TaskManager
     task.stop! unless task.nil?
     @tasks[user].delete task_id
     
-    FileUtils.rm_rf(Config.instance.temp("#{@_id}*"))
+    FileUtils.rm_rf(Config.instance.temp("#{task_id}*"))
     
   end
 end # TaskManager
