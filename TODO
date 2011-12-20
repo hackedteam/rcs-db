@@ -17,6 +17,8 @@ HIGH PRIORITY:
 
     remove objects that references an item on deletion (rules, alerts, dashboard, recent)  (alor)
 
+    force demo mode based on license
+
 MEDIUM PRIORITY:
 
     complete the worker decoding (daniele)
