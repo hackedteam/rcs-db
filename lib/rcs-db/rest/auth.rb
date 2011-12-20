@@ -95,8 +95,11 @@ class AuthController < RESTController
 
   # once the session is over you can explicitly logout
   def logout
-    Audit.log :actor => @session[:user][:name], :action => 'logout', :user => @session[:user][:name], :desc => "User '#{@session[:user][:name]}' logged out"
-    SessionManager.instance.delete(@request[:cookie])
+    if @session
+      Audit.log :actor => @session[:user][:name], :action => 'logout', :user => @session[:user][:name], :desc => "User '#{@session[:user][:name]}' logged out"
+      SessionManager.instance.delete(@request[:cookie])
+    end
+    
     ok('', {cookie: "session=; path=/; expires=#{Time.at(0).strftime('%A, %d-%b-%y %H:%M:%S %Z')}" })
   end
   

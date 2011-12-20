@@ -76,11 +76,13 @@ class RESTResponse
   def send_response
     @response.send_response
     @callback unless @callback.nil?
+    trace :debug, "[#{@request[:peer]}] REP: [#{@request[:method]}] #{@request[:uri]} #{@request[:query]} (#{Time.now - @request[:time]})" if Config.instance.global['PERF']
   end
 
 end # RESTResponse
 
 class RESTFileStream
+  include RCS::Tracer
   
   def initialize(filename, callback=proc{})
     @filename = filename
@@ -130,11 +132,16 @@ class RESTFileStream
   def send_response
     @response.send_headers
     streamer = EventMachine::FileStreamer.new(@connection, @filename, :http_chunks => false )
-    streamer.callback { @callback.call } unless @callback.nil?
+    streamer.callback do
+      @callback.call unless @callback.nil?
+      trace :debug, "[#{@request[:peer]}] REP: [#{@request[:method]}] #{@request[:uri]} #{@request[:query]} (#{Time.now - @request[:time]})" if Config.instance.global['PERF']
+    end
   end
 end # RESTFileStream
 
 class RESTGridStream
+  include RCS::Tracer
+  
   def initialize(id, collection, callback=proc{})
     @id = id
     @collection = collection
@@ -177,7 +184,10 @@ class RESTGridStream
   def send_response
     @response.send_headers
     streamer = EventMachine::GridStreamer.new(@connection, @grid_io, :http_chunks => false)
-    streamer.callback { @callback.call } unless @callback.nil?
+    streamer.callback do
+      @callback.call unless @callback.nil?
+      trace :debug, "[#{@request[:peer]}] REP: [#{@request[:method]}] #{@request[:uri]} #{@request[:query]} (#{Time.now - @request[:time]})" if Config.instance.global['PERF']
+    end
   end
 end # RESTGridStream
 

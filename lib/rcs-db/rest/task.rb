@@ -16,6 +16,7 @@ class TaskController < RESTController
     require_auth_level :admin, :sys, :tech, :view
     
     task = TaskManager.instance.get @session[:user][:name], @params['_id']
+    
     return not_found if task.nil?
     return ok task
   end
@@ -23,8 +24,11 @@ class TaskController < RESTController
   def create
     require_auth_level :admin, :sys, :tech, :view
 
-    task = TaskManager.instance.create @session[:user][:name], @params['type'], @params['file_name'], @params
+    puts @params.inspect
 
+    task = TaskManager.instance.create @session[:user][:name], @params['type'], @params['file_name'], @params['params']
+
+    #return bad_request
     return bad_request if task.nil?
     return ok task
   end

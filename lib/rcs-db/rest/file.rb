@@ -13,8 +13,9 @@ class FileController < RESTController
     
     not_found unless File.exists? file_path
     stream_file(file_path)
+    #stream_file('cores/offline.zip')
   end
-
+  
   def destroy
     require_auth_level :none
     

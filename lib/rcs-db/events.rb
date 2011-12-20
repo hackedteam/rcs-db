@@ -38,14 +38,13 @@ module HTTPHandler
     # timeout on the socket
     set_comm_inactivity_timeout 60
 
-    @request_time = Time.now
-
     # we want the connection to be encrypted with ssl
     start_tls(:private_key_file => Config.instance.cert('DB_KEY'),
               :cert_chain_file => Config.instance.cert('DB_CERT'),
               :verify_peer => false)
-
-
+    
+    @connection_time = Time.now
+    
     # to speed-up the processing, we disable the CGI environment variables
     self.no_environment_strings
 
@@ -59,7 +58,7 @@ module HTTPHandler
   end
 
   def ssl_handshake_completed
-    trace :debug, "[#{@peer}] SSL Handshake completed successfully (#{Time.now - @request_time})"
+    trace :debug, "[#{@peer}] SSL Handshake completed successfully (#{Time.now - @connection_time})"
   end
 
   def closed?
@@ -98,12 +97,13 @@ module HTTPHandler
 
     #trace :debug, "[#{@peer}] Incoming HTTP Connection"
     size = (@http_post_content) ? @http_post_content.bytesize : 0
-    trace :debug, "[#{@peer}] REQ: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time}) #{size.to_s_bytes}"
 
     # get it again since if the connection is keep-alived we need a fresh timing for each
     # request and not the total from the beginning of the connection
     @request_time = Time.now
-
+    
+    trace :debug, "[#{@peer}] REQ: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} #{size.to_s_bytes}"
+    
     responder = nil
     
     # Block which fulfills the request (generate the data)
@@ -117,6 +117,7 @@ module HTTPHandler
         # parse all the request params
         request = prepare_request @http_request_method, @http_request_uri, @http_query_string, @http_cookie, @http_content_type, @http_post_content
         request[:peer] = peer
+        request[:time] = @request_time
         
         # get the correct controller
         controller = HTTPHandler.restcontroller.get request

@@ -124,7 +124,7 @@ class RESTController
     #   def login
     #     bypass_authentication true
     #     ...
-    (@request[:controller].eql? 'AuthController' and [:login, :reset].include? @request[:action])
+    (@request[:controller].eql? 'AuthController' and [:login, :reset, :logout].include? @request[:action])
   end
   
   def act!
