@@ -5,14 +5,13 @@ module TaskGenerator
       # default values
       @keep_here = false
       @destination = 'temp'
-      @multi = false
-      @build = false
+      @gen_type = :invalid
       @filename = nil
       @description = ''
     end
   end
   
-  attr_reader :destination, :path, :keep_here, :multi, :filename, :build
+  attr_reader :destination, :path, :keep_here, :gen_type, :filename
   
   def store_in(where, path=nil)
     @destination = where
@@ -24,16 +23,16 @@ module TaskGenerator
     @keep_here = cond
   end
 
-  def build(cond = true)
-    @build = cond
+  def build
+    @gen_type = :build
   end
   
-  def multi_file(cond = true)
-    @multi = cond
+  def multi_file
+    @gen_type = :multi_file
   end
   
   def single_file(filename)
-    @multi = false
+    @gen_type = :single_file
     @filename = filename
   end
   
@@ -53,13 +52,17 @@ module TaskGenerator
     end
     
     def multi_file?
-      self.class.multi
+      self.class.gen_type == :multi_file
     end
 
+    def single_file?
+      self.class.gen_type == :single_file
+    end
+    
     def build?
-      self.class.build
+      self.class.gen_type == :build
     end
-
+    
     def filename
       self.class.filename
     end

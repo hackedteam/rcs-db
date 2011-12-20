@@ -140,8 +140,8 @@ class Task
     process_single_file = Proc.new do
       begin
         #identify where results should be stored
-        destination = Temporary.file(@generator.folder, @_id)
-        tmp_file = Temporary.file('temp', @generator.filename)
+        destination = File.new(Config.instance.temp(@_id), 'wb+')
+        tmp_file = File.new(Config.instance.temp("#{@_id}_temp"), 'wb+')
         compressor = Task.compressor_class.new destination
         @generator.next_entry do |chunk|
           break if stopped?
@@ -160,7 +160,8 @@ class Task
       
       @resource[:_id] = @_id
     end
-    
+
+    # TODO: refactor for folder delete
     process_multi_file = Proc.new do
       
       # temporary file is our task id
@@ -191,12 +192,15 @@ class Task
       @resource[:_id] = @_id
     end # process
     
-    if @generator.multi_file?
-      EM.defer process_multi_file
-    elsif @generator.build?
-      EM.defer process_build
-    else
-      EM.defer process_single_file
+    case @generator.class.gen_type
+      when :multi_file
+        EM.defer process_multi_file
+      when :build
+        EM.defer process_build
+      when :single_file
+        EM.defer process_single_file
+      else
+        raise "Invalid task type."
     end
   end
 end # Task
@@ -221,7 +225,14 @@ class TaskManager
     
     task = Task.new type, file_name, params
     trace :debug, "Creating task #{task._id} of type #{type} for user '#{user}', saving to '#{file_name}'"
-    task.run
+    
+    begin
+      task.run
+    rescue Exception => e
+      trace :error, "Invalid task: #{e.backtrace}"
+      return nil
+    end
+    
     @tasks[user][task._id] = task
     task
   end
@@ -246,7 +257,9 @@ class TaskManager
     task = @tasks[user][task_id]
     task.stop! unless task.nil?
     @tasks[user].delete task_id
-    # TODO: delete file
+    
+    FileUtils.rm_rf(Config.instance.temp("#{@_id}*"))
+    
   end
 end # TaskManager
 
