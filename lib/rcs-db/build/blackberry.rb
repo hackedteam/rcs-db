@@ -143,6 +143,8 @@ class BuildBlackberry < Build
             end
           end
         end
+      else
+        raise("pack failed. unknown type.")
     end
 
     # this is the only file we need to output after this point

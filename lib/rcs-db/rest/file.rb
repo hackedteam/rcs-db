@@ -9,7 +9,7 @@ class FileController < RESTController
     require_auth_level :admin, :sys, :tech, :view
     
     file_name = @params['_id']
-    file_path = File.join('temp', file_name)
+    file_path = Config.instance.temp(file_name)
     
     not_found unless File.exists? file_path
     stream_file(file_path)
@@ -19,7 +19,7 @@ class FileController < RESTController
     require_auth_level :none
     
     file_name = @params['_id']
-    file_path = File.join('temp', file_name)
+    file_path = Config.instance.temp(file_name)
     File.unlink file_path
     
     ok

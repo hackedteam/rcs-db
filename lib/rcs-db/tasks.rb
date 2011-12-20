@@ -1,5 +1,6 @@
 require 'archive/tar/minitar'
 require 'uuidtools'
+require 'fileutils'
 require 'rcs-common/trace'
 require 'rcs-common/temporary'
 
@@ -75,9 +76,10 @@ class Task
     @desc = ''
     @time = Time.now
     @stopped = false
+    @error = false
     @generator = Task.generator_class(@type).new(params)
     @total = @generator.total
-    @resource = {type: @generator.destination}
+    @resource = {type: @generator.destination, file_name: @file_name}
   end
   
   def self.generator_class(type)
@@ -103,6 +105,10 @@ class Task
   def stopped?
     @stopped
   end
+
+  def error?
+    @error
+  end
   
   def stop!
     trace :info, "cancelling task #{@_id}"
@@ -110,6 +116,27 @@ class Task
   end
   
   def run
+    process_build = Proc.new do
+      begin
+        @generator.next_entry do
+          break if stopped?
+          @desc = @generator.description
+          step
+        end
+        @desc = 'Saving'
+        FileUtils.cp(@generator.builder.path(@generator.builder.outputs.first), Config.instance.temp(@_id))
+        @resource[:size] = File.size(Config.instance.temp(@_id))
+        trace :info, "Task #{@_id} completed."
+      rescue Exception => e
+        @desc = "ERROR: #{e.message}"
+        @error = true
+      ensure
+        @generator.builder.clean
+      end
+      
+      @resource[:_id] = @_id
+    end
+    
     process_single_file = Proc.new do
       begin
         #identify where results should be stored
@@ -124,6 +151,9 @@ class Task
         end
         compressor.add_file(tmp_file.path, @generator.filename)
         @resource[:size] = File.size(destination.path)
+      rescue Exception => e
+        @desc = "ERROR: #{e.message}"
+        @error = true
       ensure
         compressor.close
       end
@@ -151,6 +181,9 @@ class Task
           step
         end
         @resource[:size] = File.size(tmpfile.path)
+      rescue Exception => e
+        @desc = "ERROR: #{e.message}"
+        @error = true
       ensure
         compressor.close
       end
@@ -160,6 +193,8 @@ class Task
     
     if @generator.multi_file?
       EM.defer process_multi_file
+    elsif @generator.build?
+      EM.defer process_build
     else
       EM.defer process_single_file
     end
@@ -179,7 +214,10 @@ class TaskManager
     @tasks[user] ||= Hash.new
     
     # check task file_name is unique, we cannot have 2 tasks stored in the same file for a single user
-    @tasks[user].each {|task_id| return nil if @tasks[user][task_id].file_name == file_name }
+    @tasks[user].each_pair do |id, task|
+      puts task.inspect
+      return nil if task.file_name == file_name and task.error? == false
+    end
     
     task = Task.new type, file_name, params
     trace :debug, "Creating task #{task._id} of type #{type} for user '#{user}', saving to '#{file_name}'"

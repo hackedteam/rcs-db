@@ -5,22 +5,27 @@ module TaskGenerator
       # default values
       @keep_here = false
       @destination = 'temp'
-      @multi = true
+      @multi = false
+      @build = false
       @filename = nil
       @description = ''
     end
   end
   
-  attr_reader :destination, :path, :keep_here, :multi, :filename
+  attr_reader :destination, :path, :keep_here, :multi, :filename, :build
   
   def store_in(where, path=nil)
     @destination = where
     @path = path
-    fail "Task storing in a local file must specify a path!" if @destination == :file and @path.nil?
+    fail "Task stored in a local file must specify a path!" if @destination == :file and @path.nil?
   end
   
   def keep_on_server(cond = false)
     @keep_here = cond
+  end
+
+  def build(cond = true)
+    @build = cond
   end
   
   def multi_file(cond = true)
@@ -51,16 +56,20 @@ module TaskGenerator
       self.class.multi
     end
 
+    def build?
+      self.class.build
+    end
+
     def filename
       self.class.filename
     end
 
     def total
-      raise "Please define a 'total' method for your #{self.class} class!"
+      fail "Please define a 'total' method for your #{self.class} class!"
     end
     
     def next_entry
-      raise "Please define a 'next_entry' method for your #{self.class} class!"
+      fail "Please define a 'next_entry' method for your #{self.class} class!"
     end
   end
 end
