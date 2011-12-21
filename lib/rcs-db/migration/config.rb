@@ -54,6 +54,16 @@ class ConfigMigration
 
       puts " done."
 
+      print "Filling empty configurations "
+      items = Item.any_in(_kind: ['agent', 'factory'])
+      items.each do |item|
+        if item.configs.empty?
+          item.configs.create!({config: ""})
+          print '.' unless verbose
+        end
+      end
+      puts " done."
+
     end
 
     def migrate_templates(verbose)
