@@ -27,8 +27,7 @@ class TaskController < RESTController
     puts @params.inspect
 
     task = TaskManager.instance.create @session[:user][:name], @params['type'], @params['file_name'], @params['params']
-
-    #return bad_request
+    
     return bad_request if task.nil?
     return ok task
   end
@@ -39,7 +38,19 @@ class TaskController < RESTController
     puts @params['_id']
 
     TaskManager.instance.delete @session[:user][:name], @params['_id']
-    ok
+
+    return ok
+  end
+
+  def download
+    require_auth_level :admin, :sys, :tech, :view
+
+    puts @params['_id']
+
+    path, callback = TaskManager.instance.download @session[:user][:name], @params['_id']
+
+    return bad_request if path.nil?
+    return stream_file(path, callback)
   end
 
 end

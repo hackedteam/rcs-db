@@ -66,7 +66,7 @@ end
 class Task
   include RCS::Tracer
   
-  attr_reader :_id, :total, :current, :resource, :desc, :type, :file_name, :file_size
+  attr_reader :_id, :total, :current, :resource, :desc, :type, :file_name, :file_size, :status
   
   def initialize(type, file_name, params)
     @_id = UUIDTools::UUID.random_create.to_s
@@ -75,11 +75,10 @@ class Task
     @current = 0
     @desc = ''
     @time = Time.now
-    @stopped = false
-    @error = false
+    @status = :in_progress
     @generator = Task.generator_class(@type).new(params)
     @total = @generator.total
-    @resource = {type: @generator.destination, file_name: @file_name}
+    @resource = {type: @generator.destination, _id: @_id, file_name: @file_name}
   end
   
   def self.generator_class(type)
@@ -102,40 +101,67 @@ class Task
     @current += 1
   end
   
-  def stopped?
-    @stopped
+  def finished?
+    @status == :finished
   end
 
   def error?
-    @error
+    @status == :error
+  end
+  
+  def download_available?
+    @status == :download_available
+  end
+
+  def downloading?
+    @status == :downloading
+  end
+  
+  def finished
+    @status = :finished
+    trace :debug, "Task #{@_id} FINISHED"
+  end
+
+  def error
+    @status = :error
+    trace :debug, "Task #{@_id} ERROR"
+  end
+
+  def downloading
+    @status = :downloading
+    trace :debug, "Task #{@_id} DOWNLOADING"
+  end
+  
+  def download_available
+    @status = :download_available
+    trace :debug, "Task #{@_id} DOWNLOAD AVAILABLE"
   end
   
   def stop!
     trace :info, "cancelling task #{@_id}"
-    @stopped = true
+    finished
   end
   
   def run
     process_build = Proc.new do
       begin
         @generator.next_entry do
-          break if stopped?
+          break if finished?
           @desc = @generator.description
           step
         end
         @desc = 'Saving'
         FileUtils.cp(@generator.builder.path(@generator.builder.outputs.first), Config.instance.temp(@_id))
         @resource[:size] = File.size(Config.instance.temp(@_id))
+        download_available
         trace :info, "Task #{@_id} completed."
       rescue Exception => e
         @desc = "ERROR: #{e.message}"
-        @error = true
+        error
       ensure
         @generator.builder.clean
       end
-      
-      @resource[:_id] = @_id
-    end
+    end #build
     
     process_single_file = Proc.new do
       begin
@@ -144,23 +170,23 @@ class Task
         tmp_file = File.new(Config.instance.temp("#{@_id}_temp"), 'wb+')
         compressor = Task.compressor_class.new destination
         @generator.next_entry do |chunk|
-          break if stopped?
+          break if finished?
           @desc = @generator.description
           tmp_file.write chunk
           step
         end
         compressor.add_file(tmp_file.path, @generator.filename)
         @resource[:size] = File.size(destination.path)
+        download_available
+        trace :info, "Task #{@_id} completed."
       rescue Exception => e
         @desc = "ERROR: #{e.message}"
-        @error = true
+        error
       ensure
         compressor.close
       end
-      
-      @resource[:_id] = @_id
-    end
-
+    end #single_file
+    
     # TODO: refactor for folder delete
     process_multi_file = Proc.new do
       
@@ -170,7 +196,7 @@ class Task
         compressor = Task.compressor_class.new tmpfile
         @generator.next_entry do |type, entry, content|
           
-          break if stopped?
+          break if finished?
           
           @desc = @generator.description
           case type
@@ -182,15 +208,15 @@ class Task
           step
         end
         @resource[:size] = File.size(tmpfile.path)
+        download_available
+        trace :info, "Task #{@_id} completed."
       rescue Exception => e
         @desc = "ERROR: #{e.message}"
-        @error = true
+        error
       ensure
         compressor.close
       end
-      
-      @resource[:_id] = @_id
-    end # process
+    end # multi_file
     
     case @generator.class.gen_type
       when :multi_file
@@ -251,7 +277,6 @@ class TaskManager
     tasks.values
   end
   
-  # TODO: delete temporary file
   def delete(user, task_id)
     trace :info, "Deleting task #{task_id} for user '#{user}'"
     task = @tasks[user][task_id]
@@ -260,6 +285,24 @@ class TaskManager
     
     FileUtils.rm_rf(Config.instance.temp("#{task_id}*"))
     
+  end
+  
+  def download(user, task_id)
+    trace :info, "Downloading task #{task_id} for user '#{user}'"
+
+    path = Config.instance.temp(task_id)
+    
+    # check that task is owned by the user and the corresponding file exists
+    return nil if @tasks[user][task_id].nil?
+    return nil unless File.exists?(path)
+
+    callback = proc {
+      @tasks[user][task_id].finished
+    }
+
+    @tasks[user][task_id].downloading
+
+    return path, callback
   end
 end # TaskManager
 
