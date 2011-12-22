@@ -11,13 +11,11 @@ HIGH PRIORITY:
 
     connect the build process with tasks ( together )
 
-    Local Exploit portal (alor)
+    create cooker for NIA
 
     evidence grid methods
 
     remove objects that references an item on deletion (rules, alerts, dashboard, recent)  (alor)
-
-    force demo mode based on license
     
     to_json is INSANELY SLOW
 

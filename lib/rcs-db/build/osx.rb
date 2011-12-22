@@ -25,6 +25,9 @@ class BuildOSX < Build
     params[:core] = 'core'
     params[:config] = 'config'
 
+    # overwrite the demo flag if the license doesn't allow it
+    params['demo'] = true unless LicenseManager.instance.limits[:agents][:osx][0]
+
     # invoke the generic patch method with the new params
     super
 
