@@ -23,6 +23,8 @@ class RESTResponse
     @cookie ||= opts[:cookie]
 
     @callback=callback
+
+    @response = nil
   end
   
   def keep_alive?(connection)
@@ -65,15 +67,23 @@ class RESTResponse
     self
   end
 
+  def size
+    fail "response still not prepare" if @response.nil?
+    @response.content.bytesize
+  end
+
   def content
+    fail "response still not prepare" if @response.nil?
     @response.content
   end
 
   def headers
+    fail "response still not prepare" if @response.nil?
     @response.headers
   end
 
   def send_response
+    fail "response still not prepare" if @response.nil?
     @response.send_response
     @callback unless @callback.nil?
     trace :debug, "[#{@request[:peer]}] REP: [#{@request[:method]}] #{@request[:uri]} #{@request[:query]} (#{Time.now - @request[:time]})" if Config.instance.global['PERF']
@@ -87,6 +97,7 @@ class RESTFileStream
   def initialize(filename, callback=proc{})
     @filename = filename
     @callback = callback
+    @response = nil
   end
 
   def keep_alive?(connection)
@@ -121,15 +132,23 @@ class RESTFileStream
     self
   end
 
+  def size
+    fail "response still not prepare" if @response.nil?
+    @response.headers["Content-length"]
+  end
+
   def content
+    fail "response still not prepare" if @response.nil?
     @response.content
   end
 
   def headers
+    fail "response still not prepare" if @response.nil?
     @response.headers
   end
   
   def send_response
+    fail "response still not prepare" if @response.nil?
     @response.send_headers
     streamer = EventMachine::FileStreamer.new(@connection, @filename, :http_chunks => false )
     streamer.callback do
@@ -142,11 +161,13 @@ end # RESTFileStream
 class RESTGridStream
   include RCS::Tracer
   
-  def initialize(id, collection, callback=proc{})
-    @id = id
-    @collection = collection
-    @grid_io = GridFS.get(id, collection)
+  def initialize(grid_io, callback=proc{})
+    
+    trace :debug, "RESTGridStream.initialize (#{grid_io}, #{callback})"
+    
+    @grid_io = grid_io
     @callback = callback
+    @response = nil
   end
   
   def keep_alive?(connection)
@@ -155,7 +176,7 @@ class RESTGridStream
   end
   
   def prepare_response(connection, request)
-
+    
     @request = request
     @connection = connection
     @response = EM::DelegatedHttpResponse.new @connection
@@ -180,8 +201,24 @@ class RESTGridStream
     
     self
   end
+
+  def size
+    fail "response still not prepare" if @response.nil?
+    @response.headers["Content-length"]
+  end
+
+  def content
+    fail "response still not prepare" if @response.nil?
+    @response.content
+  end
+
+  def headers
+    fail "response still not prepare" if @response.nil?
+    @response.headers
+  end
   
   def send_response
+    fail "response still not prepare" if @response.nil?
     @response.send_headers
     streamer = EventMachine::GridStreamer.new(@connection, @grid_io, :http_chunks => false)
     streamer.callback do
