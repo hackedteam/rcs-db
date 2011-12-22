@@ -11,9 +11,7 @@ class FileController < RESTController
     file_name = @params['_id']
     file_path = Config.instance.temp(file_name)
     
-    not_found unless File.exists? file_path
     stream_file(file_path)
-    #stream_file('cores/offline.zip')
   end
   
   def destroy
