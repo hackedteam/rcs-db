@@ -40,18 +40,8 @@ class CoreController < RESTController
         return ok(list)
       else
         Audit.log :actor => @session[:user][:name], :action => 'core.get', :desc => "Downloaded the core #{@params['_id']}"
-
-        #TODO: why this is not working ?  it stops at 65535 bytes on the client
-        #file = GridFS.get core[:_grid].first
-        #return stream_grid(file)
-
-        # TODO: same as above
-        #temp = GridFS.to_tmp core[:_grid].first
-        #return stream_file(temp.path)
-
-        # TODO: this is not streamed...
-        file = GridFS.get core[:_grid].first
-        return ok(file.read, {content_type: 'binary/octet-stream'})
+        
+        return stream_grid(core[:_grid].first)
       end
     end
   end

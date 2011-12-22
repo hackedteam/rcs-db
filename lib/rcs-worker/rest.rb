@@ -12,7 +12,7 @@ require 'rcs-common/trace'
 require 'json'
 
 module RCS
-module Collector
+module Worker
 
 class RESTController
   include RCS::Tracer
@@ -137,9 +137,9 @@ class RESTController
     end
   end
 
-end # RCS::Collector::RESTController
+end # RCS::Worker::RESTController
 
-require_relative 'collector_controller'
+require_relative 'worker_controller'
 
-end # RCS::Collector
+end # RCS::Worker
 end # RCS

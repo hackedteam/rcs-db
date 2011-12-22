@@ -161,11 +161,10 @@ end # RESTFileStream
 class RESTGridStream
   include RCS::Tracer
   
-  def initialize(grid_io, callback=proc{})
+  def initialize(id, collection, callback)
+    @grid_io = GridFS.get id, collection
+    fail "grid object not found" if @grid_io.nil?
     
-    trace :debug, "RESTGridStream.initialize (#{grid_io}, #{callback})"
-    
-    @grid_io = grid_io
     @callback = callback
     @response = nil
   end

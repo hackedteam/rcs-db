@@ -8,11 +8,7 @@ class GridController < RESTController
   def show
     require_auth_level :tech, :view
     
-    grid_id = @params['_id']
-    file = GridFS.get BSON::ObjectId.from_string(grid_id), @params['target_id']
-    
-    return not_found if file.nil?
-    return stream_grid(file)
+    return stream_grid(@params['_id'], @params['target_id'])
   end
 
   def create

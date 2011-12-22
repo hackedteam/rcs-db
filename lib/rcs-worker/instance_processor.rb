@@ -59,7 +59,7 @@ class InstanceProcessor
     trace :debug, "processor #{@id} is sleeping too much, let's stop!"
   end
   
-  def stopped?
+  def finished?
     @state == :stopped
   end
   
@@ -161,7 +161,7 @@ class InstanceProcessor
       put_to_sleep
     end
     
-    if stopped?
+    if finished?
       trace :debug, "deferring work for #{@id}"
       EM.defer process
     end

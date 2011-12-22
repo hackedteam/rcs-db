@@ -275,20 +275,20 @@ def REST_task(http, cookie, type, filename, params={})
   res.kind_of? Net::HTTPSuccess or fail("Cannot create task.")
   task = JSON.parse(res.body)
   puts "Created task #{task['_id']}"
+  puts "TASK STATUS: #{task['status']}"
   puts
   
-  size = nil
-  while (size.nil?)
+  while (task['status'] != 'download_available')
     res = http.request_get("/task/#{task['_id']}", {'Cookie' => cookie})
     task = JSON.parse(res.body)
-    puts "#{task['current']}/#{task['total']} #{task['desc']} ERROR: #{task['error']} RESOURCE: #{task['resource']}"
+    puts "#{task['current']}/#{task['total']} #{task['desc']}"
     break if task['error'] == true
     resource = task['resource']
-    size = task['resource']['size']
     sleep 0.05
   end
   
-  puts "#{task['current']}/#{task['total']} #{task['desc']} ERROR: #{task['error']} RESOURCE: #{task['resource']}"
+  puts "TASK STATUS: #{task['status']}"
+  puts "#{task['current']}/#{task['total']} #{task['desc']}"
   
   puts "resource: #{resource.to_s}"
   res = http.request_get("/file/#{resource['_id']}", {'Cookie' => cookie})
@@ -311,22 +311,24 @@ end
 res = http.request_get('/factory', {'Cookie' => cookie})
 factories = JSON.parse(res.body)
 
-android_params = {factory: {_id: factories.first['_id']},
+android_params = {params: {factory: {_id: factories.first['_id']},
                   platform: 'android',
                   binary: {demo: true},
                   melt: {appname: 'facebook'}
                   }
-bb_params =  {factory: {_id: factories.first['_id']},
-              platform: 'blackberry',
-              binary: {demo: true},
-              melt: {appname: 'facebook',
-                name: 'Facebook Application',
-                desc: 'Applicazione utilissima di social network',
-                vendor: 'face inc',
-                version: '1.2.3'},
-              package: {type: 'remote'}
+                }
+bb_params =  {params: {factory: {_id: factories.first['_id']},
+                platform: 'blackberry',
+                binary: {demo: true},
+                melt: {appname: 'facebook',
+                  name: 'Facebook Application',
+                  desc: 'Applicazione utilissima di social network',
+                  vendor: 'face inc',
+                  version: '1.2.3'},
+                package: {type: 'remote'}
+                }
               }
-                                    
+                                   
 #REST_task(http, cookie, 'build', 'android.zip', android_params)
 REST_task(http, cookie, 'build', 'bb.zip', bb_params)
 

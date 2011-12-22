@@ -67,11 +67,19 @@ class RESTController
   end
   
   def stream_file(filename, callback=nil)
-    RESTFileStream.new(filename, callback)
+    begin
+      RESTFileStream.new(filename, callback)
+    rescue Exception => e
+      not_found(e.message)
+    end
   end
   
-  def stream_grid(grid_io, callback=nil)
-    RESTGridStream.new(grid_io, callback)
+  def stream_grid(id, collection=nil, callback=proc{})
+    begin
+      RESTGridStream.new(id, collection, callback)
+    rescue Exception => e
+      not_found(e.message)
+    end
   end
   
   def self.register(klass)
