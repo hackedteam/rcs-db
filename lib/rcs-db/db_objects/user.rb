@@ -55,6 +55,21 @@ class User
 
     return false
   end
+
+  def delete_item(id)
+    if self.dashboard_ids.include? id
+      trace :debug, "Deleting Item #{id} from #{self.name} dashboard"
+      self.dashboard_ids.delete(id)
+      self.save
+    end
+
+    if self.recent_ids.include? id
+      trace :debug, "Deleting Item #{id} from #{self.name} recents"
+      self.recent_ids.delete(id)
+      self.save
+    end
+  end
+
 end
 
 #end # ::DB

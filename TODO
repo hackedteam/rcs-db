@@ -1,22 +1,21 @@
+TEST:
+    performance
+
+    create an item, use it in recent, dashboard, alert and nia rules, then delete it and check accordingly
+
+
 HIGH PRIORITY:
-
-    PERFORMANCE TEST !!!!
-
-    sync / async file transfers !!!  (daniele)
-        - even from the public on the collector (daniele)
 
     distributed workers, same as shards (daniele)
         - mongos should be accessible by all the workers (alor)
         - modify the NSIS to install the worker together with the shards (alor)
 
-    connect the build process with tasks ( together )
+    delete task file after download
 
     create cooker for NIA
 
     evidence grid methods
 
-    remove objects that references an item on deletion (rules, alerts, dashboard, recent)  (alor)
-    
     to_json is INSANELY SLOW
 
 MEDIUM PRIORITY:
@@ -26,6 +25,8 @@ MEDIUM PRIORITY:
 	- geolocation
 
     rename proxy -> injector
+
+    get_accessible should be faster
 
     Crawler for geo
     
@@ -40,7 +41,7 @@ LOW PRIORITY:
 
     get time via http (collector)
 
-    dongle dll 
+    dongle dll (naga)
 
     rubyencoder for 1.9.3 does NOT exist yet... :(
 

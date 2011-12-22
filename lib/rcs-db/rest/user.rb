@@ -78,6 +78,9 @@ class UserController < RESTController
         Audit.log :actor => @session[:user][:name], :action => 'user.update', :user => user['name'], :desc => "Changed password for user '#{user['name']}'"
       else
         @params.each_pair do |key, value|
+          if key == 'dashboard_ids'
+            value.collect! {|x| BSON::ObjectId(x)}
+          end
           if user[key.to_s] != value and not key['_ids']
             Audit.log :actor => @session[:user][:name], :action => 'user.update', :user => user['name'], :desc => "Updated '#{key}' to '#{value}' for user '#{user['name']}'"
           end
@@ -96,7 +99,7 @@ class UserController < RESTController
     mongoid_query do
       user = User.find(@params['_id'])
       
-      user.recent_ids.insert(0, @params['item_id'])
+      user.recent_ids.insert(0, BSON::ObjectId(@params['item_id']))
       user.recent_ids.uniq!
       user.recent_ids = user.recent_ids[0..9]
       user.save

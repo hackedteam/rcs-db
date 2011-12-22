@@ -5,8 +5,8 @@ require 'open-uri'
 require 'pp'
 require 'cgi'
 
-#http = Net::HTTP.new('192.168.1.189', 4444)
-http = Net::HTTP.new('localhost', 443)
+#http = Net::HTTP.new('localhost', 443)
+http = Net::HTTP.new('localhost', 4444)
 http.use_ssl = true
 http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
@@ -264,7 +264,7 @@ if false
 end
 
 # task
-if true
+if false
 
 def REST_task(http, cookie, type, filename, params={})
   
@@ -628,40 +628,40 @@ if false
   operation_post = {
     name: "test operation", 
     desc: "this is a test operation", 
-    contact: "billg@microsoft.com",
-    group_ids: ['4e8ac48b2afb65289500000b']
+    contact: "billg@microsoft.com"
+
   }
   res = http.request_post("/operation/create", operation_post.to_json, {'Cookie' => cookie})
   #puts res.body
   operation = JSON.parse(res.body)
   puts operation
   puts
-  
+
   # group.show
-  res = http.request_get("/group/4e8ac48b2afb65289500000b", {'Cookie' => cookie})
-  puts "group.show"
-  puts res
-  puts
+  #res = http.request_get("/group/4e8ac48b2afb65289500000b", {'Cookie' => cookie})
+  #puts "group.show"
+  #puts res
+  #puts
   
-  puts "operation.update"
-  operation_post = {
-    _id: operation['_id'],
-    name: "RENAMED!!!", 
-    desc: "whoa! this is our renamed operation", 
-    contact: "ballmer@microsoft.com",
-    group_ids: ['4e8ac4612afb652936000006']
-  }
-  res = http.request_post("/operation/update", operation_post.to_json, {'Cookie' => cookie})
+  #puts "operation.update"
+  #operation_post = {
+  #  _id: operation['_id'],
+  #  name: "RENAMED!!!", 
+  #  desc: "whoa! this is our renamed operation", 
+  #  contact: "ballmer@microsoft.com",
+  #  group_ids: ['4e8ac4612afb652936000006']
+  #}
+  #res = http.request_post("/operation/update", operation_post.to_json, {'Cookie' => cookie})
   #puts res.body
-  operation = JSON.parse(res.body)
-  puts operation
-  puts
+  #operation = JSON.parse(res.body)
+  #puts operation
+  #puts
   
   # group.show
-  res = http.request_get("/group/4e8ac48b2afb65289500000b", {'Cookie' => cookie})
-  puts "group.show"
-  puts res
-  puts
+  #res = http.request_get("/group/4e8ac48b2afb65289500000b", {'Cookie' => cookie})
+  #puts "group.show"
+  #puts res
+  #puts
   
   puts "operation.delete"
   res = http.request_post("/operation/destroy", {_id: operation['_id']}.to_json, {'Cookie' => cookie})
@@ -669,10 +669,10 @@ if false
   puts
   
   # group.show
-  res = http.request_get("/group/4e8ac48b2afb65289500000b", {'Cookie' => cookie})
-  puts "group.show"
-  puts res
-  puts
+  #res = http.request_get("/group/4e8ac48b2afb65289500000b", {'Cookie' => cookie})
+  #puts "group.show"
+  #puts res
+  #puts
 end
 
 # targets
@@ -882,7 +882,7 @@ if false
   
 end
 
-#upload
+# upload
 if false
   # upload.create
   res = http.request_post('/upload', "abracadabra", {'Cookie' => cookie})
@@ -1033,6 +1033,48 @@ if false
   puts
 end
 
+
+# item deletion
+if true
+
+  puts "operation.create"
+  operation_post = {
+    name: "test operation", 
+    desc: "this is a test operation", 
+    contact: "billg@microsoft.com"
+
+  }
+  res = http.request_post("/operation/create", operation_post.to_json, {'Cookie' => cookie})
+  operation = JSON.parse(res.body)
+  puts operation
+  puts
+  
+  res = http.request_get('/user', {'Cookie' => cookie})
+  puts "user.index"
+  users = JSON.parse(res.body)
+  user = users.first
+  puts user
+
+  puts "user.add_recent"  
+  res = http.request_post('/user/add_recent', {_id: user['_id'], item_id: operation['_id']}.to_json, {'Cookie' => cookie})
+
+  res = http.request_get('/user', {'Cookie' => cookie})
+  users = JSON.parse(res.body)
+  user = users.first
+  puts user
+
+  puts "operation.delete"
+  res = http.request_post("/operation/destroy", {_id: operation['_id']}.to_json, {'Cookie' => cookie})
+  puts res.body
+  puts
+
+  puts "user.index"
+  res = http.request_get('/user', {'Cookie' => cookie})
+  users = JSON.parse(res.body)
+  user = users.first
+  puts user
+  
+end
 
 # logout
 res = http.request_post('/auth/logout', nil, {'Cookie' => cookie})

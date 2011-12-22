@@ -145,6 +145,13 @@ class Item
   protected
   
   def destroy_callback
+    # remove the item form any dashboard or recent
+    ::User.all.each {|u| u.delete_item(self._id)}
+    # remove the item form the alerts
+    ::Alert.all.each {|a| a.delete_if_item(self._id)}
+    # remove the NIA rules that contains the item
+    ::Proxy.all.each {|p| p.delete_rule_by_item(self._id)}
+    
     case self._kind
       when 'operation'
         # destroy all the targets of this operation
@@ -152,7 +159,7 @@ class Item
       when 'target'
         # destroy all the agents of this target
         Item.where({_kind: 'agent'}).also_in({path: [ self._id ]}).each {|bck| bck.destroy}
-        # drop the collection
+        # drop the evidence collection of this target
         Mongoid.database.drop_collection Evidence.collection_name(self._id.to_s)
       when 'agent'
         # destroy all the evidences
