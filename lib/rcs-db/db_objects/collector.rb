@@ -47,6 +47,8 @@ class Collector
       coll.desc = address
       coll.internal_address = address
       coll.poll = false
+      coll.next = [nil]
+      coll.prev = [nil]
       coll.save
       
     end

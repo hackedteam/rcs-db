@@ -15,12 +15,12 @@ class AgentController < RESTController
     
     filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
     filter ||= {}
-    
+
     mongoid_query do
       items = ::Item.agents.where(filter)
         .any_in(_id: @session[:accessible])
         .only(:name, :desc, :status, :_kind, :path, :stat, :type, :platform, :uninstalled)
-      
+
       ok(items)
     end
   end
