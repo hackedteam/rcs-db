@@ -80,6 +80,9 @@ class Application
       # ensure we have the signatures for the agents
       DB.instance.ensure_signatures
 
+      # load cores in the /cores dir
+      DB.instance.load_cores
+
       # ensure all indexes are in place
       DB.instance.create_indexes
 

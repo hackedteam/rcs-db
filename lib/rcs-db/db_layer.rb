@@ -137,6 +137,43 @@ class DB
     end
   end
 
+  def load_cores
+    #TODO: remove this
+    return
+    trace :info, "Loading cores into db..."
+    Dir['./cores/*'].each do |core_file|
+      name = File.basename(core_file, '.zip')
+      version = ''
+      begin
+        Zip::ZipFile.open(core_file) do |z|
+          version = z.file.open('version', "r") { |f| f.read }.chomp
+        end
+
+        trace :debug, "Load core: #{name} #{version}"
+
+        # search if already present
+        core = ::Core.where({name: name}).first
+        unless core.nil?
+          GridFS.delete core[:_grid].first
+          core.destroy
+        end
+
+        # replace the new one
+        core = ::Core.new
+        core.name = name
+        core.version = version
+
+        core[:_grid] = [ GridFS.put(File.open(core_file, 'rb+') {|f| f.read}, {filename: name}) ]
+        core[:_grid_size] = File.size(core_file)
+        core.save
+      rescue Exception => e
+        trace :error, "Cannot load core #{name}: #{e.message}"
+      end
+      # TODO: enable this
+      #File.delete(core_file)
+    end
+  end
+
 end
 
 end #DB::

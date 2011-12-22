@@ -40,7 +40,6 @@ class CoreController < RESTController
         return ok(list)
       else
         Audit.log :actor => @session[:user][:name], :action => 'core.get', :desc => "Downloaded the core #{@params['_id']}"
-        
         return stream_grid(core[:_grid].first)
       end
     end
@@ -63,6 +62,16 @@ class CoreController < RESTController
 
       core[:_grid] = [ GridFS.put(@request[:content]['content'], {filename: @params['_id']}) ]
       core[:_grid_size] = @request[:content]['content'].bytesize
+
+      # get the version from inside the zip file
+      temp = GridFS.to_tmp core[:_grid].first
+
+      Zip::ZipFile.open(temp) do |z|
+        core.version = z.file.open('version', "r") { |f| f.read }
+      end
+
+      File.delete(temp)
+
       core.save
 
       Audit.log :actor => @session[:user][:name], :action => 'core.replace', :desc => "Replaced the #{@params['_id']} core"
@@ -87,6 +96,11 @@ class CoreController < RESTController
       end
 
       content = File.open(temp, 'rb') {|f| f.read}
+
+      # if the uploaded file is the 'version' file, update the version of the core accordingly
+      if new_entry == 'version'
+        core.version = @request[:content]['content']
+      end
 
       # delete the old one
       GridFS.delete core[:_grid].first
@@ -141,22 +155,6 @@ class CoreController < RESTController
         return ok()
       end
 
-    end
-  end
-
-  def version
-    require_auth_level :sys
-
-    mongoid_query do
-      core = ::Core.where({name: @params['_id']}).first
-      return not_found("Core #{@params['_id']} not found") if core.nil?
-
-      core.version = @params['version']
-      core.save
-
-      Audit.log :actor => @session[:user][:name], :action => 'core.version', :desc => "Set the core #{@params['_id']} to version #{@params['version']}"
-
-      return ok()
     end
   end
 

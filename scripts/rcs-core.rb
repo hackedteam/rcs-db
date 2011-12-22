@@ -82,13 +82,6 @@ class CoreDeveloper
     end
   end
 
-  def version(version)
-    raise "Must specify a core name" if @name.nil?
-    puts "Setting version [#{version}] for [#{@name}] core..."
-    resp = @http.request_post("/core/version", {_id: @name, version: version}.to_json, {'Cookie' => @cookie})
-    resp.kind_of? Net::HTTPSuccess or raise(resp.body)
-  end
-
   def replace(file)
     raise "Must specify a core name" if @name.nil?
     content = File.open(file, 'rb') {|f| f.read}
@@ -212,7 +205,6 @@ class CoreDeveloper
       c.add(options[:add]) if options[:add]
       c.remove(options[:remove]) if options[:remove]
       c.content if options[:content]
-      c.version(options[:version]) if options[:version]
       c.get(options[:get]) if options[:get]
 
       # list at the end to reflect changes made by the above operations
@@ -276,9 +268,6 @@ optparse = OptionParser.new do |opts|
   end
   opts.on( '-D', '--delete', 'delete the core from the db' ) do
     options[:delete] = true
-  end
-  opts.on( '-v', '--version VERSION', 'set the version of the core' ) do |version|
-    options[:version] = version
   end
 
   opts.separator ""
