@@ -156,6 +156,8 @@ class Task
         download_available
         trace :info, "Task #{@_id} completed."
       rescue Exception => e
+        trace :error, "Cannot build: #{e.message}"
+        trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
         @desc = "ERROR: #{e.message}"
         error
       ensure

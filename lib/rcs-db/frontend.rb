@@ -34,6 +34,7 @@ class Frontend
 
   def self.collector_put(filename, content)
     begin
+      raise if ::Status.where({type: 'collector', status: ::Status::OK}).count == 0
       # put the file on every collector, we cannot know where it will be requested
       ::Status.where({type: 'collector', status: ::Status::OK}).all.each do |collector|
 

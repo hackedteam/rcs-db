@@ -15,7 +15,7 @@ class BuildTask
   end
   
   def total
-    9
+    18
   end
   
   def builder
@@ -23,23 +23,23 @@ class BuildTask
   end
   
   def next_entry
-    @description = 'Loading core'
+    yield @description = 'Loading core'
     yield @builder.load @params['factory']
-    @description = 'Unpacking'
+    yield @description = 'Unpacking'
     yield @builder.unpack
-    @description = 'Generating agent'
+    yield @description = 'Generating agent'
     yield @builder.generate @params['generate']
-    @description = 'Patching'
+    yield @description = 'Patching'
     yield @builder.patch @params['binary']
-    @description = 'Scrambling'
+    yield @description = 'Scrambling'
     yield @builder.scramble
-    @description = 'Melting'
+    yield @description = 'Melting'
     yield @builder.melt @params['melt']
-    @description = 'Signing'
+    yield @description = 'Signing'
     yield @builder.sign @params['sign']
-    @description = 'Packing'
+    yield @description = 'Packing'
     yield @builder.pack @params['package']
-    @description = 'Delivering'
+    yield @description = 'Delivering'
     yield @builder.deliver @params['deliver']
   end
 end
