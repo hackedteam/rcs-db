@@ -4,6 +4,7 @@ require 'mongoid'
 #module DB
 
 class Alert
+  include RCS::Tracer
   include Mongoid::Document
   include Mongoid::Timestamps
 
@@ -20,6 +21,14 @@ class Alert
 
   belongs_to :user
   embeds_many :logs, class_name: "AlertLog"
+
+  def delete_if_item(id)
+    if self.path.include id
+      trace :debug, "Deleting Alert because it contains #{id}"
+      self.destroy
+    end
+  end
+
 end
 
 

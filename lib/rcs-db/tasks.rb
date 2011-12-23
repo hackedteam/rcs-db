@@ -118,6 +118,7 @@ class Task
   end
   
   def finished
+    @desc = 'Completed'
     @status = :finished
     trace :debug, "Task #{@_id} FINISHED"
   end
@@ -128,6 +129,7 @@ class Task
   end
 
   def downloading
+    @desc = 'Downloading'
     @status = :downloading
     trace :debug, "Task #{@_id} DOWNLOADING"
   end
@@ -300,6 +302,8 @@ class TaskManager
 
     callback = proc {
       @tasks[user][task_id].finished
+      trace :info, "Task #{task_id} completed. cleaning up."
+      FileUtils.rm_rf(path)
     }
 
     @tasks[user][task_id].downloading

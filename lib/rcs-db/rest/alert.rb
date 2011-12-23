@@ -43,7 +43,7 @@ class AlertController < RESTController
       user = @session[:user].reload
       na = ::Alert.new
 
-      na.path = @params['path']
+      na.path = @params['path'].collect! {|x| BSON::ObjectId(x)} if @params['path'].class == Array
       na.evidence = @params['evidence']
       na.keywords = @params['keywords']
       na.enabled = @params['enabled']
@@ -68,6 +68,9 @@ class AlertController < RESTController
       @params.delete('_id')
 
       @params.each_pair do |key, value|
+        if key == 'path'
+          value.collect! {|x| BSON::ObjectId(x)} 
+        end
         if alert[key.to_s] != value and not key['_ids']
           Audit.log :actor => @session[:user][:name], :action => 'alert.update', :desc => "Updated '#{key}' to '#{value}' for alert #{alert[:_id]}"
         end
