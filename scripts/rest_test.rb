@@ -1033,9 +1033,8 @@ if false
   puts
 end
 
-
 # item deletion
-if true
+if false
 
   puts "operation.create"
   operation_post = {

