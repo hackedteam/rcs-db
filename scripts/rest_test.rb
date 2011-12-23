@@ -1,5 +1,5 @@
 require 'net/http'
-require 'json'
+require 'yajl/json_gem'
 require 'benchmark'
 require 'open-uri'
 require 'pp'
@@ -264,7 +264,7 @@ if false
 end
 
 # task
-if true
+if false
 
 def REST_task(http, cookie, type, filename, params={})
   
@@ -726,7 +726,7 @@ if false
 end
 
 # agents
-if false
+if true
   res = http.request_get('/operation', {'Cookie' => cookie})
   operations = JSON.parse(res.body)
   
@@ -735,18 +735,18 @@ if false
   
   puts "agent.index"
   res = http.request_get('/agent', {'Cookie' => cookie})
-  puts res.body
   agents = JSON.parse(res.body)
+  agents.each {|agent| puts "#{agent['_kind']}\t#{agent['name']}"}
   puts "You got #{agents.size} agents."
   puts
   
   puts "agent.show"
   res = http.request_get("/agent/#{agents.first['_id']}", {'Cookie' => cookie})
-  puts res.body
   agent = JSON.parse(res.body)
   puts agent
   puts
   
+=begin
   puts "agent.update"
   agent_post = {
      _id: agent['_id'],
@@ -784,6 +784,7 @@ if false
   res = http.request_post("/agent/destroy", {_id: agent['_id']}.to_json, {'Cookie' => cookie})
   puts res.body
   puts
+=end
 end
 
 # factories
