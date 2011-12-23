@@ -10,7 +10,7 @@ HIGH PRIORITY:
         - mongos should be accessible by all the workers (alor)
         - modify the NSIS to install the worker together with the shards (alor)
 
-    delete task file after download
+    task without download
 
     evidence grid methods
 

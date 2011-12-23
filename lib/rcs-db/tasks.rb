@@ -300,6 +300,8 @@ class TaskManager
 
     callback = proc {
       @tasks[user][task_id].finished
+      trace :info, "Task #{task_id} completed. cleaning up."
+      FileUtils.rm_rf(path)
     }
 
     @tasks[user][task_id].downloading
