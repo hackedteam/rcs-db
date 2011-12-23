@@ -7,8 +7,8 @@ TEST:
 HIGH PRIORITY:
 
     distributed workers, same as shards (daniele)
-        - mongos should be accessible by all the workers (alor)
-        - modify the NSIS to install the worker together with the shards (alor)
+
+    modify the NSIS to install the worker together with the shards (alor)
 
     task without download
 

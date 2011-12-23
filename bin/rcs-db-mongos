@@ -30,7 +30,7 @@ end
 mongos = Dir.pwd + '/mongodb/' + os + '/mongos' + ext
 
 # the data path
-parameters = "--logpath #{logdir}/mongos.log --configdb #{rcs_config['CN']} --bind_ip localhost"
+parameters = "--logpath #{logdir}/mongos.log --configdb #{rcs_config['CN']}"
 
 # custom arguments
 custom = ARGV.join(' ')
