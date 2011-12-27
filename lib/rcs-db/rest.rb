@@ -92,14 +92,14 @@ class RESTController
   
   def self.get(request)
     name = request[:controller]
-    return nil if name.nil?
     begin
       controller = @controllers["#{name}"].new
     rescue Exception => e
       controller = InvalidController.new
     end
-      controller.request = request
-      controller
+    
+    controller.request = request
+    controller
   end
   
   def request=(request)
@@ -226,7 +226,7 @@ end # RESTController
 class InvalidController < RESTController
   def act!
     trace :error, "Invalid controller invoked: #{@request[:controller]}/#{@request[:action]}. Replied 404."
-    not_found
+    not_found('File not found')
   end
 end
 

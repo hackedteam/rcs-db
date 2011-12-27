@@ -25,7 +25,7 @@ module Parser
 
   def parse_uri(uri)
     root, controller_name, *rest = uri.split('/')
-    controller = "#{controller_name.capitalize}Controller"
+    controller = "#{controller_name.capitalize}Controller" unless controller_name.nil?
     return controller, rest
   end
   

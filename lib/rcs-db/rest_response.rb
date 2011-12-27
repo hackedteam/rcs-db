@@ -86,7 +86,7 @@ class RESTResponse
     fail "response still not prepare" if @response.nil?
     @response.send_response
     @callback unless @callback.nil?
-    trace :debug, "[#{@request[:peer]}] REP: [#{@request[:method]}] #{@request[:uri]} #{@request[:query]} (#{Time.now - @request[:time]})" if Config.instance.global['PERF']
+    trace :debug, "[#{@request[:peer]}] REP: [#{@request[:method]}] #{@request[:uri]} #{@request[:query]} (#{Time.now - @request[:time]})" if @request and Config.instance.global['PERF']
   end
 
 end # RESTResponse
