@@ -98,16 +98,13 @@ class ProxyController < RESTController
     mongoid_query do
       proxy = ::Proxy.find(@params['_id'])
 
-      # generate the rules file to be sent as ZIP
-      filename = proxy.config
+      return not_found if proxy[:_grid].empty? or proxy[:_grid].first.nil?
 
       # reset the flag for the "configuration needed"
       proxy.configured = true
       proxy.save
 
-      return stream_file(filename) unless filename.nil?
-      
-      return not_found
+      return stream_grid(proxy[:_grid].first)
     end
   end
 
@@ -257,25 +254,6 @@ class ProxyController < RESTController
                 :desc => "Modified a rule on the injection proxy '#{proxy.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
 
       return ok(rule)
-    end
-  end
-
-  def apply_rules
-    require_auth_level :tech
-    
-    mongoid_query do
-      proxy = ::Proxy.find(@params['_id'])
-      
-      Audit.log :actor => @session[:user][:name], :action => 'proxy.apply_rules',
-                :desc => "Applied the rules to the injection proxy '#{proxy.name}'"
-
-      proxy.configured = false
-      proxy.save
-
-      # push the rules
-      return server_error("Cannot push rules via NC") unless RCS::DB::NetworkController.push(proxy.address)
-
-      return ok
     end
   end
 

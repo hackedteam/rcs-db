@@ -31,6 +31,8 @@ class ProxyMigration
       mp.configured = proxy[:status] == 0 ? true : false
       mp.version = proxy[:version].to_i
       mp.redirection_tag = proxy[:tag]
+      mp[:_grid] = []
+      mp[:_grid_size] = 0
 
       mp.save
     end
