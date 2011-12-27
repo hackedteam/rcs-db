@@ -198,6 +198,10 @@ class ConfigMigration
                   e[:subtype] = "startup"
                   e[:ts] = "00:00:00"
                   e[:te] = "23:59:59"
+                  e[:repeat] = e[:start]
+                  e[:iter] = 1
+                  e[:delay] = params['hour'].first.to_i * 3600 + params['minute'].first.to_i * 60 + params['second'].first.to_i
+                  e.delete(:start)
                 when 'after install'
                   e[:event] = 'afterinst'
                   e[:days] = params['day'].first.to_i
