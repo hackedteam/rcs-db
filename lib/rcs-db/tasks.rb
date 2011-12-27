@@ -4,10 +4,7 @@ require 'fileutils'
 require 'rcs-common/trace'
 require 'rcs-common/temporary'
 
-# require all the controllers
-Dir[File.dirname(__FILE__) + '/tasks/*.rb'].each do |file|
-  require_relative file
-end
+require_relative 'build'
 
 module RCS
 module DB
@@ -38,51 +35,101 @@ class TarGzCompression
   end
 end
 
-class DummyTask
-  extend TaskGenerator
-  
-  store_in :file, 'temp'
-  multi_file
-  
-  def total
-    100
-  end
-  
-  def next_entry
-    100.times do |n|
-      filename = "dummy#{n}.txt"
-      @description = "generating '#{filename}'"
-      
-      content = "This is file #{filename}, generated especially for you by our most skilled gerbils."
-      yield 'stream', filename, content
-    end
-  end
-end
-
-# TODO: support single-file and multi-file tasks
-# for single files, progress should be reported on # of lines or similar
-# for multi files, progress is by number of files
-
-class Task
+module BaseTask
   include RCS::Tracer
   
-  attr_reader :_id, :total, :current, :resource, :desc, :type, :file_name, :file_size, :status
+  attr_reader :_id, :type, :total, :current, :resource, :description, :status
   
-  def initialize(type, file_name, params)
+  def base_init(type, params)
     @_id = UUIDTools::UUID.random_create.to_s
-    @file_name = file_name
     @type = type
     @current = 0
-    @desc = ''
+    @description = ''
     @time = Time.now
     @status = :in_progress
-    @generator = Task.generator_class(@type).new(params)
-    @total = @generator.total
-    @resource = {type: @generator.destination, _id: @_id, file_name: @file_name}
+    @params = params
   end
   
-  def self.generator_class(type)
-    @generator_class || eval("#{type.downcase.capitalize}Task")
+  def self.compressor_class
+    @compressor_class || TarGzCompression
+  end
+  
+  def self.digest_class
+    @digest_class || Digest::SHA1
+  end
+  
+  def generate_id
+    @_id = UUIDTools::UUID.random_create.to_s
+  end
+
+  def step
+    @current += 1
+  end
+
+  def finished?
+    @status == :finished
+  end
+
+  def error?
+    @status == :error
+  end
+
+  def download_available?
+    @status == :download_available
+  end
+
+  def downloading?
+    @status == :downloading
+  end
+
+  def finished
+    @description = 'Completed'
+    @status = :finished
+    trace :debug, "Task #{@_id} FINISHED"
+  end
+
+  def error
+    @status = :error
+    trace :debug, "Task #{@_id} ERROR"
+  end
+
+  def downloading
+    @description = 'Downloading'
+    @status = :downloading
+    trace :debug, "Task #{@_id} DOWNLOADING"
+  end
+
+  def download_available
+    @status = :download_available
+    trace :debug, "Task #{@_id} DOWNLOAD AVAILABLE"
+  end
+
+  def stop!
+    trace :info, "cancelling task #{@_id}"
+    finished
+  end
+  
+  def run
+    fail 'You must implement a run method!'
+  end
+  
+  def initialize
+    fail 'You must implement an initialize method!'
+  end
+
+  def total
+    'You must implement a total method!'
+  end
+
+end
+
+module FileTask
+  attr_reader :file_name, :file_size
+  
+  def file_init(file_name)
+    @file_name = file_name
+    return if @file_name.nil?
+    @resource = {type: 'download', _id: @_id, file_name: @file_name}
   end
   
   def self.compressor_class
@@ -96,78 +143,85 @@ class Task
   def sha1(path)
     Task.digest_class.new.file(path).hexdigest
   end
-  
-  def step
-    @current += 1
-  end
-  
-  def finished?
-    @status == :finished
-  end
+end
 
-  def error?
-    @status == :error
-  end
+module BuildTaskType
+  include BaseTask
+  include FileTask
   
-  def download_available?
-    @status == :download_available
-  end
-
-  def downloading?
-    @status == :downloading
-  end
-  
-  def finished
-    @desc = 'Completed'
-    @status = :finished
-    trace :debug, "Task #{@_id} FINISHED"
-  end
-
-  def error
-    @status = :error
-    trace :debug, "Task #{@_id} ERROR"
-  end
-
-  def downloading
-    @desc = 'Downloading'
-    @status = :downloading
-    trace :debug, "Task #{@_id} DOWNLOADING"
-  end
-  
-  def download_available
-    @status = :download_available
-    trace :debug, "Task #{@_id} DOWNLOAD AVAILABLE"
-  end
-  
-  def stop!
-    trace :info, "cancelling task #{@_id}"
-    finished
+  def initialize(type, file_name, params)
+    base_init(type, params)
+    file_init(file_name)
+    @builder = Build.factory(params['platform'].to_sym)
   end
   
   def run
-    process_build = Proc.new do
+    process = Proc.new do
+      @total = total
       begin
-        @generator.next_entry do
+       next_entry do
           break if finished?
-          @desc = @generator.description
           step
         end
-        @desc = 'Saving'
-        FileUtils.cp(@generator.builder.path(@generator.builder.outputs.first), Config.instance.temp(@_id))
-        @resource[:size] = File.size(Config.instance.temp(@_id))
-        download_available
+        @description = 'Saving'
+        unless @file_name.nil?
+          FileUtils.cp(@builder.path(@builder.outputs.first), Config.instance.temp(@_id))
+          @resource[:size] = File.size(Config.instance.temp(@_id))
+          download_available unless @file_name.nil?
+        else
+          finished if @file_name.nil?
+        end
         trace :info, "Task #{@_id} completed."
       rescue Exception => e
         trace :error, "Cannot build: #{e.message}"
         trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
-        @desc = "ERROR: #{e.message}"
+        @description = "ERROR: #{e.message}"
         error
       ensure
-        @generator.builder.clean
+        @builder.clean
       end
-    end #build
+    end
     
-    process_single_file = Proc.new do
+    EM.defer process
+  end #build
+end
+
+module NoFileTaskType
+  include BaseTask
+
+  def initialize(type, file_name, params)
+    base_init(type, params)
+  end
+
+  def run
+    process = Proc.new do
+      @total = total
+      begin
+         next_entry do
+            break if finished?
+            step
+         end
+        trace :info, "Task #{@_id} completed."
+        finished
+      rescue Exception => e
+        trace :error, "Cannot build: #{e.message}"
+        trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
+        @description = "ERROR: #{e.message}"
+        error
+      end
+    end
+
+    EM.defer process
+  end
+
+end
+
+module SingleFileTaskType
+  include BaseTask
+  include FileTask
+  
+  def run
+    process = Proc.new do
       begin
         #identify where results should be stored
         destination = File.new(Config.instance.temp(@_id), 'wb+')
@@ -190,18 +244,25 @@ class Task
         compressor.close
       end
     end #single_file
-    
-    # TODO: refactor for folder delete
-    process_multi_file = Proc.new do
-      
+
+    EM.defer process
+  end
+end
+
+module MultiFileTaskType
+  include BaseTask
+  include FileTask
+  
+  def run
+    process = Proc.new do
       # temporary file is our task id
       begin
         tmpfile = Temporary.file('temp', @_id)
         compressor = Task.compressor_class.new tmpfile
         @generator.next_entry do |type, entry, content|
-          
+
           break if finished?
-          
+
           @desc = @generator.description
           case type
             when 'stream'
@@ -220,20 +281,11 @@ class Task
       ensure
         compressor.close
       end
-    end # multi_file
-    
-    case @generator.class.gen_type
-      when :multi_file
-        EM.defer process_multi_file
-      when :build
-        EM.defer process_build
-      when :single_file
-        EM.defer process_single_file
-      else
-        raise "Invalid task type."
     end
-  end
-end # Task
+    
+    EM.defer process
+  end # multi_file
+end
 
 class TaskManager
   include Singleton
@@ -251,9 +303,11 @@ class TaskManager
     @tasks[user].each_pair do |id, task|
       puts task.inspect
       return nil if task.file_name == file_name and task.error? == false
-    end
+    end unless file_name.nil?
     
-    task = Task.new type, file_name, params
+    puts "type #{type} file_name #{file_name} params #{params}"
+
+    task = eval("#{type.downcase.capitalize}Task").new type, file_name, params
     trace :debug, "Creating task #{task._id} of type #{type} for user '#{user}', saving to '#{file_name}'"
     
     begin
@@ -311,6 +365,11 @@ class TaskManager
     return path, callback
   end
 end # TaskManager
+
+# require all the controllers
+Dir[File.dirname(__FILE__) + '/tasks/*.rb'].each do |file|
+  require_relative file
+end
 
 end # DB::
 end # RCS::

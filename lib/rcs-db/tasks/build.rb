@@ -1,18 +1,10 @@
-require_relative 'generator'
-require_relative '../build'
+require_relative '../tasks'
 
 module RCS
 module DB
 
 class BuildTask
-  extend TaskGenerator
-
-  build
-
-  def initialize(params)
-    @params = params
-    @builder = Build.factory(@params['platform'].to_sym)
-  end
+  include RCS::DB::BuildTaskType
   
   def total
     18

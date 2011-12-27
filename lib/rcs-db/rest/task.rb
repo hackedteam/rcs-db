@@ -35,8 +35,6 @@ class TaskController < RESTController
   def destroy
     require_auth_level :admin, :sys, :tech, :view
 
-    puts @params['_id']
-
     TaskManager.instance.delete @session[:user][:name], @params['_id']
 
     return ok
@@ -44,8 +42,6 @@ class TaskController < RESTController
 
   def download
     require_auth_level :admin, :sys, :tech, :view
-
-    puts @params['_id']
 
     path, callback = TaskManager.instance.download @session[:user][:name], @params['_id']
 
