@@ -131,10 +131,11 @@ Section "Install Section" SecInstall
   DetailPrint "done" 
 
   ${If} $installMaster == ${BST_CHECKED}
-    DetailPrint "Installing Master files..."
+  ${OrIf} $installShard == ${BST_CHECKED}
+    DetailPrint "Installing Common files..."
     SetDetailsPrint "textonly"
     !cd 'DB'
-  
+ 
     SetOutPath "$INSTDIR\DB\bin"
     File /r "bin\*.*"
 
@@ -144,13 +145,7 @@ Section "Install Section" SecInstall
     SetOutPath "$INSTDIR\DB\lib"
     File "lib\rcs-db.rb"
     File "lib\rcs-worker.rb"
-
-    SetOutPath "$INSTDIR\DB\console"
-    File /r "console\*.*"
-
-    SetOutPath "$INSTDIR\DB\cores"
-    File /r "cores\*.*"
-
+ 
     SetOutPath "$INSTDIR\DB\lib\rcs-db-release"
     ###File /r "lib\rcs-db-release\*.*"
     File /r "lib\rcs-db\*.*"
@@ -159,16 +154,30 @@ Section "Install Section" SecInstall
     ###File /r "lib\rcs-worker-release\*.*"
     File /r "lib\rcs-worker\*.*"
 
-    SetOutPath "$INSTDIR\DB\config\certs"
-    File "config\certs\openssl.cnf"
-    
     SetOutPath "$INSTDIR\DB\config"
     File "config\mongoid.yaml"
     File "config\trace.yaml"
     File "config\version.txt"
     SetDetailsPrint "both"
     DetailPrint "done"
-    
+
+    !cd '..'  
+  ${EndIf}
+  
+  ${If} $installMaster == ${BST_CHECKED}
+    DetailPrint "Installing Master files..."
+    SetDetailsPrint "textonly"
+    !cd 'DB'
+  
+    SetOutPath "$INSTDIR\DB\console"
+    File /r "console\*.*"
+
+    SetOutPath "$INSTDIR\DB\cores"
+    File /r "cores\*.*"
+
+    SetOutPath "$INSTDIR\DB\config\certs"
+    File "config\certs\openssl.cnf"
+        
     ; fresh install
     ${If} $installUPGRADE != ${BST_CHECKED}
       DetailPrint ""
@@ -187,17 +196,17 @@ Section "Install Section" SecInstall
       DetailPrint "Creating service RCS Master Config..."
       SimpleSC::InstallService "RCSMasterConfig" "RCS Master Config" "16" "2" "$INSTDIR\DB\bin\srvany" "" "" ""
       SimpleSC::SetServiceFailure "RCSMasterConfig" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSMasterConfig\Parameters" "Application" "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-mongoc"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSMasterConfig\Parameters" "Application" "$INSTDIR\DB\mongodb\win\mongod.exe --dbpath $INSTDIR\DB\data\config --nssize 64 --logpath $INSTDIR\DB\log\mongoc.log --configsvr --rest"
       DetailPrint "done"      
       DetailPrint "Creating service RCS Master Router..."
       SimpleSC::InstallService "RCSMasterRouter" "RCS Master Router" "16" "2" "$INSTDIR\DB\bin\srvany" "" "" ""
       SimpleSC::SetServiceFailure "RCSMasterRouter" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSMasterRouter\Parameters" "Application" "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-mongos"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSMasterRouter\Parameters" "Application" "$INSTDIR\DB\mongodb\win\mongos.exe --logpath $INSTDIR\DB\log\mongos.log --configdb $masterCN"
       DetailPrint "done"   
       DetailPrint "Creating service RCS Shard..."
       SimpleSC::InstallService "RCSShard" "RCS Shard" "16" "2" "$INSTDIR\DB\bin\srvany" "" "" ""
       SimpleSC::SetServiceFailure "RCSShard" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSShard\Parameters" "Application" "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-mongod"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSShard\Parameters" "Application" "$INSTDIR\DB\mongodb\win\mongod.exe --dbpath $INSTDIR\DB\data --journal --nssize 64 --logpath $INSTDIR\DB\log\mongod.log --shardsvr --rest"
       DetailPrint "done"
       DetailPrint "Creating service RCS Worker..."
       SimpleSC::InstallService "RCSWorker" "RCS Worker" "16" "2" "$INSTDIR\DB\bin\srvany" "" "" ""
@@ -233,29 +242,10 @@ Section "Install Section" SecInstall
     SetDetailsPrint "textonly"
     !cd 'DB'
     
-    SetOutPath "$INSTDIR\DB\bin"
-    File /r "bin\rcs-db-mongo*.*"
-    File "bin\srvany.exe"
-    File "bin\rcs-worker"
-
-    SetOutPath "$INSTDIR\DB\mongodb\win"
-    File /r "mongodb\win\*.*"
-    
-    SetOutPath "$INSTDIR\DB\lib"
-    File "lib\rcs-worker.rb"
-    
-    SetOutPath "$INSTDIR\DB\lib\rcs-worker-release"
-    ###File /r "lib\rcs-worker-release\*.*"
-    File /r "lib\rcs-worker\*.*"
-    
     SetOutPath "$INSTDIR\DB\config"
     #### mongoid conf has to be changed!!!!
     File "config\mongoid.yaml"
-    File "config\trace.yaml"
-    File "config\version.txt"
-    SetDetailsPrint "both"
-    DetailPrint "done"
-    
+   
     SetDetailsPrint "both"
     DetailPrint "done"
     
@@ -279,7 +269,8 @@ Section "Install Section" SecInstall
     
       DetailPrint "Writing the configuration..."
       SetDetailsPrint "textonly"
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-db-config -u admin -p $adminpass -d $masterAddress --add-shard auto"
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --defaults --db-address $masterAddress"
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config -u admin -p $adminpass -d $masterAddress --add-shard auto"
       SetDetailsPrint "both"
       DetailPrint "done"
     ${EndIf}

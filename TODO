@@ -10,6 +10,7 @@ HIGH PRIORITY:
     distributed workers, same as shards (daniele)
 
     modify the NSIS to install the worker together with the shards (alor)
+    modify the registry of the service upon CN configuration
 
     evidence grid methods
 
