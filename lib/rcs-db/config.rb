@@ -27,7 +27,8 @@ class Config
                     'DB_KEY' => 'rcs-db.key',
                     'LISTENING_PORT' => 443,
                     'HB_INTERVAL' => 30,
-                    'WORKER_PORT' => 5150}
+                    'WORKER_PORT' => 5150,
+                    'BACKUP_DIR' => 'backup'}
 
   attr_reader :global
 
@@ -76,7 +77,7 @@ class Config
       return false
     end
 
-    if Config.instance.global['BACKUP_DIR'].nil? or not File.exist? Config.instance.global['BACKUP_DIR']
+    if Config.instance.global['BACKUP_DIR'].nil?
       trace :fatal, "Backup dir not configured, please configure it"
       return false
     end
