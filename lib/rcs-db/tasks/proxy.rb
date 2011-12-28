@@ -9,7 +9,7 @@ class ProxyTask
 
   def total
     proxy = ::Proxy.find(@params['proxy_id'])
-    proxy.rules.where(:enabled => true).count + 1
+    proxy.rules.where(:enabled => true).count + 2
   end
   
   def next_entry
@@ -140,6 +140,9 @@ class ProxyTask
     proxy.configured = false
     proxy.save
 
+    yield @description = "Creating binary config"
+
+    Frontend.rnc_push(proxy.address)
   end
 end
 
