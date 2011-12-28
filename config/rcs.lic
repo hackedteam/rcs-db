@@ -1,0 +1,29 @@
+---
+:serial: "1234567890"
+:version: "8.0"
+:type: "reusable"
+:expiry: "2011-12-31 00:00:00 UTC"
+:maintenance: "2011-12-31 00:00:00 UTC"
+:users: .Inf
+:agents:
+  :total: .Inf
+  :desktop: .Inf
+  :mobile: .Inf
+  :windows: [true, true]
+  :osx: [true, true]
+  :linux: [true, true]
+  :android: [true, true]
+  :blackberry: [true, true]
+  :ios: [true, true]
+  :symbian: [true, true]
+  :winmo: [true, true]
+:alerting: true
+:correlation: false
+:rmi: true
+:ipa: .Inf
+:collectors: 
+  :collectors: 10
+  :anonymizers: 20
+:shards: 1
+:exploits: "5bd90a7ac2e8e5fdc4e92c90c0c900b5948517f7"
+:integrity: "4d50280ebea638aeb6e253cf97baf1d74e6d0979b3c398aa31adf0f22ac6d677"

@@ -1,0 +1,54 @@
+
+[ ca ]
+default_ca = CA_default
+
+[ CA_default ]
+dir = .
+certs = $dir
+new_certs_dir = $dir
+certificate = $dir/rcs-ca.crt
+private_key = $dir/rcs-ca.key
+serial = $dir/serial.txt
+database = $dir/index.txt
+
+x509_extensions = client
+default_days = 3650
+default_md = sha1
+preserve = no
+policy = policy_default
+
+[ policy_default ]
+commonName = supplied
+
+[ req ]
+default_bits = 1024
+distinguished_name = req_distinguished_name
+x509_extensions = v3_ca
+string_mask = nombstr
+
+[ req_distinguished_name ]
+commonName = Common Name
+
+[ client ]
+basicConstraints = CA:FALSE
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer:always
+extendedKeyUsage = clientAuth
+keyUsage = digitalSignature
+
+[ server ]
+basicConstraints = CA:FALSE
+nsCertType = server
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid,issuer:always
+extendedKeyUsage = serverAuth
+keyUsage = digitalSignature, keyEncipherment
+
+[ v3_req ]
+basicConstraints = CA:FALSE
+keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+
+[ v3_ca ]
+basicConstraints = CA:TRUE
+subjectKeyIdentifier = hash
+authorityKeyIdentifier = keyid:always,issuer:always

@@ -4,22 +4,22 @@ require 'rcs-worker/speex'
 require 'rcs-worker/audio_processor'
 
 module CallProcessing
-
+  
   attr_reader :wav
-
+  
   def process
     
     decoder = Speex.decoder_init(Speex.lib_get_mode(Speex::MODEID_UWB))
     
     # enable enhancement
     enhancement_ptr = FFI::MemoryPointer.new(:int32).write_uint 1
-    Speex.decoder_ctl(decoder, Speex::SET_ENH, enhancement_ptr);
+    Speex.decoder_ctl(decoder, Speex::SET_ENH, enhancement_ptr)
     
     # get frame size
     frame_size_ptr = FFI::MemoryPointer.new(:int32).write_uint 0
-    Speex.decoder_ctl(decoder, Speex::GET_FRAME_SIZE, frame_size_ptr);
+    Speex.decoder_ctl(decoder, Speex::GET_FRAME_SIZE, frame_size_ptr)
     frame_size = frame_size_ptr.get_uint(0)
-        
+    
     raw_content = StringIO.new @content
     wave_buffer = ''
     
@@ -47,12 +47,6 @@ module CallProcessing
     Speex.decoder_destroy(decoder)
     
     @wav = wave_buffer
-    
-=begin
-    channel = RCS::Worker::Channel.new self.sample_rate, self.start_time
-    channel.feed(@wav)
-    channel.to_wavfile
-=end
     
   end
   

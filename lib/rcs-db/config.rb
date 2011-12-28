@@ -4,7 +4,6 @@
 
 # from RCS::Common
 require 'rcs-common/trace'
-require 'rcs-common/flatsingleton'
 
 # system
 require 'yaml'
@@ -16,19 +15,20 @@ module DB
 
 class Config
   include Singleton
-  extend FlatSingleton
   include Tracer
 
   CONF_DIR = 'config'
+  CERT_DIR = CONF_DIR + '/certs'
   CONF_FILE = 'config.yaml'
 
-  DEFAULT_CONFIG= {'DB_ADDRESS' => 'localhost',
-                   'CA_PEM' => 'rcs-ca.pem',
-                   'DB_CERT' => 'rcs-db.crt',
-                   'DB_KEY' => 'rcs-db.key',
-                   'SERVER_SIG' => 'rcs-server.sig',
-                   'LISTENING_PORT' => 4444,
-                   'HB_INTERVAL' => 30}
+  DEFAULT_CONFIG = {'CN' => '127.0.0.1',
+                    'CA_PEM' => 'rcs.pem',
+                    'DB_CERT' => 'rcs-db.crt',
+                    'DB_KEY' => 'rcs-db.key',
+                    'LISTENING_PORT' => 443,
+                    'HB_INTERVAL' => 30,
+                    'WORKER_PORT' => 5150,
+                    'BACKUP_DIR' => 'backup'}
 
   attr_reader :global
 
@@ -50,45 +50,53 @@ class Config
       return false
     end
 
-    if not @global['DB_CERT'].nil? then
-      if not File.exist?(Config.file('DB_CERT')) then
+    if not @global['DB_CERT'].nil?
+      if not File.exist?(Config.instance.cert('DB_CERT'))
         trace :fatal, "Cannot open certificate file [#{@global['DB_CERT']}]"
         return false
       end
     end
 
-    if not @global['DB_KEY'].nil? then
-      if not File.exist?(Config.file('DB_KEY')) then
+    if not @global['DB_KEY'].nil?
+      if not File.exist?(Config.instance.cert('DB_KEY'))
         trace :fatal, "Cannot open private key file [#{@global['DB_KEY']}]"
         return false
       end
     end
 
-    if not @global['CA_PEM'].nil? then
-      if not File.exist?(Config.file('CA_PEM')) then
-        trace :fatal, "Cannot open CA file [#{@global['CA_PEM']}]"
-        return false
-      end
-    end
-
-    if not @global['SERVER_SIG'].nil? then
-      if not File.exist?(Config.file('SERVER_SIG')) then
-        trace :fatal, "Cannot open signature file [#{@global['SERVER_SIG']}]"
+    if not @global['CA_PEM'].nil?
+      if not File.exist?(Config.instance.cert('CA_PEM'))
+        trace :fatal, "Cannot open PEM file [#{@global['CA_PEM']}]"
         return false
       end
     end
 
     # to avoid problems with checks too frequent
-    if (@global['HB_INTERVAL'] and @global['HB_INTERVAL'] < 10) then
+    if (@global['HB_INTERVAL'] and @global['HB_INTERVAL'] < 10)
       trace :fatal, "Interval too short, please increase it"
+      return false
+    end
+
+    if Config.instance.global['BACKUP_DIR'].nil?
+      trace :fatal, "Backup dir not configured, please configure it"
       return false
     end
 
     return true
   end
 
+  def temp(name=nil)
+    temp = File.join Dir.pwd, 'temp'
+    temp = File.join temp, name if name
+    return temp
+  end
+  
   def file(name)
-    return File.join Dir.pwd, CONF_DIR, @global[name]
+    return File.join Dir.pwd, CONF_DIR, @global[name].nil? ? name : @global[name]
+  end
+
+  def cert(name)
+    return File.join Dir.pwd, CERT_DIR, @global[name].nil? ? name : @global[name]
   end
 
   def safe_to_file
@@ -108,6 +116,17 @@ class Config
   end
 
   def run(options)
+
+    if options[:reset]
+      reset_admin options
+      return 0
+    end
+
+    if options[:shard]
+      add_shard options
+      return 0
+    end
+
     # load the current config
     load_from_file
 
@@ -116,18 +135,23 @@ class Config
     pp @global
 
     # use the default values
-    if options[:defaults] then
+    if options[:defaults]
       @global = DEFAULT_CONFIG
     end
 
     # values taken from command line
-    @global['DB_ADDRESS'] = options[:db_address] unless options[:db_address].nil?
+    @global['CN'] = options[:cn] unless options[:cn].nil?
     @global['CA_PEM'] = options[:ca_pem] unless options[:ca_pem].nil?
     @global['DB_CERT'] = options[:db_cert] unless options[:db_cert].nil?
     @global['DB_KEY'] = options[:db_key] unless options[:db_key].nil?
-    @global['SERVER_SIG'] = options[:server_sig] unless options[:server_sig].nil?
     @global['LISTENING_PORT'] = options[:port] unless options[:port].nil?
     @global['HB_INTERVAL'] = options[:hb_interval] unless options[:hb_interval].nil?
+    @global['WORKER_PORT'] = options[:worker_port] unless options[:worker_port].nil?
+    @global['BACKUP_DIR'] = options[:backup] unless options[:backup].nil?
+
+    if options[:gen_cert]
+      generate_certificates options
+    end
 
     trace :info, ""
     trace :info, "Final configuration:"
@@ -139,7 +163,118 @@ class Config
     return 0
   end
 
-  # executed from rcs-collector-config
+  def reset_admin(options)
+    trace :info, "Resetting 'admin' password..."
+
+    http = Net::HTTP.new(options[:db_address] || '127.0.0.1', options[:db_port] || 443)
+    http.use_ssl = true
+    http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+
+    resp = http.request_post('/auth/reset', {pass: options[:reset]}.to_json, nil)
+    trace :info, resp.body
+  end
+
+  def add_shard(options)
+    trace :info, "Adding this host as db shard..."
+
+    http = Net::HTTP.new(options[:db_address] || '127.0.0.1', options[:db_port] || 443)
+    http.use_ssl = true
+    http.verify_mode = OpenSSL::SSL::VERIFY_NONE
+
+    # login
+    account = {:user => options[:user], :pass => options[:pass] }
+    resp = http.request_post('/auth/login', account.to_json, nil)
+    unless resp['Set-Cookie'].nil?
+      cookie = resp['Set-Cookie']
+    else
+      puts "Invalid authentication"
+      return
+    end
+
+    # send the request
+    res = http.request_post('/shard/create', {host: options[:shard]}.to_json, {'Cookie' => cookie})
+    puts res.body
+
+    # logout
+    http.request_post('/auth/logout', nil, {'Cookie' => cookie})
+  end
+
+  def generate_certificates(options)
+    trace :info, "Generating ssl certificates..."
+
+    old_dir = Dir.pwd
+    Dir.chdir File.join(Dir.pwd, CERT_DIR)
+
+    File.open('index.txt', 'wb+') { |f| f.write '' }
+    File.open('serial.txt', 'wb+') { |f| f.write '01' }
+
+    # to create the CA
+    if options[:gen_ca] or !File.exist?('rcs-ca.crt')
+      trace :info, "Generating a new CA authority..."
+      system "openssl req -subj /CN=\"RCS Certification Authority\"/O=\"HT srl\" -batch -days 3650 -nodes -new -x509 -keyout rcs-ca.key -out rcs-ca.crt -config openssl.cnf"
+    end
+
+    return unless File.exist? 'rcs-ca.crt'
+
+    trace :info, "Generating db certificate..."
+    # the cert for the db server
+    system "openssl req -subj /CN='#{@global['CN']}' -batch -days 3650 -nodes -new -keyout #{@global['DB_KEY']} -out rcs-db.csr -config openssl.cnf"
+
+    return unless File.exist? @global['DB_KEY']
+
+    trace :info, "Generating collector certificate..."
+    # the cert used by the collectors
+    system "openssl req -subj /CN='collector' -batch -days 3650 -nodes -new -keyout rcs-collector.key -out rcs-collector.csr -config openssl.cnf"
+
+    return unless File.exist? 'rcs-collector.key'
+
+    trace :info, "Signing certificates..."
+    # signing process
+    system "openssl ca -batch -days 3650 -out #{@global['DB_CERT']} -in rcs-db.csr -extensions server -config openssl.cnf"
+    system "openssl ca -batch -days 3650 -out rcs-collector.crt -in rcs-collector.csr -config openssl.cnf"
+
+    return unless File.exist? @global['DB_CERT']
+
+    trace :info, "Creating certificates bundles..."
+    File.open(@global['DB_CERT'], 'ab+') {|f| f.write File.read('rcs-ca.crt')}
+    
+    # create the PEM file for all the collectors
+    File.open(@global['CA_PEM'], 'wb+') do |f|
+      f.write File.read('rcs-collector.crt')
+      f.write File.read('rcs-collector.key')
+      f.write File.read('rcs-ca.crt')
+    end
+
+    trace :info, "Removing temporary files..."
+    # CA related files
+    ['index.txt', 'index.txt.old', 'index.txt.attr', 'index.txt.attr.old', 'serial.txt', 'serial.txt.old'].each do |f|
+      File.delete f
+    end
+
+    # intermediate certificate files
+    ['01.pem', '02.pem', 'rcs-collector.csr', 'rcs-collector.crt', 'rcs-collector.key', 'rcs-db.csr'].each do |f|
+      File.delete f
+    end
+
+    Dir.chdir old_dir
+    trace :info, "done."
+  end
+
+  def self.mongo_exec_path(file)
+    # select the correct dir based upon the platform we are running on
+    case RUBY_PLATFORM
+      when /darwin/
+        os = 'macos'
+        ext = ''
+      when /mingw/
+        os = 'win'
+        ext = '.exe'
+    end
+
+    return Dir.pwd + '/mongodb/' + os + '/' + file + ext
+  end
+
+  # executed from rcs-db-config
   def self.run!(*argv)
     # reopen the class and declare any empty trace method
     # if called from command line, we don't have the trace facility
@@ -156,12 +291,28 @@ class Config
       # Set a banner, displayed at the top of the help screen.
       opts.banner = "Usage: rcs-db-config [options]"
 
-      # Define the options, and what they do
+      opts.separator ""
+      opts.separator "Application layer options:"
       opts.on( '-l', '--listen PORT', Integer, 'Listen on tcp/PORT' ) do |port|
         options[:port] = port
       end
-      opts.on( '-a', '--db-address HOST', String, 'Use the rcs-db at HOST' ) do |host|
-        options[:db_address] = host
+      opts.on( '-b', '--db-heartbeat SEC', Integer, 'Time in seconds between two heartbeats' ) do |sec|
+        options[:hb_interval] = sec
+      end
+      opts.on( '-w', '--worker-port PORT', Integer, 'Listen on tcp/PORT for worker' ) do |port|
+        options[:worker_port] = port
+      end
+      opts.on( '-n', '--CN CN', String, 'Common Name for the server' ) do |cn|
+        options[:cn] = cn
+      end
+
+      opts.separator ""
+      opts.separator "Certificates options:"
+      opts.on( '-g', '--generate', 'Generate the SSL certificates needed by the system' ) do
+        options[:gen_cert] = true
+      end
+      opts.on( '-G', '--generate-ca', 'Generate a new CA authority for SSL certificates' ) do
+        options[:gen_ca] = true
       end
       opts.on( '-c', '--ca-pem FILE', 'The certificate file (pem) of the issuing CA' ) do |file|
         options[:ca_pem] = file
@@ -172,29 +323,50 @@ class Config
       opts.on( '-k', '--db-key FILE', 'The certificate file (key) used for ssl communication' ) do |file|
         options[:db_key] = file
       end
-      opts.on( '-s', '--server-sig FILE', 'The signature file (sig) used by Collectors' ) do |file|
-        options[:server_sig] = file
-      end
-      opts.on( '-b', '--db-heartbeat SEC', Integer, 'Time in seconds between two heartbeats' ) do |sec|
-        options[:hb_interval] = sec
-      end
+
+      opts.separator ""
+      opts.separator "General options:"
       opts.on( '-X', '--defaults', 'Write a new config file with default values' ) do
         options[:defaults] = true
       end
-
-      # This displays the help screen
+      opts.on( '-B', '--backup-dir DIR', String, 'The directory to be used for backups' ) do |dir|
+        options[:backup] = dir
+      end
       opts.on( '-h', '--help', 'Display this screen' ) do
         puts opts
         return 0
       end
+
+      opts.separator ""
+      opts.separator "Utilities:"
+      opts.on( '-u', '--user USERNAME', 'rcs-db username' ) do |user|
+        options[:user] = user
+      end
+      opts.on( '-p', '--password PASSWORD', 'rcs-db password' ) do |password|
+        options[:pass] = password
+      end
+      opts.on( '-d', '--db-address HOSTNAME', 'Use the rcs-db at HOSTNAME' ) do |host|
+        options[:db_address] = host
+      end
+      opts.on( '-P', '--db-port PORT', Integer, 'Connect to tcp/PORT on rcs-db' ) do |port|
+        options[:db_port] = port
+      end
+      opts.on( '-R', '--reset-admin PASS', 'Reset the password for user \'admin\'' ) do |pass|
+        options[:reset] = pass
+      end
+      opts.on( '-S', '--add-shard ADDRESS', 'Add ADDRESS as a db shard (sys account required)' ) do |shard|
+        options[:shard] = shard
+      end
+
     end
 
     optparse.parse(argv)
 
     # execute the configurator
-    return Config.run(options)
+    return Config.instance.run(options)
   end
 
 end #Config
-end #Collector::
+
+end #DB::
 end #RCS::

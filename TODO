@@ -1,0 +1,56 @@
+TEST:
+    performance
+
+    create an item, use it in recent, dashboard, alert and nia rules, then delete it and check accordingly
+
+    proxy rules pushing
+
+HIGH PRIORITY:
+
+    distributed workers, same as shards (daniele)
+
+    modify the NSIS to install the worker together with the shards (alor)
+
+    evidence grid methods
+
+    to_json is INSANELY SLOW
+
+MEDIUM PRIORITY:
+
+    complete the worker decoding (daniele)
+	- audio
+	- geolocation
+
+    rename proxy -> injector
+
+    get_accessible should be faster
+
+    Crawler for geo
+    
+    Alerting daemon (worker)
+
+    Forwarder (worker)
+
+    Blotter (browsing like console)
+    export logs
+
+LOW PRIORITY:
+
+    get time via http (collector)
+
+    dongle dll (naga)
+
+    rubyencoder for 1.9.3 does NOT exist yet... :(
+
+    mongo authentication
+
+    regsrv32 capicom.dll  (or run ruby as system)
+
+    bundle config build.mysql2 --with-mysql-dir=c:\mysql --with-mysql-lib=c:\mysql\lib\opt
+    gem install mysql2 --platform=ruby -- --with-mysql-dir=c:\mysql --with-mysql-lib=c:\mysql\lib\opt
+
+FUTURE:
+
+    jruby?
+
+    correlation hooks
