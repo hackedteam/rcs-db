@@ -34,6 +34,8 @@ MEDIUM PRIORITY:
     Blotter (browsing like console)
     export logs
 
+    default keystore for android & applet
+
 LOW PRIORITY:
 
     get time via http (collector)
