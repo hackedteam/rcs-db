@@ -91,6 +91,7 @@ Section "Update Section" SecUpdate
    SimpleSC::StopService "RCSMasterRouter" 1
    SimpleSC::StopService "RCSMasterConfig" 1
    SimpleSC::StopService "RCSShard" 1
+   SimpleSC::StopService "RCSWorker" 1
 
    DetailPrint "done"
    
@@ -113,6 +114,10 @@ Section "Install Section" SecInstall
   !cd '..\..'
   SetOutPath "$INSTDIR\Ruby"
   ###File /r "Ruby\*.*"
+  SetOutPath "$INSTDIR\Java"
+  ###File /r "Java\*.*"
+  SetOutPath "$INSTDIR\Python"
+  ###File /r "Python\*.*"
   SetDetailsPrint "both"
   DetailPrint "done"
 
@@ -134,7 +139,7 @@ Section "Install Section" SecInstall
     File /r "bin\*.*"
 
     SetOutPath "$INSTDIR\DB\mongodb\win"
-    ###File /r "mongodb\win\*.*"
+    File /r "mongodb\win\*.*"
     
     SetOutPath "$INSTDIR\DB\lib"
     File "lib\rcs-db.rb"
@@ -142,7 +147,10 @@ Section "Install Section" SecInstall
 
     SetOutPath "$INSTDIR\DB\console"
     File /r "console\*.*"
-    
+
+    SetOutPath "$INSTDIR\DB\cores"
+    File /r "cores\*.*"
+
     SetOutPath "$INSTDIR\DB\lib\rcs-db-release"
     ###File /r "lib\rcs-db-release\*.*"
     File /r "lib\rcs-db\*.*"
@@ -150,10 +158,12 @@ Section "Install Section" SecInstall
     SetOutPath "$INSTDIR\DB\lib\rcs-worker-release"
     ###File /r "lib\rcs-worker-release\*.*"
     File /r "lib\rcs-worker\*.*"
+
+    SetOutPath "$INSTDIR\DB\config\certs"
+    File "config\certs\openssl.cnf"
     
     SetOutPath "$INSTDIR\DB\config"
     File "config\mongoid.yaml"
-    File "config\openssl.cnf"
     File "config\trace.yaml"
     File "config\version.txt"
     SetDetailsPrint "both"
@@ -189,6 +199,11 @@ Section "Install Section" SecInstall
       SimpleSC::SetServiceFailure "RCSShard" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSShard\Parameters" "Application" "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-mongod"
       DetailPrint "done"
+      DetailPrint "Creating service RCS Worker..."
+      SimpleSC::InstallService "RCSWorker" "RCS Worker" "16" "2" "$INSTDIR\DB\bin\srvany" "" "" ""
+      SimpleSC::SetServiceFailure "RCSWorker" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSWorker\Parameters" "Application" "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-worker"
+      DetailPrint "done"
     ${EndIf}
     
     DetailPrint "Installing license.."
@@ -202,9 +217,11 @@ Section "Install Section" SecInstall
     SimpleSC::StartService "RCSMasterRouter" ""
     DetailPrint "Starting RCS Shard..."
     SimpleSC::StartService "RCSShard" ""
-      
-    DetailPrint "Adding firewall rule for port 4444/tcp..."
-    nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=4444'
+    DetailPrint "Starting RCS Worker..."
+    SimpleSC::StartService "RCSWorker" ""
+          
+    DetailPrint "Adding firewall rule for port 443/tcp..."
+    nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=443'
 
     !cd '..'
     WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
@@ -219,9 +236,25 @@ Section "Install Section" SecInstall
     SetOutPath "$INSTDIR\DB\bin"
     File /r "bin\rcs-db-mongo*.*"
     File "bin\srvany.exe"
+    File "bin\rcs-worker"
 
     SetOutPath "$INSTDIR\DB\mongodb\win"
-    ###File /r "mongodb\win\*.*"
+    File /r "mongodb\win\*.*"
+    
+    SetOutPath "$INSTDIR\DB\lib"
+    File "lib\rcs-worker.rb"
+    
+    SetOutPath "$INSTDIR\DB\lib\rcs-worker-release"
+    ###File /r "lib\rcs-worker-release\*.*"
+    File /r "lib\rcs-worker\*.*"
+    
+    SetOutPath "$INSTDIR\DB\config"
+    #### mongoid conf has to be changed!!!!
+    File "config\mongoid.yaml"
+    File "config\trace.yaml"
+    File "config\version.txt"
+    SetDetailsPrint "both"
+    DetailPrint "done"
     
     SetDetailsPrint "both"
     DetailPrint "done"
@@ -233,9 +266,16 @@ Section "Install Section" SecInstall
       SimpleSC::SetServiceFailure "RCSShard" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSShard\Parameters" "Application" "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-mongod"
       DetailPrint "done"
+      DetailPrint "Creating service RCS Worker..."
+      SimpleSC::InstallService "RCSWorker" "RCS Worker" "16" "2" "$INSTDIR\DB\bin\srvany" "" "" ""
+      SimpleSC::SetServiceFailure "RCSWorker" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSWorker\Parameters" "Application" "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-worker"
+      DetailPrint "done"
       
       DetailPrint "Starting RCS Shard..."
     	SimpleSC::StartService "RCSShard" ""
+      DetailPrint "Starting RCS Worker..."
+      SimpleSC::StartService "RCSWorker" ""
     
       DetailPrint "Writing the configuration..."
       SetDetailsPrint "textonly"
@@ -246,7 +286,9 @@ Section "Install Section" SecInstall
     
     DetailPrint "Starting RCS Shard..."
     SimpleSC::StartService "RCSShard" ""
-    
+    DetailPrint "Starting RCS Worker..."
+    SimpleSC::StartService "RCSWorker" ""
+
     !cd '..'
     WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
     WriteRegDWORD HKLM "Software\HT\RCS" "shard" 0x00000001
@@ -275,6 +317,9 @@ Section "Install Section" SecInstall
     SetDetailsPrint "both"
     DetailPrint "done"
     
+    DetailPrint "Adding firewall rule for port 80/tcp..."
+    nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSCollector" dir=in action=allow protocol=TCP localport=80'
+
     !cd '..'
     WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
     
@@ -347,6 +392,9 @@ Section Uninstall
   SimpleSC::RemoveService "RCSMasterConfig"
   SimpleSC::StopService "RCSShard" 1
   SimpleSC::RemoveService "RCSShard"
+  SimpleSC::StopService "RCSWorker" 1
+  SimpleSC::RemoveService "RCSWorker"
+
   DetailPrint "done"
 
   DetailPrint ""
@@ -356,6 +404,8 @@ Section Uninstall
   RMDir /r "$INSTDIR\DB"
   RMDir /r "$INSTDIR\Collector"
   RMDir /r "$INSTDIR\Ruby"
+  RMDir /r "$INSTDIR\Java"
+  RMDir /r "$INSTDIR\Python"
   RMDir /r "$INSTDIR"
   SetDetailsPrint "both"
   DetailPrint "done"

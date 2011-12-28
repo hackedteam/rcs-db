@@ -27,6 +27,7 @@ end
 # ensure the data directory is present
 Dir::mkdir(datadir) if not File.directory?(datadir)
 Dir::mkdir(configdir) if not File.directory?(configdir)
+Dir::mkdir(logdir) if not File.directory?(logdir)
 
 # the mongod executable
 mongod = Dir.pwd + '/mongodb/' + os + '/mongod' + ext
