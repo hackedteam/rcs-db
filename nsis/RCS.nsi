@@ -88,18 +88,21 @@ Section "Update Section" SecUpdate
    DetailPrint "Stopping RCS Services..."
    SimpleSC::StopService "RCSCollector" 1
    SimpleSC::StopService "RCSDB" 1
+   SimpleSC::StopService "RCSWorker" 1
    SimpleSC::StopService "RCSMasterRouter" 1
    SimpleSC::StopService "RCSMasterConfig" 1
    SimpleSC::StopService "RCSShard" 1
-   SimpleSC::StopService "RCSWorker" 1
 
    DetailPrint "done"
    
    SetDetailsPrint "textonly"
    DetailPrint "Removing previous version..."
    ###RMDir /r "$INSTDIR\Ruby"
-   ###RMDir /r "$INSTDIR\DB\lib"
-   ###RMDir /r "$INSTDIR\DB\bin"
+   RMDir /r "$INSTDIR\DB\lib"
+   RMDir /r "$INSTDIR\DB\bin"
+   RMDir /r "$INSTDIR\DB\mongodb"
+   RMDir /r "$INSTDIR\Collector\bin"
+   RMDir /r "$INSTDIR\Collector\lib"
    DetailPrint "done"
   
 SectionEnd
@@ -126,7 +129,7 @@ Section "Install Section" SecInstall
 
   DetailPrint "Setting up the path..."
   ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
-  StrCpy $R0 "$R0;$INSTDIR\Collector\bin;$INSTDIR\DB\bin;$INSTDIR\Ruby\bin"
+  StrCpy $R0 "$R0;$INSTDIR\Collector\bin;$INSTDIR\DB\bin;$INSTDIR\Ruby\bin;$INSTDIR\Java\bin"
   ###WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R0"
   DetailPrint "done" 
 
@@ -146,6 +149,15 @@ Section "Install Section" SecInstall
     File "lib\rcs-db.rb"
     File "lib\rcs-worker.rb"
  
+    SetOutPath "$INSTDIR\DB\log"
+    File /r "log\.keep"
+
+    SetOutPath "$INSTDIR\DB\data"
+    File /r "data\.keep"
+
+    SetOutPath "$INSTDIR\DB\data\config"
+    File /r "data\config\.keep"
+
     SetOutPath "$INSTDIR\DB\lib\rcs-db-release"
     ###File /r "lib\rcs-db-release\*.*"
     File /r "lib\rcs-db\*.*"
@@ -178,13 +190,18 @@ Section "Install Section" SecInstall
     SetOutPath "$INSTDIR\DB\config\certs"
     File "config\certs\openssl.cnf"
         
+    SetDetailsPrint "both"
+    DetailPrint "done"
+    
     ; fresh install
     ${If} $installUPGRADE != ${BST_CHECKED}
       DetailPrint ""
       DetailPrint "Writing the configuration..."
       SetDetailsPrint "textonly"
       ; write the config yaml
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-db-config --defaults --CN $masterCN"
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --defaults --CN $masterCN"
+      ; generate the SSL cert
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate"
       SetDetailsPrint "both"
       DetailPrint "done"
       
@@ -215,20 +232,25 @@ Section "Install Section" SecInstall
       DetailPrint "done"
     ${EndIf}
     
+    SetDetailsPrint "both"
+        
     DetailPrint "Installing license.."
     CopyFiles /SILENT $masterLicense "$INSTDIR\DB\config\rcs.lic"
-
-    DetailPrint "Starting RCS DB..."
-    SimpleSC::StartService "RCSDB" ""
+    
     DetailPrint "Starting RCS Master Config..."
     SimpleSC::StartService "RCSMasterConfig" ""
     DetailPrint "Starting RCS Master Router..."
     SimpleSC::StartService "RCSMasterRouter" ""
     DetailPrint "Starting RCS Shard..."
     SimpleSC::StartService "RCSShard" ""
+    DetailPrint "Starting RCS DB..."
+    SimpleSC::StartService "RCSDB" ""
     DetailPrint "Starting RCS Worker..."
     SimpleSC::StartService "RCSWorker" ""
           
+    ; set the admin password
+    nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --reset-admin $adminpass"
+      
     DetailPrint "Adding firewall rule for port 443/tcp..."
     nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=443'
 
