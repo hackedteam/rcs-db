@@ -299,19 +299,7 @@ class TaskManager
   
   def create(user, type, file_name, params = {})
     @tasks[user] ||= Hash.new
-    
-    # check task file_name is unique, we cannot have 2 tasks stored in the same file for a single user
-=begin
-    unless file_name.nil?
-      @tasks[user].each_pair do |id, task|
-        puts task.inspect
-        return nil if task.file_name == file_name and task.error? == false
-      end
-    end
-=end
-
-    puts "type #{type} file_name #{file_name} params #{params}"
-    
+      
     task = eval("#{type.downcase.capitalize}Task").new type, file_name, params
     trace :debug, "Creating task #{task._id} of type #{type} for user '#{user}', saving to '#{file_name}'"
     
