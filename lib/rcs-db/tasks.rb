@@ -62,6 +62,10 @@ module BaseTask
     @_id = UUIDTools::UUID.random_create.to_s
   end
 
+  def description(message)
+    @description = message
+  end
+  
   def step
     @current += 1
   end
@@ -83,7 +87,6 @@ module BaseTask
   end
 
   def finished
-    @description = 'Completed'
     @status = :finished
     trace :debug, "Task #{@_id} FINISHED"
   end
@@ -94,7 +97,6 @@ module BaseTask
   end
 
   def downloading
-    @description = 'Downloading'
     @status = :downloading
     trace :debug, "Task #{@_id} DOWNLOADING"
   end
@@ -163,7 +165,6 @@ module BuildTaskType
           break if finished?
           step
         end
-        @description = 'Saving'
         unless @file_name.nil?
           FileUtils.cp(@builder.path(@builder.outputs.first), Config.instance.temp(@_id))
           @resource[:size] = File.size(Config.instance.temp(@_id))
@@ -298,15 +299,7 @@ class TaskManager
   
   def create(user, type, file_name, params = {})
     @tasks[user] ||= Hash.new
-    
-    # check task file_name is unique, we cannot have 2 tasks stored in the same file for a single user
-    @tasks[user].each_pair do |id, task|
-      puts task.inspect
-      return nil if task.file_name == file_name and task.error? == false
-    end unless file_name.nil?
-    
-    puts "type #{type} file_name #{file_name} params #{params}"
-
+      
     task = eval("#{type.downcase.capitalize}Task").new type, file_name, params
     trace :debug, "Creating task #{task._id} of type #{type} for user '#{user}', saving to '#{file_name}'"
     

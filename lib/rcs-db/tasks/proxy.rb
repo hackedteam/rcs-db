@@ -27,7 +27,7 @@ class ProxyTask
       tag = proxy.redirection_tag + (base + progressive).to_s
       progressive += 1
 
-      yield @description = "Creating rule No: #{progressive}"
+      yield description "Creating rule No: #{progressive}"
       
       # use the key of the hash to avoid duplicates
       redirect_user["#{rule.ident} #{rule.ident_param}"] ||= tag
@@ -97,7 +97,7 @@ class ProxyTask
 
     end
 
-    yield @description = "Creating binary config"
+    yield description "Creating binary config"
 
     bin_config_file = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
 
@@ -140,9 +140,11 @@ class ProxyTask
     proxy.configured = false
     proxy.save
 
-    yield @description = "Creating binary config"
+    yield description "Creating binary config"
 
     Frontend.rnc_push(proxy.address)
+    
+    description "Rules applied successfully"
   end
 end
 
