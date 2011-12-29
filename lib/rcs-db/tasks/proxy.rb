@@ -48,7 +48,7 @@ class ProxyTask
       end
     end
 
-    yield @description = "Creating binary config"
+    yield description "Creating binary config"
 
     file = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
 
@@ -90,6 +90,8 @@ class ProxyTask
 
     proxy.configured = false
     proxy.save
+
+    description "Rules applied successfully"
 
   end
 end
