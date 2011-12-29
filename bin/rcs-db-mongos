@@ -20,6 +20,7 @@ logdir = Dir.pwd + '/log'
 
 # ensure the data directory is present
 Dir::mkdir(datadir) if not File.directory?(datadir)
+Dir::mkdir(logdir) if not File.directory?(logdir)
 
 rcs_config = {CN: 'localhost'}
 File.open(Dir.pwd + '/config/config.yaml', "r") do |f|

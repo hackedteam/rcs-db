@@ -319,6 +319,8 @@ end
         m.delete(:enabled)
       end
 
+      return if subactions.empty?
+
       start_action = {:desc => 'STARTUP', :_mig => true, :subactions => subactions}
 
       actions << start_action

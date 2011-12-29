@@ -64,7 +64,10 @@ class Application
 
       # config file parsing
       return 1 unless Config.instance.load_from_file
-      
+
+      # make sure the backup dir is present
+      FileUtils.mkdir_p(Config.instance.global['BACKUP_DIR']) if not File.directory?(Config.instance.global['BACKUP_DIR'])
+
       # connect to MongoDB
       until DB.instance.connect
         trace :warn, "Cannot connect to MongoDB, retrying..."

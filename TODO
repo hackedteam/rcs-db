@@ -3,14 +3,14 @@ TEST:
 
     create an item, use it in recent, dashboard, alert and nia rules, then delete it and check accordingly
 
+    proxy rules pushing
 
 HIGH PRIORITY:
 
     distributed workers, same as shards (daniele)
 
     modify the NSIS to install the worker together with the shards (alor)
-
-    task without download
+    modify the registry of the service upon CN configuration
 
     evidence grid methods
 
@@ -34,6 +34,8 @@ MEDIUM PRIORITY:
 
     Blotter (browsing like console)
     export logs
+
+    default keystore for android & applet
 
 LOW PRIORITY:
 
