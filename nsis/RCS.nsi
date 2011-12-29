@@ -98,6 +98,8 @@ Section "Update Section" SecUpdate
    SetDetailsPrint "textonly"
    DetailPrint "Removing previous version..."
    ###RMDir /r "$INSTDIR\Ruby"
+   ###RMDir /r "$INSTDIR\Java"
+   ###RMDir /r "$INSTDIR\Python"
    RMDir /r "$INSTDIR\DB\lib"
    RMDir /r "$INSTDIR\DB\bin"
    RMDir /r "$INSTDIR\DB\mongodb"
@@ -206,29 +208,38 @@ Section "Install Section" SecInstall
       DetailPrint "done"
       
       DetailPrint "Creating service RCS DB..."
-      SimpleSC::InstallService "RCSDB" "RCS DB" "16" "2" "$INSTDIR\DB\bin\srvany" "" "" ""
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSDB $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db"
       SimpleSC::SetServiceFailure "RCSDB" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSDB\Parameters" "Application" "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSDB" "DisplayName" "RCS DB"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSDB" "Description" "Remote Control System Application Layer"
       DetailPrint "done"
+      
       DetailPrint "Creating service RCS Master Config..."
-      SimpleSC::InstallService "RCSMasterConfig" "RCS Master Config" "16" "2" "$INSTDIR\DB\bin\srvany" "" "" ""
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSMasterConfig $INSTDIR\DB\mongodb\win\mongod.exe --dbpath $INSTDIR\DB\data\config --nssize 64 --logpath $INSTDIR\DB\log\mongoc.log --configsvr --rest"
       SimpleSC::SetServiceFailure "RCSMasterConfig" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSMasterConfig\Parameters" "Application" "$INSTDIR\DB\mongodb\win\mongod.exe --dbpath $INSTDIR\DB\data\config --nssize 64 --logpath $INSTDIR\DB\log\mongoc.log --configsvr --rest"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSDB" "DisplayName" "RCS Master Config"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSDB" "Description" "Remote Control System Master Configuration"
       DetailPrint "done"      
+      
       DetailPrint "Creating service RCS Master Router..."
-      SimpleSC::InstallService "RCSMasterRouter" "RCS Master Router" "16" "2" "$INSTDIR\DB\bin\srvany" "" "" ""
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSMasterRouter $INSTDIR\DB\mongodb\win\mongos.exe --logpath $INSTDIR\DB\log\mongos.log --configdb $masterCN"
       SimpleSC::SetServiceFailure "RCSMasterRouter" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSMasterRouter\Parameters" "Application" "$INSTDIR\DB\mongodb\win\mongos.exe --logpath $INSTDIR\DB\log\mongos.log --configdb $masterCN"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSDB" "DisplayName" "RCS Master Router"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSDB" "Description" "Remote Control System Master Router for shards"
       DetailPrint "done"   
+      
       DetailPrint "Creating service RCS Shard..."
-      SimpleSC::InstallService "RCSShard" "RCS Shard" "16" "2" "$INSTDIR\DB\bin\srvany" "" "" ""
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSShard $INSTDIR\DB\mongodb\win\mongod.exe --dbpath $INSTDIR\DB\data --journal --nssize 64 --logpath $INSTDIR\DB\log\mongod.log --shardsvr --rest"
       SimpleSC::SetServiceFailure "RCSShard" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSShard\Parameters" "Application" "$INSTDIR\DB\mongodb\win\mongod.exe --dbpath $INSTDIR\DB\data --journal --nssize 64 --logpath $INSTDIR\DB\log\mongod.log --shardsvr --rest"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSDB" "DisplayName" "RCS Shard"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSDB" "Description" "Remote Control System DB Shard for data storage"
       DetailPrint "done"
+      
       DetailPrint "Creating service RCS Worker..."
-      SimpleSC::InstallService "RCSWorker" "RCS Worker" "16" "2" "$INSTDIR\DB\bin\srvany" "" "" ""
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSWorker $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-worker"
       SimpleSC::SetServiceFailure "RCSWorker" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSWorker\Parameters" "Application" "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-worker"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSDB" "DisplayName" "RCS Worker"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSDB" "Description" "Remote Control System Worker for data decoding"
       DetailPrint "done"
     ${EndIf}
     
@@ -274,14 +285,17 @@ Section "Install Section" SecInstall
     ; fresh install
     ${If} $installUPGRADE != ${BST_CHECKED}
       DetailPrint "Creating service RCS Shard..."
-      SimpleSC::InstallService "RCSShard" "RCS Shard" "16" "2" "$INSTDIR\DB\bin\srvany" "" "" ""
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSShard $INSTDIR\DB\mongodb\win\mongod.exe --dbpath $INSTDIR\DB\data --journal --nssize 64 --logpath $INSTDIR\DB\log\mongod.log --shardsvr --rest"
       SimpleSC::SetServiceFailure "RCSShard" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSShard\Parameters" "Application" "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-mongod"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSDB" "DisplayName" "RCS Shard"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSDB" "Description" "Remote Control System DB Shard for data storage"
       DetailPrint "done"
+      
       DetailPrint "Creating service RCS Worker..."
-      SimpleSC::InstallService "RCSWorker" "RCS Worker" "16" "2" "$INSTDIR\DB\bin\srvany" "" "" ""
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSWorker $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-worker"
       SimpleSC::SetServiceFailure "RCSWorker" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSWorker\Parameters" "Application" "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-worker"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSDB" "DisplayName" "RCS Worker"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSDB" "Description" "Remote Control System Worker for data decoding"
       DetailPrint "done"
       
       DetailPrint "Starting RCS Shard..."
@@ -349,9 +363,10 @@ Section "Install Section" SecInstall
       DetailPrint "done"
     
       DetailPrint "Creating service RCS Collector..."
-      SimpleSC::InstallService "RCSCollector" "RCS Collector" "16" "2" "$INSTDIR\Collector\bin\srvany" "" "" ""
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSCollector $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector"
       SimpleSC::SetServiceFailure "RCSCollector" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSCollector\Parameters" "Application" "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSDB" "DisplayName" "RCS Collector"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSDB" "Description" "Remote Control System Collector for data reception"
       DetailPrint "done"
     ${EndIf}
 
@@ -391,12 +406,16 @@ SectionEnd
 
 Section Uninstall
 
-  DetailPrint "Removing firewall rule for 4444/tcp..."
-  nsExec::ExecToLog 'netsh firewall delete portopening TCP 4444'
-
+  DetailPrint "Removing firewall rule for 443/tcp..."
+  nsExec::ExecToLog 'netsh firewall delete portopening TCP 443'
+  DetailPrint "Removing firewall rule for 80/tcp..."
+  nsExec::ExecToLog 'netsh firewall delete portopening TCP 80'
+  
   DetailPrint "Stopping RCS Services..."
   SimpleSC::StopService "RCSCollector" 1
   SimpleSC::RemoveService "RCSCollector"
+  SimpleSC::StopService "RCSWorker" 1
+  SimpleSC::RemoveService "RCSWorker"
   SimpleSC::StopService "RCSDB" 1
   SimpleSC::RemoveService "RCSDB"
   SimpleSC::StopService "RCSMasterRouter" 1
@@ -405,8 +424,6 @@ Section Uninstall
   SimpleSC::RemoveService "RCSMasterConfig"
   SimpleSC::StopService "RCSShard" 1
   SimpleSC::RemoveService "RCSShard"
-  SimpleSC::StopService "RCSWorker" 1
-  SimpleSC::RemoveService "RCSWorker"
 
   DetailPrint "done"
 
