@@ -2,8 +2,8 @@
 :serial: "1234567890"
 :version: "8.0"
 :type: "reusable"
-:expiry: "2011-12-31 00:00:00 UTC"
-:maintenance: "2011-12-31 00:00:00 UTC"
+:expiry: "2013-01-01 00:00:00 UTC"
+:maintenance: "2013-01-01 00:00:00 UTC"
 :users: .Inf
 :agents:
   :total: .Inf
@@ -26,4 +26,4 @@
   :anonymizers: 20
 :shards: 1
 :exploits: "5bd90a7ac2e8e5fdc4e92c90c0c900b5948517f7"
-:integrity: "4d50280ebea638aeb6e253cf97baf1d74e6d0979b3c398aa31adf0f22ac6d677"
+:integrity: "088c887808789239e616a7c1c07d9c74d89f048621408be7654a46545c247e72"
