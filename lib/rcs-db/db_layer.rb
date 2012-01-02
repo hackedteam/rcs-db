@@ -96,14 +96,14 @@ class DB
 
   def enable_sharding
     if Shard.count == 0
-      output = Shard.create(Config.instance.global['CN'] + ':27018')
+      output = Shard.create(Config.instance.global['CN'])
       trace :info, "Adding the first Shard: #{output}"
       raise "Cannot create shard" unless output['ok'] == 1
     end
     output = Shard.enable('rcs')
     trace :info, "Enable Sharding on 'rcs': #{output}"
   end
-
+  
   def ensure_admin
     # check that at least one admin is present and enabled
     # if it does not exists, create it
