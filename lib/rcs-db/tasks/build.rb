@@ -15,7 +15,7 @@ class BuildTask
   end
   
   def next_entry
-    yield @description = 'Loading core'
+    yield @description = 'Loading components'
     yield @builder.load @params['factory']
     yield @description = 'Unpacking'
     yield @builder.unpack
