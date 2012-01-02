@@ -150,7 +150,7 @@ class Config
     @global['BACKUP_DIR'] = options[:backup] unless options[:backup].nil?
 
     # changing the CN is a risky business :)
-    if options[:cn] and RUBY_PLATFORM =~ /mingw/
+    if options[:newcn]
       # change the command line of the RCS Master Router service accordingly to the new CN
       change_router_service_parameter
       # change the address of the first shard in the mongodb
@@ -269,6 +269,8 @@ class Config
   end
 
   def change_router_service_parameter
+    return unless RUBY_PLATFORM =~ /mingw/
+    trace :info, "Changing the startup option of the Router Master"
     Win32::Registry::HKEY_LOCAL_MACHINE.open('SYSTEM\CurrentControlSet\services\RCSMasterRouter\Parameters', Win32::Registry::Constants::KEY_ALL_ACCESS) do |reg|
       original_value = reg['AppParameters']
       new_value = original_value.gsub(/--configdb [^ ]*/, "--configdb #{@global['CN']}")
@@ -279,7 +281,10 @@ class Config
   end
 
   def change_first_shard_address
-    
+    trace :info, "Changing the address of shard0000 to #{@global['CN']}"
+    ret = Shard.update('shard0000', @global['CN'])
+    trace :fatal, "Cannot update shard0000: #{ret['errmsg']}" if ret['ok'] != 1
+    trace :info, "Remember to restart the Master services..."
   end
 
   def self.mongo_exec_path(file)
@@ -326,6 +331,9 @@ class Config
       end
       opts.on( '-n', '--CN CN', String, 'Common Name for the server' ) do |cn|
         options[:cn] = cn
+      end
+      opts.on( '-N', '--new-CN', 'Use this option to update the CN in the db and registry' ) do
+        options[:newcn] = true
       end
 
       opts.separator ""

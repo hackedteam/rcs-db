@@ -15,8 +15,6 @@ HIGH PRIORITY:
     evidence grid methods
     offline import
 
-    console update?
-
     to_json is INSANELY SLOW
 
 MEDIUM PRIORITY:

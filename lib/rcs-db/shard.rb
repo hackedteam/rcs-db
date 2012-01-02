@@ -42,6 +42,17 @@ class Shard
     end
   end
 
+  def self.update(shard, host)
+    begin
+      db = Mongo::Connection.new("127.0.0.1", 27019).db("config")
+      coll = db.collection('shards')
+      coll.update({_id: shard}, {'$set' => {'host' => host + ':27018'}})
+      {'ok' => 1}
+    rescue Exception => e
+      {'errmsg' => e.message, 'ok' => 0}
+    end
+  end
+
   def self.find(id)
     begin
       self.all['shards'].each do |shard|

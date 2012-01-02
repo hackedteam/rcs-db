@@ -138,8 +138,6 @@ class DB
   end
 
   def load_cores
-    #TODO: remove this
-    return
     trace :info, "Loading cores into db..."
     Dir['./cores/*'].each do |core_file|
       name = File.basename(core_file, '.zip')
@@ -169,8 +167,7 @@ class DB
       rescue Exception => e
         trace :error, "Cannot load core #{name}: #{e.message}"
       end
-      # TODO: enable this
-      #File.delete(core_file)
+      File.delete(core_file)
     end
   end
 
