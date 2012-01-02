@@ -226,13 +226,13 @@ class Config
 
     trace :info, "Generating db certificate..."
     # the cert for the db server
-    system "openssl req -subj /CN='#{@global['CN']}' -batch -days 3650 -nodes -new -keyout #{@global['DB_KEY']} -out rcs-db.csr -config openssl.cnf"
+    system "openssl req -subj /CN=#{@global['CN']} -batch -days 3650 -nodes -new -keyout #{@global['DB_KEY']} -out rcs-db.csr -config openssl.cnf"
 
     return unless File.exist? @global['DB_KEY']
 
     trace :info, "Generating collector certificate..."
     # the cert used by the collectors
-    system "openssl req -subj /CN='collector' -batch -days 3650 -nodes -new -keyout rcs-collector.key -out rcs-collector.csr -config openssl.cnf"
+    system "openssl req -subj /CN=collector -batch -days 3650 -nodes -new -keyout rcs-collector.key -out rcs-collector.csr -config openssl.cnf"
 
     return unless File.exist? 'rcs-collector.key'
 
