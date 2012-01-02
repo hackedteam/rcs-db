@@ -259,7 +259,7 @@ Section "Install Section" SecInstall
     DetailPrint "Starting RCS Worker..."
     SimpleSC::StartService "RCSWorker" ""
           
-    ; set the admin password
+    DetailPrint "Setting the Admin password..."
     nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --reset-admin $adminpass"
       
     DetailPrint "Adding firewall rule for port 443/tcp..."

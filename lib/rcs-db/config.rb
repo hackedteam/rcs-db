@@ -149,6 +149,14 @@ class Config
     @global['WORKER_PORT'] = options[:worker_port] unless options[:worker_port].nil?
     @global['BACKUP_DIR'] = options[:backup] unless options[:backup].nil?
 
+    # changing the CN is a risky business :)
+    if options[:cn] and RUBY_PLATFORM =~ /mingw/
+      # change the command line of the RCS Master Router service accordingly to the new CN
+      change_router_service_parameter
+      # change the address of the first shard in the mongodb
+      change_first_shard_address
+    end
+
     if options[:gen_cert]
       generate_certificates options
     end
@@ -258,6 +266,20 @@ class Config
 
     Dir.chdir old_dir
     trace :info, "done."
+  end
+
+  def change_router_service_parameter
+    Win32::Registry::HKEY_LOCAL_MACHINE.open('SYSTEM\CurrentControlSet\services\RCSMasterRouter\Parameters', Win32::Registry::Constants::KEY_ALL_ACCESS) do |reg|
+      original_value = reg['AppParameters']
+      new_value = original_value.gsub(/--configdb [^ ]*/, "--configdb #{@global['CN']}")
+      reg['AppParameters'] = new_value
+    end
+  rescue Exception => e
+    trace :fatal, "ERROR: Cannot write registry: #{e.message}"
+  end
+
+  def change_first_shard_address
+    
   end
 
   def self.mongo_exec_path(file)
