@@ -13,6 +13,9 @@ HIGH PRIORITY:
     modify the registry of the service upon CN configuration
 
     evidence grid methods
+    offline import
+
+    console update?
 
     to_json is INSANELY SLOW
 
