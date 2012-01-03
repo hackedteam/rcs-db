@@ -45,7 +45,7 @@ class EvidenceController < RESTController
   
   # used to report that the activity of an instance is starting
   def start
-    require_auth_level :server
+    require_auth_level :server, :tech
     
     # create a phony session
     session = @params.symbolize
@@ -70,7 +70,7 @@ class EvidenceController < RESTController
   
   # used to report that the processing of an instance has finished
   def stop
-    require_auth_level :server
+    require_auth_level :server, :tech
 
     # create a phony session
     session = @params.symbolize

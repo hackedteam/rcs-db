@@ -214,7 +214,7 @@ class AgentController < RESTController
   
   # retrieve the status of a agent instance.
   def status
-    require_auth_level :server
+    require_auth_level :server, :tech
     
     # parse the platform to check if the agent is in demo mode ( -DEMO appended )
     demo = @params['subtype'].end_with? '-DEMO'

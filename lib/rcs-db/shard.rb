@@ -89,7 +89,8 @@ class Shard
       db.command({ shardcollection: collection.stats['ns'], key: key })
 
     rescue Exception => e
-      trace :error, "Cannot enable shard key: #{e.message} " #+ db.command({ getlasterror: 1})
+      # sometimes the collection is already sharded and we don't want to report an error
+      #trace :error, "Cannot enable shard key: #{e.message} " #+ db.command({ getlasterror: 1})
       e.message
     end
   end
