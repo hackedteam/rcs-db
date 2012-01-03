@@ -79,3 +79,9 @@ backups/
 
 # cores
 cores/
+
+# HASP
+hasp/*.sdf
+hasp/*.suo
+hasp/ipch
+hasp/*.opensdf
