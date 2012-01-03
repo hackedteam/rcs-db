@@ -47,9 +47,11 @@ class RESTResponse
     
     begin
       @response.content = (@content_type == 'application/json') ? @content.to_json : @content
-    rescue Exception
-      @response.status = STATUS_SERVER_ERROR
+    rescue Exception => e
+      @response.status = RCS::DB::RESTController::STATUS_SERVER_ERROR
       @response.content = 'JSON_SERIALIZATION_ERROR'
+      trace :error, e.message
+      trace :fatal, "EXCEPTION(#{e.class}): " + e.backtrace.join("\n")
     end
     
     @response.headers['Content-Type'] = @content_type

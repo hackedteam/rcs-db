@@ -134,7 +134,7 @@ class EvidenceController < RESTController
 
     mongoid_query do
       # copy remaining filtering criteria (if any)
-      filtering = Evidence.collection_class(target[:_id])
+      filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem'])
       filter.each_key do |k|
         filtering = filtering.any_in(k.to_sym => filter[k])
       end
@@ -189,7 +189,7 @@ class EvidenceController < RESTController
 
     mongoid_query do
       # copy remaining filtering criteria (if any)
-      filtering = Evidence.collection_class(target[:_id])
+      filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem'])
       filter.each_key do |k|
         filtering = filtering.any_in(k.to_sym => filter[k])
       end
