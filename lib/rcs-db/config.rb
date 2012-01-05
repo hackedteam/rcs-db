@@ -161,6 +161,17 @@ class Config
       generate_certificates options
     end
 
+    if options[:shard_failure_add]
+      shard, host = options[:shard_failure_add].split(':')
+      Shard.add(shard, host)
+      trace :info, "\n*** Please restart all the services.\n"
+    end
+    
+    if options[:shard_failure_del]
+      Shard.remove options[:shard_failure_del]
+      trace :info, "\n*** Please restart all the services.\n"
+    end
+    
     trace :info, ""
     trace :info, "Final configuration:"
     pp @global
@@ -386,6 +397,12 @@ class Config
       end
       opts.on( '-S', '--add-shard ADDRESS', 'Add ADDRESS as a db shard (sys account required)' ) do |shard|
         options[:shard] = shard
+      end
+      opts.on( '-Z', '--remove-shard SHARD', 'Remove SHARD in case of failure.') do |shard|
+        options[:shard_failure_del] = shard
+      end
+      opts.on( '-W', '--add-shard SHARD:HOST', 'Restore SHARD after failure.') do |params|
+        options[:shard_failure_add] = params
       end
 
     end

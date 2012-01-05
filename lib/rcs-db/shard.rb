@@ -41,6 +41,27 @@ class Shard
       {'errmsg' => e.message, 'ok' => 0}
     end
   end
+  
+  def self.remove(shard)
+    begin
+      db = Mongo::Connection.new("127.0.0.1", 27019).db("config")
+      coll = db.collection('shards')
+      coll.remove({_id: shard})
+      {'ok' => 1}
+    rescue Exception => e
+      {'errmsg' => e.message, 'ok' => 0}
+    end
+  end
+
+  def self.add(shard, host)
+    begin
+      db = Mongo::Connection.new("127.0.0.1", 27019).db("config")
+      coll = db.collection('shards')
+      coll.insert({_id: shard, host: host + ':27018'})
+    rescue Exception => e
+      {'errmsg' => e.message, 'ok' => 0}
+    end
+  end
 
   def self.update(shard, host)
     begin
