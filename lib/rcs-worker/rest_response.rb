@@ -4,13 +4,13 @@ require 'rcs-common/trace'
 require 'net/http'
 
 module RCS
-module Collector
+module Worker
 
 class RESTResponse
   include RCS::Tracer
 
   attr_accessor :status, :content, :content_type, :cookie
-
+  
   def initialize(status, content = '', opts = {}, callback=proc{})
     @status = status
     @status = RCS::DB::RESTController::STATUS_SERVER_ERROR if @status.nil? or @status.class != Fixnum
@@ -134,5 +134,5 @@ class RESTFileStream
   end
 end # RESTFileStream
 
-end # ::Collector
+end # ::Worker
 end # ::RCS

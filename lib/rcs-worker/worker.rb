@@ -14,6 +14,7 @@ require 'rcs-db/config'
 require 'rcs-common/trace'
 #require 'rcs-common/evidence'
 #require 'rcs-common/evidence_manager'
+require 'rcs-common/fixnum'
 
 # form System
 require 'digest/md5'
@@ -87,8 +88,10 @@ module HTTPHandler
     #   @http_post_content
     #   @http_headers
 
+    puts @http_post_content
+    
     #trace :info, "[#{@peer}] Incoming HTTP Connection"
-    size = (@http_post_content) ? @http_post_content.bytesize : 0
+    size = @http_post_content.nil? ? 0 : @http_post_content.bytesize
     trace :debug, "[#{@peer}] REQ: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time}) #{size.to_s_bytes}"
 
     # get it again since if the connection is keep-alived we need a fresh timing for each
@@ -100,7 +103,7 @@ module HTTPHandler
     # Block which fulfills the request
     operation = proc do
 
-      trace :debug, "[#{@peer}] QUE: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time})" if Config.instance.global['PERF']
+      trace :debug, "[#{@peer}] QUE: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time})" if RCS::DB::Config.instance.global['PERF']
 
       generation_time = Time.now
 
@@ -124,7 +127,7 @@ module HTTPHandler
 
         # keep the size of the reply to be used in the closing method
         @response_size = reply.content ? reply.content.bytesize : 0
-        trace :debug, "[#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{request[:query]} (#{Time.now - generation_time}) #{@response_size.to_s_bytes}" if Config.instance.global['PERF']
+        trace :debug, "[#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{request[:query]} (#{Time.now - generation_time}) #{@response_size.to_s_bytes}" if RCS::DB::Config.instance.global['PERF']
 
         reply
       rescue Exception => e
@@ -138,7 +141,7 @@ module HTTPHandler
       end
 
     end
-
+    
     # Callback block to execute once the request is fulfilled
     response = proc do |reply|
     	reply.send_response
@@ -146,11 +149,11 @@ module HTTPHandler
        # keep the size of the reply to be used in the closing method
       @response_size = reply.headers['Content-length'] || 0
     end
-
+    
     # Let the thread pool handle request
     EM.defer(operation, response)
   end
-
+  
 end
 
 class Worker
@@ -175,7 +178,7 @@ class Worker
     begin
 
       # process all the pending evidence in the repository
-      resume
+      #resume
 
       # all the events are handled here
       EM::run do
@@ -185,7 +188,7 @@ class Worker
         # set the thread pool size
         EM.threadpool_size = 50
         
-        EM::start_server("127.0.0.1", port, HTTPHandler)
+        EM::start_server("0.0.0.0", port, HTTPHandler)
         trace :info, "Listening on port #{port}..."
         
       end

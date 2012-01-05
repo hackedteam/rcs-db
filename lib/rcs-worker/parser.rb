@@ -26,10 +26,9 @@ module Parser
 
   def parse_uri(uri)
     root, controller_name, *rest = uri.split('/')
-    controller = "#{controller_name.capitalize}Controller"
-    return controller, rest
+    return "WorkerController", rest
   end
-
+  
   def parse_query_parameters(query)
     return {} if query.nil?
     parsed = CGI::parse(query)
@@ -37,7 +36,7 @@ module Parser
     parsed.each_pair { |k,v| parsed[k] = v.first if v.class == Array and v.size == 1 }
     return parsed
   end
-
+  
   def parse_json_content(content)
     return {} if content.nil?
     begin
@@ -50,7 +49,7 @@ module Parser
       return {}
     end
   end
-
+  
   def parse_multipart_content(content, content_type)
     # extract the boundary from the content type:
     # e.g. multipart/form-data; boundary=530565
@@ -63,7 +62,7 @@ module Parser
       return {}
     end
   end
-
+  
   def guid_from_cookie(cookie)
     # this will match our GUID session cookie
     re = '.*?(ID=)?([A-Z0-9]{8}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{12})'
@@ -74,12 +73,17 @@ module Parser
   
   def prepare_request(method, uri, query, cookie, content_type, content)
     controller, uri_params = parse_uri uri
+
+    params = parse_query_parameters query
+    json_content = parse_json_content content
+    params.merge! json_content unless json_content.empty?
     
     request = Hash.new
     request[:controller] = controller
     request[:method] = method
     request[:query] = query
     request[:uri] = uri
+    request[:params] = params
     request[:uri_params] = uri_params
     request[:cookie] = guid_from_cookie(cookie)
     # if not content_type is provided, default to urlencoded
