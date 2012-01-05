@@ -109,8 +109,10 @@ class AuthController < RESTController
 
     # the Collectors are authenticated only by the server signature
     if pass.eql? server_sig['value']
-      
-      Collector.collector_login user, @request[:peer]
+
+      # take the external ip address from the username
+      instance, address = user.split(':')
+      Collector.collector_login instance, address, @request[:peer]
       
       trace :info, "Collector [#{user}] logged in"
       @auth_level = [:server]
