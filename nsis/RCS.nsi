@@ -97,9 +97,9 @@ Section "Update Section" SecUpdate
    
    SetDetailsPrint "textonly"
    DetailPrint "Removing previous version..."
-   ###RMDir /r "$INSTDIR\Ruby"
-   ###RMDir /r "$INSTDIR\Java"
-   ###RMDir /r "$INSTDIR\Python"
+   RMDir /r "$INSTDIR\Ruby"
+   RMDir /r "$INSTDIR\Java"
+   RMDir /r "$INSTDIR\Python"
    RMDir /r "$INSTDIR\DB\lib"
    RMDir /r "$INSTDIR\DB\bin"
    RMDir /r "$INSTDIR\DB\mongodb"
@@ -118,11 +118,8 @@ Section "Install Section" SecInstall
   SetDetailsPrint "textonly"
   !cd '..\..'
   SetOutPath "$INSTDIR\Ruby"
-  ###File /r "Ruby\*.*"
-  SetOutPath "$INSTDIR\Java"
-  ###File /r "Java\*.*"
-  SetOutPath "$INSTDIR\Python"
-  ###File /r "Python\*.*"
+  File /r "Ruby\*.*"
+
   SetDetailsPrint "both"
   DetailPrint "done"
 
@@ -132,7 +129,7 @@ Section "Install Section" SecInstall
   DetailPrint "Setting up the path..."
   ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
   StrCpy $R0 "$R0;$INSTDIR\Collector\bin;$INSTDIR\DB\bin;$INSTDIR\Ruby\bin;$INSTDIR\Java\bin"
-  ###WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R0"
+  WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R0"
   DetailPrint "done" 
 
   ${If} $installMaster == ${BST_CHECKED}
@@ -141,6 +138,11 @@ Section "Install Section" SecInstall
     SetDetailsPrint "textonly"
     !cd 'DB'
  
+    SetOutPath "$INSTDIR\Java"
+    ###File /r "..\Java\*.*"
+    SetOutPath "$INSTDIR\Python"
+    ###File /r "..\Python\*.*"
+  
     SetOutPath "$INSTDIR\DB\bin"
     File /r "bin\*.*"
 
@@ -203,7 +205,7 @@ Section "Install Section" SecInstall
       ; write the config yaml
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --defaults --CN $masterCN"
       ; generate the SSL cert
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate"
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate -G"
       SetDetailsPrint "both"
       DetailPrint "done"
       
@@ -608,31 +610,33 @@ Function FuncSelectComponents
   
   nsDialogs::Create /NOUNLOAD 1018
   
-  ${NSD_CreateLabel} 0 0u 100% 10u "Frontend:"
+  ${NSD_CreateLabel} 0 0u 100% 10u "Backend:"
   Pop $0
   SendMessage $0 ${WM_SETFONT} $R1 0
-  ${NSD_CreateCheckBox} 20u 10u 200u 12u "Collector"
-  Pop $1
-  SendMessage $1 ${WM_SETFONT} $R1 0
-  ${NSD_CreateLabel} 30u 23u 300u 25u "Service responsible for the data collection from the agents. It has to be exposed on the internet with a public IP address."
-
-  ${NSD_CreateCheckBox} 20u 45u 200u 12u "Network Controller"
-  Pop $2
-  SendMessage $2 ${WM_SETFONT} $R1 0
-  ${NSD_CreateLabel} 30u 58u 300u 15u "Service responsible for the communications with Anonymizers and Injection Proxies."
-
-  ${NSD_CreateLabel} 0 70u 100% 10u "Backend:"
-  Pop $0
-  SendMessage $0 ${WM_SETFONT} $R1 0
-  ${NSD_CreateCheckBox} 20u 80u 200u 12u "Master Node"
+  ${NSD_CreateCheckBox} 20u 10u 200u 12u "Master Node"
   Pop $3
   SendMessage $3 ${WM_SETFONT} $R1 0
-  ${NSD_CreateLabel} 30u 93u 300u 15u "The Application Server and the primary node for the Database."
+  ${NSD_CreateLabel} 30u 23u 300u 15u "The Application Server and the primary node for the Database."
 
-  ${NSD_CreateCheckBox} 20u 110u 200u 12u "Shard"
+  ${NSD_CreateCheckBox} 20u 35u 200u 12u "Shard"
   Pop $4
   SendMessage $4 ${WM_SETFONT} $R1 0
-  ${NSD_CreateLabel} 30u 123u 280u 25u "Distributed single shard of the Database. It needs at least one Master node to be connected to."
+  ${NSD_CreateLabel} 30u 48u 280u 25u "Distributed single shard of the Database. It needs at least one Master node to be connected to."
+
+
+  ${NSD_CreateLabel} 0 70u 100% 10u "Frontend:"
+  Pop $0
+  SendMessage $0 ${WM_SETFONT} $R1 0
+  ${NSD_CreateCheckBox} 20u 80u 200u 12u "Collector"
+  Pop $1
+  SendMessage $1 ${WM_SETFONT} $R1 0
+  ${NSD_CreateLabel} 30u 93u 300u 25u "Service responsible for the data collection from the agents. It has to be exposed on the internet with a public IP address."
+
+  ${NSD_CreateCheckBox} 20u 115u 200u 12u "Network Controller"
+  Pop $2
+  SendMessage $2 ${WM_SETFONT} $R1 0
+  ${NSD_CreateLabel} 30u 128u 300u 15u "Service responsible for the communications with Anonymizers and Injection Proxies."
+
   
   nsDialogs::Show
 FunctionEnd
