@@ -19,7 +19,7 @@ class AgentController < RESTController
     mongoid_query do
       items = ::Item.where(filter)
         .any_in(_id: @session[:accessible], _kind: ['agent', 'factory'])
-        .only(:name, :desc, :status, :_kind, :path, :stat, :type, :ident, :platform, :uninstalled)
+        .only(:name, :desc, :status, :_kind, :path, :type, :stat, :ident, :platform, :uninstalled)
         
       ok(items)
     end

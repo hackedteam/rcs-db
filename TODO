@@ -10,8 +10,6 @@ HIGH PRIORITY:
 
     distributed workers, same as shards (daniele)
 
-    evidence grid methods (alor)
-
     Crawler for geo
 
     Alerting daemon (worker)
@@ -23,6 +21,8 @@ MEDIUM PRIORITY:
     complete the worker decoding (daniele)
 	- audio
 	- geolocation
+
+    import certificates from rcs 7
 
     rename proxy -> injector
 

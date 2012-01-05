@@ -135,6 +135,8 @@ class DB
       Signature.create(scope: 'network') { |s| s.value = SecureRandom.hex(16) }
       Signature.create(scope: 'server') { |s| s.value = SecureRandom.hex(16) }
     end
+    # dump the signature for NIA, Anon etc to a file
+    File.open(Config.instance.cert('rcs-network.sig'), 'w') {|f| f.write Signature.where(scope: 'network').first.value}
   end
 
   def load_cores
