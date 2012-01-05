@@ -10,7 +10,7 @@ class SignatureController < RESTController
   # retrieve the signature for a given entity
   # e.g. 'agent', 'network', ...
   def show
-    require_auth_level :server, :admin
+    require_auth_level :server, :admin, :sys
     
     begin
       if @params['_id'] == 'cert'
