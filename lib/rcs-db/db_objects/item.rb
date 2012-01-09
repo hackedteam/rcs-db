@@ -150,7 +150,7 @@ class Item
     # remove the item form the alerts
     ::Alert.all.each {|a| a.delete_if_item(self._id)}
     # remove the NIA rules that contains the item
-    ::Proxy.all.each {|p| p.delete_rule_by_item(self._id)}
+    ::Injector.all.each {|p| p.delete_rule_by_item(self._id)}
     
     case self._kind
       when 'operation'

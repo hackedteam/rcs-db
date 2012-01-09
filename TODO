@@ -4,7 +4,7 @@ TEST:
 
     create an item, use it in recent, dashboard, alert and nia rules, then delete it and check accordingly
 
-    proxy rules pushing
+    injector rules pushing
 
 HIGH PRIORITY:
 
@@ -18,11 +18,7 @@ MEDIUM PRIORITY:
 
     complete the worker decoding (daniele)
 	- audio
-	- geolocation
-
-    import certificates from rcs 7
-
-    rename proxy -> injector
+	- geolocation (the resolution is already on REST on the db)
 
     get_accessible should be faster
 

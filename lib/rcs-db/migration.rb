@@ -65,8 +65,8 @@ class Migration
       CollectorMigration.migrate options[:verbose]
       CollectorMigration.migrate_topology options[:verbose]
 
-      ProxyMigration.migrate options[:verbose]
-      ProxyMigration.migrate_rules options[:verbose]
+      InjectorMigration.migrate options[:verbose]
+      InjectorMigration.migrate_rules options[:verbose]
       Audit.log actor: '<system>', action: 'migration', desc: "Migration of data completed (#{options[:db_address]})"
     end
 
