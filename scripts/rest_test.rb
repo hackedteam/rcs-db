@@ -5,8 +5,8 @@ require 'open-uri'
 require 'pp'
 require 'cgi'
 
-http = Net::HTTP.new('localhost', 443)
-#http = Net::HTTP.new('localhost', 4444)
+#http = Net::HTTP.new('localhost', 443)
+http = Net::HTTP.new('localhost', 4444)
 http.use_ssl = true
 http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
@@ -264,7 +264,7 @@ if false
 end
 
 # task
-if true
+if false
 
 def REST_task(http, cookie, type, filename, params={})
   
@@ -1096,6 +1096,44 @@ if false
   user = users.first
   puts user
   
+end
+
+#location
+if true  
+  # GPS
+  loc = {map: {location: {latitude: 45.12345, longitude: 9.54321}}}
+  puts 'location.gps'
+  res = http.request_post('/location', loc.to_json, {'Cookie' => cookie})
+  puts res.body
+
+  # CELL
+  loc = {map: {cell_towers: [{mobile_country_code: 222, mobile_network_code: 1, location_area_code: 61208, cell_id: 528, signal_strength: -92, timing_advance: 0, age: 0}
+                            ], radio_type: 'gsm'}}
+  puts 'location.cell'
+  res = http.request_post('/location', loc.to_json, {'Cookie' => cookie})
+  puts res.body
+  
+  # WIFI
+  loc = {map: {wifi_towers: [{mac_address: '00:17:C2:F8:9C:60', signal_strength: 55, ssid: 'FASTWEB-1-0017C2F89C60'},
+          {mac_address: '00:25:C9:DF:AB:A7', signal_strength: 41, ssid: 'ht-guest-wifi'},
+          {mac_address: '38:22:9D:F7:84:F4', signal_strength: 77, ssid: 'FASTWEB-1-38229DF784F4'},
+          {mac_address: '00:1F:33:FC:B4:18', signal_strength: 85, ssid: 'NETGEAR'},
+          {mac_address: '00:24:89:01:5E:0B', signal_strength: 48, ssid: 'Vodafone-10369386'},
+          {mac_address: '00:1C:A2:DC:3C:B8', signal_strength: 84, ssid: 'InfostradaWifi'},
+          {mac_address: '00:18:F8:7A:CA:C5', signal_strength: 81, ssid: 'prsp'},
+          {mac_address: '00:25:4B:0A:63:E5', signal_strength: 80, ssid: 'Network di laura spinella'},
+          {mac_address: '00:18:F8:7A:CA:C5', signal_strength: 81, ssid: 'prsp'}
+         ]}
+       }
+  puts 'location.wifi'
+  res = http.request_post('/location', loc.to_json, {'Cookie' => cookie})
+  puts res.body
+
+  # IP
+  loc = {map: {ip_address: {ipv4: '8.8.8.8'}}}
+  puts 'location.ip'
+  res = http.request_post('/location', loc.to_json, {'Cookie' => cookie})
+  puts res.body
 end
 
 # logout

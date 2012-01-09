@@ -103,6 +103,7 @@ class AuthController < RESTController
     ok('', {cookie: "session=; path=/; expires=#{Time.at(0).strftime('%A, %d-%b-%y %H:%M:%S %Z')}" })
   end
   
+  private
   # private method to authenticate a server
   def auth_server(user, pass)
     server_sig = ::Signature.where({scope: 'server'}).first
