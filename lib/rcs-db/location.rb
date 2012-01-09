@@ -35,7 +35,7 @@ class Location
 
         if request['ip_address']
           location = get_geoip(request['ip_address']['ipv4'])
-        else
+        elsif request['location'] or request['wifi_towers'] or request['cell_towers']
           common = {request_address: true, address_language: 'en_US', version: '1.1.0', host: 'maps.google.com'}
           request.merge! common
           location = get_google(request)

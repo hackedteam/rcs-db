@@ -6,7 +6,9 @@ module RCS
 module DB
 
 class AuthController < RESTController
-  
+
+  bypass_auth [:login, :logout, :reset]
+
   def initialize
     @auth_level = []
   end

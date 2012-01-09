@@ -10,8 +10,6 @@ HIGH PRIORITY:
 
     distributed workers, same as shards (daniele)
 
-    Crawler for geo
-
     Alerting daemon (worker)
 
     export logs: all, blotter, filters...

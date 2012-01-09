@@ -1099,7 +1099,7 @@ if false
 end
 
 #location
-if true  
+if false
   # GPS
   loc = {map: {location: {latitude: 45.12345, longitude: 9.54321}}}
   puts 'location.gps'

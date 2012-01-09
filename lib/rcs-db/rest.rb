@@ -89,7 +89,7 @@ class RESTController
   def self.sessionmanager
     @session_manager || SessionManager.instance
   end
-  
+
   def self.get(request)
     name = request[:controller]
     begin
@@ -101,7 +101,13 @@ class RESTController
     controller.request = request
     controller
   end
-  
+
+  def self.bypass_auth(methods)
+    self.send(:define_method, :bypass_auth_methods) do
+      methods
+    end
+  end
+
   def request=(request)
     @request = request
     identify_action
@@ -110,8 +116,19 @@ class RESTController
   def valid_session?
     @session = RESTController.sessionmanager.get(@request[:cookie])
     RESTController.sessionmanager.update(@request[:cookie]) unless session.nil?
-    
-    return false if @session.nil? and not logging_in?
+
+    # methods without authentication
+    # class XXXXController < RESTController
+    #
+    #   bypass_auth [:method]
+    #
+    #   def method
+    #     ...
+    return true if self.respond_to?(:bypass_auth_methods) and bypass_auth_methods.include? @request[:action]
+
+    # without a valid session you cannot operate
+    return false if @session.nil?
+
     return true
   end
   
@@ -124,17 +141,7 @@ class RESTController
       @request[:action] = map_method_to_action(@request[:method], @request[:uri_params].empty?)
     end
   end
-  
-  def logging_in?
-    # TODO: each method should define if it's able bypass authentication
-    # something like
-    # class AuthController < RESTController
-    #   def login
-    #     bypass_authentication true
-    #     ...
-    (@request[:controller].eql? 'AuthController' and [:login, :reset, :logout].include? @request[:action])
-  end
-  
+
   def act!
     # check we have a valid session and an action
     return not_authorized('INVALID_COOKIE') unless valid_session?
