@@ -2,7 +2,7 @@
 Dir.chdir File.dirname(File.dirname(File.realpath(__FILE__)))
 
 # load the bundler gem (those taken from git and not installed in rubygems)
-Bundler.setup
+#Bundler.setup
 
 # release file are encrypted and stored in a different directory
 if File.directory?(Dir.pwd + '/lib/rcs-db-release')

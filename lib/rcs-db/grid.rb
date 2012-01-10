@@ -1,3 +1,7 @@
+#
+# GridFS management
+#
+
 require 'mongo'
 require 'mongoid'
 

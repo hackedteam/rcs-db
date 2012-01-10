@@ -1,7 +1,10 @@
 #
 # Controller for the Agent objects
 #
+
 require_relative '../license'
+require_relative '../alert'
+
 require 'rcs-common/crypt'
 
 module RCS
@@ -246,6 +249,9 @@ class AgentController < RESTController
         agent.save
       end
 
+      # check for alerts on this agent
+      Alerting.new_sync agent
+
       status = {:deleted => agent[:deleted], :status => agent[:status].upcase, :_id => agent[:_id]}
       return ok(status)
     end
@@ -286,12 +292,17 @@ class AgentController < RESTController
     # save the new instance in the db
     agent.save
 
+    # check for alerts on this new instance
+    Alerting.new_instance agent
+
     status = {:deleted => agent[:deleted], :status => agent[:status].upcase, :_id => agent[:_id]}
     return ok(status)
   end
 
 
   def config
+    require_auth_level :server, :tech
+    
     agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
 
     case @request[:method]

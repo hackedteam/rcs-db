@@ -25,7 +25,7 @@ class FactoryController < RESTController
     mongoid_query do
       item = Item.factories
         .any_in(_id: @session[:accessible])
-        .only(:name, :desc, :status, :_kind, :path, :ident, :counter, :configs)
+        .only(:name, :desc, :status, :_kind, :path, :ident, :counter, :configs, :logkey, :confkey)
         .find(@params['_id'])
       
       ok(item)

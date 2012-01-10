@@ -11,7 +11,7 @@ module DB
 class CoreController < RESTController
 
   def index
-    require_auth_level :sys
+    require_auth_level :sys, :tech
 
     mongoid_query do
       cores = ::Core.all
@@ -21,7 +21,7 @@ class CoreController < RESTController
   end
 
   def show
-    require_auth_level :sys
+    require_auth_level :sys, :tech
 
     mongoid_query do
       core = ::Core.where({name: @params['_id']}).first
@@ -46,7 +46,7 @@ class CoreController < RESTController
   end
 
   def create
-    require_auth_level :sys
+    require_auth_level :sys, :tech
     
     mongoid_query do
       # search if already present
@@ -81,7 +81,7 @@ class CoreController < RESTController
   end
 
   def update
-    require_auth_level :sys
+    require_auth_level :sys, :tech
 
     mongoid_query do
       core = ::Core.where({name: @params['_id']}).first
@@ -118,7 +118,7 @@ class CoreController < RESTController
   end
 
   def destroy
-    require_auth_level :sys
+    require_auth_level :sys, :tech
 
     mongoid_query do
 
