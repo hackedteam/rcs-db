@@ -26,7 +26,7 @@ class Shard
     trace :info, "Creating new shard: #{host}"
     begin
       db = Mongo::Connection.new("127.0.0.1").db("admin")
-      db.command({ addshard: host })
+      db.command({ addshard: host + ':27018' })
     rescue Exception => e
       {'errmsg' => e.message, 'ok' => 0}
     end
