@@ -32,9 +32,9 @@ LOW PRIORITY:
 
     FFI per dongle dll
 
-    rubyencoder for 1.9.3 does NOT exist yet... :(
-
     mongo authentication
+
+    is vcredist needed ?
 
     regsrv32 capicom.dll  (or run ruby as system)
 
