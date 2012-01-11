@@ -128,7 +128,7 @@ Section "Install Section" SecInstall
 
   DetailPrint "Setting up the path..."
   ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
-  StrCpy $R0 "$R0;$INSTDIR\Collector\bin;$INSTDIR\DB\bin;$INSTDIR\Ruby\bin;$INSTDIR\Java\bin"
+  StrCpy $R0 "$R0;$INSTDIR\Collector\bin;$INSTDIR\DB\bin;$INSTDIR\Ruby\bin;$INSTDIR\Java\bin;$INSTDIR\Python\bin"
   WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R0"
   DetailPrint "done" 
 
@@ -139,7 +139,7 @@ Section "Install Section" SecInstall
     !cd 'DB'
  
     SetOutPath "$INSTDIR\Java"
-    ###File /r "..\Java\*.*"
+    File /r "..\Java\*.*"
     SetOutPath "$INSTDIR\Python"
     ###File /r "..\Python\*.*"
   
@@ -307,7 +307,6 @@ Section "Install Section" SecInstall
     
       DetailPrint "Writing the configuration..."
       SetDetailsPrint "textonly"
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --defaults --db-address $masterAddress"
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config -u admin -p $adminpass -d $masterAddress --add-shard auto"
       SetDetailsPrint "both"
       DetailPrint "done"
@@ -779,7 +778,7 @@ Function FuncInsertAddress
    ${EndIf}
   ${If} $installALLINONE == ${BST_CHECKED} 
   ${OrIf} $installMaster == ${BST_CHECKED}
-    StrCpy $masterAddress "localhost"
+    StrCpy $masterAddress $masterCN
     Abort
   ${EndIf}
     
@@ -788,7 +787,7 @@ Function FuncInsertAddress
   nsDialogs::Create /NOUNLOAD 1018
 
   ${NSD_CreateLabel} 0 40u 100% 10u "Address of the Master Node:"
-  ${NSD_CreateLabel} 5u 57u 40u 10u "Hostname:"
+  ${NSD_CreateLabel} 5u 57u 40u 10u "Common Name:"
   ${NSD_CreateText} 50u 55u 200u 12u ""
   Pop $1
 
