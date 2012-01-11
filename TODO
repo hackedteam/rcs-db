@@ -10,7 +10,7 @@ HIGH PRIORITY:
 
     distributed workers, same as shards (daniele)
 
-    Alerting daemon (worker)
+    Alerting daemon (alor)
 
     export logs: all, blotter, filters...
 

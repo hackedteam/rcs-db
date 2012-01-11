@@ -31,8 +31,8 @@ class CollectorMigration
       mc.configured = collector[:status] == 0 ? false : true
       mc.version = collector[:version].to_i
 
-      mc.prev = []
-      mc.next = []
+      mc.prev = [nil]
+      mc.next = [nil]
       
       mc.save
     end
@@ -50,8 +50,8 @@ class CollectorMigration
 
       mc = Collector.where({_mid: collector[:collector_id]}).first
 
-      mc_next = Collector.where({_mid: collector[:nexthop]}).first
-      mc_prev = Collector.where({_mid: collector[:prevhop]}).first
+      mc_next = Collector.where({_mid: collector[:nexthop]}).first unless collector[:nexthop].nil?
+      mc_prev = Collector.where({_mid: collector[:prevhop]}).first unless collector[:prevhop].nil?
 
       prev_id = mc_prev[:_id] unless mc_prev.nil?
       next_id = mc_next[:_id] unless mc_next.nil?
