@@ -120,7 +120,7 @@ class DB
       end
       Audit.log :actor => '<system>', :action => 'user.create', :user => 'admin', :desc => "Created the default user 'admin'"
 
-      group = Group.create(name: "administrators")
+      group = Group.create(name: "administrators", alert: false)
       group.users << user
       group.save
       Audit.log :actor => '<system>', :action => 'group.create', :group => 'administrators', :desc => "Created the default group 'administrators'"

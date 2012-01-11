@@ -24,7 +24,9 @@ MEDIUM PRIORITY:
 
     Forwarder (worker)
 
-    default keystore for android & applet
+    default keystore for android & applet &symbian
+
+    check the TODOs in the code...
 
 LOW PRIORITY:
 

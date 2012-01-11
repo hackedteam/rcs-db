@@ -1,5 +1,8 @@
 require 'mongoid'
 
+require_relative 'alert'
+require_relative '../audit'
+
 #module RCS
 #module DB
 
@@ -41,6 +44,9 @@ class Status
       monitor[:type] = type
       case(status)
         when 'OK'
+          # notify the restoration of a component
+          RCS::DB::Alerting.restored_component(monitor) if monitor[:status] != OK
+          RCS::DB::Audit.log :actor => '<system>', :action => 'alert', :desc => "Component #{monitor[:name]} was restored to normal status"
           monitor[:status] = OK
         when 'WARN'
           monitor[:status] = WARN
@@ -58,9 +64,11 @@ class Status
         # a component is marked failed after 2 minutes (if not already marked)
         if Time.now.getutc.to_i - m[:time] > 120 and m[:status] != ERROR
           m[:status] = ERROR
-          # TODO: send alerting mail
           trace :warn, "Component #{m[:name]} is not responding, marking failed..."
+          RCS::DB::Audit.log :actor => '<system>', :action => 'alert', :desc => "Component #{m[:name]} is not responding, marking failed..."
           m.save
+          # notify the alerting system
+          RCS::DB::Alerting.failed_component(m)
         end
 
         # check disk and CPU usage
