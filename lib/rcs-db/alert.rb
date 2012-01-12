@@ -17,8 +17,14 @@ class Alerting
       ::Alert.where(:enabled => true, :action => 'SYNC').each do |alert|
         # skip non matching agents
         next unless match_path(alert, agent)
-        user = ::User.find(alert.user_id)
-        alert_fast_queue(alert, user.contact, '', '')
+
+        alert.logs.create!(time: Time.now.getutc.to_i, path: agent.path + [agent._id])
+
+        if alert.type == 'MAIL'
+          # put the matching alert in the queue
+          user = ::User.find(alert.user_id)
+          alert_fast_queue(to: user.contact, subject: 'RCS Alert [SYNC]', body: "The agent #{agent.name} has synchronized on #{Time.now}")
+        end
       end
     end
 
@@ -26,20 +32,46 @@ class Alerting
       ::Alert.where(:enabled => true, :action => 'INSTANCE').each do |alert|
         # skip non matching agents
         next unless match_path(alert, agent)
-        user = ::User.find(alert.user_id)
-        alert_fast_queue(alert, user.contact, '', '')
+
+        alert.logs.create!(time: Time.now.getutc.to_i, path: agent.path + [agent._id])
+        
+        if alert.type == 'MAIL'
+          # put the matching alert in the queue
+          user = ::User.find(alert.user_id)
+          alert_fast_queue(to: user.contact, subject: 'RCS Alert [INSTANCE]', body: "A new instance of #{agent.ident} has been created on #{Time.now}.\r\n Its name is: #{agent.name}")
+        end
       end
     end
 
     def new_evidence(evidence)
-      trace :debug, "ALERT: new evidence"
+      ::Alert.where(:enabled => true, :action => 'EVIDENCE').each do |alert|
+        agent = ::Item.find(evidence.item.first)
+        # skip non matching agents
+        next unless match_path(alert, agent)
+        # skip non matching evidence type
+        next unless (alert.evidence == '*' or alert.evidence == evidence.type)
+        # skip if none of the values in the "data" match the keywords
+        next if evidence.data.values.select {|v| v =~ Regexp.new(alert.keywords)}.empty?
+
+        # save the relevance tag into the evidence
+        evidence.relevance = alert.tag
+        evidence.save
+
+        # put the matching alert in the queue the suppression will be done there
+        # and the mail will be sent accordingly to the 'type' of alert
+        user = ::User.find(alert.user_id)
+        alert_fast_queue(alert: alert, evidence: evidence._id, path: evidence.path,
+                         to: user.contact,
+                         subject: 'RCS Alert [EVIDENCE]',
+                         body: "An evidence matching this alert [#{agent.name} #{alert.evidence} #{alert.keywords}] has arrived into the system.")
+      end
     end
 
     def failed_component(component)
       users = get_alert_users
       trace :debug, "Alerting that a component has failed: #{component.name}"
       users.each do |user|
-        alert_fast_queue(nil, user.contact, "RCS Alert [monitor] ERROR", "The component '#{component.name}' has failed, please check it.")
+        alert_fast_queue(to: user.contact, subject: "RCS Alert [monitor] ERROR", body: "The component '#{component.name}' has failed, please check it.")
       end
     end
 
@@ -47,7 +79,7 @@ class Alerting
       users = get_alert_users
       trace :debug, "Alerting that a component was restored: #{component.name}"
       users.each do |user|
-        alert_fast_queue(nil, user.contact, "RCS Alert [monitor] OK", "The component '#{component.name}' is now active")
+        alert_fast_queue(to: user.contact, subject: "RCS Alert [monitor] OK", body: "The component '#{component.name}' is now active")
       end
     end
 
@@ -58,18 +90,69 @@ class Alerting
     end
 
     def match_path(alert, agent)
+      # empty alert path means everything
+      return true if alert.path.empty?
+      
       # the path of an agent does not include itself, add it to obtain the full path
-      agent_path = agent.path << agent._id
+      agent_path = agent.path + [agent._id]
+
       # check if the agent path is included in the alert path
       # this way an alert on a target will be triggered by all of its agent
       (agent_path & alert.path == alert.path)
     end
 
-    def alert_fast_queue(alert, to, subject, body)
+    def alert_fast_queue(params)
+      # insert the entry in the queue.
+      # the alert thread will take care of it (suppressing it if needed)
+      ::AlertQueue.create! do |aq|
+        aq.alert = [params[:alert]._id] if params[:alert]
+        aq.evidence = [params[:evidence]._id] if params[:evidence]
+        aq.path = params[:path]
+        aq.to = params[:to]
+        aq.subject = params[:subject]
+        aq.body = params[:body]
+      end
+    end
 
-      #TODO: implement suppression
+    public
+    
+    def dispatch
+      alerts = ::AlertQueue.all
 
-      trace :debug, "MAIL TO: #{to}  SUBJECT: #{subject}"
+      return unless alerts.count != 0
+
+      trace :info, "Processing alert queue (#{alerts.count})..."
+
+      #TODO: remove too old alerts to keep it clean
+
+      alerts.each do |aq|
+        if aq.alert and aq.evidence
+          alert = ::Alert.find(aq.alert.first)
+
+          # check if we are in the suppression timeframe
+          if Time.now.getutc.to_i - alert.last > alert.suppression
+            # we are out of suppression, create a new entry and mail
+            trace :debug, "Triggering alert: #{alert._id}"
+            alert.logs.create!(time: Time.now.getutc.to_i, path: aq.path, evidence: aq.evidence)
+            alert.last = Time.now.getutc.to_i
+            alert.save
+            send_mail(aq.to, aq.subject, aq.body) if alert.type == 'MAIL'
+          else
+            trace :debug, "Triggering alert: #{alert._id} (suppressed)"
+            al = alert.logs.last
+            al.evidence << aq.evidence
+            al.save
+          end
+        else
+          # for queued items without an associated alert, send the mail
+          send_mail(aq.to, aq.subject, aq.body)
+        end
+        aq.destroy
+      end
+    end
+
+    def send_mail(to, subject, body)
+      trace :info, "Sending alert mail to: #{to}"
     end
 
   end

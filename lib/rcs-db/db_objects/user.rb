@@ -26,6 +26,7 @@ class User
   has_many :alerts
   
   index :name
+  index :enabled
   
   store_in :users
 

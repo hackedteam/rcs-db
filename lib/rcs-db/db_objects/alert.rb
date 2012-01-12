@@ -16,6 +16,10 @@ class Alert
   field :action, type: String
   field :evidence, type: String
   field :keywords, type: String
+  field :last, type: Integer
+
+  index :enabled
+  index :user_id
 
   store_in :alerts
 
@@ -41,6 +45,20 @@ class AlertLog
 
   embedded_in :alert
 end
+
+class AlertQueue
+  include Mongoid::Document
+
+  field :alert, type: Array
+  field :evidence, type: Array
+  field :path, type: Array
+  field :to, type: String
+  field :subject, type: String
+  field :body, type: String
+
+  store_in :alertqueue
+end
+
 
 #end # ::DB
 #end # ::RCS

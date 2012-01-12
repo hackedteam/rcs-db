@@ -73,7 +73,10 @@ class Application
         trace :warn, "Cannot connect to MongoDB, retrying..."
         sleep 5
       end
-      
+
+      # ensure all indexes are in place
+      DB.instance.create_indexes
+
       # ensure the sharding is enabled
       DB.instance.enable_sharding
 
@@ -85,9 +88,6 @@ class Application
 
       # load cores in the /cores dir
       DB.instance.load_cores
-
-      # ensure all indexes are in place
-      DB.instance.create_indexes
 
       # enter the main loop (hopefully will never exit from it)
       Events.new.setup Config.instance.global['LISTENING_PORT']

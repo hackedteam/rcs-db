@@ -21,6 +21,10 @@ class Collector
   field :next, type: Array
   field :prev, type: Array
 
+  index :name
+  index :address
+  index :internal_address
+
   store_in :collectors
 
   after_destroy :drop_log_collection

@@ -11,6 +11,7 @@ HIGH PRIORITY:
     distributed workers, same as shards (daniele)
 
     Alerting daemon (alor)
+        - expire time on alerts
 
     export logs: all, blotter, filters...
 

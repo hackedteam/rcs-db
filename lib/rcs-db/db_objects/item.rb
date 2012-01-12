@@ -57,6 +57,12 @@ class Item
 
   embeds_many :configs, class_name: "Configuration"
 
+  index :name
+  index :status
+  index :_kind
+  index :ident
+  index :instance
+
   store_in :items
 
   after_destroy :destroy_callback

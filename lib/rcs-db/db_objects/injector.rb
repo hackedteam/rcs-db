@@ -25,6 +25,11 @@ class Injector
   field :_grid, type: Array
   field :_grid_size, type: Integer
 
+  index :name
+  index :address
+  index :poll
+  index :configured
+
   store_in :injectors
 
   embeds_many :rules, class_name: "InjectorRule"

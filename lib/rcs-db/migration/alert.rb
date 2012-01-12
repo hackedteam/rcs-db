@@ -21,7 +21,7 @@ class AlertMigration
       ma = ::Alert.new
       ma[:_mid] = alert[:alert_id]
       ma.type = alert[:type]
-      ma.evidence = alert[:log_type]
+      ma.evidence = alert[:log_type].downcase
       ma.keywords = alert[:log_pattern]
       ma.suppression = alert[:suppression]
       ma.tag = alert[:tag]
