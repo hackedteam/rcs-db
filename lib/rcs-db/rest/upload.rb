@@ -8,6 +8,9 @@ class UploadController < RESTController
   def create
     require_auth_level :tech
 
+    # ensure the temp dir is present
+    Dir::mkdir(Config.instance.temp) if not File.directory?(Config.instance.temp)
+
     t = Time.now
     name = @session[:user][:_id].to_s + "-" + "%10.9f" % t.to_f
     path = Config.instance.temp(name)

@@ -148,6 +148,8 @@ class Config
     @global['HB_INTERVAL'] = options[:hb_interval] unless options[:hb_interval].nil?
     @global['WORKER_PORT'] = options[:worker_port] unless options[:worker_port].nil?
     @global['BACKUP_DIR'] = options[:backup] unless options[:backup].nil?
+    @global['SMTP'] = options[:smtp] unless options[:smtp].nil?
+    @global['SMTP_FROM'] = options[:smtp_from] unless options[:smtp_from].nil?
 
     # changing the CN is a risky business :)
     if options[:newcn]
@@ -366,6 +368,15 @@ class Config
       end
 
       opts.separator ""
+      opts.separator "Alerting options:"
+      opts.on( '-M', '--mail-server HOST:PORT', String, 'Use this mail server to send the alerting mails' ) do |smtp|
+        options[:smtp] = smtp
+      end
+      opts.on( '-f', '--mail-from EMAIL', String, 'Use this sender for alert emails' ) do |from|
+        options[:smtp_from] = from
+      end
+
+      opts.separator ""
       opts.separator "General options:"
       opts.on( '-X', '--defaults', 'Write a new config file with default values' ) do
         options[:defaults] = true
@@ -401,7 +412,7 @@ class Config
       opts.on( '-Z', '--remove-shard SHARD', 'Remove SHARD in case of failure.') do |shard|
         options[:shard_failure_del] = shard
       end
-      opts.on( '-W', '--add-shard SHARD:HOST', 'Restore SHARD after failure.') do |params|
+      opts.on( '-W', '--restore-shard SHARD:HOST', 'Restore SHARD after failure.') do |params|
         options[:shard_failure_add] = params
       end
 

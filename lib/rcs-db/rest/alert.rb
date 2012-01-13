@@ -62,6 +62,8 @@ class AlertController < RESTController
   def update
     require_auth_level :view
 
+    return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :alerting
+
     mongoid_query do
       user = @session[:user].reload
       alert = user.alerts.find(@params['_id'])

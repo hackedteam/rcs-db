@@ -5,6 +5,8 @@
 # from RCS::Common
 require 'rcs-common/trace'
 
+require 'net/smtp'
+
 module RCS
 module DB
 
@@ -68,17 +70,13 @@ class Alerting
     end
 
     def failed_component(component)
-      users = get_alert_users
-      trace :debug, "Alerting that a component has failed: #{component.name}"
-      users.each do |user|
+      get_alert_users.each do |user|
         alert_fast_queue(to: user.contact, subject: "RCS Alert [monitor] ERROR", body: "The component '#{component.name}' has failed, please check it.")
       end
     end
 
     def restored_component(component)
-      users = get_alert_users
-      trace :debug, "Alerting that a component was restored: #{component.name}"
-      users.each do |user|
+      get_alert_users.each do |user|
         alert_fast_queue(to: user.contact, subject: "RCS Alert [monitor] OK", body: "The component '#{component.name}' is now active")
       end
     end
@@ -102,59 +100,102 @@ class Alerting
     end
 
     def alert_fast_queue(params)
-      # insert the entry in the queue.
-      # the alert thread will take care of it (suppressing it if needed)
-      ::AlertQueue.create! do |aq|
-        aq.alert = [params[:alert]._id] if params[:alert]
-        aq.evidence = [params[:evidence]._id] if params[:evidence]
-        aq.path = params[:path]
-        aq.to = params[:to]
-        aq.subject = params[:subject]
-        aq.body = params[:body]
+      # no license, no alerts :)
+      return unless LicenseManager.instance.check :alerting
+      begin
+        # insert the entry in the queue.
+        # the alert thread will take care of it (suppressing it if needed)
+        ::AlertQueue.create! do |aq|
+          aq.alert = [params[:alert]._id] if params[:alert]
+          aq.evidence = [params[:evidence]._id] if params[:evidence]
+          aq.path = params[:path]
+          aq.to = params[:to]
+          aq.subject = params[:subject]
+          aq.body = params[:body]
+        end
+      rescue Exception => e
+        trace :error, "Cannot queue alert: #{e.message}"
+        trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
       end
     end
 
     public
-    
+
+    # this method runs in a proc triggered by the mail event loop every 5 seconds
+    # we are inside the thread pool, so we can be slow...
     def dispatch
-      alerts = ::AlertQueue.all
+      # no license, no alerts :)
+      return unless LicenseManager.instance.check :alerting
 
-      return unless alerts.count != 0
+      begin
+        alerts = ::AlertQueue.all
 
-      trace :info, "Processing alert queue (#{alerts.count})..."
+        return unless alerts.count != 0
 
-      #TODO: remove too old alerts to keep it clean
+        trace :info, "Processing alert queue (#{alerts.count})..."
 
-      alerts.each do |aq|
-        if aq.alert and aq.evidence
-          alert = ::Alert.find(aq.alert.first)
+        #TODO: remove too old alerts to keep it clean
 
-          # check if we are in the suppression timeframe
-          if Time.now.getutc.to_i - alert.last > alert.suppression
-            # we are out of suppression, create a new entry and mail
-            trace :debug, "Triggering alert: #{alert._id}"
-            alert.logs.create!(time: Time.now.getutc.to_i, path: aq.path, evidence: aq.evidence)
-            alert.last = Time.now.getutc.to_i
-            alert.save
-            send_mail(aq.to, aq.subject, aq.body) if alert.type == 'MAIL'
+        alerts.each do |aq|
+          if aq.alert and aq.evidence
+            alert = ::Alert.find(aq.alert.first)
+
+            # check if we are in the suppression timeframe
+            if Time.now.getutc.to_i - alert.last > alert.suppression
+              # we are out of suppression, create a new entry and mail
+              trace :debug, "Triggering alert: #{alert._id}"
+              alert.logs.create!(time: Time.now.getutc.to_i, path: aq.path, evidence: aq.evidence)
+              alert.last = Time.now.getutc.to_i
+              alert.save
+              send_mail(aq.to, aq.subject, aq.body) if alert.type == 'MAIL'
+            else
+              trace :debug, "Triggering alert: #{alert._id} (suppressed)"
+              al = alert.logs.last
+              al.evidence << aq.evidence
+              al.save
+            end
           else
-            trace :debug, "Triggering alert: #{alert._id} (suppressed)"
-            al = alert.logs.last
-            al.evidence << aq.evidence
-            al.save
+            # for queued items without an associated alert, send the mail
+            send_mail(aq.to, aq.subject, aq.body)
           end
-        else
-          # for queued items without an associated alert, send the mail
-          send_mail(aq.to, aq.subject, aq.body)
+          aq.destroy
         end
-        aq.destroy
+      rescue Exception => e
+        trace :error, "Cannot dispatch alerts: #{e.message}"
+        trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
       end
     end
 
     def send_mail(to, subject, body)
-      trace :info, "Sending alert mail to: #{to}"
-    end
 
+      host, port = Config.instance.global['SMTP'].split(':')
+      
+      trace :info, "Sending alert mail to: #{to}"
+
+      msgstr = "From: RCS Alert <#{Config.instance.global['SMTP_FROM']}>\r\n"
+               "To: #{to}\r\n"
+               "Subject: #{subject}\r\n"
+               "Date: #{Time.now}\r\n"
+               "\r\n"
+               "#{body}"
+
+msgstr = <<-END_OF_MESSAGE
+From: RCS Alert <#{Config.instance.global['SMTP_FROM']}>
+To: #{to}
+Subject: #{subject}
+Date: #{Time.now}
+
+#{body}
+END_OF_MESSAGE
+
+      Net::SMTP.start(host, port) do |smtp|
+        smtp.send_message msgstr, Config.instance.global['SMTP_FROM'], to
+      end
+    rescue Exception => e
+      trace :error, "Cannot send mail: #{e.message}"
+      trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
+    end
+  
   end
 end
 

