@@ -84,7 +84,8 @@ class Alerting
     private
 
     def get_alert_users
-      ::Group.where({:alert => true}).first.users
+      group = ::Group.where({:alert => true}).first
+      return group ? group.users : []
     end
 
     def match_path(alert, agent)
@@ -119,6 +120,13 @@ class Alerting
       end
     end
 
+    def clean_old_alerts
+      # delete the alerts older than a week
+      ::Alert.all.each do |alert|
+        alert.logs.destroy_all(conditions: { :time.lt => Time.now.getutc.to_i - 86400*7 })
+      end
+    end
+
     public
 
     # this method runs in a proc triggered by the mail event loop every 5 seconds
@@ -130,11 +138,12 @@ class Alerting
       begin
         alerts = ::AlertQueue.all
 
+        # remove too old alerts to keep it clean
+        clean_old_alerts
+
         return unless alerts.count != 0
 
         trace :info, "Processing alert queue (#{alerts.count})..."
-
-        #TODO: remove too old alerts to keep it clean
 
         alerts.each do |aq|
           if aq.alert and aq.evidence
@@ -168,16 +177,14 @@ class Alerting
 
     def send_mail(to, subject, body)
 
+      if Config.instance.global['SMTP'].nil?
+        trace :warn, "Cannot send mail since the SMTP is not configured"
+        return
+      end
+      
       host, port = Config.instance.global['SMTP'].split(':')
       
       trace :info, "Sending alert mail to: #{to}"
-
-      msgstr = "From: RCS Alert <#{Config.instance.global['SMTP_FROM']}>\r\n"
-               "To: #{to}\r\n"
-               "Subject: #{subject}\r\n"
-               "Date: #{Time.now}\r\n"
-               "\r\n"
-               "#{body}"
 
 msgstr = <<-END_OF_MESSAGE
 From: RCS Alert <#{Config.instance.global['SMTP_FROM']}>

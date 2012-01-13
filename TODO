@@ -10,9 +10,6 @@ HIGH PRIORITY:
 
     distributed workers, same as shards (daniele)
 
-    Alerting daemon (alor)
-        - expire time on alerts
-
     export logs: all, blotter, filters...
 
 MEDIUM PRIORITY:
@@ -25,11 +22,9 @@ MEDIUM PRIORITY:
 
     Forwarder (worker)
 
-    default keystore for android & applet &symbian
+    default keystore for android & applet & symbian
 
     check the TODOs in the code...
-
-    nmap against collector
 
     ask for confirmation (data deletion) on uninstall
 
