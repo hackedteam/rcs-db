@@ -80,8 +80,8 @@ class GridFS
         files = Mongoid.database.collection( collection_name(collection) + ".files")
         return files.find({"filename" => filename}, :fields => ["_id", "length"])
       rescue Exception => e
-        # TODO handle the correct exception
-        puts e.message
+        trace :error, "Cannot get content from the Grid: #{collection_name(collection)}"
+        return []
       end
     end
 
@@ -90,8 +90,8 @@ class GridFS
         files = Mongoid.database.collection( collection_name(collection) + ".files")
         return files.distinct("filename")
       rescue Exception => e
-        # TODO handle the correct exception
-        puts e.message
+        trace :error, "Cannot get content from the Grid: #{collection_name(collection)}"
+        return []
       end
 
     end

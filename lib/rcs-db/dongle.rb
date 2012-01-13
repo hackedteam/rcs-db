@@ -6,6 +6,7 @@
 # from RCS::Common
 require 'rcs-common/trace'
 
+require_relative 'frontend'
 
 module RCS
 module DB
@@ -40,7 +41,14 @@ class Dongle
     end
 
     def time
-      Time.now.getutc
+      return Time.now.getutc
+
+      # fallback to http request
+      http = Net::HTTP.new('developer.yahooapis.com', 80)
+      resp = http.request_get('/TimeService/V1/getTime?appid=YahooDemo')
+      resp.kind_of? Net::HTTPSuccess or return Time.now.getutc.to_i
+      parsed = XmlSimple.xml_in(resp.body)
+      return parsed['Timestamp'].first.to_i
     end
 
   end

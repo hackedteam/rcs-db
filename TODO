@@ -9,36 +9,38 @@ TEST:
 HIGH PRIORITY:
 
     distributed workers, same as shards (daniele)
+    	- geolocation (the resolution is already on REST on the db)
 
-    export logs: all, blotter, filters...
+    default keystore for android & applet & symbian  (alor)
+
+    default upload on new instances
+
+    check the TODOs in the code...
+
+    ask for confirmation (data deletion) on uninstall (alor)
+
 
 MEDIUM PRIORITY:
 
-    complete the worker decoding (daniele)
-	- audio
-	- geolocation (the resolution is already on REST on the db)
+    complete the audio decoding (daniele)
+
+    anonymizer configuration
 
     get_accessible should be faster
 
     Forwarder (worker)
 
-    default keystore for android & applet & symbian
-
-    check the TODOs in the code...
-
-    ask for confirmation (data deletion) on uninstall
+    export logs: all, blotter, with filters, filesystem...
 
 LOW PRIORITY:
 
-    get time via http (collector)
-
     FFI per dongle dll
+
+    sms wap send
 
     mongo authentication
 
     is vcredist needed ?
-
-    regsrv32 capicom.dll  (or run ruby as system)
 
     bundle config build.mysql2 --with-mysql-dir=c:\mysql --with-mysql-lib=c:\mysql\lib\opt
     gem install mysql2 --platform=ruby -- --with-mysql-dir=c:\mysql --with-mysql-lib=c:\mysql\lib\opt

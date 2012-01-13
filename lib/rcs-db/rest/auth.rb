@@ -39,7 +39,6 @@ class AuthController < RESTController
             return ok(sess, {cookie: 'session=' + sess[:cookie] + '; path=/;'})
           end
         rescue Exception => e
-          # TODO: specialize LICENSE_LIMIT_REACHED exception
           return conflict('LICENSE_LIMIT_REACHED')
         end
         
