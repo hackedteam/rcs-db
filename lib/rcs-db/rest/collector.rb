@@ -8,7 +8,7 @@ module DB
 class CollectorController < RESTController
   
   def index
-    require_auth_level :server, :sys
+    require_auth_level :server, :sys, :tech
 
     mongoid_query do
       result = ::Collector.all
@@ -18,7 +18,7 @@ class CollectorController < RESTController
   end
 
   def show
-    require_auth_level :sys
+    require_auth_level :sys, :tech
 
     mongoid_query do
       result = Collector.find(@params['_id'])

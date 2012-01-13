@@ -54,7 +54,7 @@ class LicenseManager
                :alerting => false,
                :correlation => false,
                :rmi => false,
-               :ipa => 0,
+               :nia => 0,
                :shards => 1,
                :collectors => {:collectors => 1, :anonymizers => 0}}
   end
@@ -137,7 +137,7 @@ class LicenseManager
     @limits[:agents][:blackberry] = limit[:agents][:blackberry]
     @limits[:agents][:android] = limit[:agents][:android]
     
-    @limits[:ipa] = limit[:ipa] if limit[:ipa] > @limits[:ipa]
+    @limits[:nia] = limit[:nia] if limit[:nia] > @limits[:nia]
     @limits[:collectors][:collectors] = limit[:collectors][:collectors] if limit[:collectors][:collectors] > @limits[:collectors][:collectors]
     @limits[:collectors][:anonymizers] = limit[:collectors][:anonymizers] if limit[:collectors][:anonymizers] > @limits[:collectors][:anonymizers]
     
@@ -198,6 +198,8 @@ class LicenseManager
   end
 
   def check(field)
+    # these check are performed just before the creation of an object.
+    # thus the comparison is strictly < and not <=
     case (field)
       when :users
         if ::User.count(conditions: {enabled: true}) < @limits[:users]
@@ -214,8 +216,8 @@ class LicenseManager
           return true
         end
 
-      when :proxies
-        if Proxy.count() < @limits[:ipa]
+      when :injectors
+        if Injector.count() < @limits[:nia]
           return true
         end
 
@@ -228,6 +230,10 @@ class LicenseManager
       when :rmi
         return @limits[:rmi]
 
+      when :shards
+        if Shard.count() < @limits[:shards]
+          return true
+        end
     end
 
     trace :warn, 'LICENCE EXCEEDED: ' + field.to_s
@@ -290,11 +296,11 @@ class LicenseManager
         offending.destroy
       end
 
-      if ::Proxy.count > @limits[:ipa]
-        trace :fatal, "LICENCE EXCEEDED: Number of proxy is greater than license file. Fixing..."
-        # fix by deleting the proxy
-        offending = ::Proxy.first(sort: [[ :updated_at, :desc ]])
-        trace :warn, "Deleting proxy '#{offending[:name]}' #{offending[:address]}"
+      if ::Injector.count > @limits[:nia]
+        trace :fatal, "LICENCE EXCEEDED: Number of injectors is greater than license file. Fixing..."
+        # fix by deleting the injector
+        offending = ::Injector.first(sort: [[ :updated_at, :desc ]])
+        trace :warn, "Deleting injector '#{offending[:name]}' #{offending[:address]}"
         offending.destroy
       end
 
@@ -362,7 +368,7 @@ class LicenseManager
                                :mobile => Item.count(conditions: {_kind: 'agent', type: 'mobile', status: 'open'})},
                 :collectors => {:collectors => Collector.count(conditions: {type: 'local'}),
                                 :anonymizers => Collector.count(conditions: {type: 'remote'})},
-                :ipa => Proxy.count,
+                :nia => Injector.count,
                 :shards => Shard.count}
 
     return counters

@@ -25,6 +25,8 @@ class ShardController < RESTController
   def create
     require_auth_level :sys
 
+    return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :shards
+
     # take the peer address as host if requested automatic discovery
     @params['host'] = @request[:peer] if @params['host'] == 'auto'
     

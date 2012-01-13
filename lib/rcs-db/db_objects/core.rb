@@ -12,6 +12,8 @@ class Core
   field :_grid, type: Array
   field :_grid_size, type: Integer
 
+  index :name
+  
   store_in :cores
 end
 

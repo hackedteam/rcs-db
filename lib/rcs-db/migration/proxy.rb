@@ -4,37 +4,37 @@ require_relative '../grid'
 module RCS
 module DB
 
-class ProxyMigration
+class InjectorMigration
   extend Tracer
   
   def self.migrate(verbose)
   
-    print "Migrating proxies "
+    print "Migrating injectors "
 
     proxies = DB.instance.mysql_query('SELECT * from `proxy` ORDER BY `proxy_id`;').to_a
     proxies.each do |proxy|
 
       # skip item if already migrated
-      next if Proxy.count(conditions: {_mid: proxy[:proxy_id]}) != 0
+      next if Injector.count(conditions: {_mid: proxy[:proxy_id]}) != 0
 
-      trace :info, "Migrating proxy '#{proxy[:proxy]}'." if verbose
+      trace :info, "Migrating injector '#{proxy[:proxy]}'." if verbose
       print "." unless verbose
       
-      mp = ::Proxy.new
-      mp[:_mid] = proxy[:proxy_id]
-      mp.name = proxy[:proxy]
-      mp.desc = proxy[:desc]
-      mp.address = proxy[:address]
-      mp.redirect = proxy[:redirect]
-      mp.port = proxy[:port]
-      mp.poll = proxy[:poll] == 0 ? false : true
-      mp.configured = proxy[:status] == 0 ? true : false
-      mp.version = proxy[:version].to_i
-      mp.redirection_tag = proxy[:tag]
-      mp[:_grid] = []
-      mp[:_grid_size] = 0
+      mi = ::Injector.new
+      mi[:_mid] = proxy[:proxy_id]
+      mi.name = proxy[:proxy]
+      mi.desc = proxy[:desc]
+      mi.address = proxy[:address]
+      mi.redirect = proxy[:redirect]
+      mi.port = proxy[:port]
+      mi.poll = proxy[:poll] == 0 ? false : true
+      mi.configured = proxy[:status] == 0 ? true : false
+      mi.version = proxy[:version].to_i
+      mi.redirection_tag = proxy[:tag]
+      mi[:_grid] = []
+      mi[:_grid_size] = 0
 
-      mp.save
+      mi.save
     end
     
     puts " done."
@@ -43,18 +43,18 @@ class ProxyMigration
 
   def self.migrate_rules(verbose)
 
-    print "Migrating proxy rules "
+    print "Migrating injector rules "
 
     rules = DB.instance.mysql_query('SELECT * from `proxyrule` ORDER BY `proxy_id`;').to_a
     rules.each do |rule|
 
-      proxy = Proxy.where({_mid: rule[:proxy_id]}).first
+      proxy = Injector.where({_mid: rule[:proxy_id]}).first
       target = Item.where({_mid: rule[:target_id], _kind: 'target'}).first
 
       # skip already migrated rules
       next unless proxy.rules.where({_mid: rule[:proxyrule_id]}).first.nil?
 
-      mr = ProxyRule.new
+      mr = InjectorRule.new
       mr[:_mid] = rule[:proxyrule_id]
       mr.enabled = rule[:disabled] == 0 ? true : false
       mr.disable_sync = rule[:until_sync] == 0 ? false : true

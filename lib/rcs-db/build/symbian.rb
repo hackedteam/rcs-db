@@ -66,12 +66,13 @@ class BuildSymbian < Build
         content.gsub! '[:UID4:]', uids[3]
         content.gsub! '[:UID5:]', uids[4]
         content.gsub! '[:UID6:]', uids[5]
+        content.gsub! 'SharedQueueCli_20023633{000a0000}[2002b30d].dll', "SharedQueueCli_20023633{000a0000}[#{uids[3]}].dll"
         File.open(file, 'wb') {|f| f.write content}
       end
     end
 
     FileUtils.cp(path('5th/rsc'), path("5th/#{uids[0]}.rsc"))
-    FileUtils.cp(path('5th/rsc'), path("3rd/#{uids[0]}.rsc"))
+    FileUtils.cp(path('3rd/rsc'), path("3rd/#{uids[0]}.rsc"))
 
     trace :debug, "Build: rebuilding with petran"
 

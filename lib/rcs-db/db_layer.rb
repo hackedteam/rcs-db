@@ -70,9 +70,6 @@ class DB
   
   # MONGO
   
-  #TODO: index more classes...
-  @@classes_to_be_indexed = [::Audit, ::User]
-  
   def connect
     begin
       #TODO: username & password
@@ -87,7 +84,10 @@ class DB
     end
     return true
   end
-  
+
+  # insert here the class to be indexed
+  @@classes_to_be_indexed = [::Audit, ::User, ::Group, ::Alert, ::Core, ::Collector, ::Injector, ::Item]
+
   def create_indexes
     @@classes_to_be_indexed.each do |k|
       k.create_indexes
@@ -102,6 +102,12 @@ class DB
     end
     output = Shard.enable('rcs')
     trace :info, "Enable Sharding on 'rcs': #{output}"
+
+    # enable shard on audit log, it will increase its size forever and ever
+    db = Mongoid.database
+    # enable sharding only if not enabled
+    audit = db.collection('audit')
+    Shard.set_key(audit, {time: 1, actor: 1}) unless audit.stats['sharded']
   end
   
   def ensure_admin
@@ -120,7 +126,7 @@ class DB
       end
       Audit.log :actor => '<system>', :action => 'user.create', :user => 'admin', :desc => "Created the default user 'admin'"
 
-      group = Group.create(name: "administrators")
+      group = Group.create(name: "administrators", alert: false)
       group.users << user
       group.save
       Audit.log :actor => '<system>', :action => 'group.create', :group => 'administrators', :desc => "Created the default group 'administrators'"

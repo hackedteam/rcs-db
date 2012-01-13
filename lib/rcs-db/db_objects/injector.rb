@@ -6,7 +6,7 @@ require 'zip/zipfilesystem'
 #module RCS
 #module DB
 
-class Proxy
+class Injector
   include RCS::Tracer
   include Mongoid::Document
   include Mongoid::Timestamps
@@ -25,9 +25,14 @@ class Proxy
   field :_grid, type: Array
   field :_grid_size, type: Integer
 
-  store_in :proxies
+  index :name
+  index :address
+  index :poll
+  index :configured
 
-  embeds_many :rules, class_name: "ProxyRule"
+  store_in :injectors
+
+  embeds_many :rules, class_name: "InjectorRule"
 
   after_destroy :destroy_callback
 
@@ -51,7 +56,7 @@ class Proxy
 end
 
 
-class ProxyRule
+class InjectorRule
   include Mongoid::Document
   include Mongoid::Timestamps
 
@@ -69,7 +74,7 @@ class ProxyRule
 
   field :_grid, type: Array
 
-  embedded_in :proxy
+  embedded_in :injector
 end
 
 #end # ::DB

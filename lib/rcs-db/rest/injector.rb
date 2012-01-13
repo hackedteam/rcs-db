@@ -1,5 +1,5 @@
 #
-# Controller for the Proxy objects
+# Controller for the Injector objects
 #
 
 require_relative '../frontend'
@@ -7,13 +7,13 @@ require_relative '../frontend'
 module RCS
 module DB
 
-class ProxyController < RESTController
+class InjectorController < RESTController
 
   def index
     require_auth_level :server, :sys, :tech
 
     mongoid_query do
-      result = ::Proxy.all
+      result = ::Injector.all
       #TODO: filter on target if you have the right access
 
       return ok(result)
@@ -24,19 +24,19 @@ class ProxyController < RESTController
     require_auth_level :server, :sys, :tech
 
     mongoid_query do
-      proxy = ::Proxy.find(@params['_id'])
-      return ok(proxy)
+      injector = ::Injector.find(@params['_id'])
+      return ok(injector)
     end
   end
 
   def create
     require_auth_level :sys
 
-    return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :proxies
+    return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :injectors
 
-    result = Proxy.create(name: @params['name'], port: 4444, poll: false, configured: false, redirect: 'auto', redirection_tag: 'ww')
+    result = Injector.create(name: @params['name'], port: 4444, poll: false, configured: false, redirect: 'auto', redirection_tag: 'ww')
 
-    Audit.log :actor => @session[:user][:name], :action => 'proxy.create', :desc => "Created the injection proxy '#{@params['name']}'"
+    Audit.log :actor => @session[:user][:name], :action => 'injector.create', :desc => "Created the injector '#{@params['name']}'"
 
     return ok(result)
   end
@@ -45,18 +45,18 @@ class ProxyController < RESTController
     require_auth_level :sys
 
     mongoid_query do
-      proxy = Proxy.find(@params['_id'])
+      injector = Injector.find(@params['_id'])
       @params.delete('_id')
 
       @params.each_pair do |key, value|
-        if proxy[key.to_s] != value and not key['_ids']
-          Audit.log :actor => @session[:user][:name], :action => 'proxy.update', :desc => "Updated '#{key}' to '#{value}' for injection proxy '#{proxy['name']}'"
+        if injector[key.to_s] != value and not key['_ids']
+          Audit.log :actor => @session[:user][:name], :action => 'injector.update', :desc => "Updated '#{key}' to '#{value}' for injector '#{injector['name']}'"
         end
       end
 
-      proxy.update_attributes(@params)
+      injector.update_attributes(@params)
 
-      return ok(proxy)
+      return ok(injector)
     end
   end
 
@@ -64,15 +64,15 @@ class ProxyController < RESTController
     require_auth_level :sys
 
     mongoid_query do
-      proxy = Proxy.find(@params['_id'])
-      proxy_name = proxy.name
+      injector = Injector.find(@params['_id'])
+      injector_name = injector.name
 
-      proxy.rules.each do |rule|
+      injector.rules.each do |rule|
         GridFS.delete rule[:_grid].first unless rule[:_grid].nil?
       end
       
-      proxy.destroy
-      Audit.log :actor => @session[:user][:name], :action => 'proxy.destroy', :desc => "Deleted the injection proxy '#{proxy_name}'"
+      injector.destroy
+      Audit.log :actor => @session[:user][:name], :action => 'injector.destroy', :desc => "Deleted the injector '#{injector_name}'"
       
       return ok
     end
@@ -82,11 +82,11 @@ class ProxyController < RESTController
     require_auth_level :server
 
     mongoid_query do
-      proxy = Proxy.find(@params['_id'])
+      injector = Injector.find(@params['_id'])
       @params.delete('_id')
 
-      proxy.version = @params['version']
-      proxy.save
+      injector.version = @params['version']
+      injector.save
 
       return ok
     end
@@ -96,34 +96,34 @@ class ProxyController < RESTController
     require_auth_level :server, :sys
     
     mongoid_query do
-      proxy = ::Proxy.find(@params['_id'])
+      injector = ::Injector.find(@params['_id'])
 
-      return not_found if proxy[:_grid].empty? or proxy[:_grid].first.nil?
+      return not_found if injector[:_grid].empty? or injector[:_grid].first.nil?
 
       # reset the flag for the "configuration needed"
-      proxy.configured = true
-      proxy.save
+      injector.configured = true
+      injector.save
 
-      return stream_grid(proxy[:_grid].first)
+      return stream_grid(injector[:_grid].first)
     end
   end
 
   def logs
     mongoid_query do
-      proxy = ::Proxy.find(@params['_id'])
+      injector = ::Injector.find(@params['_id'])
 
       case @request[:method]
         when 'GET'
           require_auth_level :sys, :tech
           
-          klass = CappedLog.collection_class proxy[:_id]
+          klass = CappedLog.collection_class injector[:_id]
           logs = klass.all
           return ok(logs)
 
         when 'POST'
           require_auth_level :server
 
-          entry = CappedLog.dynamic_new proxy[:_id]
+          entry = CappedLog.dynamic_new injector[:_id]
           entry.time = Time.parse(@params['time']).getutc.to_i
           entry.type = @params['type'].downcase
           entry.desc = @params['desc']
@@ -139,13 +139,13 @@ class ProxyController < RESTController
     require_auth_level :sys, :tech
 
     mongoid_query do
-      proxy = Proxy.find(@params['_id'])
+      injector = Injector.find(@params['_id'])
 
       # we cannot call delete_all on a capped collection
       # we must drop it:
       # http://www.mongodb.org/display/DOCS/Capped+Collections#CappedCollections-UsageandRestrictions
       db = Mongoid.database
-      logs = db.collection(CappedLog.collection_name(proxy[:_id]))
+      logs = db.collection(CappedLog.collection_name(injector[:_id]))
       logs.drop
 
       return ok
@@ -157,9 +157,9 @@ class ProxyController < RESTController
     require_auth_level :tech
 
     mongoid_query do
-      proxy = ::Proxy.find(@params['_id'])
+      injector = ::Injector.find(@params['_id'])
 
-      rule = ::ProxyRule.new
+      rule = ::InjectorRule.new
       rule.enabled = @params['rule']['enabled']
       rule.probability = @params['rule']['probability']
       rule.disable_sync = @params['rule']['disable_sync']
@@ -184,11 +184,11 @@ class ProxyController < RESTController
         end
       end
       
-      Audit.log :actor => @session[:user][:name], :action => 'proxy.add_rule', 
-                :desc => "Added a rule to the injection proxy '#{proxy.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
+      Audit.log :actor => @session[:user][:name], :action => 'injector.add_rule',
+                :desc => "Added a rule to the injector '#{injector.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
 
-      proxy.rules << rule
-      proxy.save
+      injector.rules << rule
+      injector.save
 
       return ok(rule)
     end
@@ -198,18 +198,18 @@ class ProxyController < RESTController
     require_auth_level :tech
 
     mongoid_query do
-      proxy = ::Proxy.find(@params['_id'])
-      rule = proxy.rules.find(@params['rule']['_id'])
+      injector = ::Injector.find(@params['_id'])
+      rule = injector.rules.find(@params['rule']['_id'])
       target = ::Item.find(rule.target_id.first)
 
-      Audit.log :actor => @session[:user][:name], :action => 'proxy.del_rule', :target => target.name,
-                :desc => "Deleted a rule from the injection proxy '#{proxy.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
+      Audit.log :actor => @session[:user][:name], :action => 'injector.del_rule', :target => target.name,
+                :desc => "Deleted a rule from the injector '#{injector.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
 
       # delete any pending file in the grid
       GridFS.delete rule[:_grid].first unless rule[:_grid].nil?
 
-      proxy.rules.delete_all(conditions: { _id: rule[:_id]})
-      proxy.save
+      injector.rules.delete_all(conditions: { _id: rule[:_id]})
+      injector.save
 
       return ok
     end
@@ -220,8 +220,8 @@ class ProxyController < RESTController
 
     mongoid_query do
 
-      proxy = ::Proxy.find(@params['_id'])
-      rule = proxy.rules.find(@params['rule']['_id'])
+      injector = ::Injector.find(@params['_id'])
+      rule = injector.rules.find(@params['rule']['_id'])
 
       @params.delete('_id')
       unless @params['rule']['target_id'].nil?
@@ -250,8 +250,8 @@ class ProxyController < RESTController
 
       rule.save
       
-      Audit.log :actor => @session[:user][:name], :action => 'proxy.update_rule', 
-                :desc => "Modified a rule on the injection proxy '#{proxy.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
+      Audit.log :actor => @session[:user][:name], :action => 'injector.update_rule',
+                :desc => "Modified a rule on the injector '#{injector.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
 
       return ok(rule)
     end

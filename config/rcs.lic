@@ -20,10 +20,10 @@
 :alerting: true
 :correlation: false
 :rmi: true
-:ipa: .Inf
+:nia: .Inf
 :collectors: 
   :collectors: 10
   :anonymizers: 20
 :shards: 1
 :exploits: "5bd90a7ac2e8e5fdc4e92c90c0c900b5948517f7"
-:integrity: "088c887808789239e616a7c1c07d9c74d89f048621408be7654a46545c247e72"
+:integrity: "7f00b2fdc487ca12ff0fc93da4fc896499ab3ee68edc8930124578c8b1afa653"

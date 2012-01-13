@@ -6,7 +6,9 @@ module RCS
 module DB
 
 class AuthController < RESTController
-  
+
+  bypass_auth [:login, :logout, :reset]
+
   def initialize
     @auth_level = []
   end
@@ -103,6 +105,7 @@ class AuthController < RESTController
     ok('', {cookie: "session=; path=/; expires=#{Time.at(0).strftime('%A, %d-%b-%y %H:%M:%S %Z')}" })
   end
   
+  private
   # private method to authenticate a server
   def auth_server(user, pass)
     server_sig = ::Signature.where({scope: 'server'}).first
