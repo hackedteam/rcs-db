@@ -9,6 +9,7 @@ require_relative 'parser'
 
 # from RCS::DB
 require 'rcs-db/config'
+require 'rcs-db/db_layer'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -243,10 +244,11 @@ class Application
       return 1 unless RCS::DB::Config.instance.load_from_file
       
       # connect to MongoDB
-      #until RCS::DB::DB.instance.connect
-      #  sleep 5
-      #end
-
+      until RCS::DB::DB.instance.connect
+        trace :warn, "Cannot connect to MongoDB, retrying..."
+        sleep 5
+      end
+      
       Worker.new.setup RCS::DB::Config.instance.global['WORKER_PORT']
     rescue Exception => e
       trace :fatal, "FAILURE: " << e.to_s
