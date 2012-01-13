@@ -29,6 +29,10 @@ MEDIUM PRIORITY:
 
     check the TODOs in the code...
 
+    nmap against collector
+
+    ask for confirmation (data deletion) on uninstall
+
 LOW PRIORITY:
 
     get time via http (collector)
