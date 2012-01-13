@@ -11,8 +11,6 @@ HIGH PRIORITY:
     distributed workers, same as shards (daniele)
     	- geolocation (the resolution is already on REST on the db)
 
-    default keystore for android & applet & symbian  (alor)
-
     default upload on new instances
 
     check the TODOs in the code...
