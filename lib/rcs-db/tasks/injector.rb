@@ -93,6 +93,9 @@ class InjectorTask
             end
           end
           File.delete(temp_zip)
+        when 'INJECT-UPGRADE'
+          #TODO: implement fake upgrade
+          raise "not implemented"
       end
 
     end

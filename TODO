@@ -17,24 +17,23 @@ HIGH PRIORITY:
 
     ask for confirmation (data deletion) on uninstall (alor)
 
+    anonymizer configuration task
 
 MEDIUM PRIORITY:
 
     complete the audio decoding (daniele)
 
-    anonymizer configuration
-
     get_accessible should be faster
 
     Forwarder (worker)
+
+    sms wap send
 
     export logs: all, blotter, with filters, filesystem...
 
 LOW PRIORITY:
 
     FFI per dongle dll
-
-    sms wap send
 
     mongo authentication
 

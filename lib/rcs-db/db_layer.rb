@@ -72,6 +72,9 @@ class DB
   
   def connect
     begin
+      # this is required for mongoid >= 2.4.2
+      ENV['MONGOID_ENV'] = 'yes'
+      
       #TODO: username & password
       Mongoid.load!(Dir.pwd + '/config/mongoid.yaml')
       Mongoid.configure do |config|
