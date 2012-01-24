@@ -84,7 +84,7 @@ class SessionManager
         
         # don't log timeout for the server
         unless value[:level].include? :server
-          Audit.log :actor => value[:user][:name], :action => 'logout', :user => value[:user][:name], :desc => "User '#{value[:user][:name]}' has been logged out for timeout"
+          Audit.log :actor => value[:user][:name], :action => 'logout', :user_name => value[:user][:name], :desc => "User '#{value[:user][:name]}' has been logged out for timeout"
         end
 
         trace :info, "Session Timeout for [#{value[:cookie]}]"
