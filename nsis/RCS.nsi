@@ -28,6 +28,10 @@
   
   Var upgradeComponents
   
+  ;Uninstaller variables
+  Var deletefilesctrl
+  Var deletefiles
+  
   ;Name and file
   Name "RCS"
   OutFile "RCS-${PACKAGE_VERSION}.exe"
@@ -70,7 +74,9 @@
   Page custom FuncInsertAddress FuncInsertAddressLeave
   !insertmacro MUI_PAGE_INSTFILES
 
+  ;Uninstaller pages
   !insertmacro MUI_UNPAGE_WELCOME
+  UninstPage custom un.FuncDeleteFiles un.FuncDeleteFilesLeave
   !insertmacro MUI_UNPAGE_INSTFILES
 
 ;--------------------------------
@@ -432,12 +438,16 @@ Section Uninstall
   DetailPrint "Deleting files..."
   SetDetailsPrint "textonly"
   ReadRegStr $INSTDIR HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCS" "InstDir"
-  RMDir /r "$INSTDIR\DB"
-  RMDir /r "$INSTDIR\Collector"
   RMDir /r "$INSTDIR\Ruby"
   RMDir /r "$INSTDIR\Java"
   RMDir /r "$INSTDIR\Python"
-  RMDir /r "$INSTDIR"
+  
+  ${If} $deletefiles == ${BST_CHECKED}
+    RMDir /r "$INSTDIR\DB"
+    RMDir /r "$INSTDIR\Collector"
+    RMDir /r "$INSTDIR"
+  ${EndIf}
+  
   SetDetailsPrint "both"
   DetailPrint "done"
 
@@ -802,4 +812,31 @@ Function FuncInsertAddressLeave
   StrCmp $masterAddress "" 0 +3
     MessageBox MB_OK|MB_ICONSTOP "Address for Master Node cannot be empty"
     Abort
+FunctionEnd
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Function un.FuncDeleteFiles
+
+   !insertmacro MUI_HEADER_TEXT "Uninstalling" "Delete files and data."
+
+   nsDialogs::Create /NOUNLOAD 1018
+
+   ${NSD_CreateCheckBox} 20u 5u 200u 12u "Delete all files and data"
+   Pop $deletefilesctrl
+
+   ${NSD_Check} $deletefilesctrl
+
+   ${NSD_SetFocus} $deletefilesctrl
+   nsDialogs::Show
+
+   Return
+
+FunctionEnd
+
+Function un.FuncDeleteFilesLeave
+
+   ${NSD_GetState} $deletefilesctrl $deletefiles
+
+   Return
+
 FunctionEnd
