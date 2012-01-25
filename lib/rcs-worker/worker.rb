@@ -250,6 +250,10 @@ class Application
       end
       
       Worker.new.setup RCS::DB::Config.instance.global['WORKER_PORT']
+    
+    rescue Interrupt
+      trace :info, "User asked to exit. Bye bye!"
+      return 0
     rescue Exception => e
       trace :fatal, "FAILURE: " << e.to_s
       trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
