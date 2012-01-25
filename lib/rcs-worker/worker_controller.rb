@@ -1,10 +1,11 @@
 
 require 'json'
+require_relative 'queue_manager'
 
 module RCS
 module Worker
 
-class WorkerController < RESTController
+  class WorkerController < RESTController
   
   def get
     puts "GET"
@@ -15,8 +16,8 @@ class WorkerController < RESTController
     
     return bad_request("no ids found.") if @params['ids'].nil?
     
-    @params['ids'].each do |id|
-      trace :info, "processing evidence #{id}"
+    @params['ids'].each do |evidence|
+      QueueManager.instance.queue evidence['instance'], evidence['id']
     end
     ok('OK')
   end
