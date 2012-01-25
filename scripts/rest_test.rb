@@ -5,6 +5,12 @@ require 'open-uri'
 require 'pp'
 require 'cgi'
 
+class CGI
+  def self.encode_query(hash)
+    return hash.map{|k,v| "#{CGI.escape(k.to_s)}=#{CGI.escape(v.to_s)}"}.join("&")
+  end
+end
+
 #http = Net::HTTP.new('localhost', 443)
 http = Net::HTTP.new('localhost', 4444)
 http.use_ssl = true
@@ -1134,6 +1140,15 @@ if false
   puts 'location.ip'
   res = http.request_post('/location', loc.to_json, {'Cookie' => cookie})
   puts res.body
+end
+
+
+if true
+  puts 'agent.status'
+  request = {:ident => 'RCS_0000000001', :instance => '47170c3e047b6a910e7ecc2e987060db2ff06cd9', :subtype => 'WINDOWS'}      
+  res = http.request_get('/agent/status/?' + CGI.encode_query(request), {'Cookie' => cookie})
+  puts res.body
+  
 end
 
 # logout

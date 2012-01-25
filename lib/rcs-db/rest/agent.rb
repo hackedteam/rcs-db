@@ -279,8 +279,6 @@ class AgentController < RESTController
     # default is queued
     agent.status = 'queued'
 
-    #TODO: add the upload files for the first sync
-
     # demo agent don't consume any license
     agent.status = 'open' if demo
 
@@ -291,6 +289,12 @@ class AgentController < RESTController
 
     # save the new instance in the db
     agent.save
+
+    # add the upload files for the first sync
+    agent.add_first_time_uploads
+
+    # add default requests for the filesystem
+    agent.add_default_filesystem_requests
 
     # check for alerts on this new instance
     Alerting.new_instance agent
