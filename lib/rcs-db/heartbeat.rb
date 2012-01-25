@@ -64,6 +64,7 @@ class HeartBeat
     ::Status.status_check
     rescue Exception => e
       trace :fatal, "Cannot perform status update: #{e.message}"
+      trace :fatal, e.backtrace
     end
   end
 
