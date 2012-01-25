@@ -70,9 +70,9 @@ class FactoryController < RESTController
 
       Audit.log :actor => @session[:user][:name],
                 :action => "factory.create",
-                :operation => operation['name'],
-                :target => target['name'],
-                :agent => item['name'],
+                :operation_name => operation['name'],
+                :target_name => target['name'],
+                :agent_name => item['name'],
                 :desc => "Created factory '#{item['name']}'"
 
       item = Item.factories
@@ -104,7 +104,7 @@ class FactoryController < RESTController
         if item[key.to_s] != value and not key['_ids']
           Audit.log :actor => @session[:user][:name],
                     :action => "#{item._kind}.update",
-                    item._kind.to_sym => item['name'],
+                    (item._kind + '_name').to_sym => item['name'],
                     :desc => "Updated '#{key}' to '#{value}' for #{item._kind} '#{item['name']}'"
         end
       end
@@ -128,28 +128,10 @@ class FactoryController < RESTController
       
       Audit.log :actor => @session[:user][:name],
                 :action => "#{item._kind}.delete",
-                item._kind.to_sym => @params['name'],
+                (item._kind + '_name').to_sym => @params['name'],
                 :desc => "Deleted #{item._kind} '#{item['name']}'"
       
       return ok
-    end
-  end
-  
-  def add_config
-    require_auth_level :tech
-    
-    mongoid_query do
-      item = Item.factories.any_in(_id: @session[:accessible]).find(@params['_id'])
-      # the factory can have one and only one config at a give time
-      item.configs.delete_all
-      config = item.configs.create!(config: @params['config'], user: @session[:user][:name], saved: Time.now.getutc.to_i)
-      
-      Audit.log :actor => @session[:user][:name],
-                :action => "#{item._kind}.add_config",
-                item._kind.to_sym => @params['name'],
-                :desc => "Saved configuration for factory '#{item['name']}'"
-
-      return ok(config)
     end
   end
 

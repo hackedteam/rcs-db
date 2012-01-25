@@ -8,6 +8,7 @@ require_relative 'parser'
 require_relative 'rest'
 require_relative 'sessions'
 require_relative 'backup'
+require_relative 'alert'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -52,7 +53,12 @@ module HTTPHandler
     self.max_content_length = 200 * 1024 * 1024
 
     # get the peer name
-    @peer_port, @peer = Socket.unpack_sockaddr_in(get_peername)
+    if get_peername
+      @peer_port, @peer = Socket.unpack_sockaddr_in(get_peername)
+    else
+      @peer = 'unknown'
+      @peer_port = 0
+    end
     @closed = false
     trace :debug, "Connection from #{@peer}:#{@peer_port}"
   end
@@ -201,6 +207,9 @@ class Events
 
         # perform the backups
         EM::PeriodicTimer.new(60) { EM.defer(proc{ BackupManager.perform }) }
+
+        # process the alert queue
+        EM::PeriodicTimer.new(5) { EM.defer(proc{ Alerting.dispatch }) }
       end
     rescue RuntimeError => e
       # bind error

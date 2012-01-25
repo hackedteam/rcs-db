@@ -202,7 +202,7 @@ class InjectorController < RESTController
       rule = injector.rules.find(@params['rule']['_id'])
       target = ::Item.find(rule.target_id.first)
 
-      Audit.log :actor => @session[:user][:name], :action => 'injector.del_rule', :target => target.name,
+      Audit.log :actor => @session[:user][:name], :action => 'injector.del_rule', :target_name => target.name,
                 :desc => "Deleted a rule from the injector '#{injector.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
 
       # delete any pending file in the grid

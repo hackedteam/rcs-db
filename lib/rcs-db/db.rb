@@ -52,9 +52,8 @@ class Application
       version = File.read(Dir.pwd + '/config/version.txt')
       trace :info, "Starting the RCS Database #{version}..."
 
-      # ensure the temp directory is empty and present
+      # ensure the temp directory is empty
       FileUtils.rm_rf(Config.instance.temp)
-      Dir::mkdir(Config.instance.temp) if not File.directory?(Config.instance.temp)
 
       # check the integrity of the code
       HeartBeat.dont_steal_rcs
@@ -73,7 +72,13 @@ class Application
         trace :warn, "Cannot connect to MongoDB, retrying..."
         sleep 5
       end
+
+      # ensure the temp dir is present
+      Dir::mkdir(Config.instance.temp) if not File.directory?(Config.instance.temp)
       
+      # ensure all indexes are in place
+      DB.instance.create_indexes
+
       # ensure the sharding is enabled
       DB.instance.enable_sharding
 
@@ -85,9 +90,6 @@ class Application
 
       # load cores in the /cores dir
       DB.instance.load_cores
-
-      # ensure all indexes are in place
-      DB.instance.create_indexes
 
       # enter the main loop (hopefully will never exit from it)
       Events.new.setup Config.instance.global['LISTENING_PORT']

@@ -39,7 +39,6 @@ class AuthController < RESTController
             return ok(sess, {cookie: 'session=' + sess[:cookie] + '; path=/;'})
           end
         rescue Exception => e
-          # TODO: specialize LICENSE_LIMIT_REACHED exception
           return conflict('LICENSE_LIMIT_REACHED')
         end
         
@@ -49,11 +48,11 @@ class AuthController < RESTController
           # in this case, invalidate the previous session
           sess = SessionManager.instance.get_by_user(user)
           unless sess.nil?
-            Audit.log :actor => user, :action => 'logout', :user => user, :desc => "User '#{user}' forcibly logged out by system"
+            Audit.log :actor => user, :action => 'logout', :user_name => user, :desc => "User '#{user}' forcibly logged out by system"
             SessionManager.instance.delete(sess[:cookie])
           end
           
-          Audit.log :actor => user, :action => 'login', :user => user, :desc => "User '#{user}' logged in"
+          Audit.log :actor => user, :action => 'login', :user_name => user, :desc => "User '#{user}' logged in"
 
           # get the list of accessible Items
           accessible = SessionManager.instance.get_accessible @user
@@ -87,7 +86,7 @@ class AuthController < RESTController
       end
       
       trace :info, "Resetting password for user 'admin'"
-      Audit.log :actor => '<system>', :action => 'auth.reset', :user => 'admin', :desc => "Password reset"
+      Audit.log :actor => '<system>', :action => 'auth.reset', :user_name => 'admin', :desc => "Password reset"
       user.create_password(@params['pass'])
       user.save
     end
@@ -98,7 +97,7 @@ class AuthController < RESTController
   # once the session is over you can explicitly logout
   def logout
     if @session
-      Audit.log :actor => @session[:user][:name], :action => 'logout', :user => @session[:user][:name], :desc => "User '#{@session[:user][:name]}' logged out"
+      Audit.log :actor => @session[:user][:name], :action => 'logout', :user_name => @session[:user][:name], :desc => "User '#{@session[:user][:name]}' logged out"
       SessionManager.instance.delete(@request[:cookie])
     end
     
@@ -131,7 +130,7 @@ class AuthController < RESTController
 
     # user not found
     if @user.nil?
-      Audit.log :actor => username, :action => 'login', :user => username, :desc => "User '#{username}' not found"
+      Audit.log :actor => username, :action => 'login', :user_name => username, :desc => "User '#{username}' not found"
       trace :warn, "User [#{username}] NOT FOUND"
       return false
     end
@@ -145,7 +144,7 @@ class AuthController < RESTController
       return true
     end
     
-    Audit.log :actor => username, :action => 'login', :user => username, :desc => "Invalid password for user '#{username}'"
+    Audit.log :actor => username, :action => 'login', :user_name => username, :desc => "Invalid password for user '#{username}'"
     trace :warn, "User [#{username}] INVALID PASSWORD"
     return false
   end

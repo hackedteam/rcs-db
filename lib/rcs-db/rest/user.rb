@@ -49,7 +49,7 @@ class UserController < RESTController
     return conflict(result.errors[:name]) unless result.persisted?
 
     username = @params['name']
-    Audit.log :actor => @session[:user][:name], :action => 'user.create', :user => username, :desc => "Created the user '#{username}'"
+    Audit.log :actor => @session[:user][:name], :action => 'user.create', :user_name => username, :desc => "Created the user '#{username}'"
 
     return ok(result)
   end
@@ -75,14 +75,14 @@ class UserController < RESTController
       # if pass is modified, treat it separately
       if @params.has_key? 'pass'
         @params['pass'] = user.create_password(@params['pass'])
-        Audit.log :actor => @session[:user][:name], :action => 'user.update', :user => user['name'], :desc => "Changed password for user '#{user['name']}'"
+        Audit.log :actor => @session[:user][:name], :action => 'user.update', :user_name => user['name'], :desc => "Changed password for user '#{user['name']}'"
       else
         @params.each_pair do |key, value|
           if key == 'dashboard_ids'
             value.collect! {|x| BSON::ObjectId(x)}
           end
           if user[key.to_s] != value and not key['_ids']
-            Audit.log :actor => @session[:user][:name], :action => 'user.update', :user => user['name'], :desc => "Updated '#{key}' to '#{value}' for user '#{user['name']}'"
+            Audit.log :actor => @session[:user][:name], :action => 'user.update', :user_name => user['name'], :desc => "Updated '#{key}' to '#{value}' for user '#{user['name']}'"
           end
         end
       end
@@ -115,7 +115,7 @@ class UserController < RESTController
       user = User.find(@params['_id'])
       return not_found if user.nil?
       
-      Audit.log :actor => @session[:user][:name], :action => 'user.destroy', :user => @params['name'], :desc => "Deleted the user '#{user['name']}'"
+      Audit.log :actor => @session[:user][:name], :action => 'user.destroy', :user_name => @params['name'], :desc => "Deleted the user '#{user['name']}'"
       
       user.destroy
       

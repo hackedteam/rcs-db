@@ -198,6 +198,8 @@ class LicenseManager
   end
 
   def check(field)
+    # these check are performed just before the creation of an object.
+    # thus the comparison is strictly < and not <=
     case (field)
       when :users
         if ::User.count(conditions: {enabled: true}) < @limits[:users]
@@ -228,6 +230,10 @@ class LicenseManager
       when :rmi
         return @limits[:rmi]
 
+      when :shards
+        if Shard.count() < @limits[:shards]
+          return true
+        end
     end
 
     trace :warn, 'LICENCE EXCEEDED: ' + field.to_s
