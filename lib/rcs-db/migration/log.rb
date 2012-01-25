@@ -133,6 +133,9 @@ class LogMigration
     # parse log specific data
     ev.data = migrate_data(log)
 
+    # unify the files evidence
+    ev.type = 'file' if ev.type == 'filecap' or ev.type == 'fileopen' or ev.type == 'download'
+
     # save the binary data
     if log[:longblob1].bytesize > 0
       ev.data[:_grid_size] = log[:longblob1].bytesize
@@ -171,7 +174,7 @@ class LogMigration
         conversion = {:varchar1 => :path, :varchar2 => :md5}
       when 'FILEOPEN'
         log[:size] = (log[:int1] << 32) + log[:int2]
-        conversion = {:varchar1 => :program, :varchar2 => :md5, :int3 => :access, :size => :size}
+        conversion = {:varchar1 => :program, :varchar2 => :path, :int3 => :access, :size => :size}
       when 'FILESYSTEM'
         log[:size] = (log[:int1] << 32) + log[:int2]
         conversion = {:varchar1 => :path, :int3 => :attr, :size => :size}
@@ -202,11 +205,11 @@ class LogMigration
       when 'PASSWORD'
         conversion = {:varchar1 => :program, :varchar2 => :service, :varchar3 => :pass, :varchar4 => :user}
       when 'PRINT'
-        conversion = {:varchar1 => :spool, :longtext1 => :ocr}
+        conversion = {:varchar1 => :spool} #, :longtext1 => :ocr}
       when 'SNAPSHOT'
-        conversion = {:varchar1 => :program, :varchar2 => :window, :longtext1 => :ocr}
+        conversion = {:varchar1 => :program, :varchar2 => :window} #, :longtext1 => :ocr}
       when 'URL'
-        conversion = {:varchar1 => :url, :varchar2 => :browser, :varchar3 => :title, :varchar4 => :keywords, :longtext1 => :ocr}
+        conversion = {:varchar1 => :url, :varchar2 => :browser, :varchar3 => :title, :varchar4 => :keywords}#, :longtext1 => :ocr}
     end
 
     conversion.each_pair do |k, v|

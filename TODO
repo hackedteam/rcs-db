@@ -10,18 +10,23 @@ TEST:
 
 HIGH PRIORITY:
 
-    distributed workers, same as shards (daniele)
-    	- geolocation (the resolution is already on REST on the db)
+    check the TODOs in the code...
 
     dont' send config to backdoor too old
-
-    check the TODOs in the code...
 
     anonymizer configuration
 
 MEDIUM PRIORITY:
 
-    complete the audio decoding (daniele)
+    worker decoding (daniele):
+        - call
+        - mic
+        - calendar
+        - addressbook
+        - mail
+        - file
+        - filesystem
+        - location (integrate with REST query)
 
     get_accessible should be faster
 
@@ -38,9 +43,6 @@ LOW PRIORITY:
     mongo authentication
 
     is vcredist needed ?
-
-    bundle config build.mysql2 --with-mysql-dir=c:\mysql --with-mysql-lib=c:\mysql\lib\opt
-    gem install mysql2 --platform=ruby -- --with-mysql-dir=c:\mysql --with-mysql-lib=c:\mysql\lib\opt
 
 FUTURE:
 
