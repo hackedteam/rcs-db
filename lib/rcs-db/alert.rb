@@ -84,7 +84,8 @@ class Alerting
     private
 
     def get_alert_users
-      ::Group.where({:alert => true}).first.users
+      group = ::Group.where({:alert => true}).first
+      return group ? group.users : []
     end
 
     def match_path(alert, agent)
