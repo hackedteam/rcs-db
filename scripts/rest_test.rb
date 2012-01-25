@@ -1143,7 +1143,7 @@ if false
 end
 
 
-if true
+if false
   puts 'agent.status'
   request = {:ident => 'RCS_0000000001', :instance => '47170c3e047b6a910e7ecc2e987060db2ff06cd9', :subtype => 'WINDOWS'}      
   res = http.request_get('/agent/status/?' + CGI.encode_query(request), {'Cookie' => cookie})
