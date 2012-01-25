@@ -15,11 +15,11 @@ class Audit
     # expected parameters:
     #  :actor
     #  :action
-    #  :user
-    #  :group
-    #  :operation
-    #  :target
-    #  :agent
+    #  :user_name
+    #  :group_name
+    #  :operation_name
+    #  :target_name
+    #  :agent_name
     #  :desc
     
     def log(params)
@@ -44,11 +44,11 @@ class Audit
       
       s.actor = update_search s.actor, params[:actor] if params.has_key? :actor
       s.action = update_search s.action, params[:action] if params.has_key? :action
-      s.user = update_search s.user, params[:user] if params.has_key? :user
-      s.group = update_search s.group, params[:group] if params.has_key? :group
-      s.operation = update_search s.operation, params[:operation] if params.has_key? :operation
-      s.target = update_search s.target, params[:target] if params.has_key? :target
-      s.agent = update_search s.agent, params[:agent] if params.has_key? :agent
+      s.user_name = update_search s.user_name, params[:user_name] if params.has_key? :user_name
+      s.group_name = update_search s.group_name, params[:group_name] if params.has_key? :group_name
+      s.operation_name = update_search s.operation_name, params[:operation_name] if params.has_key? :operation_name
+      s.target_name = update_search s.target_name, params[:target_name] if params.has_key? :target_name
+      s.agent_name = update_search s.agent_name, params[:agent_name] if params.has_key? :agent_name
       s.save
     end
   end

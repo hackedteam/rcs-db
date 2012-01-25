@@ -9,21 +9,21 @@ class Audit
   field :time, type: Integer
   field :actor, type: String
   field :action, type: String
-  field :user, type: String
-  field :group, type: String
-  field :operation, type: String
-  field :target, type: String
-  field :agent, type: String
+  field :user_name, type: String
+  field :group_name, type: String
+  field :operation_name, type: String
+  field :target_name, type: String
+  field :agent_name, type: String
   field :desc, type: String
   
   index :time
   index :actor
   index :action
-  index :user
-  index :group
-  index :operation
-  index :target
-  index :agent
+  index :user_name
+  index :group_name
+  index :operation_name
+  index :target_name
+  index :agent_name
   
   store_in :audit
 
@@ -91,11 +91,11 @@ class AuditFilters
     
   field :actor, type: Array
   field :action, type: Array
-  field :user, type: Array
-  field :group, type: Array
-  field :operation, type: Array
-  field :target, type: Array
-  field :agent, type: Array
+  field :user_name, type: Array
+  field :group_name, type: Array
+  field :operation_name, type: Array
+  field :target_name, type: Array
+  field :agent_name, type: Array
   
   store_in :audit_filters
 end

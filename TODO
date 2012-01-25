@@ -6,44 +6,38 @@ TEST:
 
     injector rules pushing
 
+    create an agent, sync, delete it and check the evidence destroy process (should drop evidences and gridfs)
+
 HIGH PRIORITY:
 
     distributed workers, same as shards (daniele)
+    	- geolocation (the resolution is already on REST on the db)
 
-    Alerting daemon (alor)
-        - expire time on alerts
+    dont' send config to backdoor too old
 
-    export logs: all, blotter, filters...
+    check the TODOs in the code...
+
+    anonymizer configuration
 
 MEDIUM PRIORITY:
 
-    complete the worker decoding (daniele)
-	- audio
-	- geolocation (the resolution is already on REST on the db)
+    complete the audio decoding (daniele)
 
     get_accessible should be faster
 
     Forwarder (worker)
 
-    default keystore for android & applet &symbian
+    sms wap send
 
-    check the TODOs in the code...
-
-    nmap against collector
-
-    ask for confirmation (data deletion) on uninstall
+    export logs: all, blotter, with filters, filesystem...
 
 LOW PRIORITY:
-
-    get time via http (collector)
 
     FFI per dongle dll
 
     mongo authentication
 
     is vcredist needed ?
-
-    regsrv32 capicom.dll  (or run ruby as system)
 
     bundle config build.mysql2 --with-mysql-dir=c:\mysql --with-mysql-lib=c:\mysql\lib\opt
     gem install mysql2 --platform=ruby -- --with-mysql-dir=c:\mysql --with-mysql-lib=c:\mysql\lib\opt

@@ -72,6 +72,9 @@ class DB
   
   def connect
     begin
+      # this is required for mongoid >= 2.4.2
+      ENV['MONGOID_ENV'] = 'yes'
+      
       #TODO: username & password
       Mongoid.load!(Dir.pwd + '/config/mongoid.yaml')
       Mongoid.configure do |config|
@@ -124,12 +127,12 @@ class DB
         u[:locale] = 'en_US'
         u[:timezone] = 0
       end
-      Audit.log :actor => '<system>', :action => 'user.create', :user => 'admin', :desc => "Created the default user 'admin'"
+      Audit.log :actor => '<system>', :action => 'user.create', :user_name => 'admin', :desc => "Created the default user 'admin'"
 
       group = Group.create(name: "administrators", alert: false)
       group.users << user
       group.save
-      Audit.log :actor => '<system>', :action => 'group.create', :group => 'administrators', :desc => "Created the default group 'administrators'"
+      Audit.log :actor => '<system>', :action => 'group.create', :group_name => 'administrators', :desc => "Created the default group 'administrators'"
     end
   end
 

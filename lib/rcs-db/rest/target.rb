@@ -59,8 +59,8 @@ class TargetController < RESTController
       
       Audit.log :actor => @session[:user][:name],
                 :action => "target.create",
-                :operation => operation['name'],
-                :target => item['name'],
+                :operation_name => operation['name'],
+                :target_name => item['name'],
                 :desc => "Created target '#{item['name']}'"
       
       ok(item)
@@ -81,7 +81,7 @@ class TargetController < RESTController
         if item[key.to_s] != value and not key['_ids']
           Audit.log :actor => @session[:user][:name],
                     :action => "target.update",
-                    :target => item['name'],
+                    :target_name => item['name'],
                     :desc => "Updated '#{key}' to '#{value}'"
         end
       end
@@ -103,7 +103,7 @@ class TargetController < RESTController
 
       Audit.log :actor => @session[:user][:name],
                 :action => "target.delete",
-                :target => name,
+                :target_name => name,
                 :desc => "Deleted target '#{name}'"
       return ok
     end

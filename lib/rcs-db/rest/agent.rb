@@ -55,7 +55,7 @@ class AgentController < RESTController
         if item[key.to_s] != value and not key['_ids']
           Audit.log :actor => @session[:user][:name],
                     :action => "#{item._kind}.update",
-                    item._kind.to_sym => item['name'],
+                    (item._kind + '_name').to_sym => item['name'],
                     :desc => "Updated '#{key}' to '#{value}' for #{item._kind} '#{item['name']}'"
         end
       end
@@ -75,7 +75,7 @@ class AgentController < RESTController
       
       Audit.log :actor => @session[:user][:name],
                 :action => "#{item._kind}.delete",
-                item._kind.to_sym => @params['name'],
+                (item._kind + '_name').to_sym => @params['name'],
                 :desc => "Deleted #{item._kind} '#{item['name']}'"
       
       return ok
@@ -120,9 +120,9 @@ class AgentController < RESTController
       
       Audit.log :actor => @session[:user][:name],
                 :action => "factory.create",
-                :operation => operation['name'],
-                :target => target['name'],
-                :agent => item['name'],
+                :operation_name => operation['name'],
+                :target_name => target['name'],
+                :agent_name => item['name'],
                 :desc => "Created factory '#{item['name']}'"
 
       item = Item.factories
@@ -169,7 +169,7 @@ class AgentController < RESTController
       
       Audit.log :actor => @session[:user][:name],
                 :action => "#{agent._kind}.add_config",
-                agent._kind.to_sym => @params['name'],
+                (agent._kind + '_name').to_sym => @params['name'],
                 :desc => "Saved configuration for agent '#{agent['name']}'"
       
       return ok(config)
@@ -185,7 +185,7 @@ class AgentController < RESTController
 
       Audit.log :actor => @session[:user][:name],
                 :action => "#{agent._kind}.del_config",
-                agent._kind.to_sym => @params['name'],
+                (agent._kind + '_name').to_sym => @params['name'],
                 :desc => "Deleted configuration for agent '#{agent['name']}'"
       
       return ok
@@ -279,8 +279,6 @@ class AgentController < RESTController
     # default is queued
     agent.status = 'queued'
 
-    #TODO: add the upload files for the first sync
-
     # demo agent don't consume any license
     agent.status = 'open' if demo
 
@@ -291,6 +289,12 @@ class AgentController < RESTController
 
     # save the new instance in the db
     agent.save
+
+    # add the upload files for the first sync
+    agent.add_first_time_uploads
+
+    # add default requests for the filesystem
+    agent.add_default_filesystem_requests
 
     # check for alerts on this new instance
     Alerting.new_instance agent

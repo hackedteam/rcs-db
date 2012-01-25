@@ -60,7 +60,7 @@ class OperationController < RESTController
       
       Audit.log :actor => @session[:user][:name],
                 :action => "operation.create",
-                :operation => item['name'],
+                :operation_name => item['name'],
                 :desc => "Created operation '#{item['name']}'"
 
       ok(item)
@@ -90,7 +90,7 @@ class OperationController < RESTController
         if item[key.to_s] != value and not key['_ids']
           Audit.log :actor => @session[:user][:name],
                     :action => "operation.update",
-                    :operation => item['name'],
+                    :operation_name => item['name'],
                     :desc => "Updated '#{key}' to '#{value}'"
         end
       end
@@ -113,7 +113,7 @@ class OperationController < RESTController
       
       Audit.log :actor => @session[:user][:name],
                 :action => "operation.delete",
-                :operation => name,
+                :operation_name => name,
                 :desc => "Deleted operation '#{name}'"
       
       return ok

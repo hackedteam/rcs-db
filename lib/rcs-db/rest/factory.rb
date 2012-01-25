@@ -70,9 +70,9 @@ class FactoryController < RESTController
 
       Audit.log :actor => @session[:user][:name],
                 :action => "factory.create",
-                :operation => operation['name'],
-                :target => target['name'],
-                :agent => item['name'],
+                :operation_name => operation['name'],
+                :target_name => target['name'],
+                :agent_name => item['name'],
                 :desc => "Created factory '#{item['name']}'"
 
       item = Item.factories
@@ -104,7 +104,7 @@ class FactoryController < RESTController
         if item[key.to_s] != value and not key['_ids']
           Audit.log :actor => @session[:user][:name],
                     :action => "#{item._kind}.update",
-                    item._kind.to_sym => item['name'],
+                    (item._kind + '_name').to_sym => item['name'],
                     :desc => "Updated '#{key}' to '#{value}' for #{item._kind} '#{item['name']}'"
         end
       end
@@ -128,7 +128,7 @@ class FactoryController < RESTController
       
       Audit.log :actor => @session[:user][:name],
                 :action => "#{item._kind}.delete",
-                item._kind.to_sym => @params['name'],
+                (item._kind + '_name').to_sym => @params['name'],
                 :desc => "Deleted #{item._kind} '#{item['name']}'"
       
       return ok
