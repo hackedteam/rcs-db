@@ -227,6 +227,7 @@ end
             a['width'] = a['width'].to_i
             a['height'] = a['height'].to_i
           when 'snapshot'
+            a[:module] = 'screenshot'
             a.merge! item[a[:module]].first
             a['onlywindow'] = a['onlywindow'] == 'true' ? true : false
             a['quality'] = 'med'

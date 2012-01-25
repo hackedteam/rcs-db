@@ -24,7 +24,7 @@ gem 'mail'
 # databases
 gem 'sqlite3'
 gem 'mongo'
-gem 'mongoid', "= 2.3.4"
+gem 'mongoid'
 gem 'bson'
 gem 'bson_ext'
 # to be removed after migration from 7.0

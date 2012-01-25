@@ -136,6 +136,9 @@ class LogMigration
     # unify the files evidence
     ev.type = 'file' if ev.type == 'filecap' or ev.type == 'fileopen' or ev.type == 'download'
 
+    # rename it
+    ev.type = 'screenshot' if ev.type == 'snapshot'
+    
     # save the binary data
     if log[:longblob1].bytesize > 0
       ev.data[:_grid_size] = log[:longblob1].bytesize
