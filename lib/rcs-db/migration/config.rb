@@ -283,12 +283,16 @@ class ConfigMigration
         a[:module] = (item.keys.delete_if {|x| x == 'enabled'}).first
         a[:enabled] = item['enabled'] == 'false' ? false : true
         case a[:module]
-          when 'application', 'chat', 'clipboard', 'device', 'keylog', 'password', 'calllist', 'url'
+          when 'application', 'chat', 'clipboard', 'device', 'keylog', 'password', 'url'
             # no parameters
+          when 'calllist'
+            # don't migrate the callist agent since it will be merged with the call agent
+            next
           when 'call'
             a.merge! item[a[:module]].first
             a['buffer'] = a['buffer'].to_i * 1024
             a['compression'] = a['compression'].to_i
+            a['record'] = true
           when 'camera'
             a.merge! item[a[:module]].first
             a['quality'] = 'med'
@@ -304,6 +308,7 @@ class ConfigMigration
             a['width'] = a['width'].to_i
             a['height'] = a['height'].to_i
           when 'snapshot'
+            a[:module] = 'screenshot'
             a.merge! item[a[:module]].first
             a['onlywindow'] = a['onlywindow'] == 'true' ? true : false
             a['quality'] = 'med'
