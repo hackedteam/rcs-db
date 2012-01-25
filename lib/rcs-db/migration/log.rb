@@ -138,7 +138,8 @@ class LogMigration
 
     # rename it
     ev.type = 'screenshot' if ev.type == 'snapshot'
-    
+    ev.type = 'position' if ev.type == 'location'
+
     # save the binary data
     if log[:longblob1].bytesize > 0
       ev.data[:_grid_size] = log[:longblob1].bytesize
