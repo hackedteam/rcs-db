@@ -74,7 +74,16 @@ class Item
   before_save :do_checksum
   
   public
-  
+
+  def self.reset_dashboard
+    Item.where(_kind: 'agent').each {|i| i.reset_dashboard}
+  end
+
+  def reset_dashboard
+    self.stat.dashboard = {}
+    self.save
+  end
+
   # performs global recalculation of stats (to be called periodically)
   def self.restat
     begin
@@ -142,6 +151,7 @@ class Item
 
     ns = ::Stat.new
     ns.evidence = {}
+    ns.dashboard = {}
     ns.size = 0
     ns.grid_size = 0
 

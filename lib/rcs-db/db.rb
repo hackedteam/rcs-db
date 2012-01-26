@@ -76,13 +76,13 @@ class Application
       # ensure the temp dir is present
       Dir::mkdir(Config.instance.temp) if not File.directory?(Config.instance.temp)
 
-      Audit.log :actor => '<system>', :action => 'startup', :desc => "System started"
-
       # ensure the sharding is enabled
       DB.instance.enable_sharding
 
       # ensure all indexes are in place
       DB.instance.create_indexes
+
+      Audit.log :actor => '<system>', :action => 'startup', :desc => "System started"
 
       # enable shard on audit log, it will increase its size forever and ever
       DB.instance.shard_audit

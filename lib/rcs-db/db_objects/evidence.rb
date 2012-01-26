@@ -48,6 +48,9 @@ class Evidence
           agent.stat.evidence ||= {}
           agent.stat.evidence[self.type] ||= 0
           agent.stat.evidence[self.type] += 1
+          agent.stat.dashboard ||= {}
+          agent.stat.dashboard[self.type] ||= 0
+          agent.stat.dashboard[self.type] += 1
           agent.stat.size += self.data[:_grid_size] unless self.data[:_grid].nil?
           agent.stat.size += Mongoid.database.collection("#{Evidence.collection_name(target)}").stats()['avgObjSize'].to_i
           agent.stat.grid_size += self.data[:_grid_size] unless self.data[:_grid].nil?
