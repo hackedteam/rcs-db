@@ -57,6 +57,9 @@ class EvidenceController < RESTController
     # convert the string time to a time object to be passed to 'sync_start'
     time = Time.at(@params['sync_time']).getutc
 
+    # reset the counter for the dashboard
+    agent.reset_dashboard
+    
     # update the stats
     agent.stat[:last_sync] = time
     agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_IN_PROGRESS
@@ -64,6 +67,18 @@ class EvidenceController < RESTController
     agent.stat[:user] = @params['user']
     agent.stat[:device] = @params['device']
     agent.save
+
+    # update the stat of the target
+    target = agent.get_parent
+    target.stat[:last_sync] = time
+    target.last_child = [agent[:_id]]
+    target.save
+
+    # update the stat of the target
+    operation = target.get_parent
+    operation.stat[:last_sync] = time
+    operation.last_child = [target[:_id]]
+    operation.save
     
     return ok
   end

@@ -122,6 +122,9 @@ class Item
     end
   end
 
+  def get_parent
+    ::Item.find(self.path.last)
+  end
 
   def clone_instance
     return nil if self[:_kind] != 'factory'
@@ -295,6 +298,7 @@ class Stat
   field :device, type: String
   field :last_sync, type: Integer
   field :last_sync_status, type: Integer
+  field :last_child, type: Array
   field :size, type: Integer, :default => 0
   field :grid_size, type: Integer, :default => 0
   field :evidence, type: Hash, :default => {}

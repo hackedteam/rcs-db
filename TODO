@@ -10,8 +10,6 @@ TEST:
 
 HIGH PRIORITY:
 
-    dashboard stats
-
     check the TODOs in the code...
 
     dont' send config to backdoor too old

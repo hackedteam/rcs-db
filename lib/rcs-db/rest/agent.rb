@@ -249,9 +249,6 @@ class AgentController < RESTController
         agent.save
       end
 
-      # reset the counter for the dashboard
-      agent.reset_dashboard
-
       # check for alerts on this agent
       Alerting.new_sync agent
 
