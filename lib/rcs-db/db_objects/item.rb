@@ -288,6 +288,7 @@ class Stat
   field :size, type: Integer, :default => 0
   field :grid_size, type: Integer, :default => 0
   field :evidence, type: Hash, :default => {}
+  field :dashboard, type: Hash, :default => {}
   
   embedded_in :item
 end

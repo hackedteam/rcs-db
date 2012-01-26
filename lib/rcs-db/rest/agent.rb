@@ -388,7 +388,7 @@ class AgentController < RESTController
       when 'DELETE'
         agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
         agent.upgrade_requests.destroy_all
-        trace :info, "[#{@request[:peer]}] Deleted the UPGRADE #{@params['upgrade']}"
+        trace :info, "[#{@request[:peer]}] Deleted the UPGRADES"
     end
     
     return ok

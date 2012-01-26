@@ -105,14 +105,15 @@ class DB
     end
     output = Shard.enable('rcs')
     trace :info, "Enable Sharding on 'rcs': #{output}"
+  end
 
+  def shard_audit
     # enable shard on audit log, it will increase its size forever and ever
     db = Mongoid.database
-    # enable sharding only if not enabled
     audit = db.collection('audit')
     Shard.set_key(audit, {time: 1, actor: 1}) unless audit.stats['sharded']
   end
-  
+
   def ensure_admin
     # check that at least one admin is present and enabled
     # if it does not exists, create it
