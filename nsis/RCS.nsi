@@ -284,11 +284,7 @@ Section "Install Section" SecInstall
     DetailPrint "Installing single Shard files..."
     SetDetailsPrint "textonly"
     !cd 'DB'
-    
-    SetOutPath "$INSTDIR\DB\config"
-    #### mongoid conf has to be changed!!!!
-    File "config\mongoid.yaml"
-   
+       
     SetDetailsPrint "both"
     DetailPrint "done"
     
@@ -315,6 +311,7 @@ Section "Install Section" SecInstall
     
       DetailPrint "Writing the configuration..."
       SetDetailsPrint "textonly"
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --defaults --CN $masterAddress"
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config -u admin -p $adminpass -d $masterAddress --add-shard auto"
       SetDetailsPrint "both"
       DetailPrint "done"
