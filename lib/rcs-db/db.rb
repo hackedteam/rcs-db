@@ -52,9 +52,8 @@ class Application
       version = File.read(Dir.pwd + '/config/version.txt')
       trace :info, "Starting the RCS Database #{version}..."
 
-      # ensure the temp directory is empty and present
+      # ensure the temp directory is empty
       FileUtils.rm_rf(Config.instance.temp)
-      Dir::mkdir(Config.instance.temp) if not File.directory?(Config.instance.temp)
 
       # check the integrity of the code
       HeartBeat.dont_steal_rcs
@@ -74,11 +73,19 @@ class Application
         sleep 5
       end
 
-      # ensure all indexes are in place
-      DB.instance.create_indexes
+      # ensure the temp dir is present
+      Dir::mkdir(Config.instance.temp) if not File.directory?(Config.instance.temp)
 
       # ensure the sharding is enabled
       DB.instance.enable_sharding
+
+      # ensure all indexes are in place
+      DB.instance.create_indexes
+
+      Audit.log :actor => '<system>', :action => 'startup', :desc => "System started"
+
+      # enable shard on audit log, it will increase its size forever and ever
+      DB.instance.shard_audit
 
       # ensure at least one user (admin) is active
       DB.instance.ensure_admin
@@ -93,7 +100,8 @@ class Application
       Events.new.setup Config.instance.global['LISTENING_PORT']
       
     rescue Interrupt
-      trace :info, "User asked to exit. Bye bye!"
+      trace :info, "System shutdown. Bye bye!"
+      Audit.log :actor => '<system>', :action => 'shutdown', :desc => "System shutdown"
       return 0
     rescue Exception => e
       trace :fatal, "FAILURE: " << e.message

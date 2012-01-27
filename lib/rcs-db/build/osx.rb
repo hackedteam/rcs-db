@@ -153,7 +153,7 @@ class BuildOSX < Build
       z.file.chmod(0755, @appname)
     end
 
-    # TODO: remove this when the correct method has been found
+    # remove this when the correct method has been found
     #binary_patch_exec_bit('output.zip', @appname)
 
     # this is the only file we need to output after this point

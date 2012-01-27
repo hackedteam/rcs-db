@@ -131,7 +131,7 @@ class Config
     load_from_file
 
     trace :info, ""
-    trace :info, "Current configuration:"
+    trace :info, "Previous configuration:"
     pp @global
 
     # use the default values
@@ -159,9 +159,9 @@ class Config
       change_first_shard_address
     end
 
-    if options[:gen_cert]
-      generate_certificates options
-    end
+    generate_certificates(options) if options[:gen_cert]
+
+    generate_keystores if options[:gen_keystores]
 
     if options[:shard_failure_add]
       shard, host = options[:shard_failure_add].split(':')
@@ -175,7 +175,7 @@ class Config
     end
     
     trace :info, ""
-    trace :info, "Final configuration:"
+    trace :info, "Current configuration:"
     pp @global
 
     # save the configuration
@@ -281,6 +281,21 @@ class Config
     trace :info, "done."
   end
 
+  def generate_keystores
+    trace :info, "Generating key stores for Java Applet..."
+    FileUtils.rm(Config.instance.cert('applet.keystore'))
+    system "keytool -genkey -alias signapplet -dname \"CN=VeriSign Inc., O=Default, C=US\" -validity 18250 -keystore #{Config.instance.cert('applet.keystore')} -keypass password -storepass password"
+
+    trace :info, "Generating key stores for Android..."
+    FileUtils.rm(Config.instance.cert('android.keystore'))
+    system "keytool -genkey -dname \"cn=Server, ou=JavaSoft, o=Sun, c=US\" -alias ServiceCore -keystore #{Config.instance.cert('android.keystore')} -keyalg RSA -keysize 2048 -validity 18250 -keypass password -storepass password"
+
+    trace :info, "Generating UIDS stores for Symbian..."
+    FileUtils.rm(Config.instance.cert('symbian.yaml'))
+    uids = ['20030635', '200305D7', '20030633', '20030634', '200316ED', '200305DB']
+    File.open(Config.instance.cert("symbian.yaml"), 'w') {|f| f.write uids.to_yaml}
+  end
+
   def change_router_service_parameter
     return unless RUBY_PLATFORM =~ /mingw/
     trace :info, "Changing the startup option of the Router Master"
@@ -365,6 +380,9 @@ class Config
       end
       opts.on( '-k', '--db-key FILE', 'The certificate file (key) used for ssl communication' ) do |file|
         options[:db_key] = file
+      end
+      opts.on( '-K', '--generate-keystores', 'Generate new key stores used for building vectors' ) do
+        options[:gen_keystores] = true
       end
 
       opts.separator ""

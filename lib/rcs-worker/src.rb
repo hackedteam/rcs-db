@@ -2,8 +2,8 @@ require 'ffi'
 
 module SRC
   extend FFI::Library
-  ffi_lib 'libsamplerate'
-  
+  extend RCS::Tracer
+
   class DATA < FFI::Struct
     layout :data_in, :float,            # pointer to input data samples
            :data_out, :float,           # pointer to output
@@ -20,18 +20,25 @@ module SRC
   SINC_FASTEST = 2
   ZERO_ORDER_HOLD = 3
   LINEAR = 4
-  
-  attach_function :src_simple, [:pointer, :int, :int], :int
-  
-  attach_function :src_new, [:int, :int, :pointer], :pointer
-  attach_function :src_delete, [:pointer], :pointer
-  
-  attach_function :src_process, [:pointer, :pointer], :int
-  attach_function :src_reset, [:pointer], :int
-  attach_function :src_set_ratio, [:pointer, :double], :int
-  
-  attach_function :short_to_float, :src_short_to_float_array, [:pointer, :pointer, :int], :void
-  attach_function :float_to_short, :src_float_to_short_array, [:pointer, :pointer, :int], :void
-  
-  attach_function :strerror, :src_strerror, [:int], :string
+
+  begin
+    ffi_lib 'libsamplerate'
+
+    attach_function :src_simple, [:pointer, :int, :int], :int
+
+    attach_function :src_new, [:int, :int, :pointer], :pointer
+    attach_function :src_delete, [:pointer], :pointer
+
+    attach_function :src_process, [:pointer, :pointer], :int
+    attach_function :src_reset, [:pointer], :int
+    attach_function :src_set_ratio, [:pointer, :double], :int
+
+    attach_function :short_to_float, :src_short_to_float_array, [:pointer, :pointer, :int], :void
+    attach_function :float_to_short, :src_float_to_short_array, [:pointer, :pointer, :int], :void
+
+    attach_function :strerror, :src_strerror, [:int], :string
+  rescue Exception => e
+    trace :fatal, "ERROR: Cannot open libsamplerate"
+    exit!
+  end
 end

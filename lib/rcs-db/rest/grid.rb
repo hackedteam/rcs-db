@@ -20,16 +20,6 @@ class GridController < RESTController
     return ok({_grid: grid_id.to_s})
   end
 
-  # TODO: verify Grid REST destroy is ever called, otherwise remove
-  def destroy
-    require_auth_level :none
-    
-    grid_id = @params['_id']
-    GridFS.delete grid_id
-    
-    return ok
-  end
-  
 end
   
 end # ::DB

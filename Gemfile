@@ -11,7 +11,7 @@ end
 
 # TAR/GZIP compression
 git "git://github.com/danielemilan/minitar.git", :branch => "master" do
-  gem "minitar"
+  gem "minitar", ">= 0.5.5"
 end
 gem 'rubyzip', ">= 0.9.5"
 gem 'bcrypt-ruby'
@@ -24,7 +24,7 @@ gem 'mail'
 # databases
 gem 'sqlite3'
 gem 'mongo'
-gem 'mongoid', ">= 2.2.0"
+gem 'mongoid'
 gem 'bson'
 gem 'bson_ext'
 # to be removed after migration from 7.0
@@ -39,3 +39,4 @@ group :development do
   gem 'test-unit'
   gem 'simplecov'
 end
+

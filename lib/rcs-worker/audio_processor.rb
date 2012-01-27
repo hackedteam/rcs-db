@@ -3,9 +3,9 @@ module Worker
 
 require 'ffi'
 require 'rcs-common/trace'
-require 'rcs-worker/speex'
-require 'rcs-worker/wave'
-require 'rcs-worker/src'
+require_relative 'speex'
+require_relative 'wave'
+require_relative 'src'
 
 require 'digest/md5'
 

@@ -68,10 +68,10 @@ class BuildApplet < Build
     jar = path(@outputs.first)
     cert = path(@appname + '.cer')
 
-    CrossPlatform.exec "jarsigner", "-keystore #{Config::CERT_DIR}/applet.keystore -storepass password -keypass password #{jar} signapplet"
+    CrossPlatform.exec "jarsigner", "-keystore #{Config.instance.cert('applet.keystore')} -storepass password -keypass password #{jar} signapplet"
     raise "jarsigner failed" unless File.exist? jar
 
-    CrossPlatform.exec "keytool", "-export -keystore #{Config::CERT_DIR}/applet.keystore -storepass password -alias signapplet -file #{cert}"
+    CrossPlatform.exec "keytool", "-export -keystore #{Config.instance.cert('applet.keystore')} -storepass password -alias signapplet -file #{cert}"
     raise "keytool export failed" unless File.exist? cert
 
     @outputs << @appname + '.cer'
