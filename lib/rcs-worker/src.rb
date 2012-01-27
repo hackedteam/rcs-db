@@ -38,7 +38,7 @@ module SRC
 
     attach_function :strerror, :src_strerror, [:int], :string
   rescue Exception => e
-    trace :fatal, "ERROR: Cannot open libresample"
+    trace :fatal, "ERROR: Cannot open libsamplerate"
     exit!
   end
 end
