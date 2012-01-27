@@ -4,7 +4,7 @@ module KeylogProcessing
     puts "KEYLOG: #{@info[:data]}"
   end
 
-  def keylog
+  def type
     :keylog
   end
 end # ApplicationProcessing

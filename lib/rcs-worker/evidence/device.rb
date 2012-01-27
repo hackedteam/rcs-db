@@ -4,7 +4,7 @@ module DeviceProcessing
     puts "DEVICE: #{@info[:data]}"
   end
 
-  def device
+  def type
     :device
   end
 end # DeviceProcessing
