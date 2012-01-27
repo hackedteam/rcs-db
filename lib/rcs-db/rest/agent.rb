@@ -133,6 +133,24 @@ class AgentController < RESTController
     end
   end
 
+  def move
+    mongoid_query do
+      target = ::Item.targets.find(@params['target'])
+      return bad_request('INVALID_TARGET') if target.nil?
+
+      agent = Item.any_in(_id: @session[:accessible]).find(@params['_id'])
+      agent.path = target.path + [target._id]
+      agent.save
+
+      Audit.log :actor => @session[:user][:name],
+                :action => "#{agent._kind}.move",
+                (agent._kind + '_name').to_sym => @params['name'],
+                :desc => "Moved #{agent._kind} '#{agent['name']}' to #{target['name']}"
+
+      return ok
+    end
+  end
+
   def get_new_ident
     global = ::Item.where({_kind: 'global'}).first
     global ||= ::Item.new({_kind: 'global', counter: 0}).save

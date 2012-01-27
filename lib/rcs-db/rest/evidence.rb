@@ -71,13 +71,13 @@ class EvidenceController < RESTController
     # update the stat of the target
     target = agent.get_parent
     target.stat[:last_sync] = time
-    target.stat.last_child = [agent[:_id]]
+    target.stat[:last_child] = [agent[:_id]]
     target.save
 
     # update the stat of the target
     operation = target.get_parent
     operation.stat[:last_sync] = time
-    operation.stat.last_child = [target[:_id]]
+    operation.stat[:last_child] = [target[:_id]]
     operation.save
 
     # check for alerts on this agent

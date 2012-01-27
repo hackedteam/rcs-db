@@ -109,6 +109,30 @@ class TargetController < RESTController
     end
   end
 
+  def move
+    mongoid_query do
+      operation = ::Item.operations.find(@params['operation'])
+      return bad_request('INVALID_OPERATION') if operation.nil?
+
+      target = Item.targets.any_in(_id: @session[:accessible]).find(@params['_id'])
+      target.path = [operation._id]
+      target.save
+
+      # move every agent and factory belonging to this target
+      Item.any_in({_kind: ['agent', 'factory']}).also_in({path: [ target._id ]}).each do |agent|
+        agent.path = target.path + [target._id]
+        agent.save
+      end
+
+      Audit.log :actor => @session[:user][:name],
+                :action => "#{target._kind}.move",
+                (target._kind + '_name').to_sym => @params['name'],
+                :desc => "Moved #{target._kind} '#{target['name']}' to #{operation['name']}"
+
+      return ok
+    end
+  end
+
 end
 
 end
