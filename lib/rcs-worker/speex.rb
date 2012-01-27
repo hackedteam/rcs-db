@@ -41,8 +41,15 @@ module Speex
   GET_FRAME_SIZE = 3
   
   begin
-	  ffi_lib '/usr/local/Cellar/speex/1.2rc1/lib/libspeex.1.5.0.dylib'
-    ffi_convention :stdcall
+    base_path = File.dirname(__FILE__)
+	case RUBY_PLATFORM
+        when /darwin/
+			ffi_lib File.join(base_path, 'libs/speex/macos/libspeex.1.5.0.dylib')
+        when /mingw/
+			ffi_lib File.join(base_path, 'libs/speex/win/libspeex.dll')
+	end
+    
+	ffi_convention :stdcall
 
     attach_function :decoder_init, :speex_decoder_init, [:pointer], :pointer
     attach_function :decoder_destroy, :speex_decoder_destroy, [:pointer], :void

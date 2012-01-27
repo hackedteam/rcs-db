@@ -1142,13 +1142,50 @@ if false
   puts res.body
 end
 
-
+# fake sync
 if false
   puts 'agent.status'
   request = {:ident => 'RCS_0000000001', :instance => '47170c3e047b6a910e7ecc2e987060db2ff06cd9', :subtype => 'WINDOWS'}      
   res = http.request_get('/agent/status/?' + CGI.encode_query(request), {'Cookie' => cookie})
   puts res.body
   
+end
+
+# moving...
+if true
+  puts 'target.move (to 2)'
+  request = {:_id => '4f214b8c2afb65821100006c', :operation => '4f214b8c2afb658211000032'}      
+  res = http.request_post('/target/move', request.to_json, {'Cookie' => cookie})
+  puts res.body
+
+  puts "target.show"
+  res = http.request_get("/target/4f214b8c2afb65821100006c", {'Cookie' => cookie})
+  target = JSON.parse(res.body)
+  puts target['path'].inspect
+  puts
+
+  puts "factory.show"
+  res = http.request_get("/factory/4f214b8c2afb6582110000c9", {'Cookie' => cookie})
+  factory = JSON.parse(res.body)
+  puts factory['path'].inspect
+  puts
+
+  puts 'target.move (to 1)'
+  request = {:_id => '4f214b8c2afb65821100006c', :operation => '4f214b8c2afb658211000030'}      
+  res = http.request_post('/target/move', request.to_json, {'Cookie' => cookie})
+  puts res.body
+
+  puts "target.show"
+  res = http.request_get("/target/4f214b8c2afb65821100006c", {'Cookie' => cookie})
+  target = JSON.parse(res.body)
+  puts target['path'].inspect
+  puts
+
+  puts "factory.show"
+  res = http.request_get("/factory/4f214b8c2afb6582110000c9", {'Cookie' => cookie})
+  factory = JSON.parse(res.body)
+  puts factory['path'].inspect
+  puts
 end
 
 # logout

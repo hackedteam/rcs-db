@@ -218,7 +218,7 @@ class Item
         Item.where({_kind: 'target', path: [ self._id ]}).each {|targ| targ.destroy}
       when 'target'
         # destroy all the agents of this target
-        Item.where({_kind: 'agent'}).also_in({path: [ self._id ]}).each {|bck| bck.destroy}
+        Item.where({_kind: 'agent'}).also_in({path: [ self._id ]}).each {|agent| agent.destroy}
         # drop the evidence collection of this target
         Mongoid.database.drop_collection Evidence.collection_name(self._id.to_s)
       when 'agent'
