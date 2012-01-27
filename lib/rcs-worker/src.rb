@@ -20,10 +20,16 @@ module SRC
   SINC_FASTEST = 2
   ZERO_ORDER_HOLD = 3
   LINEAR = 4
-
+  
   begin
-    ffi_lib 'libsamplerate'
-
+	base_path = File.dirname(__FILE__)
+	case RUBY_PLATFORM
+        when /darwin/
+			ffi_lib File.join(base_path, 'libs/SRC/macos/libsamplerate.0.dylib')
+        when /mingw/
+			ffi_lib File.join(base_path, 'libs/SRC/win/libsamplerate.dll')
+	end
+	
     attach_function :src_simple, [:pointer, :int, :int], :int
 
     attach_function :src_new, [:int, :int, :pointer], :pointer
