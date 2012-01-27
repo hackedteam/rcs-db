@@ -1,7 +1,7 @@
 module RCS
 
-require 'rcs-worker/speex'
-require 'rcs-worker/audio_processor'
+require_relative '../speex'
+require_relative '../audio_processor'
 
 module CallProcessing
   

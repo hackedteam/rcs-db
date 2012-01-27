@@ -8,8 +8,13 @@ require_relative 'evidence/call'
 require_relative 'parser'
 
 # from RCS::DB
-require 'rcs-db/config'
-require 'rcs-db/db_layer'
+if File.directory?(Dir.pwd + '/lib/rcs-worker-release')
+  require 'rcs-db-release/config'
+  require 'rcs-db-release/db_layer'
+else
+  require 'rcs-db/config'
+  require 'rcs-db/db_layer'
+end
 
 # from RCS::Common
 require 'rcs-common/trace'
