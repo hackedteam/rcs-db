@@ -32,7 +32,7 @@ class EvidenceDispatcher
     trace :debug, "Sending evidence #{ident} (#{instance}) to shard #{@shards[shard_idx][:host]}"
     
     # queue the evidence
-    @shards[shard_idx][:queue].push(evidence_id)
+    @shards[shard_idx][:queue].push({instance: instance, ident: ident, id: evidence_id})
     
     # send the queue to the correct shard
     http = EM::HttpRequest.new("http://#{@shards[shard_idx][:host]}:5150/").post :body => {ids: @shards[shard_idx][:queue]}.to_json

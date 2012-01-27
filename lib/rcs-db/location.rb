@@ -52,25 +52,24 @@ class Location
     end
 
     def get_google(request)
-
       # Gears API: http://code.google.com/apis/gears/geolocation_network_protocol.html
       Timeout::timeout(3) do
         response = Frontend.proxy('POST', 'www.google.com', '/loc/json', request.to_json)
         response.kind_of? Net::HTTPSuccess or raise(response.body)
+        resp = JSON.parse(response.body)
+        resp['location'] or raise('invalid response')
       end
-      resp = JSON.parse(response.body)
-      resp['location'] or raise('invalid response')
     end
-
+    
     def get_geoip(ip)
       Timeout::timeout(3) do
         response = Frontend.proxy('GET', 'geoiptool.com', "/webapi.php?type=1&IP=#{ip}")
         response.kind_of? Net::HTTPSuccess or raise(response.body)
+        resp = response.body.match /onLoad=.crearmapa([^)]*)/
+        coords = resp.to_s.split('"')
+        raise('not found') if (coords[3] == '' and coords[1] == '') or coords[3].nil? or coords[1].nil?
+        {'location' => {'latitude' => coords[3].to_f, 'longitude' => coords[1].to_f}, 'address' => {'country' => coords[7]}}
       end
-      resp = response.body.match /onLoad=.crearmapa([^)]*)/
-      coords = resp.to_s.split('"')
-      raise('not found') if (coords[3] == '' and coords[1] == '') or coords[3].nil? or coords[1].nil?
-      {'location' => {'latitude' => coords[3].to_f, 'longitude' => coords[1].to_f}, 'address' => {'country' => coords[7]}}
     end
 
     def get_cache(request)

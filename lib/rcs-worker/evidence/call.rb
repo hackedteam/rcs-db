@@ -49,6 +49,10 @@ module CallProcessing
     @wav = wave_buffer
     
   end
+
+  def type
+    :call
+  end
   
 end
 

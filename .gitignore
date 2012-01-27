@@ -57,7 +57,7 @@ lib/rcs-db-release
 lib/rcs-worker-release
 
 # evidences
-evidence
+./evidence
 
 # temporary wav files
 *.wav

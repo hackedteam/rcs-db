@@ -86,11 +86,20 @@ class CollectorController < RESTController
 
   def config
     require_auth_level :server
-    
-    #TODO: implement config retrieval
-    #TODO: mark as configured...
 
-    return not_found
+    mongoid_query do
+      collector = Collector.find(@params['_id'])
+
+      return not_found if collector.configured
+
+      #TODO: implement config retrieval
+
+      # reset the flag for the "configuration needed"
+      collector.configured = true
+      collector.save
+
+      return not_found
+    end
   end
 
   def logs
