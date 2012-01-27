@@ -18,12 +18,14 @@ class QueueManager
     @instances = {}
   end
   
-  def queue(instance, evidence)
-    return null if instance.nil? or evidence.nil?
+  def queue(instance, ident, evidence)
+    return nil if instance.nil? or ident.nil? or evidence.nil?
+    
+    idx = "#{ident}:#{instance}"
     
     begin
-      @instances[instance] ||= InstanceProcessor.new instance
-      @instances[instance].queue(evidence)
+      @instances[idx] ||= InstanceProcessor.new instance, ident
+      @instances[idx].queue(evidence)
     rescue Exception => e
       trace :error, e.message
       return nil
@@ -32,7 +34,7 @@ class QueueManager
   
   def to_s
     str = ""
-    @instances.each_pair do |instance, processor|
+    @instances.each_pair do |idx, processor|
       str += "#{processor.to_s}"
     end
     str

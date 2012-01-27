@@ -17,7 +17,7 @@ module Worker
     return bad_request("no ids found.") if @params['ids'].nil?
     
     @params['ids'].each do |evidence|
-      QueueManager.instance.queue evidence['instance'], evidence['id']
+      QueueManager.instance.queue evidence['instance'], evidence['ident'], evidence['id']
     end
     ok('OK')
   end

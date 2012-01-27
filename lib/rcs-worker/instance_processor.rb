@@ -23,17 +23,17 @@ class InstanceProcessor
   
   SLEEP_TIME = 10
   
-  def initialize(instance)
+  def initialize(instance, ident)
     @evidences = []
     @state = :stopped
     @seconds_sleeping = 0
     
     # get info about the agent instance from evidence db
     #@db = Mongo::Connection.new(RCS::DB::Config.instance.global['CN'], 27017).db("rcs")
-    @agent = Item.agents.where({instance: instance}).first
+    @agent = Item.agents.where({ident: ident, instance: instance}).first
     
     #@info = RCS::EvidenceManager.instance.instance_info @id
-    raise "Instance \'#{@instance}\' cannot be found." if @agent.nil?
+    raise "Agent \'#{ident}:#{instance}\' cannot be found." if @agent.nil?
     
     trace :info, "Created processor for agent #{@agent['ident']}:#{@agent['instance']}"
     

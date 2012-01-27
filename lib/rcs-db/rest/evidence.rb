@@ -38,7 +38,7 @@ class EvidenceController < RESTController
       trace :warn, "Cannot save evidence: #{e.message}"
       return not_found
     end
-
+    
     trace :info, "Evidence saved. Dispatching evidence of [#{ident}::#{instance}][#{id}]"
     return ok({:bytes => @request[:content]['content'].size})
   end

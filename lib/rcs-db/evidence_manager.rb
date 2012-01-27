@@ -18,10 +18,9 @@ class EvidenceManager
   SYNC_PROCESSING = 3
 
   def store_evidence(ident, instance, content)
-    return GridFS.put(content, {:filename => "#{ident}_#{instance}"}, "evidence")
+    return GridFS.put(content, {:filename => "#{ident}:#{instance}"}, "evidence")
   end
-
-
+  
   def run(options)
 
     # config file parsing
