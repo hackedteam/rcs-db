@@ -129,7 +129,7 @@ class InstanceProcessor
               store_evidence evidence
               
               processing_time = Time.now - start_time
-              trace :info, "processed #{evidence.info[:type].upcase} for #{@id} in #{processing_time} sec"
+              trace :info, "processed #{evidence.info[:type].upcase} in #{processing_time} sec"
             end
             
 =begin
@@ -198,19 +198,21 @@ class InstanceProcessor
 
     trace :debug, "found agent #{agent._id} for instance #{evidence.info[:instance]}"
 
-    target = ::Item.targets.where({_id: agent[:path].last}).first
-
+    target = agent.get_parent
+    
     trace :debug, "found target #{target._id} for agent #{agent._id}"
     
     ev = ::Evidence.dynamic_new target[:_id].to_s
-
+    
+    ev.item = [ agent[:_id] ]
+    ev.type = evidence.info[:type]
+    
     ev.acquired = evidence.info[:acquired].to_i
     ev.received = evidence.info[:received].to_i
-    ev.type = evidence.info[:type]
     ev.relevance = 1
     ev.blotter = false
     ev.note = ""
-    ev.item = [ agent[:_id] ]
+    
     ev.data = evidence.info[:data]
     
     # save the binary data (if any)
@@ -218,7 +220,7 @@ class InstanceProcessor
       ev.data[:_grid_size] = evidence.info[:grid_content].bytesize
       ev.data[:_grid] = RCS::DB::GridFS.put(evidence.info[:grid_content], {filename: agent[:_id].to_s}, target[:_id].to_s) unless evidence.info[:grid_content].nil?
     end
-    
+
     ev.save
     
     trace :debug, "saved evidence #{ev._id}"
