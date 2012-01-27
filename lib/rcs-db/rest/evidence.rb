@@ -79,7 +79,10 @@ class EvidenceController < RESTController
     operation.stat[:last_sync] = time
     operation.last_child = [target[:_id]]
     operation.save
-    
+
+    # check for alerts on this agent
+    Alerting.new_sync agent
+
     return ok
   end
   

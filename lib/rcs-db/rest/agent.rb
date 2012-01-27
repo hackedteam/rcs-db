@@ -249,9 +249,6 @@ class AgentController < RESTController
         agent.save
       end
 
-      # check for alerts on this agent
-      Alerting.new_sync agent
-
       status = {:deleted => agent[:deleted], :status => agent[:status].upcase, :_id => agent[:_id]}
       return ok(status)
     end
