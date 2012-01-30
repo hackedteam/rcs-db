@@ -108,11 +108,11 @@ class AgentController < RESTController
         doc[:name] = @params['name']
         doc[:name] ||= doc[:ident]
         doc[:counter] = 0
-        seed = (0..11).inject('') {|x,y| x += alphabet[rand(0..alphabet.size)]}
+        seed = (0..11).inject('') {|x,y| x += alphabet[rand(0..alphabet.size-1)]}
         seed.setbyte(8, 46)
         doc[:seed] = seed
-        doc[:confkey] = (0..31).inject('') {|x,y| x += alphabet[rand(0..alphabet.size)]}
-        doc[:logkey] = (0..31).inject('') {|x,y| x += alphabet[rand(0..alphabet.size)]}
+        doc[:confkey] = (0..31).inject('') {|x,y| x += alphabet[rand(0..alphabet.size-1)]}
+        doc[:logkey] = (0..31).inject('') {|x,y| x += alphabet[rand(0..alphabet.size-1)]}
         doc[:configs] = []
       end
       
