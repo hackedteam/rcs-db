@@ -1192,14 +1192,6 @@ if false
   puts
 end
 
-
-puts "agent.show"
-res = http.request_get("/search/4f214b8c2afb6582110000cb", {'Cookie' => cookie})
-#factory = JSON.parse(res.body)
-#puts factory['path'].inspect
-puts res.body
-puts
-
 # logout
 res = http.request_post('/auth/logout', nil, {'Cookie' => cookie})
 puts

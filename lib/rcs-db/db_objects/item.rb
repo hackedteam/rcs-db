@@ -101,7 +101,7 @@ class Item
         self.stat.size = 0; self.stat.grid_size = 0; self.stat.evidence = {}
         targets = Item.where(_kind: 'target').also_in(path: [self._id])
         targets.each do |t|
-          self.stat.evidence.merge!(t.stat.evidence) {|k,o,n| o+n }
+          #self.stat.evidence.merge!(t.stat.evidence) {|k,o,n| o+n }
           self.stat.size += t.stat.size
           self.stat.grid_size += t.stat.grid_size
         end
@@ -109,9 +109,10 @@ class Item
       when 'target'
         self.stat.grid_size = 0; self.stat.evidence = {}
         agents = Item.where(_kind: 'agent').also_in(path: [self._id])
-        agents.each do |b|
-          self.stat.evidence.merge!(b.stat.evidence) {|k,o,n| o+n }
-          self.stat.grid_size += b.stat.grid_size
+        agents.each do |a|
+          self.stat.evidence.merge!(a.stat.evidence) {|k,o,n| o+n }
+          self.stat.dashboard.merge!(a.stat.dashboard) {|k,o,n| o+n }
+          self.stat.grid_size += a.stat.grid_size
         end
         db = Mongoid.database
         collection = db.collections.select {|c| c.name == Evidence.collection_name(self._id.to_s)}
