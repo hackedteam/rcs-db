@@ -9,26 +9,26 @@ class TargetController < RESTController
     
     filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
     filter ||= {}
-  
-    mongoid_query do
-      items = ::Item.targets.where(filter)
-        .any_in(_id: @session[:accessible])
-        .only(:name, :desc, :status, :_kind, :path, :stat)
+    
+    filter.merge!({_kind: "target"})
+    filter.merge!({_id: {"$in" => @session[:accessible]}}) unless (admin? and @params['all'] == "true")
 
-      ok(items)
+    mongoid_query do
+      db = Mongoid.database
+      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path"])
+      ok(j)
     end
   end
   
   def show
     require_auth_level :admin, :tech, :view
-    
+
+    return not_found() unless @session[:accessible].include? BSON::ObjectId.from_string(@params['_id'])
+
     mongoid_query do
-      item = Item.targets
-        .any_in(_id: @session[:accessible])
-        .only(:name, :desc, :status, :_kind, :path, :stat)
-        .find(@params['_id'])
-      
-      ok(item)
+      db = Mongoid.database
+      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "path", "stat"])
+      ok(j.first)
     end
   end
   
