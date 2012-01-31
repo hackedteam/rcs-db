@@ -136,6 +136,9 @@ class LogMigration
     # unify the files evidence
     ev.type = 'file' if ev.type == 'filecap' or ev.type == 'fileopen' or ev.type == 'download'
 
+    # unify mail, sms, mms
+    ev.type = 'message' if ev.type == 'mail' or ev.type == 'sms' or ev.type == 'mms'
+
     # rename it
     ev.type = 'screenshot' if ev.type == 'snapshot'
     ev.type = 'position' if ev.type == 'location'
@@ -244,6 +247,11 @@ class LogMigration
         end
         data[:cell][index] = cell
       end
+    end
+
+    # keep the subtype into messages
+    if log[:type] == 'mail' or log[:type] == 'sms' or log[:type] == 'mms'
+      data[:type] = log[:type]
     end
 
     return data

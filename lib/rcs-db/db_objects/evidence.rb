@@ -56,6 +56,8 @@ class Evidence
           agent.stat.size += Mongoid.database.collection("#{Evidence.collection_name(target)}").stats()['avgObjSize'].to_i
           agent.stat.grid_size += self.data[:_grid_size] unless self.data[:_grid].nil?
           agent.save
+          # update the target of this agent
+          agent.get_parent.restat
         end
 
         def destroy_callback

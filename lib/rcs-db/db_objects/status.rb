@@ -45,7 +45,7 @@ class Status
       case(status)
         when 'OK'
           # notify the restoration of a component
-          if monitor[:status] != OK
+          if monitor[:status] == ERROR
             RCS::DB::Alerting.restored_component(monitor)
             RCS::DB::Audit.log :actor => '<system>', :action => 'alert', :desc => "Component #{monitor[:name]} was restored to normal status"
           end
