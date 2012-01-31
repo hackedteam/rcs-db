@@ -1152,7 +1152,7 @@ if false
 end
 
 # moving...
-if true
+if false
   puts 'target.move (to 2)'
   request = {:_id => '4f214b8c2afb65821100006c', :operation => '4f214b8c2afb658211000032'}      
   res = http.request_post('/target/move', request.to_json, {'Cookie' => cookie})

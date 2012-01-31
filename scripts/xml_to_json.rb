@@ -184,6 +184,7 @@ end
                 subaction[:action] = 'module'
                 subaction[:status] = s['action']
                 subaction[:module] = s['name']
+                subaction[:module] = 'screenshot' if subaction[:module] = 'snapshot'
               else
                 raise "unknown subaction: " + sub
             end
