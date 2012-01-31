@@ -19,6 +19,15 @@ class AgentController < RESTController
     filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
     filter ||= {}
 
+    filter.merge!({_id: {"$in" => @session[:accessible]}, _kind: { "$in" => ['agent', 'factory']}})
+    
+    db = Mongoid.database
+    j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "platform", "uninstalled", "demo"])
+
+    ok(j)
+
+
+=begin
     mongoid_query do
       items = ::Item.where(filter)
         .any_in(_id: @session[:accessible], _kind: ['agent', 'factory'])
@@ -26,11 +35,20 @@ class AgentController < RESTController
         
       ok(items)
     end
+=end
   end
   
   def show
     require_auth_level :tech, :view
     
+    return not_found() unless @session[:accessible].include? BSON::ObjectId.from_string(@params['_id'])
+
+    db = Mongoid.database
+    j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "stat", "path", "type", "ident", "platform", "upgradable", "uninstalled", "deleted", "demo", "version", "counter", "configs"])
+    
+    ok(j.first)
+    
+=begin
     mongoid_query do
       item = Item.agents
         .any_in(_id: @session[:accessible], _kind: ['agent', 'factory'])
@@ -39,6 +57,7 @@ class AgentController < RESTController
       
       ok(item)
     end
+=end
   end
   
   def update
