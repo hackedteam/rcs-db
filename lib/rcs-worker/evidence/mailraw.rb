@@ -1,7 +1,10 @@
 require 'mail'
+require_relative 'single_evidence'
 
 module RCS
 module MailrawProcessing
+  extend SingleEvidence
+  
   def process
     mail = Mail.read_from_string(@info[:content])
     @info[:from] = mail.from.join(', ')

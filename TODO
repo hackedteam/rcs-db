@@ -10,6 +10,8 @@ TEST:
 
 HIGH PRIORITY:
 
+    add action in nssm to delete lock files, in case of restart after a crash
+
     check the TODOs in the code...
 
     dont' send config to backdoor too old

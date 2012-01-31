@@ -1,5 +1,9 @@
+require_relative 'single_evidence'
+
 module RCS
 module PrintProcessing
+  extend SingleEvidence
+  
   def process
     puts "PRINT: #{@info[:data]}"
   end

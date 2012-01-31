@@ -132,7 +132,8 @@ class InstanceProcessor
               # override original type
               evidence.info[:type] = evidence.type
               
-              store_evidence evidence
+              #store_evidence evidence
+              evidence.store
               
               processing_time = Time.now - start_time
               trace :info, "processed #{evidence.info[:type].upcase} in #{processing_time} sec"
