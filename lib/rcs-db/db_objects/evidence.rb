@@ -1,4 +1,5 @@
 require 'mongoid'
+require_relative '../shard'
 
 #module RCS
 #module DB
