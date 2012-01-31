@@ -72,6 +72,7 @@ class EvidenceController < RESTController
     target = agent.get_parent
     target.stat[:last_sync] = time
     target.stat[:last_child] = [agent[:_id]]
+    target.reset_dashboard
     target.save
 
     # update the stat of the target

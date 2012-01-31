@@ -76,7 +76,7 @@ class Item
   public
 
   def self.reset_dashboard
-    Item.where(_kind: 'agent').each {|i| i.reset_dashboard}
+    Item.any_in(_kind: ['agent', 'target']).each {|i| i.reset_dashboard}
   end
 
   def reset_dashboard
@@ -98,7 +98,9 @@ class Item
   def restat
     case self._kind
       when 'operation'
-        self.stat.size = 0; self.stat.grid_size = 0; self.stat.evidence = {}
+        self.stat.size = 0;
+        self.stat.grid_size = 0;
+        self.stat.evidence = {}
         targets = Item.where(_kind: 'target').also_in(path: [self._id])
         targets.each do |t|
           #self.stat.evidence.merge!(t.stat.evidence) {|k,o,n| o+n }
@@ -107,7 +109,9 @@ class Item
         end
         self.save
       when 'target'
-        self.stat.grid_size = 0; self.stat.evidence = {}
+        self.stat.grid_size = 0;
+        self.stat.evidence = {}
+        self.stat.dashboard = {}
         agents = Item.where(_kind: 'agent').also_in(path: [self._id])
         agents.each do |a|
           self.stat.evidence.merge!(a.stat.evidence) {|k,o,n| o+n }
@@ -116,10 +120,8 @@ class Item
         end
         db = Mongoid.database
         collection = db.collections.select {|c| c.name == Evidence.collection_name(self._id.to_s)}
-        unless collection.empty?
-          self.stat.size = collection.first.stats()['size'].to_i
-          self.save
-        end
+        self.stat.size = collection.first.stats()['size'].to_i unless collection.empty?
+        self.save
     end
   end
 
