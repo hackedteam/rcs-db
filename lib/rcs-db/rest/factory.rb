@@ -8,27 +8,25 @@ class FactoryController < RESTController
     
     filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
     filter ||= {}
-    
+
+    filter.merge!({_id: {"$in" => @session[:accessible]}, _kind: 'factory'})
+
     mongoid_query do
-      items = ::Item.factories
-        .where(filter)
-        .any_in(_id: @session[:accessible])
-        .only(:name, :desc, :status, :_kind, :path, :type, :ident)
-      
-      ok(items)
+      db = Mongoid.database
+      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident"])
+      ok(j)
     end
   end
   
   def show
     require_auth_level :tech, :view
-    
+
+    return not_found() unless @session[:accessible].include? BSON::ObjectId.from_string(@params['_id'])
+
     mongoid_query do
-      item = Item.factories
-        .any_in(_id: @session[:accessible])
-        .only(:name, :desc, :status, :_kind, :path, :ident, :counter, :configs, :logkey, :confkey)
-        .find(@params['_id'])
-      
-      ok(item)
+      db = Mongoid.database
+      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "path", "ident", "counter", "configs"])
+      ok(j.first)
     end
   end
   

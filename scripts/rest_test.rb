@@ -639,31 +639,30 @@ end
 
 # operations
 if false
-  #puts "operation.index" 
-  #res = http.request_get('/operation', {'Cookie' => cookie})
+  puts "operation.index" 
+  res = http.request_get('/operation', {'Cookie' => cookie})
   #puts res.body
-  #operations = JSON.parse(res.body)
-  #puts operations
-  #puts
+  operations = JSON.parse(res.body)
+  puts operations
+  puts
   
-  #puts "operation.show"
-  #res = http.request_get("/operation/#{operations.first['_id']}", {'Cookie' => cookie})
-  #operation = JSON.parse(res.body)
-  #puts operation
-  #puts 
-  
-  puts "operation.create"
-  operation_post = {
-    name: "test operation", 
-    desc: "this is a test operation", 
-    contact: "billg@microsoft.com"
-
-  }
-  res = http.request_post("/operation/create", operation_post.to_json, {'Cookie' => cookie})
-  #puts res.body
+  puts "operation.show"
+  res = http.request_get("/operation/#{operations.first['_id']}", {'Cookie' => cookie})
   operation = JSON.parse(res.body)
   puts operation
-  puts
+  puts 
+  
+  #puts "operation.create"
+  #operation_post = {
+  #  name: "test operation", 
+  #  desc: "this is a test operation", 
+  #  contact: "billg@microsoft.com"
+  #}
+  #res = http.request_post("/operation/create", operation_post.to_json, {'Cookie' => cookie})
+  #puts res.body
+  #operation = JSON.parse(res.body)
+  #puts operation
+  #puts
 
   # group.show
   #res = http.request_get("/group/4e8ac48b2afb65289500000b", {'Cookie' => cookie})
@@ -691,10 +690,10 @@ if false
   #puts res
   #puts
   
-  puts "operation.delete"
-  res = http.request_post("/operation/destroy", {_id: operation['_id']}.to_json, {'Cookie' => cookie})
-  puts res.body
-  puts
+  #puts "operation.delete"
+  #res = http.request_post("/operation/destroy", {_id: operation['_id']}.to_json, {'Cookie' => cookie})
+  #puts res.body
+  #puts
   
   # group.show
   #res = http.request_get("/group/4e8ac48b2afb65289500000b", {'Cookie' => cookie})
@@ -710,18 +709,19 @@ if false
 
   puts "target.index" 
   res = http.request_get('/target', {'Cookie' => cookie})
-  puts res.body
+  #puts res.body
   targets = JSON.parse(res.body)
   puts targets  
   puts
 
   puts "target.show"
   res = http.request_get("/target/#{targets.first['_id']}", {'Cookie' => cookie})
-  puts res.body
+  #puts res.body
   target = JSON.parse(res.body)
-  #puts target
+  puts target
   puts
-  
+
+=begin  
   puts "target.create"
   target_post = {
     name: "test target", 
@@ -751,10 +751,11 @@ if false
   res = http.request_post("/target/destroy", {_id: target['_id']}.to_json, {'Cookie' => cookie})
   puts res.body
   puts
+=end
 end
 
 # agents
-if true
+if false
 =begin
   res = http.request_get('/operation', {'Cookie' => cookie})
   operations = JSON.parse(res.body)
@@ -820,7 +821,7 @@ if true
 end
 
 # factories
-if false
+if true
   res = http.request_get('/operation', {'Cookie' => cookie})
   operations = JSON.parse(res.body)
   
@@ -829,17 +830,20 @@ if false
   
   puts "factory.index"
   res = http.request_get('/factory', {'Cookie' => cookie})
-  puts res.body
+  #puts res.body
   factories = JSON.parse(res.body)
+  puts factories
   puts "You got #{factories.size} factories."
   puts
   
   puts "factory.show"
   res = http.request_get("/factory/#{factories.first['_id']}", {'Cookie' => cookie})
-  puts res.body
+  #puts res.body
   factory = JSON.parse(res.body)
+  puts factory
   puts
 
+=begin
   puts "factory.create"
   factory_post = {
      name: "Uber Factory!",
@@ -889,6 +893,7 @@ if false
   res = http.request_post("/factory/destroy", {_id: factory['_id']}.to_json, {'Cookie' => cookie})
   puts res.body
   puts
+=end
 end
 
 # search
@@ -911,8 +916,6 @@ if false
   res = http.request_get("/search/#{rcs_10[0]["_id"]}", {'Cookie' => cookie})
   puts res.body
   puts
-  
-  
 end
 
 # upload

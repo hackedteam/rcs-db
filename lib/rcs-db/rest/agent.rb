@@ -20,22 +20,12 @@ class AgentController < RESTController
     filter ||= {}
 
     filter.merge!({_id: {"$in" => @session[:accessible]}, _kind: { "$in" => ['agent', 'factory']}})
-    
-    db = Mongoid.database
-    j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "platform", "uninstalled", "demo"])
 
-    ok(j)
-
-
-=begin
     mongoid_query do
-      items = ::Item.where(filter)
-        .any_in(_id: @session[:accessible], _kind: ['agent', 'factory'])
-        .only(:name, :desc, :status, :_kind, :path, :type, :stat, :ident, :platform, :uninstalled)
-        
-      ok(items)
+      db = Mongoid.database
+      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "platform", "uninstalled", "demo"])
+      ok(j)
     end
-=end
   end
   
   def show
@@ -43,21 +33,11 @@ class AgentController < RESTController
     
     return not_found() unless @session[:accessible].include? BSON::ObjectId.from_string(@params['_id'])
 
-    db = Mongoid.database
-    j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "stat", "path", "type", "ident", "platform", "upgradable", "uninstalled", "deleted", "demo", "version", "counter", "configs"])
-    
-    ok(j.first)
-    
-=begin
     mongoid_query do
-      item = Item.agents
-        .any_in(_id: @session[:accessible], _kind: ['agent', 'factory'])
-        .only(:name, :desc, :status, :_kind, :path, :stat, :ident, :instance, :platform, :upgradable, :uninstalled, :deleted, :demo, :type, :version, :counter, :configs)
-        .find(@params['_id'])
-      
-      ok(item)
+      db = Mongoid.database
+      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "stat", "path", "type", "ident", "platform", "upgradable", "uninstalled", "deleted", "demo", "version", "counter", "configs"])
+      ok(j.first)
     end
-=end
   end
   
   def update
