@@ -3,8 +3,11 @@ require 'em-http-request'
 
 require 'rcs-common/trace'
 
+require_relative 'single_evidence'
+
 module RCS
 module LocationProcessing
+  extend SingleEvidence
   include EventMachine::Protocols
   include RCS::Tracer
   

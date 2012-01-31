@@ -1,5 +1,9 @@
+require_relative 'single_evidence'
+
 module RCS
 module ApplicationProcessing
+  extend SingleEvidence
+  
   def process
     puts "APPLICATION: #{@info[:data]}"
   end

@@ -1,5 +1,9 @@
+require_relative 'single_evidence'
+
 module RCS
 module FileopenProcessing
+  extend SingleEvidence
+  
   def process
     puts "FILEOPEN: #{@info[:data]}"
   end

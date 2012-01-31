@@ -2,8 +2,10 @@ module RCS
 
 require_relative '../speex'
 require_relative '../audio_processor'
+require_relative 'audio_evidence'
 
 module CallProcessing
+  extend AudioEvidence
   
   attr_reader :wav
   
@@ -49,7 +51,7 @@ module CallProcessing
     @wav = wave_buffer
     
   end
-
+  
   def type
     :call
   end
