@@ -106,6 +106,7 @@ class AgentController < RESTController
         doc[:ident] = get_new_ident
         doc[:name] = @params['name']
         doc[:name] ||= doc[:ident]
+        doc[:type] = @params['type']
         doc[:counter] = 0
         seed = (0..11).inject('') {|x,y| x += alphabet[rand(0..alphabet.size-1)]}
         seed.setbyte(8, 46)
