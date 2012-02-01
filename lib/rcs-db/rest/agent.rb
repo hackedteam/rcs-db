@@ -106,6 +106,7 @@ class AgentController < RESTController
         doc[:ident] = get_new_ident
         doc[:name] = @params['name']
         doc[:name] ||= doc[:ident]
+        doc[:type] = @params['type']
         doc[:counter] = 0
         seed = (0..11).inject('') {|x,y| x += alphabet[rand(0..alphabet.size-1)]}
         seed.setbyte(8, 46)
@@ -323,7 +324,7 @@ class AgentController < RESTController
 
     # demo agent don't consume any license
     agent.status = 'open' if demo
-
+    
     # check the license to see if we have room for another agent
     if demo == false and LicenseManager.instance.burn_one_license(agent.type.to_sym, agent.platform.to_sym)
       agent.status = 'open'
