@@ -30,7 +30,7 @@ class ShardController < RESTController
     # take the peer address as host if requested automatic discovery
     @params['host'] = @request[:peer] if @params['host'] == 'auto'
     
-    output = Shard.create "#{@params['host']}:27018"
+    output = Shard.create "#{@params['host']}"
     return ok(output)
   end
 

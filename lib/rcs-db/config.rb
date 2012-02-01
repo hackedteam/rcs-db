@@ -28,7 +28,8 @@ class Config
                     'LISTENING_PORT' => 443,
                     'HB_INTERVAL' => 30,
                     'WORKER_PORT' => 5150,
-                    'BACKUP_DIR' => 'backup'}
+                    'BACKUP_DIR' => 'backup',
+                    'SHARD' => 'shard0000'}
 
   attr_reader :global
 
@@ -122,13 +123,13 @@ class Config
       return 0
     end
 
+    # load the current config
+    load_from_file
+
     if options[:shard]
       add_shard options
       return 0
     end
-
-    # load the current config
-    load_from_file
 
     trace :info, ""
     trace :info, "Previous configuration:"
@@ -215,6 +216,12 @@ class Config
     # send the request
     res = http.request_post('/shard/create', {host: options[:shard]}.to_json, {'Cookie' => cookie})
     puts res.body
+    shard = JSON.parse(res.body)
+
+    @global['SHARD'] = shard['shardAdded']
+
+    # save the configuration
+    safe_to_file
 
     # logout
     http.request_post('/auth/logout', nil, {'Cookie' => cookie})
