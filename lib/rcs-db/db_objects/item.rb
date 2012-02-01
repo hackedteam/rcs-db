@@ -143,15 +143,17 @@ class Item
     agent.seed = self[:seed]
 
     # clone the factory's config
-    fc = self[:configs].first
+    if self[:configs].first
+      fc = self[:configs].first
 
-    nc = ::Configuration.new
-    nc.user = fc['user']
-    nc.desc = fc['desc']
-    nc.config = fc['config']
-    nc.saved = Time.now.getutc.to_i
+      nc = ::Configuration.new
+      nc.user = fc['user']
+      nc.desc = fc['desc']
+      nc.config = fc['config']
+      nc.saved = Time.now.getutc.to_i
 
-    agent.configs = [ nc ]
+      agent.configs = [ nc ]
+    end
 
     ns = ::Stat.new
     ns.evidence = {}

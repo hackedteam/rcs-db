@@ -323,7 +323,7 @@ class AgentController < RESTController
 
     # demo agent don't consume any license
     agent.status = 'open' if demo
-
+    
     # check the license to see if we have room for another agent
     if demo == false and LicenseManager.instance.burn_one_license(agent.type.to_sym, agent.platform.to_sym)
       agent.status = 'open'
