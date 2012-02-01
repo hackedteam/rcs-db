@@ -166,37 +166,6 @@ class InstanceProcessor
     "instance #{@agent['instance']}: #{@evidences.size}"
   end
   
-  def store_evidence(evidence)
-    
-    # retrieve the target and the dynamic collection for the evidence
-    agent = ::Item.agents.where({instance: evidence.info[:instance], ident: evidence.info[:ident]}).first
-    agent.add_default_filesystem_requests
-    target = agent.get_parent
-    
-    ev = ::Evidence.dynamic_new target[:_id].to_s
-    
-    ev.item = [ agent[:_id] ]
-    ev.type = evidence.info[:type]
-    
-    ev.acquired = evidence.info[:acquired].to_i
-    ev.received = evidence.info[:received].to_i
-    ev.relevance = 1
-    ev.blotter = false
-    ev.note = ""
-    
-    ev.data = evidence.info[:data]
-    
-    # save the binary data (if any)
-    unless evidence.info[:grid_content].nil?
-      ev.data[:_grid_size] = evidence.info[:grid_content].bytesize
-      ev.data[:_grid] = RCS::DB::GridFS.put(evidence.info[:grid_content], {filename: agent[:_id].to_s}, target[:_id].to_s) unless evidence.info[:grid_content].nil?
-    end
-
-    ev.save
-    
-    trace :debug, "saved evidence #{ev._id}"
-  end
-  
 end
 
 end # ::Worker

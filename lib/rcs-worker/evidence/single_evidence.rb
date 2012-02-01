@@ -15,15 +15,12 @@ module SingleEvidence
   
   module InstanceMethods
     def get_agent
-      ::Item.agents.where({instance: info[:instance]}).first
+      ::Item.agents.where({instance: info[:instance], ident: info[:ident]}).first
     end
-
+    
     def store
       agent = get_agent
-      trace :debug, "found agent #{agent._id} for instance #{info[:instance]}"
-      
       target = agent.get_parent
-      trace :debug, "found target #{target._id} for agent #{agent._id}"
       
       ev = ::Evidence.dynamic_new target[:_id].to_s
       
