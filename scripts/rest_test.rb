@@ -821,7 +821,7 @@ if false
 end
 
 # factories
-if true
+if false
   res = http.request_get('/operation', {'Cookie' => cookie})
   operations = JSON.parse(res.body)
   
@@ -1158,7 +1158,7 @@ if false
   
 end
 
-# moving...
+# moving target...
 if false
   puts 'target.move (to 2)'
   request = {:_id => '4f214b8c2afb65821100006c', :operation => '4f214b8c2afb658211000032'}      
@@ -1192,6 +1192,33 @@ if false
   res = http.request_get("/factory/4f214b8c2afb6582110000c9", {'Cookie' => cookie})
   factory = JSON.parse(res.body)
   puts factory['path'].inspect
+  puts
+end
+
+# moving agent...
+if false
+  agent_id = '4f28003c2afb65cf470000cb'
+
+  puts 'agent.move (to 2)'
+  request = {:_id => agent_id, :target => '4f28003c2afb65cf4700006e'}      
+  res = http.request_post('/agent/move', request.to_json, {'Cookie' => cookie})
+  puts res.body
+
+  puts "agent.show"
+  res = http.request_get("/agent/#{agent_id}", {'Cookie' => cookie})
+  target = JSON.parse(res.body)
+  puts target['path'].inspect
+  puts
+  
+  puts 'agent.move (to 1)'
+  request = {:_id => agent_id, :target => '4f28003c2afb65cf4700006c'}      
+  res = http.request_post('/agent/move', request.to_json, {'Cookie' => cookie})
+  puts res.body
+
+  puts "agent.show"
+  res = http.request_get("/agent/#{agent_id}", {'Cookie' => cookie})
+  target = JSON.parse(res.body)
+  puts target['path'].inspect
   puts
 end
 

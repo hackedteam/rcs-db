@@ -92,7 +92,7 @@ class CollectorController < RESTController
 
       return not_found if collector.configured
 
-      #TODO: implement config retrieval
+      # TODO: implement config retrieval
 
       # reset the flag for the "configuration needed"
       collector.configured = true

@@ -66,13 +66,19 @@ class Evidence
           agent.stat.evidence ||= {}
           agent.stat.evidence[self.type] ||= 0
           agent.stat.evidence[self.type] -= 1
+          agent.stat.dashboard ||= {}
+          agent.stat.dashboard[self.type] ||= 0
+          agent.stat.dashboard[self.type] -= 1
           agent.stat.size -= self.data[:_grid_size] unless self.data[:_grid].nil?
           agent.stat.size -= Mongoid.database.collection("#{Evidence.collection_name(target)}").stats()['avgObjSize'].to_i
           agent.stat.grid_size -= self.data[:_grid_size] unless self.data[:_grid].nil?
           agent.save
           
           # drop the file (if any) in grid
-          GridFS.delete(self.data[:_grid].first, agent.path.last.to_s) unless self.data[:_grid].nil?
+          RCS::DB::GridFS.delete(self.data['_grid'], agent.path.last.to_s) unless self.data['_grid'].nil?
+
+          # update the target of this agent
+          agent.get_parent.restat
         end
       end
     END
@@ -89,9 +95,20 @@ class Evidence
     return klass
   end
 
-  def self.dynamic_new(id)
-    klass = self.collection_class(id)
+  def self.dynamic_new(target_id)
+    klass = self.collection_class(target_id)
     return klass.new
+  end
+
+  def self.deep_copy(src, dst)
+    dst.acquired = src.acquired
+    dst.received = src.received
+    dst.blotter = src.blotter
+    dst.data = src.data
+    dst.item = src.item
+    dst.note = src.note
+    dst.relevance = src.relevance
+    dst.type = src.type
   end
 
 end
