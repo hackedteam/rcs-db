@@ -6,20 +6,16 @@ module MailrawProcessing
   extend SingleEvidence
   
   def process
-    mail = Mail.read_from_string(@info[:content])
-    @info[:from] = mail.from.join(', ')
-    @info[:to] = mail.to.join(', ')
-    @info[:to] ||= ''
-    @info[:sent_date] = mail.date.to_s
-    @info[:subject] = mail.subject.to_s
-    @info[:body] = mail.body.decoded
+    mail = Mail.read_from_string(@info[:grid_content])
     
-    #puts "From:    #{@info[:from]}"
-    #puts "To:      #{@info[:to]}"
-    #puts "Sent:    #{@info[:sent_date]}"
-    #puts "Subject: #{@info[:subject]}"
+    @info[:data][:from] = mail.from
+    @info[:data][:to] = mail.to
+    @info[:data][:to] ||= ''
+    @info[:data][:sent_date] = mail.date.to_s
+    @info[:data][:subject] = mail.subject.to_s
+    @info[:data][:body] = mail.body.decoded
   end
-
+  
   def type
     :mail
   end
