@@ -6,6 +6,7 @@ require 'rcs-common/trace'
 
 # from System
 require 'singleton'
+require 'thread'
 
 module RCS
 module Worker
@@ -16,19 +17,28 @@ class QueueManager
   
   def initialize
     @instances = {}
+    @semaphore = Mutex.new
   end
   
   def queue(instance, ident, evidence)
     return nil if instance.nil? or ident.nil? or evidence.nil?
-    
-    idx = "#{ident}:#{instance}"
-    
-    begin
-      @instances[idx] ||= InstanceProcessor.new instance, ident
-      @instances[idx].queue(evidence)
-    rescue Exception => e
-      trace :error, e.message
-      return nil
+
+    @semaphore.synchronize do
+      idx = "#{ident}:#{instance}"
+
+      trace :debug, "Queueing evidence #{evidence} for processor #{idx}"
+
+      begin
+        puts "QUEUEMANAGER #{@instances}"
+        if @instances[idx].nil?
+          @instances[idx] = InstanceProcessor.new instance, ident
+          puts "NEW INSTANCE PROCESSOR #{idx}"
+        end
+        @instances[idx].queue(evidence)
+      rescue Exception => e
+        trace :error, e.message
+        return nil
+      end
     end
   end
   
