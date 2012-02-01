@@ -1,15 +1,15 @@
 require_relative 'single_evidence'
 
 module RCS
-module ChatProcessing
+module ChatskypeProcessing
   extend SingleEvidence
   
   def process
     puts "CHAT: #{@info[:data]}"
   end
-
+  
   def type
     :chat
   end
-end # ChatProcessing
+end # ChatskypeProcessing
 end # RCS

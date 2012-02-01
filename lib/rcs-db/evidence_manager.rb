@@ -4,6 +4,7 @@ require 'rcs-common/fixnum'
 
 require_relative 'db'
 require_relative 'grid'
+require_relative 'evidence_dispatcher'
 
 module RCS
 module DB
@@ -11,14 +12,16 @@ module DB
 class EvidenceManager
   include Singleton
   include RCS::Tracer
-
+  
   SYNC_IDLE = 0
   SYNC_IN_PROGRESS = 1
   SYNC_TIMEOUTED = 2
   SYNC_PROCESSING = 3
-
+  
   def store_evidence(ident, instance, content)
-    return GridFS.put(content, {:filename => "#{ident}:#{instance}"}, "evidence")
+    shard_id = EvidenceDispatcher.instance.shard_id ident, instance
+    trace :debug, "Storing evidence #{ident}:#{instance} to shard #{shard_id}"
+    return GridFS.put(content, {filename: "#{ident}:#{instance}", metadata: {shard: shard_id}}, "evidence"), shard_id
   end
   
   def run(options)

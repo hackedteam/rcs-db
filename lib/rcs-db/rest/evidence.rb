@@ -25,21 +25,21 @@ class EvidenceController < RESTController
   # the content is passed as body of the request
   def create
     require_auth_level :server, :tech
-
+    
     ident = @params['_id'].slice(0..13)
     instance = @params['_id'].slice(15..-1)
-
+    
     # save the evidence in the db
     begin
-      id = RCS::DB::EvidenceManager.instance.store_evidence ident, instance, @request[:content]['content']
+      id, shard_id = RCS::DB::EvidenceManager.instance.store_evidence ident, instance, @request[:content]['content']
       # notify the worker
-      RCS::DB::EvidenceDispatcher.instance.notify id, ident, instance
+      RCS::DB::EvidenceDispatcher.instance.notify id, shard_id, ident, instance
     rescue Exception => e
       trace :warn, "Cannot save evidence: #{e.message}"
       return not_found
     end
     
-    trace :info, "Evidence saved. Dispatching evidence of [#{ident}::#{instance}][#{id}]"
+    trace :info, "Evidence [#{ident}::#{instance}][#{id}] saved and dispatched to shard #{shard_id}"
     return ok({:bytes => @request[:content]['content'].size})
   end
   

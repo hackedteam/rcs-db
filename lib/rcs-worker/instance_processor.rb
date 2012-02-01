@@ -169,13 +169,8 @@ class InstanceProcessor
         
     # retrieve the target and the dynamic collection for the evidence
     agent = ::Item.agents.where({instance: evidence.info[:instance]}).first
-
-    trace :debug, "found agent #{agent._id} for instance #{evidence.info[:instance]}"
-
     target = agent.get_parent
-    
-    trace :debug, "found target #{target._id} for agent #{agent._id}"
-    
+        
     ev = ::Evidence.dynamic_new target[:_id].to_s
     
     ev.item = [ agent[:_id] ]

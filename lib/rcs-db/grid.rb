@@ -17,11 +17,11 @@ class GridFS
   DEFAULT_GRID_NAME = 'grid'
 
   class << self
-
+    
     def collection_name(coll)
       coll.nil? ? DEFAULT_GRID_NAME : DEFAULT_GRID_NAME + '.' + coll
     end
-
+    
     def put(content, opts = {}, collection = nil)
       begin
         db = Mongoid.database
@@ -45,6 +45,7 @@ class GridFS
         grid = Mongo::Grid.new db, collection_name(collection)
         return grid.get id
       rescue Exception => e
+        trace :error, e.message
         trace :error, "Cannot get content from the Grid: #{collection_name(collection)}"
         return nil
       end
