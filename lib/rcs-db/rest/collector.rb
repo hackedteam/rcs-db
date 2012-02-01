@@ -102,7 +102,7 @@ class CollectorController < RESTController
     end
   end
 
-  def logs
+  def log
     mongoid_query do
       collector = Collector.find(@params['_id'])
 

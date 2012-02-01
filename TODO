@@ -1,6 +1,5 @@
 TEST:
     performance
-        to_json is INSANELY SLOW
 
     create an item, use it in recent, dashboard, alert and nia rules, then delete it and check accordingly
 
@@ -15,6 +14,8 @@ HIGH PRIORITY:
     check the TODOs in the code...
 
     dont' send config to backdoor too old
+
+    move evidence on agent move
 
     anonymizer configuration
 

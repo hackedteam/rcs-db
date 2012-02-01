@@ -100,10 +100,8 @@ class Item
       when 'operation'
         self.stat.size = 0;
         self.stat.grid_size = 0;
-        self.stat.evidence = {}
         targets = Item.where(_kind: 'target').also_in(path: [self._id])
         targets.each do |t|
-          #self.stat.evidence.merge!(t.stat.evidence) {|k,o,n| o+n }
           self.stat.size += t.stat.size
           self.stat.grid_size += t.stat.grid_size
         end
