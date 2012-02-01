@@ -120,6 +120,7 @@ class InstanceProcessor
               
               # store agent instance in evidence (used when storing into db)
               evidence.info[:instance] = @agent['instance']
+              evidence.info[:ident] = @agent['ident']
               
               trace :debug, "Processing evidence of type #{evidence.info[:type]}"
               
@@ -166,11 +167,12 @@ class InstanceProcessor
   end
   
   def store_evidence(evidence)
-        
+    
     # retrieve the target and the dynamic collection for the evidence
-    agent = ::Item.agents.where({instance: evidence.info[:instance]}).first
+    agent = ::Item.agents.where({instance: evidence.info[:instance], ident: evidence.info[:ident]}).first
+    agent.add_default_filesystem_requests
     target = agent.get_parent
-        
+    
     ev = ::Evidence.dynamic_new target[:_id].to_s
     
     ev.item = [ agent[:_id] ]
