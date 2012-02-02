@@ -128,7 +128,7 @@ class LogMigration
     ev.relevance = log[:tag]
     ev.blotter = log[:blotter_id].nil? ? false : true
     ev.note = log[:content] unless log[:content].nil?
-    ev.agent_id = [ agent_id ]
+    ev.agent_id = agent_id.to_s
 
     # parse log specific data
     ev.data = migrate_data(log)

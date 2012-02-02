@@ -24,7 +24,7 @@ module SingleEvidence
       
       ev = ::Evidence.dynamic_new target[:_id].to_s
       
-      ev.agent_id = [ agent[:_id] ]
+      ev.agent_id = agent[:_id].to_s
       ev.type = info[:type]
       
       ev.acquired = info[:acquired].to_i

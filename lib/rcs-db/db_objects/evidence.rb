@@ -22,7 +22,7 @@ class Evidence
         field :relevance, type: Integer
         field :blotter, type: Boolean
         field :note, type: String
-        field :agent_id, type: Array         # agent BSON_ID
+        field :agent_id, type: String       # agent BSON_ID
         field :data, type: Hash
     
         store_in Evidence.collection_name('#{target}')
@@ -45,7 +45,7 @@ class Evidence
 
         def create_callback
           return if STAT_EXCLUSION.include? self.type
-          agent = Item.find self.agent_id.first
+          agent = Item.find self.agent_id
           agent.stat.evidence ||= {}
           agent.stat.evidence[self.type] ||= 0
           agent.stat.evidence[self.type] += 1
@@ -62,7 +62,7 @@ class Evidence
 
         def destroy_callback
           return if STAT_EXCLUSION.include? self.type
-          agent = Item.find self.agent_id.first
+          agent = Item.find self.agent_id
           agent.stat.evidence ||= {}
           agent.stat.evidence[self.type] ||= 0
           agent.stat.evidence[self.type] -= 1

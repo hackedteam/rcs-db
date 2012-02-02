@@ -1023,7 +1023,7 @@ end
 if true
   # evidence.index
   filter = {target: '4f28003c2afb65cf4700006c'}.to_json
-  res = http.request_get(URI.escape("/evidence?filter=#{filter}&startIndex=0&numItems=10"), {'Cookie' => cookie})
+  res = http.request_get(URI.escape("/evidence?filter=#{filter}&startIndex=0&numItems=20"), {'Cookie' => cookie})
   puts "evidence.index"
   puts res.body
   puts
