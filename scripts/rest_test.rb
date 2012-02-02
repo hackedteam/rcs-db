@@ -1020,20 +1020,20 @@ if false
 end
   
 # evidence
-if false
+if true
   # evidence.index
-  filter = {target: '4ea526392afb656f0600003e'}.to_json
+  filter = {target: '4f28003c2afb65cf4700006c'}.to_json
   res = http.request_get(URI.escape("/evidence?filter=#{filter}&startIndex=0&numItems=10"), {'Cookie' => cookie})
   puts "evidence.index"
-  puts res
+  puts res.body
   puts
   
   # evidence.index
-  filter = {target: '4ea526392afb656f0600003e', agent: '4ea526392afb656f06000133', type: ['keylog']}.to_json
-  res = http.request_get(URI.escape("/evidence?filter=#{filter}&startIndex=0&numItems=10"), {'Cookie' => cookie})
-  puts "evidence.index"
-  puts res
-  puts
+  #filter = {target: '4ea526392afb656f0600003e', agent: '4ea526392afb656f06000133', type: ['keylog']}.to_json
+  #res = http.request_get(URI.escape("/evidence?filter=#{filter}&startIndex=0&numItems=10"), {'Cookie' => cookie})
+  #puts "evidence.index"
+  #puts res
+  #puts
 
 end
     

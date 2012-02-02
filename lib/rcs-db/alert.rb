@@ -47,7 +47,7 @@ class Alerting
 
     def new_evidence(evidence)
       ::Alert.where(:enabled => true, :action => 'EVIDENCE').each do |alert|
-        agent = ::Item.find(evidence.item.first)
+        agent = ::Item.find(evidence.agent_id.first)
         # skip non matching agents
         next unless match_path(alert, agent)
         # skip non matching evidence type

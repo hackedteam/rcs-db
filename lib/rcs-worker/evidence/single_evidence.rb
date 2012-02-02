@@ -24,12 +24,12 @@ module SingleEvidence
       
       ev = ::Evidence.dynamic_new target[:_id].to_s
       
-      ev.item = [ agent[:_id] ]
+      ev.agent_id = [ agent[:_id] ]
       ev.type = info[:type]
       
       ev.acquired = info[:acquired].to_i
       ev.received = info[:received].to_i
-      ev.relevance = 1
+      ev.relevance = 0
       ev.blotter = false
       ev.note = ""
       
