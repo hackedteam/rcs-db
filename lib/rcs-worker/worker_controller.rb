@@ -18,13 +18,9 @@ class WorkerController
   end
   
   def post
-    
     return bad_request("no ids found.") if @params['ids'].nil?
 
-    trace :debug, "PARAMS #{@params}"
-
     @params['ids'].each do |evidence|
-      trace :debug, "QUEUE #{evidence}"
       QueueManager.instance.queue evidence['instance'], evidence['ident'], evidence['id']
     end
     ok('OK')
