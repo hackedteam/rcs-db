@@ -44,6 +44,7 @@ class AlertController < RESTController
       na = ::Alert.new
 
       na.path = @params['path'].collect! {|x| BSON::ObjectId(x)} if @params['path'].class == Array
+      na.action = @params['action']
       na.evidence = @params['evidence']
       na.keywords = @params['keywords']
       na.enabled = @params['enabled']
