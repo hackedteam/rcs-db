@@ -58,10 +58,11 @@ class Build
     @core = GridFS.to_tmp core[:_grid].first
     trace :debug, "Build: loaded core: #{@platform} #{core.version} #{File.size(@core)} bytes"
 
-    @factory = ::Item.where({_kind: 'factory', _id: params['_id']}).first
-    raise "Factory #{params['ident']} not found" if @factory.nil?
-    
-    trace :debug, "Build: loaded factory: #{@factory.name}"
+    if params
+      @factory = ::Item.where({_kind: 'factory', _id: params['_id']}).first
+      raise "Factory #{params['ident']} not found" if @factory.nil?
+      trace :debug, "Build: loaded factory: #{@factory.name}"
+    end
   end
 
   def unpack

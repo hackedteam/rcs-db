@@ -23,11 +23,8 @@ MEDIUM PRIORITY:
         - call
         - mic
         - calendar
-        - addressbook
         - mail
         - file
-        - filesystem
-        - location (integrate with REST query)
 
     get_accessible should be faster
 

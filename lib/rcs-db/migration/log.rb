@@ -128,7 +128,7 @@ class LogMigration
     ev.relevance = log[:tag]
     ev.blotter = log[:blotter_id].nil? ? false : true
     ev.note = log[:content] unless log[:content].nil?
-    ev.item = [ agent_id ]
+    ev.agent_id = agent_id.to_s
 
     # parse log specific data
     ev.data = migrate_data(log)
@@ -204,7 +204,7 @@ class LogMigration
             conversion = {:latitude => :latitude, :longitude => :longitude, :varchar2 => :type}
         end
       when 'MAIL', 'MMS', 'SMS'
-        conversion = {:varchar1 => :from, :varchar2 => :to, :varchar3 => :subject, :int1 => :size, :int2 => :status, :longtext1 => :content}
+        conversion = {:varchar1 => :from, :varchar2 => :rcpt, :varchar3 => :subject, :int1 => :size, :int2 => :status, :longtext1 => :content}
       when 'MIC'
         conversion = {:int1 => :duration, :int3 => :status}
       when 'MOUSE'
