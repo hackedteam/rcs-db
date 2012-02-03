@@ -220,7 +220,12 @@ end
 module SingleFileTaskType
   include BaseTask
   include FileTask
-  
+
+  def initialize(type, file_name, params)
+    base_init(type, params)
+    file_init(file_name)
+  end
+
   def run
     process = Proc.new do
       begin
@@ -253,7 +258,12 @@ end
 module MultiFileTaskType
   include BaseTask
   include FileTask
-  
+
+  def initialize(type, file_name, params)
+    base_init(type, params)
+    file_init(file_name)
+  end
+
   def run
     process = Proc.new do
       # temporary file is our task id
