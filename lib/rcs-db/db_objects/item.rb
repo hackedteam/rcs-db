@@ -69,6 +69,8 @@ class Item
 
   after_destroy :destroy_callback
 
+  before_update :status_change
+
   before_create :do_checksum
   before_update :do_checksum
   before_save :do_checksum
@@ -221,7 +223,7 @@ class Item
         Item.where({_kind: 'target', path: [ self._id ]}).each {|targ| targ.destroy}
       when 'target'
         # destroy all the agents of this target
-        Item.where({_kind: 'agent'}).also_in({path: [ self._id ]}).each {|agent| agent.destroy}
+        Item.any_in({_kind: ['agent', 'factory']}).also_in({path: [ self._id ]}).each {|agent| agent.destroy}
         # drop the evidence collection of this target
         Mongoid.database.drop_collection Evidence.collection_name(self._id.to_s)
       when 'agent'
@@ -229,6 +231,24 @@ class Item
         Evidence.collection_class(self.path.last).where(item: self._id).each {|ev| ev.destroy}
         # drop all grid items
         RCS::DB::GridFS.delete_by_agent(self._id.to_s, self.path.last.to_s)
+    end
+  end
+
+  def status_change
+    return if self.status == 'open'
+
+    # cascade the closed status to all the descendants
+    case self._kind
+      when 'operation'
+        Item.where({_kind: 'target', path: [ self._id ]}).each do |target|
+          target.status = 'closed'
+          target.save
+        end
+      when 'target'
+        Item.any_in({_kind: ['agent', 'factory']}).also_in({path: [ self._id ]}).each do |agent|
+          agent.status = 'closed'
+          agent.save
+        end
     end
   end
 

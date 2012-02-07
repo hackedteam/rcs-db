@@ -15,8 +15,8 @@ class AlertController < RESTController
       # use reload to avoid cache
       user = @session[:user].reload
 
-      alerts = user.alerts
-
+      alerts = user.alerts.asc(:created_at)
+      
       return ok(alerts)
     end
   end

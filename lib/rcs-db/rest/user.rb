@@ -101,7 +101,7 @@ class UserController < RESTController
       
       user.recent_ids.insert(0, BSON::ObjectId(@params['item_id']))
       user.recent_ids.uniq!
-      user.recent_ids = user.recent_ids[0..9]
+      user.recent_ids = user.recent_ids[0..4]
       user.save
 
       return ok(user)
