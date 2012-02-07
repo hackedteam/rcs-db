@@ -99,6 +99,8 @@ Section "Update Section" SecUpdate
    SimpleSC::StopService "RCSMasterConfig" 1
    SimpleSC::StopService "RCSShard" 1
 
+	 sleep 3000
+	 
    DetailPrint "done"
    
    SetDetailsPrint "textonly"
@@ -167,6 +169,7 @@ Section "Install Section" SecInstall
 
     SetOutPath "$INSTDIR\DB\data\config"
     File /r "data\config\.keep"
+    File /r "data\config\logo.png"
 
     SetOutPath "$INSTDIR\DB\lib\rcs-db-release"
     ###File /r "lib\rcs-db-release\*.*"
@@ -260,10 +263,13 @@ Section "Install Section" SecInstall
     
     DetailPrint "Starting RCS Master Config..."
     SimpleSC::StartService "RCSMasterConfig" ""
+    sleep 3000
     DetailPrint "Starting RCS Master Router..."
     SimpleSC::StartService "RCSMasterRouter" ""
+    sleep 3000
     DetailPrint "Starting RCS Shard..."
     SimpleSC::StartService "RCSShard" ""
+    sleep 3000
     DetailPrint "Starting RCS DB..."
     SimpleSC::StartService "RCSDB" ""
     DetailPrint "Starting RCS Worker..."
@@ -306,6 +312,7 @@ Section "Install Section" SecInstall
       
       DetailPrint "Starting RCS Shard..."
     	SimpleSC::StartService "RCSShard" ""
+    	sleep 3000
       DetailPrint "Starting RCS Worker..."
       SimpleSC::StartService "RCSWorker" ""
     
@@ -419,16 +426,22 @@ Section Uninstall
   
   DetailPrint "Stopping RCS Services..."
   SimpleSC::StopService "RCSCollector" 1
+  sleep 2000
   SimpleSC::RemoveService "RCSCollector"
   SimpleSC::StopService "RCSWorker" 1
+  sleep 2000
   SimpleSC::RemoveService "RCSWorker"
   SimpleSC::StopService "RCSDB" 1
+  sleep 2000
   SimpleSC::RemoveService "RCSDB"
   SimpleSC::StopService "RCSMasterRouter" 1
+  sleep 2000
   SimpleSC::RemoveService "RCSMasterRouter"
   SimpleSC::StopService "RCSMasterConfig" 1
+  sleep 2000
   SimpleSC::RemoveService "RCSMasterConfig"
   SimpleSC::StopService "RCSShard" 1
+  sleep 2000
   SimpleSC::RemoveService "RCSShard"
 
   DetailPrint "done"
