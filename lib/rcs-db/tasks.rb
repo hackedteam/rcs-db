@@ -93,7 +93,7 @@ module BaseTask
 
   def error
     @status = :error
-    trace :debug, "Task #{@_id} ERROR"
+    trace :debug, "Task #{@_id} ERROR [#{@description}]"
   end
 
   def downloading
@@ -223,7 +223,7 @@ module SingleFileTaskType
 
   def initialize(type, file_name, params)
     base_init(type, params)
-    file_init(file_name)
+    file_init(file_name + ".tar.gz")
   end
 
   def run
@@ -232,19 +232,18 @@ module SingleFileTaskType
         #identify where results should be stored
         destination = File.new(Config.instance.temp(@_id), 'wb+')
         tmp_file = File.new(Config.instance.temp("#{@_id}_temp"), 'wb+')
-        compressor = Task.compressor_class.new destination
-        @generator.next_entry do |chunk|
+        compressor = FileTask.compressor_class.new destination
+        next_entry do |chunk|
           break if finished?
-          @desc = @generator.description
           tmp_file.write chunk
           step
         end
-        compressor.add_file(tmp_file.path, @generator.filename)
+        compressor.add_file(tmp_file.path, @file_name)
         @resource[:size] = File.size(destination.path)
         download_available
         trace :info, "Task #{@_id} completed."
       rescue Exception => e
-        @desc = "ERROR: #{e.message}"
+        @description = "ERROR: #{e.message}"
         error
       ensure
         compressor.close
@@ -258,10 +257,10 @@ end
 module MultiFileTaskType
   include BaseTask
   include FileTask
-
+  
   def initialize(type, file_name, params)
     base_init(type, params)
-    file_init(file_name)
+    file_init(file_name + ".tar.gz")
   end
 
   def run
@@ -269,12 +268,11 @@ module MultiFileTaskType
       # temporary file is our task id
       begin
         tmpfile = Temporary.file('temp', @_id)
-        compressor = Task.compressor_class.new tmpfile
-        @generator.next_entry do |type, entry, content|
+        compressor = FileTask.compressor_class.new tmpfile
+        next_entry do |type, entry, content|
 
           break if finished?
 
-          @desc = @generator.description
           case type
             when 'stream'
               compressor.add_stream entry, content
@@ -287,7 +285,7 @@ module MultiFileTaskType
         download_available
         trace :info, "Task #{@_id} completed."
       rescue Exception => e
-        @desc = "ERROR: #{e.message}"
+        @description = "ERROR: #{e.message}"
         error
       ensure
         compressor.close

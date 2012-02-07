@@ -14,10 +14,12 @@ module MailrawProcessing
     @info[:data][:sent_date] = mail.date.to_s
     @info[:data][:subject] = mail.subject.to_s
     @info[:data][:body] = mail.body.decoded
+    
+    @info[:data][:type] = 'mail'
   end
   
   def type
-    :mail
+    :message
   end
 end # ::Mailraw
 end # ::RCS
