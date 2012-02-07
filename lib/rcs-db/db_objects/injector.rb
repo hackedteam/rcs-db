@@ -40,7 +40,7 @@ class Injector
   def destroy_callback
     Mongoid.database.drop_collection CappedLog.collection_name(self._id.to_s)
     # make sure to delete the binary config in the grid
-    GridFS.delete self[:_grid].first
+    RCS::DB::GridFS.delete self[:_grid].first unless self[:_grid].nil?
   end
 
   public
