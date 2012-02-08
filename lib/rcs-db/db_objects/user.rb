@@ -18,7 +18,7 @@ class User
   field :locale, type: String
   field :timezone, type: Integer
   field :dashboard_ids, type: Array
-  field :recent_ids, type: Array
+  field :recent_ids, type: Array, default: []
   
   validates_uniqueness_of :name, :message => "USER_ALREADY_EXISTS"
   

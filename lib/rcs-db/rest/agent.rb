@@ -181,8 +181,9 @@ class AgentController < RESTController
 
   def get_new_ident
     global = ::Item.where({_kind: 'global'}).first
-    global ||= ::Item.new({_kind: 'global', counter: 0}).save
+    global = ::Item.new({_kind: 'global', counter: 0}) if global.nil?
     global.inc(:counter, 1)
+    global.save
     "RCS_#{global.counter.to_s.rjust(10, "0")}"
   end
 
