@@ -214,7 +214,7 @@ class AgentController < RESTController
       end
       
       Audit.log :actor => @session[:user][:name],
-                :action => "#{agent._kind}.add_config",
+                :action => "#{agent._kind}.config",
                 (agent._kind + '_name').to_sym => @params['name'],
                 :desc => "Saved configuration for agent '#{agent['name']}'"
       

