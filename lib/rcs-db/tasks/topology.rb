@@ -8,11 +8,11 @@ class TopologyTask
   include RCS::Tracer
 
   def total
-    ::Collector.where({type: 'remote'}).count + 2
+    ::Collector.where({type: 'remote'}).count + 1
   end
   
   def next_entry
-    yield description "Pushing topology"
+    yield @description = "Pushing topology"
 
     # mark all the anonymizers as "not configured"
     ::Collector.where({type: 'remote'}).each do |anon|
@@ -22,7 +22,7 @@ class TopologyTask
 
     ::Collector.where({type: 'remote'}).each do |anon|
 
-      yield description "Configuring '#{anon.name}'"
+      yield @description = "Configuring '#{anon.name}'"
 
       # skip detached anonymizers
       next if anon.next.first.nil? and anon.prev.first.nil?
@@ -30,7 +30,7 @@ class TopologyTask
       Frontend.rnc_push(anon.address)
     end
     
-    description "Topology applied successfully"
+    @description = "Topology applied successfully"
   end
 end
 

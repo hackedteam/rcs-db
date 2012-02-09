@@ -42,6 +42,12 @@ class Status
       monitor[:disk] = stats[:disk]
       monitor[:time] = Time.now.getutc.to_i
       monitor[:type] = type
+
+      # check the low resource conditions
+      if (status == 'OK' and (monitor[:disk] <= 15 or monitor[:cpu] >= 85 or monitor[:pcpu] >= 85))
+        status = 'WARN'
+      end
+
       case(status)
         when 'OK'
           # notify the restoration of a component
@@ -68,6 +74,7 @@ class Status
           m[:status] = ERROR
           trace :warn, "Component #{m[:name]} is not responding, marking failed..."
           RCS::DB::Audit.log :actor => '<system>', :action => 'alert', :desc => "Component #{m[:name]} is not responding, marking failed..."
+          m.info = 'Not sending status update for more than 2 minutes'
           m.save
           # notify the alerting system
           RCS::DB::Alerting.failed_component(m)
