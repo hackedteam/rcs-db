@@ -36,7 +36,7 @@ class Collector
   end
 
   public
-  def self.collector_login(instance, ext_address, local_address)
+  def self.collector_login(instance, version, ext_address, local_address)
 
     coll = Collector.where({instance: instance}).first
 
@@ -51,6 +51,7 @@ class Collector
       coll.desc = "Collector Node on #{local_address}"
       coll.internal_address = local_address
       coll.address = ext_address
+      coll.version = version
       coll.poll = false
       coll.next = [nil]
       coll.prev = [nil]
@@ -59,8 +60,9 @@ class Collector
       # the collector already exists, check if the external address is set, otherwise update it
       if coll.address.nil? or coll.address == ''
         coll.address = ext_address
-        coll.save
       end
+      coll.version = version
+      coll.save
     end
 
   end
