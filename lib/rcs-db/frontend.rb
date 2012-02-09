@@ -14,7 +14,7 @@ class Frontend
   def self.rnc_push(address)
     begin
       # find a network controller in the status list
-      nc = ::Status.where({type: 'nc', status: ::Status::OK}).first
+      nc = ::Status.where({type: 'nc'}).any_in(status: [::Status::OK, ::Status::WARN]).first
 
       return false if nc.nil?
 
@@ -22,7 +22,9 @@ class Frontend
 
       # send the push request
       http = Net::HTTP.new(nc.address, 80)
-      http.request_put("/RCS-NC_#{address}", '', {})
+      resp = http.request_put("/RCS-NC_#{address}", '', {})
+
+      return false unless resp.body == "OK"
       
     rescue Exception => e
       trace :error, "Frontend RNC PUSH: #{e.message}"

@@ -24,10 +24,13 @@ class TopologyTask
 
       yield @description = "Configuring '#{anon.name}'"
 
+      # don't push to "not monitored" anon
+      next unless anon.poll
+
       # skip detached anonymizers
       next if anon.next.first.nil? and anon.prev.first.nil?
 
-      Frontend.rnc_push(anon.address)
+      raise "Cannot push to #{anon.name}" unless Frontend.rnc_push(anon.address)
     end
     
     @description = "Topology applied successfully"
