@@ -103,6 +103,7 @@ class AgentController < RESTController
         doc[:_kind] = :factory
         doc[:path] = [operation._id, target._id]
         doc[:status] = :open
+        doc[:type] = @params['type']
         doc[:ident] = get_new_ident
         doc[:name] = @params['name']
         doc[:name] ||= doc[:ident]
@@ -126,7 +127,7 @@ class AgentController < RESTController
                 :desc => "Created factory '#{item['name']}'"
 
       item = Item.factories
-        .only(:name, :desc, :status, :_kind, :path, :ident, :counter, :configs)
+        .only(:name, :desc, :status, :_kind, :path, :ident, :type, :counter, :configs)
         .find(item._id)
 
       ok(item)

@@ -29,66 +29,7 @@ class FactoryController < RESTController
       ok(j.first)
     end
   end
-  
-  def create
-    require_auth_level :tech
-    
-    # to create a target, we need to owning operation
-    return bad_request('INVALID_OPERATION') unless @params.has_key? 'operation'
-    return bad_request('INVALID_TARGET') unless @params.has_key? 'target'
-    
-    mongoid_query do
 
-      operation = ::Item.operations.find(@params['operation'])
-      return bad_request('INVALID_OPERATION') if operation.nil?
-
-      target = ::Item.targets.find(@params['target'])
-      return bad_request('INVALID_TARGET') if target.nil?
-
-      # used to generate log/conf keys and seed
-      alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-'
-
-      item = Item.create!(desc: @params['desc']) do |doc|
-        doc[:_kind] = :factory
-        doc[:path] = [operation._id, target._id]
-        doc[:status] = :open
-        doc[:type] = @params['type']
-        doc[:ident] = get_new_ident
-        doc[:name] = @params['name']
-        doc[:name] ||= doc[:ident]
-        doc[:counter] = 0
-        seed = (0..11).inject('') {|x,y| x += alphabet[rand(0..alphabet.size)]}
-        seed.setbyte(8, 46)
-        doc[:seed] = seed
-        doc[:confkey] = (0..31).inject('') {|x,y| x += alphabet[rand(0..alphabet.size)]}
-        doc[:logkey] = (0..31).inject('') {|x,y| x += alphabet[rand(0..alphabet.size)]}
-        doc[:configs] = []
-      end
-
-      @session[:accessible] << item._id
-
-      Audit.log :actor => @session[:user][:name],
-                :action => "factory.create",
-                :operation_name => operation['name'],
-                :target_name => target['name'],
-                :agent_name => item['name'],
-                :desc => "Created factory '#{item['name']}'"
-
-      item = Item.factories
-        .only(:name, :desc, :status, :_kind, :path, :ident, :type, :counter, :configs)
-        .find(item._id)
-
-      ok(item)
-    end
-  end
-
-  def get_new_ident
-    global = ::Item.where({_kind: 'global'}).first
-    global ||= ::Item.new({_kind: 'global', counter: 0}).save
-    global.inc(:counter, 1)
-    "RCS_#{global.counter.to_s.rjust(10, "0")}"
-  end
-  
   def update
     require_auth_level :tech
     
