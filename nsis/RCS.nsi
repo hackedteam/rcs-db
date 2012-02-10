@@ -169,7 +169,7 @@ Section "Install Section" SecInstall
 
     SetOutPath "$INSTDIR\DB\data\config"
     File /r "data\config\.keep"
-    File /r "data\config\logo.png"
+    File /r "config\logo.png"
 
     SetOutPath "$INSTDIR\DB\lib\rcs-db-release"
     ###File /r "lib\rcs-db-release\*.*"
