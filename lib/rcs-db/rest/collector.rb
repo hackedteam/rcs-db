@@ -31,7 +31,15 @@ class CollectorController < RESTController
 
     return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :anonymizers
 
-    result = Collector.create(name: @params['name'], type: 'remote', port: 4444, poll: false, configured: false, next: [nil], prev: [nil])
+    result = Collector.create!(name: @params['name']) do |coll|
+      coll[:type] = 'remote'
+      coll[:address] = @params['address']
+      coll[:port] = @params['port']
+      coll[:poll] = @params['poll']
+      coll[:configured] = false
+      coll[:next] = [nil]
+      coll[:prev] = [nil]
+    end
 
     Audit.log :actor => @session[:user][:name], :action => 'collector.create', :desc => "Created the collector '#{@params['name']}'"
 
