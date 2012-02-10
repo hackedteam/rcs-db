@@ -74,7 +74,7 @@ class FactoryController < RESTController
                 :desc => "Created factory '#{item['name']}'"
 
       item = Item.factories
-        .only(:name, :desc, :status, :_kind, :path, :ident, :counter, :configs)
+        .only(:name, :desc, :status, :_kind, :path, :ident, :type, :counter, :configs)
         .find(item._id)
 
       ok(item)
