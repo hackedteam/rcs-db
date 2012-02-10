@@ -52,6 +52,7 @@ class FactoryController < RESTController
         doc[:_kind] = :factory
         doc[:path] = [operation._id, target._id]
         doc[:status] = :open
+        doc[:type] = @params['type']
         doc[:ident] = get_new_ident
         doc[:name] = @params['name']
         doc[:name] ||= doc[:ident]
