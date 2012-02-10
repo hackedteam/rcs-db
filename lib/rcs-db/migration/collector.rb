@@ -61,8 +61,8 @@ class CollectorMigration
 
       print "." unless verbose
 
-      mc.prev = [prev_id.to_s]
-      mc.next = [next_id.to_s]
+      mc.prev = [prev_id.to_s] if prev_id
+      mc.next = [next_id.to_s] if next_id
 
       mc.save
     end
