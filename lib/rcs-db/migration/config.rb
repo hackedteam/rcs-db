@@ -261,7 +261,7 @@ class ConfigMigration
                 subaction[:action] = 'module'
                 subaction[:status] = s['action']
                 subaction[:module] = s['name']
-                subaction[:module] = 'screenshot' if subaction[:module] = 'snapshot'
+                subaction[:module] = 'screenshot' if subaction[:module] == 'snapshot'
               else
                 raise "unknown subaction: " + sub
             end
@@ -445,7 +445,7 @@ class ConfigMigration
       actions.each do |a|
         # skip actions created during migration
         next if a[:_mig]
-        # search for start action for camera, scrennshot and position
+        # search for start action for camera, screenshot and position
         # and transform the start/stop action into an enable/disable event
         a[:subactions].each do |s|
           if s[:action] == 'module' and ['camera','screenshot', 'position'].include? s[:module]

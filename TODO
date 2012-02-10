@@ -15,6 +15,8 @@ HIGH PRIORITY:
 
     dont' send config to backdoor too old (7.x)
 
+    take the hostname of the shards and not use the "auto" ip discovery
+
     anonymizer configuration
 
 MEDIUM PRIORITY:
