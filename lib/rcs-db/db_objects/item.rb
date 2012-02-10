@@ -136,7 +136,7 @@ class Item
     agent._kind = 'agent'
     agent.deleted = false
     agent.ident = self[:ident]
-    agent.name = self[:ident] + " (#{self[:counter]})"
+    agent.name = self[:name] + " (#{self[:counter]})"
     agent.type = self[:type]
     agent.desc = self[:desc]
     agent[:path] = self[:path]
