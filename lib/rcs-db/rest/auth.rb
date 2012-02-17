@@ -113,8 +113,8 @@ class AuthController < RESTController
     if pass.eql? server_sig['value']
 
       # take the external ip address from the username
-      instance, address = user.split(':')
-      Collector.collector_login instance, address, @request[:peer]
+      instance, version, address = user.split(':')
+      Collector.collector_login instance, version, address, @request[:peer]
       
       trace :info, "Collector [#{user}] logged in"
       @auth_level = [:server]

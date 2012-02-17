@@ -174,8 +174,8 @@ module BuildTaskType
         end
         trace :info, "Task #{@_id} completed."
       rescue Exception => e
-        trace :error, "Cannot build: #{e.message}"
-        trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
+        trace :error, "Cannot complete: #{e.message}"
+        #trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
         @description = "ERROR: #{e.message}"
         error
       ensure
@@ -205,8 +205,8 @@ module NoFileTaskType
         trace :info, "Task #{@_id} completed."
         finished
       rescue Exception => e
-        trace :error, "Cannot build: #{e.message}"
-        trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
+        trace :error, "Cannot complete: #{e.message}"
+        #trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
         @description = "ERROR: #{e.message}"
         error
       end
@@ -243,6 +243,8 @@ module SingleFileTaskType
         download_available
         trace :info, "Task #{@_id} completed."
       rescue Exception => e
+        trace :error, "Cannot complete: #{e.message}"
+        #trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
         @description = "ERROR: #{e.message}"
         error
       ensure
@@ -285,6 +287,8 @@ module MultiFileTaskType
         download_available
         trace :info, "Task #{@_id} completed."
       rescue Exception => e
+        trace :error, "Cannot complete: #{e.message}"
+        #trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
         @description = "ERROR: #{e.message}"
         error
       ensure

@@ -14,7 +14,7 @@ class Frontend
   def self.rnc_push(address)
     begin
       # find a network controller in the status list
-      nc = ::Status.where({type: 'nc', status: ::Status::OK}).first
+      nc = ::Status.where({type: 'nc'}).any_in(status: [::Status::OK, ::Status::WARN]).first
 
       return false if nc.nil?
 
@@ -22,7 +22,9 @@ class Frontend
 
       # send the push request
       http = Net::HTTP.new(nc.address, 80)
-      http.request_put("/RCS-NC_#{address}", '', {})
+      resp = http.request_put("/RCS-NC_#{address}", '', {})
+
+      return false unless resp.body == "OK"
       
     rescue Exception => e
       trace :error, "Frontend RNC PUSH: #{e.message}"
@@ -34,7 +36,7 @@ class Frontend
 
   def self.collector_put(filename, content)
     begin
-      raise "no collector found" if ::Status.where({type: 'collector', status: ::Status::OK}).count == 0
+      raise "no collector found" if ::Status.where({type: 'collector'}).any_in(status: [::Status::OK, ::Status::WARN]).count == 0
       # put the file on every collector, we cannot know where it will be requested
       ::Status.where({type: 'collector', status: ::Status::OK}).all.each do |collector|
 
@@ -56,7 +58,7 @@ class Frontend
 
   def self.proxy(method, host, url, content = nil, options = {})
     begin
-      raise "no collector found" if ::Status.where({type: 'collector', status: ::Status::OK}).count == 0
+      raise "no collector found" if ::Status.where({type: 'collector'}).any_in(status: [::Status::OK, ::Status::WARN]).count == 0
       # request to one of the collectors
       collector = ::Status.where({type: 'collector', status: ::Status::OK}).all.sample
 

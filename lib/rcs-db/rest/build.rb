@@ -26,13 +26,12 @@ class BuildController < RESTController
 
       trace :info, "Output: #{build.outputs} #{File.size(build.path(build.outputs.first)).to_s_bytes}"
 
-      # TODO: remove this when fastfilereader will run on windows
-      if RUBY_PLATFORM =~ /mingw/
-        content = File.binread(build.path(build.outputs.first))
-        build.clean
-        return ok(content, {content_type: 'binary/octet-stream'})
-      end
-      
+      #if RUBY_PLATFORM =~ /mingw/
+      #  content = File.binread(build.path(build.outputs.first))
+      #  build.clean
+      #  return ok(content, {content_type: 'binary/octet-stream'})
+      #end
+
       return stream_file(build.path(build.outputs.first), proc { build.clean })
     rescue Exception => e
       return server_error(e.message)

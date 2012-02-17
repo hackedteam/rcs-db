@@ -27,7 +27,7 @@ class InjectorTask
       tag = injector.redirection_tag + (base + progressive).to_s
       progressive += 1
 
-      yield description "Creating rule No: #{progressive}"
+      yield @description = "Creating rule No: #{progressive}"
       
       # use the key of the hash to avoid duplicates
       redirect_user["#{rule.ident} #{rule.ident_param}"] ||= tag
@@ -100,7 +100,7 @@ class InjectorTask
 
     end
 
-    yield description "Creating binary config"
+    yield @description = "Creating binary config"
 
     bin_config_file = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
 
@@ -143,11 +143,11 @@ class InjectorTask
     injector.configured = false
     injector.save
 
-    yield description "Creating binary config"
+    yield @description = "Creating binary config"
 
     Frontend.rnc_push(injector.address)
     
-    description "Rules applied successfully"
+    @description = "Rules applied successfully"
   end
 end
 
