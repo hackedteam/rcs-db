@@ -85,3 +85,5 @@ hasp/*.sdf
 hasp/*.suo
 hasp/ipch
 hasp/*.opensdf
+
+backup

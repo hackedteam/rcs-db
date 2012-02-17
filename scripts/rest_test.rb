@@ -539,11 +539,21 @@ if false
 end
 
 # collector
-if false
+if true
   # collector.index
-  res = http.request_get('/collector', {'Cookie' => cookie})
-  puts "collector.index"
-  puts res.body
+  #res = http.request_get('/collector', {'Cookie' => cookie})
+  #puts "collector.index"
+  #puts res.body
+  
+  
+  coll = {_id: '4f34cea32afb6552150012ac'}
+  res = http.request_get('/collector/config/4f34cea32afb6552150012ac', {'Cookie' => cookie})
+  puts "collector.config"
+  puts res
+  puts
+  
+  #File.open('conf.zip', 'wb') {|f| f.write res.body}
+  
 =begin  
   collectors = JSON.parse(res.body)
   collectors.each do |coll|

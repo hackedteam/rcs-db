@@ -17,7 +17,7 @@ HIGH PRIORITY:
 
     take the hostname of the shards and not use the "auto" ip discovery
 
-    anonymizer configuration
+    Forwarder (worker)
 
 MEDIUM PRIORITY:
 
@@ -29,8 +29,6 @@ MEDIUM PRIORITY:
         - file
 
     get_accessible should be faster
-
-    Forwarder (worker)
 
     sms wap send
 
