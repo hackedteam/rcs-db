@@ -755,14 +755,13 @@ if false
 end
 
 # agents
-if false
+if true
 =begin
   res = http.request_get('/operation', {'Cookie' => cookie})
   operations = JSON.parse(res.body)
   
   res = http.request_get('/target', {'Cookie' => cookie})
   targets = JSON.parse(res.body)
-=end
   
   puts "agent.index"
   res = http.request_get('/agent', {'Cookie' => cookie})
@@ -771,12 +770,23 @@ if false
   #agents.each {|agent| puts "#{agent['_kind']}\t#{agent['name']}"}
   puts "You got #{agents.size} agents."
   puts
+=end
   
   puts "agent.show"
-  res = http.request_get("/agent/#{agents[0]['_id']}", {'Cookie' => cookie})
+  res = http.request_get("/agent/4f2b97e0963d3525d5000002", {'Cookie' => cookie})
   #puts res.body
   agent = JSON.parse(res.body)
   puts agent
+  puts
+  
+  puts "agent.filesystem POST"
+  filesystem_post = {
+     _id: agent['_id'],
+     filesystem: {path: '%HOMEDRIVE%\\\\*', depth: 2}
+   }
+  res = http.request_post("/agent/filesystem", filesystem_post.to_json, {'Cookie' => cookie})
+  fs_post = JSON.parse(res.body)
+  puts fs_post
   puts
   
 =begin
