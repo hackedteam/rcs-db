@@ -539,7 +539,7 @@ if false
 end
 
 # collector
-if true
+if false
   # collector.index
   #res = http.request_get('/collector', {'Cookie' => cookie})
   #puts "collector.index"
@@ -1230,6 +1230,30 @@ if false
   target = JSON.parse(res.body)
   puts target['path'].inspect
   puts
+end
+
+# forwarder
+if false
+  # forwarder.index
+  puts "forwarder.index" 
+  res = http.request_get('/forwarder', {'Cookie' => cookie})
+  shards = JSON.parse(res.body)
+  puts res.body
+  puts
+  
+  # forwarder.create
+  forwarder = {name: 'test', enabled: true, keep: true}
+  res = http.request_post('/forwarder/create', forwarder.to_json, {'Cookie' => cookie})
+  puts "forwarder.create"
+  puts res.body
+  puts
+
+  puts "forwarder.index" 
+  res = http.request_get('/forwarder', {'Cookie' => cookie})
+  shards = JSON.parse(res.body)
+  puts res.body
+  puts
+  
 end
 
 # logout
