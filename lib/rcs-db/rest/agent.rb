@@ -475,6 +475,10 @@ class AgentController < RESTController
     require_auth_level :server, :tech
 
     case @request[:method]
+      when 'POST'
+        agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+        agent.filesystem_requests.create(@params['filesystem'])
+        trace :info, "[#{@request[:peer]}] Added filesystem request #{@params['filesystem']}"
       when 'DELETE'
         agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
         agent.filesystem_requests.destroy_all(conditions: { _id: @params['filesystem']})
