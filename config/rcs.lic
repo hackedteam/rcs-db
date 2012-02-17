@@ -19,11 +19,11 @@
   :winmo: [true, true]
 :alerting: true
 :correlation: false
+:forwarders: true
 :rmi: true
 :nia: .Inf
 :collectors: 
   :collectors: 10
   :anonymizers: 20
 :shards: 2
-:exploits: "5bd90a7ac2e8e5fdc4e92c90c0c900b5948517f7"
-:integrity: "ee4f7b2451a746d749d4e030304d334f5282bc44c82f939e6b63062631ae426c"
+:integrity: "21c719f243803cdbedd52956d71a05600c2965a56aa30df2271d8da12f2de0c7"

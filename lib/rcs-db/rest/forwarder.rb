@@ -19,6 +19,8 @@ class ForwarderController < RESTController
   def create
     require_auth_level :sys
 
+    return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.limits[:forwarders]
+
     mongoid_query do
       f = ::Forwarder.new
       f.enabled = @params['enabled'] == true ? true : false
