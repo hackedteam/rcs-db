@@ -55,7 +55,7 @@ class LogMigration
       end
     end
     
-    File.delete('migration.status')
+    File.delete('migration.status') if File.exist?('migration.status')
     
   end
   
