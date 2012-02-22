@@ -60,7 +60,7 @@ class LogMigration
   end
   
   def self.migrate_single_activity(act)
-    targets = Item.where({_kind: 'target'}).also_in({path: [act.id]}).asc(:_mid)
+    targets = Item.where({_kind: 'target'}).also_in({path: [act._id]}).asc(:_mid)
 
 	  buffered_targets = targets.to_a.dup
 	
