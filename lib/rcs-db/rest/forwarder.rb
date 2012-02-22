@@ -59,7 +59,7 @@ class ForwarderController < RESTController
 
   def destroy
     require_auth_level :sys
-    
+
     mongoid_query do
       forwarder = ::Forwarder.find(@params['_id'])
       Audit.log :actor => @session[:user][:name], :action => 'forwarder.destroy', :desc => "Deleted the forwarding rule [#{forwarder[:name]}]"

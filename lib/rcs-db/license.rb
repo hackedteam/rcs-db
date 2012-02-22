@@ -53,6 +53,7 @@ class LicenseManager
                               :android => [false, false]},
                :alerting => false,
                :correlation => false,
+               :forwarders => false,
                :rmi => false,
                :nia => 0,
                :shards => 1,
@@ -143,6 +144,7 @@ class LicenseManager
     
     @limits[:alerting] = true if limit[:alerting] 
     @limits[:correlation] = true if limit[:correlation]
+    @limits[:forwarders] = true if limit[:forwarders]
     @limits[:rmi] = true if limit[:rmi]
 
     @limits[:shards] = limit[:shards] if limit[:shards] > @limits[:shards]

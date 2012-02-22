@@ -43,6 +43,14 @@ class Migration
     # ensure the sharding is enabled
     DB.instance.enable_sharding
 
+    if options[:list]
+      Item.where({_kind: 'operation'}).each do |op|
+        next if op[:_mid].nil?
+        puts "#{op.name.ljust(30)} #{op[:_mid]}"
+      end
+      return 0
+    end
+	
     # start the migration
     unless options[:log]
       Audit.log actor: '<system>', action: 'migration', desc: "Migrating data from #{options[:db_address]}..."
@@ -72,7 +80,7 @@ class Migration
 
     if options[:log]
       Audit.log actor: '<system>', action: 'migration', desc: "Migrating evidence of '#{options[:activity]}' from #{options[:db_address]}..."
-      LogMigration.migrate(options[:verbose], options[:activity], options[:exclude])
+      LogMigration.migrate(options[:verbose], options[:activity], options[:exclude], options[:from_mid])
       Audit.log actor: '<system>', action: 'migration', desc: "Migration of evidence completed (#{options[:db_address]})"
     end
 
@@ -110,10 +118,14 @@ class Migration
       
       opts.on( '-l', '--log ACTIVITY', 'Import logs for a specified activity' ) do |act|
         options[:log] = true
-        options[:activity], options[:exclude] = act.split(':')
+        options[:activity], options[:exclude], options[:from_mid] = act.split(':')
         options[:exclude] = options[:exclude].split(',') unless options[:exclude].nil?
       end
       
+	    opts.on( '-L', '--list', 'Show the list of activities ready to be migrated' ) do |host|
+        options[:list] = true
+      end
+	  
       opts.on( '-v', '--verbose', 'Verbose output' ) do
         options[:verbose] = true
       end
