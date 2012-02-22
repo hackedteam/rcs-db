@@ -3,12 +3,14 @@
 #
 
 require 'stringio'
+require 'archive/tar/minitar'
 
 module RCS
 module DB
 
 class CollectorController < RESTController
-  
+  include Archive::Tar
+
   def index
     require_auth_level :server, :sys, :tech
 
@@ -101,7 +103,7 @@ class CollectorController < RESTController
     mongoid_query do
       collector = Collector.find(@params['_id'])
 
-      return not_found if collector.configured
+      #return not_found if collector.configured
 
       # get the next hop collector
       next_hop = Collector.find(collector.prev[0])

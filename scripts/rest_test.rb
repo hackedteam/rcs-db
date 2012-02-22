@@ -765,7 +765,7 @@ if false
 end
 
 # agents
-if true
+if false
 =begin
   res = http.request_get('/operation', {'Cookie' => cookie})
   operations = JSON.parse(res.body)
