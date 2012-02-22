@@ -7,6 +7,8 @@ TEST:
 
     create an agent, sync, delete it and check the evidence destroy process (should drop evidences and gridfs)
 
+    check if after deletion the evidences (and grid) are actually deleted
+
 HIGH PRIORITY:
 
     check the TODOs in the code...
