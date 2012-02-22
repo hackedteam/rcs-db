@@ -30,7 +30,9 @@ class Evidence
         after_create :create_callback
         after_destroy :destroy_callback
 
-        index :type, :acquired, :agent_id
+        index :type
+        index :acquired
+        index :agent_id
         shard_key :type, :acquired, :agent_id
 
         STAT_EXCLUSION = ['info', 'filesystem']
@@ -38,6 +40,8 @@ class Evidence
         protected
 
         def create_callback
+          # skip migrated logs, the stats are calculated by the migration script
+          return if (self[:_mid] != nil and self[:_mid] > 0)
           return if STAT_EXCLUSION.include? self.type
           agent = Item.find self.agent_id
           agent.stat.evidence ||= {}

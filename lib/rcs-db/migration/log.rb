@@ -74,8 +74,8 @@ class LogMigration
 	
     buffered_agents.each do |a|
       
-	  # invoke the garbage collector
-	  GC.start
+      # invoke the garbage collector
+      GC.start
 	  
       # clear stats for the backdoor
       a.stat.evidence = {}
@@ -111,6 +111,7 @@ class LogMigration
         current = current + 1
         begin
           log = DB.instance.mysql_query("SELECT * FROM log LEFT JOIN note ON note.log_id = log.log_id LEFT JOIN blotter_log ON log.log_id = blotter_log.log_id WHERE log.log_id = #{log_id[:log_id]};").to_a.first
+          log[:log_id] = log_id[:log_id]
         rescue Interrupt
           puts "User requested to stop..."
           exit 0
@@ -134,52 +135,66 @@ class LogMigration
           size = 0
         end
         
-        migrate_single_log(ev, log, target_id, a[:_id])
-        
+        log_type = migrate_single_log(ev, log, target_id, a[:_id])
+
+        # stat calculation
+        a.stat.evidence ||= {}
+        a.stat.evidence[log_type] ||= 0
+        a.stat.evidence[log_type] += 1
+
         # report the status
         print "         #{current} of #{count}  %2.1f %% | #{processed}/sec  #{speed.to_s_bytes}/sec | #{@@size.to_s_bytes}      \r" % percentage
         $stdout.flush
       end
+
       # after completing print the status
       puts "         #{current} of #{count} | 100 %                                                                               "
+
+      # save the stat in the agent
+      a.save
     end
   end
 
   def self.migrate_single_log(ev, log, target_id, agent_id)
 
-	ev.create() do |e|
-		e.acquired = log[:acquired].to_i
-		e.received = log[:received].to_i
+	  evidence = ev.create() do |e|
+      # migrated log will be identified in the create_callback
+      # and the stats will not be calculated on them
+      e[:_mid] = log[:log_id]
 
-		# avoid windows epoch (1601-01-01) replacing with unix epoch (1970-01-01)
-		e.acquired = 0 if e.acquired < 0
+      e.acquired = log[:acquired].to_i
+      e.received = log[:received].to_i
 
-		e.type = log[:type].downcase
-		e.relevance = log[:tag]
-		e.blotter = log[:blotter_id].nil? ? false : true
-		e.note = log[:content] unless log[:content].nil?
-		e.agent_id = agent_id.to_s
+      # avoid windows epoch (1601-01-01) replacing with unix epoch (1970-01-01)
+      e.acquired = 0 if e.acquired < 0
 
-		# parse log specific data
-		e.data = migrate_data(log)
+      e.type = log[:type].downcase
+      e.relevance = log[:tag]
+      e.blotter = log[:blotter_id].nil? ? false : true
+      e.note = log[:content] unless log[:content].nil?
+      e.agent_id = agent_id.to_s
 
-		# unify the files evidence
-		e.type = 'file' if e.type == 'filecap' or e.type == 'fileopen' or e.type == 'download'
+      # parse log specific data
+      e.data = migrate_data(log)
 
-		# unify mail, sms, mms
-		e.type = 'message' if e.type == 'mail' or e.type == 'sms' or e.type == 'mms'
+      # unify the files evidence
+      e.type = 'file' if e.type == 'filecap' or e.type == 'fileopen' or e.type == 'download'
 
-		# rename it
-		e.type = 'screenshot' if e.type == 'snapshot'
-		e.type = 'position' if e.type == 'location'
+      # unify mail, sms, mms
+      e.type = 'message' if e.type == 'mail' or e.type == 'sms' or e.type == 'mms'
 
-		# save the binary data
-		if log[:longblob1].bytesize > 0
-		  e.data[:_grid_size] = log[:longblob1].bytesize
-		  e.data[:_grid] = GridFS.put(log[:longblob1], {filename: agent_id.to_s}, target_id.to_s)
-		end
+      # rename it
+      e.type = 'screenshot' if e.type == 'snapshot'
+      e.type = 'position' if e.type == 'location'
+
+      # save the binary data
+      if log[:longblob1].bytesize > 0
+        e.data[:_grid_size] = log[:longblob1].bytesize
+        e.data[:_grid] = GridFS.put(log[:longblob1], {filename: agent_id.to_s}, target_id.to_s)
+      end
     end
-    #ev.save(validate: false)
+
+    return evidence.type
   end
 
 
