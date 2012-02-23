@@ -103,19 +103,15 @@ class CollectorController < RESTController
     mongoid_query do
       collector = Collector.find(@params['_id'])
 
-      #return not_found if collector.configured
+      return not_found if collector.configured
 
       # get the next hop collector
       next_hop = Collector.find(collector.prev[0])
 
-      #Zip::ZipFile.open(Config.instance.temp(collector._id.to_s), Zip::ZipFile::CREATE) do |z|
-      #  z.file.open('etc/nexthop', "w") { |f| f.write next_hop.address }
-      #end
-
       # create the tar.gz with the config
       gz = Zlib::GzipWriter.new(File.open(Config.instance.temp(collector._id.to_s), 'wb'))
       output = Minitar::Output.new(gz)
-      nexthop = StringIO.new(next_hop.address)
+      nexthop = StringIO.new(next_hop.address.length > 0 ? next_hop.address + ':80' : '-')
       Minitar::pack_stream('etc/nexthop', nexthop, output)
       output.close
 
