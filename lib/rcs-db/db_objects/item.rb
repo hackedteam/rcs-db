@@ -67,6 +67,7 @@ class Item
 
   store_in :items
 
+  after_create :create_callback
   after_destroy :destroy_callback
 
   before_update :status_change
@@ -208,7 +209,18 @@ class Item
   end
 
   protected
-  
+
+  def create_callback
+    case self._kind
+      when 'target'
+        # create the collection for the target's evidence and shard it
+        db = Mongoid.database
+        collection = db.collection(Evidence.collection_name(self._id))
+        # enable sharding only if not enabled
+        RCS::DB::Shard.set_key(collection, {type: 1, acquired: 1, agent_id: 1})
+    end
+  end
+
   def destroy_callback
     # remove the item form any dashboard or recent
     ::User.all.each {|u| u.delete_item(self._id)}

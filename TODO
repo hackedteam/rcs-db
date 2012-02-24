@@ -7,17 +7,19 @@ TEST:
 
     create an agent, sync, delete it and check the evidence destroy process (should drop evidences and gridfs)
 
+    check if after deletion the evidences (and grid) are actually deleted
+
 HIGH PRIORITY:
 
-    add action in nssm to delete lock files, in case of restart after a crash
+    fast evidence retrieving methods
 
     check the TODOs in the code...
 
-    dont' send config to backdoor too old (7.x)
+    don't send config to backdoor too old (7.x)
 
     take the hostname of the shards and not use the "auto" ip discovery
 
-    anonymizer configuration
+    Forwarder (worker)
 
 MEDIUM PRIORITY:
 
@@ -29,8 +31,6 @@ MEDIUM PRIORITY:
         - file
 
     get_accessible should be faster
-
-    Forwarder (worker)
 
     sms wap send
 

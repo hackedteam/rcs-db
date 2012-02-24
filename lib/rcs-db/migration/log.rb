@@ -8,53 +8,105 @@ class LogMigration
 
   @@total = 0
   @@size = 0
+  @@time = Time.now
+  @@start_activity, @@start_target, @@start_agent, @@start_log = nil
 
-  def self.migrate(verbose, activity, exclude)
+  def self.migrate(verbose, activity, exclude, from_mid)
   
     puts "Migrating logs for:"
 
+	  from_mid = from_mid.nil? ? 0 : from_mid.to_i
+	
     if activity.upcase == 'ALL'
-      activities = Item.where({_kind: 'operation'})
+      activities = Item.where({_kind: 'operation'}).and({:_mid.gt => from_mid}).asc(:_mid)
     else
-      activities = Item.where({_kind: 'operation', name: activity})
+      activities = Item.where({_kind: 'operation', name: activity}).and({:_mid.gt => from_mid}).asc(:_mid)
     end
 
-    activities.each do |act|
-      puts "-> #{act.name}"
+    if File.exist?('migration.status')
+      starting_point = File.open('migration.status', 'r') {|f| f.read}
+      @@start_activity, @@start_target, @@start_agent, @@start_log = starting_point.split(' ').collect {|x| x.to_i}
+      puts "RESTARTING FROM: #{starting_point}"
+    end
+
+	  buffered_activities = activities.to_a.dup
+	
+    buffered_activities.each do |act|
+	    next if act[:_mid].nil?
+
+      if (@@start_activity and @@start_activity > act[:_mid])
+        puts "-> #{act.name} Already Migrated"
+        next
+      end
+
+	    puts "-> #{act.name}"
 
       # if exclude is not defined, everything is good
       exclude ||= []
       
       unless exclude.include? act[:name]
-        migrate_single_activity act[:_id]
-        puts "#{@@total} logs (#{@@size.to_s_bytes}) migrated to evidence."
+        begin
+          migrate_single_activity act
+        rescue Exception => e
+          puts "EXCEPTION #{e.class} : #{e.message}"
+        end
+        puts "#{@@total} logs (#{@@size.to_s_bytes}) migrated to evidence in #{Time.now - @@time} seconds"
         @@total = 0
         @@size = 0
+		    @@time = Time.now
       else
         puts "   SKIPPED"
       end
     end
+    
+    File.delete('migration.status') if File.exist?('migration.status')
+    
   end
   
-  def self.migrate_single_activity(id)
-    targets = Item.where({_kind: 'target'}).also_in({path: [id]})
+  def self.migrate_single_activity(act)
+    targets = Item.where({_kind: 'target'}).also_in({path: [act._id]}).asc(:_mid)
 
-    targets.each do |targ|
+	  buffered_targets = targets.to_a.dup
+	
+    buffered_targets.each do |targ|
+
+      if (@@start_target and @@start_target > targ[:_mid])
+        puts "   + #{targ.name} Already Migrated"
+        next
+      end
+
       puts "   + #{targ.name}"
-      migrate_single_target targ[:_id]
+      migrate_single_target act, targ
     end
   end
 
-  def self.migrate_single_target(target_id)
+  def self.migrate_single_target(act, targ)
 
     # delete evidence if already present
     db = Mongoid.database
-    db.drop_collection Evidence.collection_name(target_id.to_s)
+    db.drop_collection Evidence.collection_name(targ._id.to_s)
 
+    Mongoid.identity_map_enabled = false
+    Mongoid.persist_in_safe_mode = false
+
+    # the collection for this target
+    ev = Evidence.collection_class(targ._id)
+	
     # migrate evidence for each agent
-    agents = Item.where({_kind: 'agent'}).also_in({path: [target_id]})
-    agents.each do |a|
-      
+    agents = Item.where({_kind: 'agent'}).also_in({path: [targ._id]}).asc(:_mid)
+	
+	  buffered_agents = agents.to_a.dup
+	
+    buffered_agents.each do |a|
+
+      if (@@start_agent and @@start_agent > a[:_mid])
+        puts "      * #{a.name} Already Migrated"
+        next
+      end
+
+      # invoke the garbage collector
+      GC.start
+	  
       # clear stats for the backdoor
       a.stat.evidence = {}
       a.stat.size = 0
@@ -62,7 +114,7 @@ class LogMigration
       a.save
       
       # delete all files related to the backdoor
-      GridFS.delete_by_agent(a[:_id].to_s, target_id.to_s)
+      GridFS.delete_by_agent(a[:_id].to_s, targ._id.to_s)
 
       puts "      * #{a.name}"
 
@@ -73,7 +125,7 @@ class LogMigration
       @@total += count
 
       # iterate for every log...
-      log_ids = DB.instance.mysql_query("SELECT log_id FROM `log` WHERE backdoor_id = #{a[:_mid]} ORDER BY `log_id`;")
+      log_ids = DB.instance.mysql_query("SELECT log_id FROM `log` WHERE backdoor_id = #{a[:_mid]} ORDER BY `log_id` ASC;")
       
       current = 0
       size = 0
@@ -84,11 +136,25 @@ class LogMigration
       processed = 0
       percentage = 0
       speed = 0
-      
-      log_ids.each do |log_id|
-        current = current + 1
-        log = DB.instance.mysql_query("SELECT * FROM log LEFT JOIN note ON note.log_id = log.log_id LEFT JOIN blotter_log ON log.log_id = blotter_log.log_id WHERE log.log_id = #{log_id[:log_id]};").to_a.first
 
+      log_ids.each do |log_id|
+
+        current = current + 1
+
+        # skip already migrated logs
+        next if (@@start_log and @@start_log > log_id[:log_id])
+
+        # reset the start log, since from this point the logs for other agents can be less than the saved one
+        @@start_log = 0
+
+        begin
+          log = DB.instance.mysql_query("SELECT * FROM log LEFT JOIN note ON note.log_id = log.log_id LEFT JOIN blotter_log ON log.log_id = blotter_log.log_id WHERE log.log_id = #{log_id[:log_id]};").to_a.first
+          log[:log_id] = log_id[:log_id]
+        rescue Mysql2::Error => e
+          puts "LOGID: #{log_id[:log_id]} ERROR: #{e.message}"
+          next
+        end
+		
         this_size = log[:longblob1].size + log[:longtext1].size + log[:varchar1].size + log[:varchar2].size + log[:varchar3].size + log[:varchar4].size
         size += this_size
         @@size += this_size
@@ -103,53 +169,72 @@ class LogMigration
           prev_current = current
           size = 0
         end
-        
-        migrate_single_log(log, target_id.to_s, a[:_id])
-        
+
+        # persist the current log
+        log_type = migrate_single_log(ev, log, targ._id, a[:_id])
+
+        # save the current point of migration
+        # this is used in case of failure to restart from here
+        File.open('migration.status', 'w') {|f| f.write "#{act._mid} #{targ._mid} #{a._mid} #{log_id[:log_id]}"}
+
+        # stat calculation
+        a.stat.evidence ||= {}
+        a.stat.evidence[log_type] ||= 0
+        a.stat.evidence[log_type] += 1
+
         # report the status
         print "         #{current} of #{count}  %2.1f %% | #{processed}/sec  #{speed.to_s_bytes}/sec | #{@@size.to_s_bytes}      \r" % percentage
         $stdout.flush
       end
+
       # after completing print the status
       puts "         #{current} of #{count} | 100 %                                                                               "
+
+      # save the stat in the agent
+      a.save
     end
   end
 
-  def self.migrate_single_log(log, target_id, agent_id)
+  def self.migrate_single_log(ev, log, target_id, agent_id)
 
-    ev = Evidence.dynamic_new target_id
-    ev.acquired = log[:acquired].to_i
-    ev.received = log[:received].to_i
+	  evidence = ev.create() do |e|
+      # migrated log will be identified in the create_callback
+      # and the stats will not be calculated on them
+      e[:_mid] = log[:log_id]
 
-    # avoid windows epoch (1601-01-01) replacing with unix epoch (1970-01-01)
-    ev.acquired = 0 if ev.acquired < 0
+      e.acquired = log[:acquired].to_i
+      e.received = log[:received].to_i
 
-    ev.type = log[:type].downcase
-    ev.relevance = log[:tag]
-    ev.blotter = log[:blotter_id].nil? ? false : true
-    ev.note = log[:content] unless log[:content].nil?
-    ev.agent_id = agent_id.to_s
+      # avoid windows epoch (1601-01-01) replacing with unix epoch (1970-01-01)
+      e.acquired = 0 if e.acquired < 0
 
-    # parse log specific data
-    ev.data = migrate_data(log)
+      e.type = log[:type].downcase
+      e.relevance = log[:tag]
+      e.blotter = log[:blotter_id].nil? ? false : true
+      e.note = log[:content] unless log[:content].nil?
+      e.agent_id = agent_id.to_s
 
-    # unify the files evidence
-    ev.type = 'file' if ev.type == 'filecap' or ev.type == 'fileopen' or ev.type == 'download'
+      # parse log specific data
+      e.data = migrate_data(log)
 
-    # unify mail, sms, mms
-    ev.type = 'message' if ev.type == 'mail' or ev.type == 'sms' or ev.type == 'mms'
+      # unify the files evidence
+      e.type = 'file' if e.type == 'filecap' or e.type == 'fileopen' or e.type == 'download'
 
-    # rename it
-    ev.type = 'screenshot' if ev.type == 'snapshot'
-    ev.type = 'position' if ev.type == 'location'
+      # unify mail, sms, mms
+      e.type = 'message' if e.type == 'mail' or e.type == 'sms' or e.type == 'mms'
 
-    # save the binary data
-    if log[:longblob1].bytesize > 0
-      ev.data[:_grid_size] = log[:longblob1].bytesize
-      ev.data[:_grid] = GridFS.put(log[:longblob1], {filename: agent_id.to_s}, target_id.to_s)
+      # rename it
+      e.type = 'screenshot' if e.type == 'snapshot'
+      e.type = 'position' if e.type == 'location'
+
+      # save the binary data
+      if log[:longblob1].bytesize > 0
+        e.data[:_grid_size] = log[:longblob1].bytesize
+        e.data[:_grid] = GridFS.put(log[:longblob1], {filename: agent_id.to_s}, target_id.to_s)
+      end
     end
-    
-    ev.save
+
+    return evidence.type
   end
 
 

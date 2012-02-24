@@ -24,8 +24,6 @@ class TaskController < RESTController
   def create
     require_auth_level :admin, :sys, :tech, :view
 
-    puts @params.inspect
-
     task = TaskManager.instance.create @session[:user][:name], @params['type'], @params['file_name'], @params['params']
     
     return bad_request if task.nil?

