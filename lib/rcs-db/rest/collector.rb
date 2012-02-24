@@ -2,8 +2,6 @@
 # Controller for the Collector objects
 #
 
-require 'stringio'
-require 'archive/tar/minitar'
 
 module RCS
 module DB
@@ -109,11 +107,9 @@ class CollectorController < RESTController
       next_hop = Collector.find(collector.prev[0]) if collector.prev[0]
 
       # create the tar.gz with the config
-      gz = Zlib::GzipWriter.new(File.open(Config.instance.temp(collector._id.to_s), 'wb'))
-      output = Minitar::Output.new(gz)
-      nexthop = StringIO.new((next_hop and next_hop.address.length > 0) ? next_hop.address + ':80' : '-')
-      Minitar::pack_stream('etc/nexthop', nexthop, output)
-      output.close
+      File.open(Config.instance.temp(collector._id.to_s), 'w')  do |f|
+        f.write (next_hop and next_hop.address.length > 0) ? next_hop.address + ':80' : '-'
+      end
 
       # reset the flag for the "configuration needed"
       collector.configured = true
