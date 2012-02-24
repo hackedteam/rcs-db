@@ -115,8 +115,11 @@ class RESTController
   
   def valid_session?
     @session = RESTController.sessionmanager.get(@request[:cookie])
-    RESTController.sessionmanager.update(@request[:cookie]) unless session.nil?
-
+    unless @session.nil?
+      RESTController.sessionmanager.update(@request[:cookie])
+      trace :debug, "Refreshing session for #{@session[:user][:name]}"
+    end
+    
     # methods without authentication
     # class XXXXController < RESTController
     #

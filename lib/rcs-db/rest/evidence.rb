@@ -42,7 +42,7 @@ class EvidenceController < RESTController
     trace :info, "Evidence [#{ident}::#{instance}][#{id}] saved and dispatched to shard #{shard_id}"
     return ok({:bytes => @request[:content]['content'].size})
   end
-  
+
   # used to report that the activity of an instance is starting
   def start
     require_auth_level :server, :tech
@@ -142,7 +142,7 @@ class EvidenceController < RESTController
       filter.delete('agent')
       agent = Item.where({_id: agent_id}).first
       return not_found if agent.nil?
-      filter_hash[:item] = agent[:_id]
+      filter_hash[:agent_id] = agent[:_id]
     end
 
     # date filters must be treated separately
@@ -186,18 +186,16 @@ class EvidenceController < RESTController
     filter_hash = {}
 
     # filter by target
-    target_id = filter['target']
-    filter.delete('target')
+    target_id = filter.delete('target')
     target = Item.where({_id: target_id}).first
     return not_found() if target.nil?
 
     # filter by agent
     if filter['agent']
-      agent_id = filter['agent']
-      filter.delete('agent')
+      agent_id = filter.delete('agent')
       agent = Item.where({_id: agent_id}).first
       return not_found() if agent.nil?
-      filter_hash[:item] = agent[:_id]
+      filter_hash[:agent_id] = agent[:_id]
     end
 
     # date filters must be treated separately
