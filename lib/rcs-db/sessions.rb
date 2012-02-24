@@ -80,14 +80,15 @@ class SessionManager
     size = @sessions.length
     # search for timed out sessions
     @sessions.each_pair do |key, value|
-      if Time.now.getutc.to_i - value[:time] >= delta
+      now = Time.now.getutc.to_i
+      if now - value[:time] >= delta
         
         # don't log timeout for the server
         unless value[:level].include? :server
           Audit.log :actor => value[:user][:name], :action => 'logout', :user_name => value[:user][:name], :desc => "User '#{value[:user][:name]}' has been logged out for timeout"
         end
 
-        trace :info, "Session Timeout for [#{value[:cookie]}]"
+        trace :info, "User '#{value[:user][:name]}' has been logged out for timeout (NOW #{now} - COOKIE #{value[:time]} >= DELTA #{delta})"
         # delete the entry
         @sessions.delete key
       end

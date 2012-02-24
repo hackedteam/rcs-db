@@ -45,7 +45,11 @@ class LogMigration
       exclude ||= []
       
       unless exclude.include? act[:name]
-        migrate_single_activity act
+        begin
+          migrate_single_activity act
+        rescue Exception => e
+          puts "EXCEPTION #{e.class} : #{e.message}"
+        end
         puts "#{@@total} logs (#{@@size.to_s_bytes}) migrated to evidence in #{Time.now - @@time} seconds"
         @@total = 0
         @@size = 0
@@ -132,7 +136,7 @@ class LogMigration
       processed = 0
       percentage = 0
       speed = 0
-      
+
       log_ids.each do |log_id|
 
         current = current + 1
