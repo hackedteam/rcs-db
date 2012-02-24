@@ -44,7 +44,7 @@ class Migration
     DB.instance.enable_sharding
 
     if options[:list]
-      Item.where({_kind: 'operation'}).each do |op|
+      Item.where({_kind: 'operation'}).asc(:_mid).each do |op|
         next if op[:_mid].nil?
         puts "#{op.name.ljust(30)} #{op[:_mid]}"
       end

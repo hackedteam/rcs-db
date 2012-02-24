@@ -7,11 +7,15 @@ TEST:
 
     create an agent, sync, delete it and check the evidence destroy process (should drop evidences and gridfs)
 
+    check if after deletion the evidences (and grid) are actually deleted
+
 HIGH PRIORITY:
+
+    fast evidence retrieving methods
 
     check the TODOs in the code...
 
-    dont' send config to backdoor too old (7.x)
+    don't send config to backdoor too old (7.x)
 
     take the hostname of the shards and not use the "auto" ip discovery
 

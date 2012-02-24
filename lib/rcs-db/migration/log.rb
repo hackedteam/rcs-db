@@ -9,32 +9,44 @@ class LogMigration
   @@total = 0
   @@size = 0
   @@time = Time.now
+  @@start_activity, @@start_target, @@start_agent, @@start_log = nil
 
   def self.migrate(verbose, activity, exclude, from_mid)
   
     puts "Migrating logs for:"
 
-	from_mid = from_mid.nil? ? 0 : from_mid.to_i
+	  from_mid = from_mid.nil? ? 0 : from_mid.to_i
 	
     if activity.upcase == 'ALL'
-      activities = Item.where({_kind: 'operation'}).and({:_mid.gt => from_mid})
+      activities = Item.where({_kind: 'operation'}).and({:_mid.gt => from_mid}).asc(:_mid)
     else
-      activities = Item.where({_kind: 'operation', name: activity}).and({:_mid.gt => from_mid})
+      activities = Item.where({_kind: 'operation', name: activity}).and({:_mid.gt => from_mid}).asc(:_mid)
     end
 
-	buffered_activities = activities.to_a.dup
+    if File.exist?('migration.status')
+      starting_point = File.open('migration.status', 'r') {|f| f.read}
+      @@start_activity, @@start_target, @@start_agent, @@start_log = starting_point.split(' ').collect {|x| x.to_i}
+      puts "RESTARTING FROM: #{starting_point}"
+    end
+
+	  buffered_activities = activities.to_a.dup
 	
     buffered_activities.each do |act|
-	  next if act[:_mid].nil?
-      
-	  puts "-> #{act.name}"
+	    next if act[:_mid].nil?
+
+      if (@@start_activity and @@start_activity > act[:_mid])
+        puts "-> #{act.name} Already Migrated"
+        next
+      end
+
+	    puts "-> #{act.name}"
 
       # if exclude is not defined, everything is good
       exclude ||= []
       
       unless exclude.include? act[:name]
         begin
-          migrate_single_activity act[:_id]
+          migrate_single_activity act
         rescue Exception => e
           puts "EXCEPTION #{e.class} : #{e.message}"
         end
@@ -46,38 +58,52 @@ class LogMigration
         puts "   SKIPPED"
       end
     end
+    
+    File.delete('migration.status') if File.exist?('migration.status')
+    
   end
   
-  def self.migrate_single_activity(id)
-    targets = Item.where({_kind: 'target'}).also_in({path: [id]})
+  def self.migrate_single_activity(act)
+    targets = Item.where({_kind: 'target'}).also_in({path: [act._id]}).asc(:_mid)
 
-	buffered_targets = targets.to_a.dup
+	  buffered_targets = targets.to_a.dup
 	
     buffered_targets.each do |targ|
+
+      if (@@start_target and @@start_target > targ[:_mid])
+        puts "   + #{targ.name} Already Migrated"
+        next
+      end
+
       puts "   + #{targ.name}"
-      migrate_single_target targ[:_id]
+      migrate_single_target act, targ
     end
   end
 
-  def self.migrate_single_target(target_id)
+  def self.migrate_single_target(act, targ)
 
     # delete evidence if already present
     db = Mongoid.database
-    db.drop_collection Evidence.collection_name(target_id.to_s)
+    db.drop_collection Evidence.collection_name(targ._id.to_s)
 
     Mongoid.identity_map_enabled = false
     Mongoid.persist_in_safe_mode = false
 
     # the collection for this target
-    ev = Evidence.collection_class(target_id)
+    ev = Evidence.collection_class(targ._id)
 	
     # migrate evidence for each agent
-    agents = Item.where({_kind: 'agent'}).also_in({path: [target_id]})
+    agents = Item.where({_kind: 'agent'}).also_in({path: [targ._id]}).asc(:_mid)
 	
 	  buffered_agents = agents.to_a.dup
 	
     buffered_agents.each do |a|
-      
+
+      if (@@start_agent and @@start_agent > a[:_mid])
+        puts "      * #{a.name} Already Migrated"
+        next
+      end
+
       # invoke the garbage collector
       GC.start
 	  
@@ -88,7 +114,7 @@ class LogMigration
       a.save
       
       # delete all files related to the backdoor
-      GridFS.delete_by_agent(a[:_id].to_s, target_id.to_s)
+      GridFS.delete_by_agent(a[:_id].to_s, targ._id.to_s)
 
       puts "      * #{a.name}"
 
@@ -99,7 +125,7 @@ class LogMigration
       @@total += count
 
       # iterate for every log...
-      log_ids = DB.instance.mysql_query("SELECT log_id FROM `log` WHERE backdoor_id = #{a[:_mid]} ORDER BY `log_id`;")
+      log_ids = DB.instance.mysql_query("SELECT log_id FROM `log` WHERE backdoor_id = #{a[:_mid]} ORDER BY `log_id` ASC;")
       
       current = 0
       size = 0
@@ -112,13 +138,18 @@ class LogMigration
       speed = 0
 
       log_ids.each do |log_id|
+
         current = current + 1
+
+        # skip already migrated logs
+        next if (@@start_log and @@start_log > log_id[:log_id])
+
+        # reset the start log, since from this point the logs for other agents can be less than the saved one
+        @@start_log = 0
+
         begin
           log = DB.instance.mysql_query("SELECT * FROM log LEFT JOIN note ON note.log_id = log.log_id LEFT JOIN blotter_log ON log.log_id = blotter_log.log_id WHERE log.log_id = #{log_id[:log_id]};").to_a.first
           log[:log_id] = log_id[:log_id]
-        rescue Interrupt
-          puts "User requested to stop..."
-          exit 0
         rescue Mysql2::Error => e
           puts "LOGID: #{log_id[:log_id]} ERROR: #{e.message}"
           next
@@ -138,8 +169,13 @@ class LogMigration
           prev_current = current
           size = 0
         end
-        
-        log_type = migrate_single_log(ev, log, target_id, a[:_id])
+
+        # persist the current log
+        log_type = migrate_single_log(ev, log, targ._id, a[:_id])
+
+        # save the current point of migration
+        # this is used in case of failure to restart from here
+        File.open('migration.status', 'w') {|f| f.write "#{act._mid} #{targ._mid} #{a._mid} #{log_id[:log_id]}"}
 
         # stat calculation
         a.stat.evidence ||= {}
