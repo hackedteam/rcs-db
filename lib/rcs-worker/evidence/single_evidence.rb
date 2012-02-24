@@ -22,30 +22,32 @@ module SingleEvidence
       agent = get_agent
       target = agent.get_parent
       
-      ev = ::Evidence.dynamic_new target[:_id].to_s
-      
-      ev.agent_id = agent[:_id].to_s
-      ev.type = info[:type]
-      
-      ev.acquired = info[:acquired].to_i
-      ev.received = info[:received].to_i
-      ev.relevance = 0
-      ev.blotter = false
-      ev.note = ""
-      
-      ev.data = info[:data]
-      
-      # save the binary data (if any)
-      unless info[:grid_content].nil?
-        ev.data[:_grid_size] = info[:grid_content].bytesize
-        ev.data[:_grid] = RCS::DB::GridFS.put(info[:grid_content], {filename: agent[:_id].to_s}, target[:_id].to_s) unless info[:grid_content].nil?
-      end
-      
-      ev.save
-      
-      trace :debug, "saved evidence #{ev._id}"
+      evidence = ::Evidence.collection_class(target[:_id].to_s)
+      evidence.create do |ev|
 
-      ev
+        ev.agent_id = agent[:_id].to_s
+        ev.type = info[:type]
+
+        ev.acquired = info[:acquired].to_i
+        ev.received = info[:received].to_i
+        ev.relevance = 0
+        ev.blotter = false
+        ev.note = ""
+
+        ev.data = info[:data]
+
+        # save the binary data (if any)
+        unless info[:grid_content].nil?
+          ev.data[:_grid_size] = info[:grid_content].bytesize
+          ev.data[:_grid] = RCS::DB::GridFS.put(info[:grid_content], {filename: agent[:_id].to_s}, target[:_id].to_s) unless info[:grid_content].nil?
+        end
+
+        ev.save
+
+        trace :debug, "saved evidence #{ev._id}"
+      end
+
+      return evidence
     end
   end
 
