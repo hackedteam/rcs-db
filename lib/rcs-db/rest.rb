@@ -13,6 +13,18 @@ require 'rcs-common/trace'
 require 'bson'
 require 'json'
 
+
+module EventMachine
+  class FileStreamer
+    # on windows the stream_without_mapping has HUGE problems
+    # we monkey patch the class to force it to ALWAYS stream a file
+    # the mapping threshold is responsible to choose the behavior
+    if RUBY_PLATFORM =~ /mingw/
+      MappingThreshold = 0
+    end
+  end
+end
+
 module RCS
 module DB
 
@@ -115,8 +127,11 @@ class RESTController
   
   def valid_session?
     @session = RESTController.sessionmanager.get(@request[:cookie])
-    RESTController.sessionmanager.update(@request[:cookie]) unless session.nil?
-
+    unless @session.nil?
+      RESTController.sessionmanager.update(@request[:cookie])
+      #trace :debug, "Refreshing session for #{@session[:user][:name]}"
+    end
+    
     # methods without authentication
     # class XXXXController < RESTController
     #

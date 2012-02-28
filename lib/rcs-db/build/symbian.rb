@@ -66,7 +66,7 @@ class BuildSymbian < Build
         content.gsub! '[:UID4:]', uids[3]
         content.gsub! '[:UID5:]', uids[4]
         content.gsub! '[:UID6:]', uids[5]
-        content.gsub! 'SharedQueueCli_20023633{000a0000}[2002b30d].dll', "SharedQueueCli_20023633{000a0000}[#{uids[3]}].dll"
+        content.gsub! /SharedQueueCli_20023633\{000a0000\}\[[a-z0-9]*\].dll/, "SharedQueueCli_20023633{000a0000}[#{uids[3]}].dll"
         File.open(file, 'wb') {|f| f.write content}
       end
     end

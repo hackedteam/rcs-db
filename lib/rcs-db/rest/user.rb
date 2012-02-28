@@ -104,6 +104,18 @@ class UserController < RESTController
       user.recent_ids = user.recent_ids[0..4]
       user.save
 
+      item = ::Item.find(@params['item_id'])
+      case item._kind
+        when 'operation'
+          Audit.log :actor => @session[:user][:name], :action => 'view', :operation_name => item['name'], :desc => "Has accessed the operation: #{item.name}"
+        when 'target'
+          Audit.log :actor => @session[:user][:name], :action => 'view', :target_name => item['name'], :desc => "Has accessed the target: #{item.name}"
+        when 'factory'
+          Audit.log :actor => @session[:user][:name], :action => 'view', :agent_name => item['name'], :desc => "Has accessed the factory: #{item.name}"
+        when 'agent'
+          Audit.log :actor => @session[:user][:name], :action => 'view', :agent_name => item['name'], :desc => "Has accessed the agetn: #{item.name}"
+      end
+
       return ok(user)
     end
   end

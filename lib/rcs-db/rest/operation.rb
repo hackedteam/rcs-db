@@ -107,8 +107,6 @@ class OperationController < RESTController
     mongoid_query do
       item = Item.operations.any_in(_id: @session[:accessible]).find(@params['_id'])
       name = item.name
-      _kind = item._kind
-      
       item.destroy
       
       Audit.log :actor => @session[:user][:name],
