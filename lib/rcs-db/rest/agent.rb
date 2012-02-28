@@ -341,6 +341,9 @@ class AgentController < RESTController
     # add default requests for the filesystem
     agent.add_default_filesystem_requests
 
+    # add the new agent to all the accessible list of all users
+    SessionManager.instance.add_accessible(factory, agent)
+
     # check for alerts on this new instance
     Alerting.new_instance agent
 
