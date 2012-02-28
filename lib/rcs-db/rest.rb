@@ -129,7 +129,7 @@ class RESTController
     @session = RESTController.sessionmanager.get(@request[:cookie])
     unless @session.nil?
       RESTController.sessionmanager.update(@request[:cookie])
-      trace :debug, "Refreshing session for #{@session[:user][:name]}"
+      #trace :debug, "Refreshing session for #{@session[:user][:name]}"
     end
     
     # methods without authentication

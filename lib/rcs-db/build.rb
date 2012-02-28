@@ -56,7 +56,7 @@ class Build
     raise "Core for #{@platform} not found" if core.nil?
 
     @core = GridFS.to_tmp core[:_grid].first
-    trace :debug, "Build: loaded core: #{@platform} #{core.version} #{File.size(@core)} bytes"
+    trace :info, "Build: loaded core: #{@platform} #{core.version} #{File.size(@core)} bytes"
 
     if params
       @factory = ::Item.where({_kind: 'factory', _id: params['_id']}).first
