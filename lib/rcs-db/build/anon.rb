@@ -33,19 +33,13 @@ class BuildAnon < Build
       gz = Zlib::GzipWriter.new(File.open(path('install.tar.gz'), 'wb'))
       output = Minitar::Output.new(gz)
 
-      h = {name: path('rcsanon/etc/rcsanon.conf'), as: 'rcsanon/etc/rcsanon.conf'}
-      Minitar::pack_file(h, output)
-
       h = {name: path('rcsanon/etc/certificate'), as: 'rcsanon/etc/certificate'}
       Minitar::pack_file(h, output)
 
       h = {name: path('rcsanon/etc/signature'), as: 'rcsanon/etc/signature'}
       Minitar::pack_file(h, output)
 
-      h = {name: path('rcsanon/sbin/rcsanon'), as: 'rcsanon/sbin/rcsanon', mode: 0755}
-      Minitar::pack_file(h, output)
-
-      h = {name: path('rcsanon/tmp/errlog'), as: 'rcsanon/tmp/errlog'}
+      h = {name: path('rcsanon/rcsanon'), as: 'rcsanon/rcsanon', mode: 0755}
       Minitar::pack_file(h, output)
 
       h = {name: path('version'), as: 'rcsanon/etc/version'}

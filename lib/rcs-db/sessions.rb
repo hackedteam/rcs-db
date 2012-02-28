@@ -88,7 +88,7 @@ class SessionManager
           Audit.log :actor => value[:user][:name], :action => 'logout', :user_name => value[:user][:name], :desc => "User '#{value[:user][:name]}' has been logged out for timeout"
         end
 
-        trace :info, "User '#{value[:user][:name]}' has been logged out for timeout (NOW #{now} - COOKIE #{value[:time]} >= DELTA #{delta})"
+        trace :info, "User '#{value[:user][:name]}' has been logged out for timeout"
         # delete the entry
         @sessions.delete key
       end
@@ -119,6 +119,15 @@ class SessionManager
     end
 
     return accessible
+  end
+
+  def add_accessible(factory, agent)
+    # add to all the active session the new agent
+    # if the factory of the agent is in the accessible list, we are sure that even
+    # the agent will be in the list
+    @sessions.each_pair do |cookie, sess|
+      sess[:accessible] << agent[:_id] if sess[:accessible].include? factory[:_id]
+    end
   end
 
 end #SessionManager

@@ -13,6 +13,18 @@ require 'rcs-common/trace'
 require 'bson'
 require 'json'
 
+
+module EventMachine
+  class FileStreamer
+    # on windows the stream_without_mapping has HUGE problems
+    # we monkey patch the class to force it to ALWAYS stream a file
+    # the mapping threshold is responsible to choose the behavior
+    if RUBY_PLATFORM =~ /mingw/
+      MappingThreshold = 0
+    end
+  end
+end
+
 module RCS
 module DB
 
@@ -117,7 +129,7 @@ class RESTController
     @session = RESTController.sessionmanager.get(@request[:cookie])
     unless @session.nil?
       RESTController.sessionmanager.update(@request[:cookie])
-      trace :debug, "Refreshing session for #{@session[:user][:name]}"
+      #trace :debug, "Refreshing session for #{@session[:user][:name]}"
     end
     
     # methods without authentication
@@ -192,7 +204,11 @@ class RESTController
   # macro for auth level check
   def require_auth_level(*levels)
     # TODO: checking auth level should be done by SessionManager, refactor
-    raise NotAuthorized.new(@session[:level], levels) if (levels & @session[:level]).empty?
+
+    if (levels & @session[:level]).empty?
+      trace :warn, "Trying to access #{@request[:uri]} with #{@session[:level]}"
+      raise NotAuthorized.new(@session[:level], levels)
+    end
   end
 
   def admin?
