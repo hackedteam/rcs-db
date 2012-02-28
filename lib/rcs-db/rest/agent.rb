@@ -67,9 +67,9 @@ class AgentController < RESTController
   
   def destroy
     require_auth_level :tech
-    
+
     mongoid_query do
-      item = Item.agents.any_in(_id: @session[:accessible]).find(@params['_id'])
+      item = Item.any_in(_id: @session[:accessible]).find(@params['_id'])
       item.destroy
       
       Audit.log :actor => @session[:user][:name],

@@ -46,7 +46,7 @@ class Injector
   public
   def delete_rule_by_item(id)
     self.rules.each do |rule|
-      if rule.target_id.include id
+      if rule.target_id.include? id
         trace :debug, "Deleting Rule because it contains #{id}"
         rule.destroy
       end
