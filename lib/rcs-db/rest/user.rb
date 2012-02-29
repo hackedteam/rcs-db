@@ -107,13 +107,13 @@ class UserController < RESTController
       item = ::Item.find(@params['item_id'])
       case item._kind
         when 'operation'
-          Audit.log :actor => @session[:user][:name], :action => 'view', :operation_name => item['name'], :desc => "Has accessed the operation: #{item.name}"
+          Audit.log :actor => @session[:user][:name], :action => 'operation.view', :operation_name => item['name'], :desc => "Has accessed the operation: #{item.name}"
         when 'target'
-          Audit.log :actor => @session[:user][:name], :action => 'view', :target_name => item['name'], :desc => "Has accessed the target: #{item.name}"
+          Audit.log :actor => @session[:user][:name], :action => 'target,view', :target_name => item['name'], :desc => "Has accessed the target: #{item.name}"
         when 'factory'
-          Audit.log :actor => @session[:user][:name], :action => 'view', :agent_name => item['name'], :desc => "Has accessed the factory: #{item.name}"
+          Audit.log :actor => @session[:user][:name], :action => 'factory.view', :agent_name => item['name'], :desc => "Has accessed the factory: #{item.name}"
         when 'agent'
-          Audit.log :actor => @session[:user][:name], :action => 'view', :agent_name => item['name'], :desc => "Has accessed the agetn: #{item.name}"
+          Audit.log :actor => @session[:user][:name], :action => 'agent.view', :agent_name => item['name'], :desc => "Has accessed the agent: #{item.name}"
       end
 
       return ok(user)

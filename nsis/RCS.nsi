@@ -23,6 +23,7 @@
 
   Var adminpass
   Var masterAddress
+  Var localAddress
   Var masterCN
   Var masterLicense
   
@@ -169,7 +170,7 @@ Section "Install Section" SecInstall
 
     SetOutPath "$INSTDIR\DB\data\config"
     File /r "data\config\.keep"
-    File /r "data\config\logo.png"
+    File /r "config\logo.png"
 
     SetOutPath "$INSTDIR\DB\lib\rcs-db-release"
     ###File /r "lib\rcs-db-release\*.*"
@@ -319,7 +320,7 @@ Section "Install Section" SecInstall
       DetailPrint "Writing the configuration..."
       SetDetailsPrint "textonly"
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --defaults --CN $masterAddress"
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config -u admin -p $adminpass -d $masterAddress --add-shard auto"
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config -u admin -p $adminpass -d $masterAddress --add-shard $localAddress"
       SetDetailsPrint "both"
       DetailPrint "done"
     ${EndIf}
@@ -809,9 +810,14 @@ Function FuncInsertAddress
   nsDialogs::Create /NOUNLOAD 1018
 
   ${NSD_CreateLabel} 0 40u 100% 10u "Address of the Master Node:"
-  ${NSD_CreateLabel} 5u 57u 40u 10u "Common Name:"
-  ${NSD_CreateText} 50u 55u 200u 12u ""
+  ${NSD_CreateLabel} 5u 57u 55u 10u "Common Name:"
+  ${NSD_CreateText} 70u 55u 200u 12u ""
   Pop $1
+
+  ${NSD_CreateLabel} 0 75u 100% 10u "Address of this machine:"
+  ${NSD_CreateLabel} 5u 92u 55u 10u "Common Name:"
+  ${NSD_CreateText} 70u 90u 200u 12u ""
+  Pop $2
 
   ${NSD_SetFocus} $1
   
@@ -820,6 +826,7 @@ FunctionEnd
 
 Function FuncInsertAddressLeave
   ${NSD_GetText} $1 $masterAddress
+	${NSD_GetText} $2 $localAddress
 
   StrCmp $masterAddress "" 0 +3
     MessageBox MB_OK|MB_ICONSTOP "Address for Master Node cannot be empty"

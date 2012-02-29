@@ -23,7 +23,7 @@ class AgentController < RESTController
 
     mongoid_query do
       db = Mongoid.database
-      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "demo"])
+      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "upgradable", "demo"])
       ok(j)
     end
   end
@@ -426,17 +426,22 @@ class AgentController < RESTController
   def upgrade
     require_auth_level :server, :tech
 
+    agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+
     case @request[:method]
       when 'GET'
-        agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
         upl = agent.upgrade_requests.where({ _id: @params['upgrade']}).first
         content = GridFS.get upl[:_grid].first
-        trace :info, "[#{@request[:peer]}] Requested the UPGRADE #{@params['upgrade']} -- #{content.file_length.to_s_bytes}"
+        trace :debug, "[#{@request[:peer]}] Requested the UPGRADE #{@params['upgrade']} -- #{content.file_length.to_s_bytes}"
         return ok(content.read, {content_type: content.content_type})
+      when 'POST'
+        trace :info, "Agent #{agent.name} scheduled for upgrade"
+        agent.upgrade!
       when 'DELETE'
-        agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
         agent.upgrade_requests.destroy_all
-        trace :info, "[#{@request[:peer]}] Deleted the UPGRADES"
+        agent.upgradable = false
+        agent.save
+        trace :info, "Agent #{agent.name} upgraded"
     end
     
     return ok
