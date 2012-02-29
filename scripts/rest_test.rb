@@ -1266,6 +1266,15 @@ if false
   
 end
 
+# cores
+if false
+  # core.index
+  puts "core.index" 
+  res = http.request_get('/core', {'Cookie' => cookie})
+  puts res.body
+  puts
+end
+
 # logout
 res = http.request_post('/auth/logout', nil, {'Cookie' => cookie})
 puts

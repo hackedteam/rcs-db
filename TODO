@@ -11,7 +11,7 @@ TEST:
 
 HIGH PRIORITY:
 
-    deleting an agent does not delete it but mark it as deleted
+    infection agent into config needs to upload files to instances
 
     fast evidence retrieving methods
 
@@ -20,6 +20,9 @@ HIGH PRIORITY:
     take the hostname of the shards and not use the "auto" ip discovery
 
 MEDIUM PRIORITY:
+
+    deleting an agent does not delete it but mark it as deleted
+        - filter the deleted in the index function
 
     Forwarder (worker)
 
