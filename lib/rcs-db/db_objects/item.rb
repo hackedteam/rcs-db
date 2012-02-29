@@ -169,6 +169,28 @@ class Item
     return agent
   end
 
+  def add_infection_files
+    config = JSON.parse(self.configs.last.config)
+
+    config['modules'].each do |mod|
+      if mod['module'] == 'infection'
+
+        if mod['usb'] or mod['vm'] > 0
+          puts
+          puts "VM USB"
+          puts
+        end
+
+        if mod['mobile']
+          puts
+          puts "MOBILE"
+          puts
+        end
+      end
+    end
+
+  end
+
   def add_first_time_uploads
     return if self[:_kind] != 'agent'
 

