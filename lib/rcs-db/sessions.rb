@@ -121,6 +121,15 @@ class SessionManager
     return accessible
   end
 
+  def add_accessible(factory, agent)
+    # add to all the active session the new agent
+    # if the factory of the agent is in the accessible list, we are sure that even
+    # the agent will be in the list
+    @sessions.each_pair do |cookie, sess|
+      sess[:accessible] << agent[:_id] if sess[:accessible].include? factory[:_id]
+    end
+  end
+
 end #SessionManager
 
 end #DB::

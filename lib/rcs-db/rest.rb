@@ -204,7 +204,11 @@ class RESTController
   # macro for auth level check
   def require_auth_level(*levels)
     # TODO: checking auth level should be done by SessionManager, refactor
-    raise NotAuthorized.new(@session[:level], levels) if (levels & @session[:level]).empty?
+
+    if (levels & @session[:level]).empty?
+      trace :warn, "Trying to access #{@request[:uri]} with #{@session[:level]}"
+      raise NotAuthorized.new(@session[:level], levels)
+    end
   end
 
   def admin?
