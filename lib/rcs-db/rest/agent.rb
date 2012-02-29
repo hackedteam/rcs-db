@@ -432,17 +432,16 @@ class AgentController < RESTController
       when 'GET'
         upl = agent.upgrade_requests.where({ _id: @params['upgrade']}).first
         content = GridFS.get upl[:_grid].first
-        trace :info, "[#{@request[:peer]}] Requested the UPGRADE #{@params['upgrade']} -- #{content.file_length.to_s_bytes}"
+        trace :debug, "[#{@request[:peer]}] Requested the UPGRADE #{@params['upgrade']} -- #{content.file_length.to_s_bytes}"
         return ok(content.read, {content_type: content.content_type})
       when 'POST'
+        trace :info, "Agent #{agent.name} scheduled for upgrade"
         agent.upgrade!
-        agent.upgradable = true
-        agent.save
       when 'DELETE'
         agent.upgrade_requests.destroy_all
         agent.upgradable = false
         agent.save
-        trace :info, "[#{@request[:peer]}] Deleted the UPGRADES"
+        trace :info, "Agent #{agent.name} upgraded"
     end
     
     return ok

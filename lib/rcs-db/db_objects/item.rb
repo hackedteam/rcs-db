@@ -196,6 +196,8 @@ class Item
   end
 
   def upgrade!
+    return if self.upgradable
+
     factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
     build = RCS::DB::Build.factory(self.platform.to_sym)
     build.load({'_id' => factory._id})
@@ -220,6 +222,9 @@ class Item
     end
 
     build.clean
+
+    self.upgradable = true
+    self.save
   end
 
   def add_default_filesystem_requests
