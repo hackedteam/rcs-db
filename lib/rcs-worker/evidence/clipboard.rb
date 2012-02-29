@@ -5,7 +5,7 @@ module ClipboardProcessing
   extend SingleEvidence
   
   def process
-    puts "CLIPBOARD: #{@info[:data]}"
+    puts "CLIPBOARD: #{self[:data]}"
   end
 
   def type

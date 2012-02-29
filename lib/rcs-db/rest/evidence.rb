@@ -128,6 +128,9 @@ class EvidenceController < RESTController
     filter = {}
     filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
 
+    filter['from'] = Time.now.to_i - 259200 # 3 days ago
+    filter['to'] = Time.now.to_i
+
     filter_hash = {}
 
     # filter by target
@@ -182,6 +185,9 @@ class EvidenceController < RESTController
     # filtering
     filter = {}
     filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
+
+    filter['from'] = Time.now.to_i - 259200 # 3 days ago
+    filter['to'] = Time.now.to_i
 
     filter_hash = {}
 

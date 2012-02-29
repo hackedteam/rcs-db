@@ -5,7 +5,7 @@ module CameraProcessing
   extend SingleEvidence
   
   def process
-    puts "CAMERA: #{@info[:data]}"
+    puts "CAMERA: #{self[:data]}"
   end
 
   def type

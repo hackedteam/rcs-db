@@ -5,7 +5,7 @@ module PasswordProcessing
   extend SingleEvidence
   
   def process
-    puts "PASSWORD: #{@info[:data]}"
+    puts "PASSWORD: #{self[:data]}"
   end
 
   def type

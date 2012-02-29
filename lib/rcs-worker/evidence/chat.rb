@@ -5,7 +5,7 @@ module ChatProcessing
   extend SingleEvidence
   
   def process
-    puts "CHAT: #{@info[:data]}"
+    puts "CHAT: #{self[:data]}"
   end
 
   def type

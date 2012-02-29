@@ -5,7 +5,7 @@ module ApplicationProcessing
   extend SingleEvidence
   
   def process
-    puts "APPLICATION: #{@info[:data]}"
+    puts "APPLICATION: #{self[:data]}"
   end
 
   def type

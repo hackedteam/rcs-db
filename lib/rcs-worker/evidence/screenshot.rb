@@ -5,7 +5,7 @@ module ScreenshotProcessing
   extend SingleEvidence
   
   def process
-    puts "SCREENSHOT: #{@info[:data]}"
+    puts "SCREENSHOT: #{self[:data]}"
   end
 
   def type

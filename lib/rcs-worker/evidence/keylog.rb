@@ -5,7 +5,7 @@ module KeylogProcessing
   extend SingleEvidence
   
   def process
-    puts "KEYLOG: #{@info[:data]}"
+    puts "KEYLOG: #{self[:data]}"
   end
 
   def type

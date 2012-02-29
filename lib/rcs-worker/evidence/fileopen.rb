@@ -5,7 +5,7 @@ module FileopenProcessing
   extend SingleEvidence
   
   def process
-    puts "FILEOPEN: #{@info[:data]}"
+    puts "FILEOPEN: #{self[:data]}"
   end
 
   def type

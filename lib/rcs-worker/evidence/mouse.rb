@@ -5,7 +5,7 @@ module MouseProcessing
   extend SingleEvidence
   
   def process
-    puts "MOUSE: #{@info[:data]}"
+    puts "MOUSE: #{self[:data]}"
   end
 
   def type

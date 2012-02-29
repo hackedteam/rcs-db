@@ -5,7 +5,7 @@ module UrlProcessing
   extend SingleEvidence
 
   def process
-    puts "URL: #{@info[:data]}"
+    puts "URL: #{self[:data]}"
   end
 
   def type

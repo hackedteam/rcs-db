@@ -5,7 +5,7 @@ module InfoProcessing
   extend SingleEvidence
   
   def process
-    puts "INFO: #{@info[:data]}"
+    puts "INFO: #{self[:data]}"
   end
 
   def type

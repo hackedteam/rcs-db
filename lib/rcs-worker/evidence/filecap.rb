@@ -5,7 +5,7 @@ module FilecapProcessing
   extend SingleEvidence
   
   def process
-    puts "FILECAP: #{@info[:data]}"
+    puts "FILECAP: #{self[:data]}"
   end
 
   def type

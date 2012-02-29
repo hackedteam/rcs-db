@@ -9,13 +9,13 @@ module SingleEvidence
     
     base.instance_exec do
       # default values
-      
+
     end
   end
   
   module InstanceMethods
     def get_agent
-      ::Item.agents.where({instance: info[:instance], ident: info[:ident]}).first
+      ::Item.agents.where({instance: self[:instance], ident: self[:ident]}).first
     end
     
     def store
@@ -26,20 +26,20 @@ module SingleEvidence
       evidence.create do |ev|
 
         ev.agent_id = agent[:_id].to_s
-        ev.type = info[:type]
+        ev.type = self[:type]
 
-        ev.acquired = info[:acquired].to_i
-        ev.received = info[:received].to_i
+        ev.acquired = self[:acquired].to_i
+        ev.received = self[:received].to_i
         ev.relevance = 0
         ev.blotter = false
         ev.note = ""
 
-        ev.data = info[:data]
+        ev.data = self[:data]
 
         # save the binary data (if any)
-        unless info[:grid_content].nil?
-          ev.data[:_grid_size] = info[:grid_content].bytesize
-          ev.data[:_grid] = RCS::DB::GridFS.put(info[:grid_content], {filename: agent[:_id].to_s}, target[:_id].to_s) unless info[:grid_content].nil?
+        unless self[:grid_content].nil?
+          ev.data[:_grid_size] = self[:grid_content].bytesize
+          ev.data[:_grid] = RCS::DB::GridFS.put(self[:grid_content], {filename: agent[:_id].to_s}, target[:_id].to_s) unless self[:grid_content].nil?
         end
 
         ev.save

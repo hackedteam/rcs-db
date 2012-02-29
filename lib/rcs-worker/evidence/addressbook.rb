@@ -5,7 +5,7 @@ module AddressbookProcessing
   extend SingleEvidence
   
   def process
-    puts "ADDRESSBOOK: #{@info[:data]}"
+    puts "ADDRESSBOOK: #{self[:data]}"
   end
 
   def type

@@ -5,7 +5,7 @@ module DeviceProcessing
   extend SingleEvidence
   
   def process
-    puts "DEVICE: #{@info[:data]}"
+    puts "DEVICE: #{self[:data]}"
   end
   
   def type

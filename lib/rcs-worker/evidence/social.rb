@@ -5,7 +5,7 @@ module SocialProcessing
   extend SingleEvidence
 
   def process
-    puts "SOCIAL: #{@info[:data]}"
+    puts "SOCIAL: #{self[:data]}"
   end
 
   def type

@@ -5,7 +5,7 @@ module PrintProcessing
   extend SingleEvidence
   
   def process
-    puts "PRINT: #{@info[:data]}"
+    puts "PRINT: #{self[:data]}"
   end
 
   def type

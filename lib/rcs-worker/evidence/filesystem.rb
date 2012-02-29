@@ -5,7 +5,7 @@ module FilesystemProcessing
   extend SingleEvidence
   
   def process
-    puts "FILESYSTEM: #{@info[:data]}"
+    puts "FILESYSTEM: #{self[:data]}"
   end
 
   def type
