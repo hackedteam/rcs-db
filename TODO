@@ -11,8 +11,6 @@ TEST:
 
 HIGH PRIORITY:
 
-    infection agent into config needs to upload files to instances
-
     deleting an agent does not delete it but mark it as deleted
         - filter the deleted in the index function
 
