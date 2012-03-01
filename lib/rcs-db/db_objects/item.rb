@@ -182,7 +182,7 @@ class Item
           build.unpack
           build.patch({'demo' => self.demo})
           build.scramble
-          build.melt({'admin' => false})
+          build.melt({'admin' => false, 'demo' => self.demo})
           add_upgrade('installer', File.join(build.tmpdir, 'output'))
           build.clean
         end
@@ -194,7 +194,7 @@ class Item
           build.unpack
           build.patch({'demo' => self.demo})
           build.scramble
-          build.melt({'admin' => false})
+          build.melt({'admin' => false, 'demo' => self.demo})
           add_upgrade('wmcore.001', File.join(build.tmpdir, 'firstsage'))
           add_upgrade('wmcore.002', File.join(build.tmpdir, 'zoo'))
           build.clean

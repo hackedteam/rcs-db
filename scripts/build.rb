@@ -15,7 +15,7 @@ ver = DEMO ? '_demo' : ''
 params = {platform: PLATFORM,
           generate: {platforms: [],
                      binary: {demo: DEMO, admin: false},
-                     melt: {admin: false}
+                     melt: {admin: false, demo: DEMO}
                     },
           melt: {appname: 'facebook'}
           }
