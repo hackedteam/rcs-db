@@ -119,8 +119,8 @@ class BuildOSX < Build
                                         path(@scrambled[:inputmanager])+' '+
                                         path(@scrambled[:icon])+' '+
                                         path(@scrambled[:dir])+' '+
-                                        executable + ' ' +
                                         (params['demo'] ? path('demo_image') : 'null') +' '+
+                                        executable + ' ' +
                                         path('output')
 
     File.exist? path('output') || raise("output file not created by dropper")

@@ -19,7 +19,7 @@ class AgentController < RESTController
     filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
     filter ||= {}
 
-    filter.merge!({_id: {"$in" => @session[:accessible]}, _kind: { "$in" => ['agent', 'factory']}})
+    filter.merge!({_id: {"$in" => @session[:accessible]}, _kind: { "$in" => ['agent', 'factory']}, deleted: false})
 
     mongoid_query do
       db = Mongoid.database
@@ -35,7 +35,7 @@ class AgentController < RESTController
 
     mongoid_query do
       db = Mongoid.database
-      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "uninstalled", "deleted", "demo", "version", "counter", "configs"])
+      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "uninstalled", "demo", "version", "counter", "configs"])
       ok(j.first)
     end
   end
@@ -70,7 +70,17 @@ class AgentController < RESTController
 
     mongoid_query do
       item = Item.any_in(_id: @session[:accessible]).find(@params['_id'])
-      item.destroy
+
+      # don't actually destroy the agent, but mark it as deleted
+      item.deleted = true
+      item.destroy_callback
+      item.save
+
+      # if the deletion is permanent, destroy the item
+      if @params['permanent']
+        trace :info, "Agent #{item.name} permanently deleted"
+        item.destroy
+      end
       
       Audit.log :actor => @session[:user][:name],
                 :action => "#{item._kind}.delete",

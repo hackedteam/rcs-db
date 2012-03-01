@@ -160,8 +160,8 @@ class BuildWindows < Build
                                           @scrambled[:dir]+' '+
                                           manifest +' '+
                                           @funcname +' '+
-                                          executable + ' ' +
                                           (params['demo'] ? path('demo_image') : 'null') +' '+
+                                          executable + ' ' +
                                           path('output')
     end
     
