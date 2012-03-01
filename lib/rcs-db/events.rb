@@ -143,8 +143,7 @@ module HTTPHandler
       rescue Exception => e
         trace :error, e.message
         trace :fatal, "EXCEPTION(#{e.class}): " + e.backtrace.join("\n")
-        
-        # TODO: SERVER ERROR
+
         responder = RESTResponse.new(500, e.message)
         reply = responder.prepare_response(self, request)
         reply

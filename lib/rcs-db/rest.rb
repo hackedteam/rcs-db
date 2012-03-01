@@ -158,30 +158,32 @@ class RESTController
   end
 
   def act!
-    # check we have a valid session and an action
-    return not_authorized('INVALID_COOKIE') unless valid_session?
-    return server_error('NULL_ACTION') if @request[:action].nil?
-    
-    # make a copy of the params, handy for access and mongoid queries
-    # consolidate URI parameters
-    @params = @request[:params].clone unless @request[:params].nil?
-    @params ||= {}
-    unless @params.has_key? '_id'
-      @params['_id'] = @request[:uri_params].first unless @request[:uri_params].first.nil?
-    end
-    
-    # GO!
-    response = send(@request[:action])
+    begin
+      # check we have a valid session and an action
+      return not_authorized('INVALID_COOKIE') unless valid_session?
+      return server_error('NULL_ACTION') if @request[:action].nil?
 
-    return server_error('CONTROLLER_ERROR') if response.nil?
-    return response
-  rescue NotAuthorized => e
-    trace :error, "[#{@request[:peer]}] Request not authorized: #{e.message}"
-    return not_authorized(e.message)
-  rescue Exception => e
-    trace :error, "Server error: #{e.message}"
-    trace :fatal, "Backtrace   : #{e.backtrace}"
-    return server_error(e.message)
+      # make a copy of the params, handy for access and mongoid queries
+      # consolidate URI parameters
+      @params = @request[:params].clone unless @request[:params].nil?
+      @params ||= {}
+      unless @params.has_key? '_id'
+        @params['_id'] = @request[:uri_params].first unless @request[:uri_params].first.nil?
+      end
+
+      # GO!
+      response = send(@request[:action])
+
+      return server_error('CONTROLLER_ERROR') if response.nil?
+      return response
+    rescue NotAuthorized => e
+      trace :error, "[#{@request[:peer]}] Request not authorized: #{e.message}"
+      return not_authorized(e.message)
+    rescue Exception => e
+      trace :error, "Server error: #{e.message}"
+      trace :fatal, "Backtrace   : #{e.backtrace}"
+      return server_error(e.message)
+    end
   end
   
   def cleanup
@@ -243,7 +245,7 @@ class RESTController
     rescue Exception => e
       trace :error, e.message
       trace :fatal, "EXCEPTION(#{e.class}): " + e.backtrace.join("\n")
-      return not_found
+      return server_error(e.message)
     end
   end
 

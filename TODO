@@ -11,18 +11,15 @@ TEST:
 
 HIGH PRIORITY:
 
-    infection agent into config needs to upload files to instances
+    deleting an agent does not delete it but mark it as deleted
+        - filter the deleted in the index function
+
+    don't send config to backdoor too old (7.x)
+
 
     fast evidence retrieving methods
 
-    check the TODOs in the code...
-
-    take the hostname of the shards and not use the "auto" ip discovery
-
 MEDIUM PRIORITY:
-
-    deleting an agent does not delete it but mark it as deleted
-        - filter the deleted in the index function
 
     Forwarder (worker)
 
@@ -31,13 +28,13 @@ MEDIUM PRIORITY:
         - mic
         - calendar
         - mail
-        - file
 
     sms wap send
 
     export logs: all, blotter, with filters, filesystem...
 
-    don't send config to backdoor too old (7.x)
+    check the TODOs in the code...
+
 
 LOW PRIORITY:
 
@@ -47,8 +44,3 @@ LOW PRIORITY:
 
     is vcredist needed ?
 
-FUTURE:
-
-    jruby?
-
-    correlation hooks

