@@ -19,7 +19,7 @@ class AgentController < RESTController
     filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
     filter ||= {}
 
-    filter.merge!({_id: {"$in" => @session[:accessible]}, _kind: { "$in" => ['agent', 'factory']}, deleted: false})
+    filter.merge!({_id: {"$in" => @session[:accessible]}, _kind: { "$in" => ['agent', 'factory']}, deleted: {"$in" => [false, nil]} })
 
     mongoid_query do
       db = Mongoid.database

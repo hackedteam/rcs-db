@@ -36,7 +36,7 @@ class Item
   field :version, type: Integer
   field :type, type: String
   field :platform, type: String
-  field :deleted, type: Boolean
+  field :deleted, type: Boolean, default: false
   field :uninstalled, type: Boolean
   field :demo, type: Boolean
   field :upgradable, type: Boolean
