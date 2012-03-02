@@ -48,7 +48,7 @@ class BuildAnon < Build
       h = {name: path('managerport'), as: 'rcsanon/etc/managerport'}
       Minitar::pack_file(h, output)
 
-      h = {name: path('rcsanon/init.d/rcsanon'), as: 'rcsanon/init.d/rcsanon'}
+      h = {name: path('rcsanon/init.d/rcsanon'), as: 'rcsanon/init.d/rcsanon', mode: 0755}
       Minitar::pack_file(h, output)
 
     ensure
