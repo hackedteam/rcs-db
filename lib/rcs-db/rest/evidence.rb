@@ -128,8 +128,9 @@ class EvidenceController < RESTController
     filter = {}
     filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
 
-    filter['from'] = Time.now.to_i - 259200 # 3 days ago
-    filter['to'] = Time.now.to_i
+    # if not specified the filter on the date is last 24 hours
+    filter['from'] = Time.now.to_i - 86400 if filter['from'].nil?
+    filter['to'] = Time.now.to_i if filter['to'].nil?
 
     filter_hash = {}
 
@@ -156,7 +157,7 @@ class EvidenceController < RESTController
 
     mongoid_query do
       # copy remaining filtering criteria (if any)
-      filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem'])
+      filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info'])
       filter.each_key do |k|
         filtering = filtering.any_in(k.to_sym => filter[k])
       end
@@ -186,8 +187,9 @@ class EvidenceController < RESTController
     filter = {}
     filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
 
-    filter['from'] = Time.now.to_i - 259200 # 3 days ago
-    filter['to'] = Time.now.to_i
+    # if not specified the filter on the date is last 24 hours
+    filter['from'] = Time.now.to_i - 86400 if filter['from'].nil?
+    filter['to'] = Time.now.to_i if filter['to'].nil?
 
     filter_hash = {}
 
@@ -212,7 +214,7 @@ class EvidenceController < RESTController
 
     mongoid_query do
       # copy remaining filtering criteria (if any)
-      filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem'])
+      filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info'])
       filter.each_key do |k|
         filtering = filtering.any_in(k.to_sym => filter[k])
       end
@@ -222,6 +224,55 @@ class EvidenceController < RESTController
       # Flex RPC does not accept 0 (zero) as return value for a pagination (-1 is a safe alternative)
       num_evidence = -1 if num_evidence == 0
       return ok(num_evidence)
+    end
+  end
+
+
+  def info
+    require_auth_level :view
+
+    # filtering
+    filter = {}
+    filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
+
+    # if not specified the filter on the date is last 24 hours
+    filter['from'] = Time.now.to_i - 86400 if filter['from'].nil?
+    filter['to'] = Time.now.to_i if filter['to'].nil?
+
+    filter_hash = {}
+
+    # filter by target
+    target_id = filter['target']
+    filter.delete('target')
+    target = Item.where({_id: target_id}).first
+    return not_found if target.nil?
+
+    # filter by agent
+    if filter['agent']
+      agent_id = filter['agent']
+      filter.delete('agent')
+      agent = Item.where({_id: agent_id}).first
+      return not_found if agent.nil?
+      filter_hash[:agent_id] = agent[:_id]
+    end
+
+    # date filters must be treated separately
+    if filter.has_key? 'from' and filter.has_key? 'to'
+      filter_hash[:acquired.gte] = filter.delete('from')
+      filter_hash[:acquired.lte] = filter.delete('to')
+    end
+
+    mongoid_query do
+      # copy remaining filtering criteria (if any)
+      filtering = Evidence.collection_class(target[:_id]).where({:type => 'info'})
+      filter.each_key do |k|
+        filtering = filtering.any_in(k.to_sym => filter[k])
+      end
+
+      # without paging, return everything
+      query = filtering.where(filter_hash).order_by([[:acquired, :asc]])
+
+      return ok(query)
     end
   end
 

@@ -172,6 +172,23 @@ class Item
   def add_infection_files
     config = JSON.parse(self.configs.last.config)
 
+    found = false
+
+    # build the infection files only if at least one subaction is dealing with the infection module
+    config['actions'].each do |action|
+      action['subactions'].each do |sub|
+        if sub['action'] == 'module' and sub['module'] == 'infection'
+          found = true
+        end
+      end
+    end
+
+    if found
+      trace :info, "Infection module for agent #{self.name} detected, building files..."
+    else
+      return
+    end
+
     config['modules'].each do |mod|
       if mod['module'] == 'infection'
 
@@ -199,6 +216,7 @@ class Item
           add_upgrade('wmcore.002', File.join(build.tmpdir, 'zoo'))
           build.clean
         end
+
       end
     end
 

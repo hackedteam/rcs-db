@@ -370,6 +370,7 @@ class AgentController < RESTController
     require_auth_level :server, :tech
     
     agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+    return not_found if agent.nil?
 
     case @request[:method]
       when 'GET'

