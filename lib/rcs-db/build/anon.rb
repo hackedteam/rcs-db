@@ -47,21 +47,24 @@ class BuildAnon < Build
 
       h = {name: path('managerport'), as: 'rcsanon/etc/managerport'}
       Minitar::pack_file(h, output)
-      
+
+      h = {name: path('rcsanon/init.d/rcsanon'), as: 'rcsanon/init.d/rcsanon'}
+      Minitar::pack_file(h, output)
+
     ensure
       output.close
     end
 
     # prepend the install script
     sh = File.open(path('install.sh'), 'rb+') {|f| f.read}
-    bin = File.open(path('install.tar.gz', 'rb+')) {|f| f.read}
+    bin = File.open(path('install.tar.gz'), 'rb+') {|f| f.read}
 
-    File.open(path('anon-install'), 'wb') do |f|
+    File.open(path('rcsanon-install'), 'wb') do |f|
       f.write sh
       f.write bin
     end
 
-    @outputs = ['anon-install']
+    @outputs = ['rcsanon-install']
   end
 
   def pack(params)
