@@ -35,7 +35,7 @@ class CoreController < RESTController
           list << {name: f.name, size: f.size, date: f.time}
         end
 
-        File.delete(temp)
+        FileUtils.rm_rf(temp)
         
         return ok(list)
       else
@@ -70,7 +70,7 @@ class CoreController < RESTController
         core.version = z.file.open('version', "r") { |f| f.read }
       end
 
-      File.delete(temp)
+      FileUtils.rm_rf(temp)
 
       core.save
 
@@ -104,7 +104,7 @@ class CoreController < RESTController
 
       # delete the old one
       GridFS.delete core[:_grid].first
-      File.delete temp
+      FileUtils.rm_rf temp
       
       # replace with the new zip file
       core[:_grid] = [ GridFS.put(content, {filename: @params['_id']}) ]

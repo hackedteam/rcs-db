@@ -64,7 +64,7 @@ class InjectorTask
               vector_files[f.name] = f_path
             end
           end
-          File.delete(temp_zip)
+          FileUtils.rm_rf(temp_zip)
 
         when 'INJECT-HTML'
           appname = 'JwsUpdater' + progressive.to_s
@@ -92,7 +92,7 @@ class InjectorTask
               vector_files[f.name] = f_path
             end
           end
-          File.delete(temp_zip)
+          FileUtils.rm_rf(temp_zip)
         when 'INJECT-UPGRADE'
           appname = 'JavaUpdater' + progressive.to_s
           intercept_files << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.action} #{appname} #{rule.resource}"
@@ -119,7 +119,7 @@ class InjectorTask
               vector_files[f.name] = f_path
             end
           end
-          File.delete(temp_zip)
+          FileUtils.rm_rf(temp_zip)
       end
 
     end
@@ -148,7 +148,7 @@ class InjectorTask
         puts "#{filename} -> #{file}"
         z.put_next_entry("vectors/" + filename)
         z.write File.open(file, 'rb') {|f| f.read}
-        File.delete(file)
+        FileUtils.rm_rf(file)
       end
     end
 
@@ -162,7 +162,7 @@ class InjectorTask
     injector[:_grid_size] = File.size(bin_config_file)
 
     # delete the temp file
-    File.delete(bin_config_file)
+    FileUtils.rm_rf(bin_config_file)
 
     injector.configured = false
     injector.save

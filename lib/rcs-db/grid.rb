@@ -63,11 +63,18 @@ class GridFS
     end
 
     def to_tmp(id, collection = nil)
-      file = self.get id, collection
-      temp = File.open(Config.instance.temp("#{id}-%f" % Time.now), 'wb')
-      temp.write file.read(65536) until file.eof?
-      temp.flush
-      temp.close
+      begin
+        file = self.get id, collection
+        temp = File.open(Config.instance.temp("#{id}-%f" % Time.now), 'wb+')
+        temp.write file.read(65536) until file.eof?
+        temp.flush
+        temp.close
+      rescue Exception => e
+        trace :error, e.message
+        trace :error, "Cannot save to tmp from the Grid: #{collection_name(collection)}"
+        return nil
+      end
+
       return temp.path
     end
 

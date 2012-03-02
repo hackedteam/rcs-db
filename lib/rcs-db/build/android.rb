@@ -84,7 +84,7 @@ class BuildAndroid < Build
     File.chmod(0755, path('zipalign')) if File.exist? path('zipalign')
     CrossPlatform.exec path('zipalign'), "-f 4 #{apk} #{core}" or raise("cannot align apk")
 
-    File.delete(apk)
+    FileUtils.rm_rf(apk)
 
     @outputs = [@appname + '.apk']
   end
