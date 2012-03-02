@@ -373,7 +373,11 @@ class AgentController < RESTController
     return not_found if agent.nil?
 
     # don't send the config to agent too old
-    return not_found if agent.version < 2012030101
+    if (agent.platform == 'blacberry' or agent.platform == 'android')
+      return not_found if agent.version < 2012013101
+    else
+      return not_found if agent.version < 2012030101
+    end
 
     case @request[:method]
       when 'GET'
