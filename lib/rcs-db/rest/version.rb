@@ -27,7 +27,7 @@ class VersionController < RESTController
 
     return not_found() unless File.exist?(console_file)
     
-    return ok(File.binread(console_file), {:content_type => 'binary/octet-stream'})
+    return stream_file(console_file)
   end
   
 end

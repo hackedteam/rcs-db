@@ -13,6 +13,8 @@ HIGH PRIORITY:
 
     scazzi di grid fs !!
 
+    controllare che ovunque si faccia una put, poi ci sia la delete
+
     ruby della 7 da fastidio al ruby nuovo!!!
 
     don't send config to backdoor too old (7.x)

@@ -244,7 +244,12 @@ class Item
   end
 
   def add_upgrade(name, file)
-    content = File.binread(file)
+    # make sure to overwrite the new upgrade
+    self.upgrade_requests.destroy_all(conditions: { filename: name })
+
+    content = File.open(file, 'rb+') {|f| f.read}
+    raise "Cannot read from file #{file}" if content.nil?
+
     self.upgrade_requests.create!({filename: name, _grid: [RCS::DB::GridFS.put(content, {filename: name})] })
   end
 
@@ -394,6 +399,14 @@ class UpgradeRequest
   validates_uniqueness_of :filename
 
   embedded_in :item
+
+  after_destroy :destroy_upgrade_callback
+
+  def destroy_upgrade_callback
+    # remove the content from the grid
+    RCS::DB::GridFS.delete self[:_grid].first
+  end
+
 end
 
 class UploadRequest
@@ -405,6 +418,13 @@ class UploadRequest
   validates_uniqueness_of :filename
   
   embedded_in :item
+
+  after_destroy :destroy_upload_callback
+
+  def destroy_upload_callback
+    # remove the content from the grid
+    RCS::DB::GridFS.delete self[:_grid].first
+  end
 end
 
 class Stat

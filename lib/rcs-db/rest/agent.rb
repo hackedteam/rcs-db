@@ -372,6 +372,9 @@ class AgentController < RESTController
     agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
     return not_found if agent.nil?
 
+    # don't send the config to agent too old
+    return not_found if agent.version < 2012030101
+
     case @request[:method]
       when 'GET'
         config = agent.configs.where(:activated.exists => false).last

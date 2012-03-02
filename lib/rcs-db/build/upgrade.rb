@@ -55,19 +55,19 @@ class BuildUpgrade < Build
 
     CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} #{path('win')}" if File.exist? path('win')
 
-    content = File.binread(path('java-map-update.xml'))
+    content = File.open(path('java-map-update.xml'), 'rb+') {|f| f.read}
     content.gsub! "<url>%IPA_URL%/java-1.6.0_30.xml</url>", "<url>%IPA_URL%/java-1.6.0_30-#{@appname}.xml</url>"
     File.open(path("java-map-update-#{@appname}.xml"), 'w') {|f| f.write content}
     @outputs.delete 'java-map-update.xml'
     @outputs << "java-map-update-#{@appname}.xml"
 
-    content = File.binread(path('java-1.6.0_30.xml'))
+    content = File.open(path('java-1.6.0_30.xml'), 'rb+') {|f| f.read}
     content.gsub! "%IPA_URL%/JavaUpgrade.jnlp ""-X</options>", "%IPA_URL%/JavaUpgrade-#{@appname}.jnlp ""-X</options>"
     File.open(path("java-1.6.0_30-#{@appname}.xml"), 'w') {|f| f.write content}
     @outputs.delete 'java-1.6.0_30.xml'
     @outputs << "java-1.6.0_30-#{@appname}.xml"
 
-    content = File.binread(path('JavaUpgrade.jnlp'))
+    content = File.open(path('JavaUpgrade.jnlp'), 'rb+') {|f| f.read}
     content.gsub! "JavaUpgrade.jnlp", "JavaUpgrade-#{@appname}.jnlp"
     content.gsub! "JavaUpgrade.jar", "JavaUpgrade-#{@appname}.jar"
     File.open(path("JavaUpgrade-#{@appname}.jnlp"), 'w') {|f| f.write content}

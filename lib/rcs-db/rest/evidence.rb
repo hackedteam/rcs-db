@@ -57,6 +57,9 @@ class EvidenceController < RESTController
     # convert the string time to a time object to be passed to 'sync_start'
     time = Time.at(@params['sync_time']).getutc
 
+    # update the agent version
+    agent.version = @params['version']
+
     # reset the counter for the dashboard
     agent.reset_dashboard
     

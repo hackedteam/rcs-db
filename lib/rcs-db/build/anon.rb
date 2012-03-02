@@ -53,8 +53,8 @@ class BuildAnon < Build
     end
 
     # prepend the install script
-    sh = File.binread(path('install.sh'))
-    bin = File.binread(path('install.tar.gz'))
+    sh = File.open(path('install.sh'), 'rb+') {|f| f.read}
+    bin = File.open(path('install.tar.gz', 'rb+')) {|f| f.read}
 
     File.open(path('anon-install'), 'wb') do |f|
       f.write sh

@@ -35,6 +35,7 @@ class GridFS
         return grid_id
       rescue Exception => e
         trace :error, "Cannot put content into the Grid: #{collection_name(collection)} #{opts.inspect} #{e.message}"
+        trace :error, e.message
         return nil
       end
     end
@@ -45,8 +46,8 @@ class GridFS
         grid = Mongo::Grid.new db, collection_name(collection)
         return grid.get id
       rescue Exception => e
-        trace :error, e.message
         trace :error, "Cannot get content from the Grid: #{collection_name(collection)}"
+        trace :error, e.message
         return nil
       end
     end
@@ -58,6 +59,7 @@ class GridFS
         return grid.delete id
       rescue Exception => e
         trace :error, "Cannot delete content from the Grid: #{collection_name(collection)}"
+        trace :error, e.message
         return nil
       end
     end
@@ -70,8 +72,8 @@ class GridFS
         temp.flush
         temp.close
       rescue Exception => e
-        trace :error, e.message
         trace :error, "Cannot save to tmp from the Grid: #{collection_name(collection)}"
+        trace :error, e.message
         return nil
       end
 

