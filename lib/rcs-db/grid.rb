@@ -71,15 +71,15 @@ class GridFS
         temp = File.open(Config.instance.temp("#{id}-%f" % Time.now), 'wb+')
         temp.write file.read(65536) until file.eof?
         temp.close
+        return temp.path
       rescue Exception => e
         trace :error, "Cannot save to tmp from the Grid: #{collection_name(collection)}"
         trace :error, e.message
+        retry if attempt ||= 0 and attempt += 1 and attempt < 5
         return nil
       end
-
-      return temp.path
     end
-
+    
     def delete_by_agent(agent, collection = nil)
       items = get_by_filename(agent, collection_name(collection))
       items.each {|item| delete(item["_id"], collection_name(collection))}
