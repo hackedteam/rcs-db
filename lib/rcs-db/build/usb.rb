@@ -32,7 +32,7 @@ class BuildUSB < Build
     build.patch params['binary'].dup
     build.scramble
 
-    names = build.scrambled.dup if platform == 'windows'
+    names = build.scrambled.dup
 
     # copy the scrambled files in our directories
     build.scrambled.keep_if {|k, v| k != :dir and k != :reg}.each_pair do |k, v|
