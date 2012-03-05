@@ -11,8 +11,6 @@ TEST:
 
 HIGH PRIORITY:
 
-    scazzi di grid fs !!
-
     controllare che ovunque si faccia una put, poi ci sia la delete
 
     ruby della 7 da fastidio al ruby nuovo!!!
@@ -35,12 +33,13 @@ MEDIUM PRIORITY:
 
     check the TODOs in the code...
 
+    remove lock file for mongo dunring update
 
 LOW PRIORITY:
 
     FFI per dongle dll
 
-    mongo logRotate
+    mongo logRotate  & append to log
 
     mongo compact afeter deletion
 

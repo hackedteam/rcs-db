@@ -62,7 +62,10 @@ class CoreController < RESTController
       core = ::Core.new
       core.name = @params['_id']
 
-      core[:_grid] = [ GridFS.put(@request[:content]['content'], {filename: @params['_id']}) ]
+      gid = GridFS.put(@request[:content]['content'], {filename: @params['_id']})
+      return server_error("Cannot write core to grid") if gid.nil?
+
+      core[:_grid] = [ gid ]
       core[:_grid_size] = @request[:content]['content'].bytesize
 
       # get the version from inside the zip file
@@ -109,9 +112,12 @@ class CoreController < RESTController
       # delete the old one
       GridFS.delete core[:_grid].first
       FileUtils.rm_rf temp
-      
+
       # replace with the new zip file
-      core[:_grid] = [ GridFS.put(content, {filename: @params['_id']}) ]
+      gid = GridFS.put(content, {filename: @params['_id']})
+      return server_error("Cannot write core to grid") if gid.nil?
+
+      core[:_grid] = [ gid ]
       core[:_grid_size] = content.bytesize
       core.save
 
@@ -146,7 +152,10 @@ class CoreController < RESTController
 
         content = File.open(temp, 'rb') {|f| f.read}
 
-        core[:_grid] = [ GridFS.put(content, {filename: @params['_id']}) ]
+        gid = GridFS.put(content, {filename: @params['_id']})
+        return server_error("Cannot write core to grid") if gid.nil?
+
+        core[:_grid] = [ gid ]
         core[:_grid_size] = content.bytesize
         core.save
 
