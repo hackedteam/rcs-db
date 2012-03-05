@@ -130,8 +130,6 @@ class InstanceProcessor
             
             evidences.each do |evidence|
 
-              puts "*** TYPE #{evidence[:type]}"
-
               # store evidence_id inside evidence, we need it inside processors
               evidence[:db_id] = evidence_id
               
@@ -150,7 +148,7 @@ class InstanceProcessor
               
               # find correct processing module and extend evidence
               mod = "#{evidence[:type].to_s.capitalize}Processing"
-              evidence.extend eval mod if RCS.const_defined? mod.to_sym
+              evidence.extend eval(mod) if RCS.const_defined? mod.to_sym
               evidence.process if evidence.respond_to? :process
               
               # override original type
