@@ -233,7 +233,7 @@ class RESTController
   def mongoid_query(&block)
     begin
       yield
-    rescue Mongoid::ConnectionError =>  e
+    rescue Mongo::ConnectionFailure =>  e
       trace :error, "Connection to database lost, retrying in 5 seconds..."
       sleep 5
       retry if attempt ||= 0 and attempt += 1 and attempt < 2
