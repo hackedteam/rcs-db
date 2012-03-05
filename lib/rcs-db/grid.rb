@@ -35,6 +35,7 @@ class GridFS
         return grid_id
       rescue Exception => e
         trace :error, "Cannot put content into the Grid: #{collection_name(collection)} #{opts.inspect} #{e.message}"
+        trace :error, e.message
         return nil
       end
     end
@@ -45,8 +46,8 @@ class GridFS
         grid = Mongo::Grid.new db, collection_name(collection)
         return grid.get id
       rescue Exception => e
-        trace :error, e.message
         trace :error, "Cannot get content from the Grid: #{collection_name(collection)}"
+        trace :error, e.message
         return nil
       end
     end
@@ -58,6 +59,7 @@ class GridFS
         return grid.delete id
       rescue Exception => e
         trace :error, "Cannot delete content from the Grid: #{collection_name(collection)}"
+        trace :error, e.message
         return nil
       end
     end
@@ -65,15 +67,20 @@ class GridFS
     def to_tmp(id, collection = nil)
       begin
         file = self.get id, collection
-        temp = File.open(Config.instance.temp("#{id}-%f" % Time.now), 'wb')
+        raise if file.nil?
+        temp = File.open(Config.instance.temp("#{id}-%f" % Time.now), 'wb+')
         temp.write file.read(65536) until file.eof?
+        temp.flush
+        temp.close
         return temp.path
       rescue Exception => e
-        trace :error, "Cannot create temporary file. Retrying ..."
-        retry
+        trace :error, "Cannot save to tmp from the Grid: #{collection_name(collection)}"
+        trace :error, e.message
+        retry if attempt ||= 0 and attempt += 1 and attempt < 5
+        return nil
       end
     end
-
+    
     def delete_by_agent(agent, collection = nil)
       items = get_by_filename(agent, collection_name(collection))
       items.each {|item| delete(item["_id"], collection_name(collection))}

@@ -56,6 +56,7 @@ class Build
     raise "Core for #{@platform} not found" if core.nil?
 
     @core = GridFS.to_tmp core[:_grid].first
+    raise "Cannot extract core for #{@platform} to filesystem" if @core.nil?
     trace :info, "Build: loaded core: #{@platform} #{core.version} #{File.size(@core)} bytes"
 
     if params

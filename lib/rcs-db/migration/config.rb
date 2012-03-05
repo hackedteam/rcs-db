@@ -453,7 +453,7 @@ class ConfigMigration
           if s[:action] == 'module' and ['camera','screenshot', 'position'].include? s[:module]
             s[:action] = 'event'
             s[:event] = events.index {|e| e[:desc] == "#{s[:module]} loop" and e[:_mig] }
-            s[:status] = s[:status] == 'start' ? 'enabled' : 'disabled'
+            s[:status] = s[:status] == 'start' ? 'enable' : 'disable'
             s.delete :module
           end
         end

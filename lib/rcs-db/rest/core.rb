@@ -30,12 +30,14 @@ class CoreController < RESTController
       if @params['content']
         temp = GridFS.to_tmp core[:_grid].first
 
+        return server_error("Cannot extract core to filesystem") if temp.nil?
+
         list = []
         Zip::ZipFile.foreach(temp) do |f|
           list << {name: f.name, size: f.size, date: f.time}
         end
 
-        File.delete(temp)
+        FileUtils.rm_rf(temp)
         
         return ok(list)
       else
@@ -65,12 +67,13 @@ class CoreController < RESTController
 
       # get the version from inside the zip file
       temp = GridFS.to_tmp core[:_grid].first
+      return server_error("Cannot extract core to filesystem") if temp.nil?
 
       Zip::ZipFile.open(temp) do |z|
         core.version = z.file.open('version', "r") { |f| f.read }
       end
 
-      File.delete(temp)
+      FileUtils.rm_rf(temp)
 
       core.save
 
@@ -90,6 +93,7 @@ class CoreController < RESTController
       new_entry = @params['name']
 
       temp = GridFS.to_tmp core[:_grid].first
+      return server_error("Cannot extract core to filesystem") if temp.nil?
 
       Zip::ZipFile.open(temp) do |z|
         z.file.open(new_entry, "w") { |f| f.write @request[:content]['content'] }
@@ -104,7 +108,7 @@ class CoreController < RESTController
 
       # delete the old one
       GridFS.delete core[:_grid].first
-      File.delete temp
+      FileUtils.rm_rf temp
       
       # replace with the new zip file
       core[:_grid] = [ GridFS.put(content, {filename: @params['_id']}) ]
@@ -125,10 +129,13 @@ class CoreController < RESTController
       core = ::Core.where({name: @params['_id']}).first
       return not_found("Core #{@params['_id']} not found") if core.nil?
 
+      # we are requesting to delete a file inside the zip
       if @params['name']
 
         # get the core, save to tmp and edit it
         temp = GridFS.to_tmp core[:_grid].first
+        return server_error("Cannot extract core to filesystem") if temp.nil?
+
         Zip::ZipFile.open(temp, Zip::ZipFile::CREATE) do |z|
           return not_found("File #{@params['name']} not found") unless z.file.exist?(@params['name'])
           z.file.delete(@params['name'])
@@ -146,6 +153,7 @@ class CoreController < RESTController
         Audit.log :actor => @session[:user][:name], :action => 'core.remove', :desc => "Removed the file [#{@params['name']}] from the core #{@params['_id']}"
 
         return ok()
+      # here we want to delete teh entire core file
       else
         GridFS.delete core[:_grid].first
         core.destroy

@@ -19,11 +19,11 @@ class AgentController < RESTController
     filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
     filter ||= {}
 
-    filter.merge!({_id: {"$in" => @session[:accessible]}, _kind: { "$in" => ['agent', 'factory']}})
+    filter.merge!({_id: {"$in" => @session[:accessible]}, _kind: { "$in" => ['agent', 'factory']}, deleted: {"$in" => [false, nil]} })
 
     mongoid_query do
       db = Mongoid.database
-      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "upgradable", "demo"])
+      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "upgradable", "demo", "stat.last_sync"])
       ok(j)
     end
   end
@@ -35,7 +35,7 @@ class AgentController < RESTController
 
     mongoid_query do
       db = Mongoid.database
-      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "uninstalled", "deleted", "demo", "version", "counter", "configs"])
+      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "uninstalled", "demo", "version", "counter", "configs"])
       ok(j.first)
     end
   end
@@ -70,7 +70,17 @@ class AgentController < RESTController
 
     mongoid_query do
       item = Item.any_in(_id: @session[:accessible]).find(@params['_id'])
-      item.destroy
+
+      # don't actually destroy the agent, but mark it as deleted
+      item.deleted = true
+      item.destroy_callback
+      item.save
+
+      # if the deletion is permanent, destroy the item
+      if @params['permanent']
+        trace :info, "Agent #{item.name} permanently deleted"
+        item.destroy
+      end
       
       Audit.log :actor => @session[:user][:name],
                 :action => "#{item._kind}.delete",
@@ -360,6 +370,14 @@ class AgentController < RESTController
     require_auth_level :server, :tech
     
     agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+    return not_found if agent.nil?
+
+    # don't send the config to agent too old
+    if (agent.platform == 'blacberry' or agent.platform == 'android')
+      return not_found if agent.version < 2012013101
+    else
+      return not_found if agent.version < 2012030101
+    end
 
     case @request[:method]
       when 'GET'

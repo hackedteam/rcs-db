@@ -59,7 +59,7 @@ class LogMigration
       end
     end
     
-    File.delete('migration.status') if File.exist?('migration.status')
+    FileUtils.rm_rf('migration.status') if File.exist?('migration.status')
     
   end
   

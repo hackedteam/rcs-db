@@ -11,11 +11,11 @@ TEST:
 
 HIGH PRIORITY:
 
-    deleting an agent does not delete it but mark it as deleted
-        - filter the deleted in the index function
+    scazzi di grid fs !!
 
-    don't send config to backdoor too old (7.x)
+    controllare che ovunque si faccia una put, poi ci sia la delete
 
+    ruby della 7 da fastidio al ruby nuovo!!!
 
     fast evidence retrieving methods
 

@@ -64,6 +64,9 @@ class Application
       # config file parsing
       return 1 unless Config.instance.load_from_file
 
+      # we need the certs
+      return 1 unless Config.instance.check_certs
+
       # make sure the backup dir is present
       FileUtils.mkdir_p(Config.instance.global['BACKUP_DIR']) if not File.directory?(Config.instance.global['BACKUP_DIR'])
 

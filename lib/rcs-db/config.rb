@@ -37,20 +37,7 @@ class Config
     @global = {}
   end
 
-  def load_from_file
-    trace :info, "Loading configuration file..."
-    conf_file = File.join Dir.pwd, CONF_DIR, CONF_FILE
-
-    # load the config in the @global hash
-    begin
-      File.open(conf_file, "r") do |f|
-        @global = YAML.load(f.read)
-      end
-    rescue
-      trace :fatal, "Cannot open config file [#{conf_file}]"
-      return false
-    end
-
+  def check_certs
     if not @global['DB_CERT'].nil?
       if not File.exist?(Config.instance.cert('DB_CERT'))
         trace :fatal, "Cannot open certificate file [#{@global['DB_CERT']}]"
@@ -70,6 +57,23 @@ class Config
         trace :fatal, "Cannot open PEM file [#{@global['CA_PEM']}]"
         return false
       end
+    end
+
+    return true
+  end
+
+  def load_from_file
+    trace :info, "Loading configuration file..."
+    conf_file = File.join Dir.pwd, CONF_DIR, CONF_FILE
+
+    # load the config in the @global hash
+    begin
+      File.open(conf_file, "r") do |f|
+        @global = YAML.load(f.read)
+      end
+    rescue
+      trace :fatal, "Cannot open config file [#{conf_file}]"
+      return false
     end
 
     # to avoid problems with checks too frequent

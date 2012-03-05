@@ -179,7 +179,7 @@ class InjectorController < RESTController
       if rule.action == 'REPLACE' and not @params['rule']['action_param'].nil?
         path = Config.instance.temp(@params['rule']['action_param'])
         if File.exist?(path) and File.file?(path)
-          rule[:_grid] = [GridFS.put(File.binread(path), {filename: @params['rule']['action_param']})]
+          rule[:_grid] = [GridFS.put(File.open(path, 'rb+') {|f| f.read}, {filename: @params['rule']['action_param']})]
           File.unlink(path)
         end
       end
@@ -243,7 +243,7 @@ class InjectorController < RESTController
         if File.exist?(path) and File.file?(path)
           # delete any previous file in the grid
           GridFS.delete rule[:_grid].first unless rule[:_grid].nil?
-          rule[:_grid] = [GridFS.put(File.binread(path), {filename: @params['rule']['action_param']})]
+          rule[:_grid] = [GridFS.put(File.open(path, 'rb+') {|f| f.read}, {filename: @params['rule']['action_param']})]
           File.unlink(path)
         end
       end
