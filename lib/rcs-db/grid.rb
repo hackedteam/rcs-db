@@ -63,12 +63,15 @@ class GridFS
     end
 
     def to_tmp(id, collection = nil)
-      file = self.get id, collection
-      temp = File.open(Config.instance.temp("#{id}-%f" % Time.now), 'wb')
-      temp.write file.read(65536) until file.eof?
-      temp.flush
-      temp.close
-      return temp.path
+      begin
+        file = self.get id, collection
+        temp = File.open(Config.instance.temp("#{id}-%f" % Time.now), 'wb')
+        temp.write file.read(65536) until file.eof?
+        return temp.path
+      rescue Exception => e
+        trace :error, "Cannot create temporary file. Retrying ..."
+        retry
+      end
     end
 
     def delete_by_agent(agent, collection = nil)
