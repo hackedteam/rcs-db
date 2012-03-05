@@ -40,7 +40,19 @@ class EvidenceManager
         entries[inst][:count] += 1
         entries[inst][:size] += i["length"]
       end
+      ident = inst.slice(0..13)
+      instance = inst.slice(15..-1)
+      agent = ::Item.agents.where({ident: ident, instance: instance}).first
+
+      entries[inst][:platform] = agent[:platform]
+
+      time = Time.at(agent.stat[:last_sync]).getutc
+      time = time.to_s.split(' +').first
+      entries[inst][:time] = time
     end
+
+    # this will became an array
+    entries = entries.sort_by {|k,v| v[:time]}
 
     # table definitions
     table_width = 117
@@ -53,16 +65,8 @@ class EvidenceManager
          'last sync time'.center(25) + '|' + 'logs'.center(6) + '|' + 'size'.center(13) + '|'
     puts table_line
 
-    entries.each_pair do |key, value|
-
-      ident = key.slice(0..13)
-      instance = key.slice(15..-1)
-      agent = ::Item.agents.where({ident: ident, instance: instance}).first
-
-      time = Time.at(agent.stat[:last_sync]).getutc
-      time = time.to_s.split(' +').first
-
-      puts "| #{key} |#{agent[:platform].center(12)}| #{time} |#{value[:count].to_s.rjust(5)} | #{value[:size].to_s_bytes.rjust(11)} |"
+    entries.each do |entry|
+      puts "| #{entry[0]} |#{entry[1][:platform].center(12)}| #{entry[1][:time]} |#{entry[1][:count].to_s.rjust(5)} | #{entry[1][:size].to_s_bytes.rjust(11)} |"
     end
 
     puts table_line
