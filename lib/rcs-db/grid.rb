@@ -70,7 +70,6 @@ class GridFS
         raise if file.nil?
         temp = File.open(Config.instance.temp("#{id}-%f" % Time.now), 'wb+')
         temp.write file.read(65536) until file.eof?
-        temp.flush
         temp.close
         return temp.path
       rescue Exception => e
@@ -80,7 +79,7 @@ class GridFS
         return nil
       end
     end
-    
+
     def delete_by_agent(agent, collection = nil)
       items = get_by_filename(agent, collection_name(collection))
       items.each {|item| delete(item["_id"], collection_name(collection))}
