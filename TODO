@@ -40,6 +40,10 @@ LOW PRIORITY:
 
     FFI per dongle dll
 
+    mongo logRotate
+
+    mongo compact afeter deletion
+
     mongo authentication
 
     is vcredist needed ?

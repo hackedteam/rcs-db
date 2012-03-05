@@ -12,7 +12,7 @@ class BuildUSB < Build
 
   def initialize
     super
-    @platform = 'usb'
+    @platform = 'offline'
   end
 
   def load(params)

