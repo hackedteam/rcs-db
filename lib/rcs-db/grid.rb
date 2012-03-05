@@ -67,7 +67,7 @@ class GridFS
     def to_tmp(id, collection = nil)
       begin
         file = self.get id, collection
-        raise if file.nil?
+        raise "Grid content is nil" if file.nil?
         temp = File.open(Config.instance.temp("#{id}-%f" % Time.now), 'wb+')
         temp.write file.read(65536) until file.eof?
         temp.close
