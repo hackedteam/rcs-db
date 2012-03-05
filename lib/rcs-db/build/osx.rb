@@ -117,6 +117,7 @@ class BuildOSX < Build
                                         path(@scrambled[:driver])+' '+
                                         path(@scrambled[:driver64])+' '+
                                         path(@scrambled[:inputmanager])+' '+
+                                        path(@scrambled[:xpc])+' '+
                                         path(@scrambled[:icon])+' '+
                                         path(@scrambled[:dir])+' '+
                                         (params['demo'] ? path('demo_image') : 'null') +' '+
