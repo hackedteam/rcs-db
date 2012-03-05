@@ -2,9 +2,15 @@
 require 'rcs-common/trace'
 require 'rcs-common/fixnum'
 
-require_relative '../rcs-db/db'
-require_relative '../rcs-db/grid'
-require_relative '../rcs-db/evidence_dispatcher'
+if File.directory?(Dir.pwd + '/lib/rcs-worker-release')
+  require 'rcs-db-release/db'
+  require 'rcs-db-release/grid'
+  require 'rcs-db-release/evidence_dispatcher'
+else
+  require 'rcs-db/db'
+  require 'rcs-db/grid'
+  require 'rcs-db/evidence_dispatcher'
+end
 
 module RCS
 module Worker
@@ -31,6 +37,9 @@ class WorkerBacklog
       end
     end
 
+    # this will become an array
+    entries = entries.sort_by {|k,v| k}
+
     # table definitions
     table_width = 117
     table_line = '+' + '-' * table_width + '+'
@@ -42,14 +51,14 @@ class WorkerBacklog
          'shard'.center(25) + '|' + 'logs'.center(6) + '|' + 'size'.center(13) + '|'
     puts table_line
 
-    entries.each_pair do |key, value|
+    entries.each do |entry|
 
-      ident = key.slice(0..13)
-      instance = key.slice(15..-1)
+      ident = entry[0].slice(0..13)
+      instance = entry[0].slice(15..-1)
       agent = ::Item.agents.where({ident: ident, instance: instance}).first
       shard_id = RCS::DB::EvidenceDispatcher.instance.shard_id ident, instance
 
-      puts "| #{key} |#{agent[:platform].center(12)}| #{shard_id.center(23)} |#{value[:count].to_s.rjust(5)} | #{value[:size].to_s_bytes.rjust(11)} |"
+      puts "| #{entry[0]} |#{agent[:platform].center(12)}| #{shard_id.center(23)} |#{entry[1][:count].to_s.rjust(5)} | #{entry[1][:size].to_s_bytes.rjust(11)} |"
     end
 
     puts table_line
