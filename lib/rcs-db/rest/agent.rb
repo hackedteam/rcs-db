@@ -295,7 +295,7 @@ class AgentController < RESTController
     end
     
     # is the agent already in the database? (has it synchronized at least one time?)
-    agent = Item.where({_kind: 'agent', ident: @params['ident'], instance: @params['instance'], platform: platform, demo: demo}).first
+    agent = Item.where({_kind: 'agent', ident: @params['ident'], instance: @params['instance'].downcase, platform: platform, demo: demo}).first
 
     # yes it is, return the status
     unless agent.nil?
@@ -329,7 +329,7 @@ class AgentController < RESTController
 
     # specialize it with the platform and the unique instance
     agent.platform = platform
-    agent.instance = @params['instance']
+    agent.instance = @params['instance'].downcase
     agent.demo = demo
 
     # default is queued

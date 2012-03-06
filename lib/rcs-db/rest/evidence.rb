@@ -27,7 +27,7 @@ class EvidenceController < RESTController
     require_auth_level :server, :tech
     
     ident = @params['_id'].slice(0..13)
-    instance = @params['_id'].slice(15..-1)
+    instance = @params['_id'].slice(15..-1).downcase
     
     # save the evidence in the db
     begin
@@ -130,6 +130,8 @@ class EvidenceController < RESTController
     # filtering
     filter = {}
     filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
+
+    puts filter.inspect
 
     # if not specified the filter on the date is last 24 hours
     filter['from'] = Time.now.to_i - 86400 if filter['from'].nil?
