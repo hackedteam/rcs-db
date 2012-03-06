@@ -30,7 +30,7 @@ class BackdoorMigration
       next if backdoor[:instance].empty? and kind == 'agent'
 
       trace :info, "Migrating backdoor '#{backdoor[:backdoor]}'." if verbose
-      print "." unless verbose
+      print (backdoor[:deleted]) ? "+" : "." unless verbose
 
       mb = ::Item.new
       mb[:_mid] = backdoor[:backdoor_id]

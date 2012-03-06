@@ -170,6 +170,9 @@ class LogMigration
           size = 0
         end
 
+        # dont' migrate UPLOAD evidences
+        next if log[:type] == 'UPLOAD'
+
         # persist the current log
         log_type = migrate_single_log(ev, log, targ._id, a[:_id])
 
@@ -260,7 +263,7 @@ class LogMigration
         conversion = {:varchar1 => :program, :varchar2 => :window, :longtext1 => :content}
       when 'DEVICE'
         conversion = {:longtext1 => :content}
-      when 'DOWNLOAD', 'UPLOAD'
+      when 'DOWNLOAD'
         conversion = {:varchar1 => :path}
       when 'FILECAP'
         conversion = {:varchar1 => :path, :varchar2 => :md5}

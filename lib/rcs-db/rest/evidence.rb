@@ -27,7 +27,7 @@ class EvidenceController < RESTController
     require_auth_level :server, :tech
     
     ident = @params['_id'].slice(0..13)
-    instance = @params['_id'].slice(15..-1)
+    instance = @params['_id'].slice(15..-1).downcase
     
     # save the evidence in the db
     begin
@@ -41,6 +41,29 @@ class EvidenceController < RESTController
     
     trace :info, "Evidence [#{ident}::#{instance}][#{id}] saved and dispatched to shard #{shard_id}"
     return ok({:bytes => @request[:content]['content'].size})
+  end
+
+  def update
+    require_auth_level :view
+
+    mongoid_query do
+      target = Item.where({_id: @params['target']}).first
+      return not_found if target.nil?
+
+      evidence = Evidence.collection_class(target[:_id]).find(@params['_id'])
+      @params.delete('_id')
+      @params.delete('target')
+
+      @params.each_pair do |key, value|
+        if evidence[key.to_s] != value
+          Audit.log :actor => @session[:user][:name], :action => 'evidence.update', :desc => "Updated '#{key}' to '#{value}' for evidence #{evidence[:_id]}"
+        end
+      end
+
+      evidence.update_attributes(@params)
+
+      return ok(evidence)
+    end
   end
 
   # used to report that the activity of an instance is starting
@@ -127,38 +150,11 @@ class EvidenceController < RESTController
   def index
     require_auth_level :view
 
-    # filtering
-    filter = {}
-    filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
-
-    # if not specified the filter on the date is last 24 hours
-    filter['from'] = Time.now.to_i - 86400 if filter['from'].nil?
-    filter['to'] = Time.now.to_i if filter['to'].nil?
-
-    filter_hash = {}
-
-    # filter by target
-    target_id = filter['target']
-    filter.delete('target')
-    target = Item.where({_id: target_id}).first
-    return not_found if target.nil?
-
-    # filter by agent
-    if filter['agent']
-      agent_id = filter['agent']
-      filter.delete('agent')
-      agent = Item.where({_id: agent_id}).first
-      return not_found if agent.nil?
-      filter_hash[:agent_id] = agent[:_id]
-    end
-
-    # date filters must be treated separately
-    if filter.has_key? 'from' and filter.has_key? 'to'
-      filter_hash[:acquired.gte] = filter.delete('from')
-      filter_hash[:acquired.lte] = filter.delete('to')
-    end
-
     mongoid_query do
+
+      filter, filter_hash, target = create_common_filter @params
+      return not_found if filter.nil?
+
       # copy remaining filtering criteria (if any)
       filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info'])
       filter.each_key do |k|
@@ -169,11 +165,7 @@ class EvidenceController < RESTController
       if @params.has_key? 'startIndex' and @params.has_key? 'numItems'
         start_index = @params['startIndex'].to_i
         num_items = @params['numItems'].to_i
-        #trace :debug, "Querying with filter #{filter_hash}."
         query = filtering.where(filter_hash).order_by([[:acquired, :asc]]).skip(start_index).limit(num_items)
-
-        #trace :debug, query.inspect
-
       else
         # without paging, return everything
         query = filtering.where(filter_hash).order_by([[:acquired, :asc]])
@@ -183,39 +175,15 @@ class EvidenceController < RESTController
     end
   end
 
+
   def count
     require_auth_level :view
 
-    # filtering
-    filter = {}
-    filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
-
-    # if not specified the filter on the date is last 24 hours
-    filter['from'] = Time.now.to_i - 86400 if filter['from'].nil?
-    filter['to'] = Time.now.to_i if filter['to'].nil?
-
-    filter_hash = {}
-
-    # filter by target
-    target_id = filter.delete('target')
-    target = Item.where({_id: target_id}).first
-    return not_found() if target.nil?
-
-    # filter by agent
-    if filter['agent']
-      agent_id = filter.delete('agent')
-      agent = Item.where({_id: agent_id}).first
-      return not_found() if agent.nil?
-      filter_hash[:agent_id] = agent[:_id]
-    end
-
-    # date filters must be treated separately
-    if filter.has_key? 'from' and filter.has_key? 'to'
-      filter_hash[:acquired.gte] = filter.delete('from')
-      filter_hash[:acquired.lte] = filter.delete('to')
-    end
-
     mongoid_query do
+
+      filter, filter_hash, target = create_common_filter @params
+      return not_found if filter.nil?
+
       # copy remaining filtering criteria (if any)
       filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info'])
       filter.each_key do |k|
@@ -234,38 +202,11 @@ class EvidenceController < RESTController
   def info
     require_auth_level :view
 
-    # filtering
-    filter = {}
-    filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
-
-    # if not specified the filter on the date is last 24 hours
-    filter['from'] = Time.now.to_i - 86400 if filter['from'].nil?
-    filter['to'] = Time.now.to_i if filter['to'].nil?
-
-    filter_hash = {}
-
-    # filter by target
-    target_id = filter['target']
-    filter.delete('target')
-    target = Item.where({_id: target_id}).first
-    return not_found if target.nil?
-
-    # filter by agent
-    if filter['agent']
-      agent_id = filter['agent']
-      filter.delete('agent')
-      agent = Item.where({_id: agent_id}).first
-      return not_found if agent.nil?
-      filter_hash[:agent_id] = agent[:_id]
-    end
-
-    # date filters must be treated separately
-    if filter.has_key? 'from' and filter.has_key? 'to'
-      filter_hash[:acquired.gte] = filter.delete('from')
-      filter_hash[:acquired.lte] = filter.delete('to')
-    end
-
     mongoid_query do
+
+      filter, filter_hash, target = create_common_filter @params
+      return not_found if filter.nil?
+
       # copy remaining filtering criteria (if any)
       filtering = Evidence.collection_class(target[:_id]).where({:type => 'info'})
       filter.each_key do |k|
@@ -278,6 +219,44 @@ class EvidenceController < RESTController
       return ok(query)
     end
   end
+
+
+  def create_common_filter(params)
+
+    # filtering
+    filter = {}
+    filter = JSON.parse(params['filter']) if params.has_key? 'filter'
+
+    # if not specified the filter on the date is last 24 hours
+    filter['from'] = Time.now.to_i - 86400 if filter['from'].nil?
+    filter['to'] = Time.now.to_i if filter['to'].nil?
+
+    filter_hash = {}
+
+    # filter by target
+    target_id = filter['target']
+    filter.delete('target')
+    target = Item.where({_id: target_id}).first
+    return nil if target.nil?
+
+    # filter by agent
+    if filter['agent']
+      agent_id = filter['agent']
+      filter.delete('agent')
+      agent = Item.where({_id: agent_id}).first
+      return nil if agent.nil?
+      filter_hash[:agent_id] = agent[:_id]
+    end
+
+    # date filters must be treated separately
+    if filter.has_key? 'from' and filter.has_key? 'to'
+      filter_hash[:acquired.gte] = filter.delete('from')
+      filter_hash[:acquired.lte] = filter.delete('to')
+    end
+
+    return filter, filter_hash, target
+  end
+
 
 end
 

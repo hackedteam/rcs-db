@@ -119,7 +119,7 @@ class BuildOSX < Build
                                         path(@scrambled[:inputmanager])+' '+
                                         path(@scrambled[:xpc])+' '+
                                         path(@scrambled[:icon])+' '+
-                                        path(@scrambled[:dir])+' '+
+                                        @scrambled[:dir]+' '+
                                         (params['demo'] ? path('demo_image') : 'null') +' '+
                                         executable + ' ' +
                                         path('output')
