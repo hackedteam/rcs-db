@@ -10,6 +10,7 @@ require 'rcs-common/crypt'
 
 class Item
   extend RCS::Tracer
+  include RCS::Tracer
   include RCS::Crypt
   include Mongoid::Document
   include Mongoid::Timestamps
