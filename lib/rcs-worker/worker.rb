@@ -219,7 +219,6 @@ class Worker
       evidences = db.collection('grid.evidence.files').find({metadata: {shard: RCS::DB::Config.instance.global['SHARD']}})
       evidences.each do |ev|
         ident, instance = ev['filename'].split(":")
-        trace :info, "Processing pending evidence #{ev['_id']}"
         QueueManager.instance.queue instance, ident, ev['_id'].to_s
       end
     rescue Exception => e

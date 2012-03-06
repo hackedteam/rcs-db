@@ -26,12 +26,9 @@ class QueueManager
     @semaphore.synchronize do
       idx = "#{ident}:#{instance}"
 
-      #trace :debug, "Queueing evidence #{evidence} for processor #{idx}"
-
       begin
         if @instances[idx].nil?
           @instances[idx] = InstanceProcessor.new instance, ident
-          #puts "NEW INSTANCE PROCESSOR #{idx}"
         end
         @instances[idx].queue(evidence)
       rescue Exception => e
@@ -40,7 +37,7 @@ class QueueManager
       end
     end
   end
-  
+
   def to_s
     str = ""
     @instances.each_pair do |idx, processor|

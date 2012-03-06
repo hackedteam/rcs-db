@@ -43,8 +43,6 @@ module SingleEvidence
         end
 
         ev.save
-
-        trace :debug, "saved evidence #{ev._id}"
       end
 
       return evidence
