@@ -30,8 +30,6 @@ class CoreController < RESTController
       if @params['content']
         temp = GridFS.to_tmp core[:_grid].first
 
-        return server_error("Cannot extract core to filesystem") if temp.nil?
-
         list = []
         Zip::ZipFile.foreach(temp) do |f|
           list << {name: f.name, size: f.size, date: f.time}
@@ -66,7 +64,6 @@ class CoreController < RESTController
 
       # get the version from inside the zip file
       temp = GridFS.to_tmp core[:_grid].first
-      return server_error("Cannot extract core to filesystem") if temp.nil?
 
       Zip::ZipFile.open(temp) do |z|
         core.version = z.file.open('version', "r") { |f| f.read }
@@ -92,7 +89,6 @@ class CoreController < RESTController
       new_entry = @params['name']
 
       temp = GridFS.to_tmp core[:_grid].first
-      return server_error("Cannot extract core to filesystem") if temp.nil?
 
       Zip::ZipFile.open(temp) do |z|
         z.file.open(new_entry, "w") { |f| f.write @request[:content]['content'] }
@@ -133,7 +129,6 @@ class CoreController < RESTController
 
         # get the core, save to tmp and edit it
         temp = GridFS.to_tmp core[:_grid].first
-        return server_error("Cannot extract core to filesystem") if temp.nil?
 
         Zip::ZipFile.open(temp, Zip::ZipFile::CREATE) do |z|
           return not_found("File #{@params['name']} not found") unless z.file.exist?(@params['name'])
