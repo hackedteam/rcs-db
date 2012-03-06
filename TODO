@@ -17,6 +17,8 @@ HIGH PRIORITY:
 
     fast evidence retrieving methods ( amf? )
 
+    export logs: all, blotter, with filters, filesystem...
+
 MEDIUM PRIORITY:
 
     Forwarder (worker)
@@ -28,8 +30,6 @@ MEDIUM PRIORITY:
         - mail
 
     sms wap send
-
-    export logs: all, blotter, with filters, filesystem...
 
     check the TODOs in the code...
 
