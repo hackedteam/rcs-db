@@ -15,7 +15,7 @@ HIGH PRIORITY:
 
     ruby della 7 da fastidio al ruby nuovo!!!
 
-    fast evidence retrieving methods
+    fast evidence retrieving methods ( amf? )
 
 MEDIUM PRIORITY:
 
@@ -32,6 +32,8 @@ MEDIUM PRIORITY:
     export logs: all, blotter, with filters, filesystem...
 
     check the TODOs in the code...
+
+    PURGE command during sync
 
     remove lock file for mongo dunring update
 

@@ -24,6 +24,8 @@ class GridFS
     
     def put(content, opts = {}, collection = nil)
       begin
+        raise "Cannot put into the grid: content is empty" if content.nil?
+
         db = Mongoid.database
         grid = Mongo::Grid.new db, collection_name(collection)
         grid_id = grid.put(content, opts)
@@ -35,8 +37,7 @@ class GridFS
         return grid_id
       rescue Exception => e
         trace :error, "Cannot put content into the Grid: #{collection_name(collection)} #{opts.inspect} #{e.message}"
-        trace :error, e.message
-        return nil
+        raise
       end
     end
 
@@ -46,9 +47,8 @@ class GridFS
         grid = Mongo::Grid.new db, collection_name(collection)
         return grid.get id
       rescue Exception => e
-        trace :error, "Cannot get content from the Grid: #{collection_name(collection)}"
-        trace :error, e.message
-        return nil
+        trace :error, "Cannot get content from the Grid: #{collection_name(collection)} #{e.message}"
+        raise
       end
     end
 
@@ -58,9 +58,8 @@ class GridFS
         grid = Mongo::Grid.new db, collection_name(collection)
         return grid.delete id
       rescue Exception => e
-        trace :error, "Cannot delete content from the Grid: #{collection_name(collection)}"
-        trace :error, e.message
-        return nil
+        trace :error, "Cannot delete content from the Grid: #{collection_name(collection)} #{e.message}"
+        raise
       end
     end
 
@@ -76,7 +75,7 @@ class GridFS
         trace :error, "Cannot save to tmp from the Grid: #{collection_name(collection)}"
         trace :error, e.message
         retry if attempt ||= 0 and attempt += 1 and attempt < 5
-        return nil
+        raise
       end
     end
 
@@ -103,7 +102,6 @@ class GridFS
         trace :error, "Cannot get content from the Grid: #{collection_name(collection)}"
         return []
       end
-
     end
 
   end
