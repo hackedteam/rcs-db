@@ -11,7 +11,7 @@ TEST:
 
 HIGH PRIORITY:
 
-    controllare che ovunque si faccia una put, poi ci sia la delete
+    controllare che ovunque si faccia una put nel grid, poi ci sia la delete
 
     ruby della 7 da fastidio al ruby nuovo!!!
 
@@ -35,7 +35,7 @@ MEDIUM PRIORITY:
 
     PURGE command during sync
 
-    remove lock file for mongo dunring update
+    remove lock file for mongo during update
 
 LOW PRIORITY:
 

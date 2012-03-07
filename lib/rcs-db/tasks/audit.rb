@@ -12,7 +12,7 @@ class AuditTask
   end
   
   def next_entry
-    @description = "exporting audit logs"
+    @description = "Exporting audit logs"
     
     audits = ::Audit.filter(@params['filter']) unless @params['filter'].nil?
     audits ||= ::Audit.all
