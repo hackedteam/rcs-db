@@ -96,6 +96,8 @@ class InstanceProcessor
 
             next if evidences.nil?
 
+            ev_type = ''
+
             evidences.each do |ev|
 
               next if ev.empty?
@@ -115,7 +117,7 @@ class InstanceProcessor
               ev.process if ev.respond_to? :process
 
               # override original type
-              ev[:type] = ev.type
+              ev_type = ev[:type] = ev.type
 
               #store_evidence evidence
               parsed = ev.store
@@ -126,7 +128,7 @@ class InstanceProcessor
             end
 
             processing_time = Time.now - start_time
-            trace :info, "[#{evidence_id}] processed #{ev[:type].upcase} for agent #{@agent['ident']} in #{processing_time} sec"
+            trace :info, "[#{evidence_id}] processed #{ev_type.upcase} for agent #{@agent['ident']} in #{processing_time} sec"
 
           rescue Mongo::ConnectionFailure => e
             trace :error, "[#{evidence_id}] cannot connect to database, retrying in 5 seconds ..."

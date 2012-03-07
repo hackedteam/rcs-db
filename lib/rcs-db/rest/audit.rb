@@ -19,14 +19,17 @@ class AuditController < RESTController
     # filtering
     filter = {}
     filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
-    
+
+    # if not specified the filter on the date is last 24 hours
+    filter['from'] = Time.now.to_i - 86400 if filter['from'].nil?
+    filter['to'] = Time.now.to_i if filter['to'].nil?
+
     filter_hash = {}
     
     # date filters must be treated separately
     if filter.has_key? 'from' and filter.has_key? 'to'
       filter_hash[:time.gte] = filter.delete('from')
       filter_hash[:time.lte] = filter.delete('to')
-      #trace :debug, "Filtering date from #{filter['from']} to #{filter['to']}."
     end
 
     # desc filters must be handled as a regexp
@@ -63,6 +66,10 @@ class AuditController < RESTController
     # filtering
     filter = {}
     filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
+
+    # if not specified the filter on the date is last 24 hours
+    filter['from'] = Time.now.to_i - 86400 if filter['from'].nil?
+    filter['to'] = Time.now.to_i if filter['to'].nil?
 
     filter_hash = {}
     
