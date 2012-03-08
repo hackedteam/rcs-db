@@ -8,9 +8,6 @@ class GridController < RESTController
   def show
     require_auth_level :tech, :view
 
-    puts "Grid!!!"
-    puts @params.inspect
-
     return stream_grid(@params['_id'], @params['target_id'])
   end
 
