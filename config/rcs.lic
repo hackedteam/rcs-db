@@ -10,20 +10,21 @@
   :desktop: .Inf
   :mobile: .Inf
   :windows: [true, true]
-  :osx: [true, true]
-  :linux: [true, true]
+  :osx: [false, true]
+  :linux: [false, false]
   :android: [true, true]
   :blackberry: [true, true]
   :ios: [true, true]
   :symbian: [true, true]
-  :winmo: [true, true]
+  :winmo: [false, true]
 :alerting: true
 :correlation: false
 :forwarders: true
-:rmi: true
-:nia: .Inf
+:rmi: [false, true]
+:nia: [.Inf, true]
+:exploits: true
 :collectors: 
   :collectors: 10
   :anonymizers: 20
 :shards: 2
-:integrity: "21c719f243803cdbedd52956d71a05600c2965a56aa30df2271d8da12f2de0c7"
+:integrity: "9da80d879b2c4229a89538af0b5525f261febfda8c480ad20875fef109b3310e"

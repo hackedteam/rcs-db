@@ -127,7 +127,9 @@ module HTTPHandler
         
         # get the correct controller
         controller = HTTPHandler.restcontroller.get request
-        
+
+        puts controller.inspect
+
         # do the dirty job :)
         responder = controller.act!
         

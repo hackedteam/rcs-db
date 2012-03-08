@@ -18,6 +18,7 @@ class BuildWap < Build
   end
 
   def load(params)
+    #TODO: check the license
     trace :debug, "Build: load: #{params}"
     @factory = params['_id']
   end

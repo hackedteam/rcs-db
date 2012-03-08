@@ -238,13 +238,13 @@ if false
   # license.limit
   res = http.request_get('/license/limit', {'Cookie' => cookie})
   puts "license.limit"
-  puts res
+  puts res.body
   puts
   
   # license.count
   res = http.request_get('/license/count', {'Cookie' => cookie})
   puts "license.count"
-  puts res
+  puts res.body
   puts
 end
 
@@ -1091,13 +1091,11 @@ end
 
 # item deletion
 if false
-
   puts "operation.create"
   operation_post = {
     name: "test operation", 
     desc: "this is a test operation", 
     contact: "billg@microsoft.com"
-
   }
   res = http.request_post("/operation/create", operation_post.to_json, {'Cookie' => cookie})
   operation = JSON.parse(res.body)

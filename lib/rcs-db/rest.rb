@@ -159,6 +159,8 @@ class RESTController
 
   def act!
     begin
+      puts "INVALID COOKIE" unless valid_session?
+
       # check we have a valid session and an action
       return not_authorized('INVALID_COOKIE') unless valid_session?
       return server_error('NULL_ACTION') if @request[:action].nil?

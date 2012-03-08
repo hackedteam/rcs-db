@@ -54,9 +54,10 @@ class LicenseManager
                :alerting => false,
                :correlation => false,
                :forwarders => false,
-               :rmi => false,
-               :nia => 0,
+               :rmi => [false, false],
+               :nia => [0, false],
                :shards => 1,
+               :exploits => false,
                :collectors => {:collectors => 1, :anonymizers => 0}}
   end
 
@@ -123,6 +124,9 @@ class LicenseManager
     @limits[:type] = limit[:type]
     @limits[:serial] = limit[:serial]
 
+    @limits[:expiry] = Time.parse(limit[:expiry]).getutc.to_i
+    @limits[:maintenance] = Time.parse(limit[:expiry]).getutc.to_i
+
     @limits[:users] = limit[:users] if limit[:users] > @limits[:users]
 
     @limits[:agents][:total] = limit[:agents][:total] if limit[:agents][:total] > @limits[:agents][:total]
@@ -138,14 +142,14 @@ class LicenseManager
     @limits[:agents][:blackberry] = limit[:agents][:blackberry]
     @limits[:agents][:android] = limit[:agents][:android]
     
-    @limits[:nia] = limit[:nia] if limit[:nia] > @limits[:nia]
+    @limits[:nia] = limit[:nia]
     @limits[:collectors][:collectors] = limit[:collectors][:collectors] if limit[:collectors][:collectors] > @limits[:collectors][:collectors]
     @limits[:collectors][:anonymizers] = limit[:collectors][:anonymizers] if limit[:collectors][:anonymizers] > @limits[:collectors][:anonymizers]
     
     @limits[:alerting] = true if limit[:alerting] 
     @limits[:correlation] = true if limit[:correlation]
     @limits[:forwarders] = true if limit[:forwarders]
-    @limits[:rmi] = true if limit[:rmi]
+    @limits[:rmi] = limit[:rmi]
 
     @limits[:shards] = limit[:shards] if limit[:shards] > @limits[:shards]
     @limits[:exploits] = limit[:exploits]
@@ -219,7 +223,7 @@ class LicenseManager
         end
 
       when :injectors
-        if Injector.count() < @limits[:nia]
+        if Injector.count() < @limits[:nia][0]
           return true
         end
 
@@ -298,7 +302,7 @@ class LicenseManager
         offending.destroy
       end
 
-      if ::Injector.count > @limits[:nia]
+      if ::Injector.count > @limits[:nia][0]
         trace :fatal, "LICENCE EXCEEDED: Number of injectors is greater than license file. Fixing..."
         # fix by deleting the injector
         offending = ::Injector.first(sort: [[ :updated_at, :desc ]])
