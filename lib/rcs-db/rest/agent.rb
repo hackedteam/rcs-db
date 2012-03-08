@@ -35,7 +35,7 @@ class AgentController < RESTController
 
     mongoid_query do
       db = Mongoid.database
-      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "uninstalled", "demo", "version", "counter", "configs"])
+      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "uninstalled", "demo", "version", "counter", "configs", "upload_request", "download_requests"])
       ok(j.first)
     end
   end
@@ -316,7 +316,7 @@ class AgentController < RESTController
     factory = Item.where({_kind: 'factory', ident: @params['ident'], status: 'open'}).first
 
     # the status of the factory must be open otherwise no instance can be cloned from it
-    return not_found if factory.nil?
+    return not_found("Factory not found: #{@params['ident']}") if factory.nil?
 
     # increment the instance counter for the factory
     factory[:counter] += 1
@@ -370,7 +370,7 @@ class AgentController < RESTController
     require_auth_level :server, :tech
     
     agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
-    return not_found if agent.nil?
+    return not_found("Agent not found: #{@params['_id']}") if agent.nil?
 
     # don't send the config to agent too old
     if (agent.platform == 'blacberry' or agent.platform == 'android')

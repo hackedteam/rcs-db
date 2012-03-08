@@ -48,7 +48,7 @@ class EvidenceController < RESTController
 
     mongoid_query do
       target = Item.where({_id: @params['target']}).first
-      return not_found if target.nil?
+      return not_found("Target not found: #{@params['target']}") if target.nil?
 
       evidence = Evidence.collection_class(target[:_id]).find(@params['_id'])
       @params.delete('_id')
@@ -75,7 +75,7 @@ class EvidenceController < RESTController
     
     # retrieve the agent from the db
     agent = Item.where({_id: session[:bid]}).first
-    return not_found if agent.nil?
+    return not_found("Agent not found: #{session[:bid]}") if agent.nil?
     
     # convert the string time to a time object to be passed to 'sync_start'
     time = Time.at(@params['sync_time']).getutc
@@ -122,7 +122,7 @@ class EvidenceController < RESTController
 
     # retrieve the agent from the db
     agent = Item.where({_id: session[:bid]}).first
-    return not_found if agent.nil?
+    return not_found("Agent not found: #{session[:bid]}") if agent.nil?
 
     agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_IDLE
     agent.save
@@ -139,7 +139,7 @@ class EvidenceController < RESTController
 
     # retrieve the agent from the db
     agent = Item.where({_id: session[:bid]}).first
-    return not_found if agent.nil?
+    return not_found("Agent not found: #{session[:bid]}") if agent.nil?
 
     agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_TIMEOUTED
     agent.save
@@ -153,7 +153,7 @@ class EvidenceController < RESTController
     mongoid_query do
 
       filter, filter_hash, target = create_common_filter @params
-      return not_found if filter.nil?
+      return not_found("Target or Agent not found") if filter.nil?
 
       # copy remaining filtering criteria (if any)
       filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info'])
@@ -182,7 +182,7 @@ class EvidenceController < RESTController
     mongoid_query do
 
       filter, filter_hash, target = create_common_filter @params
-      return not_found if filter.nil?
+      return not_found("Target or Agent not found") if filter.nil?
 
       # copy remaining filtering criteria (if any)
       filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info'])
@@ -205,7 +205,7 @@ class EvidenceController < RESTController
     mongoid_query do
 
       filter, filter_hash, target = create_common_filter @params
-      return not_found if filter.nil?
+      return not_found("Target or Agent not found") if filter.nil?
 
       # copy remaining filtering criteria (if any)
       filtering = Evidence.collection_class(target[:_id]).where({:type => 'info'})

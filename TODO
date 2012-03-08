@@ -11,13 +11,18 @@ TEST:
 
 HIGH PRIORITY:
 
+    licenze demo / no demo
+
     controllare che ovunque si faccia una put nel grid, poi ci sia la delete
 
     ruby della 7 da fastidio al ruby nuovo!!!
 
     fast evidence retrieving methods ( amf? )
 
-    export logs: all, blotter, with filters, filesystem...
+    export evidence: all, blotter, with filters, filesystem...
+
+    sms wap send
+
 
 MEDIUM PRIORITY:
 
@@ -29,21 +34,20 @@ MEDIUM PRIORITY:
         - calendar
         - mail
 
-    sms wap send
-
     check the TODOs in the code...
 
     PURGE command during sync
 
-    remove lock file for mongo during update
 
 LOW PRIORITY:
 
     FFI per dongle dll
 
+    remove lock file for mongo during update
+
     mongo logRotate  & append to log
 
-    mongo compact afeter deletion
+    mongo compact after deletion
 
     mongo authentication
 
