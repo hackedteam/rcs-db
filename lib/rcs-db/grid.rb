@@ -42,21 +42,23 @@ class GridFS
     end
 
     def get(id, collection = nil)
+      #raise "Id must be a BSON::ObjectId" unless id.is_a? BSON::ObjectId
       begin
         db = Mongoid.database
         grid = Mongo::Grid.new db, collection_name(collection)
-        return grid.get BSON::ObjectId.from_string(id)
+        return grid.get id
       rescue Exception => e
         trace :error, "Cannot get content from the Grid: #{collection_name(collection)} #{e.message}"
         raise
       end
     end
     
-    def delete(id, collection = nil)
+   def delete(id, collection = nil)
+      #raise "Id must be a BSON::ObjectId" unless id.is_a? BSON::ObjectId
       begin
         db = Mongoid.database
         grid = Mongo::Grid.new db, collection_name(collection)
-        return grid.delete BSON::ObjectId.from_string(id)
+        return grid.delete id
       rescue Exception => e
         trace :error, "Cannot delete content from the Grid: #{collection_name(collection)} #{e.message}"
         raise
@@ -64,8 +66,9 @@ class GridFS
     end
 
     def to_tmp(id, collection = nil)
+      #raise "Id must be a BSON::ObjectId" unless id.is_a? BSON::ObjectId
       begin
-        file = self.get BSON::ObjectId.from_string(id), collection
+        file = self.get id, collection
         raise "Grid content is nil" if file.nil?
         temp = File.open(Config.instance.temp("#{id}-%f" % Time.now), 'wb+')
         temp.write file.read(65536) until file.eof?
