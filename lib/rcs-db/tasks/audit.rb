@@ -5,7 +5,11 @@ module DB
 
 class AuditTask
   include RCS::DB::SingleFileTaskType
-  
+
+  def internal_filename
+    'audit.csv'
+  end
+
   def total
     return (::Audit.count + 1) if @params['filter'].nil?
     (::Audit.filtered_count(@params['filter']) + 1)
