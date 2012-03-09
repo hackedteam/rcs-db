@@ -21,7 +21,6 @@ class GroupController < RESTController
 
     mongoid_query do
       group = Group.find(@params['_id'])
-      return not_found if group.nil?
       return ok(group)
     end
   end
@@ -43,7 +42,6 @@ class GroupController < RESTController
     mongoid_query do
       group = Group.find(@params['_id'])
       @params.delete('_id')
-      return not_found if group.nil?
       
       @params.each_pair do |key, value|
         if group[key.to_s] != value and not key['_ids']
@@ -62,7 +60,6 @@ class GroupController < RESTController
 
     mongoid_query do
       group = Group.find(@params['_id'])
-      return not_found if group.nil?
       
       Audit.log :actor => @session[:user][:name], :action => 'group.destroy', :group_name => @params['name'], :desc => "Deleted the group '#{group[:name]}'"
       
@@ -77,7 +74,6 @@ class GroupController < RESTController
     mongoid_query do
       group = Group.find(@params['_id'])
       user = User.find(@params['user']['_id'])
-      return not_found if user.nil? or group.nil?
       
       group.users << user
       
@@ -93,7 +89,6 @@ class GroupController < RESTController
     mongoid_query do
       group = Group.find(@params['_id'])
       user = User.find(@params['user']['_id'])
-      return not_found if user.nil? or group.nil?
 
       group.users.delete(user)
       
@@ -109,7 +104,6 @@ class GroupController < RESTController
     mongoid_query do
       group = Group.find(@params['_id'])
       oper = Item.find(@params['operation']['_id'])
-      return not_found if oper.nil? or group.nil?
 
       group.items << oper
 
@@ -125,7 +119,6 @@ class GroupController < RESTController
     mongoid_query do
       group = Group.find(@params['_id'])
       oper = Item.find(@params['operation']['_id'])
-      return not_found if oper.nil? or group.nil?
 
       group.items.delete(oper)
 

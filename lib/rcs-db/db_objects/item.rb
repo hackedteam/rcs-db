@@ -418,6 +418,7 @@ class UploadRequest
   include Mongoid::Document
   
   field :filename, type: String
+  field :sent, type: Integer
   field :_grid, type: Array
   
   validates_uniqueness_of :filename

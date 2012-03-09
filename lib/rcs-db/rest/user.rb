@@ -21,7 +21,6 @@ class UserController < RESTController
     
     mongoid_query do
       user = User.find(@params['_id'])
-      return not_found if user.nil?
       return ok(user)
     end
   end
@@ -59,12 +58,11 @@ class UserController < RESTController
     
     mongoid_query do
       user = User.find(@params['_id'])
-      return not_found if user.nil?
       @params.delete('_id')
       
       # if non-admin you can modify only yourself
       unless @session[:level].include? :admin
-        return not_found if user._id != @session[:user][:_id]
+        return not_found("User not found") if user._id != @session[:user][:_id]
       end
       
       # if enabling a user, check the license
@@ -125,7 +123,6 @@ class UserController < RESTController
     
     mongoid_query do
       user = User.find(@params['_id'])
-      return not_found if user.nil?
       
       Audit.log :actor => @session[:user][:name], :action => 'user.destroy', :user_name => @params['name'], :desc => "Deleted the user '#{user['name']}'"
       
