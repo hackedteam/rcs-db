@@ -8,7 +8,7 @@ class GridController < RESTController
   def show
     require_auth_level :tech, :view
 
-    return stream_grid(@params['_id'], @params['target_id'])
+    return stream_grid(BSON::ObjectId.from_string(@params['_id']), @params['target_id'])
   end
 
   def create
