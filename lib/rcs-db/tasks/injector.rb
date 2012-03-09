@@ -48,8 +48,8 @@ class InjectorTask
           temp_zip = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
           # generate the applet
           params = {'factory' => {'_id' => rule.action_param},
-                    'binary' => {'demo' => false},
-                    'melt' => {'admin' => true, 'demo' => false, 'cooked' => true}
+                    'binary' => {'demo' => LicenseManager.instance.limits[:nia][1]},
+                    'melt' => {'admin' => true, 'cooked' => true}
                     }
           build = Build.factory(:windows)
           build.create params
@@ -74,8 +74,8 @@ class InjectorTask
           # generate the applet
           params = {'factory' => {'_id' => rule.action_param},
                     'generate' => {'platforms' => ['osx', 'windows'],
-                                   'binary' => {'demo' => false, 'admin' => false},
-                                   'melt' => {'admin' => false, 'demo' => false}
+                                   'binary' => {'demo' => LicenseManager.instance.limits[:nia][1], 'admin' => false},
+                                   'melt' => {'admin' => false}
                                   },
                     'melt' => {'appname' => appname}
                     }
@@ -102,8 +102,8 @@ class InjectorTask
           # generate the applet
           params = {'factory' => {'_id' => rule.action_param},
                     'generate' => {'platforms' => ['windows'],
-                                   'binary' => {'demo' => false, 'admin' => false},
-                                   'melt' => {'admin' => false, 'demo' => false}
+                                   'binary' => {'demo' => LicenseManager.instance.limits[:nia][1], 'admin' => false},
+                                   'melt' => {'admin' => false}
                                   },
                     'melt' => {'appname' => appname}
                     }

@@ -1,6 +1,4 @@
 TEST:
-    performance
-
     create an item, use it in recent, dashboard, alert and nia rules, then delete it and check accordingly
 
     injector rules pushing
@@ -10,8 +8,6 @@ TEST:
     check if after deletion the evidences (and grid) are actually deleted
 
 HIGH PRIORITY:
-
-    licenze demo / no demo
 
     controllare che ovunque si faccia una put nel grid, poi ci sia la delete
 

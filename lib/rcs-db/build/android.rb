@@ -41,8 +41,9 @@ class BuildAndroid < Build
     params[:core] = 'apk/res/raw/resources.bin'
     params[:config] = 'apk/res/raw/config.bin'
 
-    # overwrite the demo flag if the license doesn't allow it
-    params['demo'] = true unless LicenseManager.instance.limits[:agents][:android][0]
+    # enforce demo flag accordingly to the license
+    # or raise if cannot build
+    params['demo'] = LicenseManager.instance.can_build_platform :android, params['demo']
 
     # invoke the generic patch method with the new params
     super

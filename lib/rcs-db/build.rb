@@ -133,7 +133,7 @@ class Build
       raise "Demo marker not found"
     end
 
-    raise "BUG: misaligned binary patch" if file.size != content.bytesize
+    raise "BUG: misaligned binary patch" if File.size(path(params[:core])) != content.bytesize
     
     file.rewind
     file.write content

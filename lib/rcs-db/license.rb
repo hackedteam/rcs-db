@@ -19,6 +19,18 @@ require 'optparse'
 module RCS
 module DB
 
+class NoLicenseError < StandardError
+  attr_reader :msg
+
+  def initialize(msg)
+    @msg = msg
+  end
+
+  def to_s
+    @msg
+  end
+end
+
 class LicenseManager
   include Singleton
   include RCS::Tracer
@@ -125,7 +137,7 @@ class LicenseManager
     @limits[:serial] = limit[:serial]
 
     @limits[:expiry] = Time.parse(limit[:expiry]).getutc.to_i
-    @limits[:maintenance] = Time.parse(limit[:expiry]).getutc.to_i
+    @limits[:maintenance] = Time.parse(limit[:maintenance]).getutc.to_i
 
     @limits[:users] = limit[:users] if limit[:users] > @limits[:users]
 
@@ -201,6 +213,22 @@ class LicenseManager
     end
 
     return false
+  end
+
+  def can_build_platform(platform, demo)
+
+    # enforce demo flag if not build
+    demo = true unless LicenseManager.instance.limits[:agents][platform][0]
+
+    # remove demo flag if not enabled
+    demo = false unless LicenseManager.instance.limits[:agents][platform][1]
+
+    # if not build and not demo, raise
+    if not LicenseManager.instance.limits[:agents][platform].inject(:|)
+      raise NoLicenseError.new("Cannot build #{demo}, NO license")
+    end
+
+    return demo
   end
 
   def check(field)

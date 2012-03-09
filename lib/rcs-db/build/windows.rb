@@ -24,11 +24,12 @@ class BuildWindows < Build
     params[:core] = 'core'
     params[:config] = 'config'
 
+    # enforce demo flag accordingly to the license
+    # or raise if cannot build
+    params['demo'] = LicenseManager.instance.can_build_platform :windows, params['demo']
+
     # remember the demo parameter
     @demo = params['demo']
-
-    # overwrite the demo flag if the license doesn't allow it
-    params['demo'] = true unless LicenseManager.instance.limits[:agents][:windows][0]
 
     # invoke the generic patch method with the new params
     super
@@ -107,9 +108,6 @@ class BuildWindows < Build
     @appname = params['appname'] || 'agent'
     @cooked = false
 
-    # overwrite the demo flag if the license doesn't allow it
-    params['demo'] = true unless LicenseManager.instance.limits[:agents][:windows][0]
-
     manifest = (params['admin'] == true) ? '1' : '0'
 
     executable = path('default')
@@ -159,7 +157,7 @@ class BuildWindows < Build
                                           @scrambled[:dir]+' '+
                                           manifest +' '+
                                           @funcname +' '+
-                                          (params['demo'] ? path('demo_image') : 'null') +' '+
+                                          (@demo ? path('demo_image') : 'null') +' '+
                                           executable + ' ' +
                                           path('output')
     end

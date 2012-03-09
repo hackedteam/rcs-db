@@ -18,7 +18,6 @@ class BuildWap < Build
   end
 
   def load(params)
-    #TODO: check the license
     trace :debug, "Build: load: #{params}"
     @factory = params['_id']
   end
@@ -30,12 +29,21 @@ class BuildWap < Build
   def generate(params)
     trace :debug, "Build: generate: #{params}"
 
+    # force demo if the RMI is in demo
+    params['binary']['demo'] = true if LicenseManager.instance.limits[:rmi][1]
+
     params['platforms'].each do |platform|
       build = Build.factory(platform.to_sym)
 
       build.load({'_id' => @factory})
       build.unpack
-      build.patch params['binary'].dup
+      begin
+        build.patch params['binary'].dup
+      rescue NoLicenseError => e
+        trace :warn, "Build: generate: #{e.message}"
+        build.clean
+        next
+      end
       build.scramble
       build.melt params['melt'].dup
       build.sign params['sign'].dup

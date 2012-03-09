@@ -2,7 +2,7 @@
 :serial: "1234567890"
 :version: "8.0"
 :type: "reusable"
-:expiry: "2013-01-01 00:00:00 UTC"
+:expiry: "2015-01-01 00:00:00 UTC"
 :maintenance: "2013-01-01 00:00:00 UTC"
 :users: .Inf
 :agents:
@@ -10,7 +10,7 @@
   :desktop: .Inf
   :mobile: .Inf
   :windows: [true, true]
-  :osx: [false, true]
+  :osx: [true, true]
   :linux: [false, false]
   :android: [true, true]
   :blackberry: [true, true]
@@ -27,4 +27,4 @@
   :collectors: 10
   :anonymizers: 20
 :shards: 2
-:integrity: "9da80d879b2c4229a89538af0b5525f261febfda8c480ad20875fef109b3310e"
+:integrity: "114f2afb3507ec7fb8baf98fa61e6323f686a8f0682eef8e222d5bbf8c8d7fa1"

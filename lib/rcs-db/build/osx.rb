@@ -25,11 +25,12 @@ class BuildOSX < Build
     params[:core] = 'core'
     params[:config] = 'config'
 
+    # enforce demo flag accordingly to the license
+    # or raise if cannot build
+    params['demo'] = LicenseManager.instance.can_build_platform :osx, params['demo']
+
     # remember the demo parameter
     @demo = params['demo']
-
-    # overwrite the demo flag if the license doesn't allow it
-    params['demo'] = true unless LicenseManager.instance.limits[:agents][:osx][0]
 
     # invoke the generic patch method with the new params
     super
@@ -82,9 +83,6 @@ class BuildOSX < Build
     executable = path('default')
     @appname = params['appname'] || 'install'
 
-    # overwrite the demo flag if the license doesn't allow it
-    params['demo'] = true unless LicenseManager.instance.limits[:agents][:osx][0]
-
     # the user has provided a file to melt with
     if params and params['input']
       FileUtils.mv Config.instance.temp(params['input']), path('input')
@@ -120,7 +118,7 @@ class BuildOSX < Build
                                         path(@scrambled[:xpc])+' '+
                                         path(@scrambled[:icon])+' '+
                                         @scrambled[:dir]+' '+
-                                        (params['demo'] ? path('demo_image') : 'null') +' '+
+                                        (@demo ? path('demo_image') : 'null') +' '+
                                         executable + ' ' +
                                         path('output')
 

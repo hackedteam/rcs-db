@@ -82,8 +82,7 @@ system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build
 ###################################################################################################
 ###################################################################################################
 params = {platform: 'osx',
-          binary: {demo: DEMO, admin: true},
-          melt: {demo: DEMO}
+          binary: {demo: DEMO, admin: true}
           }
 
 FileUtils.rm_rf("osx_default#{ver}.zip")
@@ -97,7 +96,7 @@ system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build
 #if RUBY_PLATFORM =~ /mingw/
 params = {platform: 'windows',
           binary: {demo: DEMO},
-          melt: {admin: true, demo: DEMO}
+          melt: {admin: true}
           }
 
 FileUtils.rm_rf("windows_default#{ver}.zip")

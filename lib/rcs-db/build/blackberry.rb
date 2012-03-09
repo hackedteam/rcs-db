@@ -48,8 +48,9 @@ class BuildBlackberry < Build
     # these params will be passed to the super
     params[:core] = 'net_rim_bb_lib_base.cod'
 
-    # overwrite the demo flag if the license doesn't allow it
-    params['demo'] = true unless LicenseManager.instance.limits[:agents][:blackberry][0]
+    # enforce demo flag accordingly to the license
+    # or raise if cannot build
+    params['demo'] = LicenseManager.instance.can_build_platform :blackberry, params['demo']
 
     # invoke the generic patch method with the new params
     super

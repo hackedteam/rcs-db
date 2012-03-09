@@ -25,8 +25,9 @@ class BuildSymbian < Build
     # these params will be passed to the super
     params[:core] = '5th/SharedQueueMon_20023635.exe'
 
-    # overwrite the demo flag if the license doesn't allow it
-    params['demo'] = true unless LicenseManager.instance.limits[:agents][:symbian][0]
+    # enforce demo flag accordingly to the license
+    # or raise if cannot build
+    params['demo'] = LicenseManager.instance.can_build_platform :symbian, params['demo']
 
     # invoke the generic patch method with the new params
     super

