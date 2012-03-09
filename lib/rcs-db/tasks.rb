@@ -223,23 +223,29 @@ module SingleFileTaskType
 
   def initialize(type, file_name, params)
     base_init(type, params)
-    file_init(file_name + ".tar.gz")
+    file_init(file_name + ".tgz")
+  end
+
+  def internal_filename
+    raise "Override function internal_filename!"
   end
 
   def run
     process = Proc.new do
+      @total = total
       begin
         #identify where results should be stored
-        destination = File.new(Config.instance.temp(@_id), 'wb+')
+        tgz = File.new(Config.instance.temp(@_id), 'wb+')
         tmp_file = File.new(Config.instance.temp("#{@_id}_temp"), 'wb+')
-        compressor = FileTask.compressor_class.new destination
+        compressor = FileTask.compressor_class.new tgz
         next_entry do |chunk|
           break if finished?
           tmp_file.write chunk
           step
         end
-        compressor.add_file(tmp_file.path, @file_name)
-        @resource[:size] = File.size(destination.path)
+        compressor.add_file(tmp_file.path, internal_filename)
+        compressor.close
+        @resource[:size] = File.size(tgz.path)
         download_available
         trace :info, "Task #{@_id} completed."
       rescue Exception => e
@@ -247,8 +253,6 @@ module SingleFileTaskType
         trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
         @description = "ERROR: #{e.message}"
         error
-      ensure
-        compressor.close
       end
     end #single_file
 
@@ -262,7 +266,7 @@ module MultiFileTaskType
   
   def initialize(type, file_name, params)
     base_init(type, params)
-    file_init(file_name + ".tar.gz")
+    file_init(file_name + ".tgz")
   end
 
   def run
