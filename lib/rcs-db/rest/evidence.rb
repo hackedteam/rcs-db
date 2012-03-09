@@ -25,7 +25,9 @@ class EvidenceController < RESTController
   # the content is passed as body of the request
   def create
     require_auth_level :server, :tech
-    
+
+    return conflict if @request[:content]['content'].nil?
+
     ident = @params['_id'].slice(0..13)
     instance = @params['_id'].slice(15..-1).downcase
     
