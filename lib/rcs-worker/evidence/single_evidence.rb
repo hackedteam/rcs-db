@@ -18,10 +18,7 @@ module SingleEvidence
       ::Item.agents.where({instance: self[:instance], ident: self[:ident]}).first
     end
     
-    def store
-      agent = get_agent
-      target = agent.get_parent
-      
+    def store(agent, target)
       evidence = ::Evidence.collection_class(target[:_id].to_s)
       evidence.create do |ev|
 

