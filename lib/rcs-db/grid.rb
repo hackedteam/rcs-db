@@ -45,18 +45,18 @@ class GridFS
       begin
         db = Mongoid.database
         grid = Mongo::Grid.new db, collection_name(collection)
-        return grid.get id
+        return grid.get BSON::ObjectId.from_string(id)
       rescue Exception => e
         trace :error, "Cannot get content from the Grid: #{collection_name(collection)} #{e.message}"
         raise
       end
     end
-
+    
     def delete(id, collection = nil)
       begin
         db = Mongoid.database
         grid = Mongo::Grid.new db, collection_name(collection)
-        return grid.delete id
+        return grid.delete BSON::ObjectId.from_string(id)
       rescue Exception => e
         trace :error, "Cannot delete content from the Grid: #{collection_name(collection)} #{e.message}"
         raise
@@ -65,7 +65,7 @@ class GridFS
 
     def to_tmp(id, collection = nil)
       begin
-        file = self.get id, collection
+        file = self.get BSON::ObjectId.from_string(id), collection
         raise "Grid content is nil" if file.nil?
         temp = File.open(Config.instance.temp("#{id}-%f" % Time.now), 'wb+')
         temp.write file.read(65536) until file.eof?
