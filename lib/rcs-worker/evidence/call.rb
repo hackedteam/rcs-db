@@ -29,12 +29,14 @@ module CallProcessing
     Speex.bits_init(bits.pointer)
     
     while not raw_content.eof? do
+      # read one chunk
       len = raw_content.read(4).unpack("L").shift
       chunk = raw_content.read(len)
+
       unless chunk.nil?
         buffer = FFI::MemoryPointer.new(:char, chunk.size)
         buffer.put_bytes(0, chunk, 0, chunk.size)
-        
+
         Speex.bits_read_from(bits.pointer, buffer, buffer.size)
         
         output_buffer = FFI::MemoryPointer.new(:float, frame_size)

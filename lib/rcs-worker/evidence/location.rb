@@ -12,8 +12,6 @@ module LocationProcessing
   include RCS::Tracer
   
   def process
-    puts "POSITION: #{self[:data]}"
-    
     case self[:data][:type]
       when 'GPS'
         q = {map: {location: {latitude: self[:data][:latitude], longitude: self[:data][:longitude]}}}

@@ -4,10 +4,6 @@ module RCS
   module DownloadProcessing
     extend SingleEvidence
 
-    def process
-      puts "DOWNLOAD: #{self[:data]}"
-    end
-
     def type
       :file
     end

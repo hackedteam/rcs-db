@@ -4,10 +4,6 @@ module RCS
 module SocialProcessing
   extend SingleEvidence
 
-  def process
-    puts "SOCIAL: #{self[:data]}"
-  end
-
   def type
     :chat
   end
