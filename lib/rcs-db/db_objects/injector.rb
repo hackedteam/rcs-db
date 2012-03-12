@@ -75,6 +75,14 @@ class InjectorRule
   field :_grid, type: Array
 
   embedded_in :injector
+
+  after_destroy :destroy_callback
+
+  protected
+
+  def destroy_callback
+    RCS::DB::GridFS.delete self[:_grid].first unless self[:_grid].nil?
+  end
 end
 
 #end # ::DB

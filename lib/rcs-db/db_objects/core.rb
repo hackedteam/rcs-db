@@ -15,6 +15,13 @@ class Core
   index :name
   
   store_in :cores
+
+  after_destroy :destroy_callback
+
+  def destroy_callback
+    # remove the content from the grid
+    RCS::DB::GridFS.delete self[:_grid].first unless self[:_grid].nil?
+  end
 end
 
 

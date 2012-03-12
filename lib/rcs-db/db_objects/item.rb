@@ -415,7 +415,7 @@ class UpgradeRequest
 
   def destroy_upgrade_callback
     # remove the content from the grid
-    RCS::DB::GridFS.delete self[:_grid].first
+    RCS::DB::GridFS.delete self[:_grid].first unless self[:_grid].nil?
   end
 
 end
@@ -426,6 +426,7 @@ class UploadRequest
   field :filename, type: String
   field :sent, type: Integer
   field :_grid, type: Array
+  field :_grid_size, type: Integer
   
   validates_uniqueness_of :filename
   
@@ -435,7 +436,7 @@ class UploadRequest
 
   def destroy_upload_callback
     # remove the content from the grid
-    RCS::DB::GridFS.delete self[:_grid].first
+    RCS::DB::GridFS.delete self[:_grid].first unless self[:_grid].nil?
   end
 end
 

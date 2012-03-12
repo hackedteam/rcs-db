@@ -51,10 +51,7 @@ class CoreController < RESTController
     mongoid_query do
       # search if already present
       core = ::Core.where({name: @params['_id']}).first
-      unless core.nil?
-        GridFS.delete core[:_grid].first
-        core.destroy
-      end
+      core.destroy unless core.nil?
 
       # replace the new one
       core = ::Core.new
@@ -146,9 +143,8 @@ class CoreController < RESTController
         Audit.log :actor => @session[:user][:name], :action => 'core.remove', :desc => "Removed the file [#{@params['name']}] from the core #{@params['_id']}"
 
         return ok()
-      # here we want to delete teh entire core file
+      # here we want to delete the entire core file
       else
-        GridFS.delete core[:_grid].first
         core.destroy
 
         Audit.log :actor => @session[:user][:name], :action => 'core.delete', :desc => "Deleted the core #{@params['_id']}"

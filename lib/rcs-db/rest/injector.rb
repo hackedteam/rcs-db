@@ -65,11 +65,8 @@ class InjectorController < RESTController
     mongoid_query do
       injector = Injector.find(@params['_id'])
       injector_name = injector.name
-
-      injector.rules.each do |rule|
-        GridFS.delete rule[:_grid].first unless rule[:_grid].nil?
-      end
-      
+      # make sure to destroy all the rules
+      injector.rules.destroy_all
       injector.destroy
       Audit.log :actor => @session[:user][:name], :action => 'injector.destroy', :desc => "Deleted the injector '#{injector_name}'"
       
@@ -203,9 +200,6 @@ class InjectorController < RESTController
 
       Audit.log :actor => @session[:user][:name], :action => 'injector.del_rule', :target_name => target.name,
                 :desc => "Deleted a rule from the injector '#{injector.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
-
-      # delete any pending file in the grid
-      GridFS.delete rule[:_grid].first unless rule[:_grid].nil?
 
       injector.rules.delete_all(conditions: { _id: rule[:_id]})
       injector.save
