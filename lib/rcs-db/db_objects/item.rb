@@ -273,6 +273,12 @@ class Item
     # then for each platform we have differences
     case self.platform
       when 'windows'
+        if self.version < 2012030101
+          trace :info, "Upgrading #{self.name} from 7.x to 8.x"
+          # file needed to upgrade from version 7.x to daVinci
+          content = self.configs.last.encrypted_config(self[:confkey])
+          self.upload_requests.create!({filename: 'nc-7-8dv.cfg', _grid: [RCS::DB::GridFS.put(content, {filename: 'nc-7-8dv.cfg'})] })
+        end
         add_upgrade('core64', File.join(build.tmpdir, 'core64'))
       when 'osx'
         add_upgrade('inputmanager', File.join(build.tmpdir, 'inputmanager'))
