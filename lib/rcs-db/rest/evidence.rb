@@ -250,15 +250,52 @@ class EvidenceController < RESTController
       filter_hash[:agent_id] = agent[:_id]
     end
 
+    # default filter is on acquired
+    date = filter.delete('date')
+    date ||= 'acquired'
+    date = date.to_sym
+
     # date filters must be treated separately
     if filter.has_key? 'from' and filter.has_key? 'to'
-      filter_hash[:acquired.gte] = filter.delete('from')
-      filter_hash[:acquired.lte] = filter.delete('to')
+      filter_hash[date.gte] = filter.delete('from')
+      filter_hash[date.lte] = filter.delete('to')
     end
 
     return filter, filter_hash, target
   end
 
+
+  def total
+    # filtering
+    filter = {}
+    filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
+
+    # filter by target
+    target = Item.where({_id: filter['target']}).first
+    return not_found("Target not found") if target.nil?
+
+    condition = {:type => { '$nin' => ['filesystem', 'info']}}
+
+    # filter by agent
+    if filter['agent']
+      agent = Item.where({_id: filter['agent']}).first
+      return not_found("Agent not found") if agent.nil?
+      condition[:agent_id] = filter['agent']
+    end
+
+    # map/reduce
+    group = Evidence.collection_class(target[:_id]).collection.group(
+      :cond => condition,
+      :key => 'type',
+      :initial => {count: 0},
+      :reduce => "function(obj, prev) {prev.count++;}"
+    )
+
+    total = group.collect {|b| b['count']}.inject(:+)
+    group << {"type" => "total", "count" => total}
+
+    return ok(group)
+  end
 
 end
 

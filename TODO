@@ -21,6 +21,8 @@ HIGH PRIORITY:
 
 MEDIUM PRIORITY:
 
+    shorten names in evidence to save space and memory
+
     Forwarder (worker)
 
     worker decoding (daniele):
