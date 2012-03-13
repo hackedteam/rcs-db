@@ -20,6 +20,7 @@ gem 'uuidtools'
 gem 'ffi'
 # MIME decoding
 gem 'mail'
+gem 'RocketAMF', :git => "https://github.com/rubyamf/rocketamf.git"
 
 # databases
 gem 'sqlite3'

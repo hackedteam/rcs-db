@@ -22,6 +22,8 @@ HIGH PRIORITY:
 
 MEDIUM PRIORITY:
 
+    add audit log upon tasks creation
+
     Forwarder (worker)
 
     worker decoding (daniele):

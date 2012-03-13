@@ -15,6 +15,14 @@ require 'em-http-request'
 require 'time'
 require 'json'
 
+require 'rocketamf'
+
+class BSON::ObjectId
+  def encode_amf ser
+    ser.serialize 3, self.to_s
+  end
+end
+
 module RCS
 module DB
 
@@ -177,6 +185,33 @@ class EvidenceController < RESTController
     end
   end
 
+  def index_amf
+    mongoid_query do
+
+      filter, filter_hash, target_id = create_mongo_filter @params
+
+      db = Mongoid.database
+      coll = db.collection("evidence.#{target_id}")
+
+      opts = {sort: ["acquired", :ascending]}
+
+      #paging
+      if @params.has_key? 'startIndex' and @params.has_key? 'numItems'
+        opts[:skip] = @params['startIndex'].to_i
+        opts[:limit] = @params['numItems'].to_i
+        array = coll.find(filter_hash, opts)
+          .to_a
+      else
+        array = coll.find(filter_hash, opts)
+          .to_a
+      end
+
+      array.is_array_collection = true
+      amf = RocketAMF.serialize(array, 3)
+
+      return ok(amf, {content_type: 'binary/octet-stream'})
+    end
+  end
 
   def count
     require_auth_level :view
@@ -200,7 +235,6 @@ class EvidenceController < RESTController
     end
   end
 
-
   def info
     require_auth_level :view
 
@@ -222,7 +256,6 @@ class EvidenceController < RESTController
     end
   end
 
-
   def create_common_filter(params)
 
     # filtering
@@ -236,19 +269,11 @@ class EvidenceController < RESTController
     filter_hash = {}
 
     # filter by target
-    target_id = filter['target']
-    filter.delete('target')
-    target = Item.where({_id: target_id}).first
+    target = Item.where({_id: filter.delete('target')}).first
     return nil if target.nil?
 
     # filter by agent
-    if filter['agent']
-      agent_id = filter['agent']
-      filter.delete('agent')
-      agent = Item.where({_id: agent_id}).first
-      return nil if agent.nil?
-      filter_hash[:agent_id] = agent[:_id]
-    end
+    filter_hash[:agent_id] = filter.delete('agent') if filter['agent']
 
     # default filter is on acquired
     date = filter.delete('date')
@@ -256,14 +281,58 @@ class EvidenceController < RESTController
     date = date.to_sym
 
     # date filters must be treated separately
-    if filter.has_key? 'from' and filter.has_key? 'to'
-      filter_hash[date.gte] = filter.delete('from')
-      filter_hash[date.lte] = filter.delete('to')
-    end
+    filter_hash[date.gte] = filter.delete('from') if filter.has_key? 'from'
+    filter_hash[date.lte] = filter.delete('to') if filter.has_key? 'to'
 
     return filter, filter_hash, target
   end
 
+  def create_mongo_filter(params)
+    filter = {}
+    filter = JSON.parse(params['filter']) if params.has_key? 'filter'
+
+    # target id
+    target_id = filter.delete('target')
+
+    # default date filtering is last 24 hours
+    filter['from'] = Time.now.to_i - 86400 if filter['from'].nil?
+    filter['to'] = Time.now.to_i if filter['to'].nil?
+
+    filter_hash = {}
+
+    # agent filter
+    filter_hash["agent_id"] = filter.delete('agent') if filter['agent']
+
+    # date filter
+    date = filter.delete('date')
+    date ||= 'acquired'
+
+    filter_hash[date] = Hash.new
+    filter_hash[date]["$gte"] = filter.delete('from') if filter.has_key? 'from'
+    filter_hash[date]["$lte"] = filter.delete('to') if filter.has_key? 'to'
+
+    if filter.has_key? 'info'
+      begin
+        key_values = filter.delete('info').split(',')
+        key_values.each do |kv|
+          k, v = kv.split(':')
+          filter_hash["data.#{k}"] = Regexp.new("#{v}", true)
+          trace :debug, "Filtering data[#{k}] by keyword '#{v}'"
+        end
+      rescue Exception => e
+        trace :error, "Invalid filter for data [#{e.message}], ignoring..."
+      end
+    end
+
+    # remaining filters
+    filter.each_key do |k|
+      filter_hash[k] = {"$in" => filter[k]}
+    end
+
+    trace :debug, "FILTER: #{filter} FILTER_HASH: #{filter_hash} TARGET_ID: #{target_id}"
+
+    return filter, filter_hash, target_id
+  end
 
   def total
     # filtering

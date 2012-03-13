@@ -40,6 +40,34 @@ class AuditController < RESTController
       ok(query)
     end
   end
+
+  def index_amf
+    mongoid_query do
+
+      filter, filter_hash, target_id = ::Audit.mongo_filter @params
+
+      db = Mongoid.database
+      coll = db.collection("audit")
+
+      opts = {sort: ["time", :ascending]}
+
+      #paging
+      if @params.has_key? 'startIndex' and @params.has_key? 'numItems'
+        opts[:skip] = @params['startIndex'].to_i
+        opts[:limit] = @params['numItems'].to_i
+        array = coll.find(filter_hash, opts)
+        .to_a
+      else
+        array = coll.find(filter_hash, opts)
+        .to_a
+      end
+
+      array.is_array_collection = true
+      amf = RocketAMF.serialize(array, 3)
+
+      return ok(amf, {content_type: 'binary/octet-stream'})
+    end
+  end
   
   def count
     require_auth_level :admin
