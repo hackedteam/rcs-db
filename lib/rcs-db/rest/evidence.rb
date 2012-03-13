@@ -329,8 +329,6 @@ class EvidenceController < RESTController
       filter_hash[k] = {"$in" => filter[k]}
     end
 
-    trace :debug, "FILTER: #{filter} FILTER_HASH: #{filter_hash} TARGET_ID: #{target_id}"
-
     return filter, filter_hash, target_id
   end
 

@@ -10,8 +10,6 @@ TEST:
 HIGH PRIORITY:
 
     fix .bat to be executed from bin
-    ruby della 7 da fastidio al ruby nuovo!!!
-    remove lock file for mongo during update
 
     fast evidence retrieving methods ( amf? )
     shorten names in evidence to save space and memory

