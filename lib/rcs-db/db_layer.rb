@@ -78,7 +78,7 @@ class DB
       #TODO: username & password
       Mongoid.load!(Dir.pwd + '/config/mongoid.yaml')
       Mongoid.configure do |config|
-        config.master = Mongo::Connection.new(Config.instance.global['CN'], 27017, pool_size: 50, pool_timeout: 5).db('rcs')
+        config.master = Mongo::Connection.new(Config.instance.global['CN'], 27017, pool_size: 20, pool_timeout: 10).db('rcs')
       end
       trace :info, "Connected to MongoDB"
     rescue Exception => e
