@@ -21,6 +21,8 @@ HIGH PRIORITY:
 
 MEDIUM PRIORITY:
 
+    add audit log upon tasks creation
+
     shorten names in evidence to save space and memory
 
     Forwarder (worker)
