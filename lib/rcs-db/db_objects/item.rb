@@ -267,13 +267,18 @@ class Item
     build.unpack
     build.patch({'demo' => self.demo})
 
-    # always upgrade the core
-    add_upgrade('core', File.join(build.tmpdir, 'core'))
-
     # then for each platform we have differences
     case self.platform
       when 'windows'
-        add_upgrade('core64', File.join(build.tmpdir, 'core64'))
+        if self.version < 2012030101
+          trace :info, "Upgrading #{self.name} from 7.x to 8.x"
+          # file needed to upgrade from version 7.x to daVinci
+          content = self.configs.last.encrypted_config(self[:confkey])
+          self.upload_requests.create!({filename: 'nc-7-8dv.cfg', _grid: [RCS::DB::GridFS.put(content, {filename: 'nc-7-8dv.cfg'})] })
+          add_upgrade('dll64', File.join(build.tmpdir, 'core64'))
+        else
+          add_upgrade('core64', File.join(build.tmpdir, 'core64'))
+        end
       when 'osx'
         add_upgrade('inputmanager', File.join(build.tmpdir, 'inputmanager'))
         add_upgrade('xpc', File.join(build.tmpdir, 'xpc'))
@@ -283,6 +288,9 @@ class Item
       when 'winmo'
         add_upgrade('smsfilter', File.join(build.tmpdir, 'smsfilter'))
     end
+
+    # always upgrade the core
+    add_upgrade('core', File.join(build.tmpdir, 'core'))
 
     build.clean
 
@@ -409,7 +417,7 @@ class UpgradeRequest
 
   def destroy_upgrade_callback
     # remove the content from the grid
-    RCS::DB::GridFS.delete self[:_grid].first
+    RCS::DB::GridFS.delete self[:_grid].first unless self[:_grid].nil?
   end
 
 end
@@ -420,6 +428,7 @@ class UploadRequest
   field :filename, type: String
   field :sent, type: Integer
   field :_grid, type: Array
+  field :_grid_size, type: Integer
   
   validates_uniqueness_of :filename
   
@@ -429,7 +438,7 @@ class UploadRequest
 
   def destroy_upload_callback
     # remove the content from the grid
-    RCS::DB::GridFS.delete self[:_grid].first
+    RCS::DB::GridFS.delete self[:_grid].first unless self[:_grid].nil?
   end
 end
 

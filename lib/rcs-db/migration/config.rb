@@ -332,9 +332,9 @@ class ConfigMigration
           when 'crisis'
             t = item[a[:module]].first
             a[:network] = {:enabled => t['network'].first['enabled'] == 'false' ? false : true,
-                           :processes => t['network'].first['process']} unless t['network'].nil?
+                           :processes => (t['network'].first['process'] or [])} unless t['network'].nil?
             a[:hook] = {:enabled => t['hook'].first['enabled'] == 'false' ? false : true,
-                        :processes => t['hook'].first['process']} unless t['hook'].nil?
+                        :processes => (t['hook'].first['process'] or [])} unless t['hook'].nil?
             a[:synchronize] = t['synchronize'] == 'false' ? false : true unless t['synchronize'].nil?
             a[:call] = t['call'] == 'false' ? false : true unless t['call'].nil?
             a[:mic] = t['mic'] == 'false' ? false : true unless t['mic'].nil?
@@ -349,8 +349,8 @@ class ConfigMigration
             a[:mobile] = false
           when 'file'
             a.merge! item[a[:module]].first
-            a['accept'] = a['accept'].first['mask'] unless a['accept'].nil?
-            a['deny'] = a['deny'].first['mask'] unless a['deny'].nil?
+            a['accept'] = a['accept'].first['mask'].nil? ? [] : a['accept'].first['mask']
+            a['deny'] = a['deny'].first['mask'].nil? ? [] : a['deny'].first['mask']
             a['open'] = a['open'] == 'true' ? true : false
             a['capture'] = a['capture'] == 'true' ? true : false
             a['minsize'] = a['minsize'].to_i unless a['minsize'].nil?

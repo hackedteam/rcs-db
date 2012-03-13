@@ -9,8 +9,6 @@ TEST:
 
 HIGH PRIORITY:
 
-    controllare che ovunque si faccia una put nel grid, poi ci sia la delete
-
     ruby della 7 da fastidio al ruby nuovo!!!
 
     fast evidence retrieving methods ( amf? )
@@ -19,9 +17,13 @@ HIGH PRIORITY:
 
     sms wap send
 
+    mettere la data di controllo sulla 7.x ad un valore sensato (cercare 2012030101)
+
 MEDIUM PRIORITY:
 
     add audit log upon tasks creation
+
+    fix .bat to be executed from bin
 
     shorten names in evidence to save space and memory
 

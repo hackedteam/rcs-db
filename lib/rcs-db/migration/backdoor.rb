@@ -152,6 +152,7 @@ class BackdoorMigration
       begin
         upload = agent.upload_requests.create!(filename: up[:filename])
         upload[:_grid] = [ GridFS.put(up[:content], {filename: up[:filename]}) ]
+        upload[:_grid_size] = up[:content].bytesize
         upload.save
       rescue Mongoid::Errors::Validations => e
         next

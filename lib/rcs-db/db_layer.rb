@@ -163,10 +163,7 @@ class DB
 
         # search if already present
         core = ::Core.where({name: name}).first
-        unless core.nil?
-          GridFS.delete core[:_grid].first
-          core.destroy
-        end
+        core.destroy unless core.nil?
 
         # replace the new one
         core = ::Core.new

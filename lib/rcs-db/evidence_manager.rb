@@ -46,9 +46,14 @@ class EvidenceManager
 
       entries[inst][:platform] = agent[:platform]
 
-      time = Time.at(agent.stat[:last_sync]).getutc
-      time = time.to_s.split(' +').first
-      entries[inst][:time] = time
+      unless agent.stat[:last_sync].nil?
+        time = Time.at(agent.stat[:last_sync]).getutc
+        time = time.to_s.split(' +').first
+        entries[inst][:time] = time
+      else
+        entries[inst][:time] = 0
+      end
+
     end
 
     # this will became an array

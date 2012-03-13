@@ -11,16 +11,17 @@ class AuditTask
   end
 
   def total
+
     return (::Audit.count + 1) if @params['filter'].nil?
-    (::Audit.filtered_count(@params['filter']) + 1)
+    (::Audit.filtered_count(@params) + 1)
   end
   
   def next_entry
     @description = "Exporting audit logs"
-    
-    audits = ::Audit.filter(@params['filter']) unless @params['filter'].nil?
+
+    audits = ::Audit.filter(@params) unless @params['filter'].nil?
     audits ||= ::Audit.all
-    
+
     # header
     yield ::Audit.field_names.to_csv
     

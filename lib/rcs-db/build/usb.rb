@@ -76,7 +76,9 @@ class BuildUSB < Build
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
       @outputs.keep_if {|x| x['winpe']}.each do |out|
-        z.file.open(out.gsub("winpe/", ''), "w") { |f| f.write File.open(path(out), 'rb') {|f| f.read} }
+        next unless File.file?(path(out))
+        name = out.gsub("winpe/", '')
+        z.file.open(name, "w") { |f| f.write File.open(path(out), 'rb') {|f| f.read} }
       end
     end
 

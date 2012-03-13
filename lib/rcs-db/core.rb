@@ -36,10 +36,7 @@ class Core
 
       # make sure to delete the old one
       core = ::Core.where({platform: args[0], name: args[1]}).first
-      unless core.nil?
-        GridFS.delete core[:_grid].first
-        core.destroy
-      end
+      core.destroy unless core.nil?
 
       # save the new core
       nc = ::Core.new

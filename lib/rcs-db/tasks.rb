@@ -243,6 +243,7 @@ module SingleFileTaskType
           tmp_file.write chunk
           step
         end
+        tmp_file.close
         compressor.add_file(tmp_file.path, internal_filename)
         compressor.close
         @resource[:size] = File.size(tgz.path)
