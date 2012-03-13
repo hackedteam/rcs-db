@@ -16,29 +16,10 @@ class AuditController < RESTController
   def index
     require_auth_level :admin
     
-    # filtering
-    filter = {}
-    filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
-
-    # if not specified the filter on the date is last 24 hours
-    filter['from'] = Time.now.to_i - 86400 if filter['from'].nil?
-    filter['to'] = Time.now.to_i if filter['to'].nil?
-
-    filter_hash = {}
-    
-    # date filters must be treated separately
-    if filter.has_key? 'from' and filter.has_key? 'to'
-      filter_hash[:time.gte] = filter.delete('from')
-      filter_hash[:time.lte] = filter.delete('to')
-    end
-
-    # desc filters must be handled as a regexp
-    if filter.has_key? 'desc'
-      #trace :debug, "Filtering description by keywork '#{filter['desc']}'."
-      filter_hash[:desc] = Regexp.new(filter.delete('desc'), true)
-    end
-
     mongoid_query do
+
+      filter, filter_hash = ::Audit.common_filter @params
+
       # copy remaining filtering criteria (if any)
       filtering = ::Audit
       filter.each_key do |k|
@@ -62,31 +43,11 @@ class AuditController < RESTController
   
   def count
     require_auth_level :admin
-    
-    # filtering
-    filter = {}
-    filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
-
-    # if not specified the filter on the date is last 24 hours
-    filter['from'] = Time.now.to_i - 86400 if filter['from'].nil?
-    filter['to'] = Time.now.to_i if filter['to'].nil?
-
-    filter_hash = {}
-    
-    # date filters must be treated separately
-    if filter.has_key? 'from' and filter.has_key? 'to'
-      filter_hash[:time.gte] = filter.delete('from')
-      filter_hash[:time.lte] = filter.delete('to')
-      #trace :debug, "Filtering date from #{filter['from']} to #{filter['to']}."
-    end
-    
-    # desc filters must be handled as a regexp
-    if filter.has_key? 'desc'
-      #trace :debug, "Filtering description by keywork '#{filter['desc']}'."
-      filter_hash[:desc] = Regexp.new(filter.delete('desc'), true)
-    end
 
     mongoid_query do
+
+      filter, filter_hash = ::Audit.common_filter @params
+
       # copy remaining filtering criteria (if any)
       filtering = ::Audit
       filter.each_key do |k|
@@ -94,8 +55,6 @@ class AuditController < RESTController
       end
 
       num_audits = filtering.where(filter_hash).count
-
-      #trace :debug, "number of filtered audits: " + num_audits.to_s unless num_audits.nil?
 
       # Flex RPC does not accept 0 (zero) as return value for a pagination (-1 is a safe alternative)
       num_audits = -1 if num_audits == 0

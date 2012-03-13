@@ -21,6 +21,8 @@ HIGH PRIORITY:
 
 MEDIUM PRIORITY:
 
+    fix .bat to be executed from bin
+
     shorten names in evidence to save space and memory
 
     Forwarder (worker)

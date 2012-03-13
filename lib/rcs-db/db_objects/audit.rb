@@ -27,43 +27,69 @@ class Audit
   
   store_in :audit
 
-  def self.filter(filter, start_index = nil, num_items = nil)
+  def self.filter(params)
+
+    filter, filter_hash = ::Audit.common_filter params
+
+    # copy remaining filtering criteria (if any)
+    filtering = ::Audit
+    filter.each_key do |k|
+      filtering = filtering.any_in(k.to_sym => filter[k])
+    end
+
+    query = filtering.where(filter_hash).order_by([[:time, :asc]])
+
+    return query
+  end
+
+  def self.filtered_count(params)
+
+    filter, filter_hash = ::Audit.common_filter params
+
+    # copy remaining filtering criteria (if any)
+    filtering = ::Audit
+    filter.each_key do |k|
+      filtering = filtering.any_in(k.to_sym => filter[k])
+    end
+
+    num_audits = filtering.where(filter_hash).count
+
+    return num_audits
+  end
+
+
+  def self.common_filter(params)
+
+    # filtering
+    filter = {}
+    filter = JSON.parse(params['filter']) if params.has_key? 'filter' and params['filter'].is_a? String
+    filter = params['filter'] if params.has_key? 'filter' and params['filter'].is_a? Hash
+
+    # if not specified the filter on the date is last 24 hours
+    filter['from'] = Time.now.to_i - 86400 if filter['from'].nil?
+    filter['to'] = Time.now.to_i if filter['to'].nil?
+
     filter_hash = {}
 
     # date filters must be treated separately
     if filter.has_key? 'from' and filter.has_key? 'to'
       filter_hash[:time.gte] = filter.delete('from')
       filter_hash[:time.lte] = filter.delete('to')
-      #trace :debug, "Filtering date from #{filter['from']} to #{filter['to']}."
     end
 
     # desc filters must be handled as a regexp
     if filter.has_key? 'desc'
-      #trace :debug, "Filtering description by keywork '#{filter['desc']}'."
       filter_hash[:desc] = Regexp.new(filter.delete('desc'), true)
     end
 
-    # copy remaining filtering criteria (if any)
-    filtering = Audit
-    filter.each_key do |k|
-      filtering = filtering.any_in(k.to_sym => filter[k])
-    end
-
-    # paging
-    unless start_index.nil? or num_items.nil?
-      #trace :debug, "Querying with filter #{filter_hash}."
-      query = filtering.where(filter_hash).order_by([[:time, :asc]]).skip(start_index).limit(num_items)
-    else
-      # without paging, return everything
-      query = filtering.where(filter_hash).order_by([[:time, :asc]])
-    end
-
-    return query
+    return filter, filter_hash
   end
+
 
   def self.field_names
     column_names = Audit.fields.keys
     column_names.delete('_type') if fields.has_key? '_type'
+    column_names.delete('_id') if fields.has_key? '_id'
     return column_names
   end
 
