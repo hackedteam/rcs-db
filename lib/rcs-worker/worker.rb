@@ -56,7 +56,7 @@ module HTTPHandler
     self.no_environment_strings
 
     # set the max content length of the POST
-    self.max_content_length = 30 * 1024 * 1024
+    self.max_content_length = 200 * 1024 * 1024
 
     # get the peer name
     @peer_port, @peer = Socket.unpack_sockaddr_in(get_peername)
@@ -64,16 +64,8 @@ module HTTPHandler
     trace :debug, "Connection from #{@network_peer}:#{@peer_port}"
   end
 
-  def ssl_handshake_completed
-    trace :debug, "[#{@peer}] SSL Handshake completed successfully (#{Time.now - @request_time})"
-  end
-
   def closed?
     @closed
-  end
-
-  def ssl_verify_peer(cert)
-    #TODO: check if the client cert is valid
   end
 
   def unbind
@@ -138,7 +130,6 @@ module HTTPHandler
         trace :error, e.message
         trace :fatal, "EXCEPTION(#{e.class}): " + e.backtrace.join("\n")
 
-        # TODO: SERVER ERROR
         responder = RESTResponse.new(500, e.message)
         reply = responder.prepare_response(self, request)
         reply

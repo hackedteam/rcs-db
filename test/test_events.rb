@@ -7,7 +7,6 @@ class EventsTest < Test::Unit::TestCase
     @handler = new HTTPHandler
   end
 
-  # TODO: test events
 =begin
   def test_process_http_request
     session_manager = MiniTest::Mock.new

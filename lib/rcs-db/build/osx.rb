@@ -79,7 +79,6 @@ class BuildOSX < Build
   def melt(params)
     trace :debug, "Build: melting: #{params}"
 
-    # TODO: make the default exe an actual default app
     executable = path('default')
     @appname = params['appname'] || 'install'
 

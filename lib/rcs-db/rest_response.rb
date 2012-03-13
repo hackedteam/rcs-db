@@ -115,7 +115,6 @@ class RESTFileStream
 
     @response.headers["Content-length"] = File.size @filename
 
-    # TODO: turbo zozza per content-length
     # fixup_headers override to evade content-length reset
     metaclass = class << @response; self; end
     metaclass.send(:define_method, :fixup_headers, proc {})
@@ -184,7 +183,6 @@ class RESTGridStream
     
     @response.headers["Content-length"] = @grid_io.file_length
     
-    # TODO: turbo zozza per content-length
     # fixup_headers override to evade content-length reset
     metaclass = class << @response; self; end
     metaclass.send(:define_method, :fixup_headers, proc {})

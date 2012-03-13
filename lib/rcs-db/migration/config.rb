@@ -105,7 +105,7 @@ class ConfigMigration
         end
       end
       globals[:migrated] = true
-      globals[:version] = 20120101
+      globals[:version] = 2012030101
       globals[:nohide] = []
       globals[:advanced] = true
       globals[:remove_driver] = true
