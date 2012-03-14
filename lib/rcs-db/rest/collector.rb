@@ -120,14 +120,14 @@ class CollectorController < RESTController
   end
 
   def upgrade
-    require_auth_level :server
+    require_auth_level :server, :sys
 
     mongoid_query do
       collector = Collector.find(@params['_id'])
-      return not_found unless collector.upgradable
 
       case @request[:method]
         when 'GET'
+          return not_found unless collector.upgradable
 
           trace :info, "Upgrading #{collector.name}"
 
@@ -141,12 +141,14 @@ class CollectorController < RESTController
           collector.save
 
           return stream_file(build.path(build.outputs.first), proc { build.clean })
-          
+
         when 'POST'
+          Audit.log :actor => @session[:user][:name], :action => 'collector.upgrade', :desc => "Upgraded the collector '#{collector[:name]}'"
+
           collector.upgradable = true
           collector.save
 
-          raise "Cannot push to #{collector.name}" unless Frontend.rnc_push(collector.address)
+          return server_error("Cannot push to #{collector.name}") unless Frontend.rnc_push(collector.address)
 
           return ok
       end

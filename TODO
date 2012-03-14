@@ -11,6 +11,8 @@ HIGH PRIORITY:
 
     fix .bat to be executed from bin
 
+    fix backup on windows
+
     fix PATH mangling during installation
 
     export evidence: all, blotter, with filters, filesystem...
