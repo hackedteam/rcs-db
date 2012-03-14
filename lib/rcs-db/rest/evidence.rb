@@ -314,10 +314,13 @@ class EvidenceController < RESTController
     date = filter.delete('date')
     date ||= 'da'
 
+    # do not account for filesystem and info evidences
+    filter_hash["type"] = {"$nin" => ["filesystem", "info"]} unless filter['type']
+
     filter_hash[date] = Hash.new
     filter_hash[date]["$gte"] = filter.delete('from') if filter.has_key? 'from'
     filter_hash[date]["$lte"] = filter.delete('to') if filter.has_key? 'to'
-
+    
     if filter.has_key? 'info'
       begin
         key_values = filter.delete('info').split(',')
