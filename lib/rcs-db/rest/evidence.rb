@@ -356,20 +356,20 @@ class EvidenceController < RESTController
       return not_found("Agent not found") if agent.nil?
       condition[:aid] = filter['agent']
     end
-    
+
     types = ["addressbook", "application", "calendar", "call", "camera", "chat", "clipboard", "device", "download", "file", "filesystem", "info", "keylog", "location", "message", "mic", "mouse", "password", "print", "screeshot", "url"]
 
-    stats = {}
+    stats = []
     types.each do |type|
       query = {type: type}.merge(condition)
-      stats[type] = Evidence.collection_class(target[:_id]).where(query).count
+      stats << {type: type, count: Evidence.collection_class(target[:_id]).where(query).count}
     end
 
-    stats[:total] = stats.values.inject(:+)
-
+    total = stats.collect {|b| b[:count]}.inject(:+)
+    stats << {type: "total", count: total}
+    
     return ok(stats)
   end
-
 end
 
 end #DB::
