@@ -348,27 +348,26 @@ class EvidenceController < RESTController
     target = Item.where({_id: filter['target']}).first
     return not_found("Target not found") if target.nil?
 
-    condition = {:type => { '$nin' => ['filesystem', 'info']}}
+    condition = {}
 
     # filter by agent
     if filter['agent']
       agent = Item.where({_id: filter['agent']}).first
       return not_found("Agent not found") if agent.nil?
-      condition[:agent_id] = filter['agent']
+      condition[:aid] = filter['agent']
+    end
+    
+    types = ["addressbook", "application", "calendar", "call", "camera", "chat", "clipboard", "device", "download", "file", "filesystem", "info", "keylog", "location", "message", "mic", "mouse", "password", "print", "screeshot", "url"]
+
+    stats = {}
+    types.each do |type|
+      query = {type: type}.merge(condition)
+      stats[type] = Evidence.collection_class(target[:_id]).where(query).count
     end
 
-    # map/reduce
-    group = Evidence.collection_class(target[:_id]).collection.group(
-      :cond => condition,
-      :key => 'type',
-      :initial => {count: 0},
-      :reduce => "function(obj, prev) {prev.count++;}"
-    )
+    stats[:total] = stats.values.inject(:+)
 
-    total = group.collect {|b| b['count']}.inject(:+)
-    group << {"type" => "total", "count" => total}
-
-    return ok(group)
+    return ok(stats)
   end
 
 end
