@@ -2,6 +2,8 @@
 require 'rcs-common/trace'
 
 require 'net/http'
+require 'stringio'
+require 'zlib'
 require_relative 'em_streamer'
 
 module RCS
@@ -41,12 +43,16 @@ class RESTResponse
     @request = request
     @connection = connection
     @response = EM::DelegatedHttpResponse.new @connection
-    
+
     @response.status = @status
     @response.status_string = ::Net::HTTPResponse::CODE_TO_OBJ["#{@response.status}"].name.gsub(/Net::HTTP/, '')
     
     begin
-      @response.content = (@content_type == 'application/json') ? @content.to_json : @content
+      compressed = StringIO.open("", 'w')
+      gzip = Zlib::GzipWriter.new(compressed)
+      gzip.write (@content_type == 'application/json') ? @content.to_json : @content
+      gzip.close
+      @response.content = compressed.string
     rescue Exception => e
       @response.status = RCS::DB::RESTController::STATUS_SERVER_ERROR
       @response.content = 'JSON_SERIALIZATION_ERROR'
@@ -65,6 +71,8 @@ class RESTResponse
     else
       @response.headers['Connection'] = 'close'
     end
+
+    @response.headers['Content-Encoding'] = 'gzip'
     
     self
   end
