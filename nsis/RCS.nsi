@@ -86,6 +86,116 @@
   !insertmacro MUI_LANGUAGE "English"
 
 ;--------------------------------
+
+!macro _EnvSet
+
+   System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("Path", "$R0").r0'
+   ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
+   StrCpy $R0 "$R0;$INSTDIR\Collector\bin;$INSTDIR\DB\bin;$INSTDIR\Ruby\bin;$INSTDIR\Java\bin;$INSTDIR\Python\bin"
+   WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R0"
+
+   SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
+!macroend
+!define EnvSet "!insertmacro _EnvSet"
+
+!macro _EnvUnset
+   ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
+
+   StrCpy $R1 0
+   StrLen $R2 "$INSTDIR\"
+   ${Do}
+      IntOp $R1 $R1 + 1
+      ${WordFind} $R0 ";" "E+$R1" $R3
+      IfErrors 0 +2
+         ${Break}
+
+      StrCmp $R3 $INSTDIR 0 +2
+         ${Continue}
+
+      StrCpy $R4 $R3 $R2
+      StrCmp $R4 "$INSTDIR\" 0 +2
+         ${Continue}
+
+      StrCpy $R5 "$R5$R3;"
+   ${Loop}
+
+   ${If} $R3 == 1
+      StrCpy $R5 $R0
+   ${Else}
+      StrCpy $R5 $R5 -1
+   ${EndIf}
+
+   System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("Path", "$R5").r0'
+   WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R5"
+
+   SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
+!macroend
+!define EnvUnset "!insertmacro _EnvUnset"
+
+!macro _EnvUnsetRCS7
+   ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
+
+   StrCpy $R1 0
+   StrLen $R2 "C:\RCSDB\java\"
+   ${Do}
+      IntOp $R1 $R1 + 1
+      ${WordFind} $R0 ";" "E+$R1" $R3
+      IfErrors 0 +2
+         ${Break}
+
+      StrCmp $R3 "C:\RCSDB\java" 0 +2
+         ${Continue}
+
+      StrCpy $R4 $R3 $R2
+      StrCmp $R4 "C:\RCSDB\java\" 0 +2
+         ${Continue}
+
+      StrCpy $R5 "$R5$R3;"
+   ${Loop}
+
+   ${If} $R3 == 1
+      StrCpy $R5 $R0
+   ${Else}
+      StrCpy $R5 $R5 -1
+   ${EndIf}
+
+   System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("Path", "$R5").r0'
+   WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R5"
+
+   ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
+
+   StrCpy $R1 0
+   StrLen $R2 "C:\RCSDB\ruby\"
+   ${Do}
+      IntOp $R1 $R1 + 1
+      ${WordFind} $R0 ";" "E+$R1" $R3
+      IfErrors 0 +2
+         ${Break}
+
+      StrCmp $R3 "C:\RCSDB\ruby" 0 +2
+         ${Continue}
+
+      StrCpy $R4 $R3 $R2
+      StrCmp $R4 "C:\RCSDB\ruby\" 0 +2
+         ${Continue}
+
+      StrCpy $R5 "$R5$R3;"
+   ${Loop}
+
+   ${If} $R3 == 1
+      StrCpy $R5 $R0
+   ${Else}
+      StrCpy $R5 $R5 -1
+   ${EndIf}
+
+   System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("Path", "$R5").r0'
+   WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R5"
+
+   SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
+!macroend
+!define EnvUnsetRCS7 "!insertmacro _EnvUnsetRCS7"
+
+;--------------------------------
 ;Installer Sections
 
 Section "Update Section" SecUpdate
@@ -94,13 +204,18 @@ Section "Update Section" SecUpdate
    DetailPrint ""
    DetailPrint "Stopping RCS Services..."
    SimpleSC::StopService "RCSCollector" 1
+   sleep 3000
    SimpleSC::StopService "RCSDB" 1
+   sleep 3000
    SimpleSC::StopService "RCSWorker" 1
+   sleep 3000
    SimpleSC::StopService "RCSMasterRouter" 1
+   sleep 3000
    SimpleSC::StopService "RCSMasterConfig" 1
+   sleep 3000
    SimpleSC::StopService "RCSShard" 1
 
-	 sleep 3000
+	 sleep 5000
 	 
    DetailPrint "done"
    
@@ -136,9 +251,9 @@ Section "Install Section" SecInstall
   File "DB\nsis\RCS.ico"
 
   DetailPrint "Setting up the path..."
-  ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
-  StrCpy $R0 "$R0;$INSTDIR\Collector\bin;$INSTDIR\DB\bin;$INSTDIR\Ruby\bin;$INSTDIR\Java\bin;$INSTDIR\Python\bin"
-  WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R0"
+  ${EnvUnsetRCS7}
+  ${EnvUnset}
+  ${EnvSet}
   DetailPrint "done" 
 
   ${If} $installMaster == ${BST_CHECKED}
@@ -150,7 +265,7 @@ Section "Install Section" SecInstall
     SetOutPath "$INSTDIR\Java"
     File /r "..\Java\*.*"
     SetOutPath "$INSTDIR\Python"
-    ###File /r "..\Python\*.*"
+    File /r "..\Python\*.*"
   
     SetOutPath "$INSTDIR\DB\bin"
     File /r "bin\*.*"
@@ -262,17 +377,23 @@ Section "Install Section" SecInstall
     DetailPrint "Installing license.."
     CopyFiles /SILENT $masterLicense "$INSTDIR\DB\config\rcs.lic"
     
+    Delete $INSTDIR\DB\data\config\mongod.lock
     DetailPrint "Starting RCS Master Config..."
     SimpleSC::StartService "RCSMasterConfig" ""
-    sleep 3000
+    sleep 5000
+    
     DetailPrint "Starting RCS Master Router..."
     SimpleSC::StartService "RCSMasterRouter" ""
-    sleep 3000
+    sleep 5000
+
+    Delete $INSTDIR\DB\data\mongod.lock
     DetailPrint "Starting RCS Shard..."
     SimpleSC::StartService "RCSShard" ""
-    sleep 3000
+    sleep 5000
+    
     DetailPrint "Starting RCS DB..."
     SimpleSC::StartService "RCSDB" ""
+    
     DetailPrint "Starting RCS Worker..."
     SimpleSC::StartService "RCSWorker" ""
           
@@ -429,22 +550,22 @@ Section Uninstall
   
   DetailPrint "Stopping RCS Services..."
   SimpleSC::StopService "RCSCollector" 1
-  sleep 2000
+  sleep 5000
   SimpleSC::RemoveService "RCSCollector"
   SimpleSC::StopService "RCSWorker" 1
-  sleep 2000
+  sleep 5000
   SimpleSC::RemoveService "RCSWorker"
   SimpleSC::StopService "RCSDB" 1
-  sleep 2000
+  sleep 5000
   SimpleSC::RemoveService "RCSDB"
   SimpleSC::StopService "RCSMasterRouter" 1
-  sleep 2000
+  sleep 5000
   SimpleSC::RemoveService "RCSMasterRouter"
   SimpleSC::StopService "RCSMasterConfig" 1
-  sleep 2000
+  sleep 5000
   SimpleSC::RemoveService "RCSMasterConfig"
   SimpleSC::StopService "RCSShard" 1
-  sleep 2000
+  sleep 5000
   SimpleSC::RemoveService "RCSShard"
 
   DetailPrint "done"
@@ -479,34 +600,7 @@ Section Uninstall
   DeleteRegKey HKLM "Software\HT"
   DetailPrint "done"
 
-  ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
-
-   StrCpy $R1 0
-   StrLen $R2 "$INSTDIR\"
-   ${Do}
-      IntOp $R1 $R1 + 1
-      ${WordFind} $R0 ";" "E+$R1" $R3
-      IfErrors 0 +2
-         ${Break}
-
-      StrCmp $R3 $INSTDIR 0 +2
-         ${Continue}
-
-      StrCpy $R4 $R3 $R2
-      StrCmp $R4 "$INSTDIR\" 0 +2
-         ${Continue}
-
-      StrCpy $R5 "$R5$R3;"
-   ${Loop}
-
-   ${If} $R3 == 1
-      StrCpy $R5 $R0
-   ${Else}
-      StrCpy $R5 $R5 -1
-   ${EndIf}
-
-   System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("Path", "$R5").r0'
-   WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R5"
+  ${EnvUnset}
 
 SectionEnd
 

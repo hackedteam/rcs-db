@@ -9,23 +9,21 @@ TEST:
 
 HIGH PRIORITY:
 
-    ruby della 7 da fastidio al ruby nuovo!!!
+    fix .bat to be executed from bin
 
     fast evidence retrieving methods ( amf? )
+    shorten names in evidence to save space and memory
 
     export evidence: all, blotter, with filters, filesystem...
 
     sms wap send
 
-    mettere la data di controllo sulla 7.x ad un valore sensato (cercare 2012030101)
-
 MEDIUM PRIORITY:
 
+    upgrade for anon
+    upgrade for nia
+
     add audit log upon tasks creation
-
-    fix .bat to be executed from bin
-
-    shorten names in evidence to save space and memory
 
     Forwarder (worker)
 
@@ -35,16 +33,15 @@ MEDIUM PRIORITY:
         - calendar
         - mail
 
-    check the TODOs in the code...
-
     PURGE command during sync
-
 
 LOW PRIORITY:
 
     FFI per dongle dll
 
-    remove lock file for mongo during update
+    remove the debug integrity for license
+
+    find: 2012030101 and replace with the actual release date
 
     mongo logRotate  & append to log
 

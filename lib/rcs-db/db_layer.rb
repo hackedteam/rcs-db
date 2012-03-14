@@ -74,8 +74,7 @@ class DB
     begin
       # this is required for mongoid >= 2.4.2
       ENV['MONGOID_ENV'] = 'yes'
-      
-      #TODO: username & password
+
       Mongoid.load!(Dir.pwd + '/config/mongoid.yaml')
       Mongoid.configure do |config|
         config.master = Mongo::Connection.new(Config.instance.global['CN'], 27017, pool_size: 20, pool_timeout: 10).db('rcs')
