@@ -216,7 +216,7 @@ class EvidenceController < RESTController
 
       trace :debug, "[index_amf] AMF serialized #{array.size} evidences in #{Time.now - start_time}"
 
-      return ok(amf, {content_type: 'binary/octet-stream'})
+      return ok(amf, {content_type: 'binary/octet-stream', gzip: true})
     end
   end
 

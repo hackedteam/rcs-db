@@ -24,6 +24,8 @@ class RESTResponse
     
     @cookie ||= opts[:cookie]
 
+    @opts = opts
+
     @callback=callback
 
     @response = nil
@@ -48,11 +50,15 @@ class RESTResponse
     @response.status_string = ::Net::HTTPResponse::CODE_TO_OBJ["#{@response.status}"].name.gsub(/Net::HTTP/, '')
     
     begin
-      compressed = StringIO.open("", 'w')
-      gzip = Zlib::GzipWriter.new(compressed)
-      gzip.write (@content_type == 'application/json') ? @content.to_json : @content
-      gzip.close
-      @response.content = compressed.string
+      if @opts[:gzip]
+        compressed = StringIO.open("", 'w')
+        gzip = Zlib::GzipWriter.new(compressed)
+        gzip.write (@content_type == 'application/json') ? @content.to_json : @content
+        gzip.close
+        @response.content = compressed.string
+      else
+        @response.content = (@content_type == 'application/json') ? @content.to_json : @content
+      end
     rescue Exception => e
       @response.status = RCS::DB::RESTController::STATUS_SERVER_ERROR
       @response.content = 'JSON_SERIALIZATION_ERROR'
@@ -72,7 +78,7 @@ class RESTResponse
       @response.headers['Connection'] = 'close'
     end
 
-    @response.headers['Content-Encoding'] = 'gzip'
+    @response.headers['Content-Encoding'] = 'gzip' if @opts[:gzip]
     
     self
   end

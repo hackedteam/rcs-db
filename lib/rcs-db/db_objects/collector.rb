@@ -17,6 +17,7 @@ class Collector
   field :poll, type: Boolean
   field :version, type: Integer
   field :configured, type: Boolean
+  field :upgradable, type: Boolean
 
   field :next, type: Array
   field :prev, type: Array
