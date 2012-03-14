@@ -28,13 +28,13 @@ module AudioEvidence
       
       ev = ::Evidence.dynamic_new target[:_id].to_s
       
-      ev.agent_id = agent[:_id].to_s
+      ev.aid = agent[:_id].to_s
       ev.type = info[:type]
       
-      ev.acquired = info[:acquired].to_i
-      ev.received = info[:received].to_i
-      ev.relevance = 0
-      ev.blotter = false
+      ev.da = info[:acquired].to_i
+      ev.dr = info[:received].to_i
+      ev.rel = 0
+      ev.blo = false
       ev.note = ""
       
       ev.data = info[:data]

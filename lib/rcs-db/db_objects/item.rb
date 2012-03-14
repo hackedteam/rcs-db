@@ -320,7 +320,7 @@ class Item
         # ensure indexes
         Evidence.collection_class(self._id).create_indexes
         # enable sharding only if not enabled
-        RCS::DB::Shard.set_key(collection, {type: 1, acquired: 1, agent_id: 1})
+        RCS::DB::Shard.set_key(collection, {type: 1, da: 1, aid: 1})
     end
   end
 

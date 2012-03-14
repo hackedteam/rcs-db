@@ -22,13 +22,13 @@ module SingleEvidence
       evidence = ::Evidence.collection_class(target[:_id].to_s)
       evidence.create do |ev|
 
-        ev.agent_id = agent[:_id].to_s
+        ev.aid = agent[:_id].to_s
         ev.type = self[:type]
 
-        ev.acquired = self[:acquired].to_i
-        ev.received = self[:received].to_i
-        ev.relevance = 0
-        ev.blotter = false
+        ev.da = self[:acquired].to_i
+        ev.dr = self[:received].to_i
+        ev.rel = 0
+        ev.blo = false
         ev.note = ""
 
         ev.data = self[:data]

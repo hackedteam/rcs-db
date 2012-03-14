@@ -16,13 +16,13 @@ class Evidence
       class Evidence_#{target}
         include Mongoid::Document
 
-        field :acquired, type: Integer
-        field :received, type: Integer
+        field :da, type: Integer            # date acquired
+        field :dr, type: Integer            # date received
         field :type, type: String
-        field :relevance, type: Integer
-        field :blotter, type: Boolean
+        field :rel, type: Integer           # relevance (tag)
+        field :blo, type: Boolean           # blotter (report)
         field :note, type: String
-        field :agent_id, type: String       # agent BSON_ID
+        field :aid, type: String            # agent BSON_ID
         field :data, type: Hash
     
         store_in Evidence.collection_name('#{target}')
@@ -31,12 +31,12 @@ class Evidence
         after_destroy :destroy_callback
 
         index :type
-        index :acquired
-        index :received
-        index :agent_id
-        index :relevance
-        index :blotter
-        shard_key :type, :acquired, :agent_id
+        index :da
+        index :dr
+        index :aid
+        index :rel
+        index :blo
+        shard_key :type, :da, :aid
 
         STAT_EXCLUSION = ['info', 'filesystem']
 
@@ -46,7 +46,7 @@ class Evidence
           # skip migrated logs, the stats are calculated by the migration script
           return if (self[:_mid] != nil and self[:_mid] > 0)
           return if STAT_EXCLUSION.include? self.type
-          agent = Item.find self.agent_id
+          agent = Item.find self.aid
           agent.stat.evidence ||= {}
           agent.stat.evidence[self.type] ||= 0
           agent.stat.evidence[self.type] += 1
@@ -63,7 +63,7 @@ class Evidence
 
         def destroy_callback
           return if STAT_EXCLUSION.include? self.type
-          agent = Item.find self.agent_id
+          agent = Item.find self.aid
           agent.stat.evidence ||= {}
           agent.stat.evidence[self.type] ||= 0
           agent.stat.evidence[self.type] -= 1
@@ -102,13 +102,13 @@ class Evidence
   end
 
   def self.deep_copy(src, dst)
-    dst.acquired = src.acquired
-    dst.received = src.received
-    dst.blotter = src.blotter
+    dst.da = src.da
+    dst.dr = src.dr
+    dst.blo = src.blo
     dst.data = src.data
-    dst.agent_id = src.agent_id
+    dst.aid = src.aid
     dst.note = src.note
-    dst.relevance = src.relevance
+    dst.rel = src.rel
     dst.type = src.type
   end
 
