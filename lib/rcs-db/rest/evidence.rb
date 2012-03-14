@@ -195,6 +195,8 @@ class EvidenceController < RESTController
 
       opts = {sort: ["acquired", :ascending]}
 
+      start_time = Time.now
+
       #paging
       if @params.has_key? 'startIndex' and @params.has_key? 'numItems'
         opts[:skip] = @params['startIndex'].to_i
@@ -206,8 +208,13 @@ class EvidenceController < RESTController
           .to_a
       end
 
+      trace :debug, "[index_amf] queried mongodb for #{array.size} evidences in #{Time.now - start_time}"
+      start_time = Time.now
+
       array.is_array_collection = true
       amf = RocketAMF.serialize(array, 3)
+
+      trace :debug, "[index_amf] AMF serialized #{array.size} evidences in #{Time.now - start_time}"
 
       return ok(amf, {content_type: 'binary/octet-stream'})
     end
