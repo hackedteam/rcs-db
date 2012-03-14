@@ -85,12 +85,17 @@ class BuildWap < Build
 
     # TODO: send the sms
     begin
-      CrossPlatform.exec path('wapsender')
+      CrossPlatform.exec path('wps')
     rescue Exception => e
+=begin
+      1: errore modem (il modem non supporta le funzioni specificate) o network (il messaggio non viene consegnato)
+      2: errore nel formato del messaggio dopo l'encoding (link + testo + encoding > 140 caratteri)
+      3: errore sugli argomenti (l'autodiscovery ha fallito miseramente, numero di telefono malformato etc...)
+      4: errore sulla commandline (parametri obbligatori mancanti o combinazioni di flag insensate etc...)
+=end
+
       trace :error, e.message
     end
-
-    #raise "SMS creation failed" unless File.exist? path('output.png')
 
   end
 
