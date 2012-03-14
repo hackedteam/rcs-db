@@ -205,17 +205,17 @@ class LogMigration
       # and the stats will not be calculated on them
       e[:_mid] = log[:log_id]
 
-      e.acquired = log[:acquired].to_i
-      e.received = log[:received].to_i
+      e.da = log[:acquired].to_i
+      e.dr = log[:received].to_i
 
       # avoid windows epoch (1601-01-01) replacing with unix epoch (1970-01-01)
-      e.acquired = 0 if e.acquired < 0
+      e.da = 0 if e.da < 0
 
       e.type = log[:type].downcase
-      e.relevance = log[:tag]
-      e.blotter = log[:blotter_id].nil? ? false : true
+      e.rel = log[:tag]
+      e.blo = log[:blotter_id].nil? ? false : true
       e.note = log[:content] unless log[:content].nil?
-      e.agent_id = agent_id.to_s
+      e.aid = agent_id.to_s
 
       # parse log specific data
       e.data = migrate_data(log)

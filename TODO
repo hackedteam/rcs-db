@@ -11,8 +11,7 @@ HIGH PRIORITY:
 
     fix .bat to be executed from bin
 
-    fast evidence retrieving methods ( amf? )
-    shorten names in evidence to save space and memory
+    fix PATH mangling during installation
 
     export evidence: all, blotter, with filters, filesystem...
 

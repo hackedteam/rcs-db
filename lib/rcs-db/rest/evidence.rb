@@ -175,10 +175,10 @@ class EvidenceController < RESTController
       if @params.has_key? 'startIndex' and @params.has_key? 'numItems'
         start_index = @params['startIndex'].to_i
         num_items = @params['numItems'].to_i
-        query = filtering.where(filter_hash).order_by([[:acquired, :asc]]).skip(start_index).limit(num_items)
+        query = filtering.where(filter_hash).order_by([[:da, :asc]]).skip(start_index).limit(num_items)
       else
         # without paging, return everything
-        query = filtering.where(filter_hash).order_by([[:acquired, :asc]])
+        query = filtering.where(filter_hash).order_by([[:da, :asc]])
       end
 
       return ok(query)
@@ -193,7 +193,7 @@ class EvidenceController < RESTController
       db = Mongoid.database
       coll = db.collection("evidence.#{target_id}")
 
-      opts = {sort: ["acquired", :ascending]}
+      opts = {sort: ["da", :ascending]}
 
       start_time = Time.now
 
@@ -216,7 +216,7 @@ class EvidenceController < RESTController
 
       trace :debug, "[index_amf] AMF serialized #{array.size} evidences in #{Time.now - start_time}"
 
-      return ok(amf, {content_type: 'binary/octet-stream'})
+      return ok(amf, {content_type: 'binary/octet-stream', gzip: true})
     end
   end
 
@@ -257,7 +257,7 @@ class EvidenceController < RESTController
       end
 
       # without paging, return everything
-      query = filtering.where(filter_hash).order_by([[:acquired, :asc]])
+      query = filtering.where(filter_hash).order_by([[:da, :asc]])
 
       return ok(query)
     end
@@ -280,11 +280,11 @@ class EvidenceController < RESTController
     return nil if target.nil?
 
     # filter by agent
-    filter_hash[:agent_id] = filter.delete('agent') if filter['agent']
+    filter_hash[:aid] = filter.delete('agent') if filter['agent']
 
     # default filter is on acquired
     date = filter.delete('date')
-    date ||= 'acquired'
+    date ||= 'da'
     date = date.to_sym
 
     # date filters must be treated separately
@@ -308,11 +308,11 @@ class EvidenceController < RESTController
     filter_hash = {}
 
     # agent filter
-    filter_hash["agent_id"] = filter.delete('agent') if filter['agent']
+    filter_hash["aid"] = filter.delete('agent') if filter['agent']
 
     # date filter
     date = filter.delete('date')
-    date ||= 'acquired'
+    date ||= 'da'
 
     filter_hash[date] = Hash.new
     filter_hash[date]["$gte"] = filter.delete('from') if filter.has_key? 'from'

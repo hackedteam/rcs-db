@@ -65,7 +65,7 @@ class AuditController < RESTController
       array.is_array_collection = true
       amf = RocketAMF.serialize(array, 3)
 
-      return ok(amf, {content_type: 'binary/octet-stream'})
+      return ok(amf, {content_type: 'binary/octet-stream', gzip: true})
     end
   end
   

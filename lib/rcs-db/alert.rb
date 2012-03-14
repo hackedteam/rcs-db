@@ -56,7 +56,7 @@ class Alerting
         next if evidence.data.values.select {|v| v =~ Regexp.new(alert.keywords)}.empty?
 
         # save the relevance tag into the evidence
-        evidence.relevance = alert.tag
+        evidence.rel = alert.tag
         evidence.save
 
         # put the matching alert in the queue the suppression will be done there
