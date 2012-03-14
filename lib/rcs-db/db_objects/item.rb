@@ -317,6 +317,8 @@ class Item
         # create the collection for the target's evidence and shard it
         db = Mongoid.database
         collection = db.collection(Evidence.collection_name(self._id))
+        # ensure indexes
+        Evidence.collection_class(self._id).create_indexes
         # enable sharding only if not enabled
         RCS::DB::Shard.set_key(collection, {type: 1, acquired: 1, agent_id: 1})
     end

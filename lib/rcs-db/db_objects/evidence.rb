@@ -32,7 +32,10 @@ class Evidence
 
         index :type
         index :acquired
+        index :received
         index :agent_id
+        index :relevance
+        index :blotter
         shard_key :type, :acquired, :agent_id
 
         STAT_EXCLUSION = ['info', 'filesystem']
