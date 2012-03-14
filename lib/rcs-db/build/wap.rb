@@ -85,9 +85,13 @@ class BuildWap < Build
 
     # TODO: send the sms
     begin
-      CrossPlatform.exec path('wapsender')
-    rescue Exception => e
-      trace :error, e.message
+      CrossPlatform.exec path('wps')
+    rescue Exception => er
+    	case er.exitstatus
+    		when 4
+    			trace :error, "Command line errata"
+      end
+      trace :error, "WAP !!!: #{er.message}"
     end
 
     #raise "SMS creation failed" unless File.exist? path('output.png')
