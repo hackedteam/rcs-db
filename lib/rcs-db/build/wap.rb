@@ -30,6 +30,8 @@ class BuildWap < Build
     # force demo if the RMI is in demo
     params['binary']['demo'] = true if LicenseManager.instance.limits[:rmi][1]
 
+    @outputs = []
+
     params['platforms'].each do |platform|
       build = Build.factory(platform.to_sym)
 
@@ -117,6 +119,8 @@ class BuildWap < Build
           raise error + "option not available on this modem"
         when 8
           raise error + "network error"
+        when 9
+          raise error + "modem not found"
       end
     end
 
