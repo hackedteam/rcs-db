@@ -89,6 +89,7 @@ class CrossPlatform
           process = Process.waitpid2(f.pid)[1]
         }
         process.success? || raise("failed to execute command [#{File.basename(original_command)}] output: #{output}")
+        return process.exitstatus
       else
         # setup the pipe to read the output of the child command
         # redirect stderr to stdout and read only stdout
@@ -109,6 +110,7 @@ class CrossPlatform
         output = rd.read
 
         $?.success? || raise("failed to execute command [#{File.basename(original_command)}] output: #{output}")
+        return $?.exitstatus
       end
     end
 

