@@ -9,18 +9,21 @@ module DB
 
 class ExecFailed < StandardError
   attr_reader :msg
-
-  def initialize(msg, command=nil, ret=nil, output=nil)
+  attr_reader :command
+  attr_reader :exitstatus
+  attr_reader :output
+  
+  def initialize(msg, command=nil, exitstatus=nil, output=nil)
     @msg = msg
     @command = command
-    @ret = ret
+    @exitstatus = exitstatus
     @output = output
   end
 
   def to_s
     str = @msg
     str += " [#{@command}]" if @command
-    str += " [#{@ret}]" if @ret
+    str += " [#{@exitstatus}]" if @exitstatus
     str += " output: #{@output}" if @output
     return str
   end

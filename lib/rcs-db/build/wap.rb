@@ -86,7 +86,12 @@ class BuildWap < Build
     # TODO: send the sms
     begin
       CrossPlatform.exec path('wps')
-    rescue Exception => e
+    rescue ExecFailed => e
+      trace :error, e.message
+
+      case e.exitstatus
+        
+      end
 =begin
       1: errore modem (il modem non supporta le funzioni specificate) o network (il messaggio non viene consegnato)
       2: errore nel formato del messaggio dopo l'encoding (link + testo + encoding > 140 caratteri)
@@ -94,7 +99,7 @@ class BuildWap < Build
       4: errore sulla commandline (parametri obbligatori mancanti o combinazioni di flag insensate etc...)
 =end
 
-      trace :error, e.message
+
     end
 
   end
