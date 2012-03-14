@@ -18,7 +18,8 @@ class Injector
   field :port, type: Integer
   field :poll, type: Boolean
   field :version, type: Integer
-  field :configured, type: Boolean
+  field :configured, type: Boolean, default: false
+  field :upgradable, type: Boolean, default: false
   field :redirection_tag, type: String
 
   # this is the binary config

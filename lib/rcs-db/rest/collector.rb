@@ -40,6 +40,7 @@ class CollectorController < RESTController
       coll[:port] = @params['port']
       coll[:poll] = @params['poll']
       coll[:configured] = false
+      coll[:upgradable] = false
       coll[:next] = [nil]
       coll[:prev] = [nil]
     end
@@ -96,11 +97,10 @@ class CollectorController < RESTController
   end
 
   def config
-    require_auth_level :server, :admin
+    require_auth_level :server
 
     mongoid_query do
       collector = Collector.find(@params['_id'])
-
       return not_found if collector.configured
 
       # get the next hop collector
@@ -116,6 +116,40 @@ class CollectorController < RESTController
       collector.save
 
       return stream_file(Config.instance.temp(collector._id.to_s), proc { FileUtils.rm_rf Config.instance.temp(collector._id.to_s) })
+    end
+  end
+
+  def upgrade
+    require_auth_level :server
+
+    mongoid_query do
+      collector = Collector.find(@params['_id'])
+      return not_found unless collector.upgradable
+
+      case @request[:method]
+        when 'GET'
+
+          trace :info, "Upgrading #{collector.name}"
+
+          build = Build.factory(:anon)
+          build.load(nil)
+          build.unpack
+          build.patch({})
+          build.melt(port: collector.port)
+
+          collector.upgradable = false
+          collector.save
+
+          return stream_file(build.path(build.outputs.first), proc { build.clean })
+          
+        when 'POST'
+          collector.upgradable = true
+          collector.save
+
+          raise "Cannot push to #{collector.name}" unless Frontend.rnc_push(collector.address)
+
+          return ok
+      end
     end
   end
 

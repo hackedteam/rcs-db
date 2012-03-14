@@ -16,8 +16,8 @@ class Collector
   field :instance, type: String
   field :poll, type: Boolean
   field :version, type: Integer
-  field :configured, type: Boolean
-  field :upgradable, type: Boolean
+  field :configured, type: Boolean, default: false
+  field :upgradable, type: Boolean, default: false
 
   field :next, type: Array
   field :prev, type: Array
