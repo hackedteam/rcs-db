@@ -6,8 +6,8 @@ USER = 'alor'
 PASS = 'demorcss'
 FACTORY = 'RCS_0000000001'
 PLATFORM = 'wap'
-DB = 'localhost'
-PORT = 4444
+DB = '172.20.20.141'
+PORT = 443
 DEMO = false
 
 ver = DEMO ? '_demo' : ''

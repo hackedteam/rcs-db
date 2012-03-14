@@ -84,7 +84,12 @@ class BuildWap < Build
     #end
 
     # TODO: send the sms
-    CrossPlatform.exec path('wapsender')
+    begin
+      CrossPlatform.exec path('wapsender')
+    rescue Exception => e
+      trace :error, e.message
+    end
+
     #raise "SMS creation failed" unless File.exist? path('output.png')
 
   end

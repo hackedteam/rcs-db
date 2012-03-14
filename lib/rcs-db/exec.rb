@@ -7,6 +7,25 @@ require 'rcs-common/trace'
 module RCS
 module DB
 
+class ExecFailed < StandardError
+  attr_reader :msg
+
+  def initialize(msg, command=nil, ret=nil, output=nil)
+    @msg = msg
+    @command = command
+    @ret = ret
+    @output = output
+  end
+
+  def to_s
+    str = @msg
+    str += " [#{@command}]" if @command
+    str += " [#{@ret}]" if @ret
+    str += " output: #{@output}" if @output
+    return str
+  end
+end
+
 class CrossPlatform
   extend RCS::Tracer
 
@@ -69,7 +88,7 @@ class CrossPlatform
         # restore the environment
         ENV['PATH'] = ENV['PATH'].gsub("#{options[:add_path]}#{separator}", '') if options[:add_path]
 
-        success or raise("failed to execute command [#{File.basename(original_command)}]")
+        success or raise(ExecFailed.new("failed to execute command", File.basename(original_command)))
         return
       end
 
@@ -88,8 +107,7 @@ class CrossPlatform
           output = f.read
           process = Process.waitpid2(f.pid)[1]
         }
-        process.success? || raise("failed to execute command [#{File.basename(original_command)}] output: #{output}")
-        return process.exitstatus
+        process.success? || raise(ExecFailed.new("failed to execute command", File.basename(original_command), process.exitstatus, output))
       else
         # setup the pipe to read the output of the child command
         # redirect stderr to stdout and read only stdout
@@ -109,8 +127,7 @@ class CrossPlatform
         wr.close
         output = rd.read
 
-        $?.success? || raise("failed to execute command [#{File.basename(original_command)}] output: #{output}")
-        return $?.exitstatus
+        $?.success? || raise(ExecFailed.new("failed to execute command", File.basename(original_command), $?.exitstatus, output))
       end
     end
 
