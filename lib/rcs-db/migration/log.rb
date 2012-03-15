@@ -221,6 +221,7 @@ class LogMigration
       e.data = migrate_data(log)
 
       # unify the files evidence
+      e.data[:size] = log[:longblob1].bytesize if e.type == 'filecap'
       e.type = 'file' if e.type == 'filecap' or e.type == 'fileopen' or e.type == 'download'
 
       # unify mail, sms, mms
@@ -258,7 +259,7 @@ class LogMigration
       when 'CAMERA'
         conversion = {}
       when 'CHAT'
-        conversion = {:varchar1 => :program, :varchar2 => :topic, :varchar3 => :users, :longtext1 => :content}
+        conversion = {:varchar1 => :program, :varchar2 => :topic, :varchar3 => :peer, :longtext1 => :content}
       when 'CLIPBOARD'
         conversion = {:varchar1 => :program, :varchar2 => :window, :longtext1 => :content}
       when 'DEVICE'
@@ -296,7 +297,7 @@ class LogMigration
       when 'MIC'
         conversion = {:int1 => :duration, :int3 => :status}
       when 'MOUSE'
-        conversion = {:varchar1 => :program, :varchar2 => :window, :int2 => :x, :int3 => :y, :int1 => :resolution}
+        conversion = {:varchar1 => :program, :varchar2 => :window, :int2 => :x, :int3 => :y, :varchar3 => :resolution}
       when 'PASSWORD'
         conversion = {:varchar1 => :program, :varchar2 => :service, :varchar3 => :pass, :varchar4 => :user}
       when 'PRINT'
