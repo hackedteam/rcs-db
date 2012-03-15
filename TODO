@@ -27,8 +27,6 @@ MEDIUM PRIORITY:
 
     upgrade for nia
 
-    add audit log upon tasks creation
-
     FFI per dongle dll
 
 LOW PRIORITY:
