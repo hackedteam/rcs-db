@@ -267,14 +267,17 @@ class Item
     build.unpack
     build.patch({'demo' => self.demo})
 
+    if self.version < 2012030101 and ['windows', 'osx', 'ios', 'winmo'].include? self.platform
+      trace :info, "Upgrading #{self.name} from 7.x to 8.x"
+      # file needed to upgrade from version 7.x to daVinci
+      content = self.configs.last.encrypted_config(self[:confkey])
+      self.upload_requests.create!({filename: 'nc-7-8dv.cfg', _grid: [RCS::DB::GridFS.put(content, {filename: 'nc-7-8dv.cfg'})] })
+    end
+
     # then for each platform we have differences
     case self.platform
       when 'windows'
         if self.version < 2012030101
-          trace :info, "Upgrading #{self.name} from 7.x to 8.x"
-          # file needed to upgrade from version 7.x to daVinci
-          content = self.configs.last.encrypted_config(self[:confkey])
-          self.upload_requests.create!({filename: 'nc-7-8dv.cfg', _grid: [RCS::DB::GridFS.put(content, {filename: 'nc-7-8dv.cfg'})] })
           add_upgrade('dll64', File.join(build.tmpdir, 'core64'))
         else
           add_upgrade('core64', File.join(build.tmpdir, 'core64'))

@@ -398,6 +398,8 @@ class AgentController < RESTController
         
       when 'DELETE'
         config = agent.configs.where(:activated.exists => false).last
+        # consistency check (don't allow a config which is activated but never sent)
+        config.sent = Time.now.getutc.to_i if config.sent.nil? or config.sent == 0
         config.activated = Time.now.getutc.to_i
         config.save
         trace :info, "[#{@request[:peer]}] Configuration sent [#{@params['_id']}]"

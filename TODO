@@ -17,25 +17,21 @@ HIGH PRIORITY:
 
     export evidence: all, blotter, with filters, filesystem...
 
-MEDIUM PRIORITY:
-
-    upgrade for nia
-
-    add audit log upon tasks creation
-
-    Forwarder (worker)
-
     worker decoding (daniele):
         - call
         - mic
         - calendar
         - mail
 
-    PURGE command during sync
+MEDIUM PRIORITY:
 
-LOW PRIORITY:
+    upgrade for nia
+
+    add audit log upon tasks creation
 
     FFI per dongle dll
+
+LOW PRIORITY:
 
     remove the debug integrity for license
 
@@ -49,3 +45,7 @@ LOW PRIORITY:
 
     is vcredist needed ?
 
+
+FUTURE:
+
+    Forwarder (worker)
