@@ -90,7 +90,7 @@ class BackupManager
 
       # the command of the mongodump
       mongodump = Config.mongo_exec_path('mongodump')
-      mongodump += " -o #{Config.instance.global['BACKUP_DIR']}/#{backup.name}-#{now.strftime('%Y-%m-%d-%H:%M')}"
+      mongodump += " -o #{Config.instance.global['BACKUP_DIR']}/#{backup.name}-#{now.strftime('%Y-%m-%d-%H-%M')}"
       mongodump += " -d rcs"
 
       # create the backup of the collection (common)
