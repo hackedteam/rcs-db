@@ -231,7 +231,7 @@ class LogMigration
       e.type = 'screenshot' if e.type == 'snapshot'
       e.type = 'position' if e.type == 'location'
 
-      # remove unneeded 
+      # remove unneeded
       e.data.delete 'status' if e.type == 'mic'
 
       # save the binary data
