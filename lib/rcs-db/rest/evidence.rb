@@ -181,7 +181,7 @@ class EvidenceController < RESTController
         query = filtering.where(filter_hash).order_by([[:da, :asc]])
       end
 
-      return ok(query)
+      return ok(query, {gzip: true})
     end
   end
 
