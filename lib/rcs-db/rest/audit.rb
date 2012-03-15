@@ -37,7 +37,7 @@ class AuditController < RESTController
         query = filtering.where(filter_hash).order_by([[:time, :asc]])
       end
 
-      ok(query)
+      ok(query, {gzip: true})
     end
   end
 
