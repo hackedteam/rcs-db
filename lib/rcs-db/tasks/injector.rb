@@ -136,6 +136,7 @@ class InjectorTask
       end
 
       z.put_next_entry("redirect_url.txt")
+      z.puts "REDIRECT_PAGE = redirect.html"
       redirect_url.each do |value|
         z.puts value
       end
