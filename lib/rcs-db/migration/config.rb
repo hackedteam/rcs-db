@@ -197,7 +197,7 @@ class ConfigMigration
                   e.delete(:start)
                 when 'after startup'
                   e[:event] = 'timer'
-                  e[:subtype] = "startup"
+                  e[:subtype] = "loop"
                   e[:ts] = "00:00:00"
                   e[:te] = "23:59:59"
                   e[:repeat] = e[:start]
@@ -411,7 +411,7 @@ class ConfigMigration
       actions << start_action
 
       event = {:event => 'timer', :desc => 'On Startup', :enabled => true,
-               :ts => '00:00:00', :te => '23:59:59', :subtype => 'startup',
+               :ts => '00:00:00', :te => '23:59:59', :subtype => 'loop',
                :start => actions.size - 1}
 
       events << event
