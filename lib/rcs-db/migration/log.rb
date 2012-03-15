@@ -231,6 +231,9 @@ class LogMigration
       e.type = 'screenshot' if e.type == 'snapshot'
       e.type = 'position' if e.type == 'location'
 
+      # remove unneeded 
+      e.data.delete 'status' if e.type == 'mic'
+
       # save the binary data
       if log[:longblob1].bytesize > 0
         e.data[:_grid_size] = log[:longblob1].bytesize
