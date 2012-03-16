@@ -7,5 +7,5 @@ module PasswordProcessing
   def type
     :password
   end
-end # ApplicationProcessing
+end # PasswordProcessing
 end # DB
