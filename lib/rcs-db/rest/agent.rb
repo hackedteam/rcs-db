@@ -462,6 +462,7 @@ class AgentController < RESTController
         trace :debug, "[#{@request[:peer]}] Requested the UPGRADE #{@params['upgrade']} -- #{content.file_length.to_s_bytes}"
         return ok(content.read, {content_type: content.content_type})
       when 'POST'
+        Audit.log :actor => @session[:user][:name], :action => "agent.upgrade", :desc => "Requested an upgrade for agent '#{agent['name']}'"
         trace :info, "Agent #{agent.name} scheduled for upgrade"
         agent.upgrade!
       when 'DELETE'
@@ -488,6 +489,11 @@ class AgentController < RESTController
     require_auth_level :server, :tech
 
     case @request[:method]
+      when 'POST'
+        agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+        agent.download_requests.create(@params['download'])
+        trace :info, "[#{@request[:peer]}] Added download request #{@params['download']}"
+        Audit.log :actor => @session[:user][:name], :action => "agent.download", :desc => "Added a download request for agent '#{agent['name']}'"
       when 'DELETE'
         agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
         agent.download_requests.destroy_all(conditions: { _id: @params['download']})
@@ -515,6 +521,7 @@ class AgentController < RESTController
         agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
         agent.filesystem_requests.create(@params['filesystem'])
         trace :info, "[#{@request[:peer]}] Added filesystem request #{@params['filesystem']}"
+        Audit.log :actor => @session[:user][:name], :action => "agent.filesystem", :desc => "Added a filesystem request for agent '#{agent['name']}'"
       when 'DELETE'
         agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
         agent.filesystem_requests.destroy_all(conditions: { _id: @params['filesystem']})

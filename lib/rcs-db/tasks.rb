@@ -316,10 +316,23 @@ class TaskManager
   
   def create(user, type, file_name, params = {})
     @tasks[user] ||= Hash.new
-      
+
     task = eval("#{type.downcase.capitalize}Task").new type, file_name, params
     trace :debug, "Creating task #{task._id} of type #{type} for user '#{user}', saving to '#{file_name}'"
-    
+
+    case type
+      when 'build'
+        Audit.log :actor => user, :action => "build", :desc => "Created an installer for #{params['platform']}"
+      when 'audit'
+        Audit.log :actor => user, :action => "audit.export", :desc => "Exported the audit log: #{params.inspect}"
+      when 'evidence'
+        Audit.log :actor => user, :action => "evidence.export", :desc => "Exported some evidence: #{params.inspect}"
+      when 'injector'
+        Audit.log :actor => user, :action => "injector.push", :desc => "Pushed the rules to a Network Injector"
+      when 'topology'
+        Audit.log :actor => user, :action => "topology", :desc => "Reconfigured the topology of the frontend"
+    end
+
     begin
       task.run
     rescue Exception => e

