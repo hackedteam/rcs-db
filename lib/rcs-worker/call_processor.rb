@@ -22,20 +22,20 @@ end
 
 class Channel
   include Tracer
-  attr_reader :sample_rate, :start_time, :stop_time, :wav_data, :status
+  attr_reader :sample_rate, :start_time, :last_stop_time, :wav_data, :status
   
   def initialize(evidence)
-    @name = evidence.info[:channel].to_s
-    @sample_rate = evidence.info[:sample_rate]
-    @start_time = evidence.info[:start_time]
-    @stop_time = @start_time
+    @name = evidence[:data][:channel].to_s
+    @sample_rate = evidence[:data][:sample_rate]
+    @start_time = evidence[:data][:start_time]
+    @last_stop_time = @start_time
     @wav_data = StringIO.new
     @status = :open
     trace :debug, "created new channel #{self.id}."
   end
   
   def id
-    "#{@name}:#{@sample_rate}:#{@start_time.to_f}:#{@stop_time.to_f}:#{@status.to_s}"
+    "#{@name}:#{@sample_rate}:#{@start_time.to_f}:#{@last_stop_time.to_f}:#{@status.to_s}"
   end
   
   def self.other_than channel
@@ -53,13 +53,14 @@ class Channel
   
   def fill(gap)
     samples_to_fill = @sample_rate * gap
+    trace :debug, "[#{@name}] filling with #{samples_to_fill} samples(@#{@sample_rate}) to fill #{gap} seconds of missing data."
     @wav_data.write([0].pack("S") * samples_to_fill.ceil)
-    trace :debug, "filled with #{samples_to_fill} samples(@#{@sample_rate}) to fill #{gap} seconds of missing data."
   end
   
   def time_gap(evidence)
-    trace :debug, "start_time #{evidence.info[:start_time]}, stop_time #{@stop_time} => #{evidence.info[:start_time].to_f - @stop_time.to_f}"
-    evidence.info[:start_time].to_f - @stop_time.to_f
+    gap = evidence[:data][:start_time].to_f - @last_stop_time.to_f
+    trace :debug, "#{@last_stop_time} to #{evidence[:data][:start_time]} => #{gap}"
+    gap
   end
   
   def accept?(evidence)
@@ -67,22 +68,26 @@ class Channel
     return false if time_gap(evidence) >= 5.0
     return true
   end
-  
+
+  def end_call?(evidence)
+    return true if evidence[:data][:grid_content].bytesize == 4 and evidence[:data][:grid_content] == "\xff\xff\xff\xff"
+  end
+
   def feed(evidence)
-    trace :debug, "Evidence channel #{evidence.info[:channel]} callee #{evidence.info[:callee]} with #{evidence.wav.bytesize} bytes of data."
+    trace :debug, "Evidence channel #{evidence[:data][:channel]} peer #{evidence[:data][:peer]} with #{evidence[:wav].bytesize} bytes of data."
     
-    if evidence.end_call?
+    if end_call? evidence
       self.close!
       return
     end
-    
+
     gap = time_gap(evidence)
     fill gap unless gap == 0
-    
-    @stop_time = evidence.info[:stop_time]
+
+    @last_stop_time = evidence[:data][:stop_time]
     @wav_data.write evidence.wav
   end
-  
+
   def size
     @wav_data.size
   end
@@ -113,17 +118,17 @@ class Call
   #   - :fillin   second channel arrived, fill in later channel with silence
   #   - :resampling second channel arrived, filled in, resample data as they arrive
   
-  def initialize(callee, start_time)
-    @callee = callee
+  def initialize(peer, start_time)
+    @peer = peer
     @start_time = start_time
     @status = :queueing
     @channels = {}
     @resampled = :not_yet
-    trace :info, "created new call for #{@callee}, starting at #{@start_time}"
+    trace :info, "created new call for #{@peer}, starting at #{@start_time}"
   end
   
   def id
-    "#{@callee}:#{@start_time.to_f}"
+    "#{@peer}:#{@start_time.to_f}"
   end
   
   def queueing?
@@ -143,14 +148,14 @@ class Call
   end
   
   def get_channel(evidence)
-    channel = @channels[evidence.info[:channel]] || create_channel(evidence)
+    channel = @channels[evidence[:data][:channel]] || create_channel(evidence)
     return channel if channel.accept? evidence
     return nil
   end
   
   def create_channel(evidence)
     channel = Channel.new evidence
-    @channels[evidence.info[:channel]] = channel
+    @channels[evidence[:data][:channel]] = channel
     
     # fix start time
     @start_time = get_start_time
@@ -165,14 +170,14 @@ class Call
   
   def feed(evidence)
     # if evidence is empty or call is closed, refuse feeding
-    return false if evidence.wav.bytesize == 0
+    return false if evidence[:wav].bytesize == 0
     return false if closed?
     
     # get the correct channel for the evidence
     channel = get_channel(evidence)
     return false if channel.nil?
     
-    trace :debug, "feeding #{evidence.wav.bytesize} bytes at #{evidence.info[:start_time]}:#{evidence.info[:stop_time]} to #{channel.id}"
+    trace :debug, "feeding #{evidence[:wav].bytesize} bytes at #{evidence[:data][:start_time]}:#{evidence[:data][:last_stop_time]} to #{channel.id}"
     channel.feed evidence
     
     # update status
@@ -223,8 +228,8 @@ class CallProcessor
   end
   
   def get_call(evidence)
-    # if callee is unknown or evidence is empty, evidence is invalid, ignore it
-    return nil if evidence.info[:callee].empty? or evidence.wav.empty?
+    # if peer is unknown or evidence is empty, evidence is invalid, ignore it
+    return nil if evidence[:data][:peer].empty? or evidence[:wav].empty?
     
     open_calls = @calls.select {|c| c.accept? evidence and not c.closed? }
     return open_calls.first unless open_calls.empty?
@@ -235,7 +240,7 @@ class CallProcessor
   end
   
   def create_call(evidence)
-    call = Call.new evidence.info[:callee], evidence.info[:start_time]
+    call = Call.new(evidence[:data][:peer], evidence[:data][:start_time])
     @calls << call
     call
   end

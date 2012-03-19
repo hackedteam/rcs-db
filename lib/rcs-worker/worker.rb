@@ -3,7 +3,7 @@
 #
 
 # relatives
-require_relative 'audio_processor'
+require_relative 'call_processor'
 require_relative 'evidence/call'
 require_relative 'parser'
 
