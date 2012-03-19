@@ -11,7 +11,6 @@ class AuditTask
   end
 
   def total
-
     return (::Audit.count + 1) if @params['filter'].nil?
     (::Audit.filtered_count(@params) + 1)
   end

@@ -12,6 +12,7 @@ HIGH PRIORITY:
     fix .bat to be executed from bin
 
     fix PATH mangling during installation
+    fix simple:sc execution
 
     export evidence: all, blotter, with filters, filesystem...
 
@@ -32,6 +33,8 @@ LOW PRIORITY:
     remove the debug integrity for license
 
     find: 2012030101 and replace with the actual release date
+
+    /usr/bin/mongodb --config $PATH-TO-CONFIG --shutdown
 
     mongo logRotate  & append to log
 

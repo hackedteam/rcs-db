@@ -63,7 +63,9 @@ class Audit
     # filtering
     filter = {}
     filter = JSON.parse(params['filter']) if params.has_key? 'filter' and params['filter'].is_a? String
-    filter = params['filter'] if params.has_key? 'filter' and params['filter'].is_a? Hash
+    # must duplicate here since we delete the param later but we need to keep the parameter intact for
+    # subsequent calls
+    filter = params['filter'].dup if params.has_key? 'filter' and params['filter'].is_a? Hash
 
     # if not specified the filter on the date is last 24 hours
     filter['from'] = Time.now.to_i - 86400 if filter['from'].nil?

@@ -55,11 +55,9 @@ class AuditController < RESTController
       if @params.has_key? 'startIndex' and @params.has_key? 'numItems'
         opts[:skip] = @params['startIndex'].to_i
         opts[:limit] = @params['numItems'].to_i
-        array = coll.find(filter_hash, opts)
-        .to_a
+        array = coll.find(filter_hash, opts).to_a
       else
-        array = coll.find(filter_hash, opts)
-        .to_a
+        array = coll.find(filter_hash, opts).to_a
       end
 
       array.is_array_collection = true

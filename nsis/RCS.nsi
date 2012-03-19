@@ -298,6 +298,7 @@ Section "Install Section" SecInstall
     SetOutPath "$INSTDIR\DB\config"
     File "config\mongoid.yaml"
     File "config\trace.yaml"
+    File "config\export.zip"
     File "config\version.txt"
     SetDetailsPrint "both"
     DetailPrint "done"
