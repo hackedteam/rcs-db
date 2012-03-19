@@ -119,7 +119,7 @@ class Call
     @status = :queueing
     @channels = {}
     @resampled = :not_yet
-    trace :info, "new call for #{@callee}, starting at #{@start_time}"
+    trace :info, "created new call for #{@callee}, starting at #{@start_time}"
   end
   
   def id
@@ -130,7 +130,7 @@ class Call
     @channels.size < 2
   end
   
-  def is_fillin?
+  def fillin?
     @status == :fillin
   end
   
@@ -216,7 +216,9 @@ class CallProcessor
   include Tracer
   require 'pp'
   
-  def initialize
+  def initialize(agent, target)
+    @agent = agent
+    @target = target
     @calls = []
   end
   
@@ -241,6 +243,11 @@ class CallProcessor
   def feed(evidence)
     call = get_call evidence
     call.feed evidence unless call.nil?
+  end
+  
+  def store
+    # duration
+    # status ["recording"]
   end
   
   def to_s

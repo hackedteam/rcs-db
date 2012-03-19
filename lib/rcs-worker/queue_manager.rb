@@ -1,5 +1,5 @@
 # relatives
-require_relative 'instance_processor'
+require_relative 'instance_worker'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -28,7 +28,7 @@ class QueueManager
 
       begin
         if @instances[idx].nil?
-          @instances[idx] = InstanceProcessor.new instance, ident
+          @instances[idx] = InstanceWorker.new instance, ident
         end
         @instances[idx].queue(evidence)
       rescue Exception => e

