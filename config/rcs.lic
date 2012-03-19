@@ -16,7 +16,7 @@
   :blackberry: [true, true]
   :ios: [true, true]
   :symbian: [true, true]
-  :winmo: [false, true]
+  :winmo: [true, true]
 :alerting: true
 :correlation: false
 :forwarders: true
@@ -27,4 +27,4 @@
   :collectors: 10
   :anonymizers: 20
 :shards: 2
-:integrity: "114f2afb3507ec7fb8baf98fa61e6323f686a8f0682eef8e222d5bbf8c8d7fa1"
+:integrity: "a362ef83122458500b4ac0aa8327920be17671dfe3aebf82c2257a910315d07e"

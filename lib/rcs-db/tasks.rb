@@ -159,9 +159,9 @@ module BuildTaskType
   
   def run
     process = Proc.new do
-      @total = total
       begin
-       next_entry do
+        @total = total
+        next_entry do
           break if finished?
           step
         end
@@ -196,12 +196,12 @@ module NoFileTaskType
 
   def run
     process = Proc.new do
-      @total = total
       begin
-         next_entry do
-            break if finished?
-            step
-         end
+        @total = total
+        next_entry do
+          break if finished?
+          step
+        end
         trace :info, "Task #{@_id} completed."
         finished
       rescue Exception => e
@@ -232,8 +232,8 @@ module SingleFileTaskType
 
   def run
     process = Proc.new do
-      @total = total
       begin
+        @total = total
         #identify where results should be stored
         tgz = File.new(Config.instance.temp(@_id), 'wb+')
         tmp_file = File.new(Config.instance.temp("#{@_id}_temp"), 'wb+')

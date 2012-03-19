@@ -162,7 +162,7 @@ class EvidenceController < RESTController
 
     mongoid_query do
 
-      filter, filter_hash, target = create_common_filter @params
+      filter, filter_hash, target = ::Evidence.common_filter @params
       return not_found("Target or Agent not found") if filter.nil?
 
       # copy remaining filtering criteria (if any)
@@ -188,7 +188,7 @@ class EvidenceController < RESTController
   def index_amf
     mongoid_query do
 
-      filter, filter_hash, target_id = create_mongo_filter @params
+      filter, filter_hash, target_id = ::Evidence.common_mongo_filter @params
 
       db = Mongoid.database
       coll = db.collection("evidence.#{target_id}")
@@ -201,11 +201,9 @@ class EvidenceController < RESTController
       if @params.has_key? 'startIndex' and @params.has_key? 'numItems'
         opts[:skip] = @params['startIndex'].to_i
         opts[:limit] = @params['numItems'].to_i
-        array = coll.find(filter_hash, opts)
-          .to_a
+        array = coll.find(filter_hash, opts).to_a
       else
-        array = coll.find(filter_hash, opts)
-          .to_a
+        array = coll.find(filter_hash, opts).to_a
       end
 
       trace :debug, "[index_amf] queried mongodb for #{array.size} evidences in #{Time.now - start_time}"
@@ -225,7 +223,7 @@ class EvidenceController < RESTController
 
     mongoid_query do
 
-      filter, filter_hash, target = create_common_filter @params
+      filter, filter_hash, target = ::Evidence.common_filter @params
       return not_found("Target or Agent not found") if filter.nil?
 
       # copy remaining filtering criteria (if any)
@@ -247,7 +245,7 @@ class EvidenceController < RESTController
 
     mongoid_query do
 
-      filter, filter_hash, target = create_common_filter @params
+      filter, filter_hash, target = ::Evidence.common_filter @params
       return not_found("Target or Agent not found") if filter.nil?
 
       # copy remaining filtering criteria (if any)
@@ -261,85 +259,6 @@ class EvidenceController < RESTController
 
       return ok(query)
     end
-  end
-
-  def create_common_filter(params)
-
-    # filtering
-    filter = {}
-    filter = JSON.parse(params['filter']) if params.has_key? 'filter'
-
-    # if not specified the filter on the date is last 24 hours
-    filter['from'] = Time.now.to_i - 86400 if filter['from'].nil?
-    filter['to'] = Time.now.to_i if filter['to'].nil?
-
-    filter_hash = {}
-
-    # filter by target
-    target = Item.where({_id: filter.delete('target')}).first
-    return nil if target.nil?
-
-    # filter by agent
-    filter_hash[:aid] = filter.delete('agent') if filter['agent']
-
-    # default filter is on acquired
-    date = filter.delete('date')
-    date ||= 'da'
-    date = date.to_sym
-
-    # date filters must be treated separately
-    filter_hash[date.gte] = filter.delete('from') if filter.has_key? 'from'
-    filter_hash[date.lte] = filter.delete('to') if filter.has_key? 'to'
-
-    return filter, filter_hash, target
-  end
-
-  def create_mongo_filter(params)
-    filter = {}
-    filter = JSON.parse(params['filter']) if params.has_key? 'filter'
-
-    # target id
-    target_id = filter.delete('target')
-
-    # default date filtering is last 24 hours
-    filter['from'] = Time.now.to_i - 86400 if filter['from'].nil?
-    filter['to'] = Time.now.to_i if filter['to'].nil?
-
-    filter_hash = {}
-
-    # agent filter
-    filter_hash["aid"] = filter.delete('agent') if filter['agent']
-
-    # date filter
-    date = filter.delete('date')
-    date ||= 'da'
-
-    # do not account for filesystem and info evidences
-    filter_hash["type"] = {"$nin" => ["filesystem", "info"]} unless filter['type']
-
-    filter_hash[date] = Hash.new
-    filter_hash[date]["$gte"] = filter.delete('from') if filter.has_key? 'from'
-    filter_hash[date]["$lte"] = filter.delete('to') if filter.has_key? 'to'
-    
-    if filter.has_key? 'info'
-      begin
-        key_values = filter.delete('info').split(',')
-        key_values.each do |kv|
-          k, v = kv.split(':')
-          filter_hash["data.#{k}"] = Regexp.new("#{v}", true)
-          trace :debug, "Filtering data[#{k}] by keyword '#{v}'"
-        end
-      rescue Exception => e
-        trace :error, "Invalid filter for data [#{e.message}], ignoring..."
-      end
-    end
-
-    # remaining filters
-    filter.each_key do |k|
-      filter_hash[k] = {"$in" => filter[k]}
-    end
-
-    return filter, filter_hash, target_id
   end
 
   def total
