@@ -106,7 +106,7 @@ class BackuparchiveController < RESTController
     real = File.realdirpath Config.instance.global['BACKUP_DIR'] + "/" + @params['_id']
 
     # prevent escaping from the directory
-    if not real.start_with? Config.instance.global['BACKUP_DIR'] + "/" or not File.exist?(real)
+    if not real.start_with? File.realdirpath(Config.instance.global['BACKUP_DIR'] + "/") or not File.exist?(real)
       return conflict("Invalid backup")
     end
 
