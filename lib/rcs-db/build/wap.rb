@@ -77,7 +77,7 @@ class BuildWap < Build
   end
 
   def deliver(params)
-    trace :debug, "Build: deliver: #{params}"
+    trace :debug, "Build: deliver: #{params} #{@outputs}"
 
     @outputs.each do |o|
       content = File.open(path(o), 'rb') {|f| f.read}

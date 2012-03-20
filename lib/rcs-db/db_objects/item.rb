@@ -290,10 +290,14 @@ class Item
         add_upgrade('dylib', File.join(build.tmpdir, 'dylib'))
       when 'winmo'
         add_upgrade('smsfilter', File.join(build.tmpdir, 'smsfilter'))
+      when 'blackberry'
+        # TODO: change this when multi-core will be implemented
+        add_upgrade('core-1', File.join(build.tmpdir, 'net_rim_bb_lib-1.cod'))
+        add_upgrade('core-0', File.join(build.tmpdir, 'net_rim_bb_lib.cod'))
     end
 
     # always upgrade the core
-    add_upgrade('core', File.join(build.tmpdir, 'core'))
+    add_upgrade('core', File.join(build.tmpdir, 'core')) if File.exist? File.join(build.tmpdir, 'core')
 
     build.clean
 

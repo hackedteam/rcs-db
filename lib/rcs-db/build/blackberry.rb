@@ -67,7 +67,6 @@ class BuildBlackberry < Build
     config = config.ljust(2**14 - 4, "\x00")
     file.write config
     file.close
-    
   end
 
   def melt(params)
