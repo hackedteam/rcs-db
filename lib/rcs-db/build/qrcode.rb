@@ -27,6 +27,9 @@ class BuildQrcode < Build
   def generate(params)
     trace :debug, "Build: generate: #{params}"
 
+    # don't include support files into the outputs
+    @outputs = []
+
     params['platforms'].each do |platform|
       build = Build.factory(platform.to_sym)
 
@@ -79,11 +82,9 @@ class BuildQrcode < Build
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
       z.file.open('url.png', "w") { |f| f.write File.open(path('output.png'), 'rb') {|f| f.read} }
     end
-
   end
 
   def deliver(params)
-    return
     trace :debug, "Build: deliver: #{params}"
 
     @outputs.each do |o|

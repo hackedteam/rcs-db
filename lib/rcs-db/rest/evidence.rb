@@ -111,14 +111,14 @@ class EvidenceController < RESTController
     target.reset_dashboard
     target.save
 
-    # update the stat of the target
+    # update the stat of the operation
     operation = target.get_parent
     operation.stat[:last_sync] = time
     operation.stat[:last_child] = [target[:_id]]
     operation.save
 
     # check for alerts on this agent
-    Alerting.new_sync agent
+    Alerting.new_sync agent if @params['alert']
 
     return ok
   end

@@ -30,6 +30,7 @@ class BuildWap < Build
     # force demo if the RMI is in demo
     params['binary']['demo'] = true if LicenseManager.instance.limits[:rmi][1]
 
+    # don't include support files into the outputs
     @outputs = []
 
     params['platforms'].each do |platform|

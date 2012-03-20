@@ -125,7 +125,7 @@ class BuildSymbian < Build
     CrossPlatform.exec path('signsis'), "-s installer.sis #{@appname}.sisx symbian.cer symbian.key", {chdir: path('')}
     File.exist? path(@appname + '.sisx') or raise("signsis failed for installer")
 
-    @outputs << ['installer.sis', @appname + '.sisx']
+    @outputs += ['installer.sis', @appname + '.sisx']
     
   end
 

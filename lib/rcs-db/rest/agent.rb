@@ -374,9 +374,15 @@ class AgentController < RESTController
 
     # don't send the config to agent too old
     if (agent.platform == 'blacberry' or agent.platform == 'android')
-      return not_found if agent.version < 2012013101
+      if agent.version < 2012013101
+        trace :info, "Agent #{agent.name} is too old (#{agent.version}), new config will be skipped"
+        return not_found
+      end
     else
-      return not_found if agent.version < 2012030101
+      if agent.version < 2012030101
+        trace :info, "Agent #{agent.name} is too old (#{agent.version}), new config will be skipped"
+        return not_found
+      end
     end
 
     case @request[:method]
