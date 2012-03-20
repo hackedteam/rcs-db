@@ -30,6 +30,8 @@ class BuildQrcode < Build
     # don't include support files into the outputs
     @outputs = []
 
+    raise "don't know what to build" if params['platforms'].nil? or params['platforms'].empty?
+
     params['platforms'].each do |platform|
       build = Build.factory(platform.to_sym)
 
