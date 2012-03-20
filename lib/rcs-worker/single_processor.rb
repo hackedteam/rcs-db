@@ -18,20 +18,6 @@ class SingleProcessor
     evidence[:instance] = @agent['instance']
     evidence[:ident] = @agent['ident']
 
-    # find correct processing module and extend evidence
-    mod = "#{evidence[:type].to_s.capitalize}Processing"
-    if RCS.const_defined? mod.to_sym
-      evidence.extend eval(mod)
-    else
-      evidence.extend DefaultProcessing
-    end
-
-    evidence.process if evidence.respond_to? :process
-
-    # override original type
-    evidence[:type] = evidence.type if evidence.respond_to? :type
-    ev_type = evidence[:type]
-
     evidence.store @agent, @target
   end
 end

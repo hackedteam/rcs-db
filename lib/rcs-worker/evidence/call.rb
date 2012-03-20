@@ -1,7 +1,7 @@
 module RCS
 
 require_relative '../speex'
-require_relative '../audio_processor'
+require_relative '../call_processor'
 require_relative 'audio_evidence'
 
 module CallProcessing
@@ -10,7 +10,8 @@ module CallProcessing
   attr_reader :wav
   
   def process
-    
+    return if self[:data][:grid_content].nil?
+
     decoder = Speex.decoder_init(Speex.lib_get_mode(Speex::MODEID_UWB))
     
     # enable enhancement
@@ -22,7 +23,7 @@ module CallProcessing
     Speex.decoder_ctl(decoder, Speex::GET_FRAME_SIZE, frame_size_ptr)
     frame_size = frame_size_ptr.get_uint(0)
     
-    raw_content = StringIO.new @content
+    raw_content = StringIO.new self[:data][:grid_content]
     wave_buffer = ''
     
     bits = Speex::Bits.new
@@ -50,8 +51,8 @@ module CallProcessing
     Speex.bits_destroy(bits.pointer)
     Speex.decoder_destroy(decoder)
     
-    @wav = wave_buffer
-    
+    self[:wav] = wave_buffer
+    self[:wav] ||= ""
   end
   
   def type
