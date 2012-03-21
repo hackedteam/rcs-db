@@ -35,7 +35,7 @@ class AgentController < RESTController
 
     mongoid_query do
       db = Mongoid.database
-      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "uninstalled", "demo", "version", "counter", "configs", "upload_request", "download_requests"])
+      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "uninstalled", "demo", "version", "counter", "configs"])
       ok(j.first)
     end
   end
@@ -429,112 +429,133 @@ class AgentController < RESTController
   def upload
     require_auth_level :server, :tech
 
-    case @request[:method]
-      when 'GET'
-        agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
-        upl = agent.upload_requests.where({ _id: @params['upload']}).first
-        content = GridFS.get upl[:_grid].first
-        trace :info, "[#{@request[:peer]}] Requested the UPLOAD #{@params['upload']} -- #{content.file_length.to_s_bytes}"
-        return ok(content.read, {content_type: content.content_type})
-      when 'DELETE'
-        agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
-        agent.upload_requests.destroy_all(conditions: { _id: @params['upload']})
-        trace :info, "[#{@request[:peer]}] Deleted the UPLOAD #{@params['upload']}"
-    end
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+
+      case @request[:method]
+        when 'GET'
+          upl = agent.upload_requests.where({ _id: @params['upload']}).first
+          content = GridFS.get upl[:_grid].first
+          trace :info, "[#{@request[:peer]}] Requested the UPLOAD #{@params['upload']} -- #{content.file_length.to_s_bytes}"
+          return ok(content.read, {content_type: content.content_type})
+        when 'POST'
+          upl = @params['upload']
+          file = @params['upload'].delete 'file'
+          upl['_grid'] = [ GridFS.put(File.open(Config.instance.temp(file), 'rb+') {|f| f.read}, {filename: upl['filename']}) ]
+          upl['_grid_size'] = File.size Config.instance.temp(file)
+          File.delete Config.instance.temp(file)
+          agent.upload_requests.create(upl)
+          Audit.log :actor => @session[:user][:name], :action => "agent.upload", :desc => "Added an upload request for agent '#{agent['name']}'"
+        when 'DELETE'
+          agent.upload_requests.destroy_all(conditions: { _id: @params['upload']})
+          trace :info, "[#{@request[:peer]}] Deleted the UPLOAD #{@params['upload']}"
+      end
     
-    return ok
+      return ok
+    end
   end
   
   # retrieve the list of upgrade for a given agent
   def upgrades
     require_auth_level :server, :tech
-    
-    agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
-    list = agent.upgrade_requests
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+      list = agent.upgrade_requests
 
-    return ok(list)
+      return ok(list)
+    end
   end
   
   # retrieve or delete a single upgrade entity
   def upgrade
     require_auth_level :server, :tech
 
-    agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
 
-    case @request[:method]
-      when 'GET'
-        upl = agent.upgrade_requests.where({ _id: @params['upgrade']}).first
-        content = GridFS.get upl[:_grid].first
-        trace :debug, "[#{@request[:peer]}] Requested the UPGRADE #{@params['upgrade']} -- #{content.file_length.to_s_bytes}"
-        return ok(content.read, {content_type: content.content_type})
-      when 'POST'
-        Audit.log :actor => @session[:user][:name], :action => "agent.upgrade", :desc => "Requested an upgrade for agent '#{agent['name']}'"
-        trace :info, "Agent #{agent.name} scheduled for upgrade"
-        agent.upgrade!
-      when 'DELETE'
-        agent.upgrade_requests.destroy_all
-        agent.upgradable = false
-        agent.save
-        trace :info, "Agent #{agent.name} upgraded"
+      case @request[:method]
+        when 'GET'
+          upl = agent.upgrade_requests.where({ _id: @params['upgrade']}).first
+          content = GridFS.get upl[:_grid].first
+          trace :debug, "[#{@request[:peer]}] Requested the UPGRADE #{@params['upgrade']} -- #{content.file_length.to_s_bytes}"
+          return ok(content.read, {content_type: content.content_type})
+        when 'POST'
+          Audit.log :actor => @session[:user][:name], :action => "agent.upgrade", :desc => "Requested an upgrade for agent '#{agent['name']}'"
+          trace :info, "Agent #{agent.name} scheduled for upgrade"
+          agent.upgrade!
+        when 'DELETE'
+          agent.upgrade_requests.destroy_all
+          agent.upgradable = false
+          agent.save
+          trace :info, "Agent #{agent.name} upgraded"
+      end
+
+      return ok
     end
-    
-    return ok
   end
 
   # retrieve the list of download for a given agent
   def downloads
     require_auth_level :server, :tech
 
-    agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
-    list = agent.download_requests
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+      list = agent.download_requests
 
-    return ok(list)
+      return ok(list)
+    end
   end
 
   def download
     require_auth_level :server, :tech
 
-    case @request[:method]
-      when 'POST'
-        agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
-        agent.download_requests.create(@params['download'])
-        trace :info, "[#{@request[:peer]}] Added download request #{@params['download']}"
-        Audit.log :actor => @session[:user][:name], :action => "agent.download", :desc => "Added a download request for agent '#{agent['name']}'"
-      when 'DELETE'
-        agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
-        agent.download_requests.destroy_all(conditions: { _id: @params['download']})
-        trace :info, "[#{@request[:peer]}] Deleted the DOWNLOAD #{@params['download']}"
-    end
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
 
-    return ok
+      case @request[:method]
+        when 'POST'
+          agent.download_requests.create(@params['download'])
+          trace :info, "[#{@request[:peer]}] Added download request #{@params['download']}"
+          Audit.log :actor => @session[:user][:name], :action => "agent.download", :desc => "Added a download request for agent '#{agent['name']}'"
+        when 'DELETE'
+          agent.download_requests.destroy_all(conditions: { _id: @params['download']})
+          trace :info, "[#{@request[:peer]}] Deleted the DOWNLOAD #{@params['download']}"
+      end
+
+      return ok
+    end
   end
 
   # retrieve the list of filesystem for a given agent
   def filesystems
     require_auth_level :server, :tech
-    
-    agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
-    list = agent.filesystem_requests
 
-    return ok(list)
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+      list = agent.filesystem_requests
+
+      return ok(list)
+    end
   end
   
   def filesystem
     require_auth_level :server, :tech
 
-    case @request[:method]
-      when 'POST'
-        agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
-        agent.filesystem_requests.create(@params['filesystem'])
-        trace :info, "[#{@request[:peer]}] Added filesystem request #{@params['filesystem']}"
-        Audit.log :actor => @session[:user][:name], :action => "agent.filesystem", :desc => "Added a filesystem request for agent '#{agent['name']}'"
-      when 'DELETE'
-        agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
-        agent.filesystem_requests.destroy_all(conditions: { _id: @params['filesystem']})
-        trace :info, "[#{@request[:peer]}] Deleted the FILESYSTEM #{@params['filesystem']}"
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+
+      case @request[:method]
+        when 'POST'
+          agent.filesystem_requests.create(@params['filesystem'])
+          trace :info, "[#{@request[:peer]}] Added filesystem request #{@params['filesystem']}"
+          Audit.log :actor => @session[:user][:name], :action => "agent.filesystem", :desc => "Added a filesystem request for agent '#{agent['name']}'"
+        when 'DELETE'
+          agent.filesystem_requests.destroy_all(conditions: { _id: @params['filesystem']})
+          trace :info, "[#{@request[:peer]}] Deleted the FILESYSTEM #{@params['filesystem']}"
+      end
+
+      return ok
     end
-    
-    return ok
   end
 
 end
