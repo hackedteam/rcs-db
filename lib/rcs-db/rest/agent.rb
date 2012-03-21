@@ -531,6 +531,17 @@ class AgentController < RESTController
     end
   end
 
+  def download_destroy
+    require_auth_level :tech
+
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+      agent.download_requests.destroy_all(conditions: { _id: @params['download']})
+      Audit.log :actor => @session[:user][:name], :action => "agent.download", :desc => "Removed a download request for agent '#{agent['name']}'"
+      return ok
+    end
+  end
+
   # retrieve the list of filesystem for a given agent
   def filesystems
     require_auth_level :server, :tech
