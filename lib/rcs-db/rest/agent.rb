@@ -422,11 +422,10 @@ class AgentController < RESTController
     agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
 
     if server?
-      list = agent.upload_requests.where({:sent.gt => 0})
+      list = agent.upload_requests.where({sent: 0})
     else
       list = agent.upload_requests
     end
-
 
     return ok(list)
   end
