@@ -435,7 +435,7 @@ class UploadRequest
   include Mongoid::Document
   
   field :filename, type: String
-  field :sent, type: Integer
+  field :sent, type: Integer, :default => 0
   field :_grid, type: Array
   field :_grid_size, type: Integer
   

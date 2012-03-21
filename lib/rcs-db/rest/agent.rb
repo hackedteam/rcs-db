@@ -420,7 +420,13 @@ class AgentController < RESTController
     require_auth_level :server, :tech
 
     agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
-    list = agent.upload_requests
+
+    if server?
+      list = agent.upload_requests.where({:sent.gt => 0})
+    else
+      list = agent.upload_requests
+    end
+
 
     return ok(list)
   end
@@ -447,10 +453,10 @@ class AgentController < RESTController
           agent.upload_requests.create(upl)
           Audit.log :actor => @session[:user][:name], :action => "agent.upload", :desc => "Added an upload request for agent '#{agent['name']}'"
         when 'DELETE'
-          agent.upload_requests.destroy_all(conditions: { _id: @params['upload']})
+          agent.upload_requests.where({ _id: @params['upload']}).update({sent: Time.now.to_i})
           trace :info, "[#{@request[:peer]}] Deleted the UPLOAD #{@params['upload']}"
       end
-    
+
       return ok
     end
   end

@@ -118,6 +118,7 @@ class EvidenceTask
     # expand all the metadata
     row[:data].each_pair do |k, v|
       next if ['_grid', '_grid_size', 'md5', 'type'].include? k
+      v.gsub! /\n/, '<br>'
       table += "<tr><td class=\"inner\">#{k}</td><td class=\"inner\">#{v}</td></tr>"
     end
     # add binary content

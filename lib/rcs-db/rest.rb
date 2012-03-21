@@ -228,7 +228,11 @@ class RESTController
   def view?
     return @session[:level].include? :view
   end
-  
+
+  def server?
+    return @session[:level].include? :server
+  end
+
   # TODO: mongoid_query doesn't belong here
   def mongoid_query(&block)
     begin

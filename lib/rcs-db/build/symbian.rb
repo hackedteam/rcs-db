@@ -62,13 +62,13 @@ class BuildSymbian < Build
     Find.find(@tmpdir).each do |file|
       if File.file?(file)
         content = File.open(file, 'rb') {|f| f.read}
-        content.binary_patch '[:UID1:]', uids[0]
-        content.binary_patch '[:UID2:]', uids[1]
-        content.binary_patch '[:UID3:]', uids[2]
-        content.binary_patch '[:UID4:]', uids[3]
-        content.binary_patch '[:UID5:]', uids[4]
-        content.binary_patch '[:UID6:]', uids[5]
-        content.binary_patch /SharedQueueCli_20023633\{000a0000\}\[[a-z0-9]*\].dll/, "SharedQueueCli_20023633{000a0000}[#{uids[3]}].dll"
+        content.binary_patch '[:UID1:]', uids[0] rescue nil
+        content.binary_patch '[:UID2:]', uids[1] rescue nil
+        content.binary_patch '[:UID3:]', uids[2] rescue nil
+        content.binary_patch '[:UID4:]', uids[3] rescue nil
+        content.binary_patch '[:UID5:]', uids[4] rescue nil
+        content.binary_patch '[:UID6:]', uids[5] rescue nil
+        content.binary_patch /SharedQueueCli_20023633\{000a0000\}\[[a-z0-9]*\].dll/, "SharedQueueCli_20023633{000a0000}[#{uids[3]}].dll" rescue nil
         File.open(file, 'wb') {|f| f.write content}
       end
     end
