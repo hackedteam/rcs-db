@@ -83,7 +83,7 @@ class CrossPlatform
       # if the file does not exists, search in the path falling back to 'system'
       if not File.exist? command and not command.start_with?('wine')
         # if needed add the path specified to the Environment
-        ENV['PATH'] = "#{options[:add_path]}#{separator}" + ENV['PATH']  if options[:add_path]
+        ENV['PATH'] = "#{options[:add_path]}#{separator}" + ENV['PATH'] if options[:add_path]
 
         trace :debug, "Executing(system): #{command} #{params}"
         success = system command + " " + params
