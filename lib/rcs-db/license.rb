@@ -81,7 +81,7 @@ class LicenseManager
     if File.exist? lic_file
       trace :info, "Loading license limits #{lic_file}"
 
-      File.open(lic_file, "r") do |f|
+      File.open(lic_file, "rb") do |f|
         lic = YAML.load(f.read)
 
         # check the autenticity of the license

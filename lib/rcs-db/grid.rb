@@ -97,6 +97,18 @@ class GridFS
       end
     end
 
+    def delete_by_filename(filename, collection = nil)
+      begin
+        files = Mongoid.database.collection( collection_name(collection) + ".files")
+        files.find({"filename" => filename}, :fields => ["_id", "length"]).each  do |e|
+          delete(e["_id"], collection_name(collection))
+        end
+      rescue Exception => e
+        trace :error, "Cannot get content from the Grid: #{collection_name(collection)}"
+        return []
+      end
+    end
+
     def get_distinct_filenames(collection = nil)
       begin
         files = Mongoid.database.collection( collection_name(collection) + ".files")

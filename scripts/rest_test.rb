@@ -1314,6 +1314,14 @@ if false
  puts
 end
 
+# filesystem
+if true
+  puts "evidence.filesystem"
+  res = http.request_get("/agent/downloads/4F6059012AFB65C9440000CC", {'Cookie' => cookie})
+  puts res.body
+  puts
+  
+end
 
 # logout
 res = http.request_post('/auth/logout', nil, {'Cookie' => cookie})

@@ -68,7 +68,7 @@ class Config
 
     # load the config in the @global hash
     begin
-      File.open(conf_file, "r") do |f|
+      File.open(conf_file, "rb") do |f|
         @global = YAML.load(f.read)
       end
     rescue
@@ -109,7 +109,7 @@ class Config
 
     # Write the @global into a yaml file
     begin
-      File.open(conf_file, "w") do |f|
+      File.open(conf_file, "wb") do |f|
         f.write(@global.to_yaml)
       end
     rescue
@@ -304,7 +304,7 @@ class Config
     trace :info, "Generating UIDS stores for Symbian..."
     FileUtils.rm(Config.instance.cert('symbian.yaml'))
     uids = ['20030635', '200305D7', '20030633', '20030634', '200316ED', '200305DB']
-    File.open(Config.instance.cert("symbian.yaml"), 'w') {|f| f.write uids.to_yaml}
+    File.open(Config.instance.cert("symbian.yaml"), 'wb') {|f| f.write uids.to_yaml}
   end
 
   def change_router_service_parameter

@@ -44,6 +44,13 @@ class EvidenceManager
       instance = inst.slice(15..-1)
       agent = ::Item.agents.where({ident: ident, instance: instance}).first
 
+      # if the agent is not found we need to delete the pending evidence
+      if agent.nil?
+        entries.delete(inst)
+        GridFS.delete_by_filename(inst, "evidence")
+        next
+      end
+
       entries[inst][:platform] = agent[:platform]
 
       unless agent.stat[:last_sync].nil?
@@ -51,7 +58,7 @@ class EvidenceManager
         time = time.to_s.split(' +').first
         entries[inst][:time] = time
       else
-        entries[inst][:time] = 0
+        entries[inst][:time] = ""
       end
 
     end

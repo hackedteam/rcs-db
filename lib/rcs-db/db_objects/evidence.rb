@@ -157,6 +157,10 @@ class Evidence
     filter['from'] = Time.now.to_i - 86400 if filter['from'].nil?
     filter['to'] = Time.now.to_i if filter['to'].nil?
 
+    # to remove a filter set it to 0
+    filter.delete('from') if filter['from'] == 0
+    filter.delete('to') if filter['to'] == 0
+
     filter_hash = {}
 
     # filter by target

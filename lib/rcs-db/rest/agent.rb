@@ -379,7 +379,7 @@ class AgentController < RESTController
         return not_found
       end
     else
-      if agent.version < 2012030101
+      if agent.version < 2012041601
         trace :info, "Agent #{agent.name} is too old (#{agent.version}), new config will be skipped"
         return not_found
       end

@@ -274,17 +274,18 @@ module MultiFileTaskType
     process = Proc.new do
       # temporary file is our task id
       begin
+        @total = total
         tmpfile = Temporary.file('temp', @_id)
         compressor = FileTask.compressor_class.new tmpfile
-        next_entry do |type, entry, content|
+        next_entry do |type, filename, opts|
 
           break if finished?
 
           case type
             when 'stream'
-              compressor.add_stream entry, content
+              compressor.add_stream filename, opts[:content]
             when 'file'
-              compressor.add_file entry
+              compressor.add_file opts[:path], filename
           end
           step
         end

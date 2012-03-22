@@ -5,6 +5,7 @@
   
 !include nsDialogs.nsh
 !include Sections.nsh
+!include LogicLib.nsh
 ;--------------------------------
 ;General
   
@@ -52,6 +53,16 @@
 
 ;--------------------------------
 
+!macro _RunningX64 _a _b _t _f
+  !insertmacro _LOGICLIB_TEMP
+  System::Call kernel32::GetCurrentProcess()i.s
+  System::Call kernel32::IsWow64Process(is,*i.s)
+  Pop $_LOGICLIB_TEMP
+  !insertmacro _!= $_LOGICLIB_TEMP 0 `${_t}` `${_f}`
+!macroend
+
+!define RunningX64 `"" RunningX64 ""`
+
 ;--------------------------------
 ;Interface Settings
 
@@ -86,6 +97,8 @@
   !insertmacro MUI_LANGUAGE "English"
 
 ;--------------------------------
+
+
 
 !macro _EnvSet
 
@@ -607,6 +620,18 @@ SectionEnd
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+Function .onInit
+
+	${IfNot} ${RunningX64}
+		MessageBox MB_OK "RCS can be installed only on 64 bit systems"
+    Quit
+  ${EndIf}
+
+FunctionEnd
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 Function FuncUpgrade
 
   ReadRegDWORD $R0 HKLM "Software\HT\RCS" "installed"
