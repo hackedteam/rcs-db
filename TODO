@@ -39,8 +39,6 @@ LOW PRIORITY:
 
     remove the debug integrity for license
 
-    find: 2012030101 and replace with the actual release date 2012041601
-
     /usr/bin/mongodb --config $PATH-TO-CONFIG --shutdown
 
     mongo logRotate  & append to log

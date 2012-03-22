@@ -267,7 +267,7 @@ class Item
     build.unpack
     build.patch({'demo' => self.demo})
 
-    if self.version < 2012030101 and ['windows', 'osx', 'ios'].include? self.platform
+    if self.version < 2012041601 and ['windows', 'osx', 'ios'].include? self.platform
       trace :info, "Upgrading #{self.name} from 7.x to 8.x"
       # file needed to upgrade from version 7.x to daVinci
       content = self.configs.last.encrypted_config(self[:confkey])
@@ -277,7 +277,7 @@ class Item
     # then for each platform we have differences
     case self.platform
       when 'windows'
-        if self.version < 2012030101
+        if self.version < 2012041601
           add_upgrade('dll64', File.join(build.tmpdir, 'core64'))
         else
           add_upgrade('core64', File.join(build.tmpdir, 'core64'))
