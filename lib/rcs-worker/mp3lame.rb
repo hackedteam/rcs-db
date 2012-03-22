@@ -1,4 +1,5 @@
 require 'ffi'
+require 'stringio'
 
 module MP3Lame
   extend FFI::Library
@@ -108,70 +109,60 @@ module MP3Lame
   
   attach_function :lame_init_params, [:pointer], :int
   attach_function :lame_encode_buffer, [:pointer, :pointer, :pointer, :int, :pointer, :int], :int
+  attach_function :lame_encode_buffer_float, [:pointer, :pointer, :pointer, :int, :pointer, :int], :int
   attach_function :lame_encode_flush, [:pointer , :pointer, :int], :int
+  attach_function :lame_encode_finish, [:pointer , :pointer, :int], :int
 end
 
-puts "FFI interface to libmp3lame #{MP3Lame::get_lame_version}"
-
-require 'wav-file'
-f = open("/Users/daniele/Desktop/wave/canzone.wav")
-format = WavFile::readFormat(f)
-dataChunk = WavFile::readDataChunk(f)
-puts format
-
-objptr = MP3Lame::lame_init
-gfp = MP3Lame::LameGlobalFlags.new(objptr)
-MP3Lame::lame_set_num_channels(objptr, format.channel)
-MP3Lame::lame_set_in_samplerate(objptr, format.hz)
-MP3Lame::lame_set_brate(objptr, 128)
-MP3Lame::lame_set_mode(objptr,1);
-MP3Lame::lame_set_quality(objptr,2);
-puts gfp[:num_channels]
-puts gfp[:in_samplerate]
-puts gfp[:mode]
-puts gfp[:quality]
-puts gfp[:brate]
-
-if MP3Lame::lame_init_params(objptr) >= 0
-  puts "params set!"
-else
-  puts "something wrong in params..."
-end
-
-bit = 's*' if format.bitPerSample == 16 # int16_t
-bit = 'c*' if format.bitPerSample == 8 # signed char
-wavs = dataChunk.data.unpack(bit) # read binary
-
-num_samples = wavs.size
-mp3buffer_size = 1.25 * num_samples + 7200
-puts "Required buffer size #{mp3buffer_size}"
-
-mp3buffer = FFI::MemoryPointer.new(:char, mp3buffer_size)
-puts mp3buffer.class
-
-class Array
-  def odd_values
-    (0...length / 2).collect { |i| self[i*2 + 1] }
+class MP3Encoder
+  def initialize(n_channels, sample_rate)
+    @n_channels = n_channels
+    @sample_rate = sample_rate
+    
+    @mp3lame = MP3Lame::lame_init
+    @buffer = nil
+    
+    gfp = MP3Lame::LameGlobalFlags.new(@mp3lame)
+    MP3Lame::lame_set_num_channels(@mp3lame, @n_channels)
+    MP3Lame::lame_set_in_samplerate(@mp3lame, @sample_rate)
+    MP3Lame::lame_set_brate(@mp3lame, 128)
+    MP3Lame::lame_set_mode(@mp3lame,1);
+    MP3Lame::lame_set_quality(@mp3lame,2);
+    puts gfp[:num_channels]
+    puts gfp[:in_samplerate]
+    puts gfp[:mode]
+    puts gfp[:quality]
+    puts gfp[:brate]
+    
+    return true if MP3Lame::lame_init_params(@mp3lame) >= 0
+    return nil
   end
-
-  def even_values
-    (0...(length + 1) / 2).collect { |i| self[i*2] }
+  
+  def feed(left, right, file_name='encoded_channel')
+    puts left.class, left.size
+    puts right.class, right.size
+    
+    to_read = [left.size, right.size].min
+    num_samples = to_read
+    buffer_size = 1.25 * num_samples + 7200
+    
+    puts "required #{buffer_size.ceil} bytes to process #{num_samples} wav samples"
+    
+    buffer = FFI::MemoryPointer.new(:float, buffer_size.ceil)
+    
+    left_pcm = left.shift(to_read).pack 'F*'
+    right_pcm = right.shift(to_read).pack 'F*'
+    
+    puts "#{left_pcm.bytesize} bytes LEFT CHANNEL"
+    puts "#{right_pcm.bytesize} bytes RIGHT CHANNEL"
+    
+    mp3_bytes = MP3Lame::lame_encode_buffer_float(@mp3lame, left_pcm, right_pcm, num_samples, buffer, buffer_size)
+    File.open(file_name, 'ab') {|f| f.write(buffer.read_string(mp3_bytes)) }
+    puts "encoded #{mp3_bytes} bytes of MP3 data"
+    
+    mp3_bytes = MP3Lame::lame_encode_flush(@mp3lame, buffer, buffer_size)
+    File.open(file_name, 'ab') {|f| f.write(buffer.read_string(mp3_bytes)) }
+    puts "flushed #{mp3_bytes} bytes of MP3 data"
   end
 end
 
-right_pcm = wavs.even_values
-left_pcm = wavs.odd_values
-
-loop do
-  lpcm = left_pcm.shift(10).pack 's*'
-  rpcm = right_pcm.shift(10).pack 's*'
-
-  break if left_pcm.size == 0
-
-  mp3_bytes = MP3Lame::lame_encode_buffer(objptr, lpcm, rpcm, 10, mp3buffer, mp3buffer_size)
-
-  File.open('canzone.mp3', 'ab') {|f| f.write(mp3buffer.read_string(mp3_bytes)) }
-end
-
-mp3_bytes = MP3Lame::lame_encode_flush(objptr, mp3buffer, mp3buffer_size)
-File.open('canzone.mp3', 'ab') {|f| f.write(mp3buffer.read_string(mp3_bytes)) }
