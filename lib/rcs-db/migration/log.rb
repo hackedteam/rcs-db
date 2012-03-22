@@ -24,7 +24,7 @@ class LogMigration
     end
 
     if File.exist?('migration.status')
-      starting_point = File.open('migration.status', 'r') {|f| f.read}
+      starting_point = File.open('migration.status', 'rb') {|f| f.read}
       @@start_activity, @@start_target, @@start_agent, @@start_log = starting_point.split(' ').collect {|x| x.to_i}
       puts "RESTARTING FROM: #{starting_point}"
     end
@@ -178,7 +178,7 @@ class LogMigration
 
         # save the current point of migration
         # this is used in case of failure to restart from here
-        File.open('migration.status', 'w') {|f| f.write "#{act._mid} #{targ._mid} #{a._mid} #{log_id[:log_id]}"}
+        File.open('migration.status', 'wb') {|f| f.write "#{act._mid} #{targ._mid} #{a._mid} #{log_id[:log_id]}"}
 
         # stat calculation
         a.stat.evidence ||= {}

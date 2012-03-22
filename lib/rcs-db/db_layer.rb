@@ -145,7 +145,7 @@ class DB
       Signature.create(scope: 'server') { |s| s.value = SecureRandom.hex(16) }
     end
     # dump the signature for NIA, Anon etc to a file
-    File.open(Config.instance.cert('rcs-network.sig'), 'w') {|f| f.write Signature.where(scope: 'network').first.value}
+    File.open(Config.instance.cert('rcs-network.sig'), 'wb') {|f| f.write Signature.where(scope: 'network').first.value}
   end
 
   def load_cores
@@ -155,7 +155,7 @@ class DB
       version = ''
       begin
         Zip::ZipFile.open(core_file) do |z|
-          version = z.file.open('version', "r") { |f| f.read }.chomp
+          version = z.file.open('version', "rb") { |f| f.read }.chomp
         end
 
         trace :debug, "Load core: #{name} #{version}"

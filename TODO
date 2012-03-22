@@ -13,8 +13,7 @@ HIGH PRIORITY:
 
     fix PATH mangling during installation
     fix simple:sc execution
-
-    export evidence: all, blotter, with filters
+    check for x64 http://nsis.sourceforge.net/Include/x64.nsh
 
     filesystem methods
 
@@ -40,7 +39,7 @@ LOW PRIORITY:
 
     remove the debug integrity for license
 
-    find: 2012030101 and replace with the actual release date
+    find: 2012030101 and replace with the actual release date 2012041601
 
     /usr/bin/mongodb --config $PATH-TO-CONFIG --shutdown
 
