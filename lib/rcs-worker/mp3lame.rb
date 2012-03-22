@@ -170,8 +170,8 @@ loop do
 
   mp3_bytes = MP3Lame::lame_encode_buffer(objptr, lpcm, rpcm, 10, mp3buffer, mp3buffer_size)
 
-  File.open('canzone.mp3', 'a') {|f| f.write(mp3buffer.read_string(mp3_bytes)) }
+  File.open('canzone.mp3', 'ab') {|f| f.write(mp3buffer.read_string(mp3_bytes)) }
 end
 
 mp3_bytes = MP3Lame::lame_encode_flush(objptr, mp3buffer, mp3buffer_size)
-File.open('canzone.mp3', 'a') {|f| f.write(mp3buffer.read_string(mp3_bytes)) }
+File.open('canzone.mp3', 'ab') {|f| f.write(mp3buffer.read_string(mp3_bytes)) }
