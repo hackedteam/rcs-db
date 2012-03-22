@@ -101,7 +101,7 @@ class GridFS
       begin
         files = Mongoid.database.collection( collection_name(collection) + ".files")
         files.find({"filename" => filename}, :fields => ["_id", "length"]).each  do |e|
-          delete(e["_id"], collection_name(collection))
+          delete(e["_id"], collection)
         end
       rescue Exception => e
         trace :error, "Cannot get content from the Grid: #{collection_name(collection)}"
