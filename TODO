@@ -1,19 +1,14 @@
 TEST:
     create an item, use it in recent, dashboard, alert and nia rules, then delete it and check accordingly
 
-    injector rules pushing
-
     create an agent, sync, delete it and check the evidence destroy process (should drop evidences and gridfs)
 
     check if after deletion the evidences (and grid) are actually deleted
 
 HIGH PRIORITY:
 
-    fix .bat to be executed from bin
-
     fix PATH mangling during installation
     fix simple:sc execution
-    check for x64 http://nsis.sourceforge.net/Include/x64.nsh
 
     filesystem methods
 

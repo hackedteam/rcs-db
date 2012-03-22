@@ -1317,9 +1317,11 @@ end
 # filesystem
 if true
   puts "evidence.filesystem"
-  res = http.request_get("/agent/downloads/4F6059012AFB65C9440000CC", {'Cookie' => cookie})
+  res = http.request_get(URI.escape('/evidence/filesystem?target=4F6058FF2AFB65C94400006D'), {'Cookie' => cookie})
   puts res.body
   puts
+  
+  
   
 end
 
