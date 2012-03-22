@@ -531,6 +531,7 @@ class AgentController < RESTController
     end
   end
 
+  # fucking flex that does not support the DELETE http method
   def download_destroy
     require_auth_level :tech
 

@@ -107,7 +107,7 @@ class CollectorController < RESTController
       next_hop = Collector.find(collector.prev[0]) if collector.prev[0]
 
       # create the tar.gz with the config
-      File.open(Config.instance.temp(collector._id.to_s), 'w')  do |f|
+      File.open(Config.instance.temp(collector._id.to_s), 'wb')  do |f|
         f.write (next_hop and next_hop.address.length > 0) ? next_hop.address + ':80' : '-'
       end
 
