@@ -114,16 +114,6 @@ module MP3Lame
   attach_function :lame_encode_finish, [:pointer , :pointer, :int], :int
 end
 
-puts "FFI interface to libmp3lame #{MP3Lame::get_lame_version}"
-
-=begin
-require 'wav-file'
-f = open("/Users/daniele/Desktop/wave/canzone.wav")
-format = WavFile::readFormat(f)
-dataChunk = WavFile::readDataChunk(f)
-puts format
-=end
-
 class MP3Encoder
   def initialize(n_channels, sample_rate)
     @n_channels = n_channels
@@ -175,3 +165,4 @@ class MP3Encoder
     puts "flushed #{mp3_bytes} bytes of MP3 data"
   end
 end
+

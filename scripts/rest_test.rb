@@ -783,21 +783,21 @@ if false
 =end
   
   puts "agent.show"
-  res = http.request_get("/agent/4f2b97e0963d3525d5000002", {'Cookie' => cookie})
-  #puts res.body
-  agent = JSON.parse(res.body)
-  puts agent
+  res = http.request_get("/agent/4F6059012AFB65C9440000CC", {'Cookie' => cookie})
+  puts res.body
+  #agent = JSON.parse(res.body)
+  #puts agent
   puts
   
-  puts "agent.filesystem POST"
-  filesystem_post = {
-     _id: agent['_id'],
-     filesystem: {path: '%HOMEDRIVE%\\\\*', depth: 2}
-   }
-  res = http.request_post("/agent/filesystem", filesystem_post.to_json, {'Cookie' => cookie})
-  fs_post = JSON.parse(res.body)
-  puts fs_post
-  puts
+  #puts "agent.filesystem POST"
+  #filesystem_post = {
+  #   _id: agent['_id'],
+  #   filesystem: {path: '%HOMEDRIVE%\\\\*', depth: 2}
+  # }
+  #res = http.request_post("/agent/filesystem", filesystem_post.to_json, {'Cookie' => cookie})
+  #fs_post = JSON.parse(res.body)
+  #puts fs_post
+  #puts
   
 =begin
   puts "agent.update"
@@ -1279,6 +1279,41 @@ if false
   puts res.body
   puts
 end
+
+# upload & download
+if false
+  puts "agent.downloads"
+  res = http.request_get("/agent/downloads/4F6059012AFB65C9440000CC", {'Cookie' => cookie})
+  puts res.body
+  puts
+=begin  
+  puts "agent.download"
+  res = http.request_post("/agent/download", {_id: "4F6059012AFB65C9440000CC", download: {path: "c:\\*.bmp"}}.to_json, {'Cookie' => cookie})
+  puts res.body
+  puts
+  
+  puts "agent.downloads"
+  res = http.request_get("/agent/downloads/4F6059012AFB65C9440000CC", {'Cookie' => cookie})
+  puts res.body
+  puts
+=end
+
+ puts "agent.uploads"
+ res = http.request_get("/agent/uploads/4F6059012AFB65C9440000CC", {'Cookie' => cookie})
+ puts res.body
+ puts
+
+ puts "agent.upload"
+ res = http.request_post("/agent/upload", {_id: "4F6059012AFB65C9440000CC", upload: {filename: "pippo", file: 'test'}}.to_json, {'Cookie' => cookie})
+ puts res.body
+ puts
+
+ puts "agent.uploads"
+ res = http.request_get("/agent/uploads/4F6059012AFB65C9440000CC", {'Cookie' => cookie})
+ puts res.body
+ puts
+end
+
 
 # logout
 res = http.request_post('/auth/logout', nil, {'Cookie' => cookie})

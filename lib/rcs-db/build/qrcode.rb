@@ -27,6 +27,11 @@ class BuildQrcode < Build
   def generate(params)
     trace :debug, "Build: generate: #{params}"
 
+    # don't include support files into the outputs
+    @outputs = []
+
+    raise "don't know what to build" if params['platforms'].nil? or params['platforms'].empty?
+
     params['platforms'].each do |platform|
       build = Build.factory(platform.to_sym)
 
@@ -77,14 +82,12 @@ class BuildQrcode < Build
     trace :debug, "Build: pack: #{params}"
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      z.file.open('url.png', "w") { |f| f.write File.open(path('output.png'), 'rb') {|f| f.read} }
+      z.file.open('url.png', "wb") { |f| f.write File.open(path('output.png'), 'rb') {|f| f.read} }
     end
-
   end
 
   def deliver(params)
-    return
-    trace :debug, "Build: deliver: #{params}"
+    trace :debug, "Build: deliver: #{params} #{@outputs}"
 
     @outputs.each do |o|
       content = File.open(path(o), 'rb') {|f| f.read}

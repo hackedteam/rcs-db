@@ -14,13 +14,21 @@ HIGH PRIORITY:
     fix PATH mangling during installation
     fix simple:sc execution
 
-    export evidence: all, blotter, with filters, filesystem...
+    export evidence: all, blotter, with filters
+
+    filesystem methods
+
+    export filesystem.
 
     worker decoding (daniele):
         - call
         - mic
         - calendar
         - mail
+
+    link alerts to store evidence
+
+    websocket per push delle istanze
 
 MEDIUM PRIORITY:
 

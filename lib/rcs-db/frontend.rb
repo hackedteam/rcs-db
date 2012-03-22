@@ -38,7 +38,7 @@ class Frontend
     begin
       raise "no collector found" if ::Status.where({type: 'collector'}).any_in(status: [::Status::OK, ::Status::WARN]).count == 0
       # put the file on every collector, we cannot know where it will be requested
-      ::Status.where({type: 'collector', status: ::Status::OK}).all.each do |collector|
+      ::Status.where({type: 'collector'}).any_in(status: [::Status::OK, ::Status::WARN]).each do |collector|
 
         next if collector.address.nil?
         
@@ -46,8 +46,9 @@ class Frontend
 
         # send the push request
         http = Net::HTTP.new(collector.address, 80)
-        http.request_put("/#{filename}", content, {})
+        resp = http.request_put("/#{filename}", content, {})
 
+        raise "wrong response from collector" unless resp.body == "OK"
       end
     rescue Exception => e
       trace :error, "Frontend Collector PUT: #{e.message}"
@@ -60,7 +61,7 @@ class Frontend
     begin
       raise "no collector found" if ::Status.where({type: 'collector'}).any_in(status: [::Status::OK, ::Status::WARN]).count == 0
       # request to one of the collectors
-      collector = ::Status.where({type: 'collector', status: ::Status::OK}).all.sample
+      collector = ::Status.where({type: 'collector'}).any_in(status: [::Status::OK, ::Status::WARN]).sample
 
       trace :debug, "Frontend: Proxying #{host} #{url} to #{collector.name}"
 

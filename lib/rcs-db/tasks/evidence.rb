@@ -118,6 +118,7 @@ class EvidenceTask
     # expand all the metadata
     row[:data].each_pair do |k, v|
       next if ['_grid', '_grid_size', 'md5', 'type'].include? k
+      v.gsub! /\n/, '<br>'
       table += "<tr><td class=\"inner\">#{k}</td><td class=\"inner\">#{v}</td></tr>"
     end
     # add binary content
@@ -168,7 +169,7 @@ class EvidenceTask
 
   def begin_new_file(day)
     FileUtils.mkdir_p File.join(@export_dir, day)
-    out = File.open(File.join(@export_dir, day, 'index.html'), 'w')
+    out = File.open(File.join(@export_dir, day, 'index.html'), 'wb+')
     out.write html_page_header
     out.write html_evidence_table_header day
     return out
@@ -191,11 +192,11 @@ class EvidenceTask
       when 'file'
         name += File.extname evidence[:data]['path']
     end
-    File.open(File.join(@export_dir, day, name), 'w') {|f| f.write file.read}
+    File.open(File.join(@export_dir, day, name), 'wb+') {|f| f.write file.read}
   end
 
   def create_summary(summary)
-    File.open(File.join(@export_dir, "index.html"), 'w') do |f|
+    File.open(File.join(@export_dir, "index.html"), 'wb+') do |f|
       f.write html_page_header
       f.write html_summary_table_header
 

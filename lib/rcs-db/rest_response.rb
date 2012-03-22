@@ -26,7 +26,7 @@ class RESTResponse
 
     @opts = opts
 
-    @callback=callback
+    @callback = callback
 
     @response = nil
   end

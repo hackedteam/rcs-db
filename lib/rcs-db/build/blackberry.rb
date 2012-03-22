@@ -67,7 +67,6 @@ class BuildBlackberry < Build
     config = config.ljust(2**14 - 4, "\x00")
     file.write config
     file.close
-    
   end
 
   def melt(params)
@@ -134,16 +133,16 @@ class BuildBlackberry < Build
       when 'remote'
         Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
           @outputs.delete_if {|o| o['res']}.keep_if {|o| o['.cod'] or o['.jad']}.each do |output|
-            z.file.open(output, "w") { |f| f.write File.open(path(output), 'rb') {|f| f.read} }
+            z.file.open(output, "wb") { |f| f.write File.open(path(output), 'rb') {|f| f.read} }
           end
         end
       when 'local'
         Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
           @outputs.keep_if {|o| o['res'] || o['install.bat'] || o['bin'] || o['base']}.each do |output|
             if output['base']
-              z.file.open('/res/net_rim_bb_lib_base.cod', "w") { |f| f.write File.open(path(output), 'rb') {|f| f.read} }
+              z.file.open('/res/net_rim_bb_lib_base.cod', "wb") { |f| f.write File.open(path(output), 'rb') {|f| f.read} }
             else
-              z.file.open(output, "w") { |f| f.write File.open(path(output), 'rb') {|f| f.read} }
+              z.file.open(output, "wb") { |f| f.write File.open(path(output), 'rb') {|f| f.read} }
             end
           end
         end

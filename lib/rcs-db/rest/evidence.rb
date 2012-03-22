@@ -111,7 +111,7 @@ class EvidenceController < RESTController
     target.reset_dashboard
     target.save
 
-    # update the stat of the target
+    # update the stat of the operation
     operation = target.get_parent
     operation.stat[:last_sync] = time
     operation.stat[:last_child] = [target[:_id]]
@@ -122,7 +122,46 @@ class EvidenceController < RESTController
 
     return ok
   end
-  
+
+  # used by the collector to update the synctime during evidence transfer
+  def start_update
+    require_auth_level :server, :tech
+
+    # create a phony session
+    session = @params.symbolize
+
+    # retrieve the agent from the db
+    agent = Item.where({_id: session[:bid]}).first
+    return not_found("Agent not found: #{session[:bid]}") if agent.nil?
+
+    # convert the string time to a time object to be passed to 'sync_start'
+    time = Time.at(@params['sync_time']).getutc
+
+    # update the agent version
+    agent.version = @params['version']
+
+    # update the stats
+    agent.stat[:last_sync] = time
+    agent.stat[:source] = @params['source']
+    agent.stat[:user] = @params['user']
+    agent.stat[:device] = @params['device']
+    agent.save
+
+    # update the stat of the target
+    target = agent.get_parent
+    target.stat[:last_sync] = time
+    target.stat[:last_child] = [agent[:_id]]
+    target.save
+
+    # update the stat of the operation
+    operation = target.get_parent
+    operation.stat[:last_sync] = time
+    operation.stat[:last_child] = [target[:_id]]
+    operation.save
+
+    return ok
+  end
+
   # used to report that the processing of an instance has finished
   def stop
     require_auth_level :server, :tech

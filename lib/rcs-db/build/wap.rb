@@ -30,7 +30,10 @@ class BuildWap < Build
     # force demo if the RMI is in demo
     params['binary']['demo'] = true if LicenseManager.instance.limits[:rmi][1]
 
+    # don't include support files into the outputs
     @outputs = []
+
+    raise "don't know what to build" if params['platforms'].nil? or params['platforms'].empty?
 
     params['platforms'].each do |platform|
       build = Build.factory(platform.to_sym)
@@ -76,7 +79,7 @@ class BuildWap < Build
   end
 
   def deliver(params)
-    trace :debug, "Build: deliver: #{params}"
+    trace :debug, "Build: deliver: #{params} #{@outputs}"
 
     @outputs.each do |o|
       content = File.open(path(o), 'rb') {|f| f.read}
@@ -121,6 +124,8 @@ class BuildWap < Build
           raise error + "network error"
         when 9
           raise error + "modem not found"
+        when 10
+          raise error + "modem disconnected from the network"
       end
     end
 

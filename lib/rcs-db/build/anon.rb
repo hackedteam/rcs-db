@@ -27,7 +27,7 @@ class BuildAnon < Build
     FileUtils.cp Config.instance.cert('rcs-network.sig'), path('rcsanon/etc/signature')
 
     # the local port to listen on
-    File.open(path('managerport'), 'w') {|f| f.write params['port']}
+    File.open(path('managerport'), 'wb') {|f| f.write params['port']}
     
     # create the installer tar gz
     begin

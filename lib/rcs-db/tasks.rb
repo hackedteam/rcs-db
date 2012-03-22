@@ -318,7 +318,7 @@ class TaskManager
     @tasks[user] ||= Hash.new
 
     task = eval("#{type.downcase.capitalize}Task").new type, file_name, params
-    trace :debug, "Creating task #{task._id} of type #{type} for user '#{user}', saving to '#{file_name}'"
+    trace :info, "Creating task #{task._id} of type #{type} for user '#{user}', saving to '#{file_name}'"
 
     case type
       when 'build'
