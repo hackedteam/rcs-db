@@ -50,7 +50,7 @@ class BuildSymbian < Build
   def sign(params)
     trace :debug, "Build: signing: #{params}"
 
-    yaml = File.open(Config.instance.cert("symbian.yaml"), 'r') {|f| f.read}
+    yaml = File.open(Config.instance.cert("symbian.yaml"), 'rb') {|f| f.read}
     uids = YAML.load(yaml)
 
     # the UIDS must be 8 chars (padded with zeros)
@@ -134,7 +134,7 @@ class BuildSymbian < Build
     trace :debug, "Build: pack: #{params}"
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      z.file.open(@appname + '.sisx', "w") { |f| f.write File.open(path(@appname + '.sisx'), 'rb') {|f| f.read} }
+      z.file.open(@appname + '.sisx', "wb") { |f| f.write File.open(path(@appname + '.sisx'), 'rb') {|f| f.read} }
     end
 
     # this is the only file we need to output after this point

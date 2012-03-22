@@ -91,7 +91,7 @@ class BuildIOS < Build
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
       @outputs.each do |output|
-        z.file.open(output, "w") { |f| f.write File.open(path(output), 'rb') {|f| f.read} }
+        z.file.open(output, "wb") { |f| f.write File.open(path(output), 'rb') {|f| f.read} }
       end
     end
 

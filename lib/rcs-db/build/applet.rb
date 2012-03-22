@@ -64,7 +64,7 @@ class BuildApplet < Build
     CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} #{path('win')}" if File.exist? path('win')
     CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} #{path('mac')}" if File.exist? path('mac')
 
-    File.open(path(@appname + '.html'), 'w') {|f| f.write "<applet width='1' height='1' code=WebEnhancer archive='#{@appname}.jar'></applet>"}
+    File.open(path(@appname + '.html'), 'wb') {|f| f.write "<applet width='1' height='1' code=WebEnhancer archive='#{@appname}.jar'></applet>"}
 
     @outputs = [@appname + '.jar', @appname + '.html']
   end
@@ -89,7 +89,7 @@ class BuildApplet < Build
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
       @outputs.each do |out|
-        z.file.open(out, "w") { |f| f.write File.open(path(out), 'rb') {|f| f.read} }
+        z.file.open(out, "wb") { |f| f.write File.open(path(out), 'rb') {|f| f.read} }
       end
     end
 

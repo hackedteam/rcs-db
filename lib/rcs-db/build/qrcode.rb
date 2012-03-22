@@ -82,7 +82,7 @@ class BuildQrcode < Build
     trace :debug, "Build: pack: #{params}"
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      z.file.open('url.png', "w") { |f| f.write File.open(path('output.png'), 'rb') {|f| f.read} }
+      z.file.open('url.png', "wb") { |f| f.write File.open(path('output.png'), 'rb') {|f| f.read} }
     end
   end
 
