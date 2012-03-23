@@ -44,7 +44,7 @@ module CallProcessing
         Speex.decode(decoder, bits.pointer, output_buffer)
         
         # Speex outputs 32 bits float samples, wave needs 16 bit integers
-        wave_buffer += output_buffer.get_bytes(0, frame_size*4).unpack('F*').pack('S*')
+        wave_buffer += output_buffer.get_bytes(0, frame_size*4) #.unpack('F*').pack('S*')
       end
     end
     
