@@ -6,6 +6,7 @@
 require_relative 'call_processor'
 require_relative 'evidence/call'
 require_relative 'parser'
+require_relative 'backlog'
 
 # from RCS::DB
 if File.directory?(Dir.pwd + '/lib/rcs-worker-release')
@@ -207,7 +208,7 @@ class Worker
   def resume_pending_evidences
     begin
       db = Mongoid.database
-      evidences = db.collection('grid.evidence.files').find({metadata: {shard: RCS::DB::Config.instance.global['SHARD']}})
+      evidences = db.collection('grid.evidence.files').find({metadata: {shard: RCS::DB::Config.instance.global['SHARD']}}, {sort: ["_id", :asc]})
       evidences.each do |ev|
         ident, instance = ev['filename'].split(":")
         QueueManager.instance.queue instance, ident, ev['_id'].to_s

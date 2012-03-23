@@ -27,9 +27,7 @@ class QueueManager
       idx = "#{ident}:#{instance}"
 
       begin
-        if @instances[idx].nil?
-          @instances[idx] = InstanceWorker.new instance, ident
-        end
+        @instances[idx] ||= InstanceWorker.new instance, ident
         @instances[idx].queue(evidence)
       rescue Exception => e
         trace :error, e.message

@@ -86,6 +86,7 @@ module Parser
     
     params = Hash.new
     params.merge! parse_query_parameters(query)
+
     json_content = parse_json_content content
     params.merge! json_content unless json_content.empty?
     
