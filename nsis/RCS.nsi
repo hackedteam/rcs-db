@@ -98,8 +98,6 @@
 
 ;--------------------------------
 
-
-
 !macro _EnvSet
 
    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("Path", "$R0").r0'
@@ -217,18 +215,18 @@ Section "Update Section" SecUpdate
    DetailPrint ""
    DetailPrint "Stopping RCS Services..."
    SimpleSC::StopService "RCSCollector" 1
-   sleep 3000
+   Sleep 3000
    SimpleSC::StopService "RCSDB" 1
-   sleep 3000
+   Sleep 3000
    SimpleSC::StopService "RCSWorker" 1
-   sleep 3000
+   Sleep 3000
    SimpleSC::StopService "RCSMasterRouter" 1
-   sleep 3000
+   Sleep 3000
    SimpleSC::StopService "RCSMasterConfig" 1
-   sleep 3000
+   Sleep 3000
    SimpleSC::StopService "RCSShard" 1
 
-	 sleep 5000
+   Sleep 5000
 	 
    DetailPrint "done"
    
@@ -335,7 +333,10 @@ Section "Install Section" SecInstall
         
     SetDetailsPrint "both"
     DetailPrint "done"
-    
+
+    DetailPrint "Installing license.."
+    CopyFiles /SILENT $masterLicense "$INSTDIR\DB\config\rcs.lic"
+
     ; fresh install
     ${If} $installUPGRADE != ${BST_CHECKED}
       DetailPrint ""
@@ -387,29 +388,26 @@ Section "Install Section" SecInstall
     ${EndIf}
     
     SetDetailsPrint "both"
-        
-    DetailPrint "Installing license.."
-    CopyFiles /SILENT $masterLicense "$INSTDIR\DB\config\rcs.lic"
-    
+
     Delete $INSTDIR\DB\data\config\mongod.lock
     DetailPrint "Starting RCS Master Config..."
-    SimpleSC::StartService "RCSMasterConfig" ""
-    sleep 5000
+    SimpleSC::StartService "RCSMasterConfig" "" 30
+    Sleep 5000
     
     DetailPrint "Starting RCS Master Router..."
-    SimpleSC::StartService "RCSMasterRouter" ""
-    sleep 5000
+    SimpleSC::StartService "RCSMasterRouter" "" 30
+    Sleep 5000
 
     Delete $INSTDIR\DB\data\mongod.lock
     DetailPrint "Starting RCS Shard..."
-    SimpleSC::StartService "RCSShard" ""
-    sleep 5000
+    SimpleSC::StartService "RCSShard" "" 30
+    Sleep 5000
     
     DetailPrint "Starting RCS DB..."
-    SimpleSC::StartService "RCSDB" ""
+    SimpleSC::StartService "RCSDB" "" 30
     
     DetailPrint "Starting RCS Worker..."
-    SimpleSC::StartService "RCSWorker" ""
+    SimpleSC::StartService "RCSWorker" "" 30
           
     ${If} $installUPGRADE != ${BST_CHECKED}
     	DetailPrint "Setting the Admin password..."
@@ -449,10 +447,10 @@ Section "Install Section" SecInstall
       DetailPrint "done"
       
       DetailPrint "Starting RCS Shard..."
-    	SimpleSC::StartService "RCSShard" ""
-    	sleep 3000
+      SimpleSC::StartService "RCSShard" "" 30
+      Sleep 3000
       DetailPrint "Starting RCS Worker..."
-      SimpleSC::StartService "RCSWorker" ""
+      SimpleSC::StartService "RCSWorker" "" 30
     
       DetailPrint "Writing the configuration..."
       SetDetailsPrint "textonly"
@@ -463,9 +461,10 @@ Section "Install Section" SecInstall
     ${EndIf}
     
     DetailPrint "Starting RCS Shard..."
-    SimpleSC::StartService "RCSShard" ""
+    SimpleSC::StartService "RCSShard" "" 30
+    Sleep 3000
     DetailPrint "Starting RCS Worker..."
-    SimpleSC::StartService "RCSWorker" ""
+    SimpleSC::StartService "RCSWorker" "" 30
 
     !cd '..'
     WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
@@ -564,22 +563,22 @@ Section Uninstall
   
   DetailPrint "Stopping RCS Services..."
   SimpleSC::StopService "RCSCollector" 1
-  sleep 5000
+  Sleep 5000
   SimpleSC::RemoveService "RCSCollector"
   SimpleSC::StopService "RCSWorker" 1
-  sleep 5000
+  Sleep 5000
   SimpleSC::RemoveService "RCSWorker"
   SimpleSC::StopService "RCSDB" 1
-  sleep 5000
+  Sleep 5000
   SimpleSC::RemoveService "RCSDB"
   SimpleSC::StopService "RCSMasterRouter" 1
-  sleep 5000
+  Sleep 5000
   SimpleSC::RemoveService "RCSMasterRouter"
   SimpleSC::StopService "RCSMasterConfig" 1
-  sleep 5000
+  Sleep 5000
   SimpleSC::RemoveService "RCSMasterConfig"
   SimpleSC::StopService "RCSShard" 1
-  sleep 5000
+  Sleep 5000
   SimpleSC::RemoveService "RCSShard"
 
   DetailPrint "done"
