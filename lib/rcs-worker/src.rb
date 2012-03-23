@@ -5,8 +5,8 @@ module SRC
   extend RCS::Tracer
 
   class DATA < FFI::Struct
-    layout :data_in, :float,            # pointer to input data samples
-           :data_out, :float,           # pointer to output
+    layout :data_in, :pointer,            # pointer to input data samples
+           :data_out, :pointer,           # pointer to output
            :input_frames, :long,        # number of frames of input
            :output_frames, :long,       # number of frames generated
            :input_frames_used, :long,
@@ -22,26 +22,26 @@ module SRC
   LINEAR = 4
   
   begin
-	base_path = File.dirname(__FILE__)
-	case RUBY_PLATFORM
+	  base_path = File.dirname(__FILE__)
+	  case RUBY_PLATFORM
         when /darwin/
 			ffi_lib File.join(base_path, 'libs/SRC/macos/libsamplerate.0.dylib')
         when /mingw/
 			ffi_lib File.join(base_path, 'libs/SRC/win/libsamplerate.dll')
-	end
-	
-    attach_function :src_simple, [:pointer, :int, :int], :int
-
-    attach_function :src_new, [:int, :int, :pointer], :pointer
-    attach_function :src_delete, [:pointer], :pointer
-
-    attach_function :src_process, [:pointer, :pointer], :int
-    attach_function :src_reset, [:pointer], :int
-    attach_function :src_set_ratio, [:pointer, :double], :int
-
+	  end
+	  
+    attach_function :simple, :src_simple, [:pointer, :int, :int], :int
+    
+    attach_function :new, :src_new, [:int, :int, :pointer], :pointer
+    attach_function :delete, :src_delete, [:pointer], :pointer
+    
+    attach_function :process, :src_process, [:pointer, :pointer], :int
+    attach_function :reset, :src_reset, [:pointer], :int
+    attach_function :set_ratio, :src_set_ratio, [:pointer, :double], :int
+    
     attach_function :short_to_float, :src_short_to_float_array, [:pointer, :pointer, :int], :void
     attach_function :float_to_short, :src_float_to_short_array, [:pointer, :pointer, :int], :void
-
+    
     attach_function :strerror, :src_strerror, [:int], :string
   rescue Exception => e
     trace :fatal, "ERROR: Cannot open libsamplerate"
