@@ -20,7 +20,8 @@ class EvidenceManager
   
   def store_evidence(ident, instance, content)
     shard_id = EvidenceDispatcher.instance.shard_id ident, instance
-    trace :debug, "Storing evidence #{ident}:#{instance} to shard #{shard_id}"
+    trace :debug, "Storing evidence #{ident}:#{instance} (shard #{shard_id})"
+    raise "INVALID SHARD ID" if shard_id.nil?
     return GridFS.put(content, {filename: "#{ident}:#{instance}", metadata: {shard: shard_id}}, "evidence"), shard_id
   end
   
