@@ -8,35 +8,43 @@ class Wave
     @wav_data = wav_data
   end
   
-  def self.main_header(size)
+  def main_header
     header = StringIO.new
     header.write "RIFF"
-    header.write [size].pack("L")
+    header.write [36 + @wav_data.bytesize].pack("L")
     header.write "WAVE"
     return header.string
   end
   
-  def self.chunk_header(num_channels, sample_rate)
+  def chunk_header
     header = StringIO.new
     header.write "fmt "
     header.write [16].pack("L")
     header.write [1].pack("S")
-    header.write [num_channels].pack("S")
-    header.write [sample_rate].pack("L")
+    header.write [@num_channels].pack("S")
+    header.write [@sample_rate].pack("L")
     bits_per_sample = 16
-    block_align = (bits_per_sample / 8) * num_channels
-    avg_bytes_sec = sample_rate * block_align
+    block_align = (bits_per_sample / 8) * @num_channels
+    avg_bytes_sec = @sample_rate * block_align
     header.write [avg_bytes_sec].pack("L")
     header.write [block_align].pack("S")
     header.write [bits_per_sample].pack("S")
     return header.string
   end
   
-  def self.data_header(size)
+  def data_header
     header = StringIO.new
     header.write "data"
-    header.write [size].pack("L")
+    header.write [@wav_data.bytesize].pack("L")
     return header.string
   end
   
+  def write(file_name)
+    File.open(file_name, 'wb+') do |f|
+      f.write main_header
+      f.write chunk_header
+      f.write data_header
+      f.write @wav_data
+    end
+  end
 end
