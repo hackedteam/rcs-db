@@ -70,7 +70,7 @@ class CrossPlatform
       trace :debug, "Executing: #{File.basename(command)}"
 
       # append the specific extension for this platform
-      command += ext
+      command += ext unless command.end_with? ext
 
       # if it does not exists on osx, try to execute the windows one with wine
       if platform == 'osx' and not File.exist? command

@@ -83,7 +83,7 @@ module Parser
   #
   def prepare_request(method, uri, query, cookie, content_type, content)
     controller, uri_params = parse_uri uri
-
+    
     params = Hash.new
     params.merge! parse_query_parameters(query)
 

@@ -438,9 +438,7 @@ class UploadRequest
   field :sent, type: Integer, :default => 0
   field :_grid, type: Array
   field :_grid_size, type: Integer
-  
-  validates_uniqueness_of :filename
-  
+
   embedded_in :item
 
   after_destroy :destroy_upload_callback

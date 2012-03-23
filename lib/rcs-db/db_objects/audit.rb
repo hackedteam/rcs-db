@@ -71,13 +71,15 @@ class Audit
     filter['from'] = Time.now.to_i - 86400 if filter['from'].nil?
     filter['to'] = Time.now.to_i if filter['to'].nil?
 
+    # to remove a filter set it to 0
+    filter.delete('from') if filter['from'] == 0
+    filter.delete('to') if filter['to'] == 0
+
     filter_hash = {}
 
     # date filters must be treated separately
-    if filter.has_key? 'from' and filter.has_key? 'to'
-      filter_hash[:time.gte] = filter.delete('from')
-      filter_hash[:time.lte] = filter.delete('to')
-    end
+    filter_hash[:time.gte] = filter.delete('from') if filter.has_key? 'from'
+    filter_hash[:time.lte] = filter.delete('to') if filter.has_key? 'to'
 
     # desc filters must be handled as a regexp
     if filter.has_key? 'desc'
