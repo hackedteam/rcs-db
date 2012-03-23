@@ -298,7 +298,6 @@ Section "Install Section" SecInstall
 
     SetOutPath "$INSTDIR\DB\data\config"
     File /r "data\config\.keep"
-    File /r "config\logo.png"
 
     SetOutPath "$INSTDIR\DB\lib\rcs-db-release"
     ###File /r "lib\rcs-db-release\*.*"
@@ -312,6 +311,7 @@ Section "Install Section" SecInstall
     File "config\mongoid.yaml"
     File "config\trace.yaml"
     File "config\export.zip"
+    File "config\logo.png"
     File "config\version.txt"
     SetDetailsPrint "both"
     DetailPrint "done"

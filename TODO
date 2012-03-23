@@ -10,9 +10,7 @@ HIGH PRIORITY:
     fix PATH mangling during installation
     fix simple:sc execution
 
-    filesystem methods
-
-    export filesystem.
+    export filesystem
 
     worker decoding (daniele):
         - call

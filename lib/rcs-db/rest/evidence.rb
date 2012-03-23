@@ -349,16 +349,19 @@ class EvidenceController < RESTController
       target = Item.where({_id: @params['target']}).first
       return not_found("Target not found") if target.nil?
 
-      condition = {}
-
       # filter by agent
       if @params.has_key? 'agent'
         agent = Item.where({_id: @params['agent']}).first
         return not_found("Agent not found") if agent.nil?
-        condition[:aid] = @params['agent']
       end
 
-      return ok()
+      # copy remaining filtering criteria (if any)
+      filtering = Evidence.collection_class(target[:_id]).where({:type => 'filesystem'})
+      filtering = filtering.any_in(:aid => [agent[:_id]]) unless agent.nil?
+
+      query = filtering.order_by([["data.path", :asc]])
+
+      return ok(query)
     end
   end
 
