@@ -17,6 +17,7 @@ HIGH PRIORITY:
         - calendar
         - mail
 	- addressbook
+	- filesystem (size e gsub)
 
     link alerts to store evidence
 
