@@ -9,17 +9,19 @@ HIGH PRIORITY:
 
     fix PATH mangling during installation
 
-    export filesystem
-
     worker decoding (daniele):
         - call
         - mic
         - calendar
         - mail
-	- addressbook
-	- filesystem (size e gsub)
+	    - addressbook
+	    - filesystem (size e gsub)
+	        - cut del sottoalbero
+	        - usiamo anche file per il filesystem?
 
     link alerts to store evidence
+
+    filtri su info scazzano di brutto
 
     websocket per push delle istanze
 

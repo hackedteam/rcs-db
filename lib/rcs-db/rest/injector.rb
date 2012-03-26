@@ -34,9 +34,9 @@ class InjectorController < RESTController
     return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :injectors
 
     result = Injector.create(name: @params['name'],
-                             adddress: @params['address'],
-                             port: 443,
-                             poll: false,
+                             address: @params['address'],
+                             port: @params['port'],
+                             poll: @params['poll'],
                              configured: false,
                              redirect: 'auto',
                              redirection_tag: 'ww')

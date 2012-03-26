@@ -20,7 +20,7 @@ class Alerting
         # skip non matching agents
         next unless match_path(alert, agent)
 
-        alert.logs.create!(time: Time.now.getutc.to_i, path: agent.path + [agent._id])
+        alert.logs.create!(time: Time.now.getutc.to_i, path: agent.path + [agent._id]) unless alert.type == 'NONE'
 
         if alert.type == 'MAIL'
           # put the matching alert in the queue
@@ -35,7 +35,7 @@ class Alerting
         # skip non matching agents
         next unless match_path(alert, agent)
 
-        alert.logs.create!(time: Time.now.getutc.to_i, path: agent.path + [agent._id])
+        alert.logs.create!(time: Time.now.getutc.to_i, path: agent.path + [agent._id]) unless alert.type == 'NONE'
         
         if alert.type == 'MAIL'
           # put the matching alert in the queue
@@ -58,6 +58,9 @@ class Alerting
         # save the relevance tag into the evidence
         evidence.rel = alert.tag
         evidence.save
+
+        # if we don't want to be alerted, don't insert in the queue
+        return if alert.type == 'NONE'
 
         # put the matching alert in the queue the suppression will be done there
         # and the mail will be sent accordingly to the 'type' of alert

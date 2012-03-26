@@ -88,7 +88,7 @@ class SessionManager
           Audit.log :actor => value[:user][:name], :action => 'logout', :user_name => value[:user][:name], :desc => "User '#{value[:user][:name]}' has been logged out for timeout"
         end
 
-        trace :info, "User '#{value[:user][:name]}' has been logged out for timeout"
+        trace :info, "User '#{value[:user][:name]}' has been logged out for timeout" unless value[:level] == :server
         # delete the entry
         @sessions.delete key
       end
