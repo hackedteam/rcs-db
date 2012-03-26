@@ -9,6 +9,8 @@ HIGH PRIORITY:
 
     fix PATH mangling during installation
 
+    websocket per push delle istanze
+
     worker decoding (daniele):
         - call
         - mic
@@ -23,7 +25,6 @@ HIGH PRIORITY:
 
     filtri su info scazzano di brutto
 
-    websocket per push delle istanze
 
 MEDIUM PRIORITY:
 
@@ -31,17 +32,17 @@ MEDIUM PRIORITY:
 
     FFI per dongle dll
 
-LOW PRIORITY:
+    mongo authentication
 
     remove the debug integrity for license
+
+LOW PRIORITY:
 
     /usr/bin/mongodb --config $PATH-TO-CONFIG --shutdown
 
     mongo logRotate  & append to log
 
     mongo compact after deletion
-
-    mongo authentication
 
     is vcredist needed ?
 
