@@ -243,11 +243,8 @@ class Call
           db = Mongoid.database
           fs = Mongo::GridFileSystem.new(db, "grid.#{@target[:_id]}")
           data = ''
-          fs.open(file_name, 'r') {|f| data = f.read} if fs.exist?(:filename => file_name)
-          fs.open(file_name, 'w') do |f|
-            f.write data + mp3_bytes
-
-            trace :debug, "[#{@id}] WRITTEN #{data.bytesize + mp3_bytes.bytesize} MP3 BYTES!"
+          fs.open(file_name, 'a') do |f|
+            f.write mp3_bytes
 
             @evidence.update_attributes("data._grid" => f.files_id)
             @evidence.update_attributes("data._grid_size" => f.file_length)
