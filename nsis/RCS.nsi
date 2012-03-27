@@ -97,13 +97,11 @@
   !insertmacro MUI_LANGUAGE "English"
 
 ;--------------------------------
-
 !macro _EnvSet
-
-   System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("Path", "$R0").r0'
    ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
    StrCpy $R0 "$R0;$INSTDIR\Collector\bin;$INSTDIR\DB\bin;$INSTDIR\Ruby\bin;$INSTDIR\Java\bin;$INSTDIR\Python"
    WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R0"
+   System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("Path", "$R0").r0'
 
    SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
 !macroend
@@ -147,60 +145,28 @@
    ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
 
    StrCpy $R1 0
-   StrLen $R2 "C:\RCSDB\java\"
    ${Do}
       IntOp $R1 $R1 + 1
-      ${WordFind} $R0 ";" "E+$R1" $R3
+      ${WordFind} $R0 ";" "E+$R1" $R2
       IfErrors 0 +2
          ${Break}
 
-      StrCmp $R3 "C:\RCSDB\java" 0 +2
+      StrCmp $R2 "C:\RCSDB\java\bin" 0 +2
          ${Continue}
 
-      StrCpy $R4 $R3 $R2
-      StrCmp $R4 "C:\RCSDB\java\" 0 +2
+      StrCmp $R2 "C:\RCSDB\ruby\bin" 0 +2
          ${Continue}
 
-      StrCpy $R5 "$R5$R3;"
+      StrCpy $R3 "$R3$R2;"
    ${Loop}
 
-   ${If} $R3 == 1
-      StrCpy $R5 $R0
+   ${If} $R2 == 1
+      StrCpy $R3 $R0
    ${Else}
-      StrCpy $R5 $R5 -1
+      StrCpy $R3 $R3 -1
    ${EndIf}
 
-   System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("Path", "$R5").r0'
-   WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R5"
-
-   ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
-
-   StrCpy $R1 0
-   StrLen $R2 "C:\RCSDB\ruby\"
-   ${Do}
-      IntOp $R1 $R1 + 1
-      ${WordFind} $R0 ";" "E+$R1" $R3
-      IfErrors 0 +2
-         ${Break}
-
-      StrCmp $R3 "C:\RCSDB\ruby" 0 +2
-         ${Continue}
-
-      StrCpy $R4 $R3 $R2
-      StrCmp $R4 "C:\RCSDB\ruby\" 0 +2
-         ${Continue}
-
-      StrCpy $R5 "$R5$R3;"
-   ${Loop}
-
-   ${If} $R3 == 1
-      StrCpy $R5 $R0
-   ${Else}
-      StrCpy $R5 $R5 -1
-   ${EndIf}
-
-   System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("Path", "$R5").r0'
-   WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R5"
+   WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R3"
 
    SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
 !macroend
