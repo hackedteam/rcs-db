@@ -17,14 +17,16 @@ HIGH PRIORITY:
         - calendar
         - mail
 	    - addressbook
-	    - filesystem (size e gsub)
+	    - filesystem
 	        - cut del sottoalbero
+	        - sub \\ con \  (anche in migrazione)
 	        - usiamo anche file per il filesystem?
 
     link alerts to store evidence
 
     filtri su info scazzano di brutto
 
+    check all the accessible
 
 MEDIUM PRIORITY:
 
