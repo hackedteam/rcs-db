@@ -5,6 +5,7 @@ gem "rcs-common", ">= 8.0.0", :path => "../rcs-common"
 
 gem 'eventmachine', ">= 1.0.0.beta.4"
 gem 'em-http-request'
+gem 'em-websocket'
 git "git://github.com/alor/evma_httpserver.git", :branch => "master" do
   gem 'eventmachine_httpserver', ">= 0.2.2"
 end

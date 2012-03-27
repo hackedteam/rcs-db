@@ -9,6 +9,7 @@ require_relative 'rest'
 require_relative 'sessions'
 require_relative 'backup'
 require_relative 'alert'
+require_relative 'websocket'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -18,6 +19,7 @@ require 'rcs-common/systemstatus'
 require 'benchmark'
 require 'eventmachine'
 require 'evma_httpserver'
+require 'em-websocket'
 require 'socket'
 require 'net/http'
 
@@ -40,9 +42,9 @@ module HTTPHandler
     set_comm_inactivity_timeout 60
 
     # we want the connection to be encrypted with ssl
-    start_tls(:private_key_file => Config.instance.cert('DB_KEY'),
-              :cert_chain_file => Config.instance.cert('DB_CERT'),
-              :verify_peer => false)
+    start_tls({:private_key_file => Config.instance.cert('DB_KEY'),
+               :cert_chain_file => Config.instance.cert('DB_CERT'),
+               :verify_peer => false})
     
     @connection_time = Time.now
     
@@ -188,7 +190,13 @@ class Events
 
         # start the HTTP REST server
         EM::start_server("0.0.0.0", port, HTTPHandler)
-        trace :info, "Listening on port #{port}..."
+        trace :info, "Listening for http on port #{port}..."
+
+        # start the WS server
+        EM::WebSocket.start(:host => "0.0.0.0", :port => port + 1, :secure => true,
+                            :tls_options => {:private_key_file => Config.instance.cert('DB_KEY'),
+                                             :cert_chain_file => Config.instance.cert('DB_CERT')} ) { |ws| WebSocket.handle ws }
+        trace :info, "Listening for ws on port #{port + 1}..."
 
         # send the first heartbeat to the db, we are alive and want to notify the db immediately
         # subsequent heartbeats will be sent every HB_INTERVAL
