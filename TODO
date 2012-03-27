@@ -7,8 +7,6 @@ TEST:
 
 HIGH PRIORITY:
 
-    fix PATH mangling during installation
-
     websocket per push delle istanze
 
     worker decoding (daniele):
