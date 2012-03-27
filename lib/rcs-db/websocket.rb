@@ -18,36 +18,27 @@ class WebSocket
   class << self
 
     def handle(ws)
-      timer=nil
-       ws.onopen {
-         peer_port, peer = Socket.unpack_sockaddr_in(ws.get_peername)
-         trace :debug, "WebSocket connection open #{Socket.unpack_sockaddr_in(ws.get_peername)}"
+      ws.onopen {
+        peer_port, peer = Socket.unpack_sockaddr_in(ws.get_peername)
+        trace :debug, "WS connection from #{peer}"
 
-         #timer = EM.add_periodic_timer(1) {
-         #  p ["Sent ping", ws.send('hello')]
-         #}
-         # publish message to the client
-         ws.send "Hello Client"
-       }
+        trace :debug, "ws #{ws}"
+        # publish message to the client
+        ws.send "Hello Client"
+      }
 
-       ws.onpong { |value|
-         trace :debug,  "Received pong: #{value}"
-       }
-       ws.onping { |value|
-         trace :debug,  "Received ping: #{value}"
-       }
+      ws.onmessage { |msg|
+        trace :debug,  "WS message: #{msg}"
+        trace :debug, "ws #{ws}"
+      }
 
-       ws.onclose {
-         trace :debug,  "WS Connection closed"
-       }
+      ws.onclose {
+        trace :debug,  "WS connection closed"
+      }
 
-       ws.onmessage { |msg|
-         trace :debug,  "Recieved message: #{msg}"
-       }
-
-       ws.onerror { |e|
-         trace :debug,  "Error: #{e.message}"
-       }
+      ws.onerror { |e|
+        trace :debug,  "WS error: #{e.message}"
+      }
     end
 
   end
