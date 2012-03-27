@@ -25,8 +25,8 @@ module SingleEvidence
         ev.aid = agent[:_id].to_s
         ev.type = self[:type]
 
-        ev.da = self[:acquired].to_i
-        ev.dr = self[:received].to_i
+        ev.da = self[:da].to_i
+        ev.dr = self[:dr].to_i
         ev.rel = 0
         ev.blo = false
         ev.note = ""
