@@ -73,6 +73,10 @@ class Build
       z.each do |f|
         f_path = path(f.name)
         FileUtils.mkdir_p(File.dirname(f_path))
+
+        # skip empty dirs
+        next if File.directory?(f.name)
+
         z.extract(f, f_path) unless File.exist?(f_path)
         @outputs << f.name
       end
