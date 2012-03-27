@@ -20,27 +20,68 @@ class WebSocket
     def handle(ws)
       ws.onopen {
         peer_port, peer = Socket.unpack_sockaddr_in(ws.get_peername)
-        trace :debug, "WS connection from #{peer}"
-
-        trace :debug, "ws #{ws}"
-        # publish message to the client
-        ws.send "Hello Client"
+        trace :debug, "[#{ws.object_id}] WS connection from #{peer}:#{peer_port}"
       }
 
       ws.onmessage { |msg|
-        trace :debug,  "WS message: #{msg}"
-        trace :debug, "ws #{ws}"
+        # decode the message
+        message = JSON.parse(msg)
+
+        # handle the request
+        case message['type']
+          when 'auth'
+            auth(ws, message)
+          when 'ping'
+            ping(ws, message)
+          when 'pong'
+            pong(ws, message)
+          else
+            trace :debug,  "[#{ws.object_id}] WS message: #{msg}"
+        end
       }
 
       ws.onclose {
-        trace :debug,  "WS connection closed"
+        close(ws)
       }
 
       ws.onerror { |e|
-        trace :debug,  "WS error: #{e.message}"
+        trace :debug,  "[#{ws.object_id}] WS error: #{e.message}"
       }
     end
 
+    def auth(ws, msg)
+      trace :debug, "[#{ws.object_id}] WS auth #{msg['cookie']}"
+      session = SessionManager.instance.get msg['cookie']
+
+      # deny access if the user is not already authenticated
+      if session.nil?
+        trace :error, "[#{ws.object_id}] WS auth INVALID #{msg['cookie']}"
+        ws.send({type: 'auth', result: 'denied'}.to_json)
+        ws.close_websocket
+      end
+
+      # grant the access to the client
+      ws.send({type: 'auth', result: 'granted'}.to_json)
+
+      # save the websocket handle in the session for later use in push messages
+      session[:ws] = ws
+    end
+
+    def ping(ws, msg)
+      trace :debug, "[#{ws.object_id}] WS ping"
+      ws.send({type: 'pong'}.to_json)
+    end
+
+    def pong(ws, msg)
+      trace :debug, "[#{ws.object_id}] WS pong"
+    end
+
+    def close(ws)
+      trace :debug,  "[#{ws.object_id}] WS connection closed"
+      session = SessionManager.instance.get_by_ws ws
+      # release the handler in the session
+      session[:ws] = nil
+    end
   end
 end
 

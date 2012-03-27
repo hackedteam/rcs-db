@@ -33,6 +33,7 @@ class SessionManager
                          :cookie => cookie,
                          :address => address,
                          :time => Time.now.getutc.to_i,
+                         :ws => nil,
                          :accessible => accessible}
 
     return @sessions[cookie]
@@ -41,6 +42,15 @@ class SessionManager
   def get_by_user(user)
     @sessions.each_pair do |cookie, sess|
       if sess[:user][:name] == user
+        return sess
+      end
+    end
+    return nil
+  end
+
+  def get_by_ws(ws)
+    @sessions.each_pair do |cookie, sess|
+      if sess[:ws] == ws
         return sess
       end
     end
@@ -88,7 +98,7 @@ class SessionManager
           Audit.log :actor => value[:user][:name], :action => 'logout', :user_name => value[:user][:name], :desc => "User '#{value[:user][:name]}' has been logged out for timeout"
         end
 
-        trace :info, "User '#{value[:user][:name]}' has been logged out for timeout" unless value[:level] == :server
+        trace :info, "User '#{value[:user][:name]}' has been logged out for timeout #{value.inspect}" unless value[:level] == :server
         # delete the entry
         @sessions.delete key
       end
