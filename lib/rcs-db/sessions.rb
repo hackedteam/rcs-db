@@ -73,6 +73,7 @@ class SessionManager
     @sessions.each_pair do |cookie, sess|
       s = sess.clone
       s.delete :accessible
+      s.delete :ws
       # do not include server accounts
       list << s unless sess[:level].include? :server
     end
@@ -109,7 +110,7 @@ class SessionManager
           Audit.log :actor => value[:user][:name], :action => 'logout', :user_name => value[:user][:name], :desc => "User '#{value[:user][:name]}' has been logged out for timeout"
         end
 
-        trace :info, "User '#{value[:user][:name]}' has been logged out for timeout #{value.inspect}" unless value[:level] == :server
+        trace :info, "User '#{value[:user][:name]}' has been logged out for timeout" unless value[:level].include? :server
         # delete the entry
         @sessions.delete key
       end

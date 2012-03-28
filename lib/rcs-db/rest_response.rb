@@ -3,6 +3,7 @@ require 'rcs-common/trace'
 
 require 'net/http'
 require 'stringio'
+require 'json'
 require 'zlib'
 require_relative 'em_streamer'
 
@@ -63,6 +64,7 @@ class RESTResponse
       @response.status = RCS::DB::RESTController::STATUS_SERVER_ERROR
       @response.content = 'JSON_SERIALIZATION_ERROR'
       trace :error, e.message
+      trace :error, "CONTENT: #{@content}"
       trace :fatal, "EXCEPTION(#{e.class}): " + e.backtrace.join("\n")
     end
     
