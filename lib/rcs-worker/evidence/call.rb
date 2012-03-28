@@ -6,14 +6,24 @@ require_relative 'audio_evidence'
 
 module CallProcessing
   extend AudioEvidence
-  
+
   attr_reader :wav
-  
+
+  def end_call?
+    self[:data][:grid_content].bytesize == 4 and self[:data][:grid_content] == "\xff\xff\xff\xff"
+  end
+
   def process
     return if self[:data][:grid_content].nil?
+    return if end_call?
 
-    decoder = Speex.decoder_init(Speex.lib_get_mode(Speex::MODEID_UWB))
-    
+    decoder = case self[:data][:program]
+      when :mobile
+        Speex.decoder_init(Speex.lib_get_mode(Speex::MODEID_NB))
+      else
+        Speex.decoder_init(Speex.lib_get_mode(Speex::MODEID_UWB))
+    end
+
     # enable enhancement
     enhancement_ptr = FFI::MemoryPointer.new(:int32).write_uint 1
     Speex.decoder_ctl(decoder, Speex::SET_ENH, enhancement_ptr)
