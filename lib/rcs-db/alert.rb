@@ -55,7 +55,7 @@ class Alerting
 
     def new_evidence(evidence)
       ::Alert.where(:enabled => true, :action => 'EVIDENCE').each do |alert|
-        agent = ::Item.find(evidence.agent_id.first)
+        agent = ::Item.find(evidence.aid)
         # skip non matching agents
         next unless match_path(alert, agent)
         # skip non matching evidence type
@@ -73,7 +73,7 @@ class Alerting
         # put the matching alert in the queue the suppression will be done there
         # and the mail will be sent accordingly to the 'type' of alert
         user = ::User.find(alert.user_id)
-        alert_fast_queue(alert: alert, evidence: evidence._id, path: evidence.path,
+        alert_fast_queue(alert: alert, evidence: evidence._id, path: agent.path,
                          to: user.contact,
                          subject: 'RCS Alert [EVIDENCE]',
                          body: "An evidence matching this alert [#{agent.name} #{alert.evidence} #{alert.keywords}] has arrived into the system.")
