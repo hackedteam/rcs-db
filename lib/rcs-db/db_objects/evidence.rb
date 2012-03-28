@@ -179,6 +179,19 @@ class Evidence
     filter_hash[date.gte] = filter.delete('from') if filter.has_key? 'from'
     filter_hash[date.lte] = filter.delete('to') if filter.has_key? 'to'
 
+    # custom filters for info
+    if filter.has_key? 'info'
+      begin
+        key_values = filter.delete('info').split(',')
+        key_values.each do |kv|
+          k, v = kv.split(':')
+          filter_hash["data.#{k}"] = Regexp.new("#{v}", true)
+        end
+      rescue Exception => e
+        trace :error, "Invalid filter for data [#{e.message}], ignoring..."
+      end
+    end
+
     return filter, filter_hash, target
   end
 
