@@ -22,6 +22,7 @@ class PushManager
         WebSocketManager.send(ws, type, message)
       end
     rescue Exception => e
+      trace :error, "PUSH ERROR: Cannot notify clients #{e.message}"
     end
   end
 
@@ -34,7 +35,7 @@ class PushManager
       end
       trace :debug, "PUSH heartbeat: #{connected} clients" if connected > 0
     rescue Exception => e
-      trace :error, "Cannot perform clients heartbeat #{e.message}"
+      trace :error, "PUSH ERROR: Cannot perform clients heartbeat #{e.message}"
     end
   end
 

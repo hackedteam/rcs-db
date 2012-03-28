@@ -200,7 +200,7 @@ class Events
         trace :info, "Listening for wss on port #{port + 1}..."
 
         # ping for the connected clients
-        EM::PeriodicTimer.new(30) { PushManager.instance.heartbeat }
+        EM::PeriodicTimer.new(60) { PushManager.instance.heartbeat }
 
         # send the first heartbeat to the db, we are alive and want to notify the db immediately
         # subsequent heartbeats will be sent every HB_INTERVAL
