@@ -57,13 +57,15 @@ class SessionManager
     return nil
   end
 
-  def each_ws
+  def each_ws(id = nil)
     @sessions.values.each do |sess|
       # do not include server accounts
       next if sess[:level].include? :server
       # not connected push channel
       next if sess[:ws].nil?
-
+      # check for accessibility, if we pass and id, we only want the ws that can access that id
+      next if id != nil and not sess[:accessible].include? id
+      # give back to the caller
       yield sess[:ws]
     end
   end

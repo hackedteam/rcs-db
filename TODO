@@ -7,8 +7,6 @@ TEST:
 
 HIGH PRIORITY:
 
-    websocket per push delle istanze
-
     worker decoding (daniele):
         - call
         - mic
@@ -20,13 +18,11 @@ HIGH PRIORITY:
 	        - sub \\ con \  (anche in migrazione)
 	        - usiamo anche file per il filesystem?
 
-    delete evidence of delete agents
+    worker should delete evidence of deleted agents
 
     link alerts to store evidence
 
     filtri su info scazzano di brutto
-
-    check all the accessible
 
     crash on windows?  synchronize?
 
