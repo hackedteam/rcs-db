@@ -75,6 +75,10 @@ class WebSocketManager
 
     def onpong(ws, msg)
       trace :debug, "[#{ws.object_id}] WS pong"
+
+      # keep the main session alive
+      session = SessionManager.instance.get_by_ws ws
+      session[:time] = Time.now.getutc.to_i
     end
 
     def ping(ws)
