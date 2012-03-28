@@ -19,8 +19,8 @@ module SingleEvidence
     end
     
     def store(agent, target)
-      evidence = ::Evidence.collection_class(target[:_id].to_s)
-      evidence.create do |ev|
+      coll = ::Evidence.collection_class(target[:_id].to_s)
+      evidence = coll.create do |ev|
 
         ev.aid = agent[:_id].to_s
         ev.type = self[:type]
@@ -40,9 +40,9 @@ module SingleEvidence
         end
 
         ev.save
+        ev
       end
-
-      return evidence
+      evidence
     end
   end
 
