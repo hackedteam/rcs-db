@@ -2,6 +2,8 @@
 # The alerting subsystem
 #
 
+require_relative 'push'
+
 # from RCS::Common
 require 'rcs-common/trace'
 
@@ -20,7 +22,10 @@ class Alerting
         # skip non matching agents
         next unless match_path(alert, agent)
 
-        alert.logs.create!(time: Time.now.getutc.to_i, path: agent.path + [agent._id]) unless alert.type == 'NONE'
+        unless alert.type == 'NONE'
+          alert.logs.create!(time: Time.now.getutc.to_i, path: agent.path + [agent._id])
+          PushManager.instance.notify('alert', {id: agent._id})
+        end
 
         if alert.type == 'MAIL'
           # put the matching alert in the queue
@@ -35,8 +40,11 @@ class Alerting
         # skip non matching agents
         next unless match_path(alert, agent)
 
-        alert.logs.create!(time: Time.now.getutc.to_i, path: agent.path + [agent._id]) unless alert.type == 'NONE'
-        
+        unless alert.type == 'NONE'
+          alert.logs.create!(time: Time.now.getutc.to_i, path: agent.path + [agent._id])
+          PushManager.instance.notify('alert', {id: agent._id})
+        end
+
         if alert.type == 'MAIL'
           # put the matching alert in the queue
           user = ::User.find(alert.user_id)
@@ -159,6 +167,7 @@ class Alerting
               alert.logs.create!(time: Time.now.getutc.to_i, path: aq.path, evidence: aq.evidence)
               alert.last = Time.now.getutc.to_i
               alert.save
+              PushManager.instance.notify('alert')
               send_mail(aq.to, aq.subject, aq.body) if alert.type == 'MAIL'
             else
               trace :debug, "Triggering alert: #{alert._id} (suppressed)"

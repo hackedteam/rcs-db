@@ -3,6 +3,8 @@ require 'mongoid'
 require_relative 'alert'
 require_relative '../audit'
 
+require_relative '../push'
+
 #module RCS
 #module DB
 
@@ -14,6 +16,8 @@ class Status
   OK = '0'
   WARN = '1'
   ERROR = '2'
+
+  STATUS_CODE = {'OK' => OK, 'WARN' => WARN, 'ERROR' => ERROR}
 
   field :name, type: String
   field :status, type: String
@@ -48,6 +52,9 @@ class Status
         status = 'WARN'
       end
 
+      # notify all that the monitor has changed only if the status has changed
+      RCS::DB::PushManager.instance.notify('monitor') if monitor[:status] != STATUS_CODE[status]
+
       case(status)
         when 'OK'
           # notify the restoration of a component
@@ -78,6 +85,8 @@ class Status
           m.save
           # notify the alerting system
           RCS::DB::Alerting.failed_component(m)
+          # notify all that the monitor has changed
+          RCS::DB::PushManager.instance.notify('monitor')
         end
 
         # check disk and CPU usage
@@ -85,6 +94,8 @@ class Status
           m[:status] = WARN
           trace :warn, "Component #{m[:name]} has low resources, raising a warning..."
           m.save
+          # notify all that the monitor has changed
+          RCS::DB::PushManager.instance.notify('monitor')
         end
       end
     end

@@ -3,6 +3,7 @@
 require 'mongoid'
 
 require_relative '../build'
+require_relative '../push'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -71,7 +72,8 @@ class Item
   after_create :create_callback
   after_destroy :destroy_callback
 
-  before_update :status_change
+  before_update :status_change_callback
+  after_update :notify_callback
 
   before_create :do_checksum
   before_update :do_checksum
@@ -356,7 +358,15 @@ class Item
     end
   end
 
-  def status_change
+  def notify_callback
+    # we are only interested if the properties changed are:
+    interesting = ['name', 'desc', 'status', 'instance', 'version', 'deleted', 'uninstalled']
+    return if not interesting.collect {|k| changes.include? k}.inject(:|)
+
+    RCS::DB::PushManager.instance.notify(self._kind, {id: self._id})
+  end
+
+  def status_change_callback
     return if self.status == 'open'
 
     # cascade the closed status to all the descendants

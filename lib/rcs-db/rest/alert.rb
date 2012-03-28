@@ -126,6 +126,7 @@ class AlertController < RESTController
       alert = user.alerts.find(@params['_id'])
 
       alert.logs.destroy_all(conditions: {_id: @params['log']['_id']})
+      PushManager.instance.notify('alert')
 
       return ok
     end
@@ -139,6 +140,7 @@ class AlertController < RESTController
       alert = user.alerts.find(@params['_id'])
       
       alert.logs.destroy_all
+      PushManager.instance.notify('alert')
 
       return ok
     end

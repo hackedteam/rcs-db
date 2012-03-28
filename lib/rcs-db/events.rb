@@ -10,6 +10,7 @@ require_relative 'sessions'
 require_relative 'backup'
 require_relative 'alert'
 require_relative 'websocket'
+require_relative 'push'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -195,8 +196,11 @@ class Events
         # start the WS server
         EM::WebSocket.start(:host => "0.0.0.0", :port => port + 1, :secure => true,
                             :tls_options => {:private_key_file => Config.instance.cert('DB_KEY'),
-                                             :cert_chain_file => Config.instance.cert('DB_CERT')} ) { |ws| WebSocket.handle ws }
+                                             :cert_chain_file => Config.instance.cert('DB_CERT')} ) { |ws| WebSocketManager.handle ws }
         trace :info, "Listening for wss on port #{port + 1}..."
+
+        # ping for the connected clients
+        EM::PeriodicTimer.new(60) { PushManager.instance.heartbeat }
 
         # send the first heartbeat to the db, we are alive and want to notify the db immediately
         # subsequent heartbeats will be sent every HB_INTERVAL

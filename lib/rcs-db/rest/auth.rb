@@ -54,6 +54,8 @@ class AuthController < RESTController
           
           Audit.log :actor => user, :action => 'login', :user_name => user, :desc => "User '#{user}' logged in"
 
+          trace :info, "[#{@request[:peer]}] Auth login: #{user}"
+
           # get the list of accessible Items
           accessible = SessionManager.instance.get_accessible @user
           # create the new auth sessions

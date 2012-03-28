@@ -57,12 +57,26 @@ class SessionManager
     return nil
   end
 
+  def each_ws(id = nil)
+    @sessions.values.each do |sess|
+      # do not include server accounts
+      next if sess[:level].include? :server
+      # not connected push channel
+      next if sess[:ws].nil?
+      # check for accessibility, if we pass and id, we only want the ws that can access that id
+      next if id != nil and not sess[:accessible].include? id
+      # give back to the caller
+      yield sess[:ws]
+    end
+  end
+
   def all
     list = []
     @sessions.each_pair do |cookie, sess|
-      # do not include server accounts
       s = sess.clone
       s.delete :accessible
+      s.delete :ws
+      # do not include server accounts
       list << s unless sess[:level].include? :server
     end
     
@@ -98,7 +112,7 @@ class SessionManager
           Audit.log :actor => value[:user][:name], :action => 'logout', :user_name => value[:user][:name], :desc => "User '#{value[:user][:name]}' has been logged out for timeout"
         end
 
-        trace :info, "User '#{value[:user][:name]}' has been logged out for timeout #{value.inspect}" unless value[:level] == :server
+        trace :info, "User '#{value[:user][:name]}' has been logged out for timeout" unless value[:level].include? :server
         # delete the entry
         @sessions.delete key
       end

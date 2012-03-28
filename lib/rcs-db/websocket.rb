@@ -12,7 +12,7 @@ require 'em-websocket'
 module RCS
 module DB
 
-class WebSocket
+class WebSocketManager
   extend RCS::Tracer
 
   class << self
@@ -32,9 +32,9 @@ class WebSocket
           when 'auth'
             auth(ws, message)
           when 'ping'
-            ping(ws, message)
+            onping(ws, message)
           when 'pong'
-            pong(ws, message)
+            onpong(ws, message)
           else
             trace :debug,  "[#{ws.object_id}] WS message: #{msg}"
         end
@@ -58,6 +58,7 @@ class WebSocket
         trace :error, "[#{ws.object_id}] WS auth INVALID #{msg['cookie']}"
         ws.send({type: 'auth', result: 'denied'}.to_json)
         ws.close_websocket
+        return
       end
 
       # grant the access to the client
@@ -67,13 +68,25 @@ class WebSocket
       session[:ws] = ws
     end
 
-    def ping(ws, msg)
+    def onping(ws, msg)
       trace :debug, "[#{ws.object_id}] WS ping"
-      ws.send({type: 'pong'}.to_json)
+      pong(ws)
     end
 
-    def pong(ws, msg)
-      trace :debug, "[#{ws.object_id}] WS pong"
+    def onpong(ws, msg)
+      # keep the main session alive
+      session = SessionManager.instance.get_by_ws ws
+      session[:time] = Time.now.getutc.to_i
+
+      trace :debug, "[#{ws.object_id}] WS pong: #{session[:address]} #{session[:user]['name']}"
+    end
+
+    def ping(ws)
+      ws.send({type: 'ping'}.to_json)
+    end
+
+    def pong(ws)
+      ws.send({type: 'pong'}.to_json)
     end
 
     def close(ws)
@@ -81,6 +94,12 @@ class WebSocket
       session = SessionManager.instance.get_by_ws ws
       # release the handler in the session
       session[:ws] = nil
+    end
+
+    def send(ws, type, message={})
+      msg = {type: type}
+      msg.merge! message
+      ws.send(msg.to_json)
     end
   end
 end
