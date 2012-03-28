@@ -188,6 +188,13 @@ class Call
     
     return channel
   end
+
+  def close!
+    @channels.each_value {|c| c.close!}
+    trace :debug, "[#{@id}] closing call for #{@peer}, starting at #{@start_time}"
+    @evidence.update_attributes("status" => :complete)
+    true
+  end
   
   def closed?
     closed_channels = @channels.select {|k,v| v.closed? unless v.nil? }
@@ -201,12 +208,7 @@ class Call
     # if evidence is empty or call is closed, refuse feeding
     return false if evidence[:wav].bytesize == 0
     return false if closed?
-
-    if end_call? evidence
-      @channels.each {|c| c.close!}
-      trace :debug, "[#{@id}] closing call for #{@peer}, starting at #{@start_time}"
-      return true
-    end
+    return close! if end_call? evidence
 
     # get the correct channel for the evidence
     channel = get_channel(evidence)
@@ -219,14 +221,15 @@ class Call
     update_status
     
     unless queueing?
-      lower_sample_rate = (@channels.values.min_by {|c| c.sample_rate}).sample_rate
-      trace :debug, "[#{@id}] COMMON SAMPLE RATE #{lower_sample_rate}"
-
+      destination_sample_rate = (@channels.values.min_by {|c| c.sample_rate}).sample_rate
+      higher_sample_rate_channel = (@channels.values.max_by {|c| c.sample_rate})
       # downsample channel with higher sample rate
-
+      unless higher_sample_rate_channel.sample_rate == destination_sample_rate
+        trace :debug, "[#{@id}] RESAMPLING #{higher_sample_rate_channel.sample_rate} -> #{destination_sample_rate}"
+      end
 
       # take channel with higher sample rate and resample accordingly            
-      @encoder ||= ::MP3Encoder.new(2, sample_rate)
+      @encoder ||= ::MP3Encoder.new(2, destination_sample_rate)
       unless @encoder.nil?
         @encoder.feed(@channels[:outgoing].wav_data, @channels[:incoming].wav_data) do |mp3_bytes|
           File.open("#{@id}.mp3", 'ab') {|f| f.write(mp3_bytes) }
@@ -289,7 +292,7 @@ class Call
       return
     else # we have (at least) two channels
       @status == :fillin
-      trace :debug, "Lesser sample rate: #{min_sample_rate}, will be used for resampling."
+      #trace :debug, "Lesser sample rate: #{min_sample_rate}, will be used for resampling."
     end
   end
   
@@ -299,7 +302,7 @@ class Call
     string += "---\n"
     return string
   end
-   
+
   def channels_by_start_time
     @channels.values.minmax_by {|c| c.start_time }
   end
@@ -307,31 +310,25 @@ end
 
 class CallProcessor
   include Tracer
-  require 'pp'
-  
+
   def initialize(agent, target)
     @agent = agent
     @target = target
-    @calls = []
+    @call = nil
   end
   
   def get_call(evidence)
     # if peer is unknown or evidence is empty, evidence is invalid, ignore it
     return nil if evidence[:data][:peer].empty? or evidence[:wav].empty?
-    
-    open_calls = @calls.select {|c| c.accept? evidence and not c.closed? }
-    return open_calls.first unless open_calls.empty?
-
-    # no valid call was found, we need to create a new one
-    call = create_call evidence
-    return call
+    return create_call(evidence) if @call.nil? # first call
+    return @call if @call.accept? evidence and not @call.closed?
+    return create_call(evidence) # previous call ended
   end
   
   def create_call(evidence)
-    call = Call.new(evidence[:data][:peer], evidence[:data][:program], evidence[:data][:start_time], @agent, @target)
-    trace :info, "CREATED NEW CALL #{call.id}"
-    @calls << call
-    call
+    @call.close! unless @call.nil?
+    @call = Call.new(evidence[:data][:peer], evidence[:data][:program], evidence[:data][:start_time], @agent, @target)
+    @call
   end
   
   def feed(evidence)
@@ -341,11 +338,7 @@ class CallProcessor
   end
   
   def to_s
-    string = ''
-    @calls.each do |c|
-      string += "#{c}\n"
-    end
-    return string
+    @call.to_s
   end
 end
 
