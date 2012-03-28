@@ -3,6 +3,8 @@ require 'mongoid'
 require_relative 'alert'
 require_relative '../audit'
 
+require_relative '../push'
+
 #module RCS
 #module DB
 
@@ -63,6 +65,9 @@ class Status
       end
 
       monitor.save
+
+      # notify all that the monitor has changed
+      RCS::DB::PushManager.instance.notify('monitor')
     end
 
     def status_check

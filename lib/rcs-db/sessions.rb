@@ -57,12 +57,23 @@ class SessionManager
     return nil
   end
 
+  def each_ws
+    @sessions.values.each do |sess|
+      # do not include server accounts
+      next if sess[:level].include? :server
+      # not connected push channel
+      next if sess[:ws].nil?
+
+      yield sess[:ws]
+    end
+  end
+
   def all
     list = []
     @sessions.each_pair do |cookie, sess|
-      # do not include server accounts
       s = sess.clone
       s.delete :accessible
+      # do not include server accounts
       list << s unless sess[:level].include? :server
     end
     

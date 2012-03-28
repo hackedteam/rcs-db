@@ -46,7 +46,7 @@ class HeartBeat
     end
 
     #TODO: report some useful information
-    message = SystemStatus.my_error_msg || "Idle..."
+    message = SystemStatus.my_error_msg || "#{SessionManager.instance.all.size} connections..."
 
     # report our status
     status = SystemStatus.my_status

@@ -26,7 +26,7 @@ class Config
                     'DB_CERT' => 'rcs-db.crt',
                     'DB_KEY' => 'rcs-db.key',
                     'LISTENING_PORT' => 443,
-                    'HB_INTERVAL' => 30,
+                    'HB_INTERVAL' => 15,
                     'WORKER_PORT' => 5150,
                     'BACKUP_DIR' => 'backup',
                     'SHARD' => 'shard0000'}
