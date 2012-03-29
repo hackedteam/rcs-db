@@ -167,7 +167,7 @@ class Alerting
               alert.logs.create!(time: Time.now.getutc.to_i, path: aq.path, evidence: aq.evidence)
               alert.last = Time.now.getutc.to_i
               alert.save
-              PushManager.instance.notify('alert')
+              PushManager.instance.notify('alert', {id: alert.path.last})
               send_mail(aq.to, aq.subject, aq.body) if alert.type == 'MAIL'
             else
               trace :debug, "Triggering alert: #{alert._id} (suppressed)"

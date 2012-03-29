@@ -129,6 +129,9 @@ class RESTFileStream
     @connection = connection
     @response = EM::DelegatedHttpResponse.new @connection
 
+    @response.status = 200
+    @response.status_string = ::Net::HTTPResponse::CODE_TO_OBJ["#{@response.status}"].name.gsub(/Net::HTTP/, '')
+
     @response.headers["Content-length"] = File.size @filename
 
     # fixup_headers override to evade content-length reset

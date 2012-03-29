@@ -46,11 +46,12 @@ class FilesystemTask
     filtering = filtering.any_in(:aid => [agent[:_id]]) unless agent.nil?
 
     # header
-    yield ['path', 'date', 'size'].to_csv
+    yield ['agent', 'path', 'date', 'size'].to_csv
 
     # one row per evidence
     filtering.order_by([["data.path", :asc]]).each do |fs|
-      yield [fs.data['path'], fs.da, fs.data['size']].to_csv
+      agent = Item.find(fs.aid)
+      yield [agent.name, fs.data['path'], Time.at(fs.da).getutc, fs.data['size'].to_i.to_s_bytes].to_csv
     end
 
   end
