@@ -14,6 +14,8 @@ module CallProcessing
   end
 
   def process
+    self[:wav] ||= "" # set a valid wav
+
     return if self[:data][:grid_content].nil?
     return if end_call?
 
@@ -62,7 +64,6 @@ module CallProcessing
     Speex.decoder_destroy(decoder)
     
     self[:wav] = wave_buffer
-    self[:wav] ||= ""
   end
   
   def type
