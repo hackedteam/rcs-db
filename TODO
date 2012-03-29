@@ -7,8 +7,6 @@ TEST:
 
 HIGH PRIORITY:
 
-    mongo compact after deletion
-
     crash on windows?  synchronize?
 
     worker decoding (daniele):
