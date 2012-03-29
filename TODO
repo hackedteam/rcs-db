@@ -10,7 +10,6 @@ HIGH PRIORITY:
     worker decoding (daniele):
         - call
         - mic
-        - calendar
         - mail
 	    - addressbook
 	    - filesystem
@@ -26,6 +25,9 @@ HIGH PRIORITY:
 
 MEDIUM PRIORITY:
 
+    migration: 
+       - calendar (split body in location, recipients and body)
+	
     upgrade for nia
 
     FFI per dongle dll
