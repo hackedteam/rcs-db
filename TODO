@@ -7,6 +7,8 @@ TEST:
 
 HIGH PRIORITY:
 
+    crash on windows?  synchronize?
+
     worker decoding (daniele):
         - call
         - mic
@@ -19,9 +21,7 @@ HIGH PRIORITY:
 
     worker should delete evidence of deleted agents
 
-    link alerts to store evidence
-
-    crash on windows?  synchronize?
+    link alerts to store evidence (worker)
 
 MEDIUM PRIORITY:
 
@@ -32,8 +32,6 @@ MEDIUM PRIORITY:
 
     FFI per dongle dll
 
-    mongo authentication
-
     remove the debug integrity for license
 
 LOW PRIORITY:
@@ -42,7 +40,7 @@ LOW PRIORITY:
 
     mongo logRotate  & append to log
 
-    mongo compact after deletion
+    mongo authentication
 
     is vcredist needed ?
 
