@@ -291,9 +291,6 @@ Section "Install Section" SecInstall
     SetOutPath "$INSTDIR\DB\console"
     File /r "console\*.*"
 
-    SetOutPath "$INSTDIR\DB\cores"
-    File /r "cores\*.*"
-
     SetOutPath "$INSTDIR\DB\config\certs"
     File "config\certs\openssl.cnf"
         
@@ -371,10 +368,12 @@ Section "Install Section" SecInstall
     
     DetailPrint "Starting RCS DB..."
     SimpleSC::StartService "RCSDB" "" 30
-    
+    Sleep 10000
+
     DetailPrint "Starting RCS Worker..."
     SimpleSC::StartService "RCSWorker" "" 30
-          
+    Sleep 5000
+
     ${If} $installUPGRADE != ${BST_CHECKED}
     	DetailPrint "Setting the Admin password..."
     	nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --reset-admin $adminpass"
@@ -471,10 +470,8 @@ Section "Install Section" SecInstall
       DetailPrint ""
       DetailPrint "Writing the configuration..."
       SetDetailsPrint "textonly"
-      ; write the config yaml
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector-config --defaults --db-address $masterAddress"
       ; retrieve the certs from the server
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector-config -d $masterAddress -u admin -p $adminpass -t -s"
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector-config --defaults -d $masterAddress -u admin -p $adminpass -t -s"
       SetDetailsPrint "both"
       DetailPrint "done"
     
@@ -502,7 +499,20 @@ Section "Install Section" SecInstall
     SimpleSC::StartService "RCSCollector" ""
           
   ${EndIf}
-  
+
+  ; we insert the core here, because we need the server up and running
+  ; when che collector is installed. loading the cores take much time...
+  ${If} $installMaster == ${BST_CHECKED}
+    !cd 'DB'
+    DetailPrint "Installing Cores files..."
+    SetOutPath "$INSTDIR\DB\cores"
+    File /r "cores\*.*"
+
+    DetailPrint "ReStarting RCS DB..."
+    SimpleSC::RestartService "RCSDB" "" 30
+    !cd '..'
+  ${EndIf}
+
   !cd "DB\nsis"
   
   DetailPrint "Writing uninstall informations..."

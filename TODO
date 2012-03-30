@@ -9,6 +9,8 @@ HIGH PRIORITY:
 
     crash on windows?  synchronize?
 
+    protected code on windows
+
     worker decoding (daniele):
         - call
         - mic
