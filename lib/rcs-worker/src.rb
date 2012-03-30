@@ -2,7 +2,6 @@ require 'ffi'
 
 module SRC
   extend FFI::Library
-  extend RCS::Tracer
 
   class DATA < FFI::Struct
     layout :data_in, :pointer,            # pointer to input data samples
@@ -61,7 +60,7 @@ module SRC
       src_data = SRC::DATA.new src_data_ptr
       src_data[:ratio] = @to_sample_rate * 1.0 / sample_rate
 
-      puts "Encoding #{wav_ary.num_frames * FFI::type_size(:float)} bytes => #{wav_ary.size} wave frames [ratio #{src_data[:ratio]}]."
+      #trace :debug, "Encoding #{wav_ary.size * FFI::type_size(:float)} bytes => #{wav_ary.size} wave frames [ratio #{src_data[:ratio]}]."
 
       src_data[:end_of_input] = 0
       src_data[:input_frames] = 0
@@ -78,7 +77,7 @@ module SRC
         resampled_short_samples = FFI::MemoryPointer.new :short, wav_ary.size
       end
 
-      bytes = []
+      resampled_frames = []
       until src_data[:end_of_input] == 1 and src_data[:output_frames_gen] == 0
 
         if src_data[:input_frames] == 0
@@ -99,18 +98,18 @@ module SRC
         unless src_data[:output_frames_gen] == 0
           if is_short
             SRC::float_to_short src_data[:data_out], resampled_short_samples, src_data[:output_frames_gen]
-            bytes.concat resampled_short_samples.read_bytes(src_data[:output_frames_gen] * 2).unpack('s*')
+            resampled_frames.concat resampled_short_samples.read_bytes(src_data[:output_frames_gen] * 2).unpack('s*')
           else
-            bytes.concat src_data[:data_out].read_array_of_float(src_data[:output_frames_gen])
+            resampled_frames.concat src_data[:data_out].read_array_of_float(src_data[:output_frames_gen])
           end
         end
 
         src_data[:input_frames] -= src_data[:input_frames_used]
         src_data[:data_in] += src_data[:input_frames_used] if src_data[:input_frames] > 0
 
-        puts "Generated #{src_data[:output_frames_gen]} frames, used #{src_data[:input_frames_used]}, still #{src_data[:input_frames]} in input."
+        #trace :debug, "Generated #{src_data[:output_frames_gen]} frames, used #{src_data[:input_frames_used]}, still #{src_data[:input_frames]} in input."
       end
-      return bytes
+      return resampled_frames
     end
 
   end
