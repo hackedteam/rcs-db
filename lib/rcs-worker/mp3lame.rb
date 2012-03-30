@@ -1,8 +1,12 @@
 require 'ffi'
 require 'stringio'
 
+require 'rcs-common/trace'
+
 module MP3Lame
+  include RCS::Tracer
   extend FFI::Library
+
   base_path = File.dirname(__FILE__)
   case RUBY_PLATFORM
     when /darwin/
@@ -119,6 +123,8 @@ module MP3Lame
 end
 
 class MP3Encoder
+  include RCS::Tracer
+
   def initialize(n_channels, sample_rate)
     @n_channels = n_channels
     @sample_rate = sample_rate
@@ -140,36 +146,22 @@ class MP3Encoder
     return true if MP3Lame::lame_init_params(@mp3lame) >= 0
     return nil
   end
-  
-  def feed(left, right)
-    puts left.class, left.size
-    puts right.class, right.size
-    
-    to_read = [left.size, right.size].min
-    num_samples = to_read
-    buffer_size = 1.25 * num_samples + 7200
-    
-    puts "required #{buffer_size.ceil} bytes to process #{num_samples} wav samples"
-    
-    buffer = FFI::MemoryPointer.new(:float, buffer_size.ceil)
-    
-    left_pcm = left.shift(to_read).pack 'F*'
-    right_pcm = right.shift(to_read).pack 'F*'
-    
-    puts "#{left_pcm.bytesize} bytes LEFT CHANNEL"
-    puts "#{right_pcm.bytesize} bytes RIGHT CHANNEL"
-    
-    mp3_bytes = MP3Lame::lame_encode_buffer_float(@mp3lame, left_pcm, right_pcm, num_samples, buffer, buffer_size)
-    #File.open(file_name, 'ab') {|f| f.write(buffer.read_string(mp3_bytes)) }
-    #puts "encoded #{mp3_bytes} bytes of MP3 data"
 
+  def feed(left, right)
+    num_samples = [left.size, right.size].min
+    buffer_size = 1.25 * num_samples + 7200
+
+    trace :debug, "ENCODING #{num_samples} frames to MP3"
+
+    buffer = FFI::MemoryPointer.new(:float, buffer_size.ceil)
+
+    left_pcm = left.shift(num_samples).pack 'F*'
+    right_pcm = right.shift(num_samples).pack 'F*'
+
+    mp3_bytes = MP3Lame::lame_encode_buffer_float(@mp3lame, left_pcm, right_pcm, num_samples, buffer, buffer_size)
     yield buffer.read_string(mp3_bytes)
 
     mp3_bytes = MP3Lame::lame_encode_flush(@mp3lame, buffer, buffer_size)
-    #File.open(file_name, 'ab') {|f| f.write(buffer.read_string(mp3_bytes)) }
-    #puts "flushed #{mp3_bytes} bytes of MP3 data"
-
     yield buffer.read_string(mp3_bytes)
   end
 end
-

