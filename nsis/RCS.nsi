@@ -253,6 +253,7 @@ Section "Install Section" SecInstall
     SetOutPath "$INSTDIR\DB\lib"
     File "lib\rcs-db.rb"
     File "lib\rcs-worker.rb"
+    File /r "lib\rgloader"
  
     SetOutPath "$INSTDIR\DB\log"
     File /r "log\.keep"
@@ -264,12 +265,12 @@ Section "Install Section" SecInstall
     File /r "data\config\.keep"
 
     SetOutPath "$INSTDIR\DB\lib\rcs-db-release"
-    ###File /r "lib\rcs-db-release\*.*"
-    File /r "lib\rcs-db\*.*"
+    File /r "lib\rcs-db-release\*.*"
+    ###File /r "lib\rcs-db\*.*"
   
     SetOutPath "$INSTDIR\DB\lib\rcs-worker-release"
-    ###File /r "lib\rcs-worker-release\*.*"
-    File /r "lib\rcs-worker\*.*"
+    File /r "lib\rcs-worker-release\*.*"
+    ###File /r "lib\rcs-worker\*.*"
 
     SetOutPath "$INSTDIR\DB\config"
     File "config\mongoid.yaml"
@@ -449,8 +450,7 @@ Section "Install Section" SecInstall
     File "lib\rcs-collector.rb"
     
     SetOutPath "$INSTDIR\Collector\lib\rcs-collector-release"
-    ###File /r "lib\rcs-collector-release\*.*"
-    File /r "lib\rcs-collector\*.*"
+    File /r "lib\rcs-collector-release\*.*"
   
     SetOutPath "$INSTDIR\Collector\config"
     File "config\decoy.html"
