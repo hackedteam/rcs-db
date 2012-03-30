@@ -11,7 +11,7 @@ module DB
 class CoreController < RESTController
 
   def index
-    require_auth_level :sys, :tech
+    require_auth_level :admin, :sys, :tech, :view
 
     mongoid_query do
       cores = ::Core.all

@@ -26,8 +26,6 @@ HIGH PRIORITY:
 
 MEDIUM PRIORITY:
 
-    upgrade for nia
-
     FFI per dongle dll
 
     remove the debug integrity for license
@@ -36,7 +34,7 @@ LOW PRIORITY:
 
     /usr/bin/mongodb --config $PATH-TO-CONFIG --shutdown
 
-    mongo logRotate  & append to log
+    mongo logRotate & append to log
 
     mongo authentication
 
@@ -44,5 +42,7 @@ LOW PRIORITY:
 
 
 FUTURE:
+
+    upgrade for nia
 
     Forwarder (worker)
