@@ -14,7 +14,7 @@ module CallProcessing
   end
 
   def process
-    self[:wav] = "" # set a valid wav
+    self[:wav] = []
 
     return if self[:data][:grid_content].nil?
     return if end_call?
@@ -56,7 +56,7 @@ module CallProcessing
         Speex.decode(decoder, bits.pointer, output_buffer)
         
         # Speex outputs 32 bits float samples, wave needs 16 bit integers
-        self[:wav] = output_buffer.read_array_of_float(frame_size)
+        self[:wav].concat output_buffer.read_array_of_float(frame_size)
       end
     end
     

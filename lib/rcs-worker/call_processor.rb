@@ -39,7 +39,7 @@ class Channel
     @resampled = false
     @wav_data = Array.new # array of 32 bit float samples
     @status = :open
-    trace :debug, "[CHAN #{@id}] CREATING NEW CHANNEL #{@name} - start_time: #{@start_time} sample_rate: #{@sample_rate}"
+    trace :debug, "[CHAN #{to_s}] CREATING NEW CHANNEL #{@name} - start_time: #{@start_time} sample_rate: #{@sample_rate}"
   end
   
   def id
@@ -52,7 +52,7 @@ class Channel
   
   def close!
     @status = :closed
-    trace :debug, "[CHAN #{@id}] closing channel #{self.id}"
+    trace :debug, "[CHAN #{to_s}] closing channel #{self.id}"
   end
   
   def closed?
@@ -68,42 +68,40 @@ class Channel
   end
 
   def resample_channel(sample_rate)
-    trace :debug, "[CHAN #{@id}] resampling channel from #{@sample_rate} to #{sample_rate}"
-    unless sample_rate == @sample_rate
-      resampler = SRC::Resampler.new sample_rate
-      @wav_data = resampler.resample_channel @wav_data, @sample_rate
-    end
+    trace :debug, "[CHAN #{to_s}] resampling channel from #{@sample_rate} to #{sample_rate}"
+    @wav_data = SRC::Resampler.new(sample_rate).resample_channel(@wav_data, @sample_rate) unless sample_rate == @sample_rate
     @needs_resampling = sample_rate
     @resampled = true
   end
 
   def resample(evidence)
     return evidence if @needs_resampling == @sample_rate
-    trace :debug, "[CHAN #{@id}] resampling wav from #{@sample_rate} to #{@needs_resampling}"
-    resampler = SRC::Resampler.new @needs_resampling
-    evidence[:wav] = resampler.resample_channel evidence[:wav], @sample_rate
+    #trace :debug, "[CHAN #{to_s}:resample] evidence wav #{evidence[:wav].size} frames from #{@sample_rate} to #{@needs_resampling}"
+    evidence[:wav] = SRC::Resampler.new(@needs_resampling).resample_channel evidence[:wav], @sample_rate
+    trace :debug, "[CHAN #{to_s}:resample] evidence wav resampled to #{evidence[:wav].size} frames @ #{@needs_resampling}"
+    evidence
   end
   
   def fill(gap)
-    samples_to_fill = @sample_rate * gap
-    trace :debug, "[CHAN #{@id}] filling with #{samples_to_fill} samples(@#{@sample_rate}) to fill #{gap} seconds of missing data."
+    samples_to_fill = @needs_resampling * gap
+    trace :debug, "[CHAN #{to_s}] filling with #{samples_to_fill} samples(@#{@needs_resampling}) to fill #{gap} seconds of missing data."
     @wav_data.concat [0.0] * samples_to_fill.ceil
   end
   
   def time_gap(evidence)
     gap = evidence[:data][:start_time].to_f - @last_stop_time.to_f
-    trace :debug, "[CHAN #{@id}]#{@last_stop_time} to #{evidence[:data][:start_time]} => #{gap}"
-    trace :fatal, "[CHAN #{@id}] *** NEGATIVE GAP ***" if gap < 0
+    #trace :debug, "[CHAN #{to_s}]#{@last_stop_time} to #{evidence[:data][:start_time]} => #{gap}"
+    trace :fatal, "[CHAN #{to_s}] *** NEGATIVE GAP #{gap} ***" if gap < 0
     gap
   end
   
   def accept?(evidence)
     if closed? 
-      trace :debug, "[CHAN #{@id}] CHANNEL IS CLOSED, REFUSING ..."
+      trace :debug, "[CHAN #{to_s}] CHANNEL IS CLOSED, REFUSING ..."
       return false
     end
     if time_gap(evidence) >= 5.0
-      trace :debug, "[CHAN #{@id}] TIME GAP IS HIGHER THAN 5 SECONDS !!! REFUSING ..."
+      trace :debug, "[CHAN #{to_s}] TIME GAP IS HIGHER THAN 5 SECONDS !!! REFUSING ..."
       return false
     end
     return true
@@ -115,7 +113,7 @@ class Channel
     
     @last_stop_time = evidence[:data][:stop_time]
     @wav_data.concat evidence[:wav]
-    trace :debug, "[CHAN #{@id}] #{num_frames} frames, NEW STOP TIME #{@last_stop_time}"
+    #trace :debug, "[CHAN #{to_s}] #{num_frames} frames, NEW STOP TIME #{@last_stop_time}"
   end
 
   def num_frames
@@ -123,7 +121,7 @@ class Channel
   end
 
   def to_s
-    self.id
+    "#{@id}:#{name}:#{sample_rate}:#{wav_data.size}"
   end
 end
 
@@ -138,7 +136,7 @@ class Call
   #   - :resampling second channel arrived, filled in, resample data as they arrive
   
   def initialize(peer, program, start_time, agent, target)
-    @id = BSON::ObjectId.new
+    @id = "#{agent[:ident]}_#{agent[:instance]}_#{BSON::ObjectId.new}"
     @peer = peer
     @start_time = start_time
     @status = :queueing
@@ -147,6 +145,7 @@ class Call
     @duration = 0
     trace :info, "[CALL #{@id}] created new call for #{@peer}, starting at #{@start_time}"
     @raw_ids = []
+    @sample_rate = nil
 
     @agent = agent
     @target = target
@@ -165,12 +164,10 @@ class Call
   def accept?(evidence)
     # peer must be the same!
     return false if evidence[:data][:peer] != @peer
-    
+
     # we accept evidence only if relative channel accept it
     channel = get_channel evidence
-    return channel.accept? evidence unless channel.nil?
-    
-    # if not sure, this is probably another call
+    return true unless channel.nil?
     return false
   end
 
@@ -184,23 +181,35 @@ class Call
     return channel if channel.accept? evidence
     return nil
   end
+
+  def num_channels
+    @channels.values.size
+  end
   
   def create_channel(evidence)
-    channel = Channel.new evidence
-    @channels[evidence[:data][:channel]] = channel
+    @channels[evidence[:data][:channel]] ||= Channel.new evidence
     
     # fix start time
     a = channels_by_start_time
     @start_time = a[0].start_time
-    
-    # fill in later channel
-    if a.size > 1
+
+    # when we have both channels
+    trace :debug, "we have #{num_channels} channels now #{@channels.values.collect {|c| c.to_s}}"
+
+    if num_channels == 2
+      #determine common sample rate
+      @sample_rate = (@channels.values.min_by {|c| c.sample_rate}).sample_rate
+
+      #resample channels (if necessary)
+      @channels.values.each {|c| c.resample_channel(@sample_rate) unless c.resampled?}
+
+      # fill in later channel
       fillin_gap = a[1].start_time - a[0].start_time
-      trace :debug, "[CALL #{@id}] FILLING #{fillin_gap.to_f} SECS ON CHANNEL #{a[1].name}"
+      #trace :debug, "[CALL #{@id}] FILLING #{fillin_gap.to_f} SECS ON CHANNEL #{a[1].name}"
       a[1].fill(fillin_gap)
     end
     
-    return channel
+    return @channels[evidence[:data][:channel]]
   end
 
   def close!
@@ -228,7 +237,7 @@ class Call
     channel = get_channel(evidence)
     #return false if channel.nil?
 
-    channel.resample evidence if channel.needs_resampling?
+    evidence = channel.resample evidence if channel.needs_resampling?
     
     trace :debug, "[CALL #{@id}] feeding #{evidence[:wav].size} frames at #{evidence[:data][:start_time]}:#{evidence[:data][:last_stop_time]} to #{channel.id}"
     channel.feed evidence
@@ -237,22 +246,19 @@ class Call
     update_status
     
     unless queueing?
-      destination_sample_rate = (@channels.values.min_by {|c| c.sample_rate}).sample_rate
-
-      # resample channels if necessary
-      @channels.values.each {|c| c.resample_channel(destination_sample_rate) unless c.resampled?}
+      trace :debug, "[CALL #{@id}] frames incoming: #{@channels[:incoming].wav_data.size} outgoing: #{@channels[:outgoing].wav_data.size}"
 
       # MP3Encoder will take care of resampling if necessary
-      @encoder ||= ::MP3Encoder.new(2, destination_sample_rate)
+      @encoder ||= ::MP3Encoder.new(2, @sample_rate)
       unless @encoder.nil?
         @encoder.feed(@channels[:outgoing].wav_data, @channels[:incoming].wav_data) do |mp3_bytes|
           File.open("#{file_name}.mp3", 'ab') {|f| f.write(mp3_bytes) }
 
-          trace :debug, "[CALL #{@id}] pumping #{mp3_bytes.size} bytes of mp3 data into FILE"
+          #trace :debug, "[CALL #{@id}] pumping #{mp3_bytes.size} bytes of mp3 data into FILE"
           db = Mongoid.database
           fs = Mongo::GridFileSystem.new(db, "grid.#{@target[:_id]}")
 
-          trace :debug, "[CALL #{@id}] pumping #{mp3_bytes.size} bytes of mp3 data into GRID"
+          #trace :debug, "[CALL #{@id}] pumping #{mp3_bytes.size} bytes of mp3 data into GRID"
           fs.open(file_name, 'a') do |f|
             f.write mp3_bytes
             @evidence.update_attributes("data._grid" => f.files_id)
@@ -309,13 +315,6 @@ class Call
       @status == :fillin
       #trace :debug, "Lesser sample rate: #{min_sample_rate}, will be used for resampling."
     end
-  end
-  
-  def to_s
-    string = "---\nCALL #{self.id}\n"
-    @channels.each {|k, c| string += "\t- #{k} #{c.seconds} #{c.num_samples}\n" }
-    string += "---\n"
-    return string
   end
 
   def channels_by_start_time
