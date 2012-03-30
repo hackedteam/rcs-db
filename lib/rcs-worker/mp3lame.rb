@@ -149,11 +149,11 @@ class MP3Encoder
 
   def feed(left, right)
     num_samples = [left.size, right.size].min
-    buffer_size = 1.25 * num_samples + 7200
+    buffer_size = (1.25 * num_samples + 7200).ceil
 
     trace :debug, "ENCODING #{num_samples} frames to MP3"
 
-    buffer = FFI::MemoryPointer.new(:float, buffer_size.ceil)
+    buffer = FFI::MemoryPointer.new(:float, buffer_size)
 
     left_pcm = left.shift(num_samples).pack 'F*'
     right_pcm = right.shift(num_samples).pack 'F*'
