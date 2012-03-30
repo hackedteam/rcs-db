@@ -294,9 +294,16 @@ Section "Install Section" SecInstall
 
     SetOutPath "$INSTDIR\DB\config\certs"
     File "config\certs\openssl.cnf"
-        
+
+    SetOutPath "$INSTDIR\DB\bin"
+    File /r "bin\haspdinst.exe"
+
     SetDetailsPrint "both"
     DetailPrint "done"
+
+    DetailPrint "Installing drivers.."
+    nsExec::ExecToLog "$INSTDIR\DB\bin\haspdinst -i -cm -kp -fi"
+    SimpleSC::SetServiceFailure "hasplms" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
 
     DetailPrint "Installing license.."
     CopyFiles /SILENT $masterLicense "$INSTDIR\DB\config\rcs.lic"

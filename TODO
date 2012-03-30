@@ -9,7 +9,7 @@ HIGH PRIORITY:
 
     crash on windows?  synchronize?
 
-    protected code on windows
+    FFI per dongle dll
 
     worker decoding (daniele):
         - call
@@ -29,8 +29,6 @@ MEDIUM PRIORITY:
 
     migration: 
        - calendar (split body in location, recipients and body)
-
-    FFI per dongle dll
 
     re-insert integrity for license
 
