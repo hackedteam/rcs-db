@@ -506,7 +506,7 @@ Section "Install Section" SecInstall
     !cd 'DB'
     DetailPrint "Installing Cores files..."
     SetDetailsPrint "textonly"
-    
+
     SetOutPath "$INSTDIR\DB\cores"
     File /r "cores\*.*"
 
