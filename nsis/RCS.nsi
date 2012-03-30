@@ -505,8 +505,13 @@ Section "Install Section" SecInstall
   ${If} $installMaster == ${BST_CHECKED}
     !cd 'DB'
     DetailPrint "Installing Cores files..."
+    SetDetailsPrint "textonly"
+    
     SetOutPath "$INSTDIR\DB\cores"
     File /r "cores\*.*"
+
+    SetDetailsPrint "both"
+    DetailPrint "done"
 
     DetailPrint "ReStarting RCS DB..."
     SimpleSC::RestartService "RCSDB" "" 30

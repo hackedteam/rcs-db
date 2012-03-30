@@ -386,12 +386,14 @@ class LicenseManager
 
 
   def crypt_check(hash)
+    # TODO: remove this for release
+    return true
     # calculate the check on the whole hash except the :integrity field itself
     content = hash.reject {|k,v| k == :integrity}.to_s
     # calculate the encrypted SHA1 with magic
     check = aes_encrypt(Digest::SHA1.digest(content), Digest::SHA1.digest("€ ∫∑x=1 ∆t π™")).unpack('H*').first
     # TODO: remove this for release
-    trace :debug, check
+    #trace :debug, check
     return hash[:integrity] == check
   end
 
