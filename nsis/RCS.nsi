@@ -368,16 +368,16 @@ Section "Install Section" SecInstall
     DetailPrint "Starting RCS Master Config..."
     SimpleSC::StartService "RCSMasterConfig" "" 30
     Sleep 5000
-    
-    DetailPrint "Starting RCS Master Router..."
-    SimpleSC::StartService "RCSMasterRouter" "" 30
-    Sleep 5000
 
     Delete $INSTDIR\DB\data\mongod.lock
     DetailPrint "Starting RCS Shard..."
     SimpleSC::StartService "RCSShard" "" 30
     Sleep 5000
-    
+
+    DetailPrint "Starting RCS Master Router..."
+    SimpleSC::StartService "RCSMasterRouter" "" 30
+    Sleep 5000
+
     DetailPrint "Starting RCS DB..."
     SimpleSC::StartService "RCSDB" "" 30
     Sleep 10000
