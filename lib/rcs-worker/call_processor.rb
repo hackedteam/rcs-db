@@ -1,6 +1,3 @@
-module RCS
-module Worker
-
 require 'ffi'
 require 'mongo'
 require 'mongoid'
@@ -13,6 +10,9 @@ require_relative 'speex'
 require_relative 'wave'
 require_relative 'src'
 require_relative 'mp3lame'
+
+module RCS
+module Worker
 
 class AudioProcessingError < StandardError
   attr_reader :msg
@@ -221,10 +221,18 @@ class Call
     return @channels[evidence[:data][:channel]]
   end
 
+  def delete_raws
+    @raw_ids.each do |id|
+      RCS::DB::GridFS.delete(id, "evidence")
+      trace :debug, "deleted raw evidence #{id}"
+    end
+  end
+
   def close!
     @channels.each_value {|c| c.close!}
     trace :debug, "[CALL #{@id}] closing call for #{@peer}, starting at #{@start_time}"
     @evidence.update_attributes("status" => :complete)
+    delete_raws
     true
   end
   
@@ -261,6 +269,8 @@ class Call
         left_pcm = @channels[:outgoing].wav_data.shift num_samples
         right_pcm = @channels[:incoming].wav_data.shift num_samples
 
+        @duration += num_samples / @sample_rate
+
         # MP3Encoder will take care of resampling if necessary
         @encoder ||= ::MP3Encoder.new(2, @sample_rate)
         unless @encoder.nil?
@@ -272,6 +282,7 @@ class Call
 
             fs.open(file_name, 'a') do |f|
               f.write mp3_bytes
+              update_attributes("data.duration" => @duration)
               update_attributes("data._grid" => f.files_id)
               update_attributes("data._grid_size" => f.file_length)
             end
@@ -284,6 +295,8 @@ class Call
         left_pcm = channel.wav_data.shift(channel.wav_data.size)
         right_pcm = Array.new left_pcm
 
+        @duration += channel.wav_data.size / channel.sample_rate
+
         # MP3Encoder will take care of resampling if necessary
         @encoder ||= ::MP3Encoder.new(2, channel.sample_rate)
         unless @encoder.nil?
@@ -295,6 +308,7 @@ class Call
 
             fs.open(file_name, 'a') do |f|
               f.write mp3_bytes
+              update_attributes("data.duration" => @duration)
               update_attributes("data._grid" => f.files_id)
               update_attributes("data._grid_size" => f.file_length)
             end
@@ -390,13 +404,11 @@ class CallProcessor
   def feed(evidence)
     call = get_call evidence
     unless call.nil?
-      call.feed evidence do |mp3_bytes|
-
-      end
+      call.feed evidence
     end
     nil
   end
-  
+
   def to_s
     @call.to_s
   end

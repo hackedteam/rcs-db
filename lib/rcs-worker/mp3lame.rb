@@ -151,7 +151,7 @@ class MP3Encoder
     num_samples = [left.size, right.size].min
     buffer_size = (1.25 * num_samples + 7200).ceil
 
-    trace :debug, "ENCODING #{num_samples} frames to MP3"
+    #trace :debug, "ENCODING #{num_samples} frames to MP3"
 
     buffer = FFI::MemoryPointer.new(:float, buffer_size)
 

