@@ -111,28 +111,11 @@ class Dongle
     end
 
     def time
-
-      begin
-        return info[:time]
-      rescue Exception => e
-        trace :debug, "Cannot get time from dongle, falling back"
-      end
-
-      begin
-        Timeout::timeout(3) do
-          # fallback to http request
-          http = Net::HTTP.new('developer.yahooapis.com', 80)
-          resp = http.request_get('/TimeService/V1/getTime?appid=YahooDemo')
-          resp.kind_of? Net::HTTPSuccess or raise
-          parsed = XmlSimple.xml_in(resp.body)
-          return Time.at(parsed['Timestamp'].first.to_i).getutc
-        end
-      rescue Exception => e
-        trace :fatal, "EXCEPTION: #{e.message}"
-        return Time.now.getutc
-      end
+      return info[:time]
+    rescue Exception => e
+      trace :debug, "Cannot get time from dongle, falling back"
+      return Time.now.getutc
     end
-
   end
 
 end
