@@ -9,6 +9,8 @@ HIGH PRIORITY:
 
     crash on windows?  synchronize?
 
+    FFI per dongle dll
+
     worker decoding (daniele):
         - call
         - mic
@@ -27,18 +29,14 @@ MEDIUM PRIORITY:
 
     migration: 
        - calendar (split body in location, recipients and body)
-	
-    upgrade for nia
 
-    FFI per dongle dll
-
-    remove the debug integrity for license
+    re-insert integrity for license
 
 LOW PRIORITY:
 
     /usr/bin/mongodb --config $PATH-TO-CONFIG --shutdown
 
-    mongo logRotate  & append to log
+    mongo logRotate & append to log
 
     mongo authentication
 
@@ -46,5 +44,7 @@ LOW PRIORITY:
 
 
 FUTURE:
+
+    upgrade for nia
 
     Forwarder (worker)

@@ -97,7 +97,11 @@ class ConfigMigration
       globals = {}
       items.each_pair do |key, value|
         if key == 'quota'
-          globals[:quota] = {:min => value.first['mindisk'].to_i*1024*1024, :max => value.first['maxlog'].to_i*1024*1024}
+          min = value.first['mindisk'].to_i*1024*1024
+          min = 4*1024*1024*1024 if min > 4*1024*1024*1024
+          max = value.first['maxlog'].to_i*1024*1024
+          max = 4*1024*1024*1024 if max > 4*1024*1024*1024
+          globals[:quota] = {:min => min, :max => max}
           globals[:wipe] = value.first['wipe'] == 'false' ? false : true
         end
         if key == 'template'

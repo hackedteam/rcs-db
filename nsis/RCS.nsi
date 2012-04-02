@@ -253,6 +253,7 @@ Section "Install Section" SecInstall
     SetOutPath "$INSTDIR\DB\lib"
     File "lib\rcs-db.rb"
     File "lib\rcs-worker.rb"
+    File /r "lib\rgloader"
  
     SetOutPath "$INSTDIR\DB\log"
     File /r "log\.keep"
@@ -264,12 +265,12 @@ Section "Install Section" SecInstall
     File /r "data\config\.keep"
 
     SetOutPath "$INSTDIR\DB\lib\rcs-db-release"
-    ###File /r "lib\rcs-db-release\*.*"
-    File /r "lib\rcs-db\*.*"
+    File /r "lib\rcs-db-release\*.*"
+    ###File /r "lib\rcs-db\*.*"
   
     SetOutPath "$INSTDIR\DB\lib\rcs-worker-release"
-    ###File /r "lib\rcs-worker-release\*.*"
-    File /r "lib\rcs-worker\*.*"
+    File /r "lib\rcs-worker-release\*.*"
+    ###File /r "lib\rcs-worker\*.*"
 
     SetOutPath "$INSTDIR\DB\config"
     File "config\mongoid.yaml"
@@ -291,14 +292,18 @@ Section "Install Section" SecInstall
     SetOutPath "$INSTDIR\DB\console"
     File /r "console\*.*"
 
-    SetOutPath "$INSTDIR\DB\cores"
-    File /r "cores\*.*"
-
     SetOutPath "$INSTDIR\DB\config\certs"
     File "config\certs\openssl.cnf"
-        
+
+    SetOutPath "$INSTDIR\DB\bin"
+    File /r "bin\haspdinst.exe"
+
     SetDetailsPrint "both"
     DetailPrint "done"
+
+    DetailPrint "Installing drivers.."
+    nsExec::ExecToLog "$INSTDIR\DB\bin\haspdinst -i -cm -kp -fi"
+    SimpleSC::SetServiceFailure "hasplms" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
 
     DetailPrint "Installing license.."
     CopyFiles /SILENT $masterLicense "$INSTDIR\DB\config\rcs.lic"
@@ -371,10 +376,12 @@ Section "Install Section" SecInstall
     
     DetailPrint "Starting RCS DB..."
     SimpleSC::StartService "RCSDB" "" 30
-    
+    Sleep 10000
+
     DetailPrint "Starting RCS Worker..."
     SimpleSC::StartService "RCSWorker" "" 30
-          
+    Sleep 5000
+
     ${If} $installUPGRADE != ${BST_CHECKED}
     	DetailPrint "Setting the Admin password..."
     	nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --reset-admin $adminpass"
@@ -450,8 +457,7 @@ Section "Install Section" SecInstall
     File "lib\rcs-collector.rb"
     
     SetOutPath "$INSTDIR\Collector\lib\rcs-collector-release"
-    ###File /r "lib\rcs-collector-release\*.*"
-    File /r "lib\rcs-collector\*.*"
+    File /r "lib\rcs-collector-release\*.*"
   
     SetOutPath "$INSTDIR\Collector\config"
     File "config\decoy.html"
@@ -471,10 +477,8 @@ Section "Install Section" SecInstall
       DetailPrint ""
       DetailPrint "Writing the configuration..."
       SetDetailsPrint "textonly"
-      ; write the config yaml
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector-config --defaults --db-address $masterAddress"
       ; retrieve the certs from the server
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector-config -d $masterAddress -u admin -p $adminpass -t -s"
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector-config --defaults -d $masterAddress -u admin -p $adminpass -t -s"
       SetDetailsPrint "both"
       DetailPrint "done"
     
@@ -502,7 +506,25 @@ Section "Install Section" SecInstall
     SimpleSC::StartService "RCSCollector" ""
           
   ${EndIf}
-  
+
+  ; we insert the core here, because we need the server up and running
+  ; when che collector is installed. loading the cores take much time...
+  ${If} $installMaster == ${BST_CHECKED}
+    !cd 'DB'
+    DetailPrint "Installing Cores files..."
+    SetDetailsPrint "textonly"
+
+    SetOutPath "$INSTDIR\DB\cores"
+    File /r "cores\*.*"
+
+    SetDetailsPrint "both"
+    DetailPrint "done"
+
+    DetailPrint "ReStarting RCS DB..."
+    SimpleSC::RestartService "RCSDB" "" 30
+    !cd '..'
+  ${EndIf}
+
   !cd "DB\nsis"
   
   DetailPrint "Writing uninstall informations..."
