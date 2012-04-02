@@ -19,6 +19,13 @@ class SingleProcessor
     evidence[:ident] = @agent['ident']
 
     evidence.store @agent, @target
+
+    delete_raw evidence
+  end
+
+  def delete_raw(evidence)
+    RCS::DB::GridFS.delete(evidence[:db_id], "evidence")
+    trace :debug, "deleted raw evidence #{evidence[:db_id]}"
   end
 end
 

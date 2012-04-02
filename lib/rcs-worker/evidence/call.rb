@@ -19,12 +19,18 @@ module CallProcessing
     return if self[:data][:grid_content].nil?
     return if end_call?
 
+    codec = :amr if self[:data][:sample_rate] & LOG_AUDIO_AMR == 1
+    codec ||= :speex
+    self[:data][:sample_rate] &= ~LOG_AUDIO_AMR # clear codec bit if set
+
     # speex decode
     case self[:data][:program]
-      when :mobile
-        self[:wav] = Speex.get_wav_frames(self[:data][:grid_content], Speex::MODEID_NB)
+      when "Mobile"
+        self[:wav] = Speex.get_wav_frames(self[:data][:grid_content], Speex::MODEID_NB) if codec == :speex
+        self[:wav] = AMR.get_wav_frames data if codec == :amr
       else
-        self[:wav] = Speex.get_wav_frames(self[:data][:grid_content], Speex::MODEID_UWB)
+        self[:wav] = Speex.get_wav_frames(self[:data][:grid_content], Speex::MODEID_UWB) if codec == :speex
+        self[:wav] = AMR.get_wav_frames data if codec == :amr
     end
   end
   

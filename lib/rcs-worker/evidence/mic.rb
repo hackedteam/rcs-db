@@ -11,9 +11,6 @@ module MicProcessing
 
   attr_reader :wav
 
-  LOG_AUDIO_SPEEX = 0x0
-  LOG_AUDIO_AMR = 0x1
-
   def end_call?
     self[:data][:grid_content].bytesize == 4 and self[:data][:grid_content] == "\xff\xff\xff\xff"
   end
@@ -30,6 +27,8 @@ module MicProcessing
     codec ||= :speex if self[:data][:sample_rate] == 44100
     codec ||= :speex_mobile if self[:data][:sample_rate] == 8000
 
+    puts "CODEC: #{codec}"
+
     # speex decode
     data = self[:data][:grid_content]
     case codec
@@ -40,6 +39,8 @@ module MicProcessing
       when :amr
         self[:wav] = AMR.get_wav_frames data
     end
+
+    puts "FRAMES: #{self[:wav].size}"
   end
 
   def type
