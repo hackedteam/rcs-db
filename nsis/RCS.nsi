@@ -308,7 +308,7 @@ Section "Install Section" SecInstall
     ; check if the license + dongle is ok
     StrCpy $0 5000
     ${Do}
-      nsExec::Exec /TIMEOUT=$0 "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-license"
+      nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-license"
       Pop $0
       ${If} $0 != 0
          MessageBox MB_OK|MB_ICONEXCLAMATION "Insert the USB token associated with the license and press OK"
