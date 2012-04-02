@@ -295,18 +295,26 @@ Section "Install Section" SecInstall
     SetOutPath "$INSTDIR\DB\config\certs"
     File "config\certs\openssl.cnf"
 
-    SetOutPath "$INSTDIR\DB\bin"
-    File /r "bin\haspdinst.exe"
-
     SetDetailsPrint "both"
     DetailPrint "done"
+
+    DetailPrint "Installing license.."
+    CopyFiles /SILENT $masterLicense "$INSTDIR\DB\config\rcs.lic"
 
     DetailPrint "Installing drivers.."
     nsExec::ExecToLog "$INSTDIR\DB\bin\haspdinst -i -cm -kp -fi"
     SimpleSC::SetServiceFailure "hasplms" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
 
-    DetailPrint "Installing license.."
-    CopyFiles /SILENT $masterLicense "$INSTDIR\DB\config\rcs.lic"
+    ; check if the license + dongle is ok
+    StrCpy $0 5000
+    ${Do}
+      nsExec::Exec /TIMEOUT=$0 "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-license"
+      Pop $0
+      ${If} $0 != 0
+         MessageBox MB_OK|MB_ICONEXCLAMATION "Insert the USB token associated with the license and press OK"
+         StrCpy $0 15000
+      ${EndIf}
+    ${LoopUntil} $0 == 0
 
     ; fresh install
     ${If} $installUPGRADE != ${BST_CHECKED}

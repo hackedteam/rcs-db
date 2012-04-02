@@ -87,18 +87,18 @@ class LicenseManager
         # check the autenticity of the license
         unless crypt_check(lic)
           trace :fatal, 'Invalid License File: corrupted integrity check'
-          exit
+          exit!
         end
 
         # the license is not for this version
         if lic[:version] != LICENSE_VERSION
           trace :fatal, 'Invalid License File: incorrect version'
-          exit
+          exit!
         end
 
         if not lic[:expiry].nil? and Time.parse(lic[:expiry]).getutc < Dongle.time
           trace :fatal, "Invalid License File: license expired on #{Time.parse(lic[:expiry]).getutc}"
-          exit
+          exit!
         end
 
         # load only licenses valid for the current dongle's serial and current version
@@ -111,22 +111,22 @@ class LicenseManager
     # sanity check
     if @limits[:agents][:total] < @limits[:agents][:desktop] or @limits[:agents][:total] < @limits[:agents][:mobile]
       trace :fatal, 'Invalid License File: total is lower than desktop or mobile'
-      exit
+      exit!
     end
 
     begin
       if @limits[:serial] != 'off'
         trace :info, "Checking for hardware dongle..."
         # get the version from the dongle (can rise exception)
-        if @limits[:serial] != Dongle.serial
-          raise 'Invalid License File: incorrect serial number'
-        end
+        info = Dongle.info
+        trace :info, "Dongle info: " + info.inspect
+        raise 'Invalid License File: incorrect serial number' if @limits[:serial] != info[:serial]
       else
         trace :info, "Hardware dongle not required..."
       end
     rescue Exception => e
       trace :fatal, e.message
-      exit
+      exit!
     end
 
     return true
@@ -202,7 +202,7 @@ class LicenseManager
     if @limits[:type] == 'oneshot'
 
       # do we have available license on the dongle?
-      if Dongle.count > 0
+      if Dongle.info[:count] > 0
         trace :info, "Using a oneshot license: #{type.to_s} #{platform.to_s}"
         Dongle.decrement
         return true
@@ -276,13 +276,12 @@ class LicenseManager
 
 
   def periodic_check
-
-    # get the serial of the dongle.
-    # this will raise an exception if the dongle is not found
-    # we have to stop the process in this case
-    Dongle.serial
-
     begin
+      # get the serial of the dongle.
+      # this will raise an exception if the dongle is not found
+      # we have to stop the process in this case
+      Dongle.info
+
       # check the consistency of the database (if someone tries to tamper it)
       if ::User.count(conditions: {enabled: true}) > @limits[:users]
         trace :fatal, "LICENCE EXCEEDED: Number of users is greater than license file. Fixing..."
@@ -381,6 +380,7 @@ class LicenseManager
 
     rescue Exception => e
       trace :fatal, "Cannot perform license check: #{e.message}"
+      exit!
     end
   end
 
@@ -415,9 +415,15 @@ class LicenseManager
     # load the license file
     load_license
 
+    @limits[:expiry] = Time.at(@limits[:expiry]).getutc
+    @limits[:maintenance] = Time.at(@limits[:maintenance]).getutc
+
     pp @limits
 
     return 0
+  rescue Exception => e
+    trace :fatal, "Cannot load license: #{e.message}"
+    return 1
   end
 
   # executed from rcs-db-license

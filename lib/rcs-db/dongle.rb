@@ -23,17 +23,18 @@ class Dongle
   DONT_STEAL_RCS = "∆©ƒø†£¢∂øª˚¶∞¨˚˚˙†´ßµ∫√Ïﬁˆ¨Øˆ·‰ﬁÎ¨"
 
   @@serial = '1234567890'
-  @@count = 5
+  @@count = 0
 
   class << self
 
-    def serial
-      #raise NoDongleFound
-      return @@serial
-    end
+    def info
+      info = {}
 
-    def count
-      return @@count
+      info[:serial] = @@serial
+      info[:time] = Time.now.getutc
+      info[:oneshot] = @@count
+
+      return info
     end
 
     def decrement
