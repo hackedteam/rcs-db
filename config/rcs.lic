@@ -1,5 +1,5 @@
 ---
-:serial: "2107615606"
+:serial: "off"
 :version: "8.0"
 :type: "reusable"
 :expiry: "2015-01-01 00:00:00 UTC"
@@ -27,4 +27,4 @@
   :collectors: 10
   :anonymizers: 20
 :shards: 2
-:integrity: "a362ef83122458500b4ac0aa8327920be17671dfe3aebf82c2257a910315d07e"
+:integrity: "1e8f2a01698350da1c9dfde89346002ecd9ed2314d42df9f541b8699b5a6ce04"

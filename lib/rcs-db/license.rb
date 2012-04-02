@@ -393,7 +393,7 @@ class LicenseManager
     # calculate the encrypted SHA1 with magic
     check = aes_encrypt(Digest::SHA1.digest(content), Digest::SHA1.digest("€ ∫∑x=1 ∆t π™")).unpack('H*').first
     # TODO: remove this for release
-    #trace :debug, check
+    trace :debug, check
     return hash[:integrity] == check
   end
 

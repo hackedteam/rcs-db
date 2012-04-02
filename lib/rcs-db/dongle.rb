@@ -25,19 +25,22 @@ end
 module Hasp
   extend FFI::Library
 
-	ffi_lib File.join(Dir.pwd, 'bin/ruby_x64.dll')
+  # we can use the HASP dongle only on windows
+  if RUBY_PLATFORM =~ /mingw/
+    ffi_lib File.join(Dir.pwd, 'bin/ruby_x64.dll')
 
-  ffi_convention :stdcall
+     ffi_convention :stdcall
 
-  AES_PADDING = 16
-  STRUCT_SIZE = 272
+     AES_PADDING = 16
+     STRUCT_SIZE = 272
 
-  class Info < FFI::Struct
-    layout :enc, [:char, STRUCT_SIZE + AES_PADDING]
+     class Info < FFI::Struct
+       layout :enc, [:char, STRUCT_SIZE + AES_PADDING]
+     end
+
+     attach_function :RI, [:pointer], Info.by_value
+     attach_function :DC, [], :int
   end
-
-  attach_function :RI, [:pointer], Info.by_value
-  attach_function :DC, [], :int
 
 end
 
@@ -51,6 +54,10 @@ class Dongle
   class << self
 
     def info
+
+      # fake info for macos
+      return {serial: 'off', time: Time.now.getutc, oneshot: 0} if RUBY_PLATFORM =~ /darwin/
+
       # our info to be returned
       info = {}
 
@@ -97,6 +104,9 @@ class Dongle
     end
 
     def decrement
+      # no dongle support for macos
+      return true if RUBY_PLATFORM =~ /darwin/
+
       raise "No license left" unless 1 == Hasp.DC
     end
 

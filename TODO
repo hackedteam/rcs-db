@@ -12,6 +12,8 @@ HIGH PRIORITY:
     FFI per dongle dll
     rename the hasp dll
 
+    mongo* as native windows service (no nssm)
+
     worker decoding (daniele):
         - call
         - mic
