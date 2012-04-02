@@ -423,6 +423,7 @@ class LicenseManager
     return 0
   rescue Exception => e
     trace :fatal, "Cannot load license: #{e.message}"
+    trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
     return 1
   end
 

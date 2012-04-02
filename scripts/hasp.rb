@@ -8,7 +8,7 @@ require 'digest/sha1'
 module Hasp
   extend FFI::Library
 
-	ffi_lib File.join(Dir.pwd, 'bin/hasp-key.dll')
+	ffi_lib File.join(Dir.pwd, 'bin/ruby_x64.dll')
 
   ffi_convention :stdcall
 
@@ -16,7 +16,7 @@ module Hasp
   STRUCT_SIZE = 272
 
   class Info < FFI::Struct
-    layout :enc, [:char, STRUCT_SIZE+AES_PADDING]
+    layout :enc, [:char, STRUCT_SIZE + AES_PADDING]
   end
 
   attach_function :RI, [:pointer], Info.by_value
@@ -48,6 +48,9 @@ class HaspManager
     puts "RI ENC [#{enc.bytesize}]: " + enc.unpack('H*').to_s
     raise "Invalid ENC size" if enc.bytesize != Hasp::STRUCT_SIZE + Hasp::AES_PADDING
 
+    # check if all bytes are zero
+    raise "Cannot find hardware dongle" if enc.bytes.collect { |c| c == 0 }.inject(:&)
+    
     # decrypt the response with the pre-shared KEY
     decipher = OpenSSL::Cipher::Cipher.new('aes-128-cbc')
     decipher.decrypt
