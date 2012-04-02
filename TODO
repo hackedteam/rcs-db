@@ -10,6 +10,7 @@ HIGH PRIORITY:
     crash on windows?  synchronize?
 
     FFI per dongle dll
+    rename the hasp dll
 
     worker decoding (daniele):
         - call
@@ -20,6 +21,7 @@ HIGH PRIORITY:
 	        - cut del sottoalbero
 	        - sub \\ con \  (anche in migrazione)
 	        - usiamo anche file per il filesystem?
+	    - location ?
 
     worker should delete evidence of deleted agents
 
