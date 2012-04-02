@@ -308,7 +308,7 @@ Section "Install Section" SecInstall
     ; check if the license + dongle is ok
     StrCpy $0 5000
     ${Do}
-      nsExec::Exec /TIMEOUT=$0 "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-license"
+      nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-license"
       Pop $0
       ${If} $0 != 0
          MessageBox MB_OK|MB_ICONEXCLAMATION "Insert the USB token associated with the license and press OK"
@@ -329,35 +329,31 @@ Section "Install Section" SecInstall
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-keystores"
       SetDetailsPrint "both"
       DetailPrint "done"
-      
-      DetailPrint "Creating service RCS DB..."
-      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSDB $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db"
-      SimpleSC::SetServiceFailure "RCSDB" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSDB" "DisplayName" "RCS DB"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSDB" "Description" "Remote Control System Application Layer"
-      DetailPrint "done"
-      
+
       DetailPrint "Creating service RCS Master Config..."
-      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSMasterConfig $INSTDIR\DB\mongodb\win\mongod.exe --dbpath $INSTDIR\DB\data\config --nssize 64 --logpath $INSTDIR\DB\log\mongoc.log --configsvr --rest"
+      nsExec::Exec '$INSTDIR\DB\mongodb\win\mongod.exe --dbpath $INSTDIR\DB\data\config --nssize 64 --logpath $INSTDIR\DB\log\mongoc.log --logappend --configsvr --rest --install --serviceName RCSMasterConfig --serviceDisplayName "RCS Master Config" --serviceDescription "Remote Control System Master Configuration"'
       SimpleSC::SetServiceFailure "RCSMasterConfig" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSMasterConfig" "DisplayName" "RCS Master Config"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSMasterConfig" "Description" "Remote Control System Master Configuration"
       DetailPrint "done"      
       
       DetailPrint "Creating service RCS Master Router..."
-      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSMasterRouter $INSTDIR\DB\mongodb\win\mongos.exe --logpath $INSTDIR\DB\log\mongos.log --configdb $masterCN"
+      nsExec::Exec "$INSTDIR\DB\bin\nssm.exe install RCSMasterRouter $INSTDIR\DB\mongodb\win\mongos.exe --logpath $INSTDIR\DB\log\mongos.log --logappend --configdb $masterCN"
       SimpleSC::SetServiceFailure "RCSMasterRouter" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSMasterRouter" "DisplayName" "RCS Master Router"
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSMasterRouter" "Description" "Remote Control System Master Router for shards"
       DetailPrint "done"   
       
       DetailPrint "Creating service RCS Shard..."
-      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSShard $INSTDIR\DB\mongodb\win\mongod.exe --dbpath $INSTDIR\DB\data --journal --nssize 64 --logpath $INSTDIR\DB\log\mongod.log --shardsvr --rest"
+      nsExec::Exec '$INSTDIR\DB\mongodb\win\mongod.exe --dbpath $INSTDIR\DB\data --journal --nssize 64 --logpath $INSTDIR\DB\log\mongod.log --logappend --shardsvr --rest --install --serviceName RCSShard --serviceDisplayName "RCS Shard" --serviceDescription "Remote Control System DB Shard for data storage"'
       SimpleSC::SetServiceFailure "RCSShard" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSShard" "DisplayName" "RCS Shard"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSShard" "Description" "Remote Control System DB Shard for data storage"
       DetailPrint "done"
-      
+
+      DetailPrint "Creating service RCS DB..."
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSDB $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db"
+      SimpleSC::SetServiceFailure "RCSDB" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSDB" "DisplayName" "RCS DB"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSDB" "Description" "Remote Control System Application Layer"
+      DetailPrint "done"
+
       DetailPrint "Creating service RCS Worker..."
       nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSWorker $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-worker"
       SimpleSC::SetServiceFailure "RCSWorker" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
@@ -395,8 +391,9 @@ Section "Install Section" SecInstall
     	nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --reset-admin $adminpass"
     ${EndIf}
       
-    DetailPrint "Adding firewall rule for port 443/tcp..."
+    DetailPrint "Adding firewall rule for port 443/tcp and 444/tcp..."
     nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=443'
+    nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=444'
 
     !cd '..'
     WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
@@ -414,10 +411,8 @@ Section "Install Section" SecInstall
     ; fresh install
     ${If} $installUPGRADE != ${BST_CHECKED}
       DetailPrint "Creating service RCS Shard..."
-      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSShard $INSTDIR\DB\mongodb\win\mongod.exe --dbpath $INSTDIR\DB\data --journal --nssize 64 --logpath $INSTDIR\DB\log\mongod.log --shardsvr --rest"
+      nsExec::Exec '$INSTDIR\DB\mongodb\win\mongod.exe --dbpath $INSTDIR\DB\data --journal --nssize 64 --logpath $INSTDIR\DB\log\mongod.log --logappend --shardsvr --rest --install --serviceName RCSShard --serviceDisplayName "RCS Shard" --serviceDescription "Remote Control System DB Shard for data storage"'
       SimpleSC::SetServiceFailure "RCSShard" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSShard" "DisplayName" "RCS Shard"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSShard" "Description" "Remote Control System DB Shard for data storage"
       DetailPrint "done"
       
       DetailPrint "Creating service RCS Worker..."
@@ -551,32 +546,22 @@ Section "Install Section" SecInstall
 SectionEnd
 
 Section Uninstall
-
-  DetailPrint "Removing firewall rule for 443/tcp..."
-  nsExec::ExecToLog 'netsh firewall delete portopening TCP 443'
-  DetailPrint "Removing firewall rule for 80/tcp..."
-  nsExec::ExecToLog 'netsh firewall delete portopening TCP 80'
-  
   DetailPrint "Stopping RCS Services..."
   SimpleSC::StopService "RCSCollector" 1
-  Sleep 5000
-  SimpleSC::RemoveService "RCSCollector"
   SimpleSC::StopService "RCSWorker" 1
-  Sleep 5000
-  SimpleSC::RemoveService "RCSWorker"
   SimpleSC::StopService "RCSDB" 1
-  Sleep 5000
-  SimpleSC::RemoveService "RCSDB"
   SimpleSC::StopService "RCSMasterRouter" 1
-  Sleep 5000
-  SimpleSC::RemoveService "RCSMasterRouter"
   SimpleSC::StopService "RCSMasterConfig" 1
-  Sleep 5000
-  SimpleSC::RemoveService "RCSMasterConfig"
   SimpleSC::StopService "RCSShard" 1
-  Sleep 5000
-  SimpleSC::RemoveService "RCSShard"
+  DetailPrint "done"
 
+  DetailPrint "Removing RCS Services..."
+  SimpleSC::RemoveService "RCSCollector"
+  SimpleSC::RemoveService "RCSWorker"
+  SimpleSC::RemoveService "RCSDB"
+  SimpleSC::RemoveService "RCSMasterRouter"
+  SimpleSC::RemoveService "RCSMasterConfig"
+  SimpleSC::RemoveService "RCSShard"
   DetailPrint "done"
 
   DetailPrint ""
