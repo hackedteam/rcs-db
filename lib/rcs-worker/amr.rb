@@ -42,7 +42,7 @@ module AMR
       AMR::decode amr, buffer, output, 0
 
       out_ptr = FFI::MemoryPointer.new :float, AMR_FRAME_SIZE
-      SRC::short_to_float out_ptr, output, AMR_FRAME_SIZE
+      SRC::short_to_float output, out_ptr, AMR_FRAME_SIZE
 
       wav_ary.concat out_ptr.read_array_of_float(AMR_FRAME_SIZE)
     end
