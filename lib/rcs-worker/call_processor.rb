@@ -100,8 +100,9 @@ class Channel
       trace :debug, "[CHAN #{to_s}] CHANNEL IS CLOSED, REFUSING ..."
       return false
     end
-    if time_gap(evidence) >= 5.0
-      trace :debug, "[CHAN #{to_s}] TIME GAP IS HIGHER THAN 5 SECONDS !!! REFUSING ..."
+    gap = time_gap(evidence)
+    if gap >= 5.0
+      trace :debug, "[CHAN #{to_s}] TIME GAP IS #{gap} SECONDS !!! REFUSING ..."
       return false
     end
     return true
@@ -152,13 +153,21 @@ class Call
 
     @evidence = store peer, program, start_time, agent, target
   end
-  
+
   def id
     "#{@peer}:#{@start_time.to_f}"
   end
-  
+
+  def single_channel?
+    @status == :single_channel
+  end
+
+  def dual_channel?
+    @status == :dual_channel
+  end
+
   def queueing?
-    @channels.size < 2
+    @status == :queueing
   end
 
   def accept?(evidence)
@@ -188,7 +197,7 @@ class Call
   
   def create_channel(evidence)
     @channels[evidence[:data][:channel]] ||= Channel.new evidence
-    
+
     # fix start time
     a = channels_by_start_time
     @start_time = a[0].start_time
@@ -208,7 +217,7 @@ class Call
       #trace :debug, "[CALL #{@id}] FILLING #{fillin_gap.to_f} SECS ON CHANNEL #{a[1].name}"
       a[1].fill(fillin_gap)
     end
-    
+
     return @channels[evidence[:data][:channel]]
   end
 
@@ -246,31 +255,60 @@ class Call
     update_status
     
     unless queueing?
-      trace :debug, "[CALL #{@id}] frames incoming: #{@channels[:incoming].wav_data.size} outgoing: #{@channels[:outgoing].wav_data.size}"
+      if dual_channel?
+        num_samples = [@channels[:outgoing].wav_data.size, @channels[:incoming].wav_data.size].min
 
-      # MP3Encoder will take care of resampling if necessary
-      @encoder ||= ::MP3Encoder.new(2, @sample_rate)
-      unless @encoder.nil?
-        @encoder.feed(@channels[:outgoing].wav_data, @channels[:incoming].wav_data) do |mp3_bytes|
-          File.open("#{file_name}.mp3", 'ab') {|f| f.write(mp3_bytes) }
+        left_pcm = @channels[:outgoing].wav_data.shift num_samples
+        right_pcm = @channels[:incoming].wav_data.shift num_samples
 
-          #trace :debug, "[CALL #{@id}] pumping #{mp3_bytes.size} bytes of mp3 data into FILE"
-          db = Mongoid.database
-          fs = Mongo::GridFileSystem.new(db, "grid.#{@target[:_id]}")
+        # MP3Encoder will take care of resampling if necessary
+        @encoder ||= ::MP3Encoder.new(2, @sample_rate)
+        unless @encoder.nil?
+          @encoder.feed(left_pcm, right_pcm) do |mp3_bytes|
+            File.open("#{file_name}.mp3", 'ab') {|f| f.write(mp3_bytes) }
 
-          #trace :debug, "[CALL #{@id}] pumping #{mp3_bytes.size} bytes of mp3 data into GRID"
-          fs.open(file_name, 'a') do |f|
-            f.write mp3_bytes
-            @evidence.update_attributes("data._grid" => f.files_id)
-            @evidence.update_attributes("data._grid_size" => f.file_length)
+            db = Mongoid.database
+            fs = Mongo::GridFileSystem.new(db, "grid.#{@target[:_id]}")
+
+            fs.open(file_name, 'a') do |f|
+              f.write mp3_bytes
+              update_attributes("data._grid" => f.files_id)
+              update_attributes("data._grid_size" => f.file_length)
+            end
+            yield mp3_bytes if block_given?
           end
+        end
+      elsif single_channel?
+        channel = @channels.values[0]
 
-          yield mp3_bytes if block_given?
+        left_pcm = channel.wav_data.shift(channel.wav_data.size)
+        right_pcm = Array.new left_pcm
+
+        # MP3Encoder will take care of resampling if necessary
+        @encoder ||= ::MP3Encoder.new(2, channel.sample_rate)
+        unless @encoder.nil?
+          @encoder.feed(left_pcm, right_pcm) do |mp3_bytes|
+            File.open("#{file_name}.mp3", 'ab') {|f| f.write(mp3_bytes) }
+
+            db = Mongoid.database
+            fs = Mongo::GridFileSystem.new(db, "grid.#{@target[:_id]}")
+
+            fs.open(file_name, 'a') do |f|
+              f.write mp3_bytes
+              update_attributes("data._grid" => f.files_id)
+              update_attributes("data._grid_size" => f.file_length)
+            end
+            yield mp3_bytes if block_given?
+          end
         end
       end
     end
 
     return true
+  end
+
+  def update_attributes(hash)
+    @evidence.update_attributes(hash)
   end
 
   def store(peer, program, start_time, agent, target)
@@ -308,12 +346,15 @@ class Call
   end
   
   def update_status
-    if @channels.size < 2
-      @status == :queueing
-      return
-    else # we have (at least) two channels
-      @status == :fillin
-      #trace :debug, "Lesser sample rate: #{min_sample_rate}, will be used for resampling."
+    case num_channels
+      when 1
+        channel = @channels.values[0]
+        gap = channel.last_stop_time - channel.start_time
+        @status = :single_channel if gap > 15
+        trace :debug, "[CALL #{@id}] call status is #{@status}, channel #{channel.name} gap is #{gap}"
+      when 2
+        @status = :dual_channel
+        trace :debug, "[CALL #{@id}] call status is #{@status}"
     end
   end
 
@@ -348,7 +389,11 @@ class CallProcessor
   
   def feed(evidence)
     call = get_call evidence
-    call.feed evidence unless call.nil?
+    unless call.nil?
+      call.feed evidence do |mp3_bytes|
+
+      end
+    end
     nil
   end
   
@@ -357,5 +402,5 @@ class CallProcessor
   end
 end
 
-end # Audio::
+end # Worker::
 end # RCS::

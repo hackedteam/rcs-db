@@ -1,4 +1,5 @@
 require_relative 'call_processor'
+require_relative 'mic_processor'
 require_relative 'single_processor'
 
 # from RCS::Common
@@ -128,11 +129,16 @@ class InstanceWorker
               ev_type = ev[:type]
 
               processor = case ev[:type]
-                when :call
-                  @call_processor
-                else
-                  @single_processor
-              end
+                            when :call
+                                @call_processor ||= CallProcessor.new(@agent, @target)
+                                @call_processor
+                            when :mic
+                                @mic_processor ||= MicProcessor.new(@agent, @target)
+                                @mic_processor
+                            else
+                              @single_processor ||= SingleProcessor.new(@agent, @target)
+                              @single_processor
+                          end
 
               begin
                 evidence = processor.feed ev
@@ -176,9 +182,6 @@ class InstanceWorker
 
       put_to_sleep
     end
-    
-    @call_processor = CallProcessor.new(@agent, @target)
-    @single_processor = SingleProcessor.new(@agent, @target)
 
     EM.defer @process
   end

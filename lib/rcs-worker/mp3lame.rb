@@ -155,8 +155,8 @@ class MP3Encoder
 
     buffer = FFI::MemoryPointer.new(:float, buffer_size)
 
-    left_pcm = left.shift(num_samples).pack 'F*'
-    right_pcm = right.shift(num_samples).pack 'F*'
+    left_pcm = left.pack 'F*'
+    right_pcm = right.pack 'F*'
 
     mp3_bytes = MP3Lame::lame_encode_buffer_float(@mp3lame, left_pcm, right_pcm, num_samples, buffer, buffer_size)
     yield buffer.read_string(mp3_bytes)

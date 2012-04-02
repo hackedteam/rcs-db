@@ -66,22 +66,50 @@ module Speex
     trace :fatal, "ERROR: Cannot open libspeex"
     exit!
   end
-  
+
+  def self.get_wav_frames(data, mode)
+    wav_ary = []
+
+    decoder = Speex.decoder_init(Speex.lib_get_mode(mode))
+
+    # enable enhancement
+    enhancement_ptr = FFI::MemoryPointer.new(:int32).write_uint 1
+    Speex.decoder_ctl(decoder, Speex::SET_ENH, enhancement_ptr)
+
+    # get frame size
+    frame_size_ptr = FFI::MemoryPointer.new(:int32).write_uint 0
+    Speex.decoder_ctl(decoder, Speex::GET_FRAME_SIZE, frame_size_ptr)
+    frame_size = frame_size_ptr.get_uint(0)
+
+    stream = StringIO.new data
+    wave_buffer = ''
+
+    bits = Speex::Bits.new
+    Speex.bits_init(bits.pointer)
+
+    while not stream.eof? do
+      # read one chunk
+      len = stream.read(4).unpack("L").shift
+      chunk = stream.read(len)
+
+      unless chunk.nil?
+        buffer = FFI::MemoryPointer.new(:char, chunk.size)
+        buffer.put_bytes(0, chunk, 0, chunk.size)
+
+        Speex.bits_read_from(bits.pointer, buffer, buffer.size)
+
+        output_buffer = FFI::MemoryPointer.new(:float, frame_size)
+        Speex.decode(decoder, bits.pointer, output_buffer)
+
+        # Speex outputs 32 bits float samples, wave needs 16 bit integers
+        wav_ary.concat output_buffer.read_array_of_float(frame_size)
+      end
+    end
+
+    Speex.bits_destroy(bits.pointer)
+    Speex.decoder_destroy(decoder)
+
+    wav_ary
+  end
+
 end
-
-=begin
-
-encoder = Speex.decoder_init(Speex.lib_get_mode(Speex::MODEID_NB))
-
-enhancement_ptr = FFI::MemoryPointer.new(:int32).write_uint 1
-Speex.decoder_ctl(encoder, Speex::SET_ENH, enhancement_ptr);
-framesize_ptr = FFI::MemoryPointer.new(:int32).write_uint 0 
-Speex.decoder_ctl(encoder, Speex::GET_FRAME_SIZE, framesize_ptr);
-puts framesize_ptr.get_uint 0
-
-bits_ptr = FFI::MemoryPointer.new :pointer
-bits = Speex::SpeexBits.new(bits_ptr)
-Speex.bits_init(bits.pointer)
-Speex.bits_destroy(bits.pointer)
-
-=end
