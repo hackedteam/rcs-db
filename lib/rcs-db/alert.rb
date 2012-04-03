@@ -56,10 +56,13 @@ class Alerting
     def new_evidence(evidence)
       ::Alert.where(:enabled => true, :action => 'EVIDENCE').each do |alert|
         agent = ::Item.find(evidence.aid)
+
         # skip non matching agents
         next unless match_path(alert, agent)
+
         # skip non matching evidence type
         next unless (alert.evidence == '*' or alert.evidence == evidence.type)
+
         # skip if none of the values in the "data" match the keywords
         next if evidence.data.values.select {|v| v =~ Regexp.new(alert.keywords)}.empty?
 
@@ -73,7 +76,12 @@ class Alerting
         # put the matching alert in the queue the suppression will be done there
         # and the mail will be sent accordingly to the 'type' of alert
         user = ::User.find(alert.user_id)
-        alert_fast_queue(alert: alert, evidence: evidence._id, path: agent.path,
+
+        # complete the path of the evidence (operation + target + agent)
+        path = agent.path + [BSON::ObjectId.from_string(evidence.aid)]
+
+        # insert in the list of alert processing
+        alert_fast_queue(alert: alert, evidence: evidence, path: path,
                          to: user.contact,
                          subject: 'RCS Alert [EVIDENCE]',
                          body: "An evidence matching this alert [#{agent.name} #{alert.evidence} #{alert.keywords}] has arrived into the system.")
@@ -112,8 +120,6 @@ class Alerting
     end
 
     def alert_fast_queue(params)
-      # no license, no alerts :)
-      return unless LicenseManager.instance.check :alerting
       begin
         # insert the entry in the queue.
         # the alert thread will take care of it (suppressing it if needed)
@@ -161,19 +167,22 @@ class Alerting
             alert = ::Alert.find(aq.alert.first)
 
             # check if we are in the suppression timeframe
-            if Time.now.getutc.to_i - alert.last > alert.suppression
+            if alert.last.nil? or Time.now.getutc.to_i - alert.last > alert.suppression
               # we are out of suppression, create a new entry and mail
               trace :debug, "Triggering alert: #{alert._id}"
               alert.logs.create!(time: Time.now.getutc.to_i, path: aq.path, evidence: aq.evidence)
               alert.last = Time.now.getutc.to_i
               alert.save
-              PushManager.instance.notify('alert', {id: alert.path.last})
+              # notify the console of the new alert
+              PushManager.instance.notify('alert', {id: aq.path.last})
               send_mail(aq.to, aq.subject, aq.body) if alert.type == 'MAIL'
             else
               trace :debug, "Triggering alert: #{alert._id} (suppressed)"
               al = alert.logs.last
               al.evidence << aq.evidence
               al.save
+              # notify even if suppressed so the console will reload the alert log list
+              PushManager.instance.notify('alert', {id: aq.path.last})
             end
           else
             # for queued items without an associated alert, send the mail

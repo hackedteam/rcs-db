@@ -306,13 +306,12 @@ Section "Install Section" SecInstall
     SimpleSC::SetServiceFailure "hasplms" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
 
     ; check if the license + dongle is ok
-    StrCpy $0 5000
+    StrCpy $0 1
     ${Do}
       nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-license"
       Pop $0
       ${If} $0 != 0
          MessageBox MB_OK|MB_ICONEXCLAMATION "Insert the USB token associated with the license and press OK"
-         StrCpy $0 15000
       ${EndIf}
     ${LoopUntil} $0 == 0
 

@@ -7,11 +7,13 @@ if File.directory?(Dir.pwd + '/lib/rcs-worker-release')
   require 'rcs-db-release/db_layer'
   require 'rcs-db-release/grid'
   require 'rcs-db-release/alert'
+  require 'rcs-db-release/forward'
 else
   require 'rcs-db/config'
   require 'rcs-db/db_layer'
   require 'rcs-db/grid'
   require 'rcs-db/alert'
+  require 'rcs-db/forward'
 end
 
 require_relative 'call_processor'
@@ -125,11 +127,11 @@ class InstanceWorker
 
               processor = case ev[:type]
                             when :call
-                                @call_processor ||= CallProcessor.new(@agent, @target)
-                                @call_processor
+                              @call_processor ||= CallProcessor.new(@agent, @target)
+                              @call_processor
                             when :mic
-                                @mic_processor ||= MicProcessor.new(@agent, @target)
-                                @mic_processor
+                              @mic_processor ||= MicProcessor.new(@agent, @target)
+                              @mic_processor
                             else
                               @single_processor ||= SingleProcessor.new(@agent, @target)
                               @single_processor
@@ -137,6 +139,13 @@ class InstanceWorker
 
               begin
                 evidence = processor.feed ev
+
+                # check if there are matching alerts for this evidence
+                RCS::DB::Alerting.new_evidence evidence unless evidence.nil?
+
+                # forward the evidence to connectors (if any)
+                RCS::DB::Forwarding.new_evidence evidence unless evidence.nil?
+                
               rescue Exception => e
                 trace :error, "[#{evidence_id}:#{@ident}:#{@instance}] cannot store evidence, #{e.message}"
                 trace :error, "[#{evidence_id}:#{@ident}:#{@instance}] #{e.backtrace}"
