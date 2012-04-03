@@ -110,6 +110,9 @@ class Item
         targets.each do |t|
           self.stat.size += t.stat.size
           self.stat.grid_size += t.stat.grid_size
+          if (not t.stat.last_sync.nil?) and (self.stat.last_sync.nil? or t.stat.last_sync > self.stat.last_sync)
+            self.stat.last_sync = t.stat.last_sync
+          end
         end
         self.save
       when 'target'
@@ -121,6 +124,9 @@ class Item
           self.stat.evidence.merge!(a.stat.evidence) {|k,o,n| o+n }
           self.stat.dashboard.merge!(a.stat.dashboard) {|k,o,n| o+n }
           self.stat.grid_size += a.stat.grid_size
+          if (not a.stat.last_sync.nil?) and (self.stat.last_sync.nil? or a.stat.last_sync > self.stat.last_sync)
+            self.stat.last_sync = a.stat.last_sync
+          end
         end
         db = Mongoid.database
         collection = db.collections.select {|c| c.name == Evidence.collection_name(self._id.to_s)}

@@ -145,7 +145,10 @@ class BuildWindows < Build
         f.puts "FUNC=" + @funcname
       end
 
-      CrossPlatform.exec path('cooker'), '-C -R ' + path('') + ' -O ' + path('output')
+      cook_param = '-C -R ' + path('') + ' -O ' + path('output')
+      cook_param += " -d #{path('demo_image')}" if @demo
+
+      CrossPlatform.exec path('cooker'), cook_param
 
     else
 
