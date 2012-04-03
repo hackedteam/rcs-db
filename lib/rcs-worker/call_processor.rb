@@ -139,13 +139,8 @@ end
 class Call
   include Tracer
   attr_writer :start_time
-  attr_reader :id, :peer
-  
-  # status of call can be:
-  #   - :queueing only first channel is present, queue data, maintain speex
-  #   - :fillin   second channel arrived, fill in later channel with silence
-  #   - :resampling second channel arrived, filled in, resample data as they arrive
-  
+  attr_reader :id, :peer, :duration, :sample_rate, :raw_ids, :evidence
+
   def initialize(peer, program, start_time, agent, target)
     @id = "#{agent[:ident]}_#{agent[:instance]}_#{BSON::ObjectId.new}"
     @peer = peer
@@ -242,21 +237,7 @@ class Call
     @channels.each_value {|c| c.close!}
     trace :debug, "[CALL #{@id}] closing call for #{@peer}, starting at #{@start_time}"
     @evidence.update_attributes("status" => :complete)
-    @encoder.flush do |mp3_bytes|
-      File.open("#{file_name}.mp3", 'ab') {|f| f.write(mp3_bytes) }
-
-      db = Mongoid.database
-      fs = Mongo::GridFileSystem.new(db, "grid.#{@target[:_id]}")
-
-      fs.open(file_name, 'a') do |f|
-        f.write mp3_bytes
-        update_attributes("data.duration" => @duration)
-        update_attributes("data._grid" => f.files_id)
-        update_attributes("data._grid_size" => f.file_length)
-      end
-      yield mp3_bytes if block_given?
-    end
-    #delete_raws
+    delete_raws
     true
   end
   
@@ -293,57 +274,18 @@ class Call
         left_pcm = @channels[:outgoing].wav_data.shift num_samples
         right_pcm = @channels[:incoming].wav_data.shift num_samples
 
-        @left_wav ||= Wave.new 1, @sample_rate
-        @right_wav ||= Wave.new 1, @sample_rate
-        @left_wav.write "#{file_name}_outgoing.wav", left_pcm
-        @right_wav.write "#{file_name}_incoming.wav", right_pcm
+        @duration += (1.0 * num_samples) / @sample_rate
 
-        @duration += num_samples / @sample_rate
-
-        # MP3Encoder will take care of resampling if necessary
-        @encoder ||= ::MP3Encoder.new(2, @sample_rate)
-        unless @encoder.nil?
-          @encoder.feed(left_pcm, right_pcm) do |mp3_bytes|
-            File.open("#{file_name}.mp3", 'ab') {|f| f.write(mp3_bytes) }
-
-            db = Mongoid.database
-            fs = Mongo::GridFileSystem.new(db, "grid.#{@target[:_id]}")
-
-            fs.open(file_name, 'a') do |f|
-              f.write mp3_bytes
-              update_attributes("data.duration" => @duration)
-              update_attributes("data._grid" => f.files_id)
-              update_attributes("data._grid_size" => f.file_length)
-            end
-            yield mp3_bytes if block_given?
-          end
-        end
+        yield @sample_rate, left_pcm, right_pcm
       elsif single_channel?
         channel = @channels.values[0]
 
         left_pcm = channel.wav_data.shift(channel.wav_data.size)
         right_pcm = Array.new left_pcm
 
-        @duration += channel.wav_data.size / channel.sample_rate
+        @duration += (1.0 * channel.wav_data.size) / channel.sample_rate
 
-        # MP3Encoder will take care of resampling if necessary
-        @encoder ||= ::MP3Encoder.new(2, channel.sample_rate)
-        unless @encoder.nil?
-          @encoder.feed(left_pcm, right_pcm) do |mp3_bytes|
-            File.open("#{file_name}.mp3", 'ab') {|f| f.write(mp3_bytes) }
-
-            db = Mongoid.database
-            fs = Mongo::GridFileSystem.new(db, "grid.#{@target[:_id]}")
-
-            fs.open(file_name, 'a') do |f|
-              f.write mp3_bytes
-              update_attributes("data.duration" => @duration)
-              update_attributes("data._grid" => f.files_id)
-              update_attributes("data._grid_size" => f.file_length)
-            end
-            yield mp3_bytes if block_given?
-          end
-        end
+        yield channel.sample_rate, left_pcm, right_pcm
       end
     end
 
@@ -417,25 +359,67 @@ class CallProcessor
   
   def get_call(evidence)
     # if peer is unknown or evidence is empty, evidence is invalid, ignore it
-    #trace :debug, "EVIDENCE WAV NIL? #{evidence[:wav].nil?}"
     return nil if evidence[:data][:peer].empty? or evidence[:wav].empty?
-    return create_call(evidence) if @call.nil? # first call
+
+    # first call, create it
+    if @call.nil?
+      close_call {|evidence, raw_ids| yield evidence, raw_ids}
+      @call = create_call(evidence)
+      return @call
+    end
+
+    # if we have a call and accepts the evidence, that's the good one
     return @call if @call.accept? evidence and not @call.closed?
-    return create_call(evidence) # previous call ended
-  end
-  
-  def create_call(evidence)
-    @call.close! unless @call.nil?
-    @call = Call.new(evidence[:data][:peer], evidence[:data][:program], evidence[:data][:start_time], @agent, @target)
+
+    # otherwise, close the call and
+    close_call {|evidence, raw_ids| yield evidence, raw_ids}
+    @call = create_call(evidence)
     @call
+  end
+
+  def close_call
+    return if @call.nil?
+    yield @call.evidence, @call.raw_ids if block_given?
+    @call.close!
+  end
+
+  def create_call(evidence)
+    Call.new(evidence[:data][:peer], evidence[:data][:program], evidence[:data][:start_time], @agent, @target)
   end
   
   def feed(evidence)
-    call = get_call evidence
+    call = get_call(evidence) {|evidence, raw_ids| yield evidence, raw_ids}
     unless call.nil?
-      call.feed evidence
+      call.feed evidence do |sample_rate, left_pcm, right_pcm|
+        encode_mp3(sample_rate, left_pcm, right_pcm) do |mp3_bytes|
+          File.open("#{call.file_name}.mp3", 'ab') {|f| f.write(mp3_bytes) }
+          write_to_grid(call, mp3_bytes)
+        end
+      end
     end
     nil
+  end
+
+  def encode_mp3(sample_rate, left_pcm, right_pcm)
+    # MP3Encoder will take care of resampling if necessary
+    @encoder ||= ::MP3Encoder.new(2, sample_rate)
+    unless @encoder.nil?
+      @encoder.feed(left_pcm, right_pcm) do |mp3_bytes|
+        yield mp3_bytes
+      end
+    end
+  end
+
+  def write_to_grid(call, mp3_bytes)
+    db = Mongoid.database
+    fs = Mongo::GridFileSystem.new(db, "grid.#{@target[:_id]}")
+
+    fs.open(call.file_name, 'a') do |f|
+      f.write mp3_bytes
+      call.update_attributes("data.duration" => call.duration)
+      call.update_attributes("data._grid" => f.files_id)
+      call.update_attributes("data._grid_size" => f.file_length)
+    end
   end
 
   def to_s
