@@ -9,6 +9,7 @@ TEST:
 TODO (daVinci 8.0.0):
 
     re-insert integrity for license
+    license generator
 
     worker decoding:
         - call

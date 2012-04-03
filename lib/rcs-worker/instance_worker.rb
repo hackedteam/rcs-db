@@ -130,11 +130,11 @@ class InstanceWorker
 
               processor = case ev[:type]
                             when :call
-                                @call_processor ||= CallProcessor.new(@agent, @target)
-                                @call_processor
+                              @call_processor ||= CallProcessor.new(@agent, @target)
+                              @call_processor
                             when :mic
-                                @mic_processor ||= MicProcessor.new(@agent, @target)
-                                @mic_processor
+                              @mic_processor ||= MicProcessor.new(@agent, @target)
+                              @mic_processor
                             else
                               @single_processor ||= SingleProcessor.new(@agent, @target)
                               @single_processor
@@ -142,7 +142,12 @@ class InstanceWorker
 
               begin
                 evidence = processor.feed ev
-                #RCS::DB::Alerting.new_evidence evidence unless evidence.nil?
+
+                # check if there are matching alerts for this evidence
+                RCS::DB::Alerting.new_evidence evidence unless evidence.nil?
+
+                # TODO: forward
+
               rescue Exception => e
                 trace :error, "[#{evidence_id}:#{@ident}:#{@instance}] cannot store evidence, #{e.message}"
                 trace :error, "[#{evidence_id}:#{@ident}:#{@instance}] #{e.backtrace}"
