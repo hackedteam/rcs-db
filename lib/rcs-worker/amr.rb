@@ -1,9 +1,11 @@
 require 'ffi'
 require 'stringio'
+require 'bson'
 
 require 'rcs-common/trace'
 
 require_relative 'src'
+require_relative 'wave'
 
 module AMR
   extend RCS::Tracer
@@ -41,24 +43,30 @@ module AMR
     until stream.eof?
       #trace :debug, "[AMR] stream pos: #{stream.pos}"
 
-      mode = stream.read 1
-      size = AMR::SIZES[(mode.to_i >> 3) & 0x0f]
+      chunk = stream.read(1)
+      mode = chunk.unpack('C').shift
+      size = AMR::SIZES[(mode >> 3) & 0x0f]
 
       #trace :debug, "[AMR] size: #{size}"
 
-      chunk = stream.read size
-      break if chunk.nil?
+      data = stream.read size
+      break if data.nil? # Symbian may save invalid chunks ...
+      chunk += data
 
       buffer = FFI::MemoryPointer.new :char, chunk.size
-      buffer.write_bytes chunk, 0, chunk.size
+      buffer.put_bytes 0, chunk, 0, chunk.size
 
       AMR::decode amr, buffer, output_short, 0
 
       #trace :debug, "[AMR] decode"
 
-      SRC::short_to_float output_short, output_float, AMR_FRAME_SIZE
+      short_samples = output_short.read_bytes AMR_FRAME_SIZE * 2
+      wav_ary.concat short_samples.unpack('s*').pack('f*').unpack('f*')
 
-      wav_ary.concat output_float.read_array_of_float(AMR_FRAME_SIZE)
+      #wav = Wave.new 1, 8000
+      #wav.write "#{BSON::ObjectId.new.to_s}.wav", wav_ary
+      #SRC::short_to_float output_short, output_float, AMR_FRAME_SIZE
+      #wav_ary.concat output_float.read_array_of_float(AMR_FRAME_SIZE)
 
       #trace :debug, "[AMR] frames: #{wav_ary.size}"
     end
