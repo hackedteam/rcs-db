@@ -27,14 +27,14 @@ end
 
 class Channel
   include Tracer
-  attr_reader :name, :sample_rate, :start_time, :last_stop_time, :wav_data, :status
+  attr_reader :name, :sample_rate, :start_time, :written_samples, :wav_data, :status
   
   def initialize(evidence)
     @id = BSON::ObjectId.new
     @name = evidence[:data][:channel].to_s
     @sample_rate = evidence[:data][:sample_rate]
     @start_time = evidence[:data][:start_time]
-    @last_stop_time = @start_time
+    @written_samples = 0
     @needs_resampling = @sample_rate
     @resampled = false
     @wav_data = Array.new # array of 32 bit float samples
@@ -43,7 +43,7 @@ class Channel
   end
   
   def id
-    "#{@name}:#{@sample_rate}:#{@start_time.to_f}:#{@last_stop_time.to_f}:#{@status.to_s}"
+    "#{@name}:#{@sample_rate}:#{@start_time.to_f}:#{@written_samples.to_f}:#{@status.to_s}"
   end
   
   def self.other_than channel
@@ -68,6 +68,7 @@ class Channel
   end
 
   def resample_channel(sample_rate)
+    return if sample_rate == @sample_rate
     trace :debug, "[CHAN #{to_s}] resampling channel from #{@sample_rate} to #{sample_rate}"
     @wav_data = SRC::Resampler.new(sample_rate).resample_channel(@wav_data, @sample_rate) unless sample_rate == @sample_rate
     @needs_resampling = sample_rate
@@ -76,30 +77,41 @@ class Channel
 
   def resample(evidence)
     return evidence if @needs_resampling == @sample_rate
-    #trace :debug, "[CHAN #{to_s}:resample] evidence wav #{evidence[:wav].size} frames from #{@sample_rate} to #{@needs_resampling}"
     evidence[:wav] = SRC::Resampler.new(@needs_resampling).resample_channel evidence[:wav], @sample_rate
     trace :debug, "[CHAN #{to_s}:resample] evidence wav resampled to #{evidence[:wav].size} frames @ #{@needs_resampling}"
     evidence
   end
-  
-  def fill(gap)
-    samples_to_fill = @needs_resampling * gap
-    trace :debug, "[CHAN #{to_s}] filling with #{samples_to_fill} samples(@#{@needs_resampling}) to fill #{gap} seconds of missing data."
-    @wav_data.concat [0.0] * samples_to_fill.ceil
+
+  def fill(evidence)
+    expected = expected_samples(evidence)
+    samples_to_fill = expected - @written_samples
+    seconds_to_fill = samples_to_fill / @needs_resampling
+    trace :debug, "[CHAN #{to_s}] filling with #{samples_to_fill} samples(@#{@needs_resampling}) to fill #{seconds_to_fill} seconds of missing data."
+    return if samples_to_fill <= 0
+    @wav_data.concat [0.0] * samples_to_fill
+    @written_samples = expected
   end
-  
+
+  def fill_begin(time_gap)
+    @wav_data.concat [0.0] * (time_gap * @needs_resampling)
+  end
+
+  def expected_samples(evidence)
+    samples = (evidence[:data][:start_time].to_f - @start_time.to_f) * @needs_resampling
+    samples
+  end
+
   def time_gap(evidence)
-    gap = evidence[:data][:start_time].to_f - @last_stop_time.to_f
-    #trace :debug, "[CHAN #{to_s}]#{@last_stop_time} to #{evidence[:data][:start_time]} => #{gap}"
-    trace :fatal, "[CHAN #{to_s}] *** NEGATIVE GAP #{gap} ***" if gap < 0
-    gap
+    expected = expected_samples(evidence)
+    (expected - @written_samples) / @needs_resampling
   end
-  
+
   def accept?(evidence)
     if closed? 
       trace :debug, "[CHAN #{to_s}] CHANNEL IS CLOSED, REFUSING ..."
       return false
     end
+
     gap = time_gap(evidence)
     if gap >= 5.0
       trace :debug, "[CHAN #{to_s}] TIME GAP IS #{gap} SECONDS !!! REFUSING ..."
@@ -107,14 +119,12 @@ class Channel
     end
     return true
   end
-  
+
   def feed(evidence)
-    gap = time_gap(evidence)
-    fill gap unless gap == 0
-    
-    @last_stop_time = evidence[:data][:stop_time]
+    fill evidence
+    @written_samples += evidence[:wav].size
     @wav_data.concat evidence[:wav]
-    #trace :debug, "[CHAN #{to_s}] #{num_frames} frames, NEW STOP TIME #{@last_stop_time}"
+    @duration = @written_samples / @needs_resampling
   end
 
   def num_frames
@@ -215,7 +225,7 @@ class Call
       # fill in later channel
       fillin_gap = a[1].start_time - a[0].start_time
       #trace :debug, "[CALL #{@id}] FILLING #{fillin_gap.to_f} SECS ON CHANNEL #{a[1].name}"
-      a[1].fill(fillin_gap)
+      a[1].fill_begin(fillin_gap)
     end
 
     return @channels[evidence[:data][:channel]]
@@ -232,7 +242,21 @@ class Call
     @channels.each_value {|c| c.close!}
     trace :debug, "[CALL #{@id}] closing call for #{@peer}, starting at #{@start_time}"
     @evidence.update_attributes("status" => :complete)
-    delete_raws
+    @encoder.flush do |mp3_bytes|
+      File.open("#{file_name}.mp3", 'ab') {|f| f.write(mp3_bytes) }
+
+      db = Mongoid.database
+      fs = Mongo::GridFileSystem.new(db, "grid.#{@target[:_id]}")
+
+      fs.open(file_name, 'a') do |f|
+        f.write mp3_bytes
+        update_attributes("data.duration" => @duration)
+        update_attributes("data._grid" => f.files_id)
+        update_attributes("data._grid_size" => f.file_length)
+      end
+      yield mp3_bytes if block_given?
+    end
+    #delete_raws
     true
   end
   
@@ -256,18 +280,23 @@ class Call
 
     evidence = channel.resample evidence if channel.needs_resampling?
     
-    trace :debug, "[CALL #{@id}] feeding #{evidence[:wav].size} frames at #{evidence[:data][:start_time]}:#{evidence[:data][:last_stop_time]} to #{channel.id}"
+    trace :debug, "[CALL #{@id}] feeding #{evidence[:wav].size} frames at #{evidence[:data][:start_time]}:#{evidence[:data][:written_samples]} to #{channel.id}"
     channel.feed evidence
     
     # update status
     update_status
-    
+
     unless queueing?
       if dual_channel?
         num_samples = [@channels[:outgoing].wav_data.size, @channels[:incoming].wav_data.size].min
 
         left_pcm = @channels[:outgoing].wav_data.shift num_samples
         right_pcm = @channels[:incoming].wav_data.shift num_samples
+
+        @left_wav ||= Wave.new 1, @sample_rate
+        @right_wav ||= Wave.new 1, @sample_rate
+        @left_wav.write "#{file_name}_outgoing.wav", left_pcm
+        @right_wav.write "#{file_name}_incoming.wav", right_pcm
 
         @duration += num_samples / @sample_rate
 
@@ -363,7 +392,7 @@ class Call
     case num_channels
       when 1
         channel = @channels.values[0]
-        gap = channel.last_stop_time - channel.start_time
+        gap = (channel.written_samples / channel.sample_rate) - channel.start_time.to_f
         @status = :single_channel if gap > 15
         trace :debug, "[CALL #{@id}] call status is #{@status}, channel #{channel.name} gap is #{gap}"
       when 2
