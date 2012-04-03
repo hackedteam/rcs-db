@@ -472,7 +472,6 @@ Section "Install Section" SecInstall
     nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSCollector" dir=in action=allow protocol=TCP localport=80'
 
     !cd '..'
-    WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
     
     ; fresh install
     ${If} $installUPGRADE != ${BST_CHECKED}
@@ -485,7 +484,7 @@ Section "Install Section" SecInstall
       DetailPrint "done"
     
       DetailPrint "Creating service RCS Collector..."
-      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSCollector $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector"
+      nsExec::Exec  "$INSTDIR\Collector\bin\nssm.exe install RCSCollector $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector"
       SimpleSC::SetServiceFailure "RCSCollector" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSCollector" "DisplayName" "RCS Collector"
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSCollector" "Description" "Remote Control System Collector for data reception"
@@ -506,7 +505,9 @@ Section "Install Section" SecInstall
 
     DetailPrint "Starting RCS Collector..."
     SimpleSC::StartService "RCSCollector" ""
-          
+
+    WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
+
   ${EndIf}
 
   ; we insert the core here, because we need the server up and running
