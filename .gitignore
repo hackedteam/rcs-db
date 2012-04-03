@@ -59,8 +59,9 @@ lib/rcs-worker-release
 # evidences
 ./evidence
 
-# temporary wav files
+# temporary wav/mp3 files
 *.wav
+*.mp3
 
 # data dir for mongo
 data/
