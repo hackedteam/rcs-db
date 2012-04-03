@@ -138,14 +138,13 @@ class InstanceWorker
                           end
 
               begin
-                evidence = processor.feed ev
+                evidence = processor.feed(ev) do |evidence, raw_ids|
+                  # check if there are matching alerts for this evidence
+                  RCS::DB::Alerting.new_evidence evidence unless evidence.nil?
 
-                # check if there are matching alerts for this evidence
-                RCS::DB::Alerting.new_evidence evidence unless evidence.nil?
-
-                # forward the evidence to connectors (if any)
-                RCS::DB::Forwarding.new_evidence(evidence, []) unless evidence.nil?
-
+                  # forward the evidence to connectors (if any)
+                  RCS::DB::Forwarding.new_evidence(evidence, raw_ids) unless evidence.nil?
+                end
               rescue Exception => e
                 trace :error, "[#{evidence_id}:#{@ident}:#{@instance}] cannot store evidence, #{e.message}"
                 trace :error, "[#{evidence_id}:#{@ident}:#{@instance}] #{e.backtrace}"
