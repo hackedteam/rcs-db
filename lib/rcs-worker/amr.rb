@@ -1,9 +1,12 @@
 require 'ffi'
 require 'stringio'
 
+require 'rcs-common/trace'
+
 require_relative 'src'
 
 module AMR
+  extend RCS::Tracer
   extend FFI::Library
 
   base_path = File.dirname(__FILE__)
@@ -30,21 +33,34 @@ module AMR
     prefix = stream.read(6)
     stream.rewind unless prefix.eql? "#!AMR\n"
 
+    output_short = FFI::MemoryPointer.new :short, AMR_FRAME_SIZE
+    output_float = FFI::MemoryPointer.new :float, AMR_FRAME_SIZE
+
     wav_ary = []
     amr = AMR::init
     until stream.eof?
+      #trace :debug, "[AMR] stream pos: #{stream.pos}"
+
       mode = stream.read 1
       size = AMR::SIZES[(mode.to_i >> 3) & 0x0f]
 
-      buffer = stream.read size
-      output = FFI::MemoryPointer.new :short, AMR_FRAME_SIZE
+      #trace :debug, "[AMR] size: #{size}"
 
-      AMR::decode amr, buffer, output, 0
+      chunk = stream.read size
+      break if chunk.nil?
 
-      out_ptr = FFI::MemoryPointer.new :float, AMR_FRAME_SIZE
-      SRC::short_to_float output, out_ptr, AMR_FRAME_SIZE
+      buffer = FFI::MemoryPointer.new :char, chunk.size
+      buffer.write_bytes chunk, 0, chunk.size
 
-      wav_ary.concat out_ptr.read_array_of_float(AMR_FRAME_SIZE)
+      AMR::decode amr, buffer, output_short, 0
+
+      #trace :debug, "[AMR] decode"
+
+      SRC::short_to_float output_short, output_float, AMR_FRAME_SIZE
+
+      wav_ary.concat output_float.read_array_of_float(AMR_FRAME_SIZE)
+
+      #trace :debug, "[AMR] frames: #{wav_ary.size}"
     end
     AMR::exit amr
 
