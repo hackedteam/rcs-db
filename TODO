@@ -24,10 +24,6 @@ TODO (daVinci 8.0.0):
 
     worker should delete evidence of deleted agents
 
-    link alerts to store evidence (worker)
-
-    Forwarder (worker)
-
     migration: 
        - calendar (split body in location, recipients and body)
 

@@ -149,7 +149,7 @@ class InstanceWorker
                 RCS::DB::Alerting.new_evidence evidence unless evidence.nil?
 
                 # forward the evidence to connectors (if any)
-                RCS::DB::Forwarding.new_evidence evidence unless evidence.nil?
+                RCS::DB::Forwarding.new_evidence(evidence, []) unless evidence.nil?
 
               rescue Exception => e
                 trace :error, "[#{evidence_id}:#{@ident}:#{@instance}] cannot store evidence, #{e.message}"

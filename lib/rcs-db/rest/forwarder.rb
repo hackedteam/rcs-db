@@ -29,7 +29,7 @@ class ForwarderController < RESTController
       f.raw = @params['raw']
       f.keep = @params['keep']
       f.dest = @params['dest']
-      f.path = @params['path']
+      f.path = @params['path'].collect! {|x| BSON::ObjectId(x)} if @params['path'].class == Array
       f.save
       
       Audit.log :actor => @session[:user][:name], :action => 'forwarder.create', :desc => "Forwarding rule '#{f.name}' was created"
@@ -46,6 +46,9 @@ class ForwarderController < RESTController
       @params.delete('_id')
 
       @params.each_pair do |key, value|
+        if key == 'path'
+          value.collect! {|x| BSON::ObjectId(x)}
+        end
         if forwarder[key.to_s] != value
           Audit.log :actor => @session[:user][:name], :action => 'forwarder.update', :desc => "Updated '#{key}' to '#{value}' for forwarding rule #{forwarder[:name]}"
         end
