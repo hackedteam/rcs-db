@@ -50,7 +50,7 @@ class Forwarding
         # save the raw evidence
         if f.raw
           raws.each_with_index do |raw, index|
-            file = GridFS.get evidence[:data]['_grid'], 'evidence'
+            file = GridFS.get raw, 'evidence'
             File.open(File.join(path, evidence[:_id].to_s + '-' + index + '.raw'), 'wb') {|d| d.write file.read}
           end
         end
