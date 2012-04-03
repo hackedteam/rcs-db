@@ -23,7 +23,7 @@ class AgentController < RESTController
 
     mongoid_query do
       db = Mongoid.database
-      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "upgradable", "demo", "stat.last_sync"])
+      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "upgradable", "demo", "stat.last_sync", "stat.user", "stat.device", "stat.source"])
       ok(j)
     end
   end
