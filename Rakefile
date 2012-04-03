@@ -79,5 +79,8 @@ task :protect do
     system "#{RUBYENCPATH}/bin/rubyencoder -o ../rcs-worker-release -r --ruby 1.9.2 *.rb */*.rb"
     Dir.chdir "../.."
   end
+  execute "Copying libs" do
+    FileUtils.cp_r(Dir.pwd + '/lib/rcs-worker/libs', Dir.pwd + '/lib/rcs-worker-release')
+  end
 end
 

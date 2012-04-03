@@ -136,8 +136,8 @@ class LicenseManager
     @limits[:type] = limit[:type]
     @limits[:serial] = limit[:serial]
 
-    @limits[:expiry] = Time.parse(limit[:expiry]).getutc.to_i
-    @limits[:maintenance] = Time.parse(limit[:maintenance]).getutc.to_i
+    @limits[:expiry] = Time.parse(limit[:expiry]).getutc unless limit[:expiry].nil?
+    @limits[:maintenance] = Time.parse(limit[:maintenance]).getutc unless limit[:maintenance].nil?
 
     @limits[:users] = limit[:users] if limit[:users] > @limits[:users]
 
@@ -280,8 +280,13 @@ class LicenseManager
       # get the serial of the dongle.
       # this will raise an exception if the dongle is not found
       # we have to stop the process in this case
-      Dongle.info
+      Dongle.info unless @limits[:serial] == 'off'
 
+      # check license expiration
+      if not @limits[:expiry].nil? and @limits[:expiry] < Dongle.time
+        raise "license expired on #{Time.parse(@limits[:expiry]).getutc}"
+      end
+      
       # check the consistency of the database (if someone tries to tamper it)
       if ::User.count(conditions: {enabled: true}) > @limits[:users]
         trace :fatal, "LICENCE EXCEEDED: Number of users is greater than license file. Fixing..."
@@ -380,6 +385,7 @@ class LicenseManager
 
     rescue Exception => e
       trace :fatal, "Cannot perform license check: #{e.message}"
+      puts e.backtrace.join "\n"
       exit!
     end
   end
@@ -393,7 +399,7 @@ class LicenseManager
     # calculate the encrypted SHA1 with magic
     check = aes_encrypt(Digest::SHA1.digest(content), Digest::SHA1.digest("€ ∫∑x=1 ∆t π™")).unpack('H*').first
     # TODO: remove this for release
-    #trace :debug, check
+    trace :debug, check
     return hash[:integrity] == check
   end
 
@@ -414,9 +420,6 @@ class LicenseManager
   def run(options)
     # load the license file
     load_license
-
-    @limits[:expiry] = Time.at(@limits[:expiry]).getutc
-    @limits[:maintenance] = Time.at(@limits[:maintenance]).getutc
 
     pp @limits
 

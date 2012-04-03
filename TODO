@@ -5,14 +5,12 @@ TEST:
 
     check if after deletion the evidences (and grid) are actually deleted
 
-HIGH PRIORITY:
 
-    crash on windows?  synchronize?
+TODO (daVinci 8.0.0):
 
-    FFI per dongle dll
-    rename the hasp dll
+    re-insert integrity for license
 
-    worker decoding (daniele):
+    worker decoding:
         - call
         - mic
         - mail
@@ -27,26 +25,22 @@ HIGH PRIORITY:
 
     link alerts to store evidence (worker)
 
-MEDIUM PRIORITY:
+    Forwarder (worker)
 
     migration: 
        - calendar (split body in location, recipients and body)
-
-    re-insert integrity for license
-
-LOW PRIORITY:
-
-    /usr/bin/mongodb --config $PATH-TO-CONFIG --shutdown
-
-    mongo logRotate & append to log
 
     mongo authentication
 
     is vcredist needed ?
 
 
-FUTURE:
+
+FUTURE (daVinci 8.x.x):
+
+    with mongo 2.1.x
+        logRotate
+        mongos --install (windows service)
 
     upgrade for nia
 
-    Forwarder (worker)
