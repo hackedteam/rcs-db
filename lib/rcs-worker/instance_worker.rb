@@ -7,11 +7,13 @@ if File.directory?(Dir.pwd + '/lib/rcs-worker-release')
   require 'rcs-db-release/db_layer'
   require 'rcs-db-release/grid'
   require 'rcs-db-release/alert'
+  require 'rcs-db-release/forward'
 else
   require 'rcs-db/config'
   require 'rcs-db/db_layer'
   require 'rcs-db/grid'
   require 'rcs-db/alert'
+  require 'rcs-db/forward'
 end
 
 require_relative 'call_processor'
@@ -146,7 +148,8 @@ class InstanceWorker
                 # check if there are matching alerts for this evidence
                 RCS::DB::Alerting.new_evidence evidence unless evidence.nil?
 
-                # TODO: forward
+                # forward the evidence to connectors (if any)
+                RCS::DB::Forwarding.new_evidence evidence unless evidence.nil?
 
               rescue Exception => e
                 trace :error, "[#{evidence_id}:#{@ident}:#{@instance}] cannot store evidence, #{e.message}"
