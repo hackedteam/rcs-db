@@ -27,7 +27,7 @@ class CollectorMigration
       mc.address = collector[:address]
       mc.port = collector[:port]
       mc.poll = collector[:poll] == 0 ? false : true
-      mc.instance = collector[:instance]
+      mc.instance = 'MIGRATED'
       mc.configured = collector[:status] == 0 ? false : true
       mc.version = collector[:version].to_i
 

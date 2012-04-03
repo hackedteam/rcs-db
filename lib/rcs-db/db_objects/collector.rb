@@ -39,7 +39,7 @@ class Collector
   public
   def self.collector_login(instance, version, ext_address, local_address)
 
-    coll = Collector.where({instance: instance}).first
+    coll = Collector.any_in({instance: [instance, 'MIGRATED']}).first
 
     # the collector does not exist, check the licence and create it
     if coll.nil?
@@ -62,6 +62,10 @@ class Collector
       if coll.address.nil? or coll.address == ''
         coll.address = ext_address
       end
+      # overwrite the instance to remove the 'MIGRATED'
+      coll.instance = instance
+      coll.internal_address = local_address
+      # update the version (can change after RCS upgrade)
       coll.version = version
       coll.save
     end
