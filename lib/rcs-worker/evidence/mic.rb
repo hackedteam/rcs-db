@@ -33,7 +33,8 @@ module MicProcessing
       when :speex_mobile
         self[:wav] = Speex.get_wav_frames(data, Speex::MODEID_NB)
       when :amr
-        self[:wav] = [] #self[:wav] = AMR.get_wav_frames data
+        puts "CODEC is AMR"
+        self[:wav] = AMR.get_wav_frames data
     end
   end
 
