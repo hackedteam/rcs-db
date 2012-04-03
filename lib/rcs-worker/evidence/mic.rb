@@ -19,15 +19,11 @@ module MicProcessing
     self[:wav] = []
     return if self[:data][:grid_content].nil?
 
-    puts "SAMPLE_RATE: #{self[:data][:sample_rate]}"
-
     codec = :amr if self[:data][:sample_rate] & LOG_AUDIO_AMR == 1
     self[:data][:sample_rate] &= ~LOG_AUDIO_AMR # clear codec bit if set
 
     codec ||= :speex if self[:data][:sample_rate] == 44100
     codec ||= :speex_mobile if self[:data][:sample_rate] == 8000
-
-    puts "CODEC: #{codec}"
 
     # speex decode
     data = self[:data][:grid_content]
@@ -39,8 +35,6 @@ module MicProcessing
       when :amr
         self[:wav] = [] #self[:wav] = AMR.get_wav_frames data
     end
-
-    puts "FRAMES: #{self[:wav].size}"
   end
 
   def type
