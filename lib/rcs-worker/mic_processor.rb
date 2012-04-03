@@ -16,7 +16,7 @@ module Worker
   class MicRecording
     include Tracer
 
-    attr_accessor :timecode, :duration, :sample_rate
+    attr_accessor :timecode, :duration, :sample_rate, :raw_ids
 
     def initialize(evidence, agent, target)
       @target = target
@@ -50,29 +50,14 @@ module Worker
 
     def feed(evidence)
       @raw_ids << evidence[:db_id]
-
+      
       @timecode = tc evidence
-      @duration += evidence[:wav].size / @sample_rate
+      @duration += (1.0 * evidence[:wav].size) / @sample_rate
 
       left_pcm = Array.new evidence[:wav]
       right_pcm = Array.new evidence[:wav]
 
-      @encoder ||= ::MP3Encoder.new(2, @sample_rate)
-      unless @encoder.nil?
-        @encoder.feed(left_pcm, right_pcm) do |mp3_bytes|
-          File.open("#{file_name}.mp3", 'ab') {|f| f.write(mp3_bytes) }
-
-          db = Mongoid.database
-          fs = Mongo::GridFileSystem.new(db, "grid.#{@target[:_id]}")
-
-          fs.open(file_name, 'a') do |f|
-            f.write mp3_bytes
-            update_attributes("data.duration" => @duration)
-            update_attributes("data._grid" => f.files_id)
-            update_attributes("data._grid_size" => f.file_length)
-          end
-        end
-      end
+      yield @sample_rate, left_pcm, right_pcm
     end
 
     def update_attributes(hash)
@@ -115,14 +100,43 @@ module Worker
       @mic ||= MicRecording.new(evidence, @agent, @target)
       unless @mic.accept? evidence
         puts "#{@mic.timecode} (#{@mic.timecode.to_f}) -> #{tc(evidence)} #{tc(evidence).to_f}"
+        yield @evidence, @mic.raw_ids if block_given?
         @mic.close!
         @mic = MicRecording.new(evidence, @agent, @target)
       end
 
-      @mic.feed(evidence)
+      @mic.feed(evidence) do |sample_rate, left_pcm, right_pcm|
+        encode_mp3(sample_rate, left_pcm, right_pcm) do |mp3_bytes|
+          File.open("#{@mic.file_name}.mp3", 'ab') {|f| f.write(mp3_bytes) }
+          write_to_grid(@mic, mp3_bytes)
+        end
+      end
+
       nil
+    end
+
+    def encode_mp3(sample_rate, left_pcm, right_pcm)
+      # MP3Encoder will take care of resampling if necessary
+      @encoder ||= ::MP3Encoder.new(2, sample_rate)
+      unless @encoder.nil?
+        @encoder.feed(left_pcm, right_pcm) do |mp3_bytes|
+          yield mp3_bytes
+        end
+      end
+    end
+
+    def write_to_grid(mic, mp3_bytes)
+      db = Mongoid.database
+      fs = Mongo::GridFileSystem.new(db, "grid.#{@target[:_id]}")
+
+      fs.open(mic.file_name, 'a') do |f|
+        f.write mp3_bytes
+        mic.update_attributes("data.duration" => mic.duration)
+        mic.update_attributes("data._grid" => f.files_id)
+        mic.update_attributes("data._grid_size" => f.file_length)
+      end
     end
   end
 
-end
-end
+end # Worker
+end # RCS
