@@ -39,6 +39,7 @@ module Speex
   MODEID_UWB = 2
   SET_ENH = 0
   GET_FRAME_SIZE = 3
+  GET_VERSION_STRING = 9
   
   begin
     base_path = File.dirname(__FILE__)
@@ -62,13 +63,13 @@ module Speex
     attach_function :bits_read_from, :speex_bits_read_from, [:pointer, :pointer, :int], :void
 
     attach_function :lib_get_mode, :speex_lib_get_mode, [:int], :pointer
+    attach_function :lib_ctl, :speex_lib_ctl, [:int, :pointer], :int
   rescue Exception => e
     trace :fatal, "ERROR: Cannot open libspeex"
     exit!
   end
 
   def self.get_wav_frames(data, mode)
-    wav_ary = []
 
     decoder = Speex.decoder_init(Speex.lib_get_mode(mode))
 
@@ -81,27 +82,27 @@ module Speex
     Speex.decoder_ctl(decoder, Speex::GET_FRAME_SIZE, frame_size_ptr)
     frame_size = frame_size_ptr.get_uint(0)
 
-    stream = StringIO.new data
-    wave_buffer = ''
-
     bits = Speex::Bits.new
     Speex.bits_init(bits.pointer)
 
+    wav_ary = []
+    stream = StringIO.new data
     while not stream.eof? do
       # read one chunk
       len = stream.read(4).unpack("L").shift
       chunk = stream.read(len)
+      break if chunk.nil?
 
-      unless chunk.nil?
-        buffer = FFI::MemoryPointer.new(:char, chunk.size)
-        buffer.put_bytes(0, chunk, 0, chunk.size)
+      if chunk.size == len
+        buffer = FFI::MemoryPointer.new(:char, len)
+        buffer.put_bytes(0, chunk, 0, len)
 
-        Speex.bits_read_from(bits.pointer, buffer, buffer.size)
+        Speex.bits_read_from(bits.pointer, buffer, len)
 
         output_buffer = FFI::MemoryPointer.new(:float, frame_size)
         Speex.decode(decoder, bits.pointer, output_buffer)
 
-        # Speex outputs 32 bits float samples, wave needs 16 bit integers
+        # Speex outputs 32 bits float samples
         wav_ary.concat output_buffer.read_array_of_float(frame_size)
       end
     end
@@ -112,4 +113,9 @@ module Speex
     wav_ary
   end
 
+  def self.version
+    ptr = FFI::MemoryPointer.new :pointer, 1
+    Speex::lib_ctl Speex::GET_VERSION_STRING, ptr
+    ptr.read_pointer.read_string
+  end
 end

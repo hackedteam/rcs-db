@@ -150,18 +150,18 @@ class MP3Encoder
   def feed(left, right)
     num_samples = [left.size, right.size].min
     buffer_size = (1.25 * num_samples + 7200).ceil
-
-    #trace :debug, "ENCODING #{num_samples} frames to MP3"
-
+    
     buffer = FFI::MemoryPointer.new(:float, buffer_size)
 
     left_pcm = left.pack 'F*'
     right_pcm = right.pack 'F*'
 
     mp3_bytes = MP3Lame::lame_encode_buffer_float(@mp3lame, left_pcm, right_pcm, num_samples, buffer, buffer_size)
-    yield buffer.read_string(mp3_bytes)
+    yield buffer.read_bytes(mp3_bytes)
+  end
 
+  def flush
     mp3_bytes = MP3Lame::lame_encode_flush(@mp3lame, buffer, buffer_size)
-    yield buffer.read_string(mp3_bytes)
+    yield buffer.read_bytes(mp3_bytes)
   end
 end
