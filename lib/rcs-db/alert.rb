@@ -85,8 +85,10 @@ class Alerting
         next unless is_accessible?(user, agent)
 
         # save the relevance tag into the evidence
-        evidence.rel = alert.tag
-        evidence.save
+        if evidence.rel < alert.tag
+          evidence.rel = alert.tag
+          evidence.save
+        end
 
         # if we don't want to be alerted, don't insert in the queue
         return if alert.type == 'NONE'

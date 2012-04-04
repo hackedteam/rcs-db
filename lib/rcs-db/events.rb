@@ -42,6 +42,16 @@ module HTTPHandler
     # timeout on the socket
     set_comm_inactivity_timeout 60
 
+    # get the peer name
+    if get_peername
+      @peer_port, @peer = Socket.unpack_sockaddr_in(get_peername)
+    else
+      @peer = 'unknown'
+      @peer_port = 0
+    end
+
+    trace :debug, "Connection from #{@peer}:#{@peer_port}"
+
     # we want the connection to be encrypted with ssl
     start_tls({:private_key_file => Config.instance.cert('DB_KEY'),
                :cert_chain_file => Config.instance.cert('DB_CERT'),
@@ -55,15 +65,7 @@ module HTTPHandler
     # set the max content length of the POST
     self.max_content_length = 200 * 1024 * 1024
 
-    # get the peer name
-    if get_peername
-      @peer_port, @peer = Socket.unpack_sockaddr_in(get_peername)
-    else
-      @peer = 'unknown'
-      @peer_port = 0
-    end
     @closed = false
-    trace :debug, "Connection from #{@peer}:#{@peer_port}"
   end
 
   def ssl_handshake_completed

@@ -282,7 +282,7 @@ class EvidenceController < RESTController
   end
 
   def info
-    require_auth_level :view
+    require_auth_level :view, :tech
 
     mongoid_query do
 

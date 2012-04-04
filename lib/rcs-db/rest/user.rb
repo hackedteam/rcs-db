@@ -131,7 +131,19 @@ class UserController < RESTController
       return ok
     end
   end
-  
+
+  def message
+    require_auth_level :admin
+
+    mongoid_query do
+      user = User.find(@params['_id'])
+
+      PushManager.instance.notify('message', {from: @session[:user][:name], rcpt: user[:_id], text: @params['text']})
+
+      return ok
+    end
+  end
+
 end
 
 end #DB::
