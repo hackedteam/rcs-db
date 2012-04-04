@@ -20,13 +20,7 @@ class SingleProcessor
 
     ev = evidence.store @agent, @target
     yield ev, [evidence[:db_id]] if block_given?
-    delete_raw evidence
-    ev
-  end
-
-  def delete_raw(evidence)
-    RCS::DB::GridFS.delete(evidence[:db_id], "evidence")
-    trace :debug, "deleted raw evidence #{evidence[:db_id]}"
+    return ev._id, 1
   end
 end
 

