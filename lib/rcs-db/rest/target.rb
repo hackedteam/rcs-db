@@ -99,12 +99,13 @@ class TargetController < RESTController
       item = Item.targets.any_in(_id: @session[:accessible]).find(@params['_id'])
       name = item.name
 
-      item.destroy
-
       Audit.log :actor => @session[:user][:name],
                 :action => "target.delete",
                 :target_name => name,
                 :desc => "Deleted target '#{name}'"
+
+      item.destroy
+
       return ok
     end
   end

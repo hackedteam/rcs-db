@@ -107,13 +107,14 @@ class OperationController < RESTController
     mongoid_query do
       item = Item.operations.any_in(_id: @session[:accessible]).find(@params['_id'])
       name = item.name
-      item.destroy
-      
+
       Audit.log :actor => @session[:user][:name],
                 :action => "operation.delete",
                 :operation_name => name,
                 :desc => "Deleted operation '#{name}'"
-      
+
+      item.destroy
+
       return ok
     end
   end

@@ -22,7 +22,7 @@ class EvidenceTask
   end
   
   def next_entry
-    @description = "Exporting evidence"
+    @description = "Exporting #{@total} evidence"
 
     evidence = ::Evidence.filter @params
 
@@ -274,7 +274,11 @@ class EvidenceTask
         summary[day] = Array.new(24, 0)
       end
 
-      e[:agent] = ::Item.find(e[:aid]).name
+      begin
+        e[:agent] = ::Item.find(e[:aid]).name
+      rescue
+        e[:agent] = 'unknown'
+      end
 
       # write the current evidence
       out[:content] += html_evidence_table_row e

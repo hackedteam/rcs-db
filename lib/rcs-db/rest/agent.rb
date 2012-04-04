@@ -76,17 +76,17 @@ class AgentController < RESTController
       item.destroy_callback
       item.save
 
+      Audit.log :actor => @session[:user][:name],
+                :action => "#{item._kind}.delete",
+                (item._kind + '_name').to_sym => @params['name'],
+                :desc => "Deleted #{item._kind} '#{item['name']}'"
+
       # if the deletion is permanent, destroy the item
       if @params['permanent']
         trace :info, "Agent #{item.name} permanently deleted"
         item.destroy
       end
-      
-      Audit.log :actor => @session[:user][:name],
-                :action => "#{item._kind}.delete",
-                (item._kind + '_name').to_sym => @params['name'],
-                :desc => "Deleted #{item._kind} '#{item['name']}'"
-      
+
       return ok
     end
   end

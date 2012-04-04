@@ -70,7 +70,7 @@ class Item
   store_in :items
 
   after_create :create_callback
-  after_destroy :destroy_callback
+  before_destroy :destroy_callback
 
   before_update :status_change_callback
   after_update :notify_callback
@@ -346,21 +346,22 @@ class Item
     ::Alert.all.each {|a| a.delete_if_item(self._id)}
     # remove the NIA rules that contains the item
     ::Injector.all.each {|p| p.delete_rule_by_item(self._id)}
-    
+
     case self._kind
       when 'operation'
         # destroy all the targets of this operation
         Item.where({_kind: 'target', path: [ self._id ]}).each {|targ| targ.destroy}
       when 'target'
         # destroy all the agents of this target
-        Item.any_in({_kind: ['agent', 'factory']}).also_in({path: [ self._id ]}).each {|agent| agent.destroy}
+        Item.any_in({_kind: ['factory', 'agent']}).also_in({path: [ self._id ]}).each {|agent| agent.destroy}
+        trace :info, "Dropping evidence for target #{self.name}"
         # drop the evidence collection of this target
         Mongoid.database.drop_collection Evidence.collection_name(self._id.to_s)
+        RCS::DB::GridFS.delete_collection(self._id.to_s)
       when 'agent'
+        trace :info, "Deleting evidence for agent #{self.name}"
         # destroy all the evidences
-        Evidence.collection_class(self.path.last).where(item: self._id).each {|ev| ev.destroy}
-        # drop all grid items
-        RCS::DB::GridFS.delete_by_agent(self._id.to_s, self.path.last.to_s)
+        Evidence.collection_class(self.path.last).where(aid: self._id.to_s).each {|ev| ev.destroy}
     end
   end
 
