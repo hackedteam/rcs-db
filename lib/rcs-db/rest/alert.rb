@@ -15,7 +15,7 @@ class AlertController < RESTController
       # use reload to avoid cache
       user = @session[:user].reload
 
-      alerts = user.alerts.asc(:created_at)
+      alerts = user.alerts.asc(:_id)
       
       return ok(alerts)
     end
@@ -95,7 +95,9 @@ class AlertController < RESTController
       alert.destroy
 
       user.reload
-      
+
+      PushManager.instance.notify('alert', {rcpt: @session[:user][:_id]})
+
       return ok
     end
   end
@@ -126,7 +128,7 @@ class AlertController < RESTController
       alert = user.alerts.find(@params['_id'])
 
       alert.logs.destroy_all(conditions: {_id: @params['log']['_id']})
-      PushManager.instance.notify('alert')
+      PushManager.instance.notify('alert', {rcpt: @session[:user][:_id]})
 
       return ok
     end
@@ -140,7 +142,7 @@ class AlertController < RESTController
       alert = user.alerts.find(@params['_id'])
       
       alert.logs.destroy_all
-      PushManager.instance.notify('alert')
+      PushManager.instance.notify('alert', {rcpt: @session[:user][:_id]})
 
       return ok
     end

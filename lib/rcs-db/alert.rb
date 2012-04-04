@@ -22,9 +22,13 @@ class Alerting
         # skip non matching agents
         next unless match_path(alert, agent)
 
+        # we MUST not dispatch alert for element that are not accessible by the user
+        user = ::User.find(alert.user_id)
+        next unless is_accessible?(user, agent)
+
         unless alert.type == 'NONE'
           alert.logs.create!(time: Time.now.getutc.to_i, path: agent.path + [agent._id])
-          PushManager.instance.notify('alert', {id: agent._id})
+          PushManager.instance.notify('alert', {id: agent._id, rcpt: user[:_id]})
         end
 
         if alert.type == 'MAIL'
@@ -33,6 +37,9 @@ class Alerting
           alert_fast_queue(to: user.contact, subject: 'RCS Alert [SYNC]', body: "The agent #{agent.name} has synchronized on #{Time.now}")
         end
       end
+    rescue Exception => e
+      trace :warn, "Cannot handle alert: #{e.message}"
+      trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
     end
 
     def new_instance(agent)
@@ -40,9 +47,13 @@ class Alerting
         # skip non matching agents
         next unless match_path(alert, agent)
 
+        # we MUST not dispatch alert for element that are not accessible by the user
+        user = ::User.find(alert.user_id)
+        next unless is_accessible?(user, agent)
+
         unless alert.type == 'NONE'
           alert.logs.create!(time: Time.now.getutc.to_i, path: agent.path + [agent._id])
-          PushManager.instance.notify('alert', {id: agent._id})
+          PushManager.instance.notify('alert', {id: agent._id, rcpt: user[:_id]})
         end
 
         if alert.type == 'MAIL'
@@ -51,6 +62,9 @@ class Alerting
           alert_fast_queue(to: user.contact, subject: 'RCS Alert [INSTANCE]', body: "A new instance of #{agent.ident} has been created on #{Time.now}.\r\n Its name is: #{agent.name}")
         end
       end
+    rescue Exception => e
+      trace :warn, "Cannot handle alert: #{e.message}"
+      trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
     end
 
     def new_evidence(evidence)
@@ -65,6 +79,10 @@ class Alerting
 
         # skip if none of the values in the "data" match the keywords
         next if evidence.data.values.select {|v| v =~ Regexp.new(alert.keywords)}.empty?
+
+        # we MUST not dispatch alert for element that are not accessible by the user
+        user = ::User.find(alert.user_id)
+        next unless is_accessible?(user, agent)
 
         # save the relevance tag into the evidence
         evidence.rel = alert.tag
@@ -86,6 +104,9 @@ class Alerting
                          subject: 'RCS Alert [EVIDENCE]',
                          body: "An evidence matching this alert [#{agent.name} #{alert.evidence} #{alert.keywords}] has arrived into the system.")
       end
+    rescue Exception => e
+      trace :warn, "Cannot handle alert: #{e.message}"
+      trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
     end
 
     def failed_component(component)
@@ -117,6 +138,10 @@ class Alerting
       # check if the agent path is included in the alert path
       # this way an alert on a target will be triggered by all of its agent
       (agent_path & alert.path == alert.path)
+    end
+
+    def is_accessible?(user, agent)
+      SessionManager.instance.get_accessible(user).include? agent._id
     end
 
     def alert_fast_queue(params)
@@ -163,32 +188,38 @@ class Alerting
         trace :info, "Processing alert queue (#{alerts.count})..."
 
         alerts.each do |aq|
-          if aq.alert and aq.evidence
-            alert = ::Alert.find(aq.alert.first)
+          begin
+            if aq.alert and aq.evidence
+              alert = ::Alert.find(aq.alert.first)
+              user = ::User.find(alert.user_id)
 
-            # check if we are in the suppression timeframe
-            if alert.last.nil? or Time.now.getutc.to_i - alert.last > alert.suppression
-              # we are out of suppression, create a new entry and mail
-              trace :debug, "Triggering alert: #{alert._id}"
-              alert.logs.create!(time: Time.now.getutc.to_i, path: aq.path, evidence: aq.evidence)
-              alert.last = Time.now.getutc.to_i
-              alert.save
-              # notify the console of the new alert
-              PushManager.instance.notify('alert', {id: aq.path.last})
-              send_mail(aq.to, aq.subject, aq.body) if alert.type == 'MAIL'
+              # check if we are in the suppression timeframe
+              if alert.last.nil? or Time.now.getutc.to_i - alert.last > alert.suppression
+                # we are out of suppression, create a new entry and mail
+                trace :debug, "Triggering alert: #{alert._id}"
+                alert.logs.create!(time: Time.now.getutc.to_i, path: aq.path, evidence: aq.evidence)
+                alert.last = Time.now.getutc.to_i
+                alert.save
+                # notify the console of the new alert
+                PushManager.instance.notify('alert', {id: aq.path.last, rcpt: user[:_id]})
+                send_mail(aq.to, aq.subject, aq.body) if alert.type == 'MAIL'
+              else
+                trace :debug, "Triggering alert: #{alert._id} (suppressed)"
+                al = alert.logs.last
+                al.evidence << aq.evidence
+                al.save
+                # notify even if suppressed so the console will reload the alert log list
+                PushManager.instance.notify('alert', {id: aq.path.last, rcpt: user[:_id]})
+              end
             else
-              trace :debug, "Triggering alert: #{alert._id} (suppressed)"
-              al = alert.logs.last
-              al.evidence << aq.evidence
-              al.save
-              # notify even if suppressed so the console will reload the alert log list
-              PushManager.instance.notify('alert', {id: aq.path.last})
+              # for queued items without an associated alert, send the mail
+              send_mail(aq.to, aq.subject, aq.body)
             end
-          else
-            # for queued items without an associated alert, send the mail
-            send_mail(aq.to, aq.subject, aq.body)
+          rescue Exception => e
+            trace :warn, "Cannot process alert queue: #{e.message}"
+          ensure
+            aq.destroy
           end
-          aq.destroy
         end
       rescue Exception => e
         trace :error, "Cannot dispatch alerts: #{e.message}"

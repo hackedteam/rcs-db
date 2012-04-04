@@ -135,7 +135,7 @@ class CollectorController < RESTController
           build.load(nil)
           build.unpack
           build.patch({})
-          build.melt(port: collector.port)
+          build.melt({'port' => collector.port})
 
           collector.upgradable = false
           collector.save

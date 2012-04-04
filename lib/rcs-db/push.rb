@@ -18,7 +18,7 @@ class PushManager
     trace :info, "PUSH Event: #{type} #{message}"
 
     begin
-      SessionManager.instance.each_ws(message[:id]) do |ws|
+      SessionManager.instance.each_ws(message[:id], message[:rcpt]) do |ws|
         WebSocketManager.send(ws, type, message)
       end
     rescue Exception => e

@@ -57,8 +57,10 @@ class SessionManager
     return nil
   end
 
-  def each_ws(id = nil)
+  def each_ws(id = nil, rcpt = nil)
     @sessions.values.each do |sess|
+      # we have specified a specific user, skip all the others
+      next if rcpt != nil and sess[:user][:_id] != rcpt
       # do not include server accounts
       next if sess[:level].include? :server
       # not connected push channel

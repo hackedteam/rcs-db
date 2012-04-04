@@ -232,7 +232,7 @@ class LogMigration
       e.type = 'position' if e.type == 'location'
 
       # remove unneeded
-      e.data.delete 'status' if e.type == 'mic'
+      e.data.delete 'status' if e.type == 'mic' or e.type == 'call'
 
       # save the binary data
       if log[:longblob1].bytesize > 0
