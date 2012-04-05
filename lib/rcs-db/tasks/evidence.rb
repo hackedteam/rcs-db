@@ -287,6 +287,7 @@ class EvidenceTask
       if e[:data]['_grid']
         filename, file = dump_file(day, e, opts[:target])
         yield 'file', filename, {path: file}
+        FileUtils.rm_rf(file)
       else
         yield
       end
