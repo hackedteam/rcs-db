@@ -129,6 +129,13 @@ class RESTFileStream
   def send_response
     @response.send_headers
     streamer = EventMachine::FileStreamer.new(@connection, @filename, :http_chunks => false )
+    # on windows the stream_without_mapping has HUGE problems
+    # we monkey patch the class to force it to ALWAYS stream a file
+    # the mapping threshold is responsible to choose the behavior
+    if RUBY_PLATFORM =~ /mingw/
+      streamer.class.send(:remove_const, :MappingThreshold)
+      streamer.class.const_set(:MappingThreshold, 0)
+    end
     streamer.callback { @callback.call } unless @callback.nil?
   end
 end # RESTFileStream
