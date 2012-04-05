@@ -1,3 +1,5 @@
+require 'mongo'
+
 # from RCS::Common
 require 'rcs-common/trace'
 
@@ -19,6 +21,9 @@ module SingleEvidence
     end
     
     def store(agent, target)
+      agent = get_agent
+      return nil if agent.nil?
+
       coll = ::Evidence.collection_class(target[:_id].to_s)
       evidence = coll.create do |ev|
 
