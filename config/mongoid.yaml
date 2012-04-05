@@ -2,7 +2,7 @@
 database: rcs
 
 # the pool size for connections
-pool_size: 10
+#pool_size: 10
 
 #
 #Mongoid currently supports the following configuration options.
