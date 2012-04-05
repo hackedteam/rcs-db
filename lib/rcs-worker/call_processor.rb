@@ -233,7 +233,7 @@ class Call
     # TODO: flush channels if samples queued
     @channels.each_value {|c| c.close!}
     trace :debug, "[CALL #{@id}] closing call for #{@peer}, starting at #{@start_time}"
-    @evidence.update_attributes("data.status" => :complete) unless @evidence.nil?
+    @evidence.remove_attribute("data.status") unless @evidence.nil?
     delete_raws
     true
   end
