@@ -226,7 +226,7 @@ class Call
   def close!
     # TODO: flush channels if samples queued
     @channels.each_value {|c| c.close!}
-    @evidence.remove_attribute("data.status") unless @evidence.nil?
+    update_attributes("data.status" => :completed) unless @evidence.nil?
     trace :debug, "[CALL #{@id}] closing call for #{@peer}, starting at #{@start_time}"
     true
   end
@@ -341,6 +341,7 @@ class Call
       ev.data[:status] = :recording
       
       ev.save
+      return ev
     end
   end
   
@@ -401,11 +402,11 @@ class CallProcessor
     @call = create_call(evidence)
     @call
   end
-  
+
   def close_call
     return if @call.nil?
-    yield @call.evidence if block_given?
     @call.close!
+    yield @call.evidence if block_given?
   end
 
   def create_call(evidence)
@@ -422,8 +423,7 @@ class CallProcessor
   
   def feed(evidence)
     if end_call? evidence
-      @call.flush_on_close
-      @call.close! unless @call.nil?
+      close_call {|evidence| yield evidence}
       @call = nil
       return nil
     end
