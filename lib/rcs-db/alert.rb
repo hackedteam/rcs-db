@@ -208,7 +208,7 @@ class Alerting
               else
                 trace :debug, "Triggering alert: #{alert._id} (suppressed)"
                 al = alert.logs.last
-                al.evidence << aq.evidence
+                al.evidence += aq.evidence
                 al.save
                 # notify even if suppressed so the console will reload the alert log list
                 PushManager.instance.notify('alert', {id: aq.path.last, rcpt: user[:_id]})
