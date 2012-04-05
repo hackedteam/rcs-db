@@ -18,6 +18,8 @@ class SingleProcessor
     evidence[:instance] = @agent['instance']
     evidence[:ident] = @agent['ident']
 
+    return nil, 1 if evidence.is_duplicate? @agent, @target
+
     ev = evidence.store @agent, @target
     yield ev if block_given?
     return ev._id, 1

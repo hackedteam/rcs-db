@@ -1,4 +1,5 @@
 require 'mongo'
+require 'mongoid'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -19,7 +20,21 @@ module SingleEvidence
     def get_agent
       ::Item.agents.where({instance: self[:instance], ident: self[:ident]}).first
     end
-    
+
+    def is_duplicate?(agent, target)
+      return false unless self.respond_to? :duplicate_criteria
+      return false if agent.nil? or target.nil?
+
+      db = Mongoid.database
+      criteria = self.duplicate_criteria
+      criteria.merge! "aid" => agent['_id'].to_s
+      evs = db["evidence.#{target['_id'].to_s}"].find criteria
+
+      trace :debug, "DUPLICATE CHECK #{criteria}: #{evs.has_next?}"
+
+      evs.has_next?
+    end
+
     def store(agent, target)
       agent = get_agent
       return nil if agent.nil?
