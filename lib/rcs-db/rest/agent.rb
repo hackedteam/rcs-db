@@ -23,7 +23,7 @@ class AgentController < RESTController
 
     mongoid_query do
       db = Mongoid.database
-      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "upgradable", "demo", "stat.last_sync", "stat.user", "stat.device", "stat.source"])
+      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "upgradable", "demo", "stat.last_sync", "stat.user", "stat.device", "stat.source", "stat.size", "stat.grid_size"])
       ok(j)
     end
   end
@@ -71,11 +71,6 @@ class AgentController < RESTController
     mongoid_query do
       item = Item.any_in(_id: @session[:accessible]).find(@params['_id'])
 
-      # don't actually destroy the agent, but mark it as deleted
-      item.deleted = true
-      item.destroy_callback
-      item.save
-
       Audit.log :actor => @session[:user][:name],
                 :action => "#{item._kind}.delete",
                 (item._kind + '_name').to_sym => @params['name'],
@@ -85,7 +80,13 @@ class AgentController < RESTController
       if @params['permanent']
         trace :info, "Agent #{item.name} permanently deleted"
         item.destroy
+        return ok
       end
+
+      # don't actually destroy the agent, but mark it as deleted
+      item.deleted = true
+      item.destroy_callback
+      item.save
 
       return ok
     end
