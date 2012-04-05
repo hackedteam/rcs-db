@@ -12,7 +12,6 @@ TODO (daVinci 8.0.0):
     license generator
 
     evidence export (failed to allocate memory) !!!
-    delete evidence on agent deletion
 
     worker decoding:
         - call

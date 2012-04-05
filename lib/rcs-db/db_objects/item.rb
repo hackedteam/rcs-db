@@ -352,8 +352,9 @@ class Item
         # destroy all the targets of this operation
         Item.where({_kind: 'target', path: [ self._id ]}).each {|targ| targ.destroy}
       when 'target'
-        # destroy all the agents of this target
-        Item.any_in({_kind: ['factory', 'agent']}).also_in({path: [ self._id ]}).each {|agent| agent.destroy}
+        # destroy all the agents of this target without callbacks
+        # we explicitly drop the collections of the evidence
+        Item.any_in({_kind: ['factory', 'agent']}).also_in({path: [ self._id ]}).each {|agent| agent.delete}
         trace :info, "Dropping evidence for target #{self.name}"
         # drop the evidence collection of this target
         Mongoid.database.drop_collection Evidence.collection_name(self._id.to_s)
