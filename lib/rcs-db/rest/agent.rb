@@ -39,6 +39,7 @@ class AgentController < RESTController
 
       # the console MUST not see deleted items
       return not_found if j.first['deleted']
+      return not_found if j.first.nil?
 
       ok(j.first)
     end
