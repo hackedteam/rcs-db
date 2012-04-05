@@ -32,7 +32,12 @@ class SearchController < RESTController
 
     mongoid_query do
       db = Mongoid.database
-      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "path", "stat", "type", "platform", "instance", "version", "demo"])
+      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "path", "stat", "type", "platform", "instance", "version", "demo", "deleted"])
+
+      # the console MUST not see deleted items
+      return not_found if j.first['deleted']
+      return not_found if j.first.nil?
+
       ok(j.first)
     end
   end

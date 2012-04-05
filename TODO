@@ -11,6 +11,8 @@ TODO (daVinci 8.0.0):
     re-insert integrity for license
     license generator
 
+    evidence for queued?
+
     worker decoding:
         - mail
 	- sms/mms
