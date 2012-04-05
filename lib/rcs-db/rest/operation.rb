@@ -14,7 +14,7 @@ class OperationController < RESTController
 
     mongoid_query do
       db = Mongoid.database
-      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "group_ids"])
+      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "group_ids", "stat.last_sync", "stat.size", "stat.grid_size", "stat.last_child"])
       ok(j)
     end
   end

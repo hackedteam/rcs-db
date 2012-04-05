@@ -421,6 +421,8 @@ class LicenseManager
     # load the license file
     load_license
 
+    pp Dongle.info if @limits[:serial] != 'off'
+
     pp @limits
 
     return 0
