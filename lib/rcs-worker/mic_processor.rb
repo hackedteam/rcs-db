@@ -16,15 +16,16 @@ module Worker
   class MicRecording
     include Tracer
 
-    attr_accessor :timecode, :duration, :sample_rate, :raw_ids
+    attr_accessor :timecode, :duration, :sample_rate, :bid, :raw_counter
 
     def initialize(evidence, agent, target)
+      @bid = BSON::ObjectId.new
       @target = target
       @mic_id = evidence[:data][:mic_id]
       @sample_rate = evidence[:data][:sample_rate]
       @timecode = tc evidence
       @duration = 0
-      @raw_ids = []
+      @raw_counter = 0
 
       @evidence = store evidence[:da], agent, @target
     end
@@ -42,14 +43,11 @@ module Worker
     end
 
     def close!
-      @raw_ids.each do |id|
-        RCS::DB::GridFS.delete(id, "evidence")
-        trace :debug, "deleted raw evidence #{id}"
-      end
+      yield @evidence
     end
 
     def feed(evidence)
-      @raw_ids << evidence[:db_id]
+      @raw_counter += 1
       
       @timecode = tc evidence
       @duration += (1.0 * evidence[:wav].size) / @sample_rate
@@ -67,6 +65,7 @@ module Worker
     def store(acquired, agent, target)
       evidence = ::Evidence.collection_class(target[:_id].to_s)
       evidence.create do |ev|
+        ev._id = @bid
         ev.aid = agent[:_id].to_s
         ev.type = :mic
 
@@ -99,12 +98,10 @@ module Worker
     def feed(evidence)
       @mic ||= MicRecording.new(evidence, @agent, @target)
       unless @mic.accept? evidence
-        puts "#{@mic.timecode} (#{@mic.timecode.to_f}) -> #{tc(evidence)} #{tc(evidence).to_f}"
-        yield @evidence, @mic.raw_ids if block_given?
-        @mic.close!
+        @mic.close! {|evidence| yield evidence}
         @mic = MicRecording.new(evidence, @agent, @target)
       end
-
+      
       @mic.feed(evidence) do |sample_rate, left_pcm, right_pcm|
         encode_mp3(sample_rate, left_pcm, right_pcm) do |mp3_bytes|
           File.open("#{@mic.file_name}.mp3", 'ab') {|f| f.write(mp3_bytes) }
@@ -112,7 +109,7 @@ module Worker
         end
       end
 
-      nil
+      return @mic.bid, @mic.raw_counter
     end
 
     def encode_mp3(sample_rate, left_pcm, right_pcm)
