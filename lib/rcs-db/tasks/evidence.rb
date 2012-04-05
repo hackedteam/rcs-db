@@ -189,7 +189,6 @@ class EvidenceTask
   end
 
   def dump_file(day, evidence, target)
-    file = GridFS.get evidence[:data]['_grid'], target
     name = evidence[:data]['_grid'].to_s
     case evidence[:type]
       when 'screenshot', 'camera', 'mouse', 'print'
@@ -203,7 +202,8 @@ class EvidenceTask
           name << '.txt'
         end
     end
-    return File.join(day, name), file.read
+    file = GridFS.to_tmp evidence[:data]['_grid'], target
+    return File.join(day, name), file
   end
 
   def create_summary(summary)
@@ -285,8 +285,8 @@ class EvidenceTask
 
       # export the binary file
       if e[:data]['_grid']
-        filename, content = dump_file(day, e, opts[:target])
-        yield 'stream', filename, {content: content}
+        filename, file = dump_file(day, e, opts[:target])
+        yield 'file', filename, {path: file}
       else
         yield
       end

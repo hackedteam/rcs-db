@@ -53,6 +53,7 @@ class Location
 
     def get_google(request)
       # Gears API: http://code.google.com/apis/gears/geolocation_network_protocol.html
+      # Gears Wiki: http://code.google.com/p/gears/wiki/GeolocationAPI
       Timeout::timeout(3) do
         response = Frontend.proxy('POST', 'www.google.com', '/loc/json', request.to_json)
         response.kind_of? Net::HTTPSuccess or raise(response.body)
