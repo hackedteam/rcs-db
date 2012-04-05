@@ -19,7 +19,7 @@
   :winmo: [true, true]
 :alerting: true
 :correlation: false
-:forwarders: true
+:connectors: true
 :rmi: [false, true]
 :nia: [.Inf, true]
 :exploits: true

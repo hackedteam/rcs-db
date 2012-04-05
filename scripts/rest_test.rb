@@ -1247,24 +1247,24 @@ if false
   puts
 end
 
-# forwarder
+# connector
 if false
-  # forwarder.index
-  puts "forwarder.index" 
-  res = http.request_get('/forwarder', {'Cookie' => cookie})
+  # connector.index
+  puts "connector.index" 
+  res = http.request_get('/connector', {'Cookie' => cookie})
   shards = JSON.parse(res.body)
   puts res.body
   puts
   
-  # forwarder.create
-  forwarder = {name: 'test', enabled: true, keep: true}
-  res = http.request_post('/forwarder/create', forwarder.to_json, {'Cookie' => cookie})
-  puts "forwarder.create"
+  # connector.create
+  connector = {name: 'test', enabled: true, keep: true}
+  res = http.request_post('/connector/create', connector.to_json, {'Cookie' => cookie})
+  puts "connector.create"
   puts res.body
   puts
 
-  puts "forwarder.index" 
-  res = http.request_get('/forwarder', {'Cookie' => cookie})
+  puts "connector.index" 
+  res = http.request_get('/connector', {'Cookie' => cookie})
   shards = JSON.parse(res.body)
   puts res.body
   puts

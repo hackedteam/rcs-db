@@ -3,7 +3,7 @@ require 'mongoid'
 #module RCS
 #module DB
 
-class Forwarder
+class Connector
   include Mongoid::Document
   include Mongoid::Timestamps
 
@@ -15,7 +15,7 @@ class Forwarder
   field :keep, type: Boolean, default: true
   field :path, type: Array
 
-  store_in :forwarders
+  store_in :connectors
 end
 
 #end # ::DB
