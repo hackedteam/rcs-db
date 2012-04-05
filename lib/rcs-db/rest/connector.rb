@@ -6,23 +6,23 @@
 module RCS
 module DB
 
-class ForwarderController < RESTController
+class ConnectorController < RESTController
 
   def index
     require_auth_level :sys
 
     mongoid_query do
-      return ok(::Forwarder.all)
+      return ok(::Connector.all)
     end
   end
 
   def create
     require_auth_level :sys
 
-    return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.limits[:forwarders]
+    return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.limits[:connectors]
 
     mongoid_query do
-      f = ::Forwarder.new
+      f = ::Connector.new
       f.enabled = @params['enabled'] == true ? true : false
       f.name = @params['name']
       f.type = @params['type'] || 'JSON'
@@ -32,7 +32,7 @@ class ForwarderController < RESTController
       f.path = @params['path'].collect! {|x| BSON::ObjectId(x)} if @params['path'].class == Array
       f.save
       
-      Audit.log :actor => @session[:user][:name], :action => 'forwarder.create', :desc => "Forwarding rule '#{f.name}' was created"
+      Audit.log :actor => @session[:user][:name], :action => 'connector.create', :desc => "Connector rule '#{f.name}' was created"
 
       return ok(f)
     end    
@@ -42,21 +42,21 @@ class ForwarderController < RESTController
     require_auth_level :sys
 
     mongoid_query do
-      forwarder = ::Forwarder.find(@params['_id'])
+      connector = ::Connector.find(@params['_id'])
       @params.delete('_id')
 
       @params.each_pair do |key, value|
         if key == 'path'
           value.collect! {|x| BSON::ObjectId(x)}
         end
-        if forwarder[key.to_s] != value
-          Audit.log :actor => @session[:user][:name], :action => 'forwarder.update', :desc => "Updated '#{key}' to '#{value}' for forwarding rule #{forwarder[:name]}"
+        if connector[key.to_s] != value
+          Audit.log :actor => @session[:user][:name], :action => 'connector.update', :desc => "Updated '#{key}' to '#{value}' for connector rule #{connector[:name]}"
         end
       end
 
-      forwarder.update_attributes(@params)
+      connector.update_attributes(@params)
 
-      return ok(forwarder)
+      return ok(connector)
     end
   end
 
@@ -64,9 +64,9 @@ class ForwarderController < RESTController
     require_auth_level :sys
 
     mongoid_query do
-      forwarder = ::Forwarder.find(@params['_id'])
-      Audit.log :actor => @session[:user][:name], :action => 'forwarder.destroy', :desc => "Deleted the forwarding rule [#{forwarder[:name]}]"
-      forwarder.destroy
+      connector = ::Connector.find(@params['_id'])
+      Audit.log :actor => @session[:user][:name], :action => 'connector.destroy', :desc => "Deleted the connector rule [#{connector[:name]}]"
+      connector.destroy
 
       return ok
     end

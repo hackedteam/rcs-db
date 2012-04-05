@@ -10,12 +10,12 @@ require 'pp'
 module RCS
 module DB
 
-class Forwarding
+class Connectors
   extend RCS::Tracer
 
   class << self
 
-    def check_forwarder(f, agent)
+    def check_connector(f, agent)
       # skip non matching rules
       return :skip unless match_path(f, agent)
       # check for unsupported types
@@ -30,13 +30,13 @@ class Forwarding
     end
 
     def new_evidence(evidence)
-      ::Forwarder.where(:enabled => true).each do |f|
+      ::Connector.where(:enabled => true).each do |f|
 
         # the generator of the evidence
         agent = ::Item.find(evidence.aid)
 
         # skip non matching rules or unsupported types
-        action = check_forwarder(f, agent)
+        action = check_connector(f, agent)
         next if action == :skip
         raise "unsupported forwarding method: #{f.type}" if action == :unsupported
         
@@ -64,10 +64,10 @@ class Forwarding
     end
     
     def new_raw(raw_id, index, agent, evidence_id)
-      ::Forwarder.where(:enabled => true).each do |f|
+      ::Connector.where(:enabled => true).each do |f|
 
         # skip non matching rules or unsupported types
-        action = check_forwarder(f, agent)
+        action = check_connector(f, agent)
         next if action == :skip
         raise "unsupported forwarding method: #{f.type}" if action == :unsupported
         
@@ -86,16 +86,16 @@ class Forwarding
       end
     end
     
-    def match_path(forwarder, agent)
+    def match_path(connector, agent)
       # empty path means everything
-      return true if forwarder.path.empty?
+      return true if connector.path.empty?
       
       # the path of an agent does not include itself, add it to obtain the full path
       agent_path = agent.path + [agent._id]
       
       # check if the agent path is included in the path
       # this way an alert on a target will be triggered by all of its agent
-      (agent_path & forwarder.path == forwarder.path)
+      (agent_path & connector.path == connector.path)
     end
   end
 
