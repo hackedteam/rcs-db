@@ -100,18 +100,19 @@ module Worker
       unless @mic.accept? evidence
         @mic.close! {|evidence| yield evidence}
         @mic = MicRecording.new(evidence, @agent, @target)
+        trace :debug, "created new MIC processor #{@mic.bid}"
       end
       
       @mic.feed(evidence) do |sample_rate, left_pcm, right_pcm|
         encode_mp3(sample_rate, left_pcm, right_pcm) do |mp3_bytes|
-          File.open("#{@mic.file_name}.mp3", 'ab') {|f| f.write(mp3_bytes) }
+          #File.open("#{@mic.file_name}.mp3", 'ab') {|f| f.write(mp3_bytes) }
           write_to_grid(@mic, mp3_bytes)
         end
       end
 
       return @mic.bid, @mic.raw_counter
     end
-
+    
     def encode_mp3(sample_rate, left_pcm, right_pcm)
       # MP3Encoder will take care of resampling if necessary
       @encoder ||= ::MP3Encoder.new(2, sample_rate)
