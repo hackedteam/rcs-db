@@ -129,6 +129,9 @@ class InstanceWorker
               ev[:type] = ev.type if ev.respond_to? :type
               ev_type = ev[:type]
 
+              # get info about the agent instance from evidence db
+              get_agent_target
+
               processor = case ev[:type]
                             when :call
                               @call_processor ||= CallProcessor.new(@agent, @target)
@@ -171,9 +174,9 @@ class InstanceWorker
             sleep 5
             retry
           rescue Exception => e
-            trace :fatal, "[#{raw_id}:#{@ident}:#{@instance}] FAILURE: " << e.to_s
-            trace :fatal, "[#{raw_id}:#{@ident}:#{@instance}] EXCEPTION: " + e.backtrace.join("\n")
-
+            trace :fatal, "[#{raw_id}:#{@ident}:#{@instance}] Unrecoverable error processing evidence #{raw_id}."
+            trace :debug, "[#{raw_id}:#{@ident}:#{@instance}] EXCEPTION: " + e.backtrace.join("\n")
+            
             Dir.mkdir "forwarded" unless File.exists? "forwarded"
             path = "forwarded/#{raw_id}.raw"
             f = File.open(path, 'wb') {|f| f.write raw}
