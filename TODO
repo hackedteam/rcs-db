@@ -12,20 +12,19 @@ TODO (daVinci 8.0.0):
     license generator
 
     worker decoding:
-        - call
-        - mic
         - mail
-	    - addressbook
-	    - filesystem
-	        - cut del sottoalbero
+	- sms/mms
+        - addressbook (split fields)
+	- filesystem
+		- cut del sottoalbero
 	        - sub \\ con \  (anche in migrazione)
 	        - usiamo anche file per il filesystem?
-	    - location ?
 
     worker should delete evidence of deleted agents
 
     migration: 
        - calendar (split body in location, recipients and body)
+       - addressbook (split fields)
 
     mongo authentication
 
