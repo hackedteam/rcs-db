@@ -284,6 +284,38 @@ class Call
 
     return true
   end
+  
+  def flush_on_close
+    # if status is not defined, define it with the information we have
+    if queueing?
+      @status = :single_channel if num_channels == 1
+      @status = :dual_channel if num_channels == 2
+    end
+    
+    if dual_channel?
+      @evidence ||= store @peer, @program, @start_time, @agent, @target
+
+      num_samples = [@channels[:outgoing].wav_data.size, @channels[:incoming].wav_data.size].min
+
+      left_pcm = @channels[:outgoing].wav_data.shift num_samples
+      right_pcm = @channels[:incoming].wav_data.shift num_samples
+
+      @duration += (1.0 * num_samples) / @sample_rate
+
+      yield @sample_rate, left_pcm, right_pcm
+    elsif single_channel?
+      @evidence ||= store @peer, @program, @start_time, @agent, @target
+
+      channel = @channels.values[0]
+
+      left_pcm = channel.wav_data.shift(channel.wav_data.size)
+      right_pcm = Array.new left_pcm
+
+      @duration += (1.0 * channel.wav_data.size) / channel.sample_rate
+
+      yield channel.sample_rate, left_pcm, right_pcm
+    end
+  end
 
   def update_attributes(hash)
     @evidence.update_attributes(hash)
@@ -328,7 +360,7 @@ class Call
     case num_channels
       when 1
         channel = @channels.values[0]
-        gap = (channel.written_samples / channel.sample_rate) - channel.start_time.to_f
+        gap = (1.0 * channel.written_samples) / channel.sample_rate
         @status = :single_channel if gap > 15
         trace :debug, "[CALL #{@id}] call status is #{@status}, channel #{channel.name} gap is #{gap}"
       when 2
@@ -390,6 +422,7 @@ class CallProcessor
   
   def feed(evidence)
     if end_call? evidence
+      @call.flush_on_close
       @call.close! unless @call.nil?
       @call = nil
       return nil
@@ -400,7 +433,7 @@ class CallProcessor
     
     call.feed evidence do |sample_rate, left_pcm, right_pcm|
       encode_mp3(sample_rate, left_pcm, right_pcm) do |mp3_bytes|
-        File.open("#{call.file_name}.mp3", 'ab') {|f| f.write(mp3_bytes) }
+        #File.open("#{call.file_name}.mp3", 'ab') {|f| f.write(mp3_bytes) }
         write_to_grid(call, mp3_bytes)
       end
     end
