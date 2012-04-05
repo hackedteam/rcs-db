@@ -19,7 +19,9 @@ class SingleProcessor
     evidence[:ident] = @agent['ident']
 
     ev = evidence.store @agent, @target
-    yield ev, [evidence[:db_id]] if block_given?
+    unless ev.nil?
+      yield ev, [evidence[:db_id]] if block_given?
+    end
     delete_raw evidence
     ev
   end
