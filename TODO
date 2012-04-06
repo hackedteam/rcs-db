@@ -17,10 +17,6 @@ TODO (daVinci 8.0.0):
         - mail
 	    - sms/mms
         - addressbook (split fields)
-	    - filesystem
-            - usiamo anche file per il filesystem?
-
-    worker should delete evidence of deleted agents
 
     migration: 
        - calendar (split body in location, recipients and body)

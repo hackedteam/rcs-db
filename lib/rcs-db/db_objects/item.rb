@@ -366,6 +366,8 @@ class Item
         # destroy all the evidences
         Evidence.collection_class(self.path.last).where(aid: self._id.to_s).each {|ev| ev.destroy}
     end
+
+    RCS::DB::PushManager.instance.notify(self._kind, {id: self._id})
   end
 
   def notify_callback
