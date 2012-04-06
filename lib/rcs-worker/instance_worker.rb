@@ -131,7 +131,11 @@ class InstanceWorker
             evidences.each do |ev|
 
               next if ev.empty?
-              
+
+              # store agent instance in evidence (used when storing into db)
+              ev[:instance] ||= @agent['instance']
+              ev[:ident] ||= @agent['ident']
+
               # find correct processing module and extend evidence
               mod = "#{ev[:type].to_s.capitalize}Processing"
               if RCS.const_defined? mod.to_sym

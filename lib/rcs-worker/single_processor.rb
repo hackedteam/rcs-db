@@ -15,8 +15,8 @@ class SingleProcessor
 
   def feed(evidence)
     # store agent instance in evidence (used when storing into db)
-    evidence[:instance] = @agent['instance']
-    evidence[:ident] = @agent['ident']
+    evidence[:instance] ||= @agent['instance']
+    evidence[:ident] ||= @agent['ident']
 
     return nil, 1 if evidence.is_duplicate? @agent, @target
 
