@@ -337,6 +337,8 @@ class Item
         # enable sharding only if not enabled
         RCS::DB::Shard.set_key(collection, {type: 1, da: 1, aid: 1})
     end
+
+    RCS::DB::PushManager.instance.notify(self._kind, {id: self._id})
   end
 
   def destroy_callback
