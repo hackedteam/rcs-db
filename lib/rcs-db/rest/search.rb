@@ -34,11 +34,13 @@ class SearchController < RESTController
       db = Mongoid.database
       j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "path", "stat", "type", "platform", "instance", "version", "demo", "deleted"])
 
-      # the console MUST not see deleted items
-      return not_found if j.first['deleted']
-      return not_found if j.first.nil?
+      agent = j.first
 
-      ok(j.first)
+      # the console MUST not see deleted items
+      return not_found if agent.nil?
+      return not_found if agent.has_key?('deleted') and agent['deleted']
+
+      ok(agent)
     end
   end
   
