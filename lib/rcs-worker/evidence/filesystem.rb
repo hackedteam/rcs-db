@@ -14,6 +14,7 @@ module FilesystemProcessing
 
     if self[:data][:attr] == FilesystemEvidence::FILESYSTEM_IS_FILE
       baseline = get_base_path(self[:data][:path])
+
       return if baseline.nil?
 
       agent = get_agent
@@ -25,7 +26,7 @@ module FilesystemProcessing
       ::Evidence.collection_class(target[:_id])
         .where(:type => 'filesystem',
                :aid => agent._id,
-               :dr.lt => self[:dr],
+               :dr.lt => self[:dr].to_i,
                'data.path' => Regexp.new(Regexp.escape(baseline), true)).each do |e|
         e.delete
       end
