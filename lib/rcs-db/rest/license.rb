@@ -24,6 +24,9 @@ class LicenseController < RESTController
     limits[:nia][0] = nil if limits[:nia][0] == inf
     limits[:shards] = nil if limits[:shards] == inf
 
+    limits[:expiry] = limits[:expiry].to_i
+    limits[:maintenance] = limits[:maintenance].to_i
+
     return ok(limits)
   end
   
