@@ -119,7 +119,7 @@ class EvidenceTask
     table = "<table class=\"inner\"><tbody>"
     # expand all the metadata
     row[:data].each_pair do |k, v|
-      next if ['_grid', '_grid_size', 'md5', 'type', 'body', 'status'].include? k
+      next if ['_grid', '_grid_size', 'md5', 'body', 'status'].include? k
       v = CGI::escapeHTML(v.to_s)
       v.gsub! /\n/, '<br>' if v.class == String
       table << "<tr><td class=\"inner\">#{k}</td><td class=\"inner\">#{v}</td></tr>"
@@ -133,11 +133,11 @@ class EvidenceTask
       when 'call', 'mic'
         table << "<tr><td class=\"inner\">audio</td><td class=\"inner\">#{html_mp3_player(row[:data]['_grid'].to_s + '.mp3')}</td></tr>"
       when 'file'
-        if row[:data]['type'] == 'capture'
+        if row[:data]['type'] == :capture
           table << "<tr><td class=\"inner\">file</td><td class=\"inner\"><a href=\"#{row[:data]['_grid'].to_s + File.extname(row[:data]['path'])}\" title=\"Download\"><font size=3><b>⇊</b></font></a></td></tr>"
         end
       when 'message'
-        if row[:data]['type'] == 'mail'
+        if row[:data]['type'] == :mail
           table << "<tr><td class=\"inner\">body</td><td class=\"inner\"><a href=\"#{row[:data]['_grid'].to_s + '.txt'}\" title=\"Download\"><font size=3><b>⇊</b></font></a></td></tr>"
         end
       end
@@ -198,7 +198,7 @@ class EvidenceTask
       when 'file'
         name << File.extname(evidence[:data]['path'])
       when 'message'
-        if evidence[:data]['type'] == 'mail'
+        if evidence[:data]['type'] == :mail
           name << '.txt'
         end
     end
