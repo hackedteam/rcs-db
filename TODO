@@ -11,14 +11,14 @@ TODO (daVinci 8.0.0):
     re-insert integrity for license
     license generator
 
+    hack da db
+
     worker decoding:
         - mail
-	- sms/mms
+	    - sms/mms
         - addressbook (split fields)
-	- filesystem
-		- cut del sottoalbero
-	        - sub \\ con \  (anche in migrazione)
-	        - usiamo anche file per il filesystem?
+	    - filesystem
+            - usiamo anche file per il filesystem?
 
     worker should delete evidence of deleted agents
 

