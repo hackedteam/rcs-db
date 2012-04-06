@@ -28,7 +28,10 @@ class TargetController < RESTController
     mongoid_query do
       db = Mongoid.database
       j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "path", "stat"])
-      ok(j.first)
+
+      target = j.first
+      return not_found if target.nil?
+      ok(target)
     end
   end
   

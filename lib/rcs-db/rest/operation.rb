@@ -27,7 +27,10 @@ class OperationController < RESTController
     mongoid_query do
       db = Mongoid.database
       j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "path", "stat", "group_ids"])
-      ok(j.first)
+
+      operation = j.first
+      return not_found if operation.nil?
+      ok(operation)
     end
   end
   
