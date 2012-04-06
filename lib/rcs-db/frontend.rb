@@ -46,7 +46,8 @@ class Frontend
 
         # send the push request
         http = Net::HTTP.new(collector.address, 80)
-        resp = http.request_put("/#{filename}", content, {})
+        sig = ::Signature.where({scope: 'server'}).first
+        resp = http.request_put("/#{filename}", content, {'Cookie' => sig[:value]})
 
         raise "wrong response from collector" unless resp.body == "OK"
       end

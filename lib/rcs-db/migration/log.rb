@@ -304,7 +304,7 @@ class LogMigration
       when 'SNAPSHOT'
         conversion = {:varchar1 => :program, :varchar2 => :window} #, :longtext1 => :ocr}
       when 'URL'
-        conversion = {:varchar1 => :url, :varchar2 => :browser, :varchar3 => :title, :varchar4 => :keywords}#, :longtext1 => :ocr}
+        conversion = {:varchar1 => :url, :varchar2 => :program, :varchar3 => :title, :varchar4 => :keywords}#, :longtext1 => :ocr}
     end
 
     conversion.each_pair do |k, v|
