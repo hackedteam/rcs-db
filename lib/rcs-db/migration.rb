@@ -23,6 +23,12 @@ end
 module RCS
 module DB
 
+# don't push any notification during migration
+class PushManager
+  def notify(type, message={})
+  end
+end
+
 class Migration
   include Singleton
   include RCS::Tracer

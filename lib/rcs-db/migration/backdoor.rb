@@ -150,7 +150,9 @@ class BackdoorMigration
       agent = Item.where({_mid: up[:backdoor_id], _kind: 'agent'}).first
       next if agent.nil?
       begin
+        next if agent.upload_requests.where({:_mid => up[:upload_id]}).first
         upload = agent.upload_requests.create!(filename: up[:filename])
+        upload[:_mid] = up[:upload_id]
         upload[:_grid] = [ GridFS.put(up[:content], {filename: up[:filename]}) ]
         upload[:_grid_size] = up[:content].bytesize
         upload.save
