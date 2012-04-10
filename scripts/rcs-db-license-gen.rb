@@ -139,6 +139,8 @@ class LicenseGenerator
       puts "License file created. #{File.size(options[:output])} bytes"
     end
 
+    pp @limits if options[:verbose]
+
   end
 
   # executed from rcs-db-license
@@ -161,6 +163,10 @@ class LicenseGenerator
 
       opts.on( '-o', '--output FILE', String, 'Output license file' ) do |file|
         options[:output] = file
+      end
+
+      opts.on( '-v', '--verbose', 'Verbose mode' ) do
+        options[:verbose] = true
       end
 
       # This displays the help screen
