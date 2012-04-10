@@ -33,6 +33,15 @@ class Alert
     end
   end
 
+  def update_path(id, path)
+    if self.path.last == id
+      trace :debug, "Updating Alert because it contains #{id}"
+      self.path = path
+      self.logs.destroy_all
+      self.save
+    end
+  end
+
 end
 
 

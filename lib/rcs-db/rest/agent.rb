@@ -190,7 +190,11 @@ class AgentController < RESTController
       # we cant before the evidence move otherwise the grid entries won't get deleted
       agent.path = target.path + [target._id]
       agent.save
-      
+
+      # update the path in alerts and connectors
+      ::Alert.all.each {|a| a.update_path(agent._id, agent.path + [agent._id])}
+      ::Connector.all.each {|a| a.update_path(agent._id, agent.path + [agent._id])}
+
       trace :info, "Moving finished for #{agent._kind} #{agent.name}"
 
       Audit.log :actor => @session[:user][:name],
