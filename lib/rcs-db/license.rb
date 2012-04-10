@@ -51,6 +51,7 @@ class LicenseManager
     #   - cannot create agents (neither demo nor real)
     @limits = {:type => 'reusable',
                :serial => "off",
+               :version => LICENSE_VERSION,
                :users => 1,
                :agents => {:total => 0,
                               :desktop => 0,
@@ -392,15 +393,17 @@ class LicenseManager
 
 
   def crypt_check(hash)
-    # TODO: remove this for release
-    return true
-    # calculate the check on the whole hash except the :integrity field itself
+    # first check on signature
+    content = hash.reject {|k,v| k == :integrity or k == :signature}.to_s
+    check = Digest::HMAC.hexdigest(content, "əɹnʇɐuƃıs ɐ ʇou sı sıɥʇ", Digest::SHA2)
+    return false if hash[:signature] != check
+
+    # second check on integrity
     content = hash.reject {|k,v| k == :integrity}.to_s
-    # calculate the encrypted SHA1 with magic
-    check = aes_encrypt(Digest::SHA1.digest(content), Digest::SHA1.digest("€ ∫∑x=1 ∆t π™")).unpack('H*').first
-    # TODO: remove this for release
-    trace :debug, check
-    return hash[:integrity] == check
+    check = aes_encrypt(Digest::SHA2.digest(content), Digest::SHA2.digest("€ ∫∑x=1 ∆t π™")).unpack('H*').first
+    return false if hash[:integrity] != check
+
+    return true
   end
 
 

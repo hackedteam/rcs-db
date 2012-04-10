@@ -8,11 +8,6 @@ TEST:
 
 TODO (daVinci 8.0.0):
 
-    re-insert integrity for license
-    license generator
-
-    hack da db
-
     worker decoding:
         - mail
 	    - sms/mms
@@ -22,13 +17,12 @@ TODO (daVinci 8.0.0):
        - calendar (split body in location, recipients and body)
        - addressbook (split fields)
 
-    mongo authentication
-
     is vcredist needed ?
 
 
-
 FUTURE (daVinci 8.x.x):
+
+    mongo authentication
 
     with mongo 2.1.x
         logRotate

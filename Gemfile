@@ -37,6 +37,7 @@ gem 'xml-simple'
 # Include everything needed to run rake, tests, features, etc.
 group :development do
   gem "bundler", "> 1.0.0"
+  gem 'rake'
   gem 'test-unit'
   gem 'simplecov'
 end
