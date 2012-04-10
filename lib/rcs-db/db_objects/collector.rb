@@ -39,9 +39,8 @@ class Collector
   public
   def self.collector_login(instance, version, ext_address, local_address)
 
-    coll = Collector.where({type: 'locals'}).any_in({instance: [instance, 'MIGRATED']}).first
+    coll = Collector.where({type: 'local'}).any_in({instance: [instance, 'MIGRATED']}).first
 
-    puts coll.inspect
     # the collector does not exist, check the licence and create it
     if coll.nil?
       raise 'LICENSE_LIMIT_EXCEEDED' unless RCS::DB::LicenseManager.instance.check :collectors
