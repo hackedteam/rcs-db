@@ -113,7 +113,7 @@ class Dongle
     def time
       return info[:time]
     rescue Exception => e
-      trace :debug, "Cannot get time from dongle, falling back"
+      #trace :debug, "Cannot get time from dongle, falling back"
       return Time.now.getutc
     end
   end
