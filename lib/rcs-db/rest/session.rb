@@ -22,10 +22,12 @@ class SessionController < RESTController
     
     session_id = @params['_id']
     session = SessionManager.instance.get(session_id)
-    return not_found if session.nil?
-    return not_found unless SessionManager.instance.delete(session_id)
 
-    PushManager.instance.notify('message', {rcpt: session[:user][:_id], text: 'You were disconnected by and admin'})
+    return not_found if session.nil?
+
+    PushManager.instance.notify('message', {rcpt: session[:user][:_id], text: "You were disconnected by #{@session[:user][:name]}"})
+
+    return not_found unless SessionManager.instance.delete(session_id)
 
     Audit.log :actor => @session[:user][:name], :action => 'session.destroy', :desc => "Killed the session of the user '#{session[:user][:name]}'"
 

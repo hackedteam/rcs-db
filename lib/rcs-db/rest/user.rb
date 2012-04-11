@@ -136,9 +136,12 @@ class UserController < RESTController
     require_auth_level :admin
 
     mongoid_query do
-      user = User.find(@params['_id'])
-
-      PushManager.instance.notify('message', {from: @session[:user][:name], rcpt: user[:_id], text: @params['text']})
+      unless @params['_id'].nil?
+        user = User.find(@params['_id'])
+        PushManager.instance.notify('message', {from: @session[:user][:name], rcpt: user[:_id], text: @params['text']})
+      else
+        PushManager.instance.notify('message', {from: @session[:user][:name], text: @params['text']})
+      end
 
       return ok
     end

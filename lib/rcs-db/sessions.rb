@@ -95,6 +95,9 @@ class SessionManager
   end
   
   def delete(cookie)
+    # terminate the websocket connection
+    @sessions[cookie][:ws].close_websocket unless @sessions[cookie][:ws].nil?
+    # delete the cookie session
     return @sessions.delete(cookie) != nil
   end
   
