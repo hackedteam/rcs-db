@@ -205,8 +205,12 @@ class LogMigration
       # and the stats will not be calculated on them
       e[:_mid] = log[:log_id]
 
-      e.da = log[:acquired].to_i
-      e.dr = log[:received].to_i
+      # the MySQL driver passes the dates in our timezone, but it is actually an UTC
+      # we fake it printing it in UTC and parsing back
+      ts = log[:acquired].strftime("%Y-%m-%d %H:%M:%S UTC")
+      e.da = Time.parse(ts).getutc.to_i
+      ts = log[:received].strftime("%Y-%m-%d %H:%M:%S UTC")
+      e.dr = Time.parse(ts).getutc.to_i
 
       # avoid windows epoch (1601-01-01) replacing with unix epoch (1970-01-01)
       e.da = 0 if e.da < 0
@@ -338,14 +342,18 @@ class LogMigration
     end
 
     # keep the subtype into messages
-    if log[:type] == 'mail' or log[:type] == 'sms' or log[:type] == 'mms'
+    if log[:type] == 'MAIL' or log[:type] == 'SMS' or log[:type] == 'MMS'
       data[:type] = log[:type].to_sym
     end
 
-    # remove unneeded
     data.delete 'status' if log[:type] == 'MIC' or log[:type] == 'CALL'
 
-    data[:size] = log[:longblob1].bytesize if log[:type] == 'FILECAP'
+    if log[:type] == 'FILECAP'
+      data[:size] = log[:longblob1].bytesize
+      data[:type] = :capture
+    end
+
+    data[:type] = :open if log[:type] == 'FILEOPEN'
 
     data[:path].gsub!("\\\\", "\\") if log[:type] == 'FILESYSTEM'
 
