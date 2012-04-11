@@ -86,14 +86,30 @@ class AgentController < RESTController
       # if the deletion is permanent, destroy the item
       if @params['permanent']
         trace :info, "Agent #{item.name} permanently deleted"
-        item.destroy
+
+        Thread.new do
+          begin
+            item.destroy
+          ensure
+            Thread.exit
+          end
+        end
+
         return ok
       end
 
       # don't actually destroy the agent, but mark it as deleted
       item.deleted = true
-      item.destroy_callback
       item.save
+
+      # run the destroy callback to clean the evidence collection
+      Thread.new do
+        begin
+          item.destroy_callback
+        ensure
+          Thread.exit
+        end
+      end
 
       return ok
     end

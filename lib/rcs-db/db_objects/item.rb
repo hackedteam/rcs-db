@@ -119,7 +119,7 @@ class Item
         self.stat.grid_size = 0;
         self.stat.evidence = {}
         self.stat.dashboard = {}
-        agents = Item.where(_kind: 'agent').also_in(path: [self._id])
+        agents = Item.where(_kind: 'agent', deleted: false).also_in(path: [self._id])
         agents.each do |a|
           self.stat.evidence.merge!(a.stat.evidence) {|k,o,n| o+n }
           self.stat.dashboard.merge!(a.stat.dashboard) {|k,o,n| o+n }
@@ -349,7 +349,7 @@ class Item
     # remove the NIA rules that contains the item
     ::Injector.all.each {|p| p.delete_rule_by_item(self._id)}
     # remove the connector rules that contains the item
-    ::Connector.all.each {|p| p.delete_rule_by_item(self._id)}
+    ::Connector.all.each {|p| p.delete_if_item(self._id)}
 
     case self._kind
       when 'operation'
@@ -364,12 +364,15 @@ class Item
         Mongoid.database.drop_collection Evidence.collection_name(self._id.to_s)
         RCS::DB::GridFS.delete_collection(self._id.to_s)
       when 'agent'
-        trace :info, "Deleting evidence for agent #{self.name}"
-        # destroy all the evidences
-        Evidence.collection_class(self.path.last).where(aid: self._id.to_s).each {|ev| ev.destroy}
+        trace :info, "Deleting evidence for agent #{self.name}..."
+        Evidence.collection_class(self.path.last).destroy_all(conditions: { aid: self._id.to_s })
+        trace :info, "Deleting evidence for agent #{self.name} done."
     end
 
     RCS::DB::PushManager.instance.notify(self._kind, {id: self._id})
+  rescue Exception => e
+    trace :error, "ERROR: #{e.message}"
+    trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
   end
 
   def notify_callback
