@@ -1,30 +1,58 @@
 ---
-:serial: "off"
-:version: "8.0"
-:type: "reusable"
-:expiry: "2015-01-01 00:00:00 UTC"
-:maintenance: "2013-01-01 00:00:00 UTC"
-:users: .Inf
+:serial: 'off'
+:version: '8.0'
+:type: reusable
+:expiry: '2015-01-01 00:00:00 UTC'
+:maintenance: '2013-01-01 00:00:00 UTC'
+:users: .inf
 :agents:
-  :total: .Inf
-  :desktop: .Inf
-  :mobile: .Inf
-  :windows: [true, true]
-  :osx: [true, true]
-  :linux: [false, false]
-  :android: [true, true]
-  :blackberry: [true, true]
-  :ios: [true, true]
-  :symbian: [true, true]
-  :winmo: [true, true]
+  :total: .inf
+  :desktop: .inf
+  :mobile: .inf
+  :windows:
+  - true
+  - true
+  :osx:
+  - true
+  - true
+  :linux:
+  - false
+  - false
+  :android:
+  - true
+  - true
+  :blackberry:
+  - true
+  - true
+  :ios:
+  - true
+  - true
+  :symbian:
+  - true
+  - true
+  :winmo:
+  - true
+  - true
 :alerting: true
 :correlation: false
 :connectors: true
-:rmi: [false, true]
-:nia: [.Inf, true]
+:rmi:
+- false
+- true
+:nia:
+- .inf
+- true
 :exploits: true
-:collectors: 
+:collectors:
   :collectors: 10
   :anonymizers: 20
 :shards: 2
-:integrity: "1e8f2a01698350da1c9dfde89346002ecd9ed2314d42df9f541b8699b5a6ce04"
+:digest: !binary |-
+  NThlOTY0MDA3ZjQzMzE0OTY3ZTI1ODA2ODQzNjI2NzExZjI5ZmI2Mg==
+:signature: !binary |-
+  ZWUzYzU5OTI0NTVhZWZlZmFmNWZkNmQ2MDZhZTA3ZDcwMTFkNzIzYjk1YWNj
+  Mjc4MGZmZjhmOTBjNjhhODRmZA==
+:integrity: !binary |-
+  ZDQ3MzAzMDdlZjE2NmZlMDAxMGY0MWQ2Yjc0MDUxZWZkMzkzZTI1MDZmYmRj
+  MDE1ZDY2YTg4MTBjNDcwOTA2NTRiNjljMWU1YzliZTUyNjY4ZDIzZjBjODcw
+  OWM1NmI5

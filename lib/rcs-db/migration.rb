@@ -97,6 +97,12 @@ class Migration
       end
     end
 
+    # don't push any notification during migration
+    PushManager.class_eval do
+      def notify(type, message={})
+      end
+    end
+
     # This hash will hold all of the options parsed from the command-line by OptionParser.
     options = {}
 

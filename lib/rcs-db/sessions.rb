@@ -95,13 +95,16 @@ class SessionManager
   end
   
   def delete(cookie)
+    # terminate the websocket connection
+    @sessions[cookie][:ws].close_websocket unless @sessions[cookie][:ws].nil?
+    # delete the cookie session
     return @sessions.delete(cookie) != nil
   end
   
   # default timeout is 15 minutes
   # this timeout is calculated from the last time the cookie was checked
   def timeout(delta = 900)
-    trace :debug, "Session Manager timing out entries..." if @sessions.length > 0
+    trace :debug, "Session Manager searching for timed out entries..." if @sessions.length > 0
     # save the size of the hash before deletion
     size = @sessions.length
     # search for timed out sessions

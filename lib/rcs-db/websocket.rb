@@ -92,6 +92,7 @@ class WebSocketManager
     def close(ws)
       trace :debug,  "[#{ws.object_id}] WS connection closed"
       session = SessionManager.instance.get_by_ws ws
+      return if session.nil?
       # release the handler in the session
       session[:ws] = nil
     end

@@ -15,7 +15,7 @@ class PushManager
   include RCS::Tracer
 
   def notify(type, message={})
-    trace :info, "PUSH Event: #{type} #{message}"
+    trace :debug, "PUSH Event: #{type} #{message}"
 
     begin
       SessionManager.instance.each_ws(message[:id], message[:rcpt]) do |ws|

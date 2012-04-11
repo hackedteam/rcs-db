@@ -202,7 +202,7 @@ class Events
         trace :info, "Listening for wss on port #{port + 1}..."
 
         # ping for the connected clients
-        EM::PeriodicTimer.new(60) { PushManager.instance.heartbeat }
+        EM::PeriodicTimer.new(60) { EM.defer(proc{ PushManager.instance.heartbeat }) }
 
         # send the first heartbeat to the db, we are alive and want to notify the db immediately
         # subsequent heartbeats will be sent every HB_INTERVAL
@@ -212,13 +212,13 @@ class Events
         EM::PeriodicTimer.new(Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
 
         # timeout for the sessions (will destroy inactive sessions)
-        EM::PeriodicTimer.new(60) { SessionManager.instance.timeout }
+        EM::PeriodicTimer.new(60) { EM.defer(proc{ SessionManager.instance.timeout }) }
 
         # reset the dashboard counter to be sure that on startup all the counters are empty
         Item.reset_dashboard
         # recalculate size statistics for operations and targets
         Item.restat
-        EM::PeriodicTimer.new(60) { EM.defer(proc{Item.restat}) }
+        EM::PeriodicTimer.new(60) { EM.defer(proc{ Item.restat }) }
 
         # perform the backups
         EM::PeriodicTimer.new(60) { EM.defer(proc{ BackupManager.perform }) }

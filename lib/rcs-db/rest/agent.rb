@@ -86,14 +86,30 @@ class AgentController < RESTController
       # if the deletion is permanent, destroy the item
       if @params['permanent']
         trace :info, "Agent #{item.name} permanently deleted"
-        item.destroy
+
+        Thread.new do
+          begin
+            item.destroy
+          ensure
+            Thread.exit
+          end
+        end
+
         return ok
       end
 
       # don't actually destroy the agent, but mark it as deleted
       item.deleted = true
-      item.destroy_callback
       item.save
+
+      # run the destroy callback to clean the evidence collection
+      Thread.new do
+        begin
+          item.destroy_callback
+        ensure
+          Thread.exit
+        end
+      end
 
       return ok
     end
@@ -160,34 +176,42 @@ class AgentController < RESTController
       agent = Item.any_in(_id: @session[:accessible]).find(@params['_id'])
       old_target = agent.get_parent
 
-      evidences = Evidence.collection_class(old_target[:_id]).where(:item => agent[:_id])
+      # factories don't have evidence to be moved
+      if agent._kind == 'agent'
 
-      trace :info, "Moving #{evidences.count} evidence for agent #{agent.name} to target #{target.name}"
+        evidences = Evidence.collection_class(old_target[:_id]).where(:item => agent[:_id])
 
-      # copy the new evidence
-      evidences.each do |e|
-        # deep copy the evidence from one collection to the other
-        ne = Evidence.dynamic_new(target[:_id])
-        Evidence.deep_copy(e, ne)
+        trace :info, "Moving #{evidences.count} evidence for agent #{agent.name} to target #{target.name}"
 
-        # move the binary content
-        if e.data['_grid']
-          bin = GridFS.get(e.data['_grid'], old_target[:_id].to_s)
-          ne.data['_grid'] = GridFS.put(bin, {filename: agent[:_id].to_s}, target[:_id].to_s) unless bin.nil?
+        # copy the new evidence
+        evidences.each do |e|
+          # deep copy the evidence from one collection to the other
+          ne = Evidence.dynamic_new(target[:_id])
+          Evidence.deep_copy(e, ne)
+
+          # move the binary content
+          if e.data['_grid']
+            bin = GridFS.get(e.data['_grid'], old_target[:_id].to_s)
+            ne.data['_grid'] = GridFS.put(bin, {filename: agent[:_id].to_s}, target[:_id].to_s) unless bin.nil?
+          end
+
+          ne.save
         end
 
-        ne.save
+        # remove the old evidence
+        Evidence.collection_class(old_target[:_id]).where(:item => agent[:_id]).destroy_all
       end
-
-      # remove the old evidence
-      Evidence.collection_class(old_target[:_id]).where(:item => agent[:_id]).destroy_all
 
       # actually move the target now.
       # we cant before the evidence move otherwise the grid entries won't get deleted
       agent.path = target.path + [target._id]
       agent.save
-      
-      trace :info, "Moving finished for agent #{agent.name}"
+
+      # update the path in alerts and connectors
+      ::Alert.all.each {|a| a.update_path(agent._id, agent.path + [agent._id])}
+      ::Connector.all.each {|a| a.update_path(agent._id, agent.path + [agent._id])}
+
+      trace :info, "Moving finished for #{agent._kind} #{agent.name}"
 
       Audit.log :actor => @session[:user][:name],
                 :action => "#{agent._kind}.move",

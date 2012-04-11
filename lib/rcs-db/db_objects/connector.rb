@@ -16,6 +16,22 @@ class Connector
   field :path, type: Array
 
   store_in :connectors
+
+  def delete_if_item(id)
+    if self.path.include? id
+      trace :debug, "Deleting Connector because it contains #{id}"
+      self.destroy
+    end
+  end
+
+  def update_path(id, path)
+    if self.path.last == id
+      trace :debug, "Updating Connector because it contains #{id}"
+      self.path = path
+      self.save
+    end
+  end
+
 end
 
 #end # ::DB

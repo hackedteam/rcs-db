@@ -28,7 +28,7 @@ gem 'sqlite3'
 gem 'mongo', :git => "git://github.com/danielemilan/mongo-ruby-driver.git"
 gem 'mongoid'
 gem 'bson'
-gem 'bson_ext', ">= 1.6.1"
+gem 'bson_ext', ">= 1.6.2"
 # to be removed after migration from 7.0
 gem 'mysql2', "= 0.3.3"
 gem 'xml-simple'
@@ -37,6 +37,7 @@ gem 'xml-simple'
 # Include everything needed to run rake, tests, features, etc.
 group :development do
   gem "bundler", "> 1.0.0"
+  gem 'rake'
   gem 'test-unit'
   gem 'simplecov'
 end

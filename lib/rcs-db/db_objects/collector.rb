@@ -39,7 +39,7 @@ class Collector
   public
   def self.collector_login(instance, version, ext_address, local_address)
 
-    coll = Collector.any_in({instance: [instance, 'MIGRATED']}).first
+    coll = Collector.where({type: 'local'}).any_in({instance: [instance, 'MIGRATED']}).first
 
     # the collector does not exist, check the licence and create it
     if coll.nil?
