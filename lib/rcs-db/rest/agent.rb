@@ -87,6 +87,10 @@ class AgentController < RESTController
       if @params['permanent']
         trace :info, "Agent #{item.name} permanently deleted"
 
+        # mark as deleted to report to the console immediately
+        item.deleted = true
+        item.save
+
         Thread.new do
           begin
             item.destroy
