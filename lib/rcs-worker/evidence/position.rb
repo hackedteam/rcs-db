@@ -35,9 +35,9 @@ module RCS
       res = http.request_post('/position', q.to_json)
       reply = JSON.parse(res.body)
 
-      puts "POSITION: #{reply}"
       return if reply['latitude'].nil? or reply['longitude'].nil?
 
+      self[:data]['accuracy'] = 20 if self[:data][:type] == 'GPS'
       self[:data].merge!(reply)
     end
 
