@@ -8,8 +8,6 @@ TEST:
 
 TODO (daVinci 8.0.0):
 
-    speed up evidence deletion
-
     worker decoding:
         - mail
 	    - sms/mms
