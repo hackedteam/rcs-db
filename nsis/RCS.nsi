@@ -218,6 +218,7 @@ Section "Install Section" SecInstall
   DetailPrint "Extracting common files..."
   SetDetailsPrint "textonly"
   !cd '..\..'
+  RMDir /r "$INSTDIR\Ruby"
   SetOutPath "$INSTDIR\Ruby"
   File /r "Ruby\*.*"
 
@@ -238,9 +239,11 @@ Section "Install Section" SecInstall
     DetailPrint "Installing Common files..."
     SetDetailsPrint "textonly"
     !cd 'DB'
- 
+
+    RMDir /r "$INSTDIR\Java"
     SetOutPath "$INSTDIR\Java"
     File /r "..\Java\*.*"
+
     SetOutPath "$INSTDIR\Python"
     File /r "..\Python\*.*"
   

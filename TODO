@@ -4,9 +4,6 @@ TEST:
 
 TODO (daVinci 8.0.0):
 
-    script per cancellare RCS Seven
-
-
     worker decoding:
         - mail
 	    - sms/mms

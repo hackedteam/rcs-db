@@ -1,0 +1,16 @@
+#!/usr/bin/env ruby
+
+require 'fileutils'
+
+DaVinciFiles = ['DB', 'Collector', 'setup', 'Ruby', 'Java', 'Python']
+
+Dir['C:/RCSDB/*'].each do |entry|
+
+  file = File.basename(entry)
+
+  next if DaVinciFiles.include? file
+  
+  puts "Removing #{entry}..."
+
+  FileUtils.rm_rf entry
+end
