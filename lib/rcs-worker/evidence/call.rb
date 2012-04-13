@@ -27,12 +27,13 @@ module CallProcessing
     self[:data][:sample_rate] &= ~LOG_AUDIO_AMR # clear codec bit if set
 
     # speex decode
+    data = self[:data][:grid_content]
     case self[:data][:program]
       when "Mobile"
-        self[:wav] = Speex.get_wav_frames(self[:data][:grid_content], Speex::MODEID_NB) if codec == :speex
-        self[:wav] = [] if codec == :amr # AMR.get_wav_frames data if codec == :amr
+        self[:wav] = Speex.get_wav_frames(data, Speex::MODEID_NB) if codec == :speex
+        self[:wav] = AMR.get_wav_frames data if codec == :amr # AMR.get_wav_frames data if codec == :amr
       else
-        self[:wav] = Speex.get_wav_frames(self[:data][:grid_content], Speex::MODEID_UWB) if codec == :speex
+        self[:wav] = Speex.get_wav_frames(data, Speex::MODEID_UWB) if codec == :speex
         self[:wav] = AMR.get_wav_frames data if codec == :amr
     end
     #wav = Wave.new 1, self[:data][:sample_rate]

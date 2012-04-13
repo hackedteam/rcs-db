@@ -69,9 +69,9 @@ class Channel
 
   def resample_channel(sample_rate)
     return if sample_rate == @sample_rate
-    trace :debug, "[CHAN #{to_s}] resampling channel from #{@sample_rate} to #{sample_rate}"
-    @wav_data = SRC::Resampler.new(sample_rate).resample_channel(@wav_data, @sample_rate) unless sample_rate == @sample_rate
     @needs_resampling = sample_rate
+    trace :debug, "[CHAN #{to_s}] resampling channel from #{@sample_rate} to #{@needs_resampling}"
+    @wav_data = SRC::Resampler.new(@needs_resampling).resample_channel(@wav_data, @sample_rate)
     @resampled = true
   end
 
@@ -261,22 +261,21 @@ class Call
         @evidence ||= store @peer, @program, @start_time, @agent, @target
 
         num_samples = [@channels[:outgoing].wav_data.size, @channels[:incoming].wav_data.size].min
+        @duration += (1.0 * num_samples) / @sample_rate
 
         left_pcm = @channels[:outgoing].wav_data.shift num_samples
         right_pcm = @channels[:incoming].wav_data.shift num_samples
-
-        @duration += (1.0 * num_samples) / @sample_rate
 
         yield @sample_rate, left_pcm, right_pcm
       elsif single_channel?
         @evidence ||= store @peer, @program, @start_time, @agent, @target
 
         channel = @channels.values[0]
+        num_samples = channel.wav_data.size
+        @duration += (1.0 * num_samples) / channel.sample_rate
 
         left_pcm = channel.wav_data.shift(channel.wav_data.size)
         right_pcm = Array.new left_pcm
-
-        @duration += (1.0 * channel.wav_data.size) / channel.sample_rate
 
         yield channel.sample_rate, left_pcm, right_pcm
       end
@@ -442,6 +441,7 @@ class CallProcessor
   
   def encode_mp3(sample_rate, left_pcm, right_pcm)
     # MP3Encoder will take care of resampling if necessary
+    trace :debug, "ENCODING MP3 @#{sample_rate} KHz"
     @encoder ||= ::MP3Encoder.new(2, sample_rate)
     unless @encoder.nil?
       @encoder.feed(left_pcm, right_pcm) do |mp3_bytes|

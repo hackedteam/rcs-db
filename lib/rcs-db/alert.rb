@@ -44,8 +44,12 @@ class Alerting
 
     def new_instance(agent)
       ::Alert.where(:enabled => true, :action => 'INSTANCE').each do |alert|
+
+        #find its factory
+        factory = ::Item.where({ident: agent.ident, _kind: 'factory'}).first
+
         # skip non matching agents
-        next unless match_path(alert, agent)
+        next unless match_path(alert, agent) || match_path(alert, factory)
 
         # we MUST not dispatch alert for element that are not accessible by the user
         user = ::User.find(alert.user_id)
