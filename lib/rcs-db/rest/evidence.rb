@@ -90,7 +90,7 @@ class EvidenceController < RESTController
       # get a fresh decoding of the position
       if evidence[:type] == 'position'
         result = PositionResolver.decode_evidence(evidence[:data])
-        evidence[:data].merge!(result)
+        evidence[:data] = evidence[:data].merge(result)
         evidence.save
       end
 

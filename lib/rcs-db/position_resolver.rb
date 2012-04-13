@@ -39,6 +39,8 @@ class PositionResolver
           common = {request_address: true, address_language: 'en_US', version: '1.1.0', host: 'maps.google.com'}
           request.merge! common
           location = get_google(request)
+        else
+          raise "Don't know what to search for'"
         end
 
         # remember the response for future requests
@@ -86,23 +88,23 @@ class PositionResolver
 
       case data['type']
         when 'GPS'
-          q = {map: {location: {latitude: data['latitude'], longitude: data['longitude']}}}
+          q = {map: {'location' => {latitude: data['latitude'], longitude: data['longitude']}}}
         when 'WIFI'
           towers = []
           data['wifi'].each do |wifi|
             towers << {mac_address: wifi[:mac], signal_strength: wifi[:sig], ssid: wifi[:bssid]}
           end
-          q = {map: {wifi_towers: towers}}
+          q = {map: {'wifi_towers' => towers}}
         when 'GSM'
-          q = {map: {cell_towers: [
+          q = {map: {'cell_towers' => [
               {mobile_country_code: data['cell']['mcc'], mobile_network_code: data['cell']['mnc'], location_area_code: data['cell']['lac'], cell_id: data['cell']['cid'], signal_strength: data['cell']['db'], timing_advance: data['cell']['adv'], age: data['cell']['age']}
           ], radio_type: 'gsm'}}
         when 'CDMA'
-          q = {map: {cell_towers: [
+          q = {map: {'cell_towers' => [
               {mobile_country_code: data['cell']['mcc'], mobile_network_code: data['cell']['sid'], location_area_code: data['cell']['nid'], cell_id: data['cell']['bid'], signal_strength: data['cell']['db'], timing_advance: data['cell']['adv'], age: data['cell']['age']}
           ], radio_type: 'cdma'}}
         when 'IPv4'
-          q = {map: {ip_address: {ipv4: data['ip']}}}
+          q = {map: {'ip_address' => {ipv4: data['ip']}}}
       end
 
       PositionResolver.get q[:map]
