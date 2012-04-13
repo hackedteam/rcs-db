@@ -1,12 +1,17 @@
 TEST:
     create an item, use it in recent, dashboard, alert and nia rules, then delete it and check accordingly
 
-    create an agent, sync, delete it and check the evidence destroy process (should drop evidences and gridfs)
-
-    check if after deletion the evidences (and grid) are actually deleted
-
 
 TODO (daVinci 8.0.0):
+
+    script per cancellare RCS Seven
+
+    alert su instance
+    cancello operation -> non spariscono i sub-item (in dashboard)
+    cancellare alert on item remove
+
+    controllare il push quando si cancella a cascata (factory in NIA)
+
 
     worker decoding:
         - mail
@@ -16,8 +21,6 @@ TODO (daVinci 8.0.0):
     migration: 
        - calendar (split body in location, recipients and body)
        - addressbook (split fields)
-
-    is vcredist needed ?
 
 
 FUTURE (daVinci 8.x.x):
