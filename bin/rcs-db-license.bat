@@ -1,2 +1,8 @@
 @echo off
-ruby rcs-db-license %*
+
+set CWD=%CD%
+cd /D C:\RCS\DB
+
+ruby bin\rcs-db-license %*
+
+cd /D %CWD%
