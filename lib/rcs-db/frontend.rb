@@ -20,9 +20,13 @@ class Frontend
 
       trace :info, "Frontend: Pushing configuration to #{address}"
 
+      headers = {}
+      sig = ::Signature.where({scope: 'server'}).first
+      headers['X-Auth-Frontend'] = sig[:value]
+
       # send the push request
       http = Net::HTTP.new(nc.address, 80)
-      resp = http.request_put("/RCS-NC_#{address}", '', {})
+      resp = http.request_put("/RCS-NC_#{address}", '', headers)
 
       return false unless resp.body == "OK"
       
@@ -44,10 +48,13 @@ class Frontend
         
         trace :info, "Frontend: Putting #{filename} to #{collector.name} (#{collector.address})"
 
+        headers = {}
+        sig = ::Signature.where({scope: 'server'}).first
+        headers['X-Auth-Frontend'] = sig[:value]
+
         # send the push request
         http = Net::HTTP.new(collector.address, 80)
-        sig = ::Signature.where({scope: 'server'}).first
-        resp = http.request_put("/#{filename}", content, {'Cookie' => sig[:value]})
+        resp = http.request_put("/#{filename}", content, headers)
 
         raise "wrong response from collector" unless resp.body == "OK"
       end
@@ -58,7 +65,7 @@ class Frontend
   end
 
 
-  def self.proxy(method, host, url, content = nil, options = {})
+  def self.proxy(method, host, url, content = nil, headers = {})
     begin
       raise "no collector found" if ::Status.where({type: 'collector'}).any_in(status: [::Status::OK, ::Status::WARN]).count == 0
       # request to one of the collectors
@@ -66,9 +73,12 @@ class Frontend
 
       trace :debug, "Frontend: Proxying #{host} #{url} to #{collector.name}"
 
+      sig = ::Signature.where({scope: 'server'}).first
+      headers['X-Auth-Frontend'] = sig[:value]
+
       # send the push request
       http = Net::HTTP.new(collector.address, 80)
-      http.send_request('HEAD', "/#{method}/#{host}#{url}", content, options)
+      http.send_request('HEAD', "/#{method}/#{host}#{url}", content, headers)
 
     rescue Exception => e
       trace :error, "Frontend Collector PROXY: #{e.message}"

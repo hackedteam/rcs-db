@@ -43,7 +43,14 @@ class BackupjobController < RESTController
     mongoid_query do
       backup = ::Backup.find(@params['_id'])
 
-      BackupManager.do_backup Time.now.getutc, backup
+      # defer it since it can take long time
+      Thread.new do
+        begin
+          BackupManager.do_backup Time.now.getutc, backup
+        ensure
+          Thread.exit
+        end
+      end
 
       return ok(backup)
     end

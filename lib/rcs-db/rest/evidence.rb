@@ -5,6 +5,7 @@
 require_relative '../db_layer'
 require_relative '../evidence_manager'
 require_relative '../evidence_dispatcher'
+require_relative '../position_resolver'
 
 # rcs-common
 require 'rcs-common/symbolize'
@@ -75,6 +76,28 @@ class EvidenceController < RESTController
       return ok(evidence)
     end
   end
+
+
+  def show
+    require_auth_level :view
+
+    mongoid_query do
+      target = Item.where({_id: @params['target']}).first
+      return not_found("Target not found: #{@params['target']}") if target.nil?
+
+      evidence = Evidence.collection_class(target[:_id]).find(@params['_id'])
+
+      # get a fresh decoding of the position
+      if evidence[:type] == 'position'
+        result = PositionResolver.decode_evidence(evidence[:data])
+        evidence[:data].merge!(result)
+        evidence.save
+      end
+
+      return ok(evidence)
+    end
+  end
+
 
   # used to report that the activity of an instance is starting
   def start

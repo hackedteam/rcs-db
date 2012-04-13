@@ -44,7 +44,9 @@ class Connectors
         operation, target = get_parents agent
         
         # the full exporting path will be splitted in subdir (one for each item)
-        path = File.join(f.dest, operation.name, target.name, agent.name)
+        path = File.join(f.dest, operation.name + '-' + operation[:_id].to_s,
+                                 target.name + '-' + target[:_id].to_s,
+                                 agent.name + '-' + agent[:_id].to_s)
 
         # ensure the dest dir is created
         FileUtils.mkdir_p path
@@ -75,7 +77,9 @@ class Connectors
         operation, target = get_parents agent
 
         # the full exporting path will be splitted in subdir (one for each item)
-        path = File.join(f.dest, operation.name, target.name, agent.name)
+        path = File.join(f.dest, operation.name + '-' + operation[:_id].to_s,
+                                 target.name + '-' + target[:_id].to_s,
+                                 agent.name + '-' + agent[:_id].to_s)
 
         # ensure the dest dir is created
         FileUtils.mkdir_p path

@@ -32,8 +32,12 @@ module RCS
       http.use_ssl = true
       http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
-      res = http.request_post('/location', q.to_json)
+      res = http.request_post('/position', q.to_json)
       reply = JSON.parse(res.body)
+
+      return if reply['latitude'].nil? or reply['longitude'].nil?
+
+      self[:data]['accuracy'] = 20 if self[:data][:type] == 'GPS'
       self[:data].merge!(reply)
     end
 

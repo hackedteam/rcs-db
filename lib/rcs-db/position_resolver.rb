@@ -13,7 +13,7 @@ require 'json'
 module RCS
 module DB
 
-class Location
+class PositionResolver
   extend RCS::Tracer
   
   @@cache = {}
@@ -29,7 +29,7 @@ class Location
       return cached if cached
 
       begin
-        trace :debug, "Location resolving..."
+        trace :debug, "Position resolving..."
 
         location = {}
 
@@ -69,7 +69,7 @@ class Location
         resp = response.body.match /onLoad=.crearmapa([^)]*)/
         coords = resp.to_s.split('"')
         raise('not found') if (coords[3] == '' and coords[1] == '') or coords[3].nil? or coords[1].nil?
-        {'location' => {'latitude' => coords[3].to_f, 'longitude' => coords[1].to_f}, 'address' => {'country' => coords[7]}}
+        {'latitude' => coords[3].to_f, 'longitude' => coords[1].to_f, 'accuracy' => 20000, 'address' => {'country' => coords[7]}}
       end
     end
 
@@ -79,6 +79,32 @@ class Location
 
     def put_cache(request, response)
       @@cache[request.hash] = response
+    end
+
+
+    def decode_evidence(data)
+      case data[:type]
+        when 'GPS'
+          q = {map: {location: {latitude: data[:latitude], longitude: data[:longitude]}}}
+        when 'WIFI'
+          towers = []
+          data[:wifi].each do |wifi|
+            towers << {mac_address: wifi[:mac], signal_strength: wifi[:sig], ssid: wifi[:bssid]}
+          end
+          q = {map: {wifi_towers: towers}}
+        when 'GSM'
+          q = {map: {cell_towers: [
+              {mobile_country_code: data[:cell][:mcc], mobile_network_code: data[:cell][:mnc], location_area_code: data[:cell][:lac], cell_id: data[:cell][:cid], signal_strength: data[:cell][:db], timing_advance: data[:cell][:adv], age: data[:cell][:age]}
+          ], radio_type: 'gsm'}}
+        when 'CDMA'
+          q = {map: {cell_towers: [
+              {mobile_country_code: data[:cell][:mcc], mobile_network_code: data[:cell][:mnc], location_area_code: data[:cell][:lac], cell_id: data[:cell][:cid], signal_strength: data[:cell][:db], timing_advance: data[:cell][:adv], age: data[:cell][:age]}
+          ], radio_type: 'cdma'}}
+        when 'IPv4'
+          q = {map: {ip_address: {ipv4: data[:ip]}}}
+      end
+
+      PositionResolver.get q['map']
     end
 
   end
