@@ -301,6 +301,9 @@ Section "Install Section" SecInstall
     DetailPrint "Installing license.."
     CopyFiles /SILENT $masterLicense "$INSTDIR\DB\config\rcs.lic"
 
+    DetailPrint "Installing libraries.."
+    nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_x86 /q"
+
     DetailPrint "Installing drivers.."
     nsExec::ExecToLog "$INSTDIR\DB\bin\haspdinst -i -cm -kp -fi"
     SimpleSC::SetServiceFailure "hasplms" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
