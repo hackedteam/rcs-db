@@ -1,6 +1,3 @@
-TEST:
-    create an item, use it in recent, dashboard, alert and nia rules, then delete it and check accordingly
-
 
 TODO (daVinci 8.0.0):
 

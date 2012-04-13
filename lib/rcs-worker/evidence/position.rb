@@ -22,7 +22,7 @@ module RCS
           ], radio_type: 'gsm'}}
         when 'CDMA'
           q = {map: {cell_towers: [
-              {mobile_country_code: self[:data][:cell][:mcc], mobile_network_code: self[:data][:cell][:mnc], location_area_code: self[:data][:cell][:lac], cell_id: self[:data][:cell][:cid], signal_strength: self[:data][:cell][:db], timing_advance: self[:data][:cell][:adv], age: self[:data][:cell][:age]}
+              {mobile_country_code: self[:data][:cell][:mcc], mobile_network_code: self[:data][:cell][:sid], location_area_code: self[:data][:cell][:nid], cell_id: self[:data][:cell][:bid], signal_strength: self[:data][:cell][:db], timing_advance: self[:data][:cell][:adv], age: self[:data][:cell][:age]}
           ], radio_type: 'cdma'}}
         when 'IPv4'
           q = {map: {ip_address: {ipv4: self[:data][:ip]}}}
