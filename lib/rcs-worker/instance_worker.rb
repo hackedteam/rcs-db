@@ -148,10 +148,6 @@ class InstanceWorker
 
               trace :debug, "[#{raw_id}:#{@ident}:#{@instance}] processing evidence of type #{ev[:type]} (#{raw.bytesize} bytes)"
 
-              # override original type
-              ev[:type] = ev.type if ev.respond_to? :type
-              ev_type = ev[:type]
-
               # get info about the agent instance from evidence db
               begin
                 get_agent_target
@@ -172,6 +168,10 @@ class InstanceWorker
                               @single_processor ||= SingleProcessor.new(@agent, @target)
                               @single_processor
                           end
+
+              # override original type
+              ev[:type] = ev.type if ev.respond_to? :type
+              ev_type = ev[:type]
 
               begin
                 evidence_id, index = processor.feed(ev) do |evidence|
