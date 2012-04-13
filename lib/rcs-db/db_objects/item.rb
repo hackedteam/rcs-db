@@ -356,18 +356,26 @@ class Item
         # destroy all the targets of this operation
         Item.where({_kind: 'target', path: [ self._id ]}).each {|targ| targ.destroy}
       when 'target'
-        # destroy all the agents of this target without callbacks
-        # we explicitly drop the collections of the evidence
-        Item.any_in({_kind: ['factory', 'agent']}).also_in({path: [ self._id ]}).each {|agent| agent.delete}
+        # destroy all the agents of this target
+        # to speed up the process, set the DROPPING flag.
+        # during callbacks the agent will not delete the evidence
+        Item.any_in({_kind: ['factory', 'agent']}).also_in({path: [ self._id ]}).each do |agent|
+          agent[:dropping] = true
+          agent.save
+          agent.destroy
+        end
         trace :info, "Dropping evidence for target #{self.name}"
         # drop the evidence collection of this target
         Mongoid.database.drop_collection Evidence.collection_name(self._id.to_s)
         RCS::DB::GridFS.delete_collection(self._id.to_s)
       when 'agent'
-        trace :info, "Deleting evidence for agent #{self.name}..."
-        Evidence.collection_class(self.path.last).delete_all(conditions: { aid: self._id.to_s })
-        GridFS.delete_by_agent(self._id.to_s, self.path.last.to_s)
-        trace :info, "Deleting evidence for agent #{self.name} done."
+        # dropping flag is set only by cascading from target
+        unless self[:dropping]
+          trace :info, "Deleting evidence for agent #{self.name}..."
+          Evidence.collection_class(self.path.last).delete_all(conditions: { aid: self._id.to_s })
+          GridFS.delete_by_agent(self._id.to_s, self.path.last.to_s)
+          trace :info, "Deleting evidence for agent #{self.name} done."
+        end
     end
 
     RCS::DB::PushManager.instance.notify(self._kind, {id: self._id})

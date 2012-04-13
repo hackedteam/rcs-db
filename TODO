@@ -6,12 +6,6 @@ TODO (daVinci 8.0.0):
 
     script per cancellare RCS Seven
 
-    alert su instance
-    cancello operation -> non spariscono i sub-item (in dashboard)
-    cancellare alert on item remove
-
-    controllare il push quando si cancella a cascata (factory in NIA)
-
 
     worker decoding:
         - mail
