@@ -47,6 +47,9 @@ class LogMigration
       unless exclude.include? act[:name]
         begin
           migrate_single_activity act
+        rescue Interrupt
+          puts "User abort..."
+          exit!
         rescue Exception => e
           puts "EXCEPTION #{e.class} : #{e.message}"
         end
