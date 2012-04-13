@@ -158,10 +158,10 @@ class InstanceWorker
               end
 
               processor = case ev[:type]
-                            when :call
+                            when 'call'
                               @call_processor ||= CallProcessor.new(@agent, @target)
                               @call_processor
-                            when :mic
+                            when 'mic'
                               @mic_processor ||= MicProcessor.new(@agent, @target)
                               @mic_processor
                             else

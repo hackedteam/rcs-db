@@ -98,6 +98,18 @@ class EvidenceController < RESTController
     end
   end
 
+  def body
+    require_auth_level :view
+
+    mongoid_query do
+      target = Item.where({_id: @params['target']}).first
+      return not_found("Target not found: #{@params['target']}") if target.nil?
+
+      evidence = Evidence.collection_class(target[:_id]).find(@params['_id'])
+
+      return ok(evidence.data['body'], {content_type: 'text/html'})
+    end
+  end
 
   # used to report that the activity of an instance is starting
   def start
