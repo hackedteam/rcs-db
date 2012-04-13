@@ -365,7 +365,8 @@ class Item
         RCS::DB::GridFS.delete_collection(self._id.to_s)
       when 'agent'
         trace :info, "Deleting evidence for agent #{self.name}..."
-        Evidence.collection_class(self.path.last).destroy_all(conditions: { aid: self._id.to_s })
+        Evidence.collection_class(self.path.last).delete_all(conditions: { aid: self._id.to_s })
+        GridFS.delete_by_agent(self._id.to_s, self.path.last.to_s)
         trace :info, "Deleting evidence for agent #{self.name} done."
     end
 
