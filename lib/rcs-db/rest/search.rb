@@ -20,7 +20,7 @@ class SearchController < RESTController
 
     mongoid_query do
       db = Mongoid.database
-      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "platform", "instance", "version", "demo"])
+      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "platform", "instance", "version", "demo", "ident"])
       ok(j)
     end
   end
@@ -32,7 +32,7 @@ class SearchController < RESTController
 
     mongoid_query do
       db = Mongoid.database
-      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "path", "stat", "type", "platform", "instance", "version", "demo", "deleted"])
+      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "path", "stat", "type", "ident", "platform", "instance", "version", "demo", "deleted"])
 
       agent = j.first
 
