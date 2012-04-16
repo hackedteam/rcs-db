@@ -1087,7 +1087,7 @@ if false
 end
 
 # exploit
-if true
+if false
   # exploit.index
   puts "exploit.index" 
   res = http.request_get('/exploit', {'Cookie' => cookie})
