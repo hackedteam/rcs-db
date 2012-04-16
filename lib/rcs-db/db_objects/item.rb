@@ -338,7 +338,7 @@ class Item
         RCS::DB::Shard.set_key(collection, {type: 1, da: 1, aid: 1})
     end
 
-    RCS::DB::PushManager.instance.notify(self._kind, {id: self._id})
+    RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'create'})
   end
 
   def destroy_callback
@@ -378,7 +378,7 @@ class Item
         end
     end
 
-    RCS::DB::PushManager.instance.notify(self._kind, {id: self._id})
+    RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'destroy'})
   rescue Exception => e
     trace :error, "ERROR: #{e.message}"
     trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
@@ -389,7 +389,7 @@ class Item
     interesting = ['name', 'desc', 'status', 'instance', 'version', 'deleted', 'uninstalled']
     return if not interesting.collect {|k| changes.include? k}.inject(:|)
 
-    RCS::DB::PushManager.instance.notify(self._kind, {id: self._id})
+    RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'modify'})
   end
 
   def status_change_callback
