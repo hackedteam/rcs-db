@@ -5,6 +5,7 @@
 # relatives
 require_relative 'call_processor'
 require_relative 'evidence/call'
+require_relative 'heartbeat'
 require_relative 'parser'
 require_relative 'backlog'
 
@@ -188,6 +189,9 @@ class Worker
 
         EM::start_server("0.0.0.0", port, HTTPHandler)
         trace :info, "listening on port #{port}"
+
+        # set up the heartbeat (the interval is in the config)
+        EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
         
         trace :info, "Worker '#{RCS::DB::Config.instance.global['SHARD']}' ready!"
       end
