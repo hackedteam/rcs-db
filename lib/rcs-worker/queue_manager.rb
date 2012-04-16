@@ -19,7 +19,11 @@ class QueueManager
     @instances = {}
     @semaphore = Mutex.new
   end
-  
+
+  def how_many_processing
+    @instances.size
+  end
+
   def queue(instance, ident, evidence)
     return nil if instance.nil? or ident.nil? or evidence.nil?
 
