@@ -26,8 +26,8 @@ http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
 # login
 account = {
-  :user => 'daniele', 
-  :pass => 'danielep123'
+  :user => 'alor', 
+  :pass => 'demorcss'
   }
 resp = http.request_post('/auth/login', account.to_json, nil)
 puts "auth.login"
@@ -1087,7 +1087,7 @@ if false
 end
 
 # exploit
-if false
+if true
   # exploit.index
   puts "exploit.index" 
   res = http.request_get('/exploit', {'Cookie' => cookie})

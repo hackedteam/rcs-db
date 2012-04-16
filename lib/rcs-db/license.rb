@@ -265,6 +265,9 @@ class LicenseManager
       when :rmi
         return @limits[:rmi]
 
+      when :exploits
+        return @limits[:exploits]
+
       when :shards
         if Shard.count() < @limits[:shards]
           return true
