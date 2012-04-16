@@ -169,6 +169,7 @@ class Evidence
         key_values = filter.delete('info').split(',')
         key_values.each do |kv|
           k, v = kv.split(':')
+          k.downcase!
           filter_hash["data.#{k}"] = Regexp.new("#{v}", true)
         end
       rescue Exception => e

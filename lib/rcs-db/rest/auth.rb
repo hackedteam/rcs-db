@@ -49,6 +49,7 @@ class AuthController < RESTController
           sess = SessionManager.instance.get_by_user(user)
           unless sess.nil?
             Audit.log :actor => user, :action => 'logout', :user_name => user, :desc => "User '#{user}' forcibly logged out by system"
+            PushManager.instance.notify('message', {rcpt: sess[:user][:_id], text: "Your account has been used on another machine"})
             SessionManager.instance.delete(sess[:cookie])
           end
           
