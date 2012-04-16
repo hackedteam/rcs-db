@@ -7,5 +7,5 @@ module SmsnewProcessing
   def type
     :message
   end
-end # ::Smsnew
+end # ::SmsnewProcessing
 end # ::RCS
