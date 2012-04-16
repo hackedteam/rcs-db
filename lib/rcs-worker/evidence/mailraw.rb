@@ -1,4 +1,3 @@
-require 'mail'
 require_relative 'single_evidence'
 
 module RCS
