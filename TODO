@@ -1,14 +1,7 @@
 
 TODO (daVinci 8.0.0):
 
-    worker decoding:
-        - mail
-	    - sms/mms
-        - addressbook (split fields)
-
-    migration: 
-       - calendar (split body in location, recipients and body)
-       - addressbook (split fields)
+    android.keystore creation
 
 
 FUTURE (daVinci 8.x.x):

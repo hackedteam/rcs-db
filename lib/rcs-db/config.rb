@@ -294,15 +294,15 @@ class Config
 
   def generate_keystores
     trace :info, "Generating key stores for Java Applet..."
-    FileUtils.rm(Config.instance.cert('applet.keystore'))
+    FileUtils.rm_rf(Config.instance.cert('applet.keystore'))
     system "keytool -genkey -alias signapplet -dname \"CN=VeriSign Inc., O=Default, C=US\" -validity 18250 -keystore #{Config.instance.cert('applet.keystore')} -keypass password -storepass password"
 
     trace :info, "Generating key stores for Android..."
-    FileUtils.rm(Config.instance.cert('android.keystore'))
+    FileUtils.rm_rf(Config.instance.cert('android.keystore'))
     system "keytool -genkey -dname \"cn=Server, ou=JavaSoft, o=Sun, c=US\" -alias ServiceCore -keystore #{Config.instance.cert('android.keystore')} -keyalg RSA -keysize 2048 -validity 18250 -keypass password -storepass password"
 
     trace :info, "Generating UIDS stores for Symbian..."
-    FileUtils.rm(Config.instance.cert('symbian.yaml'))
+    FileUtils.rm_rf(Config.instance.cert('symbian.yaml'))
     uids = ['20030635', '200305D7', '20030633', '20030634', '200316ED', '200305DB']
     File.open(Config.instance.cert("symbian.yaml"), 'wb') {|f| f.write uids.to_yaml}
   end
