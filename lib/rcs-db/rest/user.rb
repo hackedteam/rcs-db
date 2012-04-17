@@ -17,8 +17,11 @@ class UserController < RESTController
   end
 
   def show
-    require_auth_level :admin
-    
+    require_auth_level :admin, :tech, :view
+
+    # we need to leave access to themselves for everyone
+    return not_found('User not found') if !admin? && @params['_id'] != @session[:user][:_id].to_s
+
     mongoid_query do
       user = User.find(@params['_id'])
       return ok(user)
