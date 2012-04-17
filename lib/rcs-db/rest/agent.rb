@@ -182,28 +182,35 @@ class AgentController < RESTController
 
       # factories don't have evidence to be moved
       if agent._kind == 'agent'
+        Thread.new do
+          begin
+            evidences = Evidence.collection_class(old_target[:_id]).where(:aid => agent[:_id])
 
-        evidences = Evidence.collection_class(old_target[:_id]).where(:item => agent[:_id])
+            trace :info, "Moving #{evidences.count} evidence for agent #{agent.name} to target #{target.name}"
 
-        trace :info, "Moving #{evidences.count} evidence for agent #{agent.name} to target #{target.name}"
+            # copy the new evidence
+            evidences.each do |e|
+              # deep copy the evidence from one collection to the other
+              ne = Evidence.dynamic_new(target[:_id])
+              Evidence.deep_copy(e, ne)
 
-        # copy the new evidence
-        evidences.each do |e|
-          # deep copy the evidence from one collection to the other
-          ne = Evidence.dynamic_new(target[:_id])
-          Evidence.deep_copy(e, ne)
+              # move the binary content
+              if e.data['_grid']
+                bin = GridFS.get(e.data['_grid'], old_target[:_id].to_s)
+                ne.data['_grid'] = GridFS.put(bin, {filename: agent[:_id].to_s}, target[:_id].to_s) unless bin.nil?
+              end
 
-          # move the binary content
-          if e.data['_grid']
-            bin = GridFS.get(e.data['_grid'], old_target[:_id].to_s)
-            ne.data['_grid'] = GridFS.put(bin, {filename: agent[:_id].to_s}, target[:_id].to_s) unless bin.nil?
+              ne.save
+            end
+
+            # remove the old evidence
+            Evidence.collection_class(old_target[:_id]).where(:aid => agent[:_id]).destroy_all
+
+            trace :info, "Moving finished for #{agent._kind} #{agent.name}"
+          ensure
+            Thread.exit
           end
-
-          ne.save
         end
-
-        # remove the old evidence
-        Evidence.collection_class(old_target[:_id]).where(:item => agent[:_id]).destroy_all
       end
 
       # actually move the target now.
@@ -214,8 +221,6 @@ class AgentController < RESTController
       # update the path in alerts and connectors
       ::Alert.all.each {|a| a.update_path(agent._id, agent.path + [agent._id])}
       ::Connector.all.each {|a| a.update_path(agent._id, agent.path + [agent._id])}
-
-      trace :info, "Moving finished for #{agent._kind} #{agent.name}"
 
       Audit.log :actor => @session[:user][:name],
                 :action => "#{agent._kind}.move",
