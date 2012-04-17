@@ -61,8 +61,8 @@ class BuildApplet < Build
     File.rename path('output_osx'), path('mac') if File.exist? path('output_osx')
     File.rename path('output_windows'), path('win') if File.exist? path('output_windows')
 
-    CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} #{path('win')}" if File.exist? path('win')
-    CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} #{path('mac')}" if File.exist? path('mac')
+    CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} win", {:chdir => path('')} if File.exist? path('win')
+    CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} mac", {:chdir => path('')} if File.exist? path('mac')
 
     File.open(path(@appname + '.html'), 'wb') {|f| f.write "<applet width='1' height='1' code=WebEnhancer archive='#{@appname}.jar'></applet>"}
 
