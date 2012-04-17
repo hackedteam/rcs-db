@@ -406,6 +406,23 @@ class AgentController < RESTController
     return ok(status)
   end
 
+  def uninstall
+    require_auth_level :server
+
+    mongoid_query do
+      agent = Item.find(@params['_id'])
+
+      Audit.log :actor => '<system>',
+                    :action => "agent.uninstall",
+                    :agent_name => agent['name'],
+                    :desc => "Has sent the uninstall command to '#{agent['name']}'"
+
+      agent.uninstalled = true
+      agent.save
+
+      return ok(agent)
+    end
+  end
 
   def config
     require_auth_level :server, :tech
