@@ -35,8 +35,6 @@ require 'evma_httpserver'
 module RCS
 module Worker
 
-Thread.abort_on_exception=true
-
 module HTTPHandler
   include RCS::Tracer
   include EM::HttpServer
