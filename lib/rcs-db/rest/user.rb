@@ -50,6 +50,13 @@ class UserController < RESTController
     
     return conflict(result.errors[:name]) unless result.persisted?
 
+    if @params.has_key? 'group_ids'
+      @params['group_ids'].each do |gid|
+        group = ::Group.find(gid)
+        result.groups << group
+      end
+    end
+
     username = @params['name']
     Audit.log :actor => @session[:user][:name], :action => 'user.create', :user_name => username, :desc => "Created the user '#{username}'"
 
