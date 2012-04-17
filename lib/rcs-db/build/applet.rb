@@ -75,6 +75,8 @@ class BuildApplet < Build
     jar = path(@outputs.first)
     cert = path(@appname + '.cer')
 
+    raise "Cannot find keystore" unless File.exist? Config.instance.cert('applet.keystore')
+
     CrossPlatform.exec "jarsigner", "-keystore #{Config.instance.cert('applet.keystore')} -storepass password -keypass password #{jar} signapplet"
     raise "jarsigner failed" unless File.exist? jar
 

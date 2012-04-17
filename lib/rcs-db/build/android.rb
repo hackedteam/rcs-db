@@ -78,7 +78,9 @@ class BuildAndroid < Build
     apk = path(@outputs.first)
     core = path(@appname + '.apk')
 
-    CrossPlatform.exec "jarsigner", "-keystore #{Config::CERT_DIR}/android.keystore -storepass password -keypass password #{apk} ServiceCore"
+    raise "Cannot find keystore" unless File.exist? Config.instance.cert('android.keystore')
+
+    CrossPlatform.exec "jarsigner", "-keystore #{Config.instance.cert('android.keystore')} -storepass password -keypass password #{apk} ServiceCore"
 
     raise "jarsigner failed" unless File.exist? apk
     
