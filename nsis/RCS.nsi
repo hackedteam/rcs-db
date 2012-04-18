@@ -264,6 +264,9 @@ Section "Install Section" SecInstall
     SetOutPath "$INSTDIR\DB\data"
     File /r "data\.keep"
 
+    SetOutPath "$INSTDIR\DB\exploits"
+    File /r "exploits\.keep"
+
     SetOutPath "$INSTDIR\DB\data\config"
     File /r "data\config\.keep"
 

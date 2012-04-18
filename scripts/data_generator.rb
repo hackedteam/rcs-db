@@ -1,12 +1,38 @@
+#!/usr/bin/env ruby
 require 'benchmark'
-require_relative '../lib/rcs-db/audit'
-require_relative '../lib/rcs-db/db_objects/audit'
+require 'rcs-common'
+
+require_relative '../lib/rcs-db/db_objects/evidence'
+require_relative '../lib/rcs-db/db_objects/item'
+require_relative '../lib/rcs-db/db_objects/group'
+require_relative '../lib/rcs-db/db_objects/config'
+require_relative '../lib/rcs-db/db_objects/user'
+
+TARGET_ID = '4f8e7ea7aaef6609c400006d'
+AGENT_ID = '4f8e8075aaef660c08000005'
+
+EVIDENCE_TYPES = ["application", "chat", "clipboard", "device", "keylog", "password", "url"]
+
+def create_evidence(coll)
+  coll.create!() do |e|
+    e.da = Time.now.getutc.to_i
+    e.dr = Time.now.getutc.to_i
+    e.type = EVIDENCE_TYPES.sample
+    e.rel = 0
+    e.blo = false
+    e.aid = AGENT_ID
+    e.data = {content: "this is a test for the count performance"}
+  end
+end
 
 # connect to MongoDB
 begin
+  # this is required for mongoid >= 2.4.2
+  ENV['MONGOID_ENV'] = 'yes'
+
   Mongoid.load!(Dir.pwd + '/../config/mongoid.yaml')
   Mongoid.configure do |config|
-    config.master = Mongo::Connection.new.db('rcs')
+    config.master = Mongo::Connection.new('rcs-polluce', 27017, pool_size: 50, pool_timeout: 15).db('rcs')
     #config.logger = Logger.new $stdout
   end
 rescue Exception => e
@@ -14,33 +40,44 @@ rescue Exception => e
   exit
 end
 
-if true
-  n_inserts = 100_000
-end_time = Time.now.getutc
-months = 12
-insert_time = end_time - 2_592_000 * months
-interval = (end_time - insert_time).to_i / n_inserts
-Benchmark.bm do |x|
-  x.report {
-    n_inserts.times do |n|
-      log = Hash.new
-      insert_time += interval
-      log[:time] = insert_time.to_i
-      log[:user] = ['pippo', 'pluto', 'paperino', 'bart', 'jebediah', 'homer'].sample
-      log[:desc] = ["This is the #{n}th audit log.", "Mob rules.", "paper rock scissors.", "there's no place like home.", "User 'jeff' logged in.", "Suck my sock!"].sample
-      log[:action] = ['user.create', 'auth.login', 'user.update'].sample
-      RCS::DB::Audit.log(log)
+inserts = 0
+count = {}
+
+Benchmark.bm(20) do |x|
+
+  if false
+    x.report('insert') do
+
+      inserts = 50_000
+
+      coll = Evidence.collection_class(TARGET_ID)
+
+      inserts.times do |n|
+        create_evidence(coll)
+      end
     end
-  }
-end
+  end
+
+  if true
+    query = {aid: AGENT_ID}
+
+    EVIDENCE_TYPES.each do |type|
+
+      x.report('count ' + type) do
+        query[:type] = type
+        count[type] = ::Evidence.collection_class(TARGET_ID).where(query).count
+      end
+    end
+
+  end
+
 end
 
-if false
-  puts Audit.count(conditions: {desc: Regexp.new('rock', true)})
-  puts Audit.where(desc: Regexp.new('rock', true))
+puts
+puts "INSERT: #{inserts}"
+total = 0
+count.each_pair do |k,v|
+  total += v
+  puts "COUNT : #{k.rjust(15)} #{v}"
 end
-
-if false
-  puts Audit.count(conditions: {:time.gte => 1306317384, :time.lte => 1306317384})
-  puts Audit.where(:time.gte => 1306317384, :time.lte => 1306317384)
-end
+puts "COUNT : #{total}"
