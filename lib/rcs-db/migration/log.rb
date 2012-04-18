@@ -52,6 +52,7 @@ class LogMigration
           exit!
         rescue Exception => e
           puts "EXCEPTION #{e.class} : #{e.message}"
+          puts "BACKTRACE #{e.class} : " + e.backtrace.join("\n")
         end
         puts "#{@@total} logs (#{@@size.to_s_bytes}) migrated to evidence in #{Time.now - @@time} seconds"
         @@total = 0
@@ -171,9 +172,10 @@ class LogMigration
         File.open('migration.status', 'wb') {|f| f.write "#{act._mid} #{targ._mid} #{a._mid} #{log_id[:log_id]}"}
 
         # stat calculation
+        a.stat.evidence[me.type] ||= 0
         a.stat.evidence[me.type] += 1
         a.stat.size += me.data.to_s.length
-        a.stat.grid_size += me.data[:_grid_size]
+        a.stat.grid_size += me.data[:_grid_size] unless me.data[:_grid_size].nil?
 
         # report the status
         print "         #{current} of #{count}  %2.1f %% | #{processed}/sec  #{speed.to_s_bytes}/sec | #{@@size.to_s_bytes}      \r" % percentage
@@ -190,7 +192,7 @@ class LogMigration
 
   def self.migrate_single_log(ev, log, target_id, agent_id)
 
-	  evidence = ev.create() do |e|
+	  evidence = ev.create!() do |e|
       # migrated log will be identified in the create_callback
       # and the stats will not be calculated on them
       e[:_mid] = log[:log_id]
