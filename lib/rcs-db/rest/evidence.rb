@@ -361,11 +361,8 @@ class EvidenceController < RESTController
         condition[:aid] = filter['agent']
       end
 
-      types = ["addressbook", "application", "calendar", "call", "camera", "chat", "clipboard", "device",
-               "file", "keylog", "position", "message", "mic", "mouse", "password", "print", "screenshot", "url"]
-
       stats = []
-      types.each do |type|
+      ::Evidence::TYPES.each do |type|
         query = {type: type}.merge(condition)
         stats << {type: type, count: Evidence.collection_class(target[:_id]).where(query).count}
       end

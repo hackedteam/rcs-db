@@ -85,10 +85,6 @@ class LogMigration
 
   def self.migrate_single_target(act, targ)
 
-    # delete evidence if already present
-    db = Mongoid.database
-    db.drop_collection Evidence.collection_name(targ._id.to_s)
-
     Mongoid.identity_map_enabled = false
     Mongoid.persist_in_safe_mode = false
 
@@ -109,15 +105,6 @@ class LogMigration
 
       # invoke the garbage collector
       GC.start
-	  
-      # clear stats for the backdoor
-      a.stat.evidence = {}
-      a.stat.size = 0
-      a.stat.grid_size = 0
-      a.save
-      
-      # delete all files related to the backdoor
-      GridFS.delete_by_agent(a[:_id].to_s, targ._id.to_s)
 
       puts "      * #{a.name}"
 
@@ -177,16 +164,16 @@ class LogMigration
         next if log[:type] == 'UPLOAD'
 
         # persist the current log
-        log_type = migrate_single_log(ev, log, targ._id, a[:_id])
+        me = migrate_single_log(ev, log, targ._id, a[:_id])
 
         # save the current point of migration
         # this is used in case of failure to restart from here
         File.open('migration.status', 'wb') {|f| f.write "#{act._mid} #{targ._mid} #{a._mid} #{log_id[:log_id]}"}
 
         # stat calculation
-        a.stat.evidence ||= {}
-        a.stat.evidence[log_type] ||= 0
-        a.stat.evidence[log_type] += 1
+        a.stat.evidence[me.type] += 1
+        a.stat.size += me.data.to_s.length
+        a.stat.grid_size += me.data[:_grid_size]
 
         # report the status
         print "         #{current} of #{count}  %2.1f %% | #{processed}/sec  #{speed.to_s_bytes}/sec | #{@@size.to_s_bytes}      \r" % percentage
@@ -244,7 +231,7 @@ class LogMigration
       end
     end
 
-    return evidence.type
+    return evidence
   end
 
 

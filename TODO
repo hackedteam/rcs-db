@@ -1,5 +1,11 @@
+TEST:
+
+    one million rows in a collection
+
 
 TODO (daVinci 8.0.0):
+
+    migration MUST not delete logs!!!
 
 
 FUTURE (daVinci 8.x.x):

@@ -225,6 +225,10 @@ class Events
 
         # process the alert queue
         EM::PeriodicTimer.new(5) { EM.defer(proc{ Alerting.dispatch }) }
+
+        # TODO: remove this
+        #check_thread_pool
+
       end
     rescue RuntimeError => e
       # bind error
@@ -235,6 +239,21 @@ class Events
       raise
     end
 
+  end
+
+  def check_thread_pool
+    Thread.new do
+      loop do
+        statuses = Hash.new(0)
+
+        Thread.list.each { |t| statuses[t.status] += 1 }
+
+        trace :debug, "Threads: " + statuses.inspect
+        trace :debug, "Connections: " + Mongoid.master.connection.read_pool.inspect
+
+        sleep 2
+      end
+    end
   end
 
 end #Events
