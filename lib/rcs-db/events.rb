@@ -36,11 +36,7 @@ module HTTPHandler
   attr_reader :peer_port
   
   def post_init
-    # don't forget to call super here !
-    super
-
-    # timeout on the socket
-    set_comm_inactivity_timeout 60
+    @connection_time = Time.now
 
     # get the peer name
     if get_peername
@@ -50,15 +46,19 @@ module HTTPHandler
       @peer_port = 0
     end
 
-    trace :debug, "Connection from #{@peer}:#{@peer_port}"
+    trace :debug, "[#{@peer}] New connection from port #{@peer_port}"
+
+    # timeout on the socket
+    set_comm_inactivity_timeout 60
 
     # we want the connection to be encrypted with ssl
     start_tls({:private_key_file => Config.instance.cert('DB_KEY'),
                :cert_chain_file => Config.instance.cert('DB_CERT'),
                :verify_peer => false})
-    
-    @connection_time = Time.now
-    
+
+    # don't forget to call super here !
+    super
+
     # to speed-up the processing, we disable the CGI environment variables
     self.no_environment_strings
 
@@ -66,6 +66,8 @@ module HTTPHandler
     self.max_content_length = 200 * 1024 * 1024
 
     @closed = false
+
+    trace :debug, "[#{@peer}] Connection setup ended (%f)" % (Time.now - @connection_time) if Config.instance.global['PERF']
   end
 
   def ssl_handshake_completed
@@ -81,7 +83,7 @@ module HTTPHandler
   end
 
   def unbind
-    trace :debug, "Connection closed #{@peer}:#{@peer_port}"
+    trace :debug, "[#{@peer}] Connection closed from port #{@peer_port} (%f)" % (Time.now - @connection_time)
     @closed = true
   end
 

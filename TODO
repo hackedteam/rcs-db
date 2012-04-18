@@ -5,7 +5,7 @@ TEST:
 
 TODO (daVinci 8.0.0):
 
-    migration MUST not delete logs!!!
+    remove the mp3 saving from the worker
 
 
 FUTURE (daVinci 8.x.x):
