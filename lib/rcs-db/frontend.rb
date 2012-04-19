@@ -11,7 +11,7 @@ module DB
 class Frontend
   extend RCS::Tracer
 
-  def self.rnc_push(address)
+  def self.nc_push(address)
     begin
       # find a network controller in the status list
       nc = ::Status.where({type: 'nc'}).any_in(status: [::Status::OK, ::Status::WARN]).first
@@ -31,7 +31,7 @@ class Frontend
       return false unless resp.body == "OK"
       
     rescue Exception => e
-      trace :error, "Frontend RNC PUSH: #{e.message}"
+      trace :error, "Frontend NC PUSH: #{e.message}"
       return false
     end
 

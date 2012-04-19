@@ -53,15 +53,17 @@ class BuildUpgrade < Build
 
     @appname = params['appname'] || 'JavaUpgrade'
 
-    FileUtils.cp path('JavaUpgrade.jar'), path(@appname + '.jar')
+    jar_name = 'JavaUpgrade-' + @appname + '.jar'
+
+    FileUtils.cp path('JavaUpgrade.jar'), path(jar_name)
     @outputs.delete 'JavaUpgrade.jar'
-    @outputs << @appname + '.jar'
+    @outputs << jar_name
 
     # for some reason we cannot use the internal zip library, use the system "zip -u" to update a file into the jar
     File.rename path('output_windows'), path('win') if File.exist? path('output_windows')
     @outputs.delete 'output_windows'
 
-    CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} win", {:chdir => path('')} if File.exist? path('win')
+    CrossPlatform.exec path("zip"), "-u #{path(jar_name)} win", {:chdir => path('')} if File.exist? path('win')
 
     content = File.open(path('java-map-update.xml'), 'rb+') {|f| f.read}
     content.gsub! "<url>%IPA_URL%/java-1.6.0_30.xml</url>", "<url>%IPA_URL%/java-1.6.0_30-#{@appname}.xml</url>"
@@ -70,14 +72,14 @@ class BuildUpgrade < Build
     @outputs << "java-map-update-#{@appname}.xml"
 
     content = File.open(path('java-1.6.0_30.xml'), 'rb+') {|f| f.read}
-    content.gsub! "%IPA_URL%/JavaUpgrade.jnlp ""-X</options>", "%IPA_URL%/JavaUpgrade-#{@appname}.jnlp ""-X</options>"
+    content.gsub! "%IPA_URL%/JavaUpgrade.jnlp", "%IPA_URL%/JavaUpgrade-#{@appname}.jnlp"
     File.open(path("java-1.6.0_30-#{@appname}.xml"), 'wb') {|f| f.write content}
     @outputs.delete 'java-1.6.0_30.xml'
     @outputs << "java-1.6.0_30-#{@appname}.xml"
 
     content = File.open(path('JavaUpgrade.jnlp'), 'rb+') {|f| f.read}
     content.gsub! "JavaUpgrade.jnlp", "JavaUpgrade-#{@appname}.jnlp"
-    content.gsub! "JavaUpgrade.jar", "JavaUpgrade-#{@appname}.jar"
+    content.gsub! "JavaUpgrade.jar", jar_name
     File.open(path("JavaUpgrade-#{@appname}.jnlp"), 'wb') {|f| f.write content}
     @outputs.delete 'JavaUpgrade.jnlp'
     @outputs << "JavaUpgrade-#{@appname}.jnlp"

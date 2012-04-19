@@ -171,7 +171,7 @@ class InjectorTask
 
     yield @description = "Creating binary config"
 
-    Frontend.rnc_push(injector.address)
+    raise "Cannot push to #{injector.name}" unless Frontend.nc_push(injector.address)
     
     @description = "Rules applied successfully"
   end

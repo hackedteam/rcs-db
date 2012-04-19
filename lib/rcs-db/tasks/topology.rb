@@ -30,7 +30,7 @@ class TopologyTask
       #don't push elements outside topology
       next if anon.next == [ nil ] and anon.prev == [ nil ]
 
-      raise "Cannot push to #{anon.name}" unless Frontend.rnc_push(anon.address)
+      raise "Cannot push to #{anon.name}" unless Frontend.nc_push(anon.address)
     end
     
     @description = "Topology applied successfully"
