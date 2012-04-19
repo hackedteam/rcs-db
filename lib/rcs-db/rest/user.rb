@@ -17,8 +17,11 @@ class UserController < RESTController
   end
 
   def show
-    require_auth_level :admin
-    
+    require_auth_level :admin, :tech, :view
+
+    # we need to leave access to themselves for everyone
+    return not_found('User not found') if !admin? && @params['_id'] != @session[:user][:_id].to_s
+
     mongoid_query do
       user = User.find(@params['_id'])
       return ok(user)
@@ -46,6 +49,13 @@ class UserController < RESTController
     end
     
     return conflict(result.errors[:name]) unless result.persisted?
+
+    if @params.has_key? 'group_ids'
+      @params['group_ids'].each do |gid|
+        group = ::Group.find(gid)
+        result.groups << group
+      end
+    end
 
     username = @params['name']
     Audit.log :actor => @session[:user][:name], :action => 'user.create', :user_name => username, :desc => "Created the user '#{username}'"

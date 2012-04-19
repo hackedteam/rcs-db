@@ -1,8 +1,13 @@
 
 TODO (daVinci 8.0.0):
 
-    android.keystore creation
+    remove the mp3 saving from the worker
 
+    task manager for moving and deleting
+
+    NSIS for exploits agents and update
+
+    fix the IOS exploit
 
 FUTURE (daVinci 8.x.x):
 

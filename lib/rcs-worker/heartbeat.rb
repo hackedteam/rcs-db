@@ -49,10 +49,8 @@ class HeartBeat
     stats = {:disk => SystemStatus.disk_free, :cpu => SystemStatus.cpu_load, :pcpu => SystemStatus.my_cpu_load(component)}
 
     begin
-    # send the status to the db
-    ::Status.status_update component, ip, status, message, stats, 'worker'
-    # check the status of other components
-    ::Status.status_check
+      # send the status to the db
+      ::Status.status_update component, ip, status, message, stats, 'worker'
     rescue Exception => e
       trace :fatal, "Cannot perform status update: #{e.message}"
       trace :fatal, e.backtrace

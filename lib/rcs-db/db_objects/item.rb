@@ -93,9 +93,12 @@ class Item
   # performs global recalculation of stats (to be called periodically)
   def self.restat
     begin
-      # to make stat converge in one step, first restat targets, then operations
+      t = Time.now
+      # to make stat converge in one step, first restat agent, targets, then operations
+      #Item.where(_kind: 'agent').each {|i| i.restat}
       Item.where(_kind: 'target').each {|i| i.restat}
       Item.where(_kind: 'operation').each {|i| i.restat}
+      trace :debug, "Restat time: #{Time.now - t}" if RCS::DB::Config.instance.global['PERF']
     rescue Exception => e
       trace :fatal, "Cannot restat items: #{e.message}"
     end
@@ -131,6 +134,13 @@ class Item
         db = Mongoid.database
         collection = db.collections.select {|c| c.name == Evidence.collection_name(self._id.to_s)}
         self.stat.size = collection.first.stats()['size'].to_i unless collection.empty?
+        self.save
+      when 'agent'
+        self.stat.evidence = {}
+        ::Evidence::TYPES.each do |type|
+          query = {type: type, aid: self._id}
+          self.stat.evidence[type] = Evidence.collection_class(self.get_parent[:_id]).where(query).count
+        end
         self.save
     end
   end

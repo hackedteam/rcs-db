@@ -63,7 +63,7 @@ class AuthController < RESTController
           sess = SessionManager.instance.create(@user, @auth_level, @request[:peer], accessible)
           # append the cookie to the other that may have been present in the request
           expiry = (Time.now() + 86400).strftime('%A, %d-%b-%y %H:%M:%S %Z')
-          trace :debug, "Issued cookie with expiry time: #{expiry}"
+          trace :debug, "[#{@request[:peer]}] Issued cookie with expiry time: #{expiry}"
           # don't return the accessible items (used only internally)
           session = sess.select {|k,v| k != :accessible}
           return ok(session, {cookie: 'session=' + sess[:cookie] + "; path=/; expires=#{expiry}" })

@@ -377,7 +377,7 @@ class Config
 
       opts.separator ""
       opts.separator "Certificates options:"
-      opts.on( '-g', '--generate', 'Generate the SSL certificates needed by the system' ) do
+      opts.on( '-g', '--generate-certs', 'Generate the SSL certificates needed by the system' ) do
         options[:gen_cert] = true
       end
       opts.on( '-G', '--generate-ca', 'Generate a new CA authority for SSL certificates' ) do
