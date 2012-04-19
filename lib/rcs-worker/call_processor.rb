@@ -226,7 +226,7 @@ class Call
   def close!
     # TODO: flush channels if samples queued
     @channels.each_value {|c| c.close!}
-    update_attributes("data.status" => :completed) unless @evidence.nil?
+    update_attributes("data.status" => :completed) #unless @evidence.nil?
     trace :debug, "[CALL #{@id}] closing call for #{@peer}, starting at #{@start_time}"
     true
   end
@@ -317,10 +317,11 @@ class Call
   end
 
   def update_attributes(hash)
-    @evidence.update_attributes(hash)
+    @evidence.update_attributes(hash) unless @evidence.nil?
   end
 
   def store(peer, program, start_time, agent, target)
+
     evidence = ::Evidence.collection_class(target[:_id].to_s)
     evidence.create do |ev|
       ev._id = @bid
@@ -342,6 +343,7 @@ class Call
       ev.save
       return ev
     end
+
   end
   
   def file_name
@@ -413,10 +415,7 @@ class CallProcessor
   end
 
   def end_call?(evidence)
-    if evidence[:data][:grid_content].bytesize == 4 and evidence[:data][:grid_content] == "\xff\xff\xff\xff"
-      trace :debug, "[CALL #{@id}] LA CHIAMATA E' DA CHIUDERE!!!'"
-      return true
-    end
+    return true if evidence[:data][:grid_content].bytesize == 4 and evidence[:data][:grid_content] == "\xff\xff\xff\xff"
     false
   end
   
@@ -424,7 +423,7 @@ class CallProcessor
     if end_call? evidence
       close_call {|evidence| yield evidence}
       @call = nil
-      return nil
+      return nil, 0
     end
     
     call = get_call(evidence) {|evidence| yield evidence}
@@ -440,8 +439,6 @@ class CallProcessor
   end
   
   def encode_mp3(sample_rate, left_pcm, right_pcm)
-    # MP3Encoder will take care of resampling if necessary
-    trace :debug, "ENCODING MP3 @#{sample_rate} KHz"
     @encoder ||= ::MP3Encoder.new(2, sample_rate)
     unless @encoder.nil?
       @encoder.feed(left_pcm, right_pcm) do |mp3_bytes|
