@@ -78,7 +78,9 @@ Section "Install Section" SecInstall
 
   SetDetailsPrint "both"
   DetailPrint "done"
-
+  
+  !cd "nsis"
+  
 SectionEnd
 
 
