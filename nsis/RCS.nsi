@@ -11,7 +11,7 @@
 
 	; if this is defined it will perform the full install
 	; if this is NOT defined it will only install the ruby scripts and nothing else
-	;!define FULL_INSTALL 1
+	!define FULL_INSTALL 1
 
 	!define PACKAGE_NAME "RCS"
   !Define /file PACKAGE_VERSION "..\config\version.txt"
