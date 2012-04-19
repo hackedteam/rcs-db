@@ -188,7 +188,7 @@ class Worker
         resume_pending_evidences
 
         EM::start_server("0.0.0.0", port, HTTPHandler)
-        trace :info, "listening on port #{port}"
+        trace :info, "Listening on port #{port}"
 
         # set up the heartbeat (the interval is in the config)
         EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
@@ -213,9 +213,24 @@ class Worker
     begin
       db = Mongoid.database
       evidences = db.collection('grid.evidence.files').find({metadata: {shard: RCS::DB::Config.instance.global['SHARD']}}, {sort: ["_id", :asc]})
+      trace :info, "No pending evidence to be processed." unless evidences.has_next?
       evidences.each do |ev|
         ident, instance = ev['filename'].split(":")
+
+        # resume pending evidence
         QueueManager.instance.queue instance, ident, ev['_id'].to_s
+
+        # close recording calls for this agent
+        agent = Item.agents.where({ident: ident, instance: instance}).first
+        unless agent.nil?
+          target = agent.get_parent
+          calls = ::Evidence.collection_class(target[:_id].to_s).find({"type" => :call, "data.status" => :recording})
+          trace :info, "No calls left in recording state." unless calls.has_next?
+          calls.each do |c|
+            trace :debug, "Call #{c} is now set to completed."
+            c.update_attributes("data.status" => :completed)
+          end
+        end
       end
     rescue Exception => e
       trace :error, "Cannot process pending evidences: #{e.message}"
