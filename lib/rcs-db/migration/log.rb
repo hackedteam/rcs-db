@@ -192,7 +192,7 @@ class LogMigration
 
   def self.migrate_single_log(ev, log, target_id, agent_id)
 
-	  evidence = ev.create!() do |e|
+	  evidence = ev.create() do |e|
       # migrated log will be identified in the create_callback
       # and the stats will not be calculated on them
       e[:_mid] = log[:log_id]

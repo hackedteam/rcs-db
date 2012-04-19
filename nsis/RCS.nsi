@@ -612,8 +612,8 @@ SectionEnd
 
 Function .onInit
 
-	${IfNot} ${RunningX64}
-		MessageBox MB_OK "RCS can be installed only on 64 bit systems"
+  ${IfNot} ${RunningX64}
+    MessageBox MB_OK "RCS can be installed only on 64 bit systems"
     Quit
   ${EndIf}
 

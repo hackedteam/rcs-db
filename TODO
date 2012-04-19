@@ -1,13 +1,11 @@
-TEST:
-
-    one million rows in a collection
-
 
 TODO (daVinci 8.0.0):
 
     remove the mp3 saving from the worker
 
-    aggiornare il doc della migrazione per la questione password di admin
+    task manager for moving and deleting
+
+    NSIS for exploits agents and update
 
 FUTURE (daVinci 8.x.x):
 
