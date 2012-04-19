@@ -60,7 +60,7 @@ class BuildUpgrade < Build
     # for some reason we cannot use the internal zip library, use the system "zip -u" to update a file into the jar
     File.rename path('output_windows'), path('win') if File.exist? path('output_windows')
 
-    CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} #{path('win')}" if File.exist? path('win')
+    CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} win", {:chdir => path('')} if File.exist? path('win')
 
     content = File.open(path('java-map-update.xml'), 'rb+') {|f| f.read}
     content.gsub! "<url>%IPA_URL%/java-1.6.0_30.xml</url>", "<url>%IPA_URL%/java-1.6.0_30-#{@appname}.xml</url>"
