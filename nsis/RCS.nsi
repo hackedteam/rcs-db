@@ -8,8 +8,12 @@
 !include LogicLib.nsh
 ;--------------------------------
 ;General
-  
-  !define PACKAGE_NAME "RCS"
+
+	; if this is defined it will perform the full install
+	; if this is NOT defined it will only install the ruby scripts and nothing else
+	;!define FULL_INSTALL 1
+
+	!define PACKAGE_NAME "RCS"
   !Define /file PACKAGE_VERSION "..\config\version.txt"
 
   ;Variables
@@ -36,7 +40,11 @@
   
   ;Name and file
   Name "RCS"
-  OutFile "RCS-${PACKAGE_VERSION}.exe"
+	!ifdef FULL_INSTALL
+  	OutFile "RCS-${PACKAGE_VERSION}.exe"
+	!else
+		OutFile "RCS-Update-${PACKAGE_VERSION}.exe"
+	!endif
 
   ;Default installation folder
   InstallDir "C:\RCS\"
@@ -198,12 +206,14 @@ Section "Update Section" SecUpdate
    
    SetDetailsPrint "textonly"
    DetailPrint "Removing previous version..."
-   RMDir /r "$INSTDIR\Ruby"
-   RMDir /r "$INSTDIR\Java"
-   RMDir /r "$INSTDIR\Python"
+   !ifdef FULL_INSTALL
+	   RMDir /r "$INSTDIR\Ruby"
+	   RMDir /r "$INSTDIR\Java"
+	   RMDir /r "$INSTDIR\Python"
+	   RMDir /r "$INSTDIR\DB\mongodb"
+   !endif
    RMDir /r "$INSTDIR\DB\lib"
    RMDir /r "$INSTDIR\DB\bin"
-   RMDir /r "$INSTDIR\DB\mongodb"
    RMDir /r "$INSTDIR\Collector\bin"
    RMDir /r "$INSTDIR\Collector\lib"
    DetailPrint "done"
@@ -218,9 +228,12 @@ Section "Install Section" SecInstall
   DetailPrint "Extracting common files..."
   SetDetailsPrint "textonly"
   !cd '..\..'
-  RMDir /r "$INSTDIR\Ruby"
-  SetOutPath "$INSTDIR\Ruby"
-  File /r "Ruby\*.*"
+  
+  !ifdef FULL_INSTALL
+  	RMDir /r "$INSTDIR\Ruby"
+  	SetOutPath "$INSTDIR\Ruby"
+  	File /r "Ruby\*.*"
+  !endif
 
   SetDetailsPrint "both"
   DetailPrint "done"
@@ -239,20 +252,22 @@ Section "Install Section" SecInstall
     DetailPrint "Installing Common files..."
     SetDetailsPrint "textonly"
     !cd 'DB'
-
-    RMDir /r "$INSTDIR\Java"
-    SetOutPath "$INSTDIR\Java"
-    File /r "..\Java\*.*"
-
-    SetOutPath "$INSTDIR\Python"
-    File /r "..\Python\*.*"
+  
+  	!ifdef FULL_INSTALL  
+	    RMDir /r "$INSTDIR\Java"
+	    SetOutPath "$INSTDIR\Java"
+	    File /r "..\Java\*.*"
+	
+	    SetOutPath "$INSTDIR\Python"
+	    File /r "..\Python\*.*"
+	
+	    SetOutPath "$INSTDIR\DB\mongodb\win"
+	    File /r "mongodb\win\*.*"
+		!endif
   
     SetOutPath "$INSTDIR\DB\bin"
     File /r "bin\*.*"
 
-    SetOutPath "$INSTDIR\DB\mongodb\win"
-    File /r "mongodb\win\*.*"
-    
     SetOutPath "$INSTDIR\DB\lib"
     File "lib\rcs-db.rb"
     File "lib\rcs-worker.rb"
@@ -272,11 +287,9 @@ Section "Install Section" SecInstall
 
     SetOutPath "$INSTDIR\DB\lib\rcs-db-release"
     File /r "lib\rcs-db-release\*.*"
-    ###File /r "lib\rcs-db\*.*"
-  
+
     SetOutPath "$INSTDIR\DB\lib\rcs-worker-release"
     File /r "lib\rcs-worker-release\*.*"
-    ###File /r "lib\rcs-worker\*.*"
 
     SetOutPath "$INSTDIR\DB\config"
     File "config\mongoid.yaml"
@@ -307,12 +320,14 @@ Section "Install Section" SecInstall
     DetailPrint "Installing license.."
     CopyFiles /SILENT $masterLicense "$INSTDIR\DB\config\rcs.lic"
 
-    DetailPrint "Installing libraries.."
-    nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_x86 /q"
-
-    DetailPrint "Installing drivers.."
-    nsExec::ExecToLog "$INSTDIR\DB\bin\haspdinst -i -cm -kp -fi"
-    SimpleSC::SetServiceFailure "hasplms" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+		!ifdef FULL_INSTALL
+	    DetailPrint "Installing libraries.."
+	    nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_x86 /q"
+	
+	    DetailPrint "Installing drivers.."
+	    nsExec::ExecToLog "$INSTDIR\DB\bin\haspdinst -i -cm -kp -fi"
+	    SimpleSC::SetServiceFailure "hasplms" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+		!endif
 
     ; check if the license + dongle is ok
     StrCpy $0 1
@@ -519,23 +534,25 @@ Section "Install Section" SecInstall
 
   ${EndIf}
 
-  ; we insert the core here, because we need the server up and running
-  ; when che collector is installed. loading the cores take much time...
-  ${If} $installMaster == ${BST_CHECKED}
-    !cd 'DB'
-    DetailPrint "Installing Cores files..."
-    SetDetailsPrint "textonly"
-
-    SetOutPath "$INSTDIR\DB\cores"
-    File /r "cores\*.*"
-
-    SetDetailsPrint "both"
-    DetailPrint "done"
-
-    DetailPrint "ReStarting RCS DB..."
-    SimpleSC::RestartService "RCSDB" "" 30
-    !cd '..'
-  ${EndIf}
+	!ifdef FULL_INSTALL
+	  ; we insert the core here, because we need the server up and running
+	  ; when che collector is installed. loading the cores take much time...
+	  ${If} $installMaster == ${BST_CHECKED}
+	    !cd 'DB'
+	    DetailPrint "Installing Cores files..."
+	    SetDetailsPrint "textonly"
+	
+	    SetOutPath "$INSTDIR\DB\cores"
+	    File /r "cores\*.*"
+	
+	    SetDetailsPrint "both"
+	    DetailPrint "done"
+	
+	    DetailPrint "ReStarting RCS DB..."
+	    SimpleSC::RestartService "RCSDB" "" 30
+	    !cd '..'
+	  ${EndIf}
+	!endif
 
   !cd "DB\nsis"
   
