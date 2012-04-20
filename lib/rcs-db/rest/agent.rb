@@ -586,7 +586,7 @@ class AgentController < RESTController
   end
   
   def filesystem
-    require_auth_level :server, :tech
+    require_auth_level :server, :tech, :view
 
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first

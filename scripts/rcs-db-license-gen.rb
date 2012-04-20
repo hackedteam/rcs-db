@@ -43,6 +43,7 @@ class LicenseGenerator
                :nia => [0, false],
                :shards => 1,
                :exploits => false,
+               :deletion => false,
                :collectors => {:collectors => 1, :anonymizers => 0}}
   end
 

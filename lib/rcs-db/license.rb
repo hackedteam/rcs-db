@@ -71,6 +71,7 @@ class LicenseManager
                :nia => [0, false],
                :shards => 1,
                :exploits => false,
+               :deletion => false,
                :collectors => {:collectors => 1, :anonymizers => 0}}
   end
 
@@ -166,6 +167,8 @@ class LicenseManager
 
     @limits[:shards] = limit[:shards] if limit[:shards] > @limits[:shards]
     @limits[:exploits] = limit[:exploits]
+
+    @limits[:deletion] = true if limit[:deletion]
   end
 
   
