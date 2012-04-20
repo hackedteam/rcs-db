@@ -8,6 +8,7 @@ require_relative 'config'
 require_relative 'core'
 require_relative 'license'
 require_relative 'tasks'
+require_relative 'offload_manager'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -98,6 +99,9 @@ class Application
 
       # load cores in the /cores dir
       DB.instance.load_cores
+
+      # perform any pending operation in the journal
+      OffloadManager.instance.recover
 
       # enter the main loop (hopefully will never exit from it)
       Events.new.setup Config.instance.global['LISTENING_PORT']

@@ -53,7 +53,7 @@ class GridFS
       end
     end
     
-   def delete(id, collection = nil)
+    def delete(id, collection = nil)
       #raise "Id must be a BSON::ObjectId" unless id.is_a? BSON::ObjectId
       begin
         db = Mongoid.database

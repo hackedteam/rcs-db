@@ -1,11 +1,7 @@
 
 TODO (daVinci 8.0.0):
 
-    remove the mp3 saving from the worker
-
-    task manager for moving and deleting
-
-    fix the IOS exploit
+    delete in license
 
 FUTURE (daVinci 8.x.x):
 
@@ -17,3 +13,4 @@ FUTURE (daVinci 8.x.x):
 
     upgrade for nia
 
+    RMI from local console

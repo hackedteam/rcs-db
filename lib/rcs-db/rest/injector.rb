@@ -100,7 +100,7 @@ class InjectorController < RESTController
     mongoid_query do
       injector = ::Injector.find(@params['_id'])
 
-      return not_found if injector[:_grid].empty? or injector[:_grid].first.nil?
+      return not_found if injector[:_grid].nil? or injector[:_grid].empty? or injector[:_grid].first.nil?
 
       # reset the flag for the "configuration needed"
       injector.configured = true

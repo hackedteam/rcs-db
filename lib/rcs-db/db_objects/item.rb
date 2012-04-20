@@ -351,6 +351,14 @@ class Item
     RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'create'})
   end
 
+  def notify_callback
+    # we are only interested if the properties changed are:
+    interesting = ['name', 'desc', 'status', 'instance', 'version', 'deleted', 'uninstalled']
+    return if not interesting.collect {|k| changes.include? k}.inject(:|)
+
+    RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'modify'})
+  end
+
   def destroy_callback
     # remove the item form any dashboard or recent
     ::User.all.each {|u| u.delete_item(self._id)}
@@ -382,8 +390,7 @@ class Item
         # dropping flag is set only by cascading from target
         unless self[:dropping]
           trace :info, "Deleting evidence for agent #{self.name}..."
-          Evidence.collection_class(self.path.last).delete_all(conditions: { aid: self._id.to_s })
-          RCS::DB::GridFS.delete_by_agent(self._id.to_s, self.path.last.to_s)
+          Evidence.collection_class(self.path.last).destroy_all(conditions: { aid: self._id.to_s })
           trace :info, "Deleting evidence for agent #{self.name} done."
         end
     end
@@ -392,14 +399,19 @@ class Item
   rescue Exception => e
     trace :error, "ERROR: #{e.message}"
     trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
+    raise
   end
 
-  def notify_callback
-    # we are only interested if the properties changed are:
-    interesting = ['name', 'desc', 'status', 'instance', 'version', 'deleted', 'uninstalled']
-    return if not interesting.collect {|k| changes.include? k}.inject(:|)
+  def self.offload_destroy(params)
+    item = ::Item.find(params[:id])
+    raise "item not found" if item.nil?
+    item.destroy
+  end
 
-    RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'modify'})
+  def self.offload_destroy_callback(params)
+    item = ::Item.find(params[:id])
+    raise "item not found" if item.nil?
+    item.destroy_callback
   end
 
   def status_change_callback

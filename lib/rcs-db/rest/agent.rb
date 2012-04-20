@@ -91,13 +91,11 @@ class AgentController < RESTController
         item.deleted = true
         item.save
 
-        Thread.new do
-          begin
-            item.destroy
-          ensure
-            Thread.exit
-          end
-        end
+        task = {name: "delete evidence for #{item.name}",
+                method: "::Item.offload_destroy",
+                params: {id: item[:_id]}}
+
+        OffloadManager.instance.run task
 
         return ok
       end
@@ -107,13 +105,11 @@ class AgentController < RESTController
       item.save
 
       # run the destroy callback to clean the evidence collection
-      Thread.new do
-        begin
-          item.destroy_callback
-        ensure
-          Thread.exit
-        end
-      end
+      task = {name: "delete evidence for #{item.name}",
+              method: "::Item.offload_destroy_callback",
+              params: {id: item[:_id]}}
+
+      OffloadManager.instance.run task
 
       return ok
     end
@@ -182,35 +178,11 @@ class AgentController < RESTController
 
       # factories don't have evidence to be moved
       if agent._kind == 'agent'
-        Thread.new do
-          begin
-            evidences = Evidence.collection_class(old_target[:_id]).where(:aid => agent[:_id])
+        task = {name: "move evidence of #{agent.name} from #{old_target.name} to #{target.name}",
+                method: "::Evidence.offload_move_evidence",
+                params: {old_target_id: old_target[:_id], target_id: target[:_id], agent_id: agent[:_id]}}
 
-            trace :info, "Moving #{evidences.count} evidence for agent #{agent.name} to target #{target.name}"
-
-            # copy the new evidence
-            evidences.each do |e|
-              # deep copy the evidence from one collection to the other
-              ne = Evidence.dynamic_new(target[:_id])
-              Evidence.deep_copy(e, ne)
-
-              # move the binary content
-              if e.data['_grid']
-                bin = GridFS.get(e.data['_grid'], old_target[:_id].to_s)
-                ne.data['_grid'] = GridFS.put(bin, {filename: agent[:_id].to_s}, target[:_id].to_s) unless bin.nil?
-              end
-
-              ne.save
-            end
-
-            # remove the old evidence
-            Evidence.collection_class(old_target[:_id]).where(:aid => agent[:_id]).destroy_all
-
-            trace :info, "Moving finished for #{agent._kind} #{agent.name}"
-          ensure
-            Thread.exit
-          end
-        end
+        OffloadManager.instance.run task
       end
 
       # actually move the target now.
