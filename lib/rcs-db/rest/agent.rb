@@ -169,6 +169,8 @@ class AgentController < RESTController
   end
 
   def move
+    require_auth_level :tech
+
     mongoid_query do
       target = ::Item.targets.find(@params['target'])
       return bad_request('INVALID_TARGET') if target.nil?

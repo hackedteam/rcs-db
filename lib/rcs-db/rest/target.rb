@@ -114,6 +114,8 @@ class TargetController < RESTController
   end
 
   def move
+    require_auth_level :admin
+
     mongoid_query do
       operation = ::Item.operations.find(@params['operation'])
       return bad_request('INVALID_OPERATION') if operation.nil?
