@@ -238,7 +238,7 @@ class AgentController < RESTController
 
         when 'factory'
           agent.configs.delete_all
-          config = agent.configs.create!(config: @params['config'], user: @session[:user][:name], saved: Time.now.getutc.to_i)
+          config = agent.configs.create!(desc: agent.desc, config: @params['config'], user: @session[:user][:name], saved: Time.now.getutc.to_i)
       end
       
       Audit.log :actor => @session[:user][:name],

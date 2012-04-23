@@ -27,106 +27,106 @@ class SessionManager
     #cookie = SecureRandom.random_bytes(8).unpack('H*').first
     cookie = UUIDTools::UUID.random_create.to_s
     
-    # store the sessions
-    @sessions[cookie] = {:user => user,
-                         :level => level,
-                         :cookie => cookie,
-                         :address => address,
-                         :time => Time.now.getutc.to_i,
-                         :ws => nil,
-                         :accessible => accessible}
+    ::Session.create(:user => [ user[:_id] ]) do |s|
+      s[:level] = level
+      s[:cookie] = cookie
+      s[:address] = address
+      s[:time] = Time.now.getutc.to_i
+      s[:accessible] = accessible
+    end
 
-    return @sessions[cookie]
+    get(cookie)
   end
 
-  def get_by_user(user)
-    @sessions.each_pair do |cookie, sess|
-      if sess[:user][:name] == user
-        return sess
-      end
-    end
-    return nil
-  end
+  def get_by_user(username)
+    user = ::User.where({name: username}).first
+    return nil if user.nil?
 
-  def get_by_ws(ws)
-    @sessions.each_pair do |cookie, sess|
-      if sess[:ws] == ws
-        return sess
-      end
-    end
-    return nil
-  end
+    sess = ::Session.where({user: [ user[:_id] ]}).first
+    return nil if sess.nil?
 
-  def each_ws(id = nil, rcpt = nil)
-    @sessions.values.each do |sess|
-      # we have specified a specific user, skip all the others
-      next if rcpt != nil and sess[:user][:_id] != rcpt
-      # do not include server accounts
-      next if sess[:level].include? :server
-      # not connected push channel
-      next if sess[:ws].nil?
-      # check for accessibility, if we pass and id, we only want the ws that can access that id
-      next if id != nil and not sess[:accessible].include? id
-      # give back to the caller
-      yield sess[:ws]
-    end
+    get(sess[:cookie])
   end
 
   def all
-    list = []
-    @sessions.each_pair do |cookie, sess|
-      s = sess.clone
-      s.delete :accessible
-      s.delete :ws
-      # do not include server accounts
-      list << s unless sess[:level].include? :server
-    end
-    
-    return list
+    ::Session.not_in(level: ["server"]).only(:user, :level, :cookie, :address, :time).all
   end
-  
+
+  def all_raw
+    ::Session.not_in(level: ["server"]).all
+  end
+
   def update(cookie)
-    # update the time of the session (to avoid timeout)
-    @sessions[cookie][:time] = Time.now.getutc.to_i
+    sess = ::Session.where({cookie: cookie}).first
+    sess[:time] = Time.now.getutc.to_i
+    sess.save
+
+    get(cookie)
   end
   
   def get(cookie)
-    return @sessions[cookie]
+    sess = ::Session.where({cookie: cookie}).first
+    return nil if sess.nil?
+
+    # create a fake object with a real user reference
+    session = {}
+    session[:user] = ::User.find(sess[:user]).first
+    session[:level] = sess[:level]
+    session[:address] = sess[:address]
+    session[:cookie] = sess[:cookie]
+    session[:time] = sess[:time]
+    session[:accessible] = sess[:accessible]
+
+    return session
   end
-  
+
+  def get_session(cookie)
+    ::Session.where({cookie: cookie}).first
+  end
+
   def delete(cookie)
+    session = ::Session.where({cookie: cookie}).first
+
     # terminate the websocket connection
-    @sessions[cookie][:ws].close_websocket unless @sessions[cookie][:ws].nil?
+    WebSocketManager.instance.destroy(cookie)
+
     # delete the cookie session
-    return @sessions.delete(cookie) != nil
+    session.destroy
   end
   
   # default timeout is 15 minutes
   # this timeout is calculated from the last time the cookie was checked
   def timeout(delta = 900)
-    trace :debug, "Session Manager searching for timed out entries..." if @sessions.length > 0
+    count = ::Session.all.count
+    trace :debug, "Session Manager searching for timed out entries..." if count > 0
     # save the size of the hash before deletion
-    size = @sessions.length
+    size = count
     # search for timed out sessions
-    @sessions.each_pair do |key, value|
+    ::Session.all.each do |session|
       now = Time.now.getutc.to_i
-      if now - value[:time] >= delta
-        
+      if now - session[:time] >= delta
+
+        user = User.find(session[:user])
+
         # don't log timeout for the server
-        unless value[:level].include? :server
-          Audit.log :actor => value[:user][:name], :action => 'logout', :user_name => value[:user][:name], :desc => "User '#{value[:user][:name]}' has been logged out for timeout"
+        unless session[:level].include? 'server'
+          Audit.log :actor => user[:name], :action => 'logout', :user_name => user[:name], :desc => "User '#{user[:name]}' has been logged out for timeout"
+          trace :info, "User '#{user[:name]}' has been logged out for timeout"
+
+          PushManager.instance.notify('logout', {rcpt: session[:user][:_id], text: "You were disconnected by #{@session[:user][:name]}"})
+          WebSocketManager.instance.destroy(session[:cookie])
         end
 
-        trace :info, "User '#{value[:user][:name]}' has been logged out for timeout" unless value[:level].include? :server
         # delete the entry
-        @sessions.delete key
+        session.destroy
       end
     end
-    trace :info, "Session Manager timed out #{size - @sessions.length} sessions" if size - @sessions.length > 0
+    count = ::Session.all.count
+    trace :info, "Session Manager timed out #{size - count} sessions" if size - count > 0
   end
 
   def length
-    return @sessions.length
+    ::Session.all.count
   end
 
   def get_accessible(user)
@@ -154,8 +154,11 @@ class SessionManager
     # add to all the active session the new agent
     # if the factory of the agent is in the accessible list, we are sure that even
     # the agent will be in the list
-    @sessions.each_pair do |cookie, sess|
-      sess[:accessible] << agent[:_id] if sess[:accessible].include? factory[:_id]
+    ::Session.all.each do |sess|
+      if sess[:accessible].include? factory[:_id]
+        sess[:accessible] << agent[:_id]
+        sess.save
+      end
     end
   end
 

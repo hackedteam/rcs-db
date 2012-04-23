@@ -5,6 +5,14 @@ TODO (daVinci 8.0.0):
 
     disable DEP on windows
 
+    persistent sessions
+
+    push channel reconnect
+
+    explicit logout message
+
+    exploit not encrypted
+
 FUTURE (daVinci 8.x.x):
 
     mongo authentication

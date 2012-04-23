@@ -14,7 +14,12 @@ class SessionController < RESTController
   def index
     require_auth_level :admin
 
-    return ok(SessionManager.instance.all)
+    list = []
+    SessionManager.instance.all.each do |sess|
+      list << SessionManager.instance.get(sess[:cookie])
+    end
+
+    return ok(list)
   end
   
   def destroy
@@ -25,7 +30,7 @@ class SessionController < RESTController
 
     return not_found if session.nil?
 
-    PushManager.instance.notify('message', {rcpt: session[:user][:_id], text: "You were disconnected by #{@session[:user][:name]}"})
+    PushManager.instance.notify('logout', {rcpt: session[:user][:_id], text: "You were disconnected by #{@session[:user][:name]}"})
 
     return not_found unless SessionManager.instance.delete(session_id)
 

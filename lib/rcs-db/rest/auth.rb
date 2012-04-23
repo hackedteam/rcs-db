@@ -49,7 +49,7 @@ class AuthController < RESTController
           sess = SessionManager.instance.get_by_user(user)
           unless sess.nil?
             Audit.log :actor => user, :action => 'logout', :user_name => user, :desc => "User '#{user}' forcibly logged out by system"
-            PushManager.instance.notify('message', {rcpt: sess[:user][:_id], text: "Your account has been used on another machine"})
+            PushManager.instance.notify('logout', {rcpt: sess[:user][:_id], text: "Your account has been used on another machine"})
             SessionManager.instance.delete(sess[:cookie])
           end
           
@@ -62,10 +62,12 @@ class AuthController < RESTController
           # create the new auth sessions
           sess = SessionManager.instance.create(@user, @auth_level, @request[:peer], accessible)
           # append the cookie to the other that may have been present in the request
-          expiry = (Time.now() + 86400).strftime('%A, %d-%b-%y %H:%M:%S %Z')
+          expiry = (Time.now() + 7*86400).strftime('%A, %d-%b-%y %H:%M:%S %Z')
           trace :debug, "[#{@request[:peer]}] Issued cookie with expiry time: #{expiry}"
+
           # don't return the accessible items (used only internally)
           session = sess.select {|k,v| k != :accessible}
+
           return ok(session, {cookie: 'session=' + sess[:cookie] + "; path=/; expires=#{expiry}" })
         end
     end

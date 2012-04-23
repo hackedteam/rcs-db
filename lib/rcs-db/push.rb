@@ -18,9 +18,18 @@ class PushManager
     trace :debug, "PUSH Event: #{type} #{message}"
 
     begin
-      SessionManager.instance.each_ws(message[:id], message[:rcpt]) do |ws|
-        WebSocketManager.send(ws, type, message)
+      SessionManager.instance.all_raw.each do |session|
+        ws = WebSocketManager.instance.get_ws_from_cookie session[:cookie]
+        # not connected push channel
+        next if ws.nil?
+        # we have specified a specific user, skip all the others
+        next if message[:rcpt] != nil and session[:user].first != message[:rcpt]
+        # check for accessibility, if we pass and id, we only want the ws that can access that id
+        next if message[:id] != nil and not session[:accessible].include? message[:id]
+        # send the message
+        WebSocketManager.instance.send(ws, type, message)
       end
+
     rescue Exception => e
       trace :error, "PUSH ERROR: Cannot notify clients #{e.message}"
     end
@@ -29,10 +38,7 @@ class PushManager
   def heartbeat
     connected = 0
     begin
-      SessionManager.instance.each_ws do |ws|
-        WebSocketManager.ping(ws)
-        connected = connected + 1
-      end
+      connected = WebSocketManager.instance.ping_all
       trace :debug, "PUSH heartbeat: #{connected} clients" if connected > 0
     rescue Exception => e
       trace :error, "PUSH ERROR: Cannot perform clients heartbeat #{e.message}"
