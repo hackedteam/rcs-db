@@ -249,7 +249,20 @@ class AgentController < RESTController
       return ok(config)
     end
   end
-  
+
+  def update_config
+    require_auth_level :tech
+
+    mongoid_query do
+      agent = Item.any_in(_id: @session[:accessible]).where(_kind: 'agent').find(@params['_id'])
+      config = agent.configs.where(@params['config_id']).first
+
+      config.update_attributes(@params)
+
+      return ok
+    end
+  end
+
   def del_config
     require_auth_level :tech
 
