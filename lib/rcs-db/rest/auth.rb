@@ -34,7 +34,7 @@ class AuthController < RESTController
           # the unique username will be used to create an entry for it in the network schema
           if auth_server(user, pass)
             # create the new auth sessions
-            sess = SessionManager.instance.create({:name => user}, @auth_level, @request[:peer])
+            sess = SessionManager.instance.create(nil, @auth_level, @request[:peer])
             # append the cookie to the other that may have been present in the request
             return ok(sess, {cookie: 'session=' + sess[:cookie] + '; path=/;'})
           end

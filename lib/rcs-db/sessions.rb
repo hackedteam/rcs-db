@@ -27,7 +27,8 @@ class SessionManager
     #cookie = SecureRandom.random_bytes(8).unpack('H*').first
     cookie = UUIDTools::UUID.random_create.to_s
     
-    ::Session.create(:user => [ user[:_id] ]) do |s|
+    ::Session.create({:user => []}) do |s|
+      s[:user] = [ user[:_id] ] unless user.nil?
       s[:level] = level
       s[:cookie] = cookie
       s[:address] = address
@@ -53,7 +54,11 @@ class SessionManager
   end
 
   def update(cookie)
+    return if cookie.nil?
+
     sess = ::Session.where({cookie: cookie}).first
+    return if sess.nil?
+
     sess[:time] = Time.now.getutc.to_i
     sess.save
 
@@ -93,38 +98,39 @@ class SessionManager
   # default timeout is 15 minutes
   # this timeout is calculated from the last time the cookie was checked
   def timeout(delta = 900)
-    count = ::Session.all.count
-    trace :debug, "Session Manager searching for timed out entries..." if count > 0
-    # save the size of the hash before deletion
-    size = count
-    # search for timed out sessions
-    ::Session.all.each do |session|
+    begin
+      count = ::Session.all.count
+      trace :debug, "Session Manager searching for timed out entries..." if count > 0
+      # save the size of the hash before deletion
+      size = count
+      # search for timed out sessions
+      ::Session.all.each do |session|
 
-      # clean invalid sessions
-      session.destroy if session[:user].first.nil?
+        now = Time.now.getutc.to_i
+        if now - session[:time] >= delta
 
-      now = Time.now.getutc.to_i
-      if now - session[:time] >= delta
+          # don't log timeout for the server
+          unless session[:level].include? 'server'
 
-        user = User.find(session[:user].first).first
-        next if user.nil?
+            user = User.find(session[:user].first).first
+            next if user.nil?
 
-        # don't log timeout for the server
-        unless session[:level].include? 'server'
+            Audit.log :actor => user[:name], :action => 'logout', :user_name => user[:name], :desc => "User '#{user[:name]}' has been logged out for timeout"
+            trace :info, "User '#{user[:name]}' has been logged out for timeout"
 
-          Audit.log :actor => user[:name], :action => 'logout', :user_name => user[:name], :desc => "User '#{user[:name]}' has been logged out for timeout"
-          trace :info, "User '#{user[:name]}' has been logged out for timeout"
+            PushManager.instance.notify('logout', {rcpt: user[:_id], text: "You were disconnected for timeout"})
+            WebSocketManager.instance.destroy(session[:cookie])
+          end
 
-          PushManager.instance.notify('logout', {rcpt: user[:_id], text: "You were disconnected for timeout"})
-          WebSocketManager.instance.destroy(session[:cookie])
+          # delete the entry
+          session.destroy
         end
-
-        # delete the entry
-        session.destroy
       end
+      count = ::Session.all.count
+      trace :info, "Session Manager timed out #{size - count} sessions" if size - count > 0
+    rescue Exception => e
+      trace :error, "Cannot perform session timeout: #{e.message}"
     end
-    count = ::Session.all.count
-    trace :info, "Session Manager timed out #{size - count} sessions" if size - count > 0
   end
 
   def length

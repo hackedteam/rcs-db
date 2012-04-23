@@ -49,7 +49,6 @@ class WebSocketManager
 
     ws.onerror { |e|
       trace :debug,  "[#{ws.object_id}] WS error: #{e.message}"
-      trace :debug,  "[#{ws.object_id}] WS error: #{e.backtrace}"
     }
   end
 
@@ -78,12 +77,7 @@ class WebSocketManager
   end
 
   def onpong(ws, msg)
-    session = SessionManager.instance.get_session(get_cookie_from_ws(ws))
-    return if session.nil?
-    # keep the main session alive
-    session[:time] = Time.now.getutc.to_i
-    session.save
-
+    SessionManager.instance.update(get_cookie_from_ws(ws))
     trace :debug, "[#{ws.object_id}] WS pong: #{session[:address]}"
   end
 
