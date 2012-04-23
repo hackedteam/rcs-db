@@ -3,6 +3,8 @@ TODO (daVinci 8.0.0):
 
     delete in license
 
+    disable DEP on windows
+
 FUTURE (daVinci 8.x.x):
 
     mongo authentication
