@@ -102,14 +102,15 @@ class SessionManager
       now = Time.now.getutc.to_i
       if now - session[:time] >= delta
 
-        user = User.find(session[:user])
+        user = User.find(session[:user]).first
 
         # don't log timeout for the server
         unless session[:level].include? 'server'
+
           Audit.log :actor => user[:name], :action => 'logout', :user_name => user[:name], :desc => "User '#{user[:name]}' has been logged out for timeout"
           trace :info, "User '#{user[:name]}' has been logged out for timeout"
 
-          PushManager.instance.notify('logout', {rcpt: session[:user][:_id], text: "You were disconnected by #{@session[:user][:name]}"})
+          PushManager.instance.notify('logout', {rcpt: user[:_id], text: "You were disconnected for timeout"})
           WebSocketManager.instance.destroy(session[:cookie])
         end
 
