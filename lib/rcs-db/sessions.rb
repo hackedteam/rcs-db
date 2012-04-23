@@ -99,10 +99,15 @@ class SessionManager
     size = count
     # search for timed out sessions
     ::Session.all.each do |session|
+
+      # clean invalid sessions
+      session.destroy if session[:user].first.nil?
+
       now = Time.now.getutc.to_i
       if now - session[:time] >= delta
 
-        user = User.find(session[:user]).first
+        user = User.find(session[:user].first).first
+        next if user.nil?
 
         # don't log timeout for the server
         unless session[:level].include? 'server'
