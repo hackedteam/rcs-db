@@ -28,7 +28,11 @@ class SessionManager
     cookie = UUIDTools::UUID.random_create.to_s
     
     ::Session.create({:user => []}) do |s|
-      s[:user] = [ user[:_id] ] unless user.nil?
+      if level.include? :server
+        s[:user] = [ user ]
+      else
+        s[:user] = [ user[:_id] ]
+      end
       s[:level] = level
       s[:cookie] = cookie
       s[:address] = address
@@ -71,7 +75,11 @@ class SessionManager
 
     # create a fake object with a real user reference
     session = {}
-    session[:user] = ::User.find(sess[:user]).first
+    if sess[:level].include? 'server'
+      session[:user] = nil
+    else
+      session[:user] = ::User.find(sess[:user]).first
+    end
     session[:level] = sess[:level]
     session[:address] = sess[:address]
     session[:cookie] = sess[:cookie]
@@ -94,7 +102,11 @@ class SessionManager
     # delete the cookie session
     session.destroy
   end
-  
+
+  def delete_server(user)
+    ::Session.destroy_all(conditions: {user: [ user ]})
+  end
+
   # default timeout is 15 minutes
   # this timeout is calculated from the last time the cookie was checked
   def timeout(delta = 900)

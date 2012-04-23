@@ -33,12 +33,16 @@ class AuthController < RESTController
           # and the password must be the 'server signature'
           # the unique username will be used to create an entry for it in the network schema
           if auth_server(user, pass)
+            # delete any previous session from this server
+            SessionManager.instance.delete_server(user)
             # create the new auth sessions
-            sess = SessionManager.instance.create(nil, @auth_level, @request[:peer])
+            sess = SessionManager.instance.create(user, @auth_level, @request[:peer])
             # append the cookie to the other that may have been present in the request
             return ok(sess, {cookie: 'session=' + sess[:cookie] + '; path=/;'})
           end
         rescue Exception => e
+          trace :error, "#{e.message}"
+          trace :error, "#{e.backtrace}"
           return conflict('LICENSE_LIMIT_REACHED')
         end
         

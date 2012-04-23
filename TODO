@@ -3,13 +3,7 @@ TODO (daVinci 8.0.0):
 
     delete in license
 
-    disable DEP on windows
-
-    persistent sessions
-
-    push channel reconnect
-
-    explicit logout message
+    persistent accessible add
 
     exploit not encrypted
 

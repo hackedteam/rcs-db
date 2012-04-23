@@ -49,6 +49,7 @@ class WebSocketManager
 
     ws.onerror { |e|
       trace :debug,  "[#{ws.object_id}] WS error: #{e.message}"
+      trace :debug,  "[#{ws.object_id}] WS error: #{e.backtrace}"
     }
   end
 
