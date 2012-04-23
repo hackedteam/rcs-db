@@ -15,8 +15,17 @@ class SessionController < RESTController
     require_auth_level :admin
 
     list = []
+    # the console needs sessions with the User object inside
+    # so, we have to reconstruct a fake list here
     SessionManager.instance.all.each do |sess|
-      list << SessionManager.instance.get(sess[:cookie])
+      # create a fake object with a real user reference
+      session = {}
+      session[:user] = ::User.find(sess[:user]).first
+      session[:level] = sess[:level]
+      session[:address] = sess[:address]
+      session[:cookie] = sess[:cookie]
+      session[:time] = sess[:time]
+      list << session
     end
 
     return ok(list)

@@ -49,10 +49,6 @@ class SessionManager
   end
 
   def all
-    ::Session.not_in(level: ["server"]).only(:user, :level, :cookie, :address, :time).all
-  end
-
-  def all_raw
     ::Session.not_in(level: ["server"]).all
   end
 

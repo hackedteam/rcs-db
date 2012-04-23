@@ -255,9 +255,10 @@ class AgentController < RESTController
 
     mongoid_query do
       agent = Item.any_in(_id: @session[:accessible]).where(_kind: 'agent').find(@params['_id'])
-      config = agent.configs.where(@params['config_id']).first
+      config = agent.configs.where({:_id => @params['config_id']}).first
 
-      config.update_attributes(@params)
+      config[:desc] = @params['desc']
+      config.save
 
       return ok
     end

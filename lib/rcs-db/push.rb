@@ -18,7 +18,7 @@ class PushManager
     trace :debug, "PUSH Event: #{type} #{message}"
 
     begin
-      SessionManager.instance.all_raw.each do |session|
+      SessionManager.instance.all.each do |session|
         ws = WebSocketManager.instance.get_ws_from_cookie session[:cookie]
         # not connected push channel
         next if ws.nil?
