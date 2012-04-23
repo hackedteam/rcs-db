@@ -233,6 +233,8 @@ Section "Install Section" SecInstall
   	RMDir /r "$INSTDIR\Ruby"
   	SetOutPath "$INSTDIR\Ruby"
   	File /r "Ruby\*.*"
+
+  	WriteRegExpandStr HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" "C:\RCS\Ruby\bin\ruby.exe" "DisableNXShowUI"
   !endif
 
   SetDetailsPrint "both"
