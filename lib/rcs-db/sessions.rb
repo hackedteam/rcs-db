@@ -124,7 +124,7 @@ class SessionManager
           # don't log timeout for the server
           unless session[:level].include? :server
 
-            user = User.find(session[:user].first).first
+            user = User.find(session[:user].first)
             next if user.nil?
 
             Audit.log :actor => user[:name], :action => 'logout', :user_name => user[:name], :desc => "User '#{user[:name]}' has been logged out for timeout"
