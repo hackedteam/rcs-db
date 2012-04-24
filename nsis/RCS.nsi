@@ -337,7 +337,10 @@ Section "Install Section" SecInstall
       nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-license"
       Pop $0
       ${If} $0 != 0
-         MessageBox MB_OK|MB_ICONEXCLAMATION "Insert the USB token associated with the license and press OK"
+         MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "Insert the USB token associated with the license and retry" IDRETRY retry IDCANCEL cancel
+         cancel:
+            Quit
+         retry:
       ${EndIf}
     ${LoopUntil} $0 == 0
 
