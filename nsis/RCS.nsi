@@ -9,11 +9,11 @@
 ;--------------------------------
 ;General
 
-	; if this is defined it will perform the full install
-	; if this is NOT defined it will only install the ruby scripts and nothing else
-	!define FULL_INSTALL 1
+  ; if this is defined it will perform the full install
+  ; if this is NOT defined it will only install the ruby scripts and nothing else
+  !define FULL_INSTALL 1
 
-	!define PACKAGE_NAME "RCS"
+  !define PACKAGE_NAME "RCS"
   !Define /file PACKAGE_VERSION "..\config\version.txt"
 
   ;Variables
@@ -40,11 +40,11 @@
   
   ;Name and file
   Name "RCS"
-	!ifdef FULL_INSTALL
+  !ifdef FULL_INSTALL
   	OutFile "RCS-${PACKAGE_VERSION}.exe"
-	!else
-		OutFile "RCS-Update-${PACKAGE_VERSION}.exe"
-	!endif
+  !else
+	OutFile "RCS-Update-${PACKAGE_VERSION}.exe"
+  !endif
 
   ;Default installation folder
   InstallDir "C:\RCS\"
@@ -265,7 +265,7 @@ Section "Install Section" SecInstall
 	
 	    SetOutPath "$INSTDIR\DB\mongodb\win"
 	    File /r "mongodb\win\*.*"
-		!endif
+	!endif
   
     SetOutPath "$INSTDIR\DB\bin"
     File /r "bin\*.*"
@@ -322,14 +322,17 @@ Section "Install Section" SecInstall
     DetailPrint "Installing license.."
     CopyFiles /SILENT $masterLicense "$INSTDIR\DB\config\rcs.lic"
 
-		!ifdef FULL_INSTALL
-	    DetailPrint "Installing libraries.."
+	!ifdef FULL_INSTALL
+	    DetailPrint "Installing VC redistributable (x86).."
 	    nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_x86 /q"
-	
+
+        DetailPrint "Installing VC redistributable (x64).."
+        nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_x64 /q"
+
 	    DetailPrint "Installing drivers.."
 	    nsExec::ExecToLog "$INSTDIR\DB\bin\haspdinst -i -cm -kp -fi"
 	    SimpleSC::SetServiceFailure "hasplms" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-		!endif
+	!endif
 
     ; check if the license + dongle is ok
     StrCpy $0 1

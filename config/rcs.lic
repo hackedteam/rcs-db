@@ -37,22 +37,22 @@
 :correlation: false
 :connectors: true
 :rmi:
-- false
+- true
 - true
 :nia:
 - .inf
-- true
+- false
 :exploits: true
 :collectors:
   :collectors: 10
   :anonymizers: 20
 :shards: 2
 :digest: !binary |-
-  NThlOTY0MDA3ZjQzMzE0OTY3ZTI1ODA2ODQzNjI2NzExZjI5ZmI2Mg==
+  YTMyYWQwODUwNzU3MThkODEyYTQ4OWE4YjBlMTc3OGNkNjZkNGM0Yg==
 :signature: !binary |-
-  ZWUzYzU5OTI0NTVhZWZlZmFmNWZkNmQ2MDZhZTA3ZDcwMTFkNzIzYjk1YWNj
-  Mjc4MGZmZjhmOTBjNjhhODRmZA==
+  MDQ4MDA0YmExNmZlMjJjNzM4ZDA3MjdlNDVkZmY2ZDVlMDhmYmFlMDFmOWYz
+  NzMxYmVkYzZjYzU1Y2MzODA3OQ==
 :integrity: !binary |-
-  ZDQ3MzAzMDdlZjE2NmZlMDAxMGY0MWQ2Yjc0MDUxZWZkMzkzZTI1MDZmYmRj
-  MDE1ZDY2YTg4MTBjNDcwOTA2NTRiNjljMWU1YzliZTUyNjY4ZDIzZjBjODcw
-  OWM1NmI5
+  ZGU1MzBmZGYwMjQxNDhjOTE3NTVkNzQwZDdiNDE4MWNjNDkxYmYzYmM5YmZl
+  NzM4NzIzNmNiMWM0ZWY1MDdiMzI5OTc3M2M1NWY1MDBkNjEzYTYxMjExZGQ4
+  MmVhYmRm
