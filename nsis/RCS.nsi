@@ -804,7 +804,7 @@ Function FuncSelectComponentsLeave
   
   ${If} $installMaster == ${BST_CHECKED}
   ${AndIf} $installShard == ${BST_CHECKED}
-    MessageBox MB_OK|MB_ICONSTOP "The Master Node already include the first Shard, please deselect it."
+    MessageBox MB_OK|MB_ICONSTOP "The Master Node already includes the first Shard, please deselect it."
     Abort
   ${EndIf}
   
