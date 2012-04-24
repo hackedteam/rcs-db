@@ -150,9 +150,10 @@ class AgentController < RESTController
         doc[:logkey] = (0..31).inject('') {|x,y| x += alphabet[rand(0..alphabet.size-1)]}
         doc[:configs] = []
       end
-      
-      @session[:accessible] << item._id
-      
+
+      # make item accessible to this user
+      SessionManager.instance.add_single_accessible(@session, item._id)
+
       Audit.log :actor => @session[:user][:name],
                 :action => "factory.create",
                 :operation_name => operation['name'],

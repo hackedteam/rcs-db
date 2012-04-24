@@ -34,7 +34,7 @@ class AuthController < RESTController
           # the unique username will be used to create an entry for it in the network schema
           if auth_server(user, pass)
             # delete any previous session from this server
-            SessionManager.instance.delete_server(user)
+            SessionManager.instance.delete_user(user)
             # create the new auth sessions
             sess = SessionManager.instance.create(user, @auth_level, @request[:peer])
             # append the cookie to the other that may have been present in the request

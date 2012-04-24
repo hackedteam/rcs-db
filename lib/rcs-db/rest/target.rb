@@ -57,9 +57,10 @@ class TargetController < RESTController
         doc[:status] = :open
         doc[:desc] = @params['desc']
       end
-      
-      @session[:accessible] << item._id
-      
+
+      # make item accessible to this user
+      SessionManager.instance.add_single_accessible(@session, item._id)
+
       Audit.log :actor => @session[:user][:name],
                 :action => "target.create",
                 :operation_name => operation['name'],

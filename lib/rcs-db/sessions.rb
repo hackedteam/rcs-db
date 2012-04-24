@@ -75,7 +75,7 @@ class SessionManager
 
     # create a fake object with a real user reference
     session = {}
-    if sess[:level].include? 'server'
+    if sess[:level].include? :server
       session[:user] = nil
     else
       session[:user] = ::User.find(sess[:user]).first
@@ -103,7 +103,7 @@ class SessionManager
     session.destroy
   end
 
-  def delete_server(user)
+  def delete_user(user)
     ::Session.destroy_all(conditions: {user: [ user ]})
   end
 
@@ -122,7 +122,7 @@ class SessionManager
         if now - session[:time] >= delta
 
           # don't log timeout for the server
-          unless session[:level].include? 'server'
+          unless session[:level].include? :server
 
             user = User.find(session[:user].first).first
             next if user.nil?
@@ -176,9 +176,17 @@ class SessionManager
     # the agent will be in the list
     ::Session.all.each do |sess|
       if sess[:accessible].include? factory[:_id]
-        sess[:accessible] << agent[:_id]
+        sess[:accessible] = sess[:accessible] + [ agent[:_id] ]
         sess.save
       end
+    end
+  end
+
+  def add_single_accessible(session, id)
+    # persist it in the db
+    ::Session.where({cookie: session[:cookie]}).each do |sess|
+      sess[:accessible] = sess[:accessible] + [ id ]
+      sess.save
     end
   end
 
