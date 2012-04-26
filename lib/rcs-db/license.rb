@@ -107,7 +107,8 @@ class LicenseManager
         add_limits lic
       end
     else
-      trace :info, "No license file found, starting with default values..."
+      trace :fatal, "No license file found"
+      exit!
     end
 
     # sanity check
