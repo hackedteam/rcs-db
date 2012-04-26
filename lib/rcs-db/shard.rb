@@ -11,24 +11,21 @@ class Shard
   extend RCS::Tracer
 
   def self.count
-    db = Mongo::Connection.new("127.0.0.1").db("admin")
-    db.authenticate(DB::AUTH_USER, DB::AUTH_PASS)
+    db = DB.instance.new_connection("admin")
     list = db.command({ listshards: 1 })
     list['shards'].size
   end
 
   def self.all
     t = Time.now
-    db = Mongo::Connection.new("127.0.0.1").db("admin")
-    db.authenticate(DB::AUTH_USER, DB::AUTH_PASS)
+    db = DB.instance.new_connection("admin")
     db.command({ listshards: 1 })
   end
 
   def self.create(host)
     trace :info, "Creating new shard: #{host}"
     begin
-      db = Mongo::Connection.new("127.0.0.1").db("admin")
-      db.authenticate(DB::AUTH_USER, DB::AUTH_PASS)
+      db = DB.instance.new_connection("admin")
       db.command({ addshard: host + ':27018' })
     rescue Exception => e
       {'errmsg' => e.message, 'ok' => 0}
@@ -38,8 +35,7 @@ class Shard
   def self.destroy(host)
     trace :info, "Destroying shard: #{host}"
     begin
-      db = Mongo::Connection.new("127.0.0.1").db("admin")
-      db.authenticate(DB::AUTH_USER, DB::AUTH_PASS)
+      db = DB.instance.new_connection("admin")
       db.command({ removeshard: host })
     rescue Exception => e
       {'errmsg' => e.message, 'ok' => 0}
@@ -48,8 +44,7 @@ class Shard
   
   def self.remove(shard)
     begin
-      db = Mongo::Connection.new("127.0.0.1", 27019).db("config")
-      db.authenticate(DB::AUTH_USER, DB::AUTH_PASS)
+      db = DB.instance.new_connection("config", "127.0.0.1", 27019)
       coll = db.collection('shards')
       coll.remove({_id: shard})
       {'ok' => 1}
@@ -60,8 +55,7 @@ class Shard
 
   def self.add(shard, host)
     begin
-      db = Mongo::Connection.new("127.0.0.1", 27019).db("config")
-      db.authenticate(DB::AUTH_USER, DB::AUTH_PASS)
+      db = DB.instance.new_connection("config", "127.0.0.1", 27019)
       coll = db.collection('shards')
       coll.insert({_id: shard, host: host + ':27018'})
     rescue Exception => e
@@ -71,8 +65,7 @@ class Shard
 
   def self.update(shard, host)
     begin
-      db = Mongo::Connection.new("127.0.0.1", 27019).db("config")
-      db.authenticate(DB::AUTH_USER, DB::AUTH_PASS)
+      db = DB.instance.new_connection("config", "127.0.0.1", 27019)
       coll = db.collection('shards')
       coll.update({_id: shard}, {'$set' => {'host' => host + ':27018'}})
       {'ok' => 1}
@@ -86,8 +79,7 @@ class Shard
       self.all['shards'].each do |shard|
         if shard['_id'] == id
           host, port = shard['host'].split(':')
-          db = Mongo::Connection.new(host, port.to_i).db("rcs")
-          db.authenticate(DB::AUTH_USER, DB::AUTH_PASS)
+          db = DB.instance.new_connection("rcs", host, port.to_i)
           return db.stats
         end
       end
@@ -99,8 +91,7 @@ class Shard
 
   def self.enable(database)
     begin
-      db = Mongo::Connection.new("127.0.0.1").db("admin")
-      db.authenticate(DB::AUTH_USER, DB::AUTH_PASS)
+      db = DB.instance.new_connection("admin")
       db.command({ enablesharding: database })
     rescue Exception => e
       error = db.command({ getlasterror: 1})
@@ -115,8 +106,7 @@ class Shard
       collection.create_index(key.to_a)
 
       # switch to 'admin' and create the shard
-      db = Mongo::Connection.new("127.0.0.1").db("admin")
-      db.authenticate(DB::AUTH_USER, DB::AUTH_PASS)
+      db = DB.instance.new_connection("admin")
       db.command({ shardcollection: collection.stats['ns'], key: key })
 
     rescue Exception => e

@@ -18,8 +18,7 @@ class CompactTask
     Shard.all['shards'].each do |shard|
       host, port = shard['host'].split(':')
 
-      db = Mongo::Connection.new(host, port.to_i).db("rcs")
-      db.authenticate(DB::AUTH_USER, DB::AUTH_PASS)
+      db = DB.instance.new_connection("rcs", host, port.to_i)
 
       db.collection_names.sort.keep_if {|c| c['logs.'].nil? and c['system.'].nil?}.each do |coll|
         yield @description = "Compacting #{coll}"

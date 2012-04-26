@@ -31,6 +31,7 @@ class DB
   def initialize
     @available = false
     @semaphore = Mutex.new
+    @auth_required = false
   end
   
   def mysql_connect(user, pass, host)
@@ -84,15 +85,13 @@ class DB
       end
       trace :info, "Connected to MongoDB"
 
-      # authenticate only if we have at least one user configured
+      # check if we need to authenticate
       begin
-        db = Mongo::Connection.new("127.0.0.1").db("rcs")
-        db.authenticate(AUTH_USER, AUTH_PASS)
         Mongoid.database.authenticate(AUTH_USER, AUTH_PASS)
         trace :info, "Authenticated to MongoDB"
+        @auth_required = true
       rescue Exception => e
-        trace :error, "AUTH: #{e.class}"
-        exit!
+        trace :warn, "AUTH: #{e.message}"
       end
 
     rescue Exception => e
@@ -100,6 +99,14 @@ class DB
       return false
     end
     return true
+  end
+
+  def new_connection(db, host = "127.0.0.1", port = 27017)
+    db = Mongo::Connection.new(host, port).db(db)
+    db.authenticate(AUTH_USER, AUTH_PASS) if @auth_required
+    return db
+  rescue Mongo::AuthenticationError => e
+    trace :fatal, "AUTH: #{e.message}"
   end
 
   # insert here the class to be indexed
