@@ -24,10 +24,14 @@ module DB
 class DB
   include Singleton
   include RCS::Tracer
-  
+
+  AUTH_USER = 'root'
+  AUTH_PASS = 'MongoRCS daVinci'
+
   def initialize
     @available = false
     @semaphore = Mutex.new
+    @auth_required = false
   end
   
   def mysql_connect(user, pass, host)
@@ -80,11 +84,38 @@ class DB
         config.master = Mongo::Connection.new(Config.instance.global['CN'], 27017, pool_size: 50, pool_timeout: 15).db('rcs')
       end
       trace :info, "Connected to MongoDB"
+
+      # check if we need to authenticate
+      begin
+        Mongoid.database.authenticate(AUTH_USER, AUTH_PASS)
+        trace :info, "Authenticated to MongoDB"
+        @auth_required = true
+      rescue Exception => e
+        trace :warn, "AUTH: #{e.message}"
+        # ensure the users are created, so the next time it will not fail
+        create_db_users
+      end
+
     rescue Exception => e
       trace :fatal, e
       return false
     end
     return true
+  end
+
+  def new_connection(db, host = Config.instance.global['CN'], port = 27017)
+    db = Mongo::Connection.new(host, port).db(db)
+    db.authenticate(AUTH_USER, AUTH_PASS) if @auth_required
+    return db
+  rescue Mongo::AuthenticationError => e
+    trace :fatal, "AUTH: #{e.message}"
+  end
+
+  def create_db_users
+    ['rcs', 'admin', 'config'].each do |name|
+      db = new_connection(name)
+      db.eval("db.addUser('#{AUTH_USER}', '#{AUTH_PASS}')")
+    end
   end
 
   # insert here the class to be indexed
