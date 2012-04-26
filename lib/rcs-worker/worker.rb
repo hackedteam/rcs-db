@@ -266,7 +266,7 @@ class Application
     
     begin
       version = File.read(Dir.pwd + '/config/version.txt')
-      trace :info, "Starting a RCS Worker #{version}..."
+      trace :info, "Starting the RCS Worker #{version}..."
       
       # config file parsing
       return 1 unless RCS::DB::Config.instance.load_from_file
