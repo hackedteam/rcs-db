@@ -29,7 +29,7 @@ Dir::mkdir(datadir) if not File.directory?(datadir)
 Dir::mkdir(configdir) if not File.directory?(configdir)
 Dir::mkdir(logdir) if not File.directory?(logdir)
 
-require_auth = true
+require_auth = false
 keyfile = Dir.pwd + '/config/mongodb.key'
 
 # the mongod executable

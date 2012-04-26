@@ -24,7 +24,10 @@ module DB
 class DB
   include Singleton
   include RCS::Tracer
-  
+
+  AUTH_USER = 'root'
+  AUTH_PASS = 'MongoRCS daVinci'
+
   def initialize
     @available = false
     @semaphore = Mutex.new
@@ -83,13 +86,13 @@ class DB
 
       # authenticate only if we have at least one user configured
       begin
-      db = Mongo::Connection.new("127.0.0.1").db("rcs")
-      if db.collection('system.users').count() != 0
-        Mongoid.database.authenticate("root", "MongoRCS daVinci")
+        db = Mongo::Connection.new("127.0.0.1").db("rcs")
+        db.authenticate(AUTH_USER, AUTH_PASS)
+        Mongoid.database.authenticate(AUTH_USER, AUTH_PASS)
         trace :info, "Authenticated to MongoDB"
-      end
       rescue Exception => e
         trace :error, "AUTH: #{e.class}"
+        exit!
       end
 
     rescue Exception => e
