@@ -144,6 +144,13 @@ class AuthController < RESTController
       return false
     end
 
+    # user is disabled
+    unless @user.enabled
+      Audit.log :actor => username, :action => 'login', :user_name => username, :desc => "User '#{username}' cannot access because is disabled"
+      trace :warn, "User [#{username}] DISABLED"
+      return false
+    end
+
     # the account is valid
     if @user.verify_password(pass)
       # symbolize the privs array
