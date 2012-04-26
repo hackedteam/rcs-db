@@ -1,0 +1,17 @@
+
+TODO (daVinci 8.0.0):
+
+
+FUTURE (daVinci 8.x.x):
+
+    delete in license
+
+    mongo authentication
+
+    with mongo 2.1.x
+        logRotate
+        mongos --install (windows service)
+
+    upgrade for nia
+
+    RMI from local console

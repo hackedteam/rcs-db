@@ -2,97 +2,117 @@
 #  HTTP requests parsing module
 #
 
-# relatives
-require_relative 'rest.rb'
+require_relative 'rest'
 
 # from RCS::Common
 require 'rcs-common/trace'
 require 'rcs-common/mime'
 
 # system
+require 'cgi'
 require 'json'
+
+require 'webrick'
 
 module RCS
 module DB
 
 module Parser
   include RCS::Tracer
+  include WEBrick::HTTPUtils
+  
+  CRLF = "\x0d\x0a"
 
-  # parse a request from a client
-  def http_parse(http_headers, req_method, req_uri, req_cookie, req_content)
-
-    # extract the name of the controller and the parameters
-    root, controller_name, *params = req_uri.split('/')
-
-    # instantiate the correct AnythingController class
-    # we will then pass the control of the operation to that object
-    begin
-      klass = "#{controller_name.capitalize}Controller" unless controller_name.nil?
-      controller = eval(klass).new
-    rescue
-      trace :error, "Invalid controller [#{req_uri}]"
-      return RESTController::STATUS_NOT_FOUND
-    end
-
-    # init the controller and check if everything is ok to proceed
-    if not controller.init(http_headers, req_method, req_uri, req_cookie, req_content, @peer) then
-      return RESTController::STATUS_NOT_AUTHORIZED
-    end
-
-    # if the object has an explicit method calling
-    method = params.shift if not params.first.nil? and controller.respond_to?(params.first)
-
-    # save the params in the controller object
-    controller.params[controller_name.downcase.to_sym] = params.first unless params.first.nil?
-    controller.params.merge!(http_parse_parameters(req_content))
-
-    # if we are not calling an explicit method, extract it from the http method
-    if method.nil? then
-      case req_method
-        when 'GET'
-          method = (params.empty?) ? :index : :show 
-        when 'POST'
-          method = :create
-        when 'PUT'
-          method = :update
-        when 'DELETE'
-          method = :destroy
-      end
-    end
-
-    # default is not authorized to do anything
-    resp_status = RESTController::STATUS_NOT_AUTHORIZED
-
-    # invoke the right method on the controller
-    begin
-      resp_status, resp_content, resp_content_type, resp_cookie = controller.send(method) unless method.nil?
-    rescue NotAuthorized => e
-      resp_content = "Invalid access level: " + e.message
-      trace :warn, resp_content
-    rescue Exception => e
-      resp_content = "ERROR: " + e.message
-      trace :error, resp_content
-      trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
-    end
-
-    # the controller job has finished, call the cleanup hook
-    controller.cleanup
-
-    return resp_status, resp_content, resp_content_type, resp_cookie
+  def parse_uri(uri)
+    root, controller_name, *rest = uri.split('/')
+    controller = "#{controller_name.capitalize}Controller" unless controller_name.nil?
+    return controller, rest
   end
-
-  # returns the JSON parsed object containing the parameters passed to a POST or PUT request
-  def http_parse_parameters(content)
+  
+  def parse_query_parameters(query)
+    return {} if query.nil?
+    parsed = CGI::parse(query)
+    # if value is an array with a lone value, assign direct value to hash key
+    parsed.each_pair { |k,v| parsed[k] = v.first if v.class == Array and v.size == 1 }
+    return parsed
+  end
+  
+  def parse_json_content(content)
+    return {} if content.nil?
     begin
       # in case the content is binary and not a json document
       # we will catch the exception and return the empty hash {}
-      return JSON.parse(content)
-    rescue
+      result = JSON.parse(content)
+      return result
+    rescue Exception => e
+      #trace :debug, "#{e.class}: #{e.message}"
       return {}
     end
   end
 
-end #Parser
+  def parse_multipart_content(content, content_type)
+    # extract the boundary from the content type:
+    # e.g. multipart/form-data; boundary=530565
+    boundary = content_type.split('boundary=')[1]
 
-end #Collector::
+    begin
+      # this function is from WEBrick::HTTPUtils module
+      return parse_form_data(content, boundary)
+    rescue Exception => e
+      #trace :debug, "#{e.class}: #{e.message}"
+      return {}
+    end
+  end
+
+  def guid_from_cookie(cookie)
+    # this will match our GUID session cookie
+    re = '.*?(session=)([A-Z0-9]{8}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{12})'
+    m = Regexp.new(re, Regexp::IGNORECASE).match(cookie)
+    return m[2] unless m.nil?
+    return nil
+  end
+
+  # we handle the following types of requests:
+  # /<controller>
+  # /<controller>/<method>
+  # /<controller>/<method>/<id>
+  #
+  # - any CGI style query ("?q=pippo,pluto&filter=all") will be parsed and passed as parameters
+  # - JSON encoded POST content ("{"q": ["pippo", "pluto"], "filter": "all"}") will be treated as a CGI query
+  # - multipart POST will be parsed correctly and :content contains all the parts
+  #
+  def prepare_request(method, uri, query, cookie, content_type, content)
+    controller, uri_params = parse_uri uri
+    
+    params = Hash.new
+    params.merge! parse_query_parameters(query)
+
+    json_content = parse_json_content content
+    params.merge! json_content unless json_content.empty?
+    
+    request = Hash.new
+    request[:controller] = controller
+    request[:method] = method
+    request[:query] = query
+    request[:uri] = uri
+    request[:uri_params] = uri_params
+    request[:params] = params
+    request[:cookie] = guid_from_cookie(cookie)
+    # if not content_type is provided, default to urlencoded
+    request[:content_type] = content_type || 'application/x-www-form-urlencoded'
+
+    if request[:content_type]['multipart/form-data']
+      request[:content] = parse_multipart_content(content, content_type)
+      request[:content][:type] = 'multipart'
+    else
+      # use 'content' as a string instead of symbol because it is a string in the multipart decoding
+      request[:content] = {'content' => content}
+      request[:content][:type] = json_content.empty? ? 'binary' : 'json'
+    end
+
+    return request
+  end
+end # Parser
+
+end #DB::
 end #RCS::

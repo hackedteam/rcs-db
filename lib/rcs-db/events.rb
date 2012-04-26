@@ -3,53 +3,79 @@
 #
 
 # relatives
-require_relative 'heartbeat.rb'
-require_relative 'parser.rb'
-require_relative 'sessions.rb'
+require_relative 'heartbeat'
+require_relative 'parser'
+require_relative 'rest'
+require_relative 'sessions'
+require_relative 'backup'
+require_relative 'alert'
+require_relative 'websocket'
+require_relative 'push'
 
 # from RCS::Common
 require 'rcs-common/trace'
-require 'rcs-common/status'
+require 'rcs-common/systemstatus'
 
 # system
+require 'benchmark'
 require 'eventmachine'
 require 'evma_httpserver'
+require 'em-websocket'
 require 'socket'
-require 'em-proxy'
+require 'net/http'
 
 module RCS
 module DB
 
-class HTTPHandler < EM::Connection
+module HTTPHandler
   include RCS::Tracer
   include EM::HttpServer
   include Parser
 
   attr_reader :peer
   attr_reader :peer_port
-
+  
   def post_init
-    # don't forget to call super here !
-    super
+    @connection_time = Time.now
+
+    # get the peer name
+    if get_peername
+      @peer_port, @peer = Socket.unpack_sockaddr_in(get_peername)
+    else
+      @peer = 'unknown'
+      @peer_port = 0
+    end
+
+    trace :debug, "[#{@peer}] New connection from port #{@peer_port}"
+
+    # timeout on the socket
+    set_comm_inactivity_timeout 60
 
     # we want the connection to be encrypted with ssl
-    start_tls(:private_key_file => Config.file('DB_KEY'),
-              :cert_chain_file => Config.file('DB_CERT'),
-              :verify_peer => true)
+    start_tls({:private_key_file => Config.instance.cert('DB_KEY'),
+               :cert_chain_file => Config.instance.cert('DB_CERT'),
+               :verify_peer => false})
+
+    # don't forget to call super here !
+    super
 
     # to speed-up the processing, we disable the CGI environment variables
     self.no_environment_strings
 
     # set the max content length of the POST
-    self.max_content_length = 30 * 1024 * 1024
+    self.max_content_length = 200 * 1024 * 1024
 
-    # get the peer name
-    @peer_port, @peer = Socket.unpack_sockaddr_in(get_peername)
-    trace :debug, "Connection from #{@peer}:#{@peer_port}"
+    @closed = false
+
+    trace :debug, "[#{@peer}] Connection setup ended (%f)" % (Time.now - @connection_time) if Config.instance.global['PERF']
   end
 
   def ssl_handshake_completed
-    trace :debug, "SSL Handshake completed successfully"
+    trace :debug, "[#{@peer}] SSL Handshake completed successfully (#{Time.now - @connection_time})"
+  end
+
+  def closed?
+    @closed
   end
 
   def ssl_verify_peer(cert)
@@ -57,9 +83,18 @@ class HTTPHandler < EM::Connection
   end
 
   def unbind
-    trace :debug, "Connection closed #{@peer}:#{@peer_port}"
+    trace :debug, "[#{@peer}] Connection closed from port #{@peer_port} (%f)" % (Time.now - @connection_time)
+    @closed = true
   end
 
+  def self.sessionmanager
+    @session_manager || SessionManager.instance
+  end
+
+  def self.restcontroller
+    @rest_controller || RESTController
+  end
+  
   def process_http_request
     # the http request details are available via the following instance variables:
     #   @http_protocol
@@ -73,82 +108,79 @@ class HTTPHandler < EM::Connection
     #   @http_post_content
     #   @http_headers
 
-    trace :debug, "[#{@peer}] Incoming HTTP Connection"
-    trace :debug, "[#{@peer}] Request: [#{@http_request_method}] #{@http_request_uri}"
+    #trace :debug, "[#{@peer}] Incoming HTTP Connection"
+    size = (@http_post_content) ? @http_post_content.bytesize : 0
 
-    resp = EM::DelegatedHttpResponse.new(self)
-
-    # Block which fulfills the request
+    # get it again since if the connection is keep-alived we need a fresh timing for each
+    # request and not the total from the beginning of the connection
+    @request_time = Time.now
+    
+    trace :debug, "[#{@peer}] REQ: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} #{size.to_s_bytes}"
+    
+    responder = nil
+    
+    # Block which fulfills the request (generate the data)
     operation = proc do
+      
+      trace :debug, "[#{@peer}] QUE: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time})" if Config.instance.global['PERF']
 
-      # do the dirty job :)
-      # here we pass the control to the internal parser which will return:
-      #   - the content of the reply
-      #   - the content_type
-      #   - the cookie if the backdoor successfully passed the auth phase
+      generation_time = Time.now
+      
       begin
-        status, content, content_type, cookie = http_parse(@http_headers.split("\x00"), @http_request_method, @http_request_uri, @http_cookie, @http_post_content)
+        # parse all the request params
+        request = prepare_request @http_request_method, @http_request_uri, @http_query_string, @http_cookie, @http_content_type, @http_post_content
+        request[:peer] = peer
+        request[:time] = @request_time
+        
+        # get the correct controller
+        controller = HTTPHandler.restcontroller.get request
+
+        # do the dirty job :)
+        responder = controller.act!
+        
+        # create the response object to be used in the EM::defer callback
+        
+        reply = responder.prepare_response(self, request)
+        
+        # keep the size of the reply to be used in the closing method
+        @response_size = reply.size
+        trace :debug, "[#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{request[:query]} (#{Time.now - generation_time}) #{@response_size.to_s_bytes}" if Config.instance.global['PERF']
+        
+        reply
       rescue Exception => e
-        trace :error, "ERROR: " + e.message
-        trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
+        trace :error, e.message
+        trace :fatal, "EXCEPTION(#{e.class}): " + e.backtrace.join("\n")
+
+        responder = RESTResponse.new(500, e.message)
+        reply = responder.prepare_response(self, request)
+        reply
       end
-
-      # prepare the HTTP response
-      resp.status = status
-      #TODO: status_string from status
-      resp.status_string = "OK"
-      resp.content = content
-      resp.headers['Content-Type'] = content_type
-      resp.headers['Set-Cookie'] = cookie unless cookie.nil?
-      #TODO: investigate the keep-alive option
-      #resp.keep_connection_open = true
-      resp.headers['Connection'] = 'close'
+      
     end
-
-    # Callback block to execute once the request is fulfilled
-    callback = proc do |res|
-    	resp.send_response
+    
+    # Block which fulfills the reply (send back the data to the client)
+    response = proc do |reply|
+      
+      reply.send_response
+      
+      # keep the size of the reply to be used in the closing method
+      @response_size = reply.headers['Content-length'] || 0
     end
 
     # Let the thread pool handle request
-    EM.defer(operation, callback)
+    EM.defer(operation, response)
   end
-
+  
 end #HTTPHandler
 
 
 class Events
   include RCS::Tracer
-
-  def start_proxy(local_port, server, server_port)
-    Thread.new do
-      trace :info, "Forwarding port #{local_port} to #{server}:#{server_port}..."
-      
-      Proxy.start(:host => "0.0.0.0", :port => local_port, :debug => false) do |conn|
-        conn.server :srv, :host => server, :port => server_port
-
-        conn.on_data do |data|
-          data
-        end
-
-        conn.on_response do |backend, resp|
-          resp
-        end
-
-        conn.on_finish do |backend, name|
-          unbind if backend == :srv
-        end
-      end
-    end
-  end
   
-  def setup(port = 4444)
+  def setup(port = 443)
 
     # main EventMachine loop
     begin
-
-      #start the proxy for the XML-RPC calls
-      start_proxy(port - 1, Config.global['DB_ADDRESS'], port - 1)
 
       # all the events are handled here
       EM::run do
@@ -159,31 +191,71 @@ class Events
         EM.threadpool_size = 50
 
         # we are alive and ready to party
-        Status.my_status = Status::OK
+        SystemStatus.my_status = SystemStatus::OK
 
         # start the HTTP REST server
         EM::start_server("0.0.0.0", port, HTTPHandler)
-        trace :info, "Listening on port #{port}..."
+        trace :info, "Listening for https on port #{port}..."
+
+        # start the WS server
+        EM::WebSocket.start(:host => "0.0.0.0", :port => port + 1, :secure => true,
+                            :tls_options => {:private_key_file => Config.instance.cert('DB_KEY'),
+                                             :cert_chain_file => Config.instance.cert('DB_CERT')} ) { |ws| WebSocketManager.instance.handle ws }
+        trace :info, "Listening for wss on port #{port + 1}..."
+
+        # ping for the connected clients
+        EM::PeriodicTimer.new(60) { EM.defer(proc{ PushManager.instance.heartbeat }) }
 
         # send the first heartbeat to the db, we are alive and want to notify the db immediately
         # subsequent heartbeats will be sent every HB_INTERVAL
         HeartBeat.perform
 
         # set up the heartbeat (the interval is in the config)
-        EM::PeriodicTimer.new(Config.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
+        EM::PeriodicTimer.new(Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
 
         # timeout for the sessions (will destroy inactive sessions)
-        EM::PeriodicTimer.new(60) { SessionManager.timeout }
+        EM::PeriodicTimer.new(60) { EM.defer(proc{ SessionManager.instance.timeout }) }
+
+        # reset the dashboard counter to be sure that on startup all the counters are empty
+        Item.reset_dashboard
+        # recalculate size statistics for operations and targets
+        Item.restat
+        EM::PeriodicTimer.new(60) { EM.defer(proc{ Item.restat }) }
+
+        # perform the backups
+        EM::PeriodicTimer.new(60) { EM.defer(proc{ BackupManager.perform }) }
+
+        # process the alert queue
+        EM::PeriodicTimer.new(5) { EM.defer(proc{ Alerting.dispatch }) }
+
+        # TODO: remove this
+        #check_thread_pool
+
       end
-    rescue Exception => e
+    rescue RuntimeError => e
       # bind error
-      if e.message.eql? 'no acceptor' then
-        trace :fatal, "Cannot bind port #{Config.global['LISTENING_PORT']}"
+      if e.message.start_with? 'no acceptor'
+        trace :fatal, "Cannot bind port #{Config.instance.global['LISTENING_PORT']}"
         return 1
       end
       raise
     end
 
+  end
+
+  def check_thread_pool
+    Thread.new do
+      loop do
+        statuses = Hash.new(0)
+
+        Thread.list.each { |t| statuses[t.status] += 1 }
+
+        trace :debug, "Threads: " + statuses.inspect
+        trace :debug, "Connections: " + Mongoid.master.connection.read_pool.inspect
+
+        sleep 2
+      end
+    end
   end
 
 end #Events

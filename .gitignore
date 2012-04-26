@@ -9,7 +9,7 @@ doc
 .yardoc
 
 # bundler
-.bundle
+#.bundle
 
 # jeweler generated
 pkg
@@ -42,10 +42,12 @@ Gemfile.lock
 log/*
 
 # certs
-config/*.pem
-config/*.sig
-config/*.crt
-config/*.key
+rcs-db.crt
+rcs-db.key
+rcs.pem
+config/certs/symbian.key
+config/certs/symbian.cer
+
 
 # config
 config/config.yaml
@@ -55,10 +57,36 @@ lib/rcs-db-release
 lib/rcs-worker-release
 
 # evidences
-evidence
+./evidence
 
-# temporary wav files
+# temporary wav/mp3 files
 *.wav
+*.mp3
 
 # data dir for mongo
 data/
+
+#NSIS setup
+nsis/*.exe
+
+#configs
+scripts/*.xml
+scripts/*.json
+scripts/*.bson
+scripts/*.zip
+
+# backup dir
+backups/
+
+# cores
+cores/
+
+# HASP
+hasp/*.sdf
+hasp/*.suo
+hasp/ipch
+hasp/*.opensdf
+
+backup
+
+exploits

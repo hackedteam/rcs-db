@@ -1,4 +1,6 @@
-require "test/unit"
+require 'helper'
+
+=begin
 
 class TestSpeex < Test::Unit::TestCase
 
@@ -20,3 +22,5 @@ class TestSpeex < Test::Unit::TestCase
     assert_true Speex.respond_to? :decoder_init
   end
 end
+
+=end

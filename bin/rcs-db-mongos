@@ -1,0 +1,40 @@
+#!/usr/bin/env ruby
+
+require 'yaml'
+
+# ensure the working dir is correct
+Dir.chdir File.dirname(File.dirname(File.realpath(__FILE__)))
+
+# select the correct dir based upon the platform we are running on
+case RUBY_PLATFORM
+  when /darwin/
+    os = 'macos'
+    ext = ''
+  when /mingw/
+    os = 'win'
+    ext = '.exe'
+end
+
+datadir = Dir.pwd + '/data'
+logdir = Dir.pwd + '/log'
+
+# ensure the data directory is present
+Dir::mkdir(datadir) if not File.directory?(datadir)
+Dir::mkdir(logdir) if not File.directory?(logdir)
+
+rcs_config = {CN: 'localhost'}
+File.open(Dir.pwd + '/config/config.yaml', "r") do |f|
+  rcs_config = YAML.load(f.read)
+end
+
+# the mongod executable
+mongos = Dir.pwd + '/mongodb/' + os + '/mongos' + ext
+
+# the data path
+parameters = "--logpath #{logdir}/mongos.log --configdb #{rcs_config['CN']}"
+
+# custom arguments
+custom = ARGV.join(' ')
+
+# execute it
+exec mongos + ' ' + parameters + ' ' + custom

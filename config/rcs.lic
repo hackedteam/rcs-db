@@ -1,0 +1,58 @@
+---
+:serial: 'off'
+:version: '8.0'
+:type: reusable
+:expiry: '2015-01-01 00:00:00 UTC'
+:maintenance: '2013-01-01 00:00:00 UTC'
+:users: .inf
+:agents:
+  :total: .inf
+  :desktop: .inf
+  :mobile: .inf
+  :windows:
+  - true
+  - true
+  :osx:
+  - true
+  - true
+  :linux:
+  - false
+  - false
+  :android:
+  - true
+  - true
+  :blackberry:
+  - true
+  - true
+  :ios:
+  - true
+  - true
+  :symbian:
+  - true
+  - true
+  :winmo:
+  - true
+  - true
+:alerting: true
+:correlation: false
+:connectors: true
+:rmi:
+- true
+- true
+:nia:
+- .inf
+- false
+:exploits: true
+:collectors:
+  :collectors: 10
+  :anonymizers: 20
+:shards: 2
+:digest: !binary |-
+  YTMyYWQwODUwNzU3MThkODEyYTQ4OWE4YjBlMTc3OGNkNjZkNGM0Yg==
+:signature: !binary |-
+  MDQ4MDA0YmExNmZlMjJjNzM4ZDA3MjdlNDVkZmY2ZDVlMDhmYmFlMDFmOWYz
+  NzMxYmVkYzZjYzU1Y2MzODA3OQ==
+:integrity: !binary |-
+  ZGU1MzBmZGYwMjQxNDhjOTE3NTVkNzQwZDdiNDE4MWNjNDkxYmYzYmM5YmZl
+  NzM4NzIzNmNiMWM0ZWY1MDdiMzI5OTc3M2M1NWY1MDBkNjEzYTYxMjExZGQ4
+  MmVhYmRm
