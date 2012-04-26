@@ -92,6 +92,8 @@ class DB
         @auth_required = true
       rescue Exception => e
         trace :warn, "AUTH: #{e.message}"
+        # ensure the users are created, so the next time it will not fail
+        create_db_users
       end
 
     rescue Exception => e
@@ -101,12 +103,19 @@ class DB
     return true
   end
 
-  def new_connection(db, host = "127.0.0.1", port = 27017)
+  def new_connection(db, host = Config.instance.global['CN'], port = 27017)
     db = Mongo::Connection.new(host, port).db(db)
     db.authenticate(AUTH_USER, AUTH_PASS) if @auth_required
     return db
   rescue Mongo::AuthenticationError => e
     trace :fatal, "AUTH: #{e.message}"
+  end
+
+  def create_db_users
+    ['rcs', 'admin', 'config'].each do |name|
+      db = new_connection(name)
+      db.eval("db.addUser('#{AUTH_USER}', '#{AUTH_PASS}')")
+    end
   end
 
   # insert here the class to be indexed
