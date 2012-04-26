@@ -29,13 +29,18 @@ Dir::mkdir(datadir) if not File.directory?(datadir)
 Dir::mkdir(configdir) if not File.directory?(configdir)
 Dir::mkdir(logdir) if not File.directory?(logdir)
 
+require_auth = true
+keyfile = Dir.pwd + '/config/mongodb.key'
+
 # the mongod executable
 mongod = Dir.pwd + '/mongodb/' + os + '/mongod' + ext
 mongos = Dir.pwd + '/mongodb/' + os + '/mongos' + ext
 
+
 puts "Starting the config server (#{rcs_config['CN']})..."
 # the config server
 parameters = "--dbpath #{configdir} --fork --nssize 64 --logpath #{logdir}/mongoc.log --configsvr --rest"
+parameters += " --keyFile #{keyfile}" if require_auth
 `#{mongod} #{parameters}`
 
 sleep 4
@@ -43,6 +48,7 @@ sleep 4
 puts "Starting the router..."
 # the shard router
 parameters = "--logpath #{logdir}/mongos.log --fork --configdb #{rcs_config['CN']}"
+parameters += " --keyFile #{keyfile}" if require_auth
 `#{mongos} #{parameters}`
 
 sleep 2
@@ -50,4 +56,5 @@ sleep 2
 puts "Starting the shard server..."
 # the shard server
 parameters = "--dbpath #{datadir} --journal --fork  --nssize 64 --logpath #{logdir}/mongod.log --shardsvr --rest"
+parameters += " --keyFile #{keyfile}" if require_auth
 `#{mongod} #{parameters}`

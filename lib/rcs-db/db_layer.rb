@@ -80,6 +80,18 @@ class DB
         config.master = Mongo::Connection.new(Config.instance.global['CN'], 27017, pool_size: 50, pool_timeout: 15).db('rcs')
       end
       trace :info, "Connected to MongoDB"
+
+      # authenticate only if we have at least one user configured
+      begin
+      db = Mongo::Connection.new("127.0.0.1").db("rcs")
+      if db.collection('system.users').count() != 0
+        Mongoid.database.authenticate("root", "MongoRCS daVinci")
+        trace :info, "Authenticated to MongoDB"
+      end
+      rescue Exception => e
+        trace :error, "AUTH: #{e.class}"
+      end
+
     rescue Exception => e
       trace :fatal, e
       return false

@@ -27,11 +27,13 @@ File.open(Dir.pwd + '/config/config.yaml', "r") do |f|
   rcs_config = YAML.load(f.read)
 end
 
+keyfile = Dir.pwd + '/config/mongodb.key'
+
 # the mongod executable
 mongos = Dir.pwd + '/mongodb/' + os + '/mongos' + ext
 
 # the data path
-parameters = "--logpath #{logdir}/mongos.log --configdb #{rcs_config['CN']}"
+parameters = "--logpath #{logdir}/mongos.log --configdb #{rcs_config['CN']} --keyFile #{keyfile}"
 
 # custom arguments
 custom = ARGV.join(' ')
