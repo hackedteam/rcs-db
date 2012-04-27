@@ -25,13 +25,12 @@ class DB
   include Singleton
   include RCS::Tracer
 
-  AUTH_USER = 'root'
-  AUTH_PASS = 'MongoRCS daVinci'
-
   def initialize
     @available = false
     @semaphore = Mutex.new
     @auth_required = false
+    @auth_user = 'root'
+    @auth_pass = File.binread(Config.instance.file('mongodb.key')) if File.exist?(Config.instance.file('mongodb.key'))
   end
   
   def mysql_connect(user, pass, host)
@@ -49,8 +48,6 @@ class DB
   def mysql_query(query, opts={:symbolize_keys => true})
     begin
       @semaphore.synchronize do
-        # try to reconnect if not connected
-        mysql_connect('root', 'rootp123', Config.instance.global['DB_ADDRESS']) if not @available
         # execute the query
         @mysql.query(query, opts)
       end
@@ -87,7 +84,7 @@ class DB
 
       # check if we need to authenticate
       begin
-        Mongoid.database.authenticate(AUTH_USER, AUTH_PASS)
+        Mongoid.database.authenticate(@auth_user, @auth_pass)
         trace :info, "Authenticated to MongoDB"
         @auth_required = true
       rescue Exception => e
@@ -105,7 +102,7 @@ class DB
 
   def new_connection(db, host = Config.instance.global['CN'], port = 27017)
     db = Mongo::Connection.new(host, port).db(db)
-    db.authenticate(AUTH_USER, AUTH_PASS) if @auth_required
+    db.authenticate(@auth_user, @auth_pass) if @auth_required
     return db
   rescue Mongo::AuthenticationError => e
     trace :fatal, "AUTH: #{e.message}"
@@ -114,7 +111,7 @@ class DB
   def create_db_users
     ['rcs', 'admin', 'config'].each do |name|
       db = new_connection(name)
-      db.eval("db.addUser('#{AUTH_USER}', '#{AUTH_PASS}')")
+      db.eval("db.addUser('#{@auth_user}', '#{@auth_pass}')")
     end
   end
 

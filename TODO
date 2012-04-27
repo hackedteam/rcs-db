@@ -1,7 +1,7 @@
 
 TODO (daVinci 8.x.x):
 
-    mongo authentication
+    mongo authentication in NSIS
 
     with mongo 2.1.x
         logRotate
