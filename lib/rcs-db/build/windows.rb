@@ -47,6 +47,13 @@ class BuildWindows < Build
       raise "Funcname marker not found"
     end
 
+    # avoid signature on the build time (kaspersky)
+    begin
+      content.binary_patch "\xD1\x20\x84\x4F", SecureRandom.random_bytes(4)
+    rescue
+      raise "Build time ident marker not found"
+    end
+
     file.rewind
     file.write content
     file.close
