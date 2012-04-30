@@ -77,7 +77,6 @@ class EvidenceController < RESTController
     end
   end
 
-
   def show
     require_auth_level :view
 
@@ -95,6 +94,23 @@ class EvidenceController < RESTController
       end
 
       return ok(evidence)
+    end
+  end
+
+  def destroy
+    require_auth_level :admin
+
+    return conflict("Unable to delete") unless LicenseManager.instance.check :deletion
+
+    trace :debug, @params.inspect
+
+    mongoid_query do
+      target = Item.where({_id: @params['target']}).first
+      return not_found("Target not found: #{@params['target']}") if target.nil?
+
+      Evidence.collection_class(target[:_id]).find(@params['_id']).destroy
+
+      return ok
     end
   end
 

@@ -22,14 +22,18 @@ class PositionResolver
 
     def get(params)
 
+      trace :debug, "Positioning: resolving #{params.inspect}"
+
       request = params.dup
 
-      # check for cached values (to avoid too many external request)
-      cached = get_cache params
-      return cached if cached
-
       begin
-        trace :debug, "Position resolving..."
+
+        # check for cached values (to avoid too many external request)
+        cached = get_cache params
+        if cached
+          trace :debug, "Positioning: resolved from cache #{cached.inspect}"
+          return cached
+        end
 
         location = {}
 
@@ -40,7 +44,7 @@ class PositionResolver
           request.merge! common
           location = get_google(request)
         else
-          raise "Don't know what to search for'"
+          raise "Don't know what to search for"
         end
 
         # remember the response for future requests

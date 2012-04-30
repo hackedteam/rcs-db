@@ -1,12 +1,11 @@
 
-TODO (daVinci 8.0.0):
+TODO (daVinci 8.x.x):
+
+    evidence COMMAND
 
 
-FUTURE (daVinci 8.x.x):
 
-    delete in license
-
-    mongo authentication
+    mongo authentication in NSIS
 
     with mongo 2.1.x
         logRotate
@@ -14,4 +13,14 @@ FUTURE (daVinci 8.x.x):
 
     upgrade for nia
 
-    RMI from local console
+
+
+    rewrite the http server:
+        - drop the evma_httpserver
+        - create a new gem in pure ruby
+        - test it on jruby
+
+    investigate JRuby
+        http://www.ruby-forum.com/topic/217747
+        http://caldersphere.rubyforge.org/warbler/
+        http://github.com/rawr/rawr

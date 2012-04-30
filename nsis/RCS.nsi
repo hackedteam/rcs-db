@@ -295,6 +295,7 @@ Section "Install Section" SecInstall
 
     SetOutPath "$INSTDIR\DB\config"
     File "config\mongoid.yaml"
+    File "config\mongodb.key"
     File "config\trace.yaml"
     File "config\export.zip"
     File "config\logo.png"

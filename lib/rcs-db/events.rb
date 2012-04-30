@@ -208,7 +208,7 @@ class Events
 
         # send the first heartbeat to the db, we are alive and want to notify the db immediately
         # subsequent heartbeats will be sent every HB_INTERVAL
-        HeartBeat.perform
+        EM.defer(proc{ HeartBeat.perform })
 
         # set up the heartbeat (the interval is in the config)
         EM::PeriodicTimer.new(Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
@@ -217,9 +217,9 @@ class Events
         EM::PeriodicTimer.new(60) { EM.defer(proc{ SessionManager.instance.timeout }) }
 
         # reset the dashboard counter to be sure that on startup all the counters are empty
-        Item.reset_dashboard
+        EM.defer(proc{ Item.reset_dashboard })
         # recalculate size statistics for operations and targets
-        Item.restat
+        EM.defer(proc{ Item.restat })
         EM::PeriodicTimer.new(60) { EM.defer(proc{ Item.restat }) }
 
         # perform the backups

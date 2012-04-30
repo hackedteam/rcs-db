@@ -116,6 +116,10 @@ class AuthController < RESTController
   private
   # private method to authenticate a server
   def auth_server(user, pass)
+
+    # if we are in archive mode, no collector is allowed to login
+    return false if LicenseManager.instance.check :archive
+
     server_sig = ::Signature.where({scope: 'server'}).first
 
     # the Collectors are authenticated only by the server signature
@@ -141,6 +145,13 @@ class AuthController < RESTController
     if @user.nil?
       Audit.log :actor => username, :action => 'login', :user_name => username, :desc => "User '#{username}' not found"
       trace :warn, "User [#{username}] NOT FOUND"
+      return false
+    end
+
+    # user is disabled
+    unless @user.enabled
+      Audit.log :actor => username, :action => 'login', :user_name => username, :desc => "User '#{username}' cannot access because is disabled"
+      trace :warn, "User [#{username}] DISABLED"
       return false
     end
 

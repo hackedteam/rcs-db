@@ -189,6 +189,7 @@ class Worker
         trace :info, "Listening on port #{port}"
 
         # set up the heartbeat (the interval is in the config)
+        EM.defer(proc{ HeartBeat.perform })
         EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
         
         trace :info, "Worker '#{RCS::DB::Config.instance.global['SHARD']}' ready!"
@@ -266,7 +267,7 @@ class Application
     
     begin
       version = File.read(Dir.pwd + '/config/version.txt')
-      trace :info, "Starting a RCS Worker #{version}..."
+      trace :info, "Starting the RCS Worker #{version}..."
       
       # config file parsing
       return 1 unless RCS::DB::Config.instance.load_from_file
