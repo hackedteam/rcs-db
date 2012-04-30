@@ -24,3 +24,4 @@ TODO (daVinci 8.x.x):
         http://www.ruby-forum.com/topic/217747
         http://caldersphere.rubyforge.org/warbler/
         http://github.com/rawr/rawr
+        RUBY_PLATFORM is problematic, its just "java"
