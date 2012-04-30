@@ -100,15 +100,15 @@ class EvidenceController < RESTController
   def destroy
     require_auth_level :admin
 
-    return conflict("Don't have permission to delete") unless LicenseManager.instance.check :deletion
+    return conflict("Unable to delete") unless LicenseManager.instance.check :deletion
+
+    trace :debug, @params.inspect
 
     mongoid_query do
       target = Item.where({_id: @params['target']}).first
       return not_found("Target not found: #{@params['target']}") if target.nil?
 
-      Evidence.collection_class(target[:_id]).any_in(_id: @params['_id']).each do |ev|
-        ev.destroy
-      end
+      Evidence.collection_class(target[:_id]).find(@params['_id']).destroy
 
       return ok
     end

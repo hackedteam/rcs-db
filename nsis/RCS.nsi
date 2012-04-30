@@ -794,7 +794,7 @@ Function FuncSelectComponents
   ${NSD_CreateCheckBox} 20u 115u 200u 12u "Network Controller"
   Pop $2
   SendMessage $2 ${WM_SETFONT} $R1 0
-  ${NSD_CreateLabel} 30u 128u 300u 15u "Service responsible for the communications with Anonymizers and Injection Proxies."
+  ${NSD_CreateLabel} 30u 128u 300u 15u "Service responsible for the communications with Anonymizers and Network Injectors."
 
   
   nsDialogs::Show
