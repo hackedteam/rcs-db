@@ -72,6 +72,7 @@ class LicenseManager
                :shards => 1,
                :exploits => false,
                :deletion => false,
+               :archive => false,
                :collectors => {:collectors => 1, :anonymizers => 0}}
   end
 
@@ -170,6 +171,7 @@ class LicenseManager
     @limits[:exploits] = limit[:exploits]
 
     @limits[:deletion] = true if limit[:deletion]
+    @limits[:archive] = true if limit[:archive]
   end
 
   
@@ -271,6 +273,12 @@ class LicenseManager
 
       when :exploits
         return @limits[:exploits]
+
+      when :deletion
+        return @limits[:deletion]
+
+      when :archive
+        return @limits[:archive]
 
       when :shards
         if Shard.count() < @limits[:shards]

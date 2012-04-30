@@ -1,6 +1,10 @@
 
 TODO (daVinci 8.x.x):
 
+    evidence COMMAND
+
+
+
     mongo authentication in NSIS
 
     with mongo 2.1.x
@@ -9,4 +13,11 @@ TODO (daVinci 8.x.x):
 
     upgrade for nia
 
-    RMI from local console
+
+
+    rewrite the http server:
+        - drop the evma_httpserver
+        - create a new gem in pure ruby
+        - test it on jruby
+
+    investigate JRuby

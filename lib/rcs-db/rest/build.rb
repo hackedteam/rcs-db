@@ -14,6 +14,9 @@ class BuildController < RESTController
 
     platform = @params['platform']
 
+    # if we are in archive mode, no build is allowed
+    return conflict('LICENSE_LIMIT_REACHED') if LicenseManager.instance.check :archive
+
     # instantiate the correct builder
     begin
       build = Build.factory(platform.to_sym)
