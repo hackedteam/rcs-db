@@ -11,7 +11,7 @@
 
   ; if this is defined it will perform the full install
   ; if this is NOT defined it will only install the ruby scripts and nothing else
-  !define FULL_INSTALL 1
+  ;!define FULL_INSTALL 1
 
   !define PACKAGE_NAME "RCS"
   !Define /file PACKAGE_VERSION "..\config\version.txt"
@@ -41,9 +41,9 @@
   ;Name and file
   Name "RCS"
   !ifdef FULL_INSTALL
-  	OutFile "RCS-${PACKAGE_VERSION}.exe"
+    OutFile "RCS-${PACKAGE_VERSION}.exe"
   !else
-	OutFile "RCS-Update-${PACKAGE_VERSION}.exe"
+  OutFile "RCS-Update-${PACKAGE_VERSION}.exe"
   !endif
 
   ;Default installation folder
@@ -201,16 +201,16 @@ Section "Update Section" SecUpdate
    SimpleSC::StopService "RCSShard" 1
 
    Sleep 5000
-	 
+   
    DetailPrint "done"
    
    SetDetailsPrint "textonly"
    DetailPrint "Removing previous version..."
    !ifdef FULL_INSTALL
-	   RMDir /r "$INSTDIR\Ruby"
-	   RMDir /r "$INSTDIR\Java"
-	   RMDir /r "$INSTDIR\Python"
-	   RMDir /r "$INSTDIR\DB\mongodb"
+     RMDir /r "$INSTDIR\Ruby"
+     RMDir /r "$INSTDIR\Java"
+     RMDir /r "$INSTDIR\Python"
+     RMDir /r "$INSTDIR\DB\mongodb"
    !endif
    RMDir /r "$INSTDIR\DB\lib"
    RMDir /r "$INSTDIR\DB\bin"
@@ -230,11 +230,11 @@ Section "Install Section" SecInstall
   !cd '..\..'
   
   !ifdef FULL_INSTALL
-  	RMDir /r "$INSTDIR\Ruby"
-  	SetOutPath "$INSTDIR\Ruby"
-  	File /r "Ruby\*.*"
+    RMDir /r "$INSTDIR\Ruby"
+    SetOutPath "$INSTDIR\Ruby"
+    File /r "Ruby\*.*"
 
-  	WriteRegExpandStr HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" "C:\RCS\Ruby\bin\ruby.exe" "DisableNXShowUI"
+    WriteRegExpandStr HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" "C:\RCS\Ruby\bin\ruby.exe" "DisableNXShowUI"
   !endif
 
   SetDetailsPrint "both"
@@ -255,17 +255,17 @@ Section "Install Section" SecInstall
     SetDetailsPrint "textonly"
     !cd 'DB'
   
-  	!ifdef FULL_INSTALL  
-	    RMDir /r "$INSTDIR\Java"
-	    SetOutPath "$INSTDIR\Java"
-	    File /r "..\Java\*.*"
-	
-	    SetOutPath "$INSTDIR\Python"
-	    File /r "..\Python\*.*"
-	
-	    SetOutPath "$INSTDIR\DB\mongodb\win"
-	    File /r "mongodb\win\*.*"
-	!endif
+    !ifdef FULL_INSTALL  
+      RMDir /r "$INSTDIR\Java"
+      SetOutPath "$INSTDIR\Java"
+      File /r "..\Java\*.*"
+  
+      SetOutPath "$INSTDIR\Python"
+      File /r "..\Python\*.*"
+  
+      SetOutPath "$INSTDIR\DB\mongodb\win"
+      File /r "mongodb\win\*.*"
+    !endif
   
     SetOutPath "$INSTDIR\DB\bin"
     File /r "bin\*.*"
@@ -322,17 +322,17 @@ Section "Install Section" SecInstall
     DetailPrint "Installing license.."
     CopyFiles /SILENT $masterLicense "$INSTDIR\DB\config\rcs.lic"
 
-	!ifdef FULL_INSTALL
-	    DetailPrint "Installing VC redistributable (x86).."
-	    nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_x86 /q"
+    !ifdef FULL_INSTALL
+      DetailPrint "Installing VC redistributable (x86).."
+      nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_x86 /q"
 
         DetailPrint "Installing VC redistributable (x64).."
         nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_x64 /q"
 
-	    DetailPrint "Installing drivers.."
-	    nsExec::ExecToLog "$INSTDIR\DB\bin\haspdinst -i -cm -kp -fi"
-	    SimpleSC::SetServiceFailure "hasplms" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-	!endif
+      DetailPrint "Installing drivers.."
+      nsExec::ExecToLog "$INSTDIR\DB\bin\haspdinst -i -cm -kp -fi"
+      SimpleSC::SetServiceFailure "hasplms" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+    !endif
 
     ; check if the license + dongle is ok
     StrCpy $0 1
@@ -418,8 +418,8 @@ Section "Install Section" SecInstall
     Sleep 5000
 
     ${If} $installUPGRADE != ${BST_CHECKED}
-    	DetailPrint "Setting the Admin password..."
-    	nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --reset-admin $adminpass"
+      DetailPrint "Setting the Admin password..."
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --reset-admin $adminpass"
     ${EndIf}
       
     DetailPrint "Adding firewall rule for port 443/tcp and 444/tcp..."
@@ -542,25 +542,25 @@ Section "Install Section" SecInstall
 
   ${EndIf}
 
-	!ifdef FULL_INSTALL
-	  ; we insert the core here, because we need the server up and running
-	  ; when che collector is installed. loading the cores take much time...
-	  ${If} $installMaster == ${BST_CHECKED}
-	    !cd 'DB'
-	    DetailPrint "Installing Cores files..."
-	    SetDetailsPrint "textonly"
-	
-	    SetOutPath "$INSTDIR\DB\cores"
-	    File /r "cores\*.*"
-	
-	    SetDetailsPrint "both"
-	    DetailPrint "done"
-	
-	    DetailPrint "ReStarting RCS DB..."
-	    SimpleSC::RestartService "RCSDB" "" 30
-	    !cd '..'
-	  ${EndIf}
-	!endif
+  !ifdef FULL_INSTALL
+    ; we insert the core here, because we need the server up and running
+    ; when che collector is installed. loading the cores take much time...
+    ${If} $installMaster == ${BST_CHECKED}
+      !cd 'DB'
+      DetailPrint "Installing Cores files..."
+      SetDetailsPrint "textonly"
+  
+      SetOutPath "$INSTDIR\DB\cores"
+      File /r "cores\*.*"
+  
+      SetDetailsPrint "both"
+      DetailPrint "done"
+  
+      DetailPrint "ReStarting RCS DB..."
+      SimpleSC::RestartService "RCSDB" "" 30
+      !cd '..'
+    ${EndIf}
+  !endif
 
   !cd "DB\nsis"
   
@@ -793,7 +793,7 @@ Function FuncSelectComponents
   ${NSD_CreateCheckBox} 20u 115u 200u 12u "Network Controller"
   Pop $2
   SendMessage $2 ${WM_SETFONT} $R1 0
-  ${NSD_CreateLabel} 30u 128u 300u 15u "Service responsible for the communications with Anonymizers and Injection Proxies."
+  ${NSD_CreateLabel} 30u 128u 300u 15u "Service responsible for the communications with Anonymizers and Network Injectors."
 
   
   nsDialogs::Show
@@ -962,7 +962,7 @@ FunctionEnd
 
 Function FuncInsertAddressLeave
   ${NSD_GetText} $1 $masterAddress
-	${NSD_GetText} $2 $localAddress
+  ${NSD_GetText} $2 $localAddress
 
   StrCmp $masterAddress "" 0 +3
     MessageBox MB_OK|MB_ICONSTOP "Address for Master Node cannot be empty"
