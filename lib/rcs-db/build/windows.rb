@@ -49,8 +49,8 @@ class BuildWindows < Build
 
     # avoid signature on the build time (kaspersky)
     begin
-      content.binary_patch "\xD1\x20\x84\x4F", SecureRandom.random_bytes(4)
-    rescue
+      content.binary_patch "\xD1\x20\x84\x4F".force_encoding('ASCII-8BIT'), SecureRandom.random_bytes(4).force_encoding('ASCII-8BIT')
+    rescue Exception => e
       raise "Build time ident marker not found"
     end
 
