@@ -102,8 +102,6 @@ class EvidenceController < RESTController
 
     return conflict("Unable to delete") unless LicenseManager.instance.check :deletion
 
-    trace :debug, @params.inspect
-
     mongoid_query do
       target = Item.where({_id: @params['target']}).first
       return not_found("Target not found: #{@params['target']}") if target.nil?
