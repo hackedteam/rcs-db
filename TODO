@@ -3,7 +3,13 @@ TODO (daVinci 8.x.x):
 
     evidence COMMAND
 
-
+    change RUBY_PLATFORM to RbConfig
+        require 'rbconfig'
+        puts "Ruby Info:"
+        puts " RUBY_PLATFORM: #{RUBY_PLATFORM}"
+        puts " RUBY_VERSION: #{RUBY_VERSION}"
+        puts " Config::CONFIG['RUBY_INSTALL_NAME']: #{RbConfig::CONFIG['RUBY_INSTALL_NAME']}"
+        puts " Config::CONFIG['host_os']: #{RbConfig::CONFIG['host_os']}"
 
     mongo authentication in NSIS
 

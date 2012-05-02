@@ -419,6 +419,27 @@ class EvidenceController < RESTController
     end
   end
 
+  def commands
+    require_auth_level :view, :tech
+
+    mongoid_query do
+
+      filter, filter_hash, target = ::Evidence.common_filter @params
+      return not_found("Target or Agent not found") if filter.nil?
+
+      # copy remaining filtering criteria (if any)
+      filtering = Evidence.collection_class(target[:_id]).where({:type => 'command'})
+      filter.each_key do |k|
+        filtering = filtering.any_in(k.to_sym => filter[k])
+      end
+
+      # without paging, return everything
+      query = filtering.where(filter_hash).order_by([[:_id, :asc]])
+
+      return ok(query)
+    end
+  end
+
 end
 
 end #DB::
