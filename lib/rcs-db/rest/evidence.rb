@@ -106,7 +106,13 @@ class EvidenceController < RESTController
       target = Item.where({_id: @params['target']}).first
       return not_found("Target not found: #{@params['target']}") if target.nil?
 
-      Evidence.collection_class(target[:_id]).find(@params['_id']).destroy
+      evidence = Evidence.collection_class(target[:_id]).find(@params['_id'])
+      agent = Item.find(evidence[:aid])
+      agent.stat.evidence[evidence.type] -= 1
+      agent.stat.size -= evidence.data.to_s.length
+      agent.stat.grid_size -= evidence.data[:_grid_size] unless evidence.data[:_grid].nil?
+      agent.save
+      evidence.destroy
 
       return ok
     end
