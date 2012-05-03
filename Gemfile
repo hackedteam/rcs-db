@@ -3,18 +3,13 @@ source "http://rubygems.org"
 
 gem "rcs-common", ">= 8.0.0", :path => "../rcs-common"
 
-#git "git://github.com/alor/eventmachine.git", :branch => "master" do
-  gem 'eventmachine', ">= 1.0.0.beta.4"
-#end
-
+gem 'eventmachine', ">= 1.0.0.beta.4"
 gem 'em-http-request'
 gem 'em-websocket'
 gem 'em-http-server'
 
-# TAR/GZIP compression
-git "git://github.com/danielemilan/minitar.git", :branch => "master" do
-  gem "minitar", ">= 0.5.5"
-end
+gem "minitar", ">= 0.5.5", :git => "git://github.com/danielemilan/minitar.git"
+
 gem 'rubyzip'
 gem 'bcrypt-ruby'
 gem 'plist'
@@ -36,6 +31,7 @@ platforms :jruby do
 end
 
 platforms :ruby do
+  # remove after migration
   gem 'mysql2'
   gem 'xml-simple'
 end

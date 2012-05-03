@@ -31,12 +31,7 @@ class RESTResponse
 
     @response = nil
   end
-  
-  def keep_alive?(connection)
-    http_headers = connection.instance_variable_get :@http_headers
-    http_headers.split("\x00").index {|h| h['Connection: keep-alive'] || h['Connection: Keep-Alive']}
-  end
-  
+
   #
   # BEWARE: for any reason this method should raise an exception!
   # An exception raised here WILL NOT be cough, resulting in a crash.
@@ -71,7 +66,7 @@ class RESTResponse
     @response.headers['Content-Type'] = @content_type
     @response.headers['Set-Cookie'] = @cookie unless @cookie.nil?
     
-    if keep_alive? connection
+    if request[:headers][:connection].downcase == 'keep-alive'
       # keep the connection open to allow multiple requests on the same connection
       # this will increase the speed of sync since it decrease the latency on the net
       @response.keep_connection_open true
@@ -118,11 +113,6 @@ class RESTFileStream
     @response = nil
   end
 
-  def keep_alive?(connection)
-    http_headers = connection.instance_variable_get :@http_headers
-    http_headers.split("\x00").index {|h| h['Connection: keep-alive'] || h['Connection: Keep-Alive']}
-  end
-
   def prepare_response(connection, request)
 
     @request = request
@@ -140,7 +130,7 @@ class RESTFileStream
     
     @response.headers["Content-Type"] = RCS::MimeType.get @filename
     
-    if keep_alive? connection
+    if request[:headers][:connection].downcase == 'keep-alive'
       # keep the connection open to allow multiple requests on the same connection
       # this will increase the speed of sync since it decrease the latency on the net
       @response.keep_connection_open true
@@ -195,12 +185,7 @@ class RESTGridStream
     @callback = callback
     @response = nil
   end
-  
-  def keep_alive?(connection)
-    http_headers = connection.instance_variable_get :@http_headers
-    http_headers.split("\x00").index {|h| h['Connection: keep-alive'] || h['Connection: Keep-Alive']}
-  end
-  
+
   def prepare_response(connection, request)
     
     @request = request
@@ -215,7 +200,7 @@ class RESTGridStream
     
     @response.headers["Content-Type"] = @grid_io.content_type
     
-    if keep_alive? connection
+    if request[:headers][:connection].downcase == 'keep-alive'
       # keep the connection open to allow multiple requests on the same connection
       # this will increase the speed of sync since it decrease the latency on the net
       @response.keep_connection_open true
