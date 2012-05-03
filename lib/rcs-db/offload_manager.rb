@@ -86,8 +86,13 @@ class OffloadManager
 
   def journal_read
     if File.exist? @journal_file
-      data = File.open(@journal_file, 'r') {|f| f.read}
-      @journal = Marshal.load(data)
+      begin
+        data = File.open(@journal_file, 'r') {|f| f.read}
+        @journal = Marshal.load(data)
+      rescue Exception => e
+        trace :warn, "Task journal file is corrupted, deleting it..."
+        FileUtils.rm_rf(@journal_file)
+      end
     else
       @journal = []
     end
