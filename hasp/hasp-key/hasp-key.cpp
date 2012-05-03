@@ -55,32 +55,44 @@ HASPKEY_API encrypted_info_t RI(BYTE *crypt_iv)
 	struct_info.version = VERSION;
 	ZeroMemory(&encrypted_info, sizeof(encrypted_info));
 	do {
-		if(hasp_get_info("<haspscope />", "<haspformat root=\"rcs\"><hasp><attribute name=\"id\" /></hasp></haspformat>", vendor_code, &info) != HASP_STATUS_OK) 
+		if(hasp_get_info("<haspscope />", "<haspformat root=\"rcs\"><hasp><attribute name=\"id\" /></hasp></haspformat>", vendor_code, &info) != HASP_STATUS_OK) {
+			memcpy(&encrypted_info, "\x01", sizeof(char));
 			break;
+		}
 
-		if(!(start = strstr(info, "<hasp id=\""))) 
+		if(!(start = strstr(info, "<hasp id=\""))) {
+			memcpy(&encrypted_info, "\x02", sizeof(char));
 			break;
+		}
 		start += strlen("<hasp id=\"");
 
-		if(!(end = strchr(start, '"'))) 
+		if(!(end = strchr(start, '"'))) {
+			memcpy(&encrypted_info, "\x03", sizeof(char));
 			break;
+		}
 		*end = '\0';
 
 		// Copio il seriale 
 		_snprintf_s(struct_info.serial, sizeof(struct_info.serial), _TRUNCATE, "%s", start);		
 
-		if(hasp_login(HASP_DEFAULT_FID, vendor_code, &handle) != HASP_STATUS_OK) 
+		if(hasp_login(HASP_DEFAULT_FID, vendor_code, &handle) != HASP_STATUS_OK){
+			memcpy(&encrypted_info, "\x04", sizeof(char));
 			break;
+		}
 
-		if(hasp_get_rtc(handle, &htime) != HASP_STATUS_OK) 
+		if(hasp_get_rtc(handle, &htime) != HASP_STATUS_OK) {
+			memcpy(&encrypted_info, "\x05", sizeof(char));
 			break;
+		}
 
 		// Copio il timestamp
 		struct_info.time = htime;
 
 		// Copio il numero di agent rimasti per il pay-per-use
-		if (hasp_read(handle, HASP_FILEID_RW, 0, 4, &struct_info.license_left) != HASP_STATUS_OK)
+		if (hasp_read(handle, HASP_FILEID_RW, 0, 4, &struct_info.license_left) != HASP_STATUS_OK){
+			memcpy(&encrypted_info, "\x06", sizeof(char));
 			break;
+		}
 
 		// Cifro tutta la struttura dentro encrypted_info.encrypted
 		// inserendo il padding
