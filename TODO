@@ -3,6 +3,8 @@ TODO (daVinci 8.x.x):
 
     evidence COMMAND
 
+    use em-http-server in db and worker
+
     change RUBY_PLATFORM to RbConfig
         require 'rbconfig'
         puts "Ruby Info:"
@@ -10,6 +12,12 @@ TODO (daVinci 8.x.x):
         puts " RUBY_VERSION: #{RUBY_VERSION}"
         puts " Config::CONFIG['RUBY_INSTALL_NAME']: #{RbConfig::CONFIG['RUBY_INSTALL_NAME']}"
         puts " Config::CONFIG['host_os']: #{RbConfig::CONFIG['host_os']}"
+
+
+    license count after deletion
+
+
+    fix collector tests
 
     mongo authentication in NSIS
 
@@ -21,13 +29,8 @@ TODO (daVinci 8.x.x):
 
 
 
-    rewrite the http server:
-        - drop the evma_httpserver
-        - create a new gem in pure ruby
-        - test it on jruby
-
     investigate JRuby
+        - Threads !!!  Thread.exit  ->   Thread.kill Thread.current   ????
         http://www.ruby-forum.com/topic/217747
         http://caldersphere.rubyforge.org/warbler/
         http://github.com/rawr/rawr
-        RUBY_PLATFORM is problematic, its just "java"

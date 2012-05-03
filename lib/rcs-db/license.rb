@@ -358,7 +358,7 @@ class LicenseManager
         offending.destroy
       end
 
-      if ::Item.count(conditions: {_kind: 'agent', type: 'desktop', status: 'open', demo: false}) > @limits[:agents][:desktop]
+      if ::Item.count(conditions: {_kind: 'agent', type: 'desktop', status: 'open', demo: false, deleted: false}) > @limits[:agents][:desktop]
         trace :fatal, "LICENCE EXCEEDED: Number of agents(desktop) is greater than license file. Fixing..."
         # fix by queuing the last updated agent
         offending = ::Item.first(conditions: {_kind: 'agent', type: 'desktop', status: 'open', demo: false}, sort: [[ :updated_at, :desc ]])
@@ -367,7 +367,7 @@ class LicenseManager
         offending.save
       end
 
-      if ::Item.count(conditions: {_kind: 'agent', type: 'mobile', status: 'open', demo: false}) > @limits[:agents][:mobile]
+      if ::Item.count(conditions: {_kind: 'agent', type: 'mobile', status: 'open', demo: false, deleted: false}) > @limits[:agents][:mobile]
         trace :fatal, "LICENCE EXCEEDED: Number of agents(mobile) is greater than license file. Fixing..."
         # fix by queuing the last updated agent
         offending = ::Item.first(conditions: {_kind: 'agent', type: 'mobile', status: 'open', demo: false}, sort: [[ :updated_at, :desc ]])
@@ -376,7 +376,7 @@ class LicenseManager
         offending.save
       end
 
-      if ::Item.count(conditions: {_kind: 'agent', status: 'open', demo: false}) > @limits[:agents][:total]
+      if ::Item.count(conditions: {_kind: 'agent', status: 'open', demo: false, deleted: false}) > @limits[:agents][:total]
         trace :fatal, "LICENCE EXCEEDED: Number of agent(total) is greater than license file. Fixing..."
         # fix by queuing the last updated agent
         offending = ::Item.first(conditions: {_kind: 'agent', status: 'open', demo: false}, sort: [[ :updated_at, :desc ]])
@@ -424,9 +424,9 @@ class LicenseManager
 
   def counters
     counters = {:users => User.count(conditions: {enabled: true}),
-                :agents => {:total => Item.count(conditions: {_kind: 'agent', status: 'open'}),
-                               :desktop => Item.count(conditions: {_kind: 'agent', type: 'desktop', status: 'open'}),
-                               :mobile => Item.count(conditions: {_kind: 'agent', type: 'mobile', status: 'open'})},
+                :agents => {:total => Item.count(conditions: {_kind: 'agent', status: 'open', demo: false, deleted: false}),
+                               :desktop => Item.count(conditions: {_kind: 'agent', type: 'desktop', status: 'open', demo: false, deleted: false}),
+                               :mobile => Item.count(conditions: {_kind: 'agent', type: 'mobile', status: 'open', demo: false, deleted: false})},
                 :collectors => {:collectors => Collector.count(conditions: {type: 'local'}),
                                 :anonymizers => Collector.count(conditions: {type: 'remote'})},
                 :nia => Injector.count,
