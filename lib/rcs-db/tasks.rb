@@ -392,7 +392,7 @@ end # TaskManager
 
 # require all the controllers
 Dir[File.dirname(__FILE__) + '/tasks/*.rb'].each do |file|
-  require_relative file
+  require file
 end
 
 end # DB::
