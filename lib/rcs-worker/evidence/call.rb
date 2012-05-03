@@ -9,24 +9,18 @@ module CallProcessing
 
   attr_reader :wav
 
-  def end_call?
-    self[:data][:grid_content].bytesize == 4 and self[:data][:grid_content] == "\xff\xff\xff\xff"
-  end
-
   def process
+
     self[:wav] = []
 
     return if self[:data][:grid_content].nil?
-    if end_call?
-      trace :debug, "[CallProcessing] FINE CHIAMATA #{self[:data][:peer]}!!!"
-      return
-    end
+
+    return if self[:end_call]
 
     codec = :amr if self[:data][:sample_rate] & LOG_AUDIO_AMR == 1
     codec ||= :speex
     self[:data][:sample_rate] &= ~LOG_AUDIO_AMR # clear codec bit if set
 
-    # speex decode
     data = self[:data][:grid_content]
     case self[:data][:program]
       when "Mobile"
@@ -36,6 +30,7 @@ module CallProcessing
         self[:wav] = Speex.get_wav_frames(data, Speex::MODEID_UWB) if codec == :speex
         self[:wav] = AMR.get_wav_frames data if codec == :amr
     end
+
     #wav = Wave.new 1, self[:data][:sample_rate]
     #wav.write "#{self[:data][:peer]}_#{self[:data][:start_time].to_f}_#{self[:data][:channel]}.wav", self[:wav]
   end

@@ -39,7 +39,7 @@ class Channel
     @resampled = false
     @wav_data = Array.new # array of 32 bit float samples
     @status = :open
-    trace :debug, "[CHAN #{to_s}] CREATING NEW CHANNEL #{@name} - start_time: #{@start_time} sample_rate: #{@sample_rate}"
+    trace :debug, "[channel #{to_s}] ceating new channel #{@name} - start_time: #{@start_time} sample_rate: #{@sample_rate}"
   end
   
   def id
@@ -52,7 +52,7 @@ class Channel
   
   def close!
     @status = :closed
-    trace :debug, "[CHAN #{to_s}] closing channel #{self.id}"
+    trace :debug, "[channel #{to_s}] closing channel #{self.id}"
   end
   
   def closed?
@@ -70,7 +70,7 @@ class Channel
   def resample_channel(sample_rate)
     return if sample_rate == @sample_rate
     @needs_resampling = sample_rate
-    trace :debug, "[CHAN #{to_s}] resampling channel from #{@sample_rate} to #{@needs_resampling}"
+    trace :debug, "[channel #{to_s}] resampling channel from #{@sample_rate} to #{@needs_resampling}"
     @wav_data = SRC::Resampler.new(@needs_resampling).resample_channel(@wav_data, @sample_rate)
     @resampled = true
   end
@@ -78,7 +78,7 @@ class Channel
   def resample(evidence)
     return evidence if @needs_resampling == @sample_rate
     evidence[:wav] = SRC::Resampler.new(@needs_resampling).resample_channel evidence[:wav], @sample_rate
-    trace :debug, "[CHAN #{to_s}:resample] evidence wav resampled to #{evidence[:wav].size} frames @ #{@needs_resampling}"
+    trace :debug, "[channel #{to_s}:resample] evidence wav resampled to #{evidence[:wav].size} frames @ #{@needs_resampling}"
     evidence
   end
 
@@ -86,7 +86,7 @@ class Channel
     expected = expected_samples(evidence)
     samples_to_fill = expected - @written_samples
     seconds_to_fill = samples_to_fill / @needs_resampling
-    trace :debug, "[CHAN #{to_s}] filling with #{samples_to_fill} samples(@#{@needs_resampling}) to fill #{seconds_to_fill} seconds of missing data."
+    trace :debug, "[channel #{to_s}] filling with #{samples_to_fill} samples(@#{@needs_resampling}) to fill #{seconds_to_fill} seconds of missing data."
     return if samples_to_fill <= 0
     @wav_data.concat [0.0] * samples_to_fill
     @written_samples = expected
@@ -108,13 +108,13 @@ class Channel
 
   def accept?(evidence)
     if closed? 
-      trace :debug, "[CHAN #{to_s}] CHANNEL IS CLOSED, REFUSING ..."
+      trace :debug, "[channel #{to_s}] channel is closed, refusing ..."
       return false
     end
 
     gap = time_gap(evidence)
     if gap >= 5.0
-      trace :debug, "[CHAN #{to_s}] TIME GAP IS #{gap} SECONDS !!! REFUSING ..."
+      trace :debug, "[channel #{to_s}] time gap is more than 5 seconds (#{gap}), refusing ..."
       return false
     end
     return true
@@ -415,8 +415,7 @@ class CallProcessor
   end
 
   def end_call?(evidence)
-    return true if evidence[:data][:grid_content].bytesize == 4 and evidence[:data][:grid_content] == "\xff\xff\xff\xff"
-    false
+    evidence[:end_call]
   end
   
   def feed(evidence)
