@@ -412,7 +412,6 @@ class LicenseManager
 
     rescue Exception => e
       trace :fatal, "Cannot perform license check: #{e.message}"
-      puts e.backtrace.join "\n"
       exit!
     end
   end
