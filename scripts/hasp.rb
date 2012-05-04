@@ -70,10 +70,10 @@ class HaspManager
     info[:time] = time
 
     info[:oneshot] = data.slice!(0..3).unpack('I').first
-
     info[:error_code] = data.slice!(0..3).unpack('I').first
-
     info[:error_msg] = data.slice!(0..63).delete("\x00")
+
+		raise "Error #{info[:error_code]} while communicating with HASP token: #{info[:error_msg]}" unless info[:error_code] == 0
 
     return info
   end
