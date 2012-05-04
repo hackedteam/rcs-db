@@ -3,6 +3,8 @@ TODO (daVinci 8.x.x):
 
     evidence COMMAND
 
+    report db version to console
+
     use em-http-server in db and worker
 
     change RUBY_PLATFORM to RbConfig
