@@ -55,8 +55,8 @@ class Connectors
         File.open(File.join(path, evidence[:_id].to_s + '.json'), 'wb') {|d| d.write evidence.to_json}
 
         # dump the binary (if any)
-        if evidence[:data]['_grid']
-          file = GridFS.get evidence[:data]['_grid'], target[:_id].to_s
+        if evidence[:data][:_grid]
+          file = GridFS.get evidence[:data][:_grid], target[:_id].to_s
           File.open(File.join(path, evidence[:_id].to_s + '.bin'), 'wb') {|d| d.write file.read}
         end
         
