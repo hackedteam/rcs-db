@@ -31,8 +31,8 @@ module Hasp
 
      ffi_convention :stdcall
 
-     AES_PADDING = 16
-     STRUCT_SIZE = 272
+      AES_PADDING = 16
+      STRUCT_SIZE = 128
 
      class Info < FFI::Struct
        layout :enc, [:char, STRUCT_SIZE + AES_PADDING]
@@ -47,9 +47,15 @@ end
 class Dongle
   extend RCS::Tracer
 
-  VERSION = 20111222
+  VERSION = 20120504
   KEY = "\xB3\xE0\x2A\x88\x30\x69\x67\xAA\x21\x74\x23\xCC\x90\x99\x0C\x3C"
   DONT_STEAL_RCS = "∆©ƒø†£¢∂øª˚¶∞¨˚˚˙†´ßµ∫√Ïﬁˆ¨Øˆ·‰ﬁÎ¨"
+
+	ERROR_INFO = 1
+	ERROR_PARSING = 2
+	ERROR_LOGIN = 3
+	ERROR_RTC = 4
+	ERROR_STORAGE = 5
 
   class << self
 
@@ -73,9 +79,6 @@ class Dongle
       enc = hasp_info[:enc].to_ptr.read_bytes Hasp::STRUCT_SIZE + Hasp::AES_PADDING
       raise "Invalid ENC dongle size: corrupted?" if enc.bytesize != Hasp::STRUCT_SIZE + Hasp::AES_PADDING
 
-      # check if all bytes are zero
-      raise "Cannot find hardware dongle" if enc.bytes.collect { |c| c == 0 }.inject(:&)
-
       # decrypt the response with the pre-shared KEY
       decipher = OpenSSL::Cipher::Cipher.new('aes-128-cbc')
       decipher.decrypt
@@ -90,15 +93,19 @@ class Dongle
       raise "Invalid HASP version" if version != VERSION
       info[:version] = version
 
-      serial = data.slice!(0..255).delete("\x00")
-      info[:serial] = serial
+      info[:serial] = data.slice!(0..31).delete("\x00")
 
       time = data.slice!(0..7).unpack('Q').first
-      time = Time.at(time).getutc
+      time = Time.at(time) unless time == 0
       info[:time] = time
 
-      licenses = data.slice!(0..3).unpack('I').first
-      info[:oneshot] = licenses
+      info[:oneshot] = data.slice!(0..3).unpack('I').first
+      info[:error_code] = data.slice!(0..3).unpack('I').first
+      info[:error_msg] = data.slice!(0..63).delete("\x00")
+
+      trace :error, "Error #{info[:error_code]} while communicating with HASP token: #{info[:error_msg]}" unless info[:error_code] == 0
+
+      raise "Cannot find hardware token" if info[:error_code] == ERROR_INFO || info[:error_code] == ERROR_PARSING
 
       return info
     end
@@ -111,9 +118,11 @@ class Dongle
     end
 
     def time
-      return info[:time]
+      time = info[:time]
+      raise "Cannot get RTC time" if time == 0
+      return time
     rescue Exception => e
-      #trace :debug, "Cannot get time from dongle, falling back"
+      trace :warn, "Invalid dongle time, contact support for dongle replacement"
       return Time.now.getutc
     end
   end

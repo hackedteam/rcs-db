@@ -125,6 +125,7 @@ class LicenseManager
         info = Dongle.info
         trace :info, "Dongle info: " + info.inspect
         raise 'Invalid License File: incorrect serial number' if @limits[:serial] != info[:serial]
+        raise 'Cannot read storage from token' if @limits[:type] == 'oneshot' && (info[:error_code] == Dongle::ERROR_LOGIN || info[:error_code] == Dongle::ERROR_STORAGE)
       else
         trace :info, "Hardware dongle not required..."
       end
@@ -296,13 +297,16 @@ class LicenseManager
       # get the serial of the dongle.
       # this will raise an exception if the dongle is not found
       # we have to stop the process in this case
-      Dongle.info unless @limits[:serial] == 'off'
+      unless @limits[:serial] == 'off'
+        info = Dongle.info
+        raise 'Invalid Dongle: incorrect serial number' if @limits[:serial] != info[:serial]
 
-      # check license expiration
-      if not @limits[:expiry].nil? and @limits[:expiry] < Dongle.time
-        raise "license expired on #{Time.parse(@limits[:expiry]).getutc}"
+        # check license expiration
+        if not @limits[:expiry].nil? and @limits[:expiry] < info[:time]
+          raise "license expired on #{Time.parse(@limits[:expiry]).getutc}"
+        end
       end
-      
+
       # check the consistency of the database (if someone tries to tamper it)
       if ::User.count(conditions: {enabled: true}) > @limits[:users]
         trace :fatal, "LICENCE EXCEEDED: Number of users is greater than license file. Fixing..."
