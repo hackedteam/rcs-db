@@ -1,0 +1,6 @@
+
+Changelog for 8.0.3
+
+fix for backups on external storage
+fix for connectors not creating binary data
+database version is reported correctly into the console
