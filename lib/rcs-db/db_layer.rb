@@ -88,9 +88,9 @@ class DB
         trace :info, "Authenticated to MongoDB"
         @auth_required = true
       rescue Exception => e
-        trace :warn, "AUTH: #{e.message}"
+        #trace :warn, "AUTH: #{e.message}"
         # ensure the users are created, so the next time it will not fail
-        create_db_users
+        #create_db_users
       end
 
     rescue Exception => e
