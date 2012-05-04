@@ -1,10 +1,6 @@
 
 TODO (daVinci 8.x.x):
 
-    evidence COMMAND
-
-    auth when the db is empty!!!
-
     report db version to console
 
     use em-http-server in db and worker
@@ -18,8 +14,7 @@ TODO (daVinci 8.x.x):
         puts " Config::CONFIG['host_os']: #{RbConfig::CONFIG['host_os']}"
 
 
-    license count after deletion
-
+    documentation of connectors
 
     fix collector tests
 

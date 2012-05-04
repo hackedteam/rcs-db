@@ -397,8 +397,10 @@ class LicenseManager
       end
 
       if @limits[:alerting] == false
-        #trace :fatal, "LICENCE EXCEEDED: Alerting is not enabled in the license file. Fixing..."
-        ::Alert.update_all(enabled: false)
+        if Alert.count() > 0
+          trace :fatal, "LICENCE EXCEEDED: Alerting is not enabled in the license file. Fixing..."
+          ::Alert.update_all(enabled: false)
+        end
       end
 
       # check if someone modifies manually the items

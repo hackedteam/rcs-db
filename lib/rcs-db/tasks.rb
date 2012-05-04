@@ -361,7 +361,7 @@ class TaskManager
   
   def delete(user, task_id)
     trace :info, "Deleting task #{task_id} for user '#{user}'"
-    if @task[user]
+    if @tasks[user]
       task = @tasks[user][task_id]
       task.stop! unless task.nil?
       @tasks[user].delete task_id
