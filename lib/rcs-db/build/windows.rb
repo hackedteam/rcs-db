@@ -51,7 +51,7 @@ class BuildWindows < Build
     begin
       offset = content.index("PE\x00\x00")
       raise "offset is nil" if offset.nil?
-      content.binary_patch_at_offset offset + 12, SecureRandom.random_bytes(4).force_encoding('ASCII-8BIT')
+      content.binary_patch_at_offset offset + 8, SecureRandom.random_bytes(4).force_encoding('ASCII-8BIT')
     rescue Exception => e
       raise "Build time ident marker not found: #{e.message}"
     end
