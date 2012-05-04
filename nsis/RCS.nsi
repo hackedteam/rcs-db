@@ -14,7 +14,7 @@
   ;!define FULL_INSTALL 1
 
   !define PACKAGE_NAME "RCS"
-  !Define /file PACKAGE_VERSION "..\config\build.txt"
+  !Define /file PACKAGE_VERSION "..\config\VERSION_BUILD"
 
   ;Variables
   Var installALLINONE
@@ -299,7 +299,7 @@ Section "Install Section" SecInstall
     File "config\trace.yaml"
     File "config\export.zip"
     File "config\logo.png"
-    File "config\build.txt"
+    File "config\VERSION_BUILD"
     File "config\VERSION"
     SetDetailsPrint "both"
     DetailPrint "done"
@@ -499,7 +499,7 @@ Section "Install Section" SecInstall
     File "config\decoy.html"
     File "config\trace.yaml"
     File "config\VERSION"
-    File "config\build.txt"
+    File "config\VERSION_BUILD"
     SetDetailsPrint "both"
     DetailPrint "done"
     

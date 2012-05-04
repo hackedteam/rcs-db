@@ -266,7 +266,7 @@ class Application
     end
     
     begin
-      build = File.read(Dir.pwd + '/config/build.txt')
+      build = File.read(Dir.pwd + '/config/VERSION_BUILD')
       version = File.read(Dir.pwd + '/config/VERSION')
       trace :info, "Starting the RCS Worker #{version} (#{build})..."
       

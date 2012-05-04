@@ -50,7 +50,7 @@ class Application
     srand(Time.now.to_i)
 
     begin
-      build = File.read(Dir.pwd + '/config/build.txt')
+      build = File.read(Dir.pwd + '/config/VERSION_BUILD')
       version = File.read(Dir.pwd + '/config/VERSION')
       trace :info, "Starting the RCS Database #{version} (#{build})..."
 
