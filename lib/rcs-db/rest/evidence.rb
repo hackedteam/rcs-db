@@ -77,7 +77,6 @@ class EvidenceController < RESTController
     end
   end
 
-
   def show
     require_auth_level :view
 
@@ -95,6 +94,27 @@ class EvidenceController < RESTController
       end
 
       return ok(evidence)
+    end
+  end
+
+  def destroy
+    require_auth_level :admin
+
+    return conflict("Unable to delete") unless LicenseManager.instance.check :deletion
+
+    mongoid_query do
+      target = Item.where({_id: @params['target']}).first
+      return not_found("Target not found: #{@params['target']}") if target.nil?
+
+      evidence = Evidence.collection_class(target[:_id]).find(@params['_id'])
+      agent = Item.find(evidence[:aid])
+      agent.stat.evidence[evidence.type] -= 1
+      agent.stat.size -= evidence.data.to_s.length
+      agent.stat.grid_size -= evidence.data[:_grid_size] unless evidence.data[:_grid].nil?
+      agent.save
+      evidence.destroy
+
+      return ok
     end
   end
 
@@ -394,6 +414,27 @@ class EvidenceController < RESTController
       filtering = filtering.any_in(:aid => [agent[:_id]]) unless agent.nil?
 
       query = filtering.order_by([["data.path", :asc]])
+
+      return ok(query)
+    end
+  end
+
+  def commands
+    require_auth_level :view, :tech
+
+    mongoid_query do
+
+      filter, filter_hash, target = ::Evidence.common_filter @params
+      return not_found("Target or Agent not found") if filter.nil?
+
+      # copy remaining filtering criteria (if any)
+      filtering = Evidence.collection_class(target[:_id]).where({:type => 'command'})
+      filter.each_key do |k|
+        filtering = filtering.any_in(k.to_sym => filter[k])
+      end
+
+      # without paging, return everything
+      query = filtering.where(filter_hash).order_by([[:_id, :asc]])
 
       return ok(query)
     end

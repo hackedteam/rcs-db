@@ -1,12 +1,25 @@
 
-TODO (daVinci 8.0.0):
+TODO (daVinci 8.x.x):
+
+    evidence COMMAND
+
+    use em-http-server in db and worker
+
+    change RUBY_PLATFORM to RbConfig
+        require 'rbconfig'
+        puts "Ruby Info:"
+        puts " RUBY_PLATFORM: #{RUBY_PLATFORM}"
+        puts " RUBY_VERSION: #{RUBY_VERSION}"
+        puts " Config::CONFIG['RUBY_INSTALL_NAME']: #{RbConfig::CONFIG['RUBY_INSTALL_NAME']}"
+        puts " Config::CONFIG['host_os']: #{RbConfig::CONFIG['host_os']}"
 
 
-FUTURE (daVinci 8.x.x):
+    license count after deletion
 
-    delete in license
 
-    mongo authentication
+    fix collector tests
+
+    mongo authentication in NSIS
 
     with mongo 2.1.x
         logRotate
@@ -14,4 +27,10 @@ FUTURE (daVinci 8.x.x):
 
     upgrade for nia
 
-    RMI from local console
+
+
+    investigate JRuby
+        - Threads !!!  Thread.exit  ->   Thread.kill Thread.current   ????
+        http://www.ruby-forum.com/topic/217747
+        http://caldersphere.rubyforge.org/warbler/
+        http://github.com/rawr/rawr

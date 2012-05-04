@@ -42,17 +42,19 @@
 :nia:
 - .inf
 - false
-:exploits: true
 :collectors:
   :collectors: 10
   :anonymizers: 20
 :shards: 2
+:exploits: true
+:deletion: true
+:archive: false
 :digest: !binary |-
-  YTMyYWQwODUwNzU3MThkODEyYTQ4OWE4YjBlMTc3OGNkNjZkNGM0Yg==
+  ODQwM2Y1YjkyZmMxZDJlMGM2ODVkZTZlYjA1ZDM1M2FmYTQzY2Q5Yg==
 :signature: !binary |-
-  MDQ4MDA0YmExNmZlMjJjNzM4ZDA3MjdlNDVkZmY2ZDVlMDhmYmFlMDFmOWYz
-  NzMxYmVkYzZjYzU1Y2MzODA3OQ==
+  MTJmZDljNGRmOTgzNDQ0ZDY0OWY3Y2U0YTc3NmVmMmUwOWEyMDM4OTdkZDAz
+  MmRkNTcyNGYxYTFkNmE4NDcxNA==
 :integrity: !binary |-
-  ZGU1MzBmZGYwMjQxNDhjOTE3NTVkNzQwZDdiNDE4MWNjNDkxYmYzYmM5YmZl
-  NzM4NzIzNmNiMWM0ZWY1MDdiMzI5OTc3M2M1NWY1MDBkNjEzYTYxMjExZGQ4
-  MmVhYmRm
+  Y2RiYjk0YzQzM2NhMDU0NDBhMDU2MTdhOWViMjJiOWZhNzViY2QyMTJiNzkw
+  N2ZhMjkzMWMxYzQ0NTM0ZjliODVjODJjMDczMThiOWI1MzE5NmNjNjNiY2Iy
+  OTMwZWE0

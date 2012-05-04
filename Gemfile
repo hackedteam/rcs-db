@@ -27,7 +27,6 @@ gem 'mail'
 gem 'RocketAMF', :git => "https://github.com/rubyamf/rocketamf.git"
 
 # databases
-gem 'sqlite3'
 gem 'mongo', :git => "git://github.com/danielemilan/mongo-ruby-driver.git"
 gem 'mongoid'
 gem 'bson'
@@ -42,6 +41,5 @@ group :development do
   gem "bundler", "> 1.0.0"
   gem 'rake'
   gem 'test-unit'
-  gem 'simplecov'
 end
 

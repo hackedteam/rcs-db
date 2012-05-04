@@ -67,7 +67,9 @@ class Evidence
         def destroy_callback
           agent = Item.find self.aid
           # drop the file (if any) in grid
-          RCS::DB::GridFS.delete(self.data['_grid'], agent.path.last.to_s) unless self.data['_grid'].nil?
+          unless self.data['_grid'].nil?
+            RCS::DB::GridFS.delete(self.data['_grid'], agent.path.last.to_s) rescue nil
+          end
         end
       end
     END

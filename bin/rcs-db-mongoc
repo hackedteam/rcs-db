@@ -22,11 +22,13 @@ Dir::mkdir(datadir) if not File.directory?(datadir)
 Dir::mkdir(configdir) if not File.directory?(configdir)
 Dir::mkdir(logdir) if not File.directory?(logdir)
 
+keyfile = Dir.pwd + '/config/mongodb.key'
+
 # the mongod executable
 mongod = Dir.pwd + '/mongodb/' + os + '/mongod' + ext
 
 # the data path
-parameters = "--dbpath #{configdir} --nssize 64 --logpath #{logdir}/mongoc.log --configsvr --rest"
+parameters = "--dbpath #{configdir} --nssize 64 --logpath #{logdir}/mongoc.log --configsvr --rest --keyFile #{keyfile}"
 
 # custom arguments
 custom = ARGV.join(' ')

@@ -72,6 +72,7 @@ class LicenseManager
                :shards => 1,
                :exploits => false,
                :deletion => false,
+               :archive => false,
                :collectors => {:collectors => 1, :anonymizers => 0}}
   end
 
@@ -98,7 +99,14 @@ class LicenseManager
           exit!
         end
 
-        if not lic[:expiry].nil? and Time.parse(lic[:expiry]).getutc < Dongle.time
+        # use local time if the dongle presence is not enforced
+        if @limits[:serial] == 'off'
+          time = Time.now.getutc
+        else
+          time = Dongle.time
+        end
+
+        if not lic[:expiry].nil? and Time.parse(lic[:expiry]).getutc < time
           trace :fatal, "Invalid License File: license expired on #{Time.parse(lic[:expiry]).getutc}"
           exit!
         end
@@ -107,7 +115,8 @@ class LicenseManager
         add_limits lic
       end
     else
-      trace :info, "No license file found, starting with default values..."
+      trace :fatal, "No license file found"
+      exit!
     end
 
     # sanity check
@@ -123,6 +132,7 @@ class LicenseManager
         info = Dongle.info
         trace :info, "Dongle info: " + info.inspect
         raise 'Invalid License File: incorrect serial number' if @limits[:serial] != info[:serial]
+        raise 'Cannot read storage from token' if @limits[:type] == 'oneshot' && (info[:error_code] == Dongle::ERROR_LOGIN || info[:error_code] == Dongle::ERROR_STORAGE)
       else
         trace :info, "Hardware dongle not required..."
       end
@@ -169,6 +179,7 @@ class LicenseManager
     @limits[:exploits] = limit[:exploits]
 
     @limits[:deletion] = true if limit[:deletion]
+    @limits[:archive] = true if limit[:archive]
   end
 
   
@@ -271,6 +282,12 @@ class LicenseManager
       when :exploits
         return @limits[:exploits]
 
+      when :deletion
+        return @limits[:deletion]
+
+      when :archive
+        return @limits[:archive]
+
       when :shards
         if Shard.count() < @limits[:shards]
           return true
@@ -287,13 +304,16 @@ class LicenseManager
       # get the serial of the dongle.
       # this will raise an exception if the dongle is not found
       # we have to stop the process in this case
-      Dongle.info unless @limits[:serial] == 'off'
+      unless @limits[:serial] == 'off'
+        info = Dongle.info
+        raise 'Invalid Dongle: incorrect serial number' if @limits[:serial] != info[:serial]
 
-      # check license expiration
-      if not @limits[:expiry].nil? and @limits[:expiry] < Dongle.time
-        raise "license expired on #{Time.parse(@limits[:expiry]).getutc}"
+        # check license expiration
+        if not @limits[:expiry].nil? and @limits[:expiry] < info[:time]
+          raise "license expired on #{Time.parse(@limits[:expiry]).getutc}"
+        end
       end
-      
+
       # check the consistency of the database (if someone tries to tamper it)
       if ::User.count(conditions: {enabled: true}) > @limits[:users]
         trace :fatal, "LICENCE EXCEEDED: Number of users is greater than license file. Fixing..."
@@ -349,7 +369,7 @@ class LicenseManager
         offending.destroy
       end
 
-      if ::Item.count(conditions: {_kind: 'agent', type: 'desktop', status: 'open', demo: false}) > @limits[:agents][:desktop]
+      if ::Item.count(conditions: {_kind: 'agent', type: 'desktop', status: 'open', demo: false, deleted: false}) > @limits[:agents][:desktop]
         trace :fatal, "LICENCE EXCEEDED: Number of agents(desktop) is greater than license file. Fixing..."
         # fix by queuing the last updated agent
         offending = ::Item.first(conditions: {_kind: 'agent', type: 'desktop', status: 'open', demo: false}, sort: [[ :updated_at, :desc ]])
@@ -358,7 +378,7 @@ class LicenseManager
         offending.save
       end
 
-      if ::Item.count(conditions: {_kind: 'agent', type: 'mobile', status: 'open', demo: false}) > @limits[:agents][:mobile]
+      if ::Item.count(conditions: {_kind: 'agent', type: 'mobile', status: 'open', demo: false, deleted: false}) > @limits[:agents][:mobile]
         trace :fatal, "LICENCE EXCEEDED: Number of agents(mobile) is greater than license file. Fixing..."
         # fix by queuing the last updated agent
         offending = ::Item.first(conditions: {_kind: 'agent', type: 'mobile', status: 'open', demo: false}, sort: [[ :updated_at, :desc ]])
@@ -367,7 +387,7 @@ class LicenseManager
         offending.save
       end
 
-      if ::Item.count(conditions: {_kind: 'agent', status: 'open', demo: false}) > @limits[:agents][:total]
+      if ::Item.count(conditions: {_kind: 'agent', status: 'open', demo: false, deleted: false}) > @limits[:agents][:total]
         trace :fatal, "LICENCE EXCEEDED: Number of agent(total) is greater than license file. Fixing..."
         # fix by queuing the last updated agent
         offending = ::Item.first(conditions: {_kind: 'agent', status: 'open', demo: false}, sort: [[ :updated_at, :desc ]])
@@ -392,7 +412,6 @@ class LicenseManager
 
     rescue Exception => e
       trace :fatal, "Cannot perform license check: #{e.message}"
-      puts e.backtrace.join "\n"
       exit!
     end
   end
@@ -415,9 +434,9 @@ class LicenseManager
 
   def counters
     counters = {:users => User.count(conditions: {enabled: true}),
-                :agents => {:total => Item.count(conditions: {_kind: 'agent', status: 'open'}),
-                               :desktop => Item.count(conditions: {_kind: 'agent', type: 'desktop', status: 'open'}),
-                               :mobile => Item.count(conditions: {_kind: 'agent', type: 'mobile', status: 'open'})},
+                :agents => {:total => Item.count(conditions: {_kind: 'agent', status: 'open', demo: false, deleted: false}),
+                               :desktop => Item.count(conditions: {_kind: 'agent', type: 'desktop', status: 'open', demo: false, deleted: false}),
+                               :mobile => Item.count(conditions: {_kind: 'agent', type: 'mobile', status: 'open', demo: false, deleted: false})},
                 :collectors => {:collectors => Collector.count(conditions: {type: 'local'}),
                                 :anonymizers => Collector.count(conditions: {type: 'remote'})},
                 :nia => Injector.count,

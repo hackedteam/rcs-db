@@ -24,19 +24,28 @@ unsigned char vendor_code[] =
 unsigned char crypt_key[16] = {0xB3, 0xE0, 0x2A, 0x88, 0x30, 0x69, 0x67, 0xAA, 0x21, 0x74, 0x23, 0xCC, 0x90, 0x99, 0x0C, 0x3C}; 
 
 #define AES_PADDING 16
-#define VERSION 20111222
+#define VERSION 20120504
+
+#define HASP_RCS_FID 1
 
 #pragma pack(1)
 typedef struct {
 	DWORD version;
-	char serial[256];
+	CHAR serial[32];
 	hasp_time_t time;
 	DWORD license_left;
+	DWORD error_code;
+		#define ERROR_INFO 1
+		#define ERROR_PARSING 2
+		#define ERROR_LOGIN 3
+		#define ERROR_RTC 4
+		#define ERROR_STORAGE 5
+	CHAR error_msg[76];
 } struct_info_t;
 #pragma pack()
 
 typedef struct {
-	BYTE encrypted[sizeof(struct_info_t)+AES_PADDING];
+	BYTE encrypted[sizeof(struct_info_t) + AES_PADDING];
 } encrypted_info_t;
 
 HASPKEY_API encrypted_info_t RI(BYTE *crypt_iv)
@@ -55,45 +64,67 @@ HASPKEY_API encrypted_info_t RI(BYTE *crypt_iv)
 	struct_info.version = VERSION;
 	ZeroMemory(&encrypted_info, sizeof(encrypted_info));
 	do {
-		if(hasp_get_info("<haspscope />", "<haspformat root=\"rcs\"><hasp><attribute name=\"id\" /></hasp></haspformat>", vendor_code, &info) != HASP_STATUS_OK) 
+		if(hasp_get_info("<haspscope />", "<haspformat root=\"rcs\"><hasp><attribute name=\"id\" /></hasp></haspformat>", vendor_code, &info) != HASP_STATUS_OK) {
+			struct_info.error_code = ERROR_INFO;
+			sprintf_s(struct_info.error_msg, sizeof(struct_info.error_msg), "cannot get info");
 			break;
+		}
 
-		if(!(start = strstr(info, "<hasp id=\""))) 
+		if(!(start = strstr(info, "<hasp id=\""))) {
+			struct_info.error_code = ERROR_PARSING;
+			sprintf_s(struct_info.error_msg, sizeof(struct_info.error_msg), "bad parsing start");
 			break;
+		}
 		start += strlen("<hasp id=\"");
 
-		if(!(end = strchr(start, '"'))) 
+		if(!(end = strchr(start, '"'))) {
+			struct_info.error_code = ERROR_PARSING;
+			sprintf_s(struct_info.error_msg, sizeof(struct_info.error_msg), "bad parsing end");
 			break;
+		}
 		*end = '\0';
 
 		// Copio il seriale 
 		_snprintf_s(struct_info.serial, sizeof(struct_info.serial), _TRUNCATE, "%s", start);		
 
-		if(hasp_login(HASP_DEFAULT_FID, vendor_code, &handle) != HASP_STATUS_OK) 
-			break;
+		if (hasp_login(HASP_DEFAULT_FID, vendor_code, &handle) != HASP_STATUS_OK){
+			sprintf_s(struct_info.error_msg, sizeof(struct_info.error_msg), "cannot login with FID 0");
+			if (hasp_login(HASP_RCS_FID, vendor_code, &handle) != HASP_STATUS_OK){
+				struct_info.error_code = ERROR_LOGIN;
+				sprintf_s(struct_info.error_msg, sizeof(struct_info.error_msg), "cannot login with FID 1");
+				break;
+			}
+		}
 
-		if(hasp_get_rtc(handle, &htime) != HASP_STATUS_OK) 
+		if(hasp_get_rtc(handle, &htime) != HASP_STATUS_OK) {
+			struct_info.error_code = ERROR_RTC;
+			sprintf_s(struct_info.error_msg, sizeof(struct_info.error_msg), "cannot get rtc time");
 			break;
+		}
 
 		// Copio il timestamp
 		struct_info.time = htime;
 
 		// Copio il numero di agent rimasti per il pay-per-use
-		if (hasp_read(handle, HASP_FILEID_RW, 0, 4, &struct_info.license_left) != HASP_STATUS_OK)
+		if (hasp_read(handle, HASP_FILEID_RW, 0, 4, &struct_info.license_left) != HASP_STATUS_OK){
+			struct_info.error_code = ERROR_STORAGE;
+			sprintf_s(struct_info.error_msg, sizeof(struct_info.error_msg), "cannot get storage value");
 			break;
+		}
 
-		// Cifro tutta la struttura dentro encrypted_info.encrypted
-		// inserendo il padding
-		tot_len = sizeof(struct_info);
-		tot_len/=16;
-		tot_len++;
-		tot_len*=16;
-		pad_len = tot_len - sizeof(struct_info);
-		memset(encrypted_info.encrypted, pad_len, tot_len);
-		memcpy(encrypted_info.encrypted, &struct_info, sizeof(struct_info));
-		aes_set_key( &crypt_ctx, crypt_key, 128);
-		aes_cbc_encrypt(&crypt_ctx, iv, encrypted_info.encrypted, encrypted_info.encrypted, tot_len);
 	} while(0);
+
+	// Cifro tutta la struttura dentro encrypted_info.encrypted
+	// inserendo il padding
+	tot_len = sizeof(struct_info);
+	tot_len/=16;
+	tot_len++;
+	tot_len*=16;
+	pad_len = tot_len - sizeof(struct_info);
+	memset(encrypted_info.encrypted, pad_len, tot_len);
+	memcpy(encrypted_info.encrypted, &struct_info, sizeof(struct_info));
+	aes_set_key( &crypt_ctx, crypt_key, 128);
+	aes_cbc_encrypt(&crypt_ctx, iv, encrypted_info.encrypted, encrypted_info.encrypted, tot_len);
 
 	if(info) 
 		hasp_free(info);
