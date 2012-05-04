@@ -13,7 +13,7 @@ module Hasp
   ffi_convention :stdcall
 
   AES_PADDING = 16
-  STRUCT_SIZE = 272
+  STRUCT_SIZE = 128
 
   class Info < FFI::Struct
     layout :enc, [:char, STRUCT_SIZE + AES_PADDING]
@@ -26,7 +26,7 @@ end
 
 class HaspManager
 
-  VERSION = 20111222
+  VERSION = 20120504
   KEY = "\xB3\xE0\x2A\x88\x30\x69\x67\xAA\x21\x74\x23\xCC\x90\x99\x0C\x3C"
 
   def self.info
@@ -48,9 +48,6 @@ class HaspManager
     puts "RI ENC [#{enc.bytesize}]: " + enc.unpack('H*').to_s
     raise "Invalid ENC size" if enc.bytesize != Hasp::STRUCT_SIZE + Hasp::AES_PADDING
 
-    # check if all bytes are zero
-    raise "Cannot find hardware dongle" if enc.bytes.collect { |c| c == 0 }.inject(:&)
-    
     # decrypt the response with the pre-shared KEY
     decipher = OpenSSL::Cipher::Cipher.new('aes-128-cbc')
     decipher.decrypt
@@ -66,15 +63,17 @@ class HaspManager
     raise "Invalid HASP version" if version != VERSION
     info[:version] = version
 
-    serial = data.slice!(0..255).delete("\x00")
-    info[:serial] = serial
+    info[:serial] = data.slice!(0..31).delete("\x00")
 
     time = data.slice!(0..7).unpack('Q').first
-    time = Time.at(time)
+    time = Time.at(time) unless time == 0
     info[:time] = time
 
-    licenses = data.slice!(0..3).unpack('I').first
-    info[:oneshot] = licenses
+    info[:oneshot] = data.slice!(0..3).unpack('I').first
+
+    info[:error_code] = data.slice!(0..3).unpack('I').first
+
+    info[:error_msg] = data.slice!(0..63).delete("\x00")
 
     return info
   end
@@ -90,5 +89,5 @@ if __FILE__ == $0
   info = HaspManager.info
   puts info.inspect
   puts
-  HaspManager.dec
+  #HaspManager.dec
 end
