@@ -99,7 +99,14 @@ class LicenseManager
           exit!
         end
 
-        if not lic[:expiry].nil? and Time.parse(lic[:expiry]).getutc < Dongle.time
+        # use local time if the dongle presence is not enforced
+        if @limits[:serial] == 'off'
+          time = Time.now.getutc
+        else
+          time = Dongle.time
+        end
+
+        if not lic[:expiry].nil? and Time.parse(lic[:expiry]).getutc < time
           trace :fatal, "Invalid License File: license expired on #{Time.parse(lic[:expiry]).getutc}"
           exit!
         end
