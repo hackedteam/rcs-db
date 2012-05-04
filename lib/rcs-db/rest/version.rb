@@ -8,7 +8,7 @@ module DB
 class VersionController < RESTController
 
   def index
-    db_version = File.open(Dir.pwd + '/config/version.txt', 'rb') {|f| f.read}
+    db_version = File.read(Dir.pwd + '/config/VERSION')
     console_version = "-1"
 
     last_console = Dir[Dir.pwd + '/console/rcs-console*.air'].sort.last
