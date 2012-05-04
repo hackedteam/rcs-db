@@ -98,6 +98,7 @@ class BackuparchiveController < RESTController
 
     Dir[Config.instance.global['BACKUP_DIR'] + '/*'].each do |dir|
       dirsize = 0
+      next unless File.exist?(dir + '/rcs')
       Find.find(dir + '/rcs') { |f| dirsize += File.stat(f).size }
       name = File.basename(dir).split('-')[0]
       time = File.stat(dir).ctime.getutc
