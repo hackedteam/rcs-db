@@ -1,6 +1,8 @@
 
 TODO (daVinci 8.x.x):
 
+    stats for collector and worker
+
     use em-http-server in db and worker
 
     change RUBY_PLATFORM to RbConfig
@@ -16,7 +18,7 @@ TODO (daVinci 8.x.x):
 
     fix collector tests
 
-    mongo authentication in NSIS
+    mongo authentication
 
     with mongo 2.1.x
         logRotate

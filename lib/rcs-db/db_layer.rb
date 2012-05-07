@@ -29,7 +29,7 @@ class DB
     @available = false
     @semaphore = Mutex.new
     @auth_required = false
-    @auth_user = 'mongo'
+    @auth_user = 'root'
     @auth_pass = File.binread(Config.instance.file('mongodb.key')) if File.exist?(Config.instance.file('mongodb.key'))
   end
   
@@ -84,9 +84,9 @@ class DB
 
       # check if we need to authenticate
       begin
-        Mongoid.database.authenticate(@auth_user, @auth_pass)
-        trace :info, "Authenticated to MongoDB"
-        @auth_required = true
+        #Mongoid.database.authenticate(@auth_user, @auth_pass)
+        #trace :info, "Authenticated to MongoDB"
+        #@auth_required = true
       rescue Exception => e
         trace :warn, "AUTH: #{e.message}"
       end
@@ -100,13 +100,15 @@ class DB
 
   def new_connection(db, host = Config.instance.global['CN'], port = 27017)
     db = Mongo::Connection.new(host, port).db(db)
-    db.authenticate(@auth_user, @auth_pass) if @auth_required
+    #db.authenticate(@auth_user, @auth_pass) if @auth_required
     return db
   rescue Mongo::AuthenticationError => e
     trace :fatal, "AUTH: #{e.message}"
   end
 
   def ensure_mongo_auth
+    # TODO: no users, for now...
+    return
     # don't create the users if already there
     return if @auth_required
     # ensure the users are created, so the next time it will not fail
