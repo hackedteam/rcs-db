@@ -27,7 +27,7 @@ gem 'mail'
 gem 'RocketAMF', :git => "https://github.com/rubyamf/rocketamf.git"
 
 # databases
-gem 'mongo', "= 1.6.1", :git => "git://github.com/danielemilan/mongo-ruby-driver.git"
+gem 'mongo', "= 1.6.1", :git => "git://github.com/danielemilan/mongo-ruby-driver.git", :branch => "1.6.1_append"
 gem 'mongoid'
 gem 'bson', "= 1.6.1"
 gem 'bson_ext', "= 1.6.1"
