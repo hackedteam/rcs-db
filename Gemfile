@@ -27,10 +27,10 @@ gem 'mail'
 gem 'RocketAMF', :git => "https://github.com/rubyamf/rocketamf.git"
 
 # databases
-gem 'mongo', :git => "git://github.com/danielemilan/mongo-ruby-driver.git"
+gem 'mongo', "= 1.6.1", :git => "git://github.com/danielemilan/mongo-ruby-driver.git"
 gem 'mongoid'
-gem 'bson'
-gem 'bson_ext', ">= 1.6.2"
+gem 'bson', "= 1.6.1"
+gem 'bson_ext', "= 1.6.1"
 # to be removed after migration from 7.0
 gem 'mysql2', "= 0.3.3"
 gem 'xml-simple'

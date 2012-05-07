@@ -3,4 +3,6 @@ Changelog for 8.0.3
 
 fix for backups on external storage
 fix for connectors not creating binary data
+fir for connections issue on Windows 2003
+
 database version is reported correctly into the console

@@ -84,9 +84,9 @@ class DB
 
       # check if we need to authenticate
       begin
-        #Mongoid.database.authenticate(@auth_user, @auth_pass)
-        #trace :info, "Authenticated to MongoDB"
-        #@auth_required = true
+        Mongoid.database.authenticate(@auth_user, @auth_pass)
+        trace :info, "Authenticated to MongoDB"
+        @auth_required = true
       rescue Exception => e
         trace :warn, "AUTH: #{e.message}"
       end
@@ -107,8 +107,6 @@ class DB
   end
 
   def ensure_mongo_auth
-    # TODO: no users, for now...
-    return
     # don't create the users if already there
     return if @auth_required
     # ensure the users are created, so the next time it will not fail
