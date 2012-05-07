@@ -261,7 +261,7 @@ class LicenseManager
         end
 
       when :anonymizers
-        if Collector.count(conditions: {type: 'remote'}) < @limits[:collectors][:collectors]
+        if Collector.count(conditions: {type: 'remote'}) < @limits[:collectors][:anonymizers]
           return true
         end
 
