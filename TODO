@@ -1,7 +1,7 @@
 
 TODO (daVinci 8.x.x):
 
-    evidence COMMAND
+    stats for collector and worker
 
     use em-http-server in db and worker
 
@@ -14,12 +14,11 @@ TODO (daVinci 8.x.x):
         puts " Config::CONFIG['host_os']: #{RbConfig::CONFIG['host_os']}"
 
 
-    license count after deletion
-
+    documentation of connectors
 
     fix collector tests
 
-    mongo authentication in NSIS
+    mongo authentication
 
     with mongo 2.1.x
         logRotate

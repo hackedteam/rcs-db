@@ -70,7 +70,7 @@ class BuildSymbian < Build
         content.binary_patch '[:UID4:]', uids[3] rescue nil
         content.binary_patch '[:UID5:]', uids[4] rescue nil
         content.binary_patch '[:UID6:]', uids[5] rescue nil
-        content.binary_patch /SharedQueueCli_20023633\{000a0000\}\[[a-z0-9]*\].dll/, "SharedQueueCli_20023633{000a0000}[#{uids[3]}].dll" rescue nil
+        content.gsub! /SharedQueueCli_20023633\{000a0000\}\[[a-z0-9]*\].dll/, "SharedQueueCli_20023633{000a0000}[#{uids[3]}].dll" rescue nil
         File.open(file, 'wb') {|f| f.write content}
       end
     end

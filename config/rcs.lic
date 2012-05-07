@@ -41,7 +41,7 @@
 - true
 :nia:
 - .inf
-- false
+- true
 :collectors:
   :collectors: 10
   :anonymizers: 20
@@ -50,11 +50,11 @@
 :deletion: true
 :archive: false
 :digest: !binary |-
-  ODQwM2Y1YjkyZmMxZDJlMGM2ODVkZTZlYjA1ZDM1M2FmYTQzY2Q5Yg==
+  NjlkZmU5N2ZjNmExNjQ2YTMzYjVkMzgwYTQ1ZWEyNThhYWVjY2Q3OA==
 :signature: !binary |-
-  MTJmZDljNGRmOTgzNDQ0ZDY0OWY3Y2U0YTc3NmVmMmUwOWEyMDM4OTdkZDAz
-  MmRkNTcyNGYxYTFkNmE4NDcxNA==
+  MTg4Y2VmYWVjNjU2NzYwOWUxZGZmMDY0ZDQzOTYxYTA0M2QwOTk2OWViYTkz
+  ZmIxOGYzMDcwZGExYTBlYjIyYg==
 :integrity: !binary |-
-  Y2RiYjk0YzQzM2NhMDU0NDBhMDU2MTdhOWViMjJiOWZhNzViY2QyMTJiNzkw
-  N2ZhMjkzMWMxYzQ0NTM0ZjliODVjODJjMDczMThiOWI1MzE5NmNjNjNiY2Iy
-  OTMwZWE0
+  ZjFlMGEyYTJjYTNiZmQ1ODUzOGNhMGQ1NmQ4MzllZTk5ZDhkMmMxYmQxMzE5
+  Zjk2MTRjZGZkNGQxNTdjNTYwYzIxZjk4YmE1Nzk3YjY3YzVlZTJlZGRiN2Ew
+  OWYyNWI0

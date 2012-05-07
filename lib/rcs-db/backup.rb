@@ -64,8 +64,9 @@ class BackupManager
       # the 'what' property of a backup decides which collections have to be backed up
       collections = Mongoid::Config.master.collection_names
 
-      # don't backup the statuses of the components
+      # don't backup the "volatile" collections
       collections.delete('statuses')
+      collections.delete('sessions')
       # don't backup the logs of the components
       collections.delete_if {|x| x['logs.']}
 

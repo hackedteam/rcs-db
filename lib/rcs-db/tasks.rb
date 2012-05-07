@@ -361,12 +361,12 @@ class TaskManager
   
   def delete(user, task_id)
     trace :info, "Deleting task #{task_id} for user '#{user}'"
-    task = @tasks[user][task_id]
-    task.stop! unless task.nil?
-    @tasks[user].delete task_id
-    
+    if @tasks[user]
+      task = @tasks[user][task_id]
+      task.stop! unless task.nil?
+      @tasks[user].delete task_id
+    end
     FileUtils.rm_rf(Config.instance.temp("#{task_id}*"))
-    
   end
   
   def download(user, task_id)

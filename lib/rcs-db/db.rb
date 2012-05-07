@@ -50,8 +50,9 @@ class Application
     srand(Time.now.to_i)
 
     begin
-      version = File.read(Dir.pwd + '/config/version.txt')
-      trace :info, "Starting the RCS Database #{version}..."
+      build = File.read(Dir.pwd + '/config/VERSION_BUILD')
+      version = File.read(Dir.pwd + '/config/VERSION')
+      trace :info, "Starting the RCS Database #{version} (#{build})..."
 
       # ensure the temp directory is empty
       FileUtils.rm_rf(Config.instance.temp)
@@ -93,6 +94,9 @@ class Application
 
       # ensure at least one user (admin) is active
       DB.instance.ensure_admin
+
+      # ensure mongo users for authentication
+      DB.instance.ensure_mongo_auth
 
       # ensure we have the signatures for the agents
       DB.instance.ensure_signatures
