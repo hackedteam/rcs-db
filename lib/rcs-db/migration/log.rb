@@ -288,7 +288,7 @@ class LogMigration
             conversion = {:latitude => :latitude, :longitude => :longitude, :varchar2 => :type}
         end
       when 'MAIL', 'MMS', 'SMS'
-        conversion = {:varchar1 => :from, :varchar2 => :rcpt, :varchar3 => :subject, :int1 => :size, :int2 => :status, :longtext1 => :body}
+        conversion = {:varchar1 => :from, :varchar2 => :rcpt, :varchar3 => :subject, :int1 => :size, :int2 => :status, :longtext1 => :content}
       when 'MIC'
         conversion = {:int1 => :duration, :int3 => :status}
       when 'MOUSE'
