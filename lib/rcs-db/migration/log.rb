@@ -333,7 +333,7 @@ class LogMigration
 
     # keep the subtype into messages
     if log[:type] == 'MAIL' or log[:type] == 'SMS' or log[:type] == 'MMS'
-      data[:type] = log[:type].to_sym
+      data[:type] = log[:type].downcase.to_sym
     end
 
     data.delete 'status' if log[:type] == 'MIC' or log[:type] == 'CALL'
