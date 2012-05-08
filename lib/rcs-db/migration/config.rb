@@ -353,8 +353,10 @@ class ConfigMigration
             a[:mobile] = false
           when 'file'
             a.merge! item[a[:module]].first
-            a['accept'] = a['accept'].first['mask'].nil? ? [] : a['accept'].first['mask']
-            a['deny'] = a['deny'].first['mask'].nil? ? [] : a['deny'].first['mask']
+            a['accept'] = a['accept'].first['mask'].nil? ? [] : a['accept'].first['mask'] unless a['accept'].nil?
+            a['accept'] ||= []
+            a['deny'] = a['deny'].first['mask'].nil? ? [] : a['deny'].first['mask'] unless a['deny'].nil?
+            a['deny'] ||= []
             a['open'] = a['open'] == 'true' ? true : false
             a['capture'] = a['capture'] == 'true' ? true : false
             a['minsize'] = a['minsize'].to_i unless a['minsize'].nil?
@@ -389,7 +391,8 @@ class ConfigMigration
             modules << a.dup
             a[:module] = 'calendar'
           else
-            raise "unknown agent: " + a[:module]
+            #raise "unknown agent: #{a[:module]}"
+            next
         end
         modules << a
       end
