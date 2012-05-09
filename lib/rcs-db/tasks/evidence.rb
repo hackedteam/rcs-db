@@ -4,6 +4,8 @@ require_relative '../tasks'
 
 require 'cgi'
 
+require 'rcs-common/utf16le'
+
 module RCS
 module DB
 
@@ -281,7 +283,7 @@ class EvidenceTask
       end
 
       # write the current evidence
-      out[:content] << html_evidence_table_row(e)
+      out[:content] << html_evidence_table_row(e).force_encoding('utf-8')
 
       # export the binary file
       if e[:data]['_grid']
