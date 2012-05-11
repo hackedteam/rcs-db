@@ -6,15 +6,18 @@
 !include nsDialogs.nsh
 !include Sections.nsh
 !include LogicLib.nsh
+
+!include "FileSearch.nsh"
+!insertmacro FileSearch
 ;--------------------------------
 ;General
 
   ; if this is defined it will perform the full install
   ; if this is NOT defined it will only install the ruby scripts and nothing else
-  ;!define FULL_INSTALL 1
+  !define FULL_INSTALL 1
 
   !define PACKAGE_NAME "RCS"
-  !Define /file PACKAGE_VERSION "..\config\VERSION_BUILD"
+  !define /file PACKAGE_VERSION "..\config\VERSION_BUILD"
 
   ;Variables
   Var installALLINONE
@@ -41,11 +44,11 @@
   ;Name and file
   Name "RCS"
   !ifdef FULL_INSTALL
-    OutFile "RCS-${PACKAGE_VERSION}.exe"
+    OutFile "rcs-setup-${PACKAGE_VERSION}.exe"
   !else
-  OutFile "RCS-Update-${PACKAGE_VERSION}.exe"
+  OutFile "rcs-update-${PACKAGE_VERSION}.exe"
   !endif
-
+  
   ;Default installation folder
   InstallDir "C:\RCS\"
 
@@ -348,7 +351,7 @@ Section "Install Section" SecInstall
          retry:
       ${EndIf}
     ${LoopUntil} $0 == 0
-
+	
     ; fresh install
     ${If} $installUPGRADE != ${BST_CHECKED}
       DetailPrint ""
@@ -393,6 +396,12 @@ Section "Install Section" SecInstall
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSWorker" "DisplayName" "RCS Worker"
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSWorker" "Description" "Remote Control System Worker for data decoding"
       DetailPrint "done"
+	  
+	  DetailPrint "Adding static $masterCN to /etc/hosts file..."
+	  FileOpen $4 "$WINDIR\System32\drivers\etc\hosts" a
+	  FileSeek $4 0 END
+	  FileWrite $4 "$\n127.0.0.1$\t$masterCN"
+	  FileClose $4 ; and close the file
     ${EndIf}
     
     SetDetailsPrint "both"
@@ -418,16 +427,24 @@ Section "Install Section" SecInstall
     DetailPrint "Starting RCS Worker..."
     SimpleSC::StartService "RCSWorker" "" 30
     Sleep 5000
-
+	
     ${If} $installUPGRADE != ${BST_CHECKED}
       DetailPrint "Setting the Admin password..."
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --reset-admin $adminpass"
     ${EndIf}
       
     DetailPrint "Adding firewall rule for port 443/tcp and 444/tcp..."
-    nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=443'
-    nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=444'
-
+    #nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=443'
+    #nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=444'
+	SimpleFC::AddPort 443 "RCS Database" 6 0 2 "" 1
+	SimpleFC::AddPort 444 "RCS Database" 6 0 2 "" 1
+	
+	DetailPrint "Fixing evidence format..."
+	SetDetailsPrint "textonly"
+	nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\db_update.rb"
+	SetDetailsPrint "both"
+	DetailPrint "done"
+	
     !cd '..'
     WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
     WriteRegDWORD HKLM "Software\HT\RCS" "master" 0x00000001
@@ -467,7 +484,7 @@ Section "Install Section" SecInstall
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config -u admin -p $adminpass -d $masterAddress --add-shard $localAddress"
       SetDetailsPrint "both"
       DetailPrint "done"
-    ${EndIf}
+	${EndIf}
     
     DetailPrint "Starting RCS Shard..."
     SimpleSC::StartService "RCSShard" "" 30
@@ -504,8 +521,9 @@ Section "Install Section" SecInstall
     DetailPrint "done"
     
     DetailPrint "Adding firewall rule for port 80/tcp..."
-    nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSCollector" dir=in action=allow protocol=TCP localport=80'
-
+    #nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSCollector" dir=in action=allow protocol=TCP localport=80'
+	SimpleFC::AddPort 80 "RCS Collector" 6 0 2 "" 1
+	
     !cd '..'
     
     ; fresh install
