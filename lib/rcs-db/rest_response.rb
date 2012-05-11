@@ -87,6 +87,7 @@ class RESTResponse
 
   def size
     fail "response still not prepare" if @response.nil?
+    return 0 if @response.content.nil?
     @response.content.bytesize
   end
 

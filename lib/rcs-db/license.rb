@@ -194,9 +194,9 @@ class LicenseManager
     if @limits[:type] == 'reusable'
       # reusable licenses don't consume any license slot but we have to check
       # the number of already active agents in the db
-      desktop = Item.count(conditions: {_kind: 'agent', type: 'desktop', status: 'open'})
-      mobile = Item.count(conditions: {_kind: 'agent', type: 'mobile', status: 'open'})
-  
+      desktop = Item.count(conditions: {_kind: 'agent', type: 'desktop', status: 'open', demo: false, deleted: false})
+      mobile = Item.count(conditions: {_kind: 'agent', type: 'mobile', status: 'open', demo: false, deleted: false})
+
       if desktop + mobile >= @limits[:agents][:total]
         trace :warn, "You don't have enough total license to received data. Queuing..."
         return false
