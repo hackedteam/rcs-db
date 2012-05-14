@@ -99,8 +99,11 @@ class DB
   end
 
   def new_connection(db, host = Config.instance.global['CN'], port = 27017)
+    time = Time.now
     db = Mongo::Connection.new(host, port).db(db)
-    #db.authenticate(@auth_user, @auth_pass) if @auth_required
+    db.authenticate(@auth_user, @auth_pass) if @auth_required
+    delta = Time.now - time
+    trace :warn, "Opening new connection is too slow (%f), check name resolution" % delta if delta > 0.5
     return db
   rescue Mongo::AuthenticationError => e
     trace :fatal, "AUTH: #{e.message}"

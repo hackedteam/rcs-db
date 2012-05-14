@@ -5,6 +5,8 @@ TODO (daVinci 8.x.x):
 
     BB infection agent
 
+    log slow query
+
     use em-http-server in db and worker
 
     change RUBY_PLATFORM to RbConfig::CONFIG['host_os']
