@@ -247,61 +247,74 @@ class EvidenceTask
 
     summary = {}
 
-    evidence.each_with_index do |e, i|
-      # get the day of the current evidence
-      day = Time.at(e[opts[:index]]).strftime('%Y-%m-%d')
-      # get the our of the evidence
-      hour = Time.at(e[opts[:index]]).strftime('%H').to_i
+    # to avoid cursor timeout on server-side
+    # we split the query into different small chunks
+    # so the cursor should be recreated every query
+    # TODO: in mogoid 3.0.0 we should be able to specify :timeout => false on queries
 
-      # this is the first element
-      if i == 0
-        file_day = day
-        out = begin_new_file day
-        summary[day] = Array.new(24, 0)
+    chunk = 1000
+    cursor = 0
+    total = evidence.count
+
+    while cursor < total do
+      evidence.limit(chunk).skip(cursor).each_with_index do |e, i|
+        # get the day of the current evidence
+        day = Time.at(e[opts[:index]]).strftime('%Y-%m-%d')
+        # get the our of the evidence
+        hour = Time.at(e[opts[:index]]).strftime('%H').to_i
+
+        # this is the first element
+        if i == 0
+          file_day = day
+          out = begin_new_file day
+          summary[day] = Array.new(24, 0)
+        end
+
+        # if the date of the file is different from the day of the evidence
+        # we need to begin a new file
+        if file_day != day
+          # close any pending file / table
+          end_file out
+
+          # store the file
+          yield 'stream', out[:name], {content: out[:content]}
+
+          # create a new file
+          out = begin_new_file day
+          # remember the day of the file for the next iteration
+          file_day = day
+          summary[day] = Array.new(24, 0)
+        end
+
+        begin
+          e[:agent] = ::Item.find(e[:aid]).name
+        rescue
+          e[:agent] = 'unknown'
+        end
+
+        # write the current evidence
+        out[:content] << html_evidence_table_row(e)
+
+        # export the binary file
+        if e[:data]['_grid']
+          filename, file = dump_file(day, e, opts[:target])
+          yield 'file', filename, {path: file}
+          FileUtils.rm_rf(file)
+        else
+          yield
+        end
+
+        # update the stat of the summary
+        summary[day][hour] +=  1
+
+        # this is the last element
+        if i == evidence.length - 1
+          end_file out
+          yield 'stream', out[:name], {content: out[:content]}
+        end
+
       end
-
-      # if the date of the file is different from the day of the evidence
-      # we need to begin a new file
-      if file_day != day
-        # close any pending file / table
-        end_file out
-
-        # store the file
-        yield 'stream', out[:name], {content: out[:content]}
-
-        # create a new file
-        out = begin_new_file day
-        # remember the day of the file for the next iteration
-        file_day = day
-        summary[day] = Array.new(24, 0)
-      end
-
-      begin
-        e[:agent] = ::Item.find(e[:aid]).name
-      rescue
-        e[:agent] = 'unknown'
-      end
-
-      # write the current evidence
-      out[:content] << html_evidence_table_row(e).force_encoding('utf-8')
-
-      # export the binary file
-      if e[:data]['_grid']
-        filename, file = dump_file(day, e, opts[:target])
-        yield 'file', filename, {path: file}
-        FileUtils.rm_rf(file)
-      else
-        yield
-      end
-
-      # update the stat of the summary
-      summary[day][hour] +=  1
-
-      # this is the last element
-      if i == evidence.length - 1
-        end_file out
-        yield 'stream', out[:name], {content: out[:content]}
-      end
+      cursor += chunk
     end
 
     # create the total summary of the exported evidence

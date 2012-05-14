@@ -3,8 +3,6 @@ TODO (daVinci 8.x.x):
 
     stats for collector and worker
 
-    BB infection agent
-
     log slow query
 
     use em-http-server in db and worker
