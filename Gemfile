@@ -1,22 +1,16 @@
 source "http://rubygems.org"
 # Add dependencies required to use your gem here.
 
-gem "rcs-common", ">= 8.0.0", :path => "../rcs-common"
-
+gem "rcs-common", ">= 8.0.5", :path => "../rcs-common"
 
 gem 'em-http-request'
 gem 'em-websocket'
-#git "git://github.com/alor/eventmachine.git", :branch => "master" do
-  gem 'eventmachine', ">= 1.0.0.beta.4"
-#end
-git "git://github.com/alor/evma_httpserver.git", :branch => "master" do
-  gem 'eventmachine_httpserver', ">= 0.2.2"
-end
+gem 'eventmachine', ">= 1.0.0.beta.4"
+gem 'eventmachine_httpserver', ">= 0.2.2", :git => "git://github.com/alor/evma_httpserver.git", :branch => "master"
 
 # TAR/GZIP compression
-git "git://github.com/danielemilan/minitar.git", :branch => "master" do
-  gem "minitar", ">= 0.5.5"
-end
+gem "minitar", ">= 0.5.5", :git => "git://github.com/danielemilan/minitar.git", :branch => "master"
+
 gem 'rubyzip', ">= 0.9.5"
 gem 'bcrypt-ruby'
 gem 'plist'

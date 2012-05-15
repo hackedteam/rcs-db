@@ -9,6 +9,7 @@ require_relative 'core'
 require_relative 'license'
 require_relative 'tasks'
 require_relative 'offload_manager'
+require_relative 'statistics'
 
 # from RCS::Common
 require 'rcs-common/trace'

@@ -43,6 +43,10 @@ class EvidenceController < RESTController
     # save the evidence in the db
     begin
       id, shard_id = RCS::DB::EvidenceManager.instance.store_evidence ident, instance, @request[:content]['content']
+
+      # update the connection statistics
+      StatsManager.instance.add evidence: 1, evidence_size: @request[:content]['content'].bytesize
+
       # notify the worker
       RCS::DB::EvidenceDispatcher.instance.notify id, shard_id, ident, instance
     rescue Exception => e

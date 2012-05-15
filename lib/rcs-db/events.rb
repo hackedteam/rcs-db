@@ -118,7 +118,10 @@ module HTTPHandler
     trace :debug, "[#{@peer}] REQ: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} #{size.to_s_bytes}"
     
     responder = nil
-    
+
+    # update the connection statistics
+    StatsManager.instance.add conn: 1
+
     # Block which fulfills the request (generate the data)
     operation = proc do
       
@@ -228,6 +231,9 @@ class Events
 
         # process the alert queue
         EM::PeriodicTimer.new(5) { EM.defer(proc{ Alerting.dispatch }) }
+
+        # calculate and save the stats
+        EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }
 
         # TODO: remove this
         #check_thread_pool
