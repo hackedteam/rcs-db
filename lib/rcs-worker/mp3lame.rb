@@ -1,5 +1,6 @@
 require 'ffi'
 require 'stringio'
+require 'rbconfig'
 
 require 'rcs-common/trace'
 
@@ -8,7 +9,7 @@ module MP3Lame
   extend FFI::Library
 
   base_path = File.dirname(__FILE__)
-  case RUBY_PLATFORM
+  case RbConfig::CONFIG['host_os']
     when /darwin/
   	  ffi_lib File.join(base_path, 'libs/lame/macos/libmp3lame.0.dylib')
     when /mingw/

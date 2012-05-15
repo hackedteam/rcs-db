@@ -2,6 +2,7 @@
 require 'rcs-common/trace'
 
 require 'net/http'
+require 'rbconfig'
 
 module RCS
 module Worker
@@ -132,7 +133,7 @@ class RESTFileStream
     # on windows the stream_without_mapping has HUGE problems
     # we monkey patch the class to force it to ALWAYS stream a file
     # the mapping threshold is responsible to choose the behavior
-    if RUBY_PLATFORM =~ /mingw/
+    if RbConfig::CONFIG['host_os'] =~ /mingw/
       streamer.class.send(:remove_const, :MappingThreshold)
       streamer.class.const_set(:MappingThreshold, 0)
     end
