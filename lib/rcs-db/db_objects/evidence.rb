@@ -108,7 +108,7 @@ class Evidence
     raise "Target not found" if filter.nil?
 
     # copy remaining filtering criteria (if any)
-    filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info'])
+    filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info', 'command'])
     filter.each_key do |k|
       filtering = filtering.any_in(k.to_sym => filter[k])
     end
@@ -124,7 +124,7 @@ class Evidence
     raise "Target not found" if filter.nil?
 
     # copy remaining filtering criteria (if any)
-    filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info'])
+    filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info', 'command'])
     filter.each_key do |k|
       filtering = filtering.any_in(k.to_sym => filter[k])
     end

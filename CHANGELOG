@@ -4,6 +4,7 @@ Changelog for 8.0.5
 Collector:
     - Speed improvement in trasnferring the evidence to db
     - Backward compatibility fix for some old (pre 7.5) devices
+    - input/output statistics with rcs-collector-stats
 
 DB:
     - Fix for big evidence export
