@@ -53,6 +53,7 @@ class LogMigration
         rescue Exception => e
           puts "EXCEPTION #{e.class} : #{e.message}"
           puts "BACKTRACE #{e.class} : " + e.backtrace.join("\n")
+          exit!
         end
         puts "#{@@total} logs (#{@@size.to_s_bytes}) migrated to evidence in #{Time.now - @@time} seconds"
         @@total = 0
