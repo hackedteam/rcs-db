@@ -67,6 +67,9 @@ module HTTPHandler
 
     @closed = false
 
+    # update the connection statistics
+    StatsManager.instance.add conn: 1
+
     trace :debug, "[#{@peer}] Connection setup ended (%f)" % (Time.now - @connection_time) if Config.instance.global['PERF']
   end
 
@@ -120,7 +123,7 @@ module HTTPHandler
     responder = nil
 
     # update the connection statistics
-    StatsManager.instance.add conn: 1
+    StatsManager.instance.add query: 1
 
     # Block which fulfills the request (generate the data)
     operation = proc do

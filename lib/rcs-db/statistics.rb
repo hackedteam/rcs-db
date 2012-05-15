@@ -17,7 +17,7 @@ class StatsManager < Stats
   def initialize
     # configure the storage statistics
     @sections = {:minutes => 0, :hours => 60, :days => 24, :weeks => 7}
-    @template = {conn: 0, evidence: 0, evidence_size: 0}
+    @template = {conn: 0, query: 0, evidence: 0, evidence_size: 0}
 
     # persist the statistics
     @persist = true
