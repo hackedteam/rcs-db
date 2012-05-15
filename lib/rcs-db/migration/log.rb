@@ -73,6 +73,7 @@ class LogMigration
 	  buffered_targets = targets.to_a.dup
 	
     buffered_targets.each do |targ|
+      next if targ[:_mid].nil?
 
       if (@@start_target and @@start_target > targ[:_mid])
         puts "   + #{targ.name} Already Migrated"
@@ -98,6 +99,7 @@ class LogMigration
 	  buffered_agents = agents.to_a.dup
 	
     buffered_agents.each do |a|
+      next if a[:_mid].nil?
 
       if (@@start_agent and @@start_agent > a[:_mid])
         puts "      * #{a.name} Already Migrated"
