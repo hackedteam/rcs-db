@@ -145,7 +145,8 @@ module HTTPHandler
         # keep the size of the reply to be used in the closing method
         @response_size = reply.size
         trace :debug, "[#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{request[:query]} (#{Time.now - generation_time}) #{@response_size.to_s_bytes}" if Config.instance.global['PERF']
-        
+        trace :warn, "SLOW QUERY [#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{request[:query]} (#{Time.now - generation_time}) #{@response_size.to_s_bytes}" if Config.instance.is_slow?(Time.now - generation_time)
+
         reply
       rescue Exception => e
         trace :error, e.message

@@ -1,15 +1,15 @@
 
 TODO (daVinci 8.x.x):
 
-    stats for collector and worker
-
-    log slow query
+    stats for worker
 
     use em-http-server in db and worker
 
     documentation of connectors
 
     fix collector tests
+
+
 
     mongo authentication
 

@@ -105,6 +105,11 @@ class Config
     return File.join Dir.pwd, CERT_DIR, @global[name].nil? ? name : @global[name]
   end
 
+  def is_slow?(time)
+    return false if @global['SLOW'].nil? || @global['SLOW'] == 0
+    return time > @global['SLOW']
+  end
+
   def safe_to_file
     conf_file = File.join Dir.pwd, CONF_DIR, CONF_FILE
 
