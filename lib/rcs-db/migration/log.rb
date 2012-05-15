@@ -306,7 +306,11 @@ class LogMigration
     end
 
     conversion.each_pair do |k, v|
-      data[v] = log[k]
+      if k == :longtext1 and log[k].bytesize > 2**20
+        data[v] = log[k].slice(0, 2**20)
+      else
+        data[v] = log[k]
+      end
     end
 
     # post processing for location parsing to new format
