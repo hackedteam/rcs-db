@@ -9,6 +9,7 @@ require_relative 'core'
 require_relative 'license'
 require_relative 'tasks'
 require_relative 'offload_manager'
+require_relative 'statistics'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -71,6 +72,10 @@ class Application
 
       # make sure the backup dir is present
       FileUtils.mkdir_p(Config.instance.global['BACKUP_DIR']) if not File.directory?(Config.instance.global['BACKUP_DIR'])
+
+      # ensure that the CN is resolved to 127.0.0.1 in the /etc/host file
+      # this is to avoid IPv6 resolution under windows 2008
+      DB.instance.ensure_cn_resolution
 
       # connect to MongoDB
       until DB.instance.connect

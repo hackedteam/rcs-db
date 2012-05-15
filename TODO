@@ -1,17 +1,15 @@
 
 TODO (daVinci 8.x.x):
 
-    stats for collector and worker
-
-    log slow query
+    stats for worker
 
     use em-http-server in db and worker
-
-    change RUBY_PLATFORM to RbConfig::CONFIG['host_os']
 
     documentation of connectors
 
     fix collector tests
+
+
 
     mongo authentication
 

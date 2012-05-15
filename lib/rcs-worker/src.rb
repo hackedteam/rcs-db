@@ -1,4 +1,5 @@
 require 'ffi'
+require 'rbconfig'
 
 module SRC
   extend FFI::Library
@@ -22,7 +23,7 @@ module SRC
   
   begin
 	  base_path = File.dirname(__FILE__)
-	  case RUBY_PLATFORM
+	  case RbConfig::CONFIG['host_os']
         when /darwin/
 			ffi_lib File.join(base_path, 'libs/SRC/macos/libsamplerate.0.dylib')
         when /mingw/

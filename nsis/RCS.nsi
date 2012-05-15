@@ -7,8 +7,6 @@
 !include Sections.nsh
 !include LogicLib.nsh
 
-!include "FileSearch.nsh"
-!insertmacro FileSearch
 ;--------------------------------
 ;General
 
@@ -396,12 +394,7 @@ Section "Install Section" SecInstall
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSWorker" "DisplayName" "RCS Worker"
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSWorker" "Description" "Remote Control System Worker for data decoding"
       DetailPrint "done"
-	  
-	  DetailPrint "Adding static $masterCN to /etc/hosts file..."
-	  FileOpen $4 "$WINDIR\System32\drivers\etc\hosts" a
-	  FileSeek $4 0 END
-	  FileWrite $4 "$\n127.0.0.1$\t$masterCN"
-	  FileClose $4 ; and close the file
+
     ${EndIf}
     
     SetDetailsPrint "both"

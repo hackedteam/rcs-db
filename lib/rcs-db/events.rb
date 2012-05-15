@@ -67,6 +67,9 @@ module HTTPHandler
 
     @closed = false
 
+    # update the connection statistics
+    StatsManager.instance.add conn: 1
+
     trace :debug, "[#{@peer}] Connection setup ended (%f)" % (Time.now - @connection_time) if Config.instance.global['PERF']
   end
 
@@ -118,7 +121,10 @@ module HTTPHandler
     trace :debug, "[#{@peer}] REQ: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} #{size.to_s_bytes}"
     
     responder = nil
-    
+
+    # update the connection statistics
+    StatsManager.instance.add query: 1
+
     # Block which fulfills the request (generate the data)
     operation = proc do
       
@@ -145,7 +151,8 @@ module HTTPHandler
         # keep the size of the reply to be used in the closing method
         @response_size = reply.size
         trace :debug, "[#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{request[:query]} (#{Time.now - generation_time}) #{@response_size.to_s_bytes}" if Config.instance.global['PERF']
-        
+        trace :warn, "SLOW QUERY [#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{request[:query]} (#{Time.now - generation_time}) #{@response_size.to_s_bytes}" if Config.instance.is_slow?(Time.now - generation_time)
+
         reply
       rescue Exception => e
         trace :error, e.message
@@ -227,6 +234,9 @@ class Events
 
         # process the alert queue
         EM::PeriodicTimer.new(5) { EM.defer(proc{ Alerting.dispatch }) }
+
+        # calculate and save the stats
+        EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }
 
         # TODO: remove this
         #check_thread_pool

@@ -1,6 +1,7 @@
 require 'ffi'
 require 'stringio'
 require 'bson'
+require 'rbconfig'
 
 require 'rcs-common/trace'
 
@@ -12,7 +13,7 @@ module AMR
   extend FFI::Library
 
   base_path = File.dirname(__FILE__)
-  case RUBY_PLATFORM
+  case RbConfig::CONFIG['host_os']
     when /darwin/
   	  ffi_lib File.join(base_path, 'libs/amr/macos/libopencore-amrnb.0.dylib')
     when /mingw/

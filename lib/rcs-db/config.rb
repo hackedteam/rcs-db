@@ -9,6 +9,7 @@ require 'rcs-common/trace'
 require 'yaml'
 require 'pp'
 require 'optparse'
+require 'rbconfig'
 
 module RCS
 module DB
@@ -102,6 +103,11 @@ class Config
 
   def cert(name)
     return File.join Dir.pwd, CERT_DIR, @global[name].nil? ? name : @global[name]
+  end
+
+  def is_slow?(time)
+    return false if @global['SLOW'].nil? || @global['SLOW'] == 0
+    return time > @global['SLOW']
   end
 
   def safe_to_file
@@ -308,7 +314,7 @@ class Config
   end
 
   def change_router_service_parameter
-    return unless RUBY_PLATFORM =~ /mingw/
+    return unless RbConfig::CONFIG['host_os'] =~ /mingw/
     trace :info, "Changing the startup option of the Router Master"
     Win32::Registry::HKEY_LOCAL_MACHINE.open('SYSTEM\CurrentControlSet\services\RCSMasterRouter\Parameters', Win32::Registry::Constants::KEY_ALL_ACCESS) do |reg|
       original_value = reg['AppParameters']
@@ -328,7 +334,7 @@ class Config
 
   def self.mongo_exec_path(file)
     # select the correct dir based upon the platform we are running on
-    case RUBY_PLATFORM
+    case RbConfig::CONFIG['host_os']
       when /darwin/
         os = 'macos'
         ext = ''

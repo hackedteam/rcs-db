@@ -12,6 +12,7 @@ require 'ffi'
 require 'securerandom'
 require 'openssl'
 require 'digest/sha1'
+require 'rbconfig'
 
 module RCS
 module DB
@@ -26,7 +27,7 @@ module Hasp
   extend FFI::Library
 
   # we can use the HASP dongle only on windows
-  if RUBY_PLATFORM =~ /mingw/
+  if RbConfig::CONFIG['host_os'] =~ /mingw/
     ffi_lib File.join(Dir.pwd, 'bin/ruby_x64.dll')
 
      ffi_convention :stdcall
@@ -62,7 +63,7 @@ class Dongle
     def info
 
       # fake info for macos
-      return {serial: 'off', time: Time.now.getutc, oneshot: 0} if RUBY_PLATFORM =~ /darwin/
+      return {serial: 'off', time: Time.now.getutc, oneshot: 0} if RbConfig::CONFIG['host_os'] =~ /darwin/
 
       # our info to be returned
       info = {}
@@ -112,7 +113,7 @@ class Dongle
 
     def decrement
       # no dongle support for macos
-      return true if RUBY_PLATFORM =~ /darwin/
+      return true if RbConfig::CONFIG['host_os'] =~ /darwin/
 
       raise "No license left" unless 1 == Hasp.DC
     end

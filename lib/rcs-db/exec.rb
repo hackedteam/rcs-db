@@ -3,6 +3,7 @@
 #
 
 require 'rcs-common/trace'
+require 'rbconfig'
 
 module RCS
 module DB
@@ -36,7 +37,7 @@ class CrossPlatform
     
     def init
       # select the correct dir based upon the platform we are running on
-      case RUBY_PLATFORM
+      case RbConfig::CONFIG['host_os']
         when /darwin/
           @platform = 'osx'
           @ext = ''
