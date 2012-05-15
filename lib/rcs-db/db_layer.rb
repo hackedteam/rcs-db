@@ -12,6 +12,7 @@ require 'rcs-common/trace'
 require 'mysql2'
 require 'mongo'
 require 'mongoid'
+require 'rbconfig'
 
 # require all the DB objects
 Dir[File.dirname(__FILE__) + '/db_objects/*.rb'].each do |file|
@@ -178,6 +179,21 @@ class DB
     end
     # dump the signature for NIA, Anon etc to a file
     File.open(Config.instance.cert('rcs-network.sig'), 'wb') {|f| f.write Signature.where(scope: 'network').first.value}
+  end
+
+  def ensure_cn_resolution
+    return unless RbConfig::CONFIG['host_os'] =~ /mingw/
+
+    # make sure the CN is resolved properly in IPv4
+    content = File.open("C:\\windows\\system32\\drivers\\etc\\hosts", 'rb') {|f| f.read}
+
+    entry = "\n127.0.0.1\t#{Config.instance.global['CN']}"
+
+    unless content[entry]
+      trace :info, "Adding CN (#{Config.instance.global['CN']}) to /etc/hosts file"
+      content += entry
+      File.open("C:\\windows\\system32\\drivers\\etc\\hosts", 'wb') {|f| f.write content}
+    end
   end
 
   def load_cores
