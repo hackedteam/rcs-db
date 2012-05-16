@@ -3,13 +3,16 @@ TODO (daVinci 8.x.x):
 
     stats for worker
 
+    ip addresses of the sync
+
     use em-http-server in db and worker
 
     documentation of connectors
 
+
+
+
     fix collector tests
-
-
 
     mongo authentication
 

@@ -8,4 +8,4 @@ Collector:
 
 DB:
     - Fix for big evidence export
-    - ability to disable the position resolver
+    - Ability to disable the position resolver

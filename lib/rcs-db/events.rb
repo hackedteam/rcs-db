@@ -172,6 +172,9 @@ module HTTPHandler
       
       # keep the size of the reply to be used in the closing method
       @response_size = reply.headers['Content-length'] || 0
+
+      # update the connection statistics
+      StatsManager.instance.add data: @response_size
     end
 
     # Let the thread pool handle request
