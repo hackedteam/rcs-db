@@ -30,6 +30,9 @@ class Config
                     'HB_INTERVAL' => 15,
                     'WORKER_PORT' => 5150,
                     'BACKUP_DIR' => 'backup',
+                    'POSITION' => true,
+                    'PERF' => false,
+                    'SLOW' => 0,
                     'SHARD' => 'shard0000'}
 
   attr_reader :global
