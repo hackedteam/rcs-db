@@ -97,7 +97,7 @@ class BackupManager
       # create the backup of the collection (common)
       params[:coll].each do |coll|
         if coll == 'items'
-          command = mongodump + " -c #{coll} -q '#{params[:ifilter]}'"
+          command = mongodump + " -c #{coll} -q \"#{params[:ifilter]}\""
           trace :debug, "Backup: #{command}"
           ret = system command
           trace :debug, "Backup result: #{ret}"
@@ -112,7 +112,7 @@ class BackupManager
       end
 
       # gridfs entries linked to backed up collections
-      command = mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.files -q '#{params[:gfilter]}'"
+      command = mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.files -q \"#{params[:gfilter]}\""
       trace :debug, "Backup: #{command}"
       ret = system command
       trace :debug, "Backup result: #{ret}"
@@ -120,7 +120,7 @@ class BackupManager
 
       # use the same query to retrieve the chunk list
       params[:gfilter]['_id'] = 'files_id' unless params[:gfilter]['_id'].nil?
-      command = mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.chunks -q '#{params[:gfilter]}'"
+      command = mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.chunks -q \"#{params[:gfilter]}\""
       trace :debug, "Backup: #{command}"
       ret = system command
       trace :debug, "Backup result: #{ret}"
