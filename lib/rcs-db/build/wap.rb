@@ -126,6 +126,8 @@ class BuildWap < Build
           raise error + "modem not found"
         when 10
           raise error + "modem disconnected from the network"
+        when 11
+          raise error + "message too long to fit"
       end
     end
 

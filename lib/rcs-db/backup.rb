@@ -97,17 +97,34 @@ class BackupManager
       # create the backup of the collection (common)
       params[:coll].each do |coll|
         if coll == 'items'
-          system mongodump + " -c #{coll} -q '#{params[:ifilter]}'"
+          command = mongodump + " -c #{coll} -q '#{params[:ifilter]}'"
+          trace :debug, "Backup: #{command}"
+          ret = system command
+          trace :debug, "Backup result: #{ret}"
+          raise unless ret
         else
-          system mongodump + " -c #{coll}"
+          command = mongodump + " -c #{coll}"
+          trace :debug, "Backup: #{command}"
+          ret = system command
+          trace :debug, "Backup result: #{ret}"
+          raise unless ret
         end
       end
 
       # gridfs entries linked to backed up collections
-      system mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.files -q '#{params[:gfilter]}'"
+      command = mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.files -q '#{params[:gfilter]}'"
+      trace :debug, "Backup: #{command}"
+      ret = system command
+      trace :debug, "Backup result: #{ret}"
+      raise unless ret
+
       # use the same query to retrieve the chunk list
       params[:gfilter]['_id'] = 'files_id' unless params[:gfilter]['_id'].nil?
-      system mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.chunks -q '#{params[:gfilter]}'"
+      command = mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.chunks -q '#{params[:gfilter]}'"
+      trace :debug, "Backup: #{command}"
+      ret = system command
+      trace :debug, "Backup result: #{ret}"
+      raise unless ret
 
       Audit.log :actor => '<system>', :action => 'backup.end', :desc => "Backup #{backup.name} completed"
 
