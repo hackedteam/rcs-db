@@ -87,17 +87,20 @@ class BuildOSX < Build
       FileUtils.mv Config.instance.temp(params['input']), path('input')
 
       exe = ''
+      trace :debug, "Build: melting: searching for the executable into app..."
       # unzip the application and extract the executable file
       Zip::ZipFile.open(path('input')) do |z|
         z.each do |f|
           if f.name['.app/Contents/Info.plist']
-            puts f.name
             xml = z.file.open(f.name) {|x| x.read}
-            exe = Plist::parse_xml(xml)['CFBundleExecutable']
+            exe = Plist::parse_xml(xml.force_encoding('UTF-8'))['CFBundleExecutable']
             raise "cannot find CFBundleExecutable" if exe.nil?
             trace :debug, "Build: melting: executable provided into app is [#{exe}]"
           end
         end
+
+        raise "executable not found in the provided app" if exe == ''
+
         # rescan to search for the exe and extract it
         z.each do |f|
           if f.name["MacOS/#{exe}"]

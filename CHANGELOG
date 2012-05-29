@@ -4,8 +4,12 @@ Changelog for 8.0.5
 Collector:
     - Speed improvement in trasnferring the evidence to db
     - Backward compatibility fix for some old (pre 7.5) devices
-    - input/output statistics with rcs-collector-stats
+    - Input/Output statistics with rcs-collector-stats
 
 DB:
+    - Statistics with rcs-db-stats
     - Fix for big evidence export
     - Ability to disable the position resolver
+    - Fix for backup not backing up all the collections
+    - Fix for OSX melting with applications
+
