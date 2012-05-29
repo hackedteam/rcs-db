@@ -53,6 +53,7 @@ class LogMigration
         rescue Exception => e
           puts "EXCEPTION #{e.class} : #{e.message}"
           puts "BACKTRACE #{e.class} : " + e.backtrace.join("\n")
+          exit!
         end
         puts "#{@@total} logs (#{@@size.to_s_bytes}) migrated to evidence in #{Time.now - @@time} seconds"
         @@total = 0
@@ -73,6 +74,7 @@ class LogMigration
 	  buffered_targets = targets.to_a.dup
 	
     buffered_targets.each do |targ|
+      next if targ[:_mid].nil?
 
       if (@@start_target and @@start_target > targ[:_mid])
         puts "   + #{targ.name} Already Migrated"
@@ -98,6 +100,7 @@ class LogMigration
 	  buffered_agents = agents.to_a.dup
 	
     buffered_agents.each do |a|
+      next if a[:_mid].nil?
 
       if (@@start_agent and @@start_agent > a[:_mid])
         puts "      * #{a.name} Already Migrated"
@@ -304,7 +307,11 @@ class LogMigration
     end
 
     conversion.each_pair do |k, v|
-      data[v] = log[k]
+      if k == :longtext1 and log[k].bytesize > 2**20
+        data[v] = log[k].slice(0, 2**20)
+      else
+        data[v] = log[k]
+      end
     end
 
     # post processing for location parsing to new format

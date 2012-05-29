@@ -2,6 +2,7 @@
 require 'rcs-common/trace'
 
 require 'ffi'
+require 'rbconfig'
 
 module Speex
 	extend FFI::Library
@@ -43,7 +44,7 @@ module Speex
   
   begin
     base_path = File.dirname(__FILE__)
-	case RUBY_PLATFORM
+	case RbConfig::CONFIG['host_os']
         when /darwin/
 			ffi_lib File.join(base_path, 'libs/speex/macos/libspeex.1.5.0.dylib')
         when /mingw/

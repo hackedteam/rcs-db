@@ -81,6 +81,7 @@ class BuildISO < Build
       f.puts "HSYS=ndisk.sys"
       f.puts "HKEY=#{key}"
       f.puts "FUNC=" + funcname
+      f.puts "MASK=#{params['dump_mask']}"
     end
 
   end

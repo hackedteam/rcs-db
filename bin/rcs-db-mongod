@@ -1,10 +1,12 @@
 #!/usr/bin/env ruby
 
+require 'rbconfig'
+
 # ensure the working dir is correct
 Dir.chdir File.dirname(File.dirname(File.realpath(__FILE__)))
 
 # select the correct dir based upon the platform we are running on
-case RUBY_PLATFORM
+case RbConfig::CONFIG['host_os']
   when /darwin/
     os = 'macos'
     ext = ''

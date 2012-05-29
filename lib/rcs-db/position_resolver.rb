@@ -28,6 +28,9 @@ class PositionResolver
 
       begin
 
+        # skip resolution on request
+        return {'location' => {}, 'address' => {}} if Config.instance.global['POSITION'] == false
+
         # check for cached values (to avoid too many external request)
         cached = get_cache params
         if cached

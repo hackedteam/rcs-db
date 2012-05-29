@@ -29,7 +29,7 @@ class BuildController < RESTController
 
       trace :info, "Output: #{build.outputs} #{File.size(build.path(build.outputs.first)).to_s_bytes}"
 
-      #if RUBY_PLATFORM =~ /mingw/
+      #if RbConfig::CONFIG['host_os'] =~ /mingw/
       #  content = File.binread(build.path(build.outputs.first))
       #  build.clean
       #  return ok(content, {content_type: 'binary/octet-stream'})
