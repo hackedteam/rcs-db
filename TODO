@@ -5,12 +5,16 @@ TODO (daVinci 8.x.x):
 
     ip addresses of the sync
 
+    update license method
+
+    symbian configuration method
+
+    purge command
+
+
     use em-http-server in db and worker
 
     documentation of connectors
-
-
-
 
     fix collector tests
 
