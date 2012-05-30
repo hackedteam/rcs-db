@@ -5,5 +5,5 @@ Collector:
 
 
 DB:
-
+    - option to create a custom CA for certificates
 
