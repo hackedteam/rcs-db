@@ -13,6 +13,10 @@ TODO (daVinci 8.x.x):
 
     check the filesystem indexes and sorting (remove duplicates)
 
+    what happens if a connectors fail to write a log?
+
+    fix the crash on task streaming...
+
 
 
     use em-http-server in db and worker
