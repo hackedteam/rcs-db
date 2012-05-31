@@ -308,7 +308,7 @@ module RCS
             out[:content] << html_evidence_table_row(e)
 
             # add grid exports to queue
-            grid_dumps << {day: day, id: e[:data]['_grid'], file_name: dump_filename(day, e, opts[:target]), target: opts[:target]}
+            grid_dumps << {day: day, id: e[:data]['_grid'], file_name: dump_filename(day, e, opts[:target]), target: opts[:target]} unless e[:data]['_grid'].nil?
 
             # update the stat of the summary
             summary[day][hour] +=  1
