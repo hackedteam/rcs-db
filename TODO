@@ -5,11 +5,13 @@ TODO (daVinci 8.x.x):
 
     ip addresses of the sync
 
-    update license method
-
     symbian configuration method
 
     purge command
+
+    fix fake document with spaces
+
+    check the filesystem indexes and sorting (remove duplicates)
 
 
 

@@ -6,4 +6,7 @@ Collector:
 
 DB:
     - option to create a custom CA for certificates
+    - HASP drivers updated to 6.23
+    - utility to update the license file
+    - ability to change the license file form console
 

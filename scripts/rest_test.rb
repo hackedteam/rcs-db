@@ -1323,6 +1323,17 @@ if false
   
 end
 
+# license
+if false
+  # license.create
+  content = File.open("rcs.lic", "rb") {|f| f.read}
+  res = http.request_post('/license', content, {'Cookie' => cookie})
+  puts "license.create"
+  puts res.body
+  puts
+end
+
+
 
 # logout
 res = http.request_post('/auth/logout', nil, {'Cookie' => cookie})
