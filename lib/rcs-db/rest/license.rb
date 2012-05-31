@@ -44,6 +44,7 @@ class LicenseController < RESTController
     t = Time.now
     name = @session[:user][:_id].to_s + "-" + "%10.9f" % t.to_f
     path = Config.instance.temp(name)
+
     File.open(path, "wb+") { |f| f.write @request[:content]['content'] }
 
     # load the new license file
@@ -52,6 +53,7 @@ class LicenseController < RESTController
       FileUtils.rm_rf(path)
     rescue Exception => e
       trace :error, "Cannot load new license file: #{e.message}"
+      trace :error, "EXCEPTION:" + e.backtrace.join("\n")
       return bad_request("#{e.message}")
     end
 
