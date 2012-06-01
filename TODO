@@ -1,7 +1,12 @@
 
 TODO (daVinci 8.x.x):
 
-    stats for worker
+    the db crash is on filestream !!!!
+
+    fix the crash on task streaming...
+    fix fake document with spaces
+    fix the filesystem indexes and sorting
+
 
     ip addresses of the sync
 
@@ -9,13 +14,12 @@ TODO (daVinci 8.x.x):
 
     purge command
 
-    fix fake document with spaces
-
-    check the filesystem indexes and sorting (remove duplicates)
-
     what happens if a connectors fail to write a log?
 
-    fix the crash on task streaming...
+
+    public folder to install the console
+
+    stats for worker
 
 
 
@@ -23,7 +27,7 @@ TODO (daVinci 8.x.x):
 
     documentation of connectors
 
-    fix collector tests
+
 
     mongo authentication
 
