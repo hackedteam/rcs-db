@@ -9,4 +9,5 @@ DB:
     - HASP drivers updated to 6.23
     - utility to update the license file
     - ability to change the license file form console
+    - console can be installed by accessing: https://db_address/console
 

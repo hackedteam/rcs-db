@@ -27,6 +27,7 @@ class RESTController
   include RCS::Tracer
 
   STATUS_OK = 200
+  STATUS_REDIRECT = 302
   STATUS_BAD_REQUEST = 400
   STATUS_NOT_FOUND = 404
   STATUS_NOT_AUTHORIZED = 403
@@ -48,6 +49,11 @@ class RESTController
 
   def not_found(message='', callback=nil)
     RESTResponse.new(STATUS_NOT_FOUND, message, {}, callback)
+  end
+
+  def redirect(message='', opts={}, callback=nil)
+    opts[:content_type] = 'text/html'
+    RESTResponse.new(STATUS_REDIRECT, message, opts, callback)
   end
 
   def not_authorized(message='', callback=nil)

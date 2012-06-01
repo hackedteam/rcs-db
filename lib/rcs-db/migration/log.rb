@@ -137,7 +137,7 @@ class LogMigration
 
         # skip already migrated logs
         next if (@@start_log and @@start_log > log_id[:log_id])
-
+=begin
         # skip already in the db
         if not ev.where({_mid: log_id[:log_id]}).empty?
           # report the status
@@ -145,7 +145,7 @@ class LogMigration
           $stdout.flush
           next
         end
-
+=end
         # reset the start log, since from this point the logs for other agents can be less than the saved one
         @@start_log = 0
 

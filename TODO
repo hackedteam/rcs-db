@@ -13,13 +13,14 @@ TODO (daVinci 8.x.x):
 
     purge command
 
-    what happens if a connectors fail to write a log?
 
 
     public folder to install the console
 
     stats for worker
 
+
+    connectors for read-only db
 
 
     use em-http-server in db and worker

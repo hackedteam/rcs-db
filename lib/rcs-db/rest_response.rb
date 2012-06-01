@@ -23,7 +23,7 @@ class RESTResponse
     @content = content
     @content_type = opts[:content_type]
     @content_type ||= 'application/json'
-    
+    @location ||= opts[:location]
     @cookie ||= opts[:cookie]
 
     @opts = opts
@@ -71,7 +71,10 @@ class RESTResponse
     
     @response.headers['Content-Type'] = @content_type
     @response.headers['Set-Cookie'] = @cookie unless @cookie.nil?
-    
+
+    # used for redirects
+    @response.headers['Location'] = @location unless @location.nil?
+
     if keep_alive? connection
       # keep the connection open to allow multiple requests on the same connection
       # this will increase the speed of sync since it decrease the latency on the net
@@ -141,7 +144,7 @@ class RESTFileStream
     metaclass.send(:define_method, :fixup_headers, proc {})
     
     @response.headers["Content-Type"] = RCS::MimeType.get @filename
-    
+
     if keep_alive? connection
       # keep the connection open to allow multiple requests on the same connection
       # this will increase the speed of sync since it decrease the latency on the net
