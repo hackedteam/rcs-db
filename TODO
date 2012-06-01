@@ -5,7 +5,6 @@ TODO (daVinci 8.x.x):
 
     fix the crash on task streaming...
     fix fake document with spaces
-    fix the filesystem indexes and sorting
 
 
     ip addresses of the sync

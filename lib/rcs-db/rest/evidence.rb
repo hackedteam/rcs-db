@@ -417,9 +417,14 @@ class EvidenceController < RESTController
       filtering = Evidence.collection_class(target[:_id]).where({:type => 'filesystem'})
       filtering = filtering.any_in(:aid => [agent[:_id]]) unless agent.nil?
 
-      query = filtering.order_by([["data.path", :asc]])
+      # perform de-duplication and sorting at app-layer and not in mongo
+      # because the data set can be larger the mongo is able to handle
+      data = filtering.to_a
 
-      return ok(query)
+      data.uniq! {|x| x[:data]['path']}
+      data.sort! {|x, y| x[:data]['path'].downcase <=> y[:data]['path'].downcase}
+
+      return ok(data)
     end
   end
 

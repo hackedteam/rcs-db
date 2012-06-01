@@ -139,7 +139,12 @@ class LogMigration
         next if (@@start_log and @@start_log > log_id[:log_id])
 
         # skip already in the db
-        next unless ev.where({_mid: log_id[:log_id]}).empty?
+        if not ev.where({_mid: log_id[:log_id]}).empty?
+          # report the status
+          print "         #{current} of #{count}  %2.1f %% | #{processed}/sec  #{speed.to_s_bytes}/sec | #{@@size.to_s_bytes}      \r" % percentage
+          $stdout.flush
+          next
+        end
 
         # reset the start log, since from this point the logs for other agents can be less than the saved one
         @@start_log = 0
