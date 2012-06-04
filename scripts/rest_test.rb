@@ -1333,6 +1333,26 @@ if false
   puts
 end
 
+# symbian conf
+if false
+  # symbian.check
+  res = http.request_post('/build/symbian_conf', nil, {'Cookie' => cookie})
+  puts "symbian_conf.get"
+  puts res.body
+  puts
+
+  uids = ["20030635","200305D7","20030633","20030634","200316ED","200305DB"]
+  conf = {}
+  conf[:key] = "pippo"
+  conf[:uids] = uids
+  res = http.request_post('/build/symbian_conf', conf.to_json, {'Cookie' => cookie})
+  puts "symbian_conf.set"
+  puts res.body
+  puts
+
+
+end
+
 
 
 # logout

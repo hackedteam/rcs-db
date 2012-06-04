@@ -2,20 +2,17 @@
 TODO (daVinci 8.x.x):
 
     the db crash is on filestream !!!!
-
     fix the crash on task streaming...
     fix fake document with spaces
 
 
     ip addresses of the sync
 
-    symbian configuration method
-
     purge command
 
 
 
-    public folder to install the console
+    auth on public folder to install the console
 
     stats for worker
 
