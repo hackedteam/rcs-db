@@ -4,6 +4,7 @@ TODO (daVinci 8.x.x):
     the db crash is on filestream !!!!
     fix the crash on task streaming...
 
+    fix auth for shards
 
     ip addresses of the sync
 
