@@ -71,7 +71,7 @@ module Parser
     m[2]
   end
   
-  def prepare_request(method, uri, query, cookie, content_type, content)
+  def prepare_request(method, uri, query, content, http, peer)
     controller, uri_params = parse_uri uri
 
     params = parse_query_parameters query
@@ -85,11 +85,13 @@ module Parser
     request[:uri] = uri
     request[:params] = params
     request[:uri_params] = uri_params
-    request[:cookie] = guid_from_cookie(cookie)
+    request[:cookie] = guid_from_cookie(http[:cookie])
     # if not content_type is provided, default to urlencoded
     request[:content_type] = content_type || 'application/x-www-form-urlencoded'
     
+    request[:headers] = http
     request[:content] = content
+    request[:peer] = peer
     
     return request
   end

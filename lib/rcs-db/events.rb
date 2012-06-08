@@ -27,7 +27,7 @@ require 'net/http'
 module RCS
 module DB
 
-class HTTPHandler < EM::Http::Server
+class HTTPHandler < EM::HttpServer::Server
   include RCS::Tracer
   include Parser
 

@@ -22,12 +22,7 @@ class RESTResponse
 
     @cookie ||= opts[:cookie]
     
-    @callback=callback
-  end
-
-  def keep_alive?(connection)
-    http_headers = connection.instance_variable_get :@http_headers
-    http_headers.split("\x00").index {|h| h['Connection: keep-alive'] || h['Connection: Keep-Alive']}
+    @callback = callback
   end
 
   #
@@ -53,7 +48,7 @@ class RESTResponse
     @response.headers['Content-Type'] = @content_type
     @response.headers['Set-Cookie'] = @cookie unless @cookie.nil?
 
-    if keep_alive? connection
+    if request[:headers][:connection] && request[:headers][:connection].downcase == 'keep-alive'
       # keep the connection open to allow multiple requests on the same connection
       # this will increase the speed of sync since it decrease the latency on the net
       @response.keep_connection_open true
@@ -107,7 +102,7 @@ class RESTFileStream
     # RCS::MimeType (rcs-common)
     @response.headers["Content-Type"] = RCS::MimeType.get @filename
 
-    if keep_alive? connection
+    if request[:headers][:connection] && request[:headers][:connection].downcase == 'keep-alive'
       # keep the connection open to allow multiple requests on the same connection
       # this will increase the speed of sync since it decrease the latency on the net
       @response.keep_connection_open true

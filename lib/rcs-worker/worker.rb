@@ -20,8 +20,6 @@ end
 
 # from RCS::Common
 require 'rcs-common/trace'
-#require 'rcs-common/evidence'
-#require 'rcs-common/evidence_manager'
 require 'rcs-common/fixnum'
 
 # form System
@@ -30,38 +28,35 @@ require 'net/http'
 require 'optparse'
 
 require 'eventmachine'
-require 'evma_httpserver'
+require 'em-http-server'
+require 'socket'
 
 module RCS
 module Worker
 
-module HTTPHandler
+class HTTPHandler < EM::HttpServer::Server
   include RCS::Tracer
-  include EM::HttpServer
   include Parser
   
   attr_reader :peer
   attr_reader :peer_port
   
   def post_init
-    # don't forget to call super here !
-    super
-
-    # timeout on the socket
-    set_comm_inactivity_timeout 30
-
     @request_time = Time.now
 
-    # to speed-up the processing, we disable the CGI environment variables
-    self.no_environment_strings
-
-    # set the max content length of the POST
-    self.max_content_length = 200 * 1024 * 1024
-
     # get the peer name
-    @peer_port, @peer = Socket.unpack_sockaddr_in(get_peername)
-    @network_peer = @peer
-    trace :debug, "Connection from #{@network_peer}:#{@peer_port}"
+    if get_peername
+      @peer_port, @peer = Socket.unpack_sockaddr_in(get_peername)
+    else
+      @peer = 'unknown'
+      @peer_port = 0
+    end
+
+    trace :debug, "[#{@peer}] New connection from port #{@peer_port}"
+
+    # timeout on the socket
+    set_comm_inactivity_timeout 60
+
   end
 
   def closed?
@@ -74,18 +69,6 @@ module HTTPHandler
   end
 
   def process_http_request
-    # the http request details are available via the following instance variables:
-    #   @http_protocol
-    #   @http_request_method
-    #   @http_cookie
-    #   @http_if_none_match
-    #   @http_content_type
-    #   @http_path_info
-    #   @http_request_uri
-    #   @http_query_string
-    #   @http_post_content
-    #   @http_headers
-
     #trace :info, "[#{@peer}] Incoming HTTP Connection"
     size = @http_post_content.nil? ? 0 : @http_post_content.bytesize
     trace :debug, "[#{@peer}] REQ: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time}) #{size.to_s_bytes}"
@@ -105,10 +88,7 @@ module HTTPHandler
 
       begin
         # parse all the request params
-        request = prepare_request @http_request_method, @http_request_uri, @http_query_string, @http_cookie, @http_content_type, @http_post_content
-
-        request[:peer] = @peer
-        request[:headers] = @http_headers.split("\x00")
+        request = prepare_request @http_request_method, @http_request_uri, @http_query_string, @http_content, @http, @peer
 
         # get the correct controller
         controller = WorkerController.new

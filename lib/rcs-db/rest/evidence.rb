@@ -49,6 +49,7 @@ class EvidenceController < RESTController
       RCS::DB::EvidenceDispatcher.instance.notify id, shard_id, ident, instance
     rescue Exception => e
       trace :warn, "Cannot save evidence: #{e.message}"
+      trace :fatal, e.backtrace.join("\n")
       return not_found
     end
     
