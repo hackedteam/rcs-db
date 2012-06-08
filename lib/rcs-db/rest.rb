@@ -207,6 +207,11 @@ class RESTController
     end
   end
 
+  def require_basic_auth
+    puts @http.inspect
+    puts @request.inspect
+  end
+
   def admin?
     return @session[:level].include? :admin
   end

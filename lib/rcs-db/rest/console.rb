@@ -12,10 +12,12 @@ class ConsoleController < RESTController
   bypass_auth [:index, :show]
 
   def index
-
+    # sugar for the users to not force them to add the trailing /
     return http_redirect('/console/') unless @request[:uri].end_with?("/")
 
     return not_found unless File.exist?(Dir.pwd + '/console/index.html')
+
+    require_basic_auth
 
     # retrieve the latest console in the directory
     last_console = Dir[Dir.pwd + '/console/rcs-console*.air'].sort.last
