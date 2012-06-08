@@ -203,8 +203,8 @@ class Worker
         agent = Item.agents.where({ident: ident, instance: instance}).first
         unless agent.nil?
           target = agent.get_parent
-          calls = ::Evidence.collection_class(target[:_id].to_s).find({"type" => :call, "data.status" => :recording})
-          trace :info, "No calls left in recording state." unless calls.has_next?
+          calls = ::Evidence.collection_class(target[:_id].to_s).where({"type" => :call, "data.status" => :recording})
+          trace :info, "No calls left in recording state." unless calls.empty?
           calls.each do |c|
             trace :debug, "Call #{c} is now set to completed."
             c.update_attributes("data.status" => :completed)

@@ -87,7 +87,7 @@ module Parser
     request[:uri_params] = uri_params
     request[:cookie] = guid_from_cookie(http[:cookie])
     # if not content_type is provided, default to urlencoded
-    request[:content_type] = content_type || 'application/x-www-form-urlencoded'
+    request[:content_type] = http[:content_type] || 'application/x-www-form-urlencoded'
     
     request[:headers] = http
     request[:content] = content
