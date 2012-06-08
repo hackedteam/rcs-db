@@ -42,7 +42,7 @@ class Evidence
         index :blo
         shard_key :type, :da, :aid
 
-        STAT_EXCLUSION = ['info', 'filesystem']
+        STAT_EXCLUSION = ['filesystem', 'info', 'command', 'ip']
 
         protected
 
@@ -108,7 +108,7 @@ class Evidence
     raise "Target not found" if filter.nil?
 
     # copy remaining filtering criteria (if any)
-    filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info', 'command'])
+    filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info', 'command', 'ip'])
     filter.each_key do |k|
       filtering = filtering.any_in(k.to_sym => filter[k])
     end
@@ -124,7 +124,7 @@ class Evidence
     raise "Target not found" if filter.nil?
 
     # copy remaining filtering criteria (if any)
-    filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info', 'command'])
+    filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info', 'command', 'ip'])
     filter.each_key do |k|
       filtering = filtering.any_in(k.to_sym => filter[k])
     end

@@ -179,7 +179,26 @@ class EvidenceController < RESTController
     # check for alerts on this agent
     Alerting.new_sync agent
 
+    # remember the address of each sync
+    insert_sync_address(target, agent, @params['source'])
+
     return ok
+  end
+
+  def insert_sync_address(target, agent, address)
+
+    # resolv the position of the address
+    position = PositionResolver.get({'ip_address' => {'ipv4' => address}})
+
+    # add the evidence to the target
+    ev = Evidence.dynamic_new(target[:_id])
+    ev.type = 'ip'
+    ev.da = Time.now.getutc.to_i
+    ev.dr = Time.now.getutc.to_i
+    ev.aid = agent[:_id].to_s
+    ev[:data] = {content: address}
+    ev[:data] = ev[:data].merge(position)
+    ev.save
   end
 
   # used by the collector to update the synctime during evidence transfer
@@ -266,7 +285,7 @@ class EvidenceController < RESTController
       return not_found("Target or Agent not found") if filter.nil?
 
       # copy remaining filtering criteria (if any)
-      filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info', 'command'])
+      filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info', 'command', 'ip'])
       filter.each_key do |k|
         filtering = filtering.any_in(k.to_sym => filter[k])
       end
@@ -329,7 +348,7 @@ class EvidenceController < RESTController
       return not_found("Target or Agent not found") if filter.nil?
 
       # copy remaining filtering criteria (if any)
-      filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info', 'command'])
+      filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info', 'command', 'ip'])
       filter.each_key do |k|
         filtering = filtering.any_in(k.to_sym => filter[k])
       end
@@ -448,6 +467,29 @@ class EvidenceController < RESTController
       return ok(query)
     end
   end
+
+
+  def ips
+    require_auth_level :view, :tech
+
+    mongoid_query do
+
+      filter, filter_hash, target = ::Evidence.common_filter @params
+      return not_found("Target or Agent not found") if filter.nil?
+
+      # copy remaining filtering criteria (if any)
+      filtering = Evidence.collection_class(target[:_id]).where({:type => 'ip'})
+      filter.each_key do |k|
+        filtering = filtering.any_in(k.to_sym => filter[k])
+      end
+
+      # without paging, return everything
+      query = filtering.where(filter_hash).order_by([[:_id, :asc]])
+
+      return ok(query)
+    end
+  end
+
 
 end
 
