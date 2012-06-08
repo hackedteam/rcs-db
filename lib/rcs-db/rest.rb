@@ -12,6 +12,7 @@ require 'rcs-common/trace'
 # system
 require 'bson'
 require 'json'
+require 'base64'
 
 module RCS
 module DB
@@ -23,12 +24,20 @@ class NotAuthorized < StandardError
   end
 end
 
+class BasicAuthRequired < StandardError
+  def initialize
+    @message = "basic auth required for this uri"
+    super @message
+  end
+end
+
 class RESTController
   include RCS::Tracer
 
   STATUS_OK = 200
   STATUS_REDIRECT = 302
   STATUS_BAD_REQUEST = 400
+  STATUS_AUTH_REQUIRED = 401
   STATUS_NOT_FOUND = 404
   STATUS_NOT_AUTHORIZED = 403
   STATUS_CONFLICT = 409
@@ -58,6 +67,10 @@ class RESTController
 
   def not_authorized(message='', callback=nil)
     RESTResponse.new(STATUS_NOT_AUTHORIZED, message, {}, callback)
+  end
+
+  def auth_required(message='', callback=nil)
+    RESTResponse.new(STATUS_AUTH_REQUIRED, message, {}, callback)
   end
 
   def conflict(message='', callback=nil)
@@ -173,6 +186,9 @@ class RESTController
     rescue NotAuthorized => e
       trace :error, "[#{@request[:peer]}] Request not authorized: #{e.message}"
       return not_authorized(e.message)
+    rescue BasicAuthRequired => e
+      trace :error, "[#{@request[:peer]}] Request not authorized: #{e.message}"
+      return auth_required(e.message)
     rescue Exception => e
       trace :error, "Server error: #{e.message}"
       trace :fatal, "Backtrace   : #{e.backtrace}"
@@ -208,8 +224,27 @@ class RESTController
   end
 
   def require_basic_auth
-    puts @http.inspect
-    puts @request.inspect
+
+    # check if the headers contains the authentication
+    auth = @request[:headers][:authorization]
+    # no header
+    raise BasicAuthRequired.new if auth.nil?
+
+    type, encoded = auth.split(' ')
+
+    # check for bad requests
+    raise BasicAuthRequired.new if type.downcase != 'basic'
+
+    # parse the auth record
+    username, password = Base64.decode64(encoded).split(':')
+
+    user = User.where(name: username).first
+
+    raise BasicAuthRequired.new if user.nil? or not user.enabled
+
+    raise BasicAuthRequired.new unless user.verify_password(password)
+
+    trace :info, "Auth granted for user #{username} to #{@request[:uri]}"
   end
 
   def admin?

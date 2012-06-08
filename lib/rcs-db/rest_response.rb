@@ -67,6 +67,8 @@ class RESTResponse
     @response.headers['Content-Type'] = @content_type
     @response.headers['Set-Cookie'] = @cookie unless @cookie.nil?
 
+    @response.headers['WWW-Authenticate'] = "Basic realm=\"Secure Area\"" if @response.status == RCS::DB::RESTController::STATUS_AUTH_REQUIRED
+
     # used for redirects
     @response.headers['Location'] = @location unless @location.nil?
 

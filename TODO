@@ -6,6 +6,8 @@ TODO (daVinci 8.x.x):
 
     fix worker on move or delete
 
+    fix cursor expiration on evidence move
+
     purge command
 
 

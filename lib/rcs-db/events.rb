@@ -116,8 +116,7 @@ class HTTPHandler < EM::Http::Server
         request[:time] = @request_time
 
         # get the correct controller
-        controller = CollectorController.new
-        controller.request = request
+        controller = HTTPHandler.restcontroller.get request
 
         # do the dirty job :)
         responder = controller.act!
