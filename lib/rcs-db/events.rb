@@ -113,6 +113,7 @@ class HTTPHandler < EM::Http::Server
       begin
         # parse all the request params
         request = prepare_request @http_request_method, @http_request_uri, @http_query_string, @http_content, @http, @peer
+        request[:time] = @request_time
 
         # get the correct controller
         controller = CollectorController.new

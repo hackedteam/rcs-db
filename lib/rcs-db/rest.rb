@@ -125,7 +125,7 @@ class RESTController
       RESTController.sessionmanager.update(@request[:cookie])
       #trace :debug, "Refreshing session for #{@session[:user][:name]}"
     end
-    
+
     # methods without authentication
     # class XXXXController < RESTController
     #
