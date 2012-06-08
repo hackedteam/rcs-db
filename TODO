@@ -3,7 +3,6 @@ TODO (daVinci 8.x.x):
 
     the db crash is on filestream !!!!
     fix the crash on task streaming...
-    fix fake document with spaces
 
 
     ip addresses of the sync
