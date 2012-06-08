@@ -5,13 +5,15 @@ gem "rcs-common", ">= 8.0.5", :path => "../rcs-common"
 
 gem 'em-http-request'
 gem 'em-websocket'
+gem 'em-http-server'
+
 gem 'eventmachine', ">= 1.0.0.beta.4"
-gem 'eventmachine_httpserver', ">= 0.2.2", :git => "git://github.com/alor/evma_httpserver.git", :branch => "master"
 
 # TAR/GZIP compression
 gem "minitar", ">= 0.5.5", :git => "git://github.com/danielemilan/minitar.git", :branch => "master"
 
 gem 'rubyzip', ">= 0.9.5"
+
 gem 'bcrypt-ruby'
 gem 'plist'
 gem 'uuidtools'
@@ -25,9 +27,17 @@ gem 'mongo', "= 1.6.1", :git => "git://github.com/danielemilan/mongo-ruby-driver
 gem 'mongoid'
 gem 'bson', "= 1.6.1"
 gem 'bson_ext', "= 1.6.1"
-# to be removed after migration from 7.0
-gem 'mysql2', "= 0.3.3"
-gem 'xml-simple'
+
+platforms :jruby do
+  gem 'json'
+  gem 'jruby-openssl'
+end
+
+platforms :ruby do
+  # to be removed after migration from 7.0
+  gem 'mysql2', "= 0.3.3"
+  gem 'xml-simple'
+end
 
 # Add dependencies to develop your gem here.
 # Include everything needed to run rake, tests, features, etc.

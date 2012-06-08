@@ -16,8 +16,6 @@ require 'em-http-request'
 require 'time'
 require 'json'
 
-require 'rocketamf'
-
 class BSON::ObjectId
   def encode_amf ser
     ser.serialize 3, self.to_s
@@ -304,6 +302,7 @@ class EvidenceController < RESTController
     end
   end
 
+=begin
   def index_amf
     require_auth_level :view
 
@@ -338,6 +337,7 @@ class EvidenceController < RESTController
       return ok(amf, {content_type: 'binary/octet-stream', gzip: true})
     end
   end
+=end
 
   def count
     require_auth_level :view

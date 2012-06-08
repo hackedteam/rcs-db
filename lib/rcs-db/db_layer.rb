@@ -9,7 +9,7 @@ require_relative 'config'
 require 'rcs-common/trace'
 
 # system
-require 'mysql2'
+require 'mysql2' unless RUBY_PLATFORM =~ /java/
 require 'mongo'
 require 'mongoid'
 require 'rbconfig'
@@ -33,7 +33,8 @@ class DB
     @auth_user = 'root'
     @auth_pass = File.binread(Config.instance.file('mongodb.key')) if File.exist?(Config.instance.file('mongodb.key'))
   end
-  
+
+unless RUBY_PLATFORM =~ /java/
   def mysql_connect(user, pass, host)
     begin
       @mysql = Mysql2::Client.new(:host => host, :username => user, :password => pass, :database => 'rcs')
@@ -69,7 +70,8 @@ class DB
       s.replace @mysql.escape(s) if s.class == String
     end
   end
-  
+end
+
   # MONGO
   
   def connect
