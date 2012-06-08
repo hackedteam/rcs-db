@@ -112,10 +112,21 @@ class DB
 
   def ensure_mongo_auth
     # don't create the users if already there
-    return if @auth_required
-    # ensure the users are created, so the next time it will not fail
+    #return if @auth_required
+
+    # ensure the users are created on master
     ['rcs', 'admin', 'config'].each do |name|
+      trace :debug, "Setting up auth for: #{name}"
       db = new_connection(name)
+      db.eval("db.addUser('#{@auth_user}', '#{@auth_pass}')")
+    end
+
+    # ensure the users are created on each shard
+    shards = Shard.all
+    shards['shards'].each do |shard|
+      trace :debug, "Setting up auth for: #{shard['host']}"
+      host, port = shard['host'].split(':')
+      db = new_connection('rcs', host, port.to_i)
       db.eval("db.addUser('#{@auth_user}', '#{@auth_pass}')")
     end
   end
