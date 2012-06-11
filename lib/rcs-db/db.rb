@@ -34,6 +34,7 @@ class Application
 
     # ensure the log directory is present
     Dir::mkdir(Dir.pwd + '/log') if not File.directory?(Dir.pwd + '/log')
+    Dir::mkdir(Dir.pwd + '/log/err') if not File.directory?(Dir.pwd + '/log/err')
 
     # initialize the tracing facility
     begin
