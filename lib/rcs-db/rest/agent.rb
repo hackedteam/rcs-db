@@ -635,7 +635,8 @@ class AgentController < RESTController
         when 'GET'
           return ok(agent.purge)
         when 'POST'
-          agent.download_requests.create(@params['purge'])
+          agent.purge = @params['purge']
+          agent.save
           trace :info, "[#{@request[:peer]}] Added purge request #{@params['purge']}"
           Audit.log :actor => @session[:user][:name], :action => "agent.purge", :desc => "Added a purge request for agent '#{agent['name']}'"
         when 'DELETE'
