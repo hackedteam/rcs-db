@@ -2,7 +2,7 @@
 Changelog for 8.0.6
 
 Collector:
-
+    - purge command (on request) for agents with evidence too old
 
 DB:
     - option to create a custom CA for certificates

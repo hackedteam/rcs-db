@@ -625,6 +625,29 @@ class AgentController < RESTController
     end
   end
 
+  def purge
+    require_auth_level :server, :tech, :view
+
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+
+      case @request[:method]
+        when 'GET'
+          return ok(agent.purge)
+        when 'POST'
+          agent.download_requests.create(@params['purge'])
+          trace :info, "[#{@request[:peer]}] Added purge request #{@params['purge']}"
+          Audit.log :actor => @session[:user][:name], :action => "agent.purge", :desc => "Added a purge request for agent '#{agent['name']}'"
+        when 'DELETE'
+          agent.purge = [0, 0]
+          agent.save
+          trace :info, "[#{@request[:peer]}] Purge command reset"
+      end
+
+      return ok
+    end
+  end
+
 end
 
 end #DB::
