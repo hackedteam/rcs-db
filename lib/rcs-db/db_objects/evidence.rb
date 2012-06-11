@@ -207,7 +207,7 @@ class Evidence
     date ||= 'da'
 
     # do not account for filesystem and info evidences
-    filter_hash["type"] = {"$nin" => ["filesystem", "info"]} unless filter['type']
+    filter_hash["type"] = {"$nin" => ['filesystem', 'info', 'command', 'ip']} unless filter['type']
 
     filter_hash[date] = Hash.new
     filter_hash[date]["$gte"] = filter.delete('from') if filter.has_key? 'from'
