@@ -10,21 +10,22 @@ TODO (daVinci 8.x.x):
 
     purge command
 
-    filesystem not by default
-
-
-    auth on public folder to install the console
 
     stats for worker
+
+    collector deletion of file
+
+    exploit auto-extract zip
+
+--------------------------------------
+
 
 
     connectors for read-only db
 
-
-    use em-http-server in db and worker
-
     documentation of connectors
 
+======================================
 
     mongo authentication
 

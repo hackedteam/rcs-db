@@ -275,9 +275,6 @@ class Evidence
 
       total = total - chunk_size
       trace :info, "Evidence Move: #{total} left to move for agent #{agent.name} to target #{target.name}" unless total < 0
-
-      raise "testing exception"
-
     end
 
     trace :info, "Evidence Move: completed for #{agent.name}"

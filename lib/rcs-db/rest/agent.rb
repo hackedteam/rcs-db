@@ -607,9 +607,8 @@ class AgentController < RESTController
 
       case @request[:method]
         when 'POST'
-          
+
           if @params['filesystem'] == 'default'
-            # add default requests for the filesystem
             agent.add_default_filesystem_requests
           else
             agent.filesystem_requests.create(@params['filesystem'])
