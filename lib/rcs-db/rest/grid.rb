@@ -8,6 +8,8 @@ class GridController < RESTController
   def show
     require_auth_level :tech, :view
 
+    return bad_request('invalid ObjectId') if @params['_id'].nil? or @params['_id'] == 'null'
+
     return stream_grid(BSON::ObjectId.from_string(@params['_id']), @params['target_id'])
   end
 

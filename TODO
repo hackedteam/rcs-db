@@ -6,7 +6,7 @@ TODO (daVinci 8.x.x):
 
     fix worker on move or delete
 
-    fix cursor expiration on evidence move
+    fix utf-8 encoding in export
 
     purge command
 

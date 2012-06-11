@@ -241,32 +241,46 @@ class Evidence
 
     evidences = Evidence.collection_class(old_target[:_id]).where(:aid => agent[:_id])
 
-    trace :info, "Moving #{evidences.count} evidence for agent #{agent.name} to target #{target.name}"
+    total = evidences.count
+    chunk_size = 500
+    trace :info, "Evidence Move: #{total} to be moved for agent #{agent.name} to target #{target.name}"
 
-    # copy the new evidence
-    evidences.each do |old_ev|
-      # deep copy the evidence from one collection to the other
-      new_ev = Evidence.dynamic_new(target[:_id])
-      Evidence.deep_copy(old_ev, new_ev)
+    # move the evidence in chunks to prevent cursor expiration on mongodb
+    until evidences.count == 0 do
 
-      # move the binary content
-      if old_ev.data['_grid']
-        bin = RCS::DB::GridFS.get(old_ev.data['_grid'], old_target[:_id].to_s)
-        new_ev.data['_grid'] = RCS::DB::GridFS.put(bin, {filename: agent[:_id].to_s}, target[:_id].to_s) unless bin.nil?
-        new_ev.data['_grid_size'] = old_ev.data['_grid_size']
+      evidences = Evidence.collection_class(old_target[:_id]).where(:aid => agent[:_id]).limit(chunk_size)
+
+      # copy the new evidence
+      evidences.each do |old_ev|
+        # deep copy the evidence from one collection to the other
+        new_ev = Evidence.dynamic_new(target[:_id])
+        Evidence.deep_copy(old_ev, new_ev)
+
+        # move the binary content
+        if old_ev.data['_grid']
+          bin = RCS::DB::GridFS.get(old_ev.data['_grid'], old_target[:_id].to_s)
+          new_ev.data['_grid'] = RCS::DB::GridFS.put(bin, {filename: agent[:_id].to_s}, target[:_id].to_s) unless bin.nil?
+          new_ev.data['_grid_size'] = old_ev.data['_grid_size']
+        end
+
+        # save the new one
+        new_ev.save
+
+        # delete the old one. NOTE CAREFULLY:
+        # we use delete + explicit grid, since the callback in the destroy will fail
+        # because the parent of aid in the evidence is already the new one
+        old_ev.delete
+        RCS::DB::GridFS.delete(old_ev.data['_grid'], old_target[:_id].to_s) unless old_ev.data['_grid'].nil?
       end
 
-      # save the new one
-      new_ev.save
+      total = total - chunk_size
+      trace :info, "Evidence Move: #{total} left to move for agent #{agent.name} to target #{target.name}" unless total < 0
 
-      # delete the old one. NOTE CAREFULLY:
-      # we use delete + explicit grid, since the callback in the destroy will fail
-      # because the parent of aid in the evidence is already the new one
-      old_ev.delete
-      RCS::DB::GridFS.delete(old_ev.data['_grid'], old_target[:_id].to_s) unless old_ev.data['_grid'].nil?
+      raise "testing exception"
+
     end
 
-    trace :info, "Moving finished for #{agent._kind} #{agent.name}"
+    trace :info, "Evidence Move: completed for #{agent.name}"
   end
 
 end
