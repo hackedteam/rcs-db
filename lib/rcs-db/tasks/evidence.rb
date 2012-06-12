@@ -307,8 +307,13 @@ module RCS
             # write the current evidence
             out[:content] << html_evidence_table_row(e)
 
-            # add grid exports to queue
-            grid_dumps << {day: day, id: e[:data]['_grid'], file_name: dump_filename(day, e, opts[:target]), target: opts[:target]}
+            # if the log does not have grid, yield it now, else add to the queue (it will be yielded later)
+            if e[:data]['_grid'].nil?
+              yield
+            else
+              # add grid exports to queue
+              grid_dumps << {day: day, id: e[:data]['_grid'], file_name: dump_filename(day, e, opts[:target]), target: opts[:target]}
+            end
 
             # update the stat of the summary
             summary[day][hour] +=  1

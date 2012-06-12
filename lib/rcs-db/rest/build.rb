@@ -42,6 +42,38 @@ class BuildController < RESTController
 
   end
 
+
+  def symbian_conf
+    require_auth_level :tech
+
+    unless @params.empty?
+      if File.exist? Config.instance.temp(@params['key'])
+        FileUtils.cp Config.instance.temp(@params['key']), Config.instance.cert('symbian.key')
+        FileUtils.rm_rf Config.instance.temp(@params['key'])
+      end
+      if not @params['uids'].empty?
+        File.open(Config.instance.cert("symbian.yaml"), 'wb') {|f| f.write @params['uids'].to_yaml}
+      end
+    end
+
+    # retrieve the current conf and return it
+    current_conf = {}
+    current_conf[:key] = File.exist? Config.instance.cert('symbian.key')
+
+    if File.exist? Config.instance.cert('symbian.yaml')
+      yaml = File.open(Config.instance.cert("symbian.yaml"), 'rb') {|f| f.read}
+      uids = YAML.load(yaml)
+
+      # the UIDS must be 8 chars (padded with zeros)
+      uids.collect! {|u| u.rjust(8, '0')}
+      current_conf[:uids] = uids
+    else
+      current_conf[:uids] = []
+    end
+
+    return ok(current_conf)
+  end
+
 end
 
 end #DB::

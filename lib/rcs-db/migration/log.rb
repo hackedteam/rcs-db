@@ -89,7 +89,7 @@ class LogMigration
   def self.migrate_single_target(act, targ)
 
     Mongoid.identity_map_enabled = false
-    Mongoid.persist_in_safe_mode = false
+    Mongoid.persist_in_safe_mode = true
 
     # the collection for this target
     ev = Evidence.collection_class(targ._id)
@@ -137,7 +137,15 @@ class LogMigration
 
         # skip already migrated logs
         next if (@@start_log and @@start_log > log_id[:log_id])
-
+=begin
+        # skip already in the db
+        if not ev.where({_mid: log_id[:log_id]}).empty?
+          # report the status
+          print "         #{current} of #{count}  %2.1f %% | #{processed}/sec  #{speed.to_s_bytes}/sec | #{@@size.to_s_bytes}      \r" % percentage
+          $stdout.flush
+          next
+        end
+=end
         # reset the start log, since from this point the logs for other agents can be less than the saved one
         @@start_log = 0
 
@@ -148,7 +156,10 @@ class LogMigration
           puts "LOGID: #{log_id[:log_id]} ERROR: #{e.message}"
           next
         end
-		
+
+        # dont' migrate UPLOAD evidences
+        next if log[:type] == 'UPLOAD'
+
         this_size = log[:longblob1].size + log[:longtext1].size + log[:varchar1].size + log[:varchar2].size + log[:varchar3].size + log[:varchar4].size
         size += this_size
         @@size += this_size
@@ -163,9 +174,6 @@ class LogMigration
           prev_current = current
           size = 0
         end
-
-        # dont' migrate UPLOAD evidences
-        next if log[:type] == 'UPLOAD'
 
         # persist the current log
         me = migrate_single_log(ev, log, targ._id, a[:_id])

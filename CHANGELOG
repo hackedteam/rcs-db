@@ -1,15 +1,17 @@
 
-Changelog for 8.0.5
+Changelog for 8.0.6
 
 Collector:
-    - Speed improvement in trasnferring the evidence to db
-    - Backward compatibility fix for some old (pre 7.5) devices
-    - Input/Output statistics with rcs-collector-stats
+    - purge command (on request) for agents with evidence too old
+    - auto-compact of the evidence database to keep disk usage low
 
 DB:
-    - Statistics with rcs-db-stats
-    - Fix for big evidence export
-    - Ability to disable the position resolver
-    - Fix for backup not backing up all the collections
-    - Fix for OSX melting with applications
-
+    - option to create a custom CA for certificates
+    - HASP drivers updated to 6.23
+    - stats for the worker (rcs-worker-stats)
+    - utility to update the license file
+    - ability to change the license file form console
+    - console can be installed by accessing: https://db_address/console
+    - the filesystem of the agent is not retrieved by default, you have to schedule it
+    - fix for the evidence move while moving active targets
+    - fix for the status check of the shards

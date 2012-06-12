@@ -1,22 +1,26 @@
 
 TODO (daVinci 8.x.x):
 
-    stats for worker
+    the db crash is on filestream !!!!
+    fix the crash on task streaming...
 
-    ip addresses of the sync
+    fix worker on move or delete
 
-    update license method
+    fix utf-8 encoding in export
 
-    symbian configuration method
+    connectors for audio
 
-    purge command
+    collector deletion of file
 
+    exploit auto-extract zip
 
-    use em-http-server in db and worker
+--------------------------------------
+
+    connectors for read-only db
 
     documentation of connectors
 
-    fix collector tests
+======================================
 
     mongo authentication
 

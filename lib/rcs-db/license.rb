@@ -76,47 +76,47 @@ class LicenseManager
                :collectors => {:collectors => 1, :anonymizers => 0}}
   end
 
-  def load_license
+  def load_license(periodic = false)
 
     # load the license file
     lic_file = File.join Dir.pwd, Config::CONF_DIR, LICENSE_FILE
 
-    if File.exist? lic_file
-      trace :info, "Loading license limits #{lic_file}"
-
-      File.open(lic_file, "rb") do |f|
-        lic = YAML.load(f.read)
-
-        # check the autenticity of the license
-        unless crypt_check(lic)
-          trace :fatal, 'Invalid License File: corrupted integrity check'
-          exit!
-        end
-
-        # the license is not for this version
-        if lic[:version] != LICENSE_VERSION
-          trace :fatal, 'Invalid License File: incorrect version'
-          exit!
-        end
-
-        # use local time if the dongle presence is not enforced
-        if @limits[:serial] == 'off'
-          time = Time.now.getutc
-        else
-          time = Dongle.time
-        end
-
-        if not lic[:expiry].nil? and Time.parse(lic[:expiry]).getutc < time
-          trace :fatal, "Invalid License File: license expired on #{Time.parse(lic[:expiry]).getutc}"
-          exit!
-        end
-
-        # load only licenses valid for the current dongle's serial and current version
-        add_limits lic
-      end
-    else
+    unless File.exist? lic_file
       trace :fatal, "No license file found"
       exit!
+    end
+
+    trace :info, "Loading license limits #{lic_file}" unless periodic
+
+    File.open(lic_file, "rb") do |f|
+      lic = YAML.load(f.read)
+
+      # check the autenticity of the license
+      unless crypt_check(lic)
+        trace :fatal, 'Invalid License File: corrupted integrity check'
+        exit!
+      end
+
+      # the license is not for this version
+      if lic[:version] != LICENSE_VERSION
+        trace :fatal, 'Invalid License File: incorrect version'
+        exit!
+      end
+
+      # use local time if the dongle presence is not enforced
+      if @limits[:serial] == 'off'
+        time = Time.now.getutc
+      else
+        time = Dongle.time
+      end
+
+      if not lic[:expiry].nil? and Time.parse(lic[:expiry]).getutc < time
+        trace :fatal, "Invalid License File: license expired on #{Time.parse(lic[:expiry]).getutc}"
+        exit!
+      end
+
+      # load only licenses valid for the current dongle's serial and current version
+      add_limits lic
     end
 
     # sanity check
@@ -134,7 +134,7 @@ class LicenseManager
         raise 'Invalid License File: incorrect serial number' if @limits[:serial] != info[:serial]
         raise 'Cannot read storage from token' if @limits[:type] == 'oneshot' && (info[:error_code] == Dongle::ERROR_LOGIN || info[:error_code] == Dongle::ERROR_STORAGE)
       else
-        trace :info, "Hardware dongle not required..."
+        trace :info, "Hardware dongle not required..." unless periodic
       end
     rescue Exception => e
       trace :fatal, e.message
@@ -144,6 +144,43 @@ class LicenseManager
     return true
   end
 
+  def new_license(file)
+
+    raise "file not found" unless File.exist? file
+
+    trace :info, "Loading new license file #{file}"
+
+    content = File.open(file, "rb") {|f| f.read}
+    lic = YAML.load(content)
+
+    # check the autenticity of the license
+    unless crypt_check(lic)
+      raise 'Invalid License File: corrupted integrity check'
+    end
+
+    # the license is not for this version
+    if lic[:version] != LICENSE_VERSION
+      raise 'Invalid License File: incorrect version'
+    end
+
+    if lic[:serial] != 'off'
+      trace :info, "Checking for hardware dongle..."
+      # get the version from the dongle (can rise exception)
+      info = Dongle.info
+      trace :info, "Dongle info: " + info.inspect
+      raise 'Invalid License File: incorrect serial number' if lic[:serial] != info[:serial]
+      raise 'Cannot read storage from token' if lic[:type] == 'oneshot' && (info[:error_code] == Dongle::ERROR_LOGIN || info[:error_code] == Dongle::ERROR_STORAGE)
+    else
+      trace :info, "Hardware dongle not required..."
+    end
+
+    # save the new license file
+    lic_file = File.join Dir.pwd, Config::CONF_DIR, LICENSE_FILE
+    File.open(lic_file, "wb") {|f| f.write content}
+
+    trace :info, "New license file saved"
+  end
+
   def add_limits(limit)
     @limits[:type] = limit[:type]
     @limits[:serial] = limit[:serial]
@@ -151,11 +188,11 @@ class LicenseManager
     @limits[:expiry] = Time.parse(limit[:expiry]).getutc unless limit[:expiry].nil?
     @limits[:maintenance] = Time.parse(limit[:maintenance]).getutc unless limit[:maintenance].nil?
 
-    @limits[:users] = limit[:users] if limit[:users] > @limits[:users]
+    @limits[:users] = limit[:users]
 
-    @limits[:agents][:total] = limit[:agents][:total] if limit[:agents][:total] > @limits[:agents][:total]
-    @limits[:agents][:mobile] = limit[:agents][:mobile] if limit[:agents][:mobile] > @limits[:agents][:mobile]
-    @limits[:agents][:desktop] = limit[:agents][:desktop] if limit[:agents][:desktop] > @limits[:agents][:desktop]
+    @limits[:agents][:total] = limit[:agents][:total]
+    @limits[:agents][:mobile] = limit[:agents][:mobile]
+    @limits[:agents][:desktop] = limit[:agents][:desktop]
 
     @limits[:agents][:windows] = limit[:agents][:windows]
     @limits[:agents][:osx] = limit[:agents][:osx]
@@ -166,20 +203,21 @@ class LicenseManager
     @limits[:agents][:blackberry] = limit[:agents][:blackberry]
     @limits[:agents][:android] = limit[:agents][:android]
     
-    @limits[:nia] = limit[:nia]
-    @limits[:collectors][:collectors] = limit[:collectors][:collectors] if limit[:collectors][:collectors] > @limits[:collectors][:collectors]
-    @limits[:collectors][:anonymizers] = limit[:collectors][:anonymizers] if limit[:collectors][:anonymizers] > @limits[:collectors][:anonymizers]
-    
-    @limits[:alerting] = true if limit[:alerting] 
-    @limits[:correlation] = true if limit[:correlation]
-    @limits[:connectors] = true if limit[:connectors]
-    @limits[:rmi] = limit[:rmi]
+    @limits[:collectors][:collectors] = limit[:collectors][:collectors] unless limit[:collectors][:collectors].nil?
+    @limits[:collectors][:anonymizers] = limit[:collectors][:anonymizers] unless limit[:collectors][:anonymizers].nil?
 
-    @limits[:shards] = limit[:shards] if limit[:shards] > @limits[:shards]
-    @limits[:exploits] = limit[:exploits]
+    @limits[:nia] = limit[:nia] unless limit[:nia].nil?
 
-    @limits[:deletion] = true if limit[:deletion]
-    @limits[:archive] = true if limit[:archive]
+    @limits[:alerting] = limit[:alerting] unless limit[:alerting].nil?
+    @limits[:correlation] = limit[:correlation] unless limit[:correlation].nil?
+    @limits[:connectors] = limit[:connectors] unless limit[:connectors].nil?
+    @limits[:rmi] = limit[:rmi] unless limit[:rmi].nil?
+
+    @limits[:shards] = limit[:shards] unless limit[:shards].nil?
+    @limits[:exploits] = limit[:exploits] unless limit[:exploits].nil?
+
+    @limits[:deletion] = limit[:deletion] unless limit[:deletion].nil?
+    @limits[:archive] = limit[:archive] unless limit[:archive].nil?
   end
 
   
@@ -301,18 +339,9 @@ class LicenseManager
 
   def periodic_check
     begin
-      # get the serial of the dongle.
-      # this will raise an exception if the dongle is not found
-      # we have to stop the process in this case
-      unless @limits[:serial] == 'off'
-        info = Dongle.info
-        raise 'Invalid Dongle: incorrect serial number' if @limits[:serial] != info[:serial]
 
-        # check license expiration
-        if not @limits[:expiry].nil? and @limits[:expiry] < info[:time]
-          raise "license expired on #{Time.parse(@limits[:expiry]).getutc}"
-        end
-      end
+      # periodically check for license file
+      load_license(true)
 
       # check the consistency of the database (if someone tries to tamper it)
       if ::User.count(conditions: {enabled: true}) > @limits[:users]
@@ -448,17 +477,20 @@ class LicenseManager
   end
 
   def run(options)
+
+    # save the new file if requested
+    new_license(options[:new_license]) if options[:new_license]
+
     # load the license file
     load_license
 
+    # print the current license
     pp Dongle.info if @limits[:serial] != 'off'
-
     pp @limits
 
     return 0
   rescue Exception => e
     trace :fatal, "Cannot load license: #{e.message}"
-    trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
     return 1
   end
 
@@ -478,6 +510,10 @@ class LicenseManager
     optparse = OptionParser.new do |opts|
       # Set a banner, displayed at the top of the help screen.
       opts.banner = "Usage: rcs-db-license [options]"
+
+      opts.on( '-n', '--new FILE', String, 'Load a new license file into the system' ) do |file|
+        options[:new_license] = file
+      end
 
       # This displays the help screen
       opts.on( '-h', '--help', 'Display this screen' ) do

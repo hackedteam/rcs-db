@@ -34,6 +34,34 @@ class LicenseController < RESTController
     return ok(LicenseManager.instance.counters)
   end
 
+  def create
+    require_auth_level :admin
+
+    # ensure the temp dir is present
+    Dir::mkdir(Config.instance.temp) if not File.directory?(Config.instance.temp)
+
+    # write to a temporary file
+    t = Time.now
+    name = @session[:user][:_id].to_s + "-" + "%10.9f" % t.to_f
+    path = Config.instance.temp(name)
+
+    File.open(path, "wb+") { |f| f.write @request[:content]['content'] }
+
+    # load the new license file
+    begin
+      LicenseManager.instance.new_license(path)
+      FileUtils.rm_rf(path)
+    rescue Exception => e
+      trace :error, "Cannot load new license file: #{e.message}"
+      trace :error, "EXCEPTION:" + e.backtrace.join("\n")
+      return bad_request("#{e.message}")
+    end
+
+    Audit.log :actor => @session[:user][:name], :action => 'license.create', :desc => "Updated the license file"
+
+    return ok
+  end
+
 end
 
 end #DB::

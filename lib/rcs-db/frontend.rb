@@ -26,7 +26,7 @@ class Frontend
 
       # send the push request
       http = Net::HTTP.new(nc.address, 80)
-      resp = http.request_put("/RCS-NC_#{address}", '', headers)
+      resp = http.send_request('PUSH', "#{address}", '', headers)
 
       return false unless resp.body == "OK"
       
@@ -78,7 +78,7 @@ class Frontend
 
       # send the push request
       http = Net::HTTP.new(collector.address, 80)
-      http.send_request('HEAD', "/#{method}/#{host}#{url}", content, headers)
+      http.send_request('PROXY', "/#{method}/#{host}#{url}", content, headers)
 
     rescue Exception => e
       trace :error, "Frontend Collector PROXY: #{e.message}"

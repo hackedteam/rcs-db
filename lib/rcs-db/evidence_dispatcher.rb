@@ -2,6 +2,9 @@ require 'rcs-common/trace'
 require 'eventmachine'
 require 'zlib'
 
+require 'http/parser'
+require 'em-http-request'
+
 require_relative 'shard'
 
 module RCS

