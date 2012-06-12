@@ -41,7 +41,15 @@ class PositionResolver
         location = {}
 
         if request['ip_address']
-          location = get_geoip(request['ip_address']['ipv4'])
+
+          ip = request['ip_address']['ipv4']
+
+          # check if it's a valid ip address
+          if /(?:[0-9]{1,3}\.){3}[0-9]{1,3}/.match(ip).nil? or ip == '127.0.0.1'
+            return {'location' => {}, 'address' => {}}
+          end
+
+          location = get_geoip(ip)
         elsif request['location'] or request['wifi_towers'] or request['cell_towers']
           common = {request_address: true, address_language: 'en_US', version: '1.1.0', host: 'maps.google.com'}
           request.merge! common
