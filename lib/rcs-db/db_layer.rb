@@ -137,7 +137,15 @@ end
   @@classes_to_be_indexed = [::Audit, ::User, ::Group, ::Alert, ::Core, ::Collector, ::Injector, ::Item]
 
   def create_indexes
+    db = DB.instance.new_connection("rcs")
+
     @@classes_to_be_indexed.each do |k|
+      # get the metadata of the collection
+      coll = db.collection(k.collection_name)
+      # skip if already indexed
+      next if coll.stats['nindexes'] > 1
+      # create the index
+      trace :info, "Creating indexes for #{k.collection_name}"
       k.create_indexes
     end
   end
