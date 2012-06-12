@@ -143,7 +143,10 @@ end
       # get the metadata of the collection
       coll = db.collection(k.collection_name)
       # skip if already indexed
-      next if coll.stats['nindexes'] > 1
+      begin
+        next if coll.stats['nindexes'] > 1
+      rescue Mongo::OperationFailure
+      end
       # create the index
       trace :info, "Creating indexes for #{k.collection_name}"
       k.create_indexes
