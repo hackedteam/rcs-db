@@ -26,7 +26,7 @@ class Frontend
 
       # send the push request
       http = Net::HTTP.new(nc.address, 80)
-      resp = http.request_put("/RCS-NC_#{address}", '', headers)
+      resp = http.send_request('PUSH', "#{address}", '', headers)
 
       return false unless resp.body == "OK"
       
