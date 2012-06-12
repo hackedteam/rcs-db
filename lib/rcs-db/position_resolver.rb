@@ -45,7 +45,7 @@ class PositionResolver
           ip = request['ip_address']['ipv4']
 
           # check if it's a valid ip address
-          if /(?:[0-9]{1,3}\.){3}[0-9]{1,3}/.match(ip).nil? or ip == '127.0.0.1'
+          if /(?:[0-9]{1,3}\.){3}[0-9]{1,3}/.match(ip).nil? or private_address?(ip)
             return {'location' => {}, 'address' => {}}
           end
 
@@ -123,6 +123,17 @@ class PositionResolver
       end
 
       PositionResolver.get q[:map]
+    end
+
+    def private_address?(ip)
+      return true if ip.start_with?('127.')
+      return true if ip.start_with?('10.')
+      return true if ip.start_with?('169.254')
+      return true if ip.start_with?('192.168.')
+      prefix = ip.slice(0..5)
+      return true if prefix >= '172.16' and prefix <= '172.31'
+
+      return false
     end
 
   end

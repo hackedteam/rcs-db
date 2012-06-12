@@ -605,6 +605,8 @@ class AgentController < RESTController
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
 
+      return not_found() if agent.nil?
+
       case @request[:method]
         when 'POST'
 
@@ -630,6 +632,8 @@ class AgentController < RESTController
 
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+
+      return not_found() if agent.nil?
 
       case @request[:method]
         when 'GET'
