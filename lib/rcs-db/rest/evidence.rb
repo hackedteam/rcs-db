@@ -42,7 +42,7 @@ class EvidenceController < RESTController
     begin
       id, shard_id = RCS::DB::EvidenceManager.instance.store_evidence ident, instance, @request[:content]['content']
 
-      # update the connection statistics
+      # update the evidence statistics
       StatsManager.instance.add evidence: 1, evidence_size: @request[:content]['content'].bytesize
 
       # notify the worker

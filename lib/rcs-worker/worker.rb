@@ -8,6 +8,7 @@ require_relative 'evidence/call'
 require_relative 'heartbeat'
 require_relative 'parser'
 require_relative 'backlog'
+require_relative 'statistics'
 
 # from RCS::DB
 if File.directory?(Dir.pwd + '/lib/rcs-worker-release')
@@ -56,6 +57,9 @@ class HTTPHandler < EM::HttpServer::Server
 
     # timeout on the socket
     set_comm_inactivity_timeout 60
+
+    # update the connection statistics
+    StatsManager.instance.add conn: 1
 
   end
 
@@ -171,7 +175,10 @@ class Worker
         # set up the heartbeat (the interval is in the config)
         EM.defer(proc{ HeartBeat.perform })
         EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
-        
+
+        # calculate and save the stats
+        EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }
+
         trace :info, "Worker '#{RCS::DB::Config.instance.global['SHARD']}' ready!"
       end
     rescue Interrupt

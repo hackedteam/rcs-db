@@ -8,16 +8,16 @@ TODO (daVinci 8.x.x):
 
     fix utf-8 encoding in export
 
+    don't index if already indexed
 
-    stats for worker
+    connectors for audio
+
 
     collector deletion of file
 
     exploit auto-extract zip
 
 --------------------------------------
-
-
 
     connectors for read-only db
 

@@ -339,7 +339,11 @@ class Call
       ev.data[:program] = program
       ev.data[:duration] = 0
       ev.data[:status] = :recording
-      
+
+      # update the evidence statistics
+      # TODO: where do we add the size to the stats? (probably in the same place where we will forward to connectors)
+      RCS::Worker::StatsManager.instance.add evidence: 1
+
       ev.save
       return ev
     end

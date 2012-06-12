@@ -59,6 +59,11 @@ module SingleEvidence
           ev.data[:_grid] = RCS::DB::GridFS.put(self[:grid_content], {filename: agent[:_id].to_s}, target[:_id].to_s) unless self[:grid_content].nil?
         end
 
+        # update the evidence statistics
+        size = ev.data.to_s.size
+        size += ev.data[:_grid_size] unless ev.data[:_grid_size].nil?
+        RCS::Worker::StatsManager.instance.add evidence: 1, evidence_size: size
+
         ev.save
         ev
       end
