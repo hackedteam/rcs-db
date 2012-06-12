@@ -78,7 +78,7 @@ class Frontend
 
       # send the push request
       http = Net::HTTP.new(collector.address, 80)
-      http.send_request('HEAD', "/#{method}/#{host}#{url}", content, headers)
+      http.send_request('PROXY', "/#{method}/#{host}#{url}", content, headers)
 
     rescue Exception => e
       trace :error, "Frontend Collector PROXY: #{e.message}"
