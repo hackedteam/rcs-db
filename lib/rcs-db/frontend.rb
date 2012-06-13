@@ -63,9 +63,7 @@ class Frontend
     begin
       raise "no collector found" if ::Status.where({type: 'collector'}).any_in(status: [::Status::OK, ::Status::WARN]).count == 0
 
-      # save the filename in the public documents
-      puts "FACTORY: #{factory.inspect}"
-      puts "USER: #{user.inspect}"
+      saved = false
 
       # put the file on every collector, we cannot know where it will be requested
       ::Status.where({type: 'collector'}).any_in(status: [::Status::OK, ::Status::WARN]).each do |collector|
@@ -82,11 +80,20 @@ class Frontend
         http = Net::HTTP.new(collector.address, 80)
         resp = http.request_put("/#{filename}", content, headers)
 
-        raise "wrong response from collector" unless resp.body == "OK"
+        raise resp.body unless resp.body == "OK"
+
+        # save the filename in the public documents
+        unless saved
+          ::PublicDocument.create({name: File.basename(filename, '.*'),
+                                   user: [user],
+                                   factory: [factory[:_id]],
+                                   time: Time.now.getutc.to_i})
+          saved = true
+        end
       end
     rescue Exception => e
       trace :error, "Frontend Collector PUT: #{e.message}"
-      raise "Cannot put file on collector"
+      raise "Cannot put file on collector: #{e.message}"
     end
   end
 

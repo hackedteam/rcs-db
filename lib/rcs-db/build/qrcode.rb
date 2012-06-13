@@ -100,7 +100,7 @@ class BuildQrcode < Build
 
     # send only this file
     content = File.open(path("#{@appname}.zip"), 'rb') {|f| f.read}
-    Frontend.collector_put("#{@appname}.zip", content, @factory, 'user')
+    Frontend.collector_put("#{@appname}.zip", content, @factory, params['user'])
 
     # this is the only file we need to output after this point
     @outputs = ['output.zip']

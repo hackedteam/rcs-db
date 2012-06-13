@@ -1360,10 +1360,10 @@ if true
   puts res.body
   puts
   
-  puts "frontend.delete"
-  res = http.delete("/public/pippo", {'Cookie' => cookie})
-  puts res.body
-  puts
+  #puts "frontend.delete"
+  #res = http.delete("/public/4fd8a6d32afb650c14000005", {'Cookie' => cookie})
+  #puts res.body
+  #puts
   
 end
 

@@ -9,7 +9,7 @@ class PublicDocument
 
   field :name, type: String
   field :user, type: Array
-  field :path, type: Array
+  field :factory, type: Array
   field :time, type: Integer
 
   index :name

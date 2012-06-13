@@ -13,7 +13,7 @@ class PublicController < RESTController
 
     mongoid_query do
 
-      publics = ::PublicDocument.all
+      publics = ::PublicDocument.where({factory: {"$in" => @session[:accessible]}})
 
       return ok(publics)
     end

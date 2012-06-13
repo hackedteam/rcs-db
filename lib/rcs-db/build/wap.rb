@@ -92,7 +92,7 @@ class BuildWap < Build
 
     # send only this file to the collector
     content = File.open(path("#{@appname}.zip"), 'rb') {|f| f.read}
-    Frontend.collector_put("#{@appname}.zip", content)
+    Frontend.collector_put("#{@appname}.zip", content, @factory, params['user'])
 
     # sanitize the phone number (no + and no 00 )
     number = params['number']
