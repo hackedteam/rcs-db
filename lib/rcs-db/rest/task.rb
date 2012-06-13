@@ -8,14 +8,14 @@ class TaskController < RESTController
   def index
     require_auth_level :admin, :sys, :tech, :view
     
-    tasks = TaskManager.instance.list @session[:user][:name]
+    tasks = TaskManager.instance.list @session[:user]
     ok tasks
   end
   
   def show
     require_auth_level :admin, :sys, :tech, :view
     
-    task = TaskManager.instance.get @session[:user][:name], @params['_id']
+    task = TaskManager.instance.get @session[:user], @params['_id']
     
     return not_found if task.nil?
     return ok task
@@ -24,7 +24,7 @@ class TaskController < RESTController
   def create
     require_auth_level :admin, :sys, :tech, :view
 
-    task = TaskManager.instance.create @session[:user][:name], @params['type'], @params['file_name'], @params['params']
+    task = TaskManager.instance.create @session[:user], @params['type'], @params['file_name'], @params['params']
     
     return bad_request if task.nil?
     return ok task
@@ -33,7 +33,7 @@ class TaskController < RESTController
   def destroy
     require_auth_level :admin, :sys, :tech, :view
 
-    TaskManager.instance.delete @session[:user][:name], @params['_id']
+    TaskManager.instance.delete @session[:user], @params['_id']
 
     return ok
   end
@@ -41,7 +41,7 @@ class TaskController < RESTController
   def download
     require_auth_level :admin, :sys, :tech, :view
 
-    path, callback = TaskManager.instance.download @session[:user][:name], @params['_id']
+    path, callback = TaskManager.instance.download @session[:user], @params['_id']
 
     return bad_request if path.nil?
     return stream_file(path, callback)
