@@ -49,6 +49,8 @@ module EventMachine
             break
           end
         }
+      rescue Exception => e
+        # catch all exceptions otherwise it will propagate up to the reactor and terminate the main program
       end
   end
 end
