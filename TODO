@@ -8,6 +8,8 @@ TODO (daVinci 8.x.x):
 
     fix utf-8 encoding in export
 
+    filesystem export in utf-8
+
     connectors for audio
 
     collector deletion of file

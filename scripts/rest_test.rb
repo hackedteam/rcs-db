@@ -1353,6 +1353,19 @@ if false
 
 end
 
+# frontend
+if true
+  puts "frontend.index"
+  res = http.request_get("/public", {'Cookie' => cookie})
+  puts res.body
+  puts
+  
+  puts "frontend.delete"
+  res = http.delete("/public/pippo", {'Cookie' => cookie})
+  puts res.body
+  puts
+  
+end
 
 
 # logout
