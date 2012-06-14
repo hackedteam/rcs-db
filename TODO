@@ -1,9 +1,6 @@
 
 TODO (daVinci 8.x.x):
 
-    the db crash is on filestream !!!!
-    fix the crash on task streaming...
-
     fix worker on move or delete
 
     fix utf-8 encoding in export
