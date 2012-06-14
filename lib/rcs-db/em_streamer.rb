@@ -87,7 +87,10 @@ module EventMachine
       # @private
       def stream_one_chunk
         loop do
-          break if @connection.closed?
+          if @connection.closed?
+            @file_io.close unless @file_io.closed?
+            break
+          end
           if @file_io.pos < @size
             if @connection.get_outbound_data_size > BackpressureLevel
                 # recursively call myself
@@ -109,6 +112,7 @@ module EventMachine
         end
       rescue Exception => e
         # catch all exceptions otherwise it will propagate up to the reactor and terminate the main program
+        @file_io.close unless @file_io.closed?
       end
   end
 

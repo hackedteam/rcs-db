@@ -1,3 +1,9 @@
+#
+# response handling classes
+#
+
+require_relative 'em_streamer'
+
 # from RCS::Common
 require 'rcs-common/trace'
 
@@ -5,8 +11,6 @@ require 'net/http'
 require 'stringio'
 require 'json'
 require 'zlib'
-require 'rbconfig'
-require_relative 'em_streamer'
 
 module RCS
 module DB
