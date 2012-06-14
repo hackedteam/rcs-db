@@ -600,7 +600,9 @@ class AgentController < RESTController
 
       case @request[:method]
         when 'GET'
-          return ok(agent.purge)
+          purge = [0, 0]
+          purge = agent.purge unless agent.purge.nil?
+          return ok(purge)
         when 'POST'
           agent.purge = @params['purge']
           agent.save
