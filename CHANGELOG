@@ -1,5 +1,5 @@
 
-Changelog for 8.0.6
+Changelog for 8.1.0
 
 Collector:
     - purge command (on request) for agents with evidence too old
@@ -13,6 +13,6 @@ DB:
     - ability to change the license file form console
     - console can be installed by accessing: https://db_address/console
     - the filesystem of the agent is not retrieved by default, you have to schedule it
+    - moving an agent will now create a task with progress bar
     - fix for the evidence move while moving active targets
     - fix for the status check of the shards
-    - moving an agent will now create a task with progress bar

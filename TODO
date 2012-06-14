@@ -8,13 +8,7 @@ TODO (daVinci 8.x.x):
 
     fix utf-8 encoding in export
 
-    filesystem export in utf-8
-
-    exploits with new files for server
-
     connectors for audio
-
-    collector deletion of file
 
     exploit auto-extract zip
 

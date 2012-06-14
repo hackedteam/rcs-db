@@ -34,6 +34,11 @@ class MoveagentTask
     ::Alert.all.each {|a| a.update_path(@agent._id, @agent.path + [@agent._id])}
     ::Connector.all.each {|a| a.update_path(@agent._id, @agent.path + [@agent._id])}
 
+    Audit.log :actor => @params[:user][:name],
+              :action => "#{@agent._kind}.move",
+              (@agent._kind + '_name').to_sym => @agent[:name],
+              :desc => "Moved #{@agent._kind} '#{@agent[:name]}' to #{@target[:name]}"
+
     if @agent._kind == 'agent'
       yield @description = "Moving #{@total} evidence of #{@agent[:name]} to #{@target[:name]}"
 
