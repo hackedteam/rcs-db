@@ -81,7 +81,7 @@ class OffloadManager
   end
 
   def journal_write
-    File.open(@journal_file, 'w') {|f| f.write Marshal.dump(@journal)}
+    File.open(@journal_file, 'wb') {|f| f.write Marshal.dump(@journal)}
   end
 
   def journal_read
