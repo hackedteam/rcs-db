@@ -277,7 +277,7 @@ class Evidence
         RCS::DB::GridFS.delete(old_ev.data['_grid'], old_target[:_id].to_s) unless old_ev.data['_grid'].nil?
 
         # yield for progress indication
-        yield
+        yield if block_given?
       end
 
       total = total - chunk_size
