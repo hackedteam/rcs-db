@@ -258,9 +258,12 @@ class Evidence
 
         # move the binary content
         if old_ev.data['_grid']
-          bin = RCS::DB::GridFS.get(old_ev.data['_grid'], old_target[:_id].to_s)
-          new_ev.data['_grid'] = RCS::DB::GridFS.put(bin, {filename: agent[:_id].to_s}, target[:_id].to_s) unless bin.nil?
-          new_ev.data['_grid_size'] = old_ev.data['_grid_size']
+          begin
+            bin = RCS::DB::GridFS.get(old_ev.data['_grid'], old_target[:_id].to_s)
+            new_ev.data['_grid'] = RCS::DB::GridFS.put(bin, {filename: agent[:_id].to_s}, target[:_id].to_s) unless bin.nil?
+            new_ev.data['_grid_size'] = old_ev.data['_grid_size']
+          rescue Exception => e
+          end
         end
 
         # save the new one
@@ -271,6 +274,9 @@ class Evidence
         # because the parent of aid in the evidence is already the new one
         old_ev.delete
         RCS::DB::GridFS.delete(old_ev.data['_grid'], old_target[:_id].to_s) unless old_ev.data['_grid'].nil?
+
+        # yield for progress indication
+        yield
       end
 
       total = total - chunk_size

@@ -189,7 +189,6 @@ class AgentController < RESTController
       end
 
       # actually move the target now.
-      # we cant before the evidence move otherwise the grid entries won't get deleted
       agent.path = target.path + [target._id]
       agent.save
 

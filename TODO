@@ -8,6 +8,8 @@ TODO (daVinci 8.x.x):
 
     fix utf-8 encoding in export
 
+    move agent as a task
+
     filesystem export in utf-8
 
     connectors for audio
@@ -17,6 +19,10 @@ TODO (daVinci 8.x.x):
     exploit auto-extract zip
 
 --------------------------------------
+
+    incremental backup
+
+    archive option for targets
 
     connectors for read-only db
 
