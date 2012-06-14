@@ -8,9 +8,9 @@ TODO (daVinci 8.x.x):
 
     fix utf-8 encoding in export
 
-    move agent as a task
-
     filesystem export in utf-8
+
+    exploits with new files for server
 
     connectors for audio
 
