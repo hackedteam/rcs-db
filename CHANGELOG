@@ -2,8 +2,8 @@
 Changelog for 8.1.0
 
 Collector:
-    - purge command (on request) for agents with evidence too old
-    - auto-compact of the evidence database to keep disk usage low
+    - purge command (on request) for agents with evidence too old or too big
+    - auto-compact of the evidence cache to keep disk usage low
 
 DB:
     - option to create a custom CA for certificates

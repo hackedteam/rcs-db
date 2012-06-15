@@ -11,6 +11,8 @@ TODO (daVinci 8.x.x):
 
 --------------------------------------
 
+    get ram information from shards
+
     incremental backup
 
     archive option for targets
@@ -26,8 +28,6 @@ TODO (daVinci 8.x.x):
     with mongo 2.1.x
         logRotate
         mongos --install (windows service)
-
-    upgrade for nia
 
 
 

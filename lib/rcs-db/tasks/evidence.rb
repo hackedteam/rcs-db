@@ -181,14 +181,10 @@ module RCS
         out[:name] = File.join(day, 'index.html')
         out[:content] = html_page_header
         out[:content] << html_evidence_table_header(day)
-
-        trace :debug, "CREATING DAY INDEX FILE #{out[:name]}"
-
         return out
       end
 
       def end_file(out)
-        trace :debug, "CLOSING DAY INDEX FILE #{out[:name]}"
         out[:content] << html_table_footer
         out[:content] << html_page_footer
       end
