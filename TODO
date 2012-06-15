@@ -1,22 +1,19 @@
 
 TODO (daVinci 8.x.x):
 
-    the db crash is on filestream !!!!
-    fix the crash on task streaming...
-
     fix worker on move or delete
-
-    fix utf-8 encoding in export
-
-    filesystem export in utf-8
-
     connectors for audio
 
-    collector deletion of file
-
+    fix utf-8 encoding in export
     exploit auto-extract zip
 
 --------------------------------------
+
+    get ram information from shards
+
+    incremental backup
+
+    archive option for targets
 
     connectors for read-only db
 
@@ -29,8 +26,6 @@ TODO (daVinci 8.x.x):
     with mongo 2.1.x
         logRotate
         mongos --install (windows service)
-
-    upgrade for nia
 
 
 

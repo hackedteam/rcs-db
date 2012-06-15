@@ -1,9 +1,9 @@
 
-Changelog for 8.0.6
+Changelog for 8.1.0
 
 Collector:
-    - purge command (on request) for agents with evidence too old
-    - auto-compact of the evidence database to keep disk usage low
+    - purge command (on request) for agents with evidence too old or too big
+    - auto-compact of the evidence cache to keep disk usage low
 
 DB:
     - option to create a custom CA for certificates
@@ -13,5 +13,7 @@ DB:
     - ability to change the license file form console
     - console can be installed by accessing: https://db_address/console
     - the filesystem of the agent is not retrieved by default, you have to schedule it
+    - moving an agent will now create a task with progress bar
     - fix for the evidence move while moving active targets
     - fix for the status check of the shards
+    - fixed a bug in the streaming function for files

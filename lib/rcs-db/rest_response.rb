@@ -1,3 +1,9 @@
+#
+# response handling classes
+#
+
+require_relative 'em_streamer'
+
 # from RCS::Common
 require 'rcs-common/trace'
 
@@ -5,8 +11,6 @@ require 'net/http'
 require 'stringio'
 require 'json'
 require 'zlib'
-require 'rbconfig'
-require_relative 'em_streamer'
 
 module RCS
 module DB
@@ -167,14 +171,7 @@ class RESTFileStream
   def send_response
     fail "response still not prepare" if @response.nil?
     @response.send_headers
-    streamer = EventMachine::FileStreamer.new(@connection, @filename, :http_chunks => false )
-    # on windows the stream_without_mapping has HUGE problems
-    # we monkey patch the class to force it to ALWAYS stream a file
-    # the mapping threshold is responsible to choose the behavior
-    if RbConfig::CONFIG['host_os'] =~ /mingw/
-      streamer.class.send(:remove_const, :MappingThreshold)
-      streamer.class.const_set(:MappingThreshold, 0)
-    end
+    streamer = EventMachine::FilesystemStreamer.new(@connection, @filename, :http_chunks => false )
     streamer.callback do
       @callback.call unless @callback.nil?
       trace :debug, "[#{@request[:peer]}] REP: [#{@request[:method]}] #{@request[:uri]} #{@request[:query]} (#{Time.now - @request[:time]})" if Config.instance.global['PERF']

@@ -143,13 +143,18 @@ class HTTPHandler < EM::HttpServer::Server
     
     # Block which fulfills the reply (send back the data to the client)
     response = proc do |reply|
-      reply.send_response
-      
-      # keep the size of the reply to be used in the closing method
-      @response_size = reply.headers['Content-length'] || 0
+      begin
+        reply.send_response
 
-      # update the connection statistics
-      StatsManager.instance.add data_size: @response_size
+        # keep the size of the reply to be used in the closing method
+        @response_size = reply.headers['Content-length'] || 0
+
+        # update the connection statistics
+        StatsManager.instance.add data_size: @response_size
+      rescue Exception => e
+        trace :error, e.message
+        trace :fatal, "EXCEPTION(#{e.class}): " + e.backtrace.join("\n")
+      end
     end
 
     # Let the thread pool handle request

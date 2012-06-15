@@ -275,6 +275,9 @@ class Evidence
         # because the parent of aid in the evidence is already the new one
         old_ev.delete
         RCS::DB::GridFS.delete(old_ev.data['_grid'], old_target[:_id].to_s) unless old_ev.data['_grid'].nil?
+
+        # yield for progress indication
+        yield if block_given?
       end
 
       total = total - chunk_size

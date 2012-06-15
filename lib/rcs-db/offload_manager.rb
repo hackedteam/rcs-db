@@ -66,6 +66,23 @@ class OffloadManager
     end
   end
 
+  def add_task(task)
+    # the unique ident of this task
+    task[:id] = SecureRandom.uuid
+
+    trace :info, "Offload add task : #{task[:name]} [#{task[:id]}]"
+
+    journal_add(task)
+
+    return task
+  end
+
+  def remove_task(task)
+    trace :info, "Offload remove task : #{task[:name]} [#{task[:id]}]"
+
+    journal_del(task)
+  end
+
   def journal_add(task)
     @semaphore.synchronize do
       @journal.push task
