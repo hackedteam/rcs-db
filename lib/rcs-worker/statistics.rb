@@ -28,8 +28,14 @@ class StatsManager < Stats
     # initialize the stats repository
     super
 
-    # load the saved statistics
-    @stats = Marshal.load(File.binread(@dump_file)) if File.exist?(@dump_file) && @persist
+    begin
+      # load the saved statistics
+      @stats = Marshal.load(File.binread(@dump_file)) if File.exist?(@dump_file) && @persist
+    rescue Exception => e
+      trace :error, "Statistic file is invalid, purging it..."
+      purge
+    end
+
   end
 
   def calculate
