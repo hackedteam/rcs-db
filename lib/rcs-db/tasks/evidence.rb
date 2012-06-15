@@ -133,6 +133,7 @@ module RCS
           when 'mouse'
             table << "<tr><td class=\"inner\">image</td><td class=\"inner\">#{html_image(row[:data]['_grid'].to_s + '.jpg', 40)}</td></tr>"
           when 'call', 'mic'
+            break if row[:data]['_grid'].nil?
             table << "<tr><td class=\"inner\">audio</td><td class=\"inner\">#{html_mp3_player(row[:data]['_grid'].to_s + '.mp3')}</td></tr>"
           when 'file'
             if row[:data]['type'] == :capture
@@ -271,7 +272,7 @@ module RCS
           evidence.limit(chunk).skip(cursor).each_with_index do |e, i|
             # get the day of the current evidence
             day = Time.at(e[opts[:index]]).strftime('%Y-%m-%d')
-            # get the our of the evidence
+            # get the hour of the evidence
             hour = Time.at(e[opts[:index]]).strftime('%H').to_i
 
             # this is the first element
