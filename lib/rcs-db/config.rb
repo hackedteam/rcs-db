@@ -332,9 +332,9 @@ class Config
     FileUtils.cp pfx, Config.instance.cert("windows.pfx")
 
     trace :info, "Using pfx cert to create applet keystore..."
-    system "openssl pkcs12 -in #{pfx} -out pfx.pem"
-    system "openssl pkcs12 -export -in pfx.pem -out pfx.p12 -name signapplet"
-    system "keytool -importkeystore -srckeystore pfx.p12 -destkeystore #{Config.instance.cert('applet.keystore')} -srcstoretype pkcs12 -deststoretype JKS"
+    system "openssl pkcs12 -in #{pfx} -out pfx.pem -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']} -chain"
+    system "openssl pkcs12 -export -in pfx.pem -out pfx.p12 -name signapplet -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']}"
+    system "keytool -importkeystore -srckeystore pfx.p12 -destkeystore #{Config.instance.cert('applet.keystore')} -srcstoretype pkcs12 -deststoretype JKS -srcstorepass #{Config.instance.global['CERT_PASSWORD']} -deststorepass #{Config.instance.global['CERT_PASSWORD']}"
 
     # remove temporary files
     ['pfx.pem', 'pfx.p12'].each do |f|
