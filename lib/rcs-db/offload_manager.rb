@@ -66,6 +66,23 @@ class OffloadManager
     end
   end
 
+  def add_task(task)
+    # the unique ident of this task
+    task[:id] = SecureRandom.uuid
+
+    trace :info, "Offload add task : #{task[:name]} [#{task[:id]}]"
+
+    journal_add(task)
+
+    return task
+  end
+
+  def remove_task(task)
+    trace :info, "Offload remove task : #{task[:name]} [#{task[:id]}]"
+
+    journal_del(task)
+  end
+
   def journal_add(task)
     @semaphore.synchronize do
       @journal.push task
@@ -81,13 +98,13 @@ class OffloadManager
   end
 
   def journal_write
-    File.open(@journal_file, 'w') {|f| f.write Marshal.dump(@journal)}
+    File.open(@journal_file, 'wb') {|f| f.write Marshal.dump(@journal)}
   end
 
   def journal_read
     if File.exist? @journal_file
       begin
-        data = File.open(@journal_file, 'r') {|f| f.read}
+        data = File.open(@journal_file, 'rb') {|f| f.read}
         @journal = Marshal.load(data)
       rescue Exception => e
         trace :warn, "Task journal file is corrupted, deleting it..."

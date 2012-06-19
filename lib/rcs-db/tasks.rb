@@ -316,22 +316,23 @@ class TaskManager
   end
   
   def create(user, type, file_name, params = {})
-    @tasks[user] ||= Hash.new
+    @tasks[user[:name]] ||= Hash.new
 
+    params[:user] = user
     task = eval("#{type.downcase.capitalize}Task").new type, file_name, params
-    trace :info, "Creating task #{task._id} of type #{type} for user '#{user}', saving to '#{file_name}'"
+    trace :info, "Creating task #{task._id} of type #{type} for user '#{user[:name]}', saving to '#{file_name}'"
 
     case type
       when 'build'
-        Audit.log :actor => user, :action => "build", :desc => "Created an installer for #{params['platform']}"
+        Audit.log :actor => user[:name], :action => "build", :desc => "Created an installer for #{params['platform']}"
       when 'audit'
-        Audit.log :actor => user, :action => "audit.export", :desc => "Exported the audit log: #{params.inspect}"
+        Audit.log :actor => user[:name], :action => "audit.export", :desc => "Exported the audit log: #{params.inspect}"
       when 'evidence'
-        Audit.log :actor => user, :action => "evidence.export", :desc => "Exported some evidence: #{params.inspect}"
+        Audit.log :actor => user[:name], :action => "evidence.export", :desc => "Exported some evidence: #{params.inspect}"
       when 'injector'
-        Audit.log :actor => user, :action => "injector.push", :desc => "Pushed the rules to a Network Injector"
+        Audit.log :actor => user[:name], :action => "injector.push", :desc => "Pushed the rules to a Network Injector"
       when 'topology'
-        Audit.log :actor => user, :action => "topology", :desc => "Reconfigured the topology of the frontend"
+        Audit.log :actor => user[:name], :action => "topology", :desc => "Reconfigured the topology of the frontend"
     end
 
     begin
@@ -341,50 +342,50 @@ class TaskManager
       return nil
     end
     
-    @tasks[user][task._id] = task
+    @tasks[user[:name]][task._id] = task
     task
   end
   
   def get(user, id)
-    trace :debug, "Getting task #{id} for user '#{user}'"
-    @tasks[user][id] rescue nil
+    trace :debug, "Getting task #{id} for user '#{user[:name]}'"
+    @tasks[user[:name]][id] rescue nil
   end
   
   def list(user)
     #trace :debug, "List of tasks for user '#{user}': #{@tasks[user]}"
     
-    tasks = @tasks[user]
+    tasks = @tasks[user][:name]
     tasks ||= {}
     
     tasks.values
   end
   
   def delete(user, task_id)
-    trace :info, "Deleting task #{task_id} for user '#{user}'"
-    if @tasks[user]
-      task = @tasks[user][task_id]
+    trace :info, "Deleting task #{task_id} for user '#{user[:name]}'"
+    if @tasks[user[:name]]
+      task = @tasks[user[:name]][task_id]
       task.stop! unless task.nil?
-      @tasks[user].delete task_id
+      @tasks[user[:name]].delete task_id
     end
     FileUtils.rm_rf(Config.instance.temp("#{task_id}*"))
   end
   
   def download(user, task_id)
-    trace :info, "Downloading task #{task_id} for user '#{user}'"
+    trace :info, "Downloading task #{task_id} for user '#{user[:name]}'"
 
     path = Config.instance.temp(task_id)
     
     # check that task is owned by the user and the corresponding file exists
-    return nil if @tasks[user][task_id].nil?
+    return nil if @tasks[user[:name]][task_id].nil?
     return nil unless File.exists?(path)
 
     callback = proc {
-      @tasks[user][task_id].finished
+      @tasks[user[:name]][task_id].finished
       trace :info, "Task #{task_id} completed. cleaning up."
       FileUtils.rm_rf(path)
     }
 
-    @tasks[user][task_id].downloading
+    @tasks[user[:name]][task_id].downloading
 
     return path, callback
   end

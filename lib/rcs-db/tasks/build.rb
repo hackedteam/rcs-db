@@ -32,6 +32,7 @@ class BuildTask
     yield @description = 'Packing'
     yield @builder.pack @params['package']
     yield @description = 'Delivering'
+    @params['deliver']['user'] = @params[:user][:_id] if @params['deliver']
     yield @builder.deliver @params['deliver']
   end
 end

@@ -133,7 +133,9 @@ module RCS
           when 'mouse'
             table << "<tr><td class=\"inner\">image</td><td class=\"inner\">#{html_image(row[:data]['_grid'].to_s + '.jpg', 40)}</td></tr>"
           when 'call', 'mic'
-            table << "<tr><td class=\"inner\">audio</td><td class=\"inner\">#{html_mp3_player(row[:data]['_grid'].to_s + '.mp3')}</td></tr>"
+            unless row[:data]['_grid'].nil?
+              table << "<tr><td class=\"inner\">audio</td><td class=\"inner\">#{html_mp3_player(row[:data]['_grid'].to_s + '.mp3')}</td></tr>"
+            end
           when 'file'
             if row[:data]['type'] == :capture
               table << "<tr><td class=\"inner\">file</td><td class=\"inner\"><a href=\"#{row[:data]['_grid'].to_s + File.extname(row[:data]['path'])}\" title=\"Download\"><font size=3><b>⇊</b></font></a></td></tr>"
@@ -181,14 +183,10 @@ module RCS
         out[:name] = File.join(day, 'index.html')
         out[:content] = html_page_header
         out[:content] << html_evidence_table_header(day)
-
-        trace :debug, "CREATING DAY INDEX FILE #{out[:name]}"
-
         return out
       end
 
       def end_file(out)
-        trace :debug, "CLOSING DAY INDEX FILE #{out[:name]}"
         out[:content] << html_table_footer
         out[:content] << html_page_footer
       end
@@ -271,7 +269,7 @@ module RCS
           evidence.limit(chunk).skip(cursor).each_with_index do |e, i|
             # get the day of the current evidence
             day = Time.at(e[opts[:index]]).strftime('%Y-%m-%d')
-            # get the our of the evidence
+            # get the hour of the evidence
             hour = Time.at(e[opts[:index]]).strftime('%H').to_i
 
             # this is the first element

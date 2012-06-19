@@ -54,7 +54,7 @@ class Application
     begin
       build = File.read(Dir.pwd + '/config/VERSION_BUILD')
       version = File.read(Dir.pwd + '/config/VERSION')
-      trace :info, "Starting the RCS Database #{version} (#{build})..."
+      trace :fatal, "Starting the RCS Database #{version} (#{build})..."
 
       # ensure the temp directory is empty
       FileUtils.rm_rf(Config.instance.temp)

@@ -134,7 +134,7 @@ end
   end
 
   # insert here the class to be indexed
-  @@classes_to_be_indexed = [::Audit, ::User, ::Group, ::Alert, ::Core, ::Collector, ::Injector, ::Item]
+  @@classes_to_be_indexed = [::Audit, ::User, ::Group, ::Alert, ::Core, ::Collector, ::Injector, ::Item, ::PublicDocument]
 
   def create_indexes
     db = DB.instance.new_connection("rcs")

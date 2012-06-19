@@ -169,43 +169,6 @@ class AgentController < RESTController
     end
   end
 
-  def move
-    require_auth_level :tech
-
-    mongoid_query do
-      target = ::Item.targets.find(@params['target'])
-      return bad_request('INVALID_TARGET') if target.nil?
-
-      agent = Item.any_in(_id: @session[:accessible]).find(@params['_id'])
-      old_target = agent.get_parent
-
-      # factories don't have evidence to be moved
-      if agent._kind == 'agent'
-        task = {name: "move evidence of #{agent.name} from #{old_target.name} to #{target.name}",
-                method: "::Evidence.offload_move_evidence",
-                params: {old_target_id: old_target[:_id], target_id: target[:_id], agent_id: agent[:_id]}}
-
-        OffloadManager.instance.run task
-      end
-
-      # actually move the target now.
-      # we cant before the evidence move otherwise the grid entries won't get deleted
-      agent.path = target.path + [target._id]
-      agent.save
-
-      # update the path in alerts and connectors
-      ::Alert.all.each {|a| a.update_path(agent._id, agent.path + [agent._id])}
-      ::Connector.all.each {|a| a.update_path(agent._id, agent.path + [agent._id])}
-
-      Audit.log :actor => @session[:user][:name],
-                :action => "#{agent._kind}.move",
-                (agent._kind + '_name').to_sym => @params['name'],
-                :desc => "Moved #{agent._kind} '#{agent['name']}' to #{target['name']}"
-
-      return ok
-    end
-  end
-
   def get_new_ident
     global = ::Item.where({_kind: 'global'}).first
     global = ::Item.new({_kind: 'global', counter: 0}) if global.nil?
@@ -637,7 +600,9 @@ class AgentController < RESTController
 
       case @request[:method]
         when 'GET'
-          return ok(agent.purge)
+          purge = [0, 0]
+          purge = agent.purge unless agent.purge.nil?
+          return ok(purge)
         when 'POST'
           agent.purge = @params['purge']
           agent.save

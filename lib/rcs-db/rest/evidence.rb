@@ -68,6 +68,10 @@ class EvidenceController < RESTController
       @params.delete('_id')
       @params.delete('target')
 
+      trace :fatal, "CANNOT MODIFY DATA #{@params['data']}" if @params.has_key? 'data'
+
+      @params.delete('data')
+
       @params.each_pair do |key, value|
         if evidence[key.to_s] != value
           Audit.log :actor => @session[:user][:name], :action => 'evidence.update', :desc => "Updated '#{key}' to '#{value}' for evidence #{evidence[:_id]}"

@@ -80,7 +80,7 @@ class BuildAndroid < Build
 
     raise "Cannot find keystore" unless File.exist? Config.instance.cert('android.keystore')
 
-    CrossPlatform.exec "jarsigner", "-keystore #{Config.instance.cert('android.keystore')} -storepass password -keypass password #{apk} ServiceCore"
+    CrossPlatform.exec "jarsigner", "-keystore #{Config.instance.cert('android.keystore')} -storepass #{Config.instance.global['CERT_PASSWORD']} -keypass #{Config.instance.global['CERT_PASSWORD']} #{apk} ServiceCore"
 
     raise "jarsigner failed" unless File.exist? apk
     

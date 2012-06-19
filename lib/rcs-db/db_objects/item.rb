@@ -42,7 +42,7 @@ class Item
   field :uninstalled, type: Boolean
   field :demo, type: Boolean
   field :upgradable, type: Boolean
-  field :purge, type: Array
+  field :purge, type: Array, default: [0, 0]
 
   field :cs, type: String
   
