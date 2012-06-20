@@ -182,17 +182,28 @@ class BuildWindows < Build
     @outputs = ['output']
   end
 
-
   def sign(params)
     trace :debug, "Build: signing: #{params}"
 
-    return if params.nil? or params['sign'] != true
+    do_signature = false
 
-    raise "Cannot find pfx file" unless File.exist? Config.instance.cert("windows.pfx")
+    # not requested but the cert is present
+    if params.nil? and File.exist? Config.instance.cert("windows.pfx")
+      do_signature = true
+    end
 
-    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('output')}"
+    # explicit request to sign the code
+    if not params.nil? and params['sign']
+      raise "Cannot find pfx file" unless File.exist? Config.instance.cert("windows.pfx")
+
+      do_signature = true
+    end
+
+    # perform the signature
+    if do_signature
+      CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('output')}"
+    end
   end
-
 
   def pack(params)
     trace :debug, "Build: pack: #{params}"
