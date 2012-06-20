@@ -32,7 +32,11 @@ class BuildTask
     yield @description = 'Packing'
     yield @builder.pack @params['package']
     yield @description = 'Delivering'
-    @params['deliver']['user'] = @params[:user][:_id] if @params['deliver']
+
+    # add the username of the creator to be used in the frontend files records
+    @params['deliver'] = {} unless @params['deliver']
+    @params['deliver']['user'] = @params[:user][:_id]
+
     yield @builder.deliver @params['deliver']
   end
 end
