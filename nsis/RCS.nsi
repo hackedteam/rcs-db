@@ -432,12 +432,6 @@ Section "Install Section" SecInstall
 	SimpleFC::AddPort 443 "RCS Database" 6 0 2 "" 1
 	SimpleFC::AddPort 444 "RCS Database" 6 0 2 "" 1
 	
-	DetailPrint "Fixing evidence format..."
-	SetDetailsPrint "textonly"
-	nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\db_update.rb"
-	SetDetailsPrint "both"
-	DetailPrint "done"
-	
     !cd '..'
     WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
     WriteRegDWORD HKLM "Software\HT\RCS" "master" 0x00000001

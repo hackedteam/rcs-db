@@ -19,7 +19,7 @@ require 'rcs-common/systemstatus'
 # system
 require 'benchmark'
 require 'eventmachine'
-require 'evma_httpserver'
+require 'em-http-server'
 require 'em-websocket'
 require 'socket'
 require 'net/http'
@@ -27,9 +27,8 @@ require 'net/http'
 module RCS
 module DB
 
-module HTTPHandler
+class HTTPHandler < EM::HttpServer::Server
   include RCS::Tracer
-  include EM::HttpServer
   include Parser
 
   attr_reader :peer
@@ -55,15 +54,6 @@ module HTTPHandler
     start_tls({:private_key_file => Config.instance.cert('DB_KEY'),
                :cert_chain_file => Config.instance.cert('DB_CERT'),
                :verify_peer => false})
-
-    # don't forget to call super here !
-    super
-
-    # to speed-up the processing, we disable the CGI environment variables
-    self.no_environment_strings
-
-    # set the max content length of the POST
-    self.max_content_length = 200 * 1024 * 1024
 
     @closed = false
 
@@ -99,18 +89,6 @@ module HTTPHandler
   end
   
   def process_http_request
-    # the http request details are available via the following instance variables:
-    #   @http_protocol
-    #   @http_request_method
-    #   @http_cookie
-    #   @http_if_none_match
-    #   @http_content_type
-    #   @http_path_info
-    #   @http_request_uri
-    #   @http_query_string
-    #   @http_post_content
-    #   @http_headers
-
     #trace :debug, "[#{@peer}] Incoming HTTP Connection"
     size = (@http_post_content) ? @http_post_content.bytesize : 0
 
@@ -134,22 +112,20 @@ module HTTPHandler
       
       begin
         # parse all the request params
-        request = prepare_request @http_request_method, @http_request_uri, @http_query_string, @http_cookie, @http_content_type, @http_post_content
-        request[:peer] = peer
+        request = prepare_request @http_request_method, @http_request_uri, @http_query_string, @http_content, @http, @peer
         request[:time] = @request_time
-        
+
         # get the correct controller
         controller = HTTPHandler.restcontroller.get request
 
         # do the dirty job :)
         responder = controller.act!
-        
+
         # create the response object to be used in the EM::defer callback
-        
         reply = responder.prepare_response(self, request)
-        
+
         # keep the size of the reply to be used in the closing method
-        @response_size = reply.size
+        @response_size = reply.content ? reply.content.bytesize : 0
         trace :debug, "[#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{request[:query]} (#{Time.now - generation_time}) #{@response_size.to_s_bytes}" if Config.instance.global['PERF']
         trace :warn, "SLOW QUERY [#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{request[:query]} (#{Time.now - generation_time}) #{@response_size.to_s_bytes}" if Config.instance.is_slow?(Time.now - generation_time)
 
@@ -167,14 +143,18 @@ module HTTPHandler
     
     # Block which fulfills the reply (send back the data to the client)
     response = proc do |reply|
-      
-      reply.send_response
-      
-      # keep the size of the reply to be used in the closing method
-      @response_size = reply.headers['Content-length'] || 0
+      begin
+        reply.send_response
 
-      # update the connection statistics
-      StatsManager.instance.add data_size: @response_size
+        # keep the size of the reply to be used in the closing method
+        @response_size = reply.headers['Content-length'] || 0
+
+        # update the connection statistics
+        StatsManager.instance.add data_size: @response_size
+      rescue Exception => e
+        trace :error, e.message
+        trace :fatal, "EXCEPTION(#{e.class}): " + e.backtrace.join("\n")
+      end
     end
 
     # Let the thread pool handle request
@@ -226,8 +206,6 @@ class Events
         # timeout for the sessions (will destroy inactive sessions)
         EM::PeriodicTimer.new(60) { EM.defer(proc{ SessionManager.instance.timeout }) }
 
-        # reset the dashboard counter to be sure that on startup all the counters are empty
-        EM.defer(proc{ Item.reset_dashboard })
         # recalculate size statistics for operations and targets
         EM.defer(proc{ Item.restat })
         EM::PeriodicTimer.new(60) { EM.defer(proc{ Item.restat }) }

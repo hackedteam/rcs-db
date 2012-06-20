@@ -1,30 +1,31 @@
 
 TODO (daVinci 8.x.x):
 
-    stats for worker
+    fix worker on move or delete
+    connectors for audio
 
-    ip addresses of the sync
+    fix utf-8 encoding in export
+    exploit auto-extract zip
 
-    update license method
+--------------------------------------
 
-    symbian configuration method
+    get ram information from shards
 
-    purge command
+    incremental backup
 
+    archive option for targets
 
-    use em-http-server in db and worker
+    connectors for read-only db
 
     documentation of connectors
 
-    fix collector tests
+======================================
 
     mongo authentication
 
     with mongo 2.1.x
         logRotate
         mongos --install (windows service)
-
-    upgrade for nia
 
 
 

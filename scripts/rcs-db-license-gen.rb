@@ -111,7 +111,12 @@ class LicenseGenerator
 
     # first check on signature
     content = values.reject {|k,v| k == :integrity or k == :signature}.to_s
-    check = Digest::HMAC.hexdigest(content, "əɹnʇɐuƃıs ɐ ʇou sı sıɥʇ", Digest::SHA2)
+    if RUBY_PLATFORM =~ /java/
+      check = OpenSSL::HMAC.hexdigest(Digest::SHA2, "əɹnʇɐuƃıs ɐ ʇou sı sıɥʇ", content)
+    else
+      check = Digest::HMAC.hexdigest(content, "əɹnʇɐuƃıs ɐ ʇou sı sıɥʇ", Digest::SHA2)
+    end
+
     puts "Signature is NOT valid." if values[:signature] != check
 
     # second check on integrity

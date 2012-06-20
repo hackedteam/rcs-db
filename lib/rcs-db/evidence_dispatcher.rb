@@ -2,6 +2,9 @@ require 'rcs-common/trace'
 require 'eventmachine'
 require 'zlib'
 
+require 'http/parser'
+require 'em-http-request'
+
 require_relative 'shard'
 
 module RCS
@@ -42,7 +45,7 @@ class EvidenceDispatcher
     return false if agent.nil?
     
     # spread evidences to shards, each shard getting ALL the evidences for the same agent (round-robin)
-    #identify the correct shard for the evidence
+    # identify the correct shard for the evidence
 
     # send the queue to the correct shard
     http = EM::HttpRequest.new("http://#{@shards[shard_id][:host]}:5150/").post :body => {ids: [{instance: instance, ident: ident, id: evidence_id}]}.to_json
