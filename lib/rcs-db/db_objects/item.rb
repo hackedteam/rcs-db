@@ -328,9 +328,13 @@ class Item
       when 'winmo'
         add_upgrade('smsfilter', File.join(build.tmpdir, 'smsfilter'))
       when 'blackberry'
-        # TODO: change this when multi-core will be implemented
-        add_upgrade('core-1', File.join(build.tmpdir, 'net_rim_bb_lib-1.cod'))
-        add_upgrade('core-0', File.join(build.tmpdir, 'net_rim_bb_lib.cod'))
+       	add_upgrade('core-1_4.5', File.join(build.tmpdir, 'net_rim_bb_lib-1_4.5.cod'))
+        add_upgrade('core-0_4.5', File.join(build.tmpdir, 'net_rim_bb_lib_4.5.cod'))
+        if self.version > 2012041699
+          trace :debug, "version requires 5.0 files"
+          add_upgrade('core-1_5.0', File.join(build.tmpdir, 'net_rim_bb_lib-1_5.0.cod'))
+          add_upgrade('core-0_5.0', File.join(build.tmpdir, 'net_rim_bb_lib_5.0.cod'))
+		end
     end
 
     # always upgrade the core
