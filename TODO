@@ -7,6 +7,8 @@ TODO (daVinci 8.x.x):
     fix utf-8 encoding in export
     exploit auto-extract zip
 
+    upgrade even if already requested
+
 --------------------------------------
 
     get ram information from shards
@@ -15,7 +17,11 @@ TODO (daVinci 8.x.x):
 
     archive option for targets
 
-    connectors for read-only db
+    connectors:
+     - xml format
+     - implement transport layers:
+        - proprietary for read-only db
+        - sftp
 
     documentation of connectors
 

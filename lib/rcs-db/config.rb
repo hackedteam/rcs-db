@@ -182,6 +182,8 @@ class Config
 
     generate_keystores if options[:gen_keystores]
 
+    puts options.inspect
+
     use_pfx_cert(options[:pfx_cert]) if options[:pfx_cert]
 
     if options[:shard_failure_add]
@@ -434,10 +436,10 @@ class Config
       opts.on( '-K', '--generate-keystores', 'Generate new self-signed key stores used for building vectors' ) do
         options[:gen_keystores] = true
       end
-      opts.on( nil, '--sign-cert FILE', String, 'Use this certificate (pfx) to sign the executables' ) do |file|
+      opts.on('--sign-cert FILE', String, 'Use this certificate (pfx) to sign the executables' ) do |file|
         options[:pfx_cert] = file
       end
-      opts.on( nil, '--sign-pass PASSWORD', String, 'Password for the pfx certificate' ) do |pass|
+      opts.on('--sign-pass PASSWORD', String, 'Password for the pfx certificate' ) do |pass|
         options[:pfx_pass] = pass
       end
 
