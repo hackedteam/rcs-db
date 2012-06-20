@@ -330,11 +330,10 @@ class Item
       when 'blackberry'
        	add_upgrade('core-1_4.5', File.join(build.tmpdir, 'net_rim_bb_lib-1_4.5.cod'))
         add_upgrade('core-0_4.5', File.join(build.tmpdir, 'net_rim_bb_lib_4.5.cod'))
-        if self.version > 2012063001
-          trace :debug, "version requires 5.0 files"
+        if self.version >= 2012063001
           add_upgrade('core-1_5.0', File.join(build.tmpdir, 'net_rim_bb_lib-1_5.0.cod'))
           add_upgrade('core-0_5.0', File.join(build.tmpdir, 'net_rim_bb_lib_5.0.cod'))
-		end
+		    end
     end
 
     # always upgrade the core

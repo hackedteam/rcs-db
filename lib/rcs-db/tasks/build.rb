@@ -5,7 +5,7 @@ module DB
 
 class BuildTask
   include RCS::DB::BuildTaskType
-  
+
   def total
     18
   end

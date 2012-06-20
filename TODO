@@ -7,8 +7,6 @@ TODO (daVinci 8.x.x):
     fix utf-8 encoding in export
     exploit auto-extract zip
 
-    upgrade even if already requested
-
 --------------------------------------
 
     get ram information from shards
