@@ -7,9 +7,7 @@ TODO (daVinci 8.x.x):
     fix utf-8 encoding in export
     exploit auto-extract zip
 
-    signing for windows
-    utility for certificate for windows
-    specify the password in the config for certificates
+    upgrade even if already requested
 
 --------------------------------------
 

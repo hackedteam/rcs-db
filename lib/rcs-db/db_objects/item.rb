@@ -305,8 +305,10 @@ class Item
   end
 
   def upgrade!
-    return if self.upgradable
     return if self.version.nil?
+
+    # delete any pending upgrade if requested multiple time
+    self.upgrade_requests.destroy_all if self.upgradable
 
     factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
     build = RCS::DB::Build.factory(self.platform.to_sym)
