@@ -14,6 +14,7 @@ DB:
     - console can be installed by accessing: https://db_address/console
     - the filesystem of the agent is not retrieved by default, you have to schedule it
     - moving an agent will now create a task with progress bar
+    - automatic push of exploit with multiple files on server side
     - fix for the evidence move while moving active targets
     - fix for the status check of the shards
     - fixed a bug in the streaming function for files
