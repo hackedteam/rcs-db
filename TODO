@@ -6,6 +6,8 @@ TODO (daVinci 8.x.x):
 
     fix utf-8 encoding in export
 
+    fix tar creation during export (corrupted file)
+
 --------------------------------------
 
     get ram information from shards
