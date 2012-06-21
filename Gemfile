@@ -33,11 +33,11 @@ platforms :jruby do
   gem 'jruby-openssl'
 end
 
-platforms :ruby do
+#platforms :ruby do
   # to be removed after migration from 7.0
   gem 'mysql2', "= 0.3.3"
   gem 'xml-simple'
-end
+#end
 
 # Add dependencies to develop your gem here.
 # Include everything needed to run rake, tests, features, etc.
