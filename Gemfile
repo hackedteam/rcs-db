@@ -1,7 +1,7 @@
 source "http://rubygems.org"
 # Add dependencies required to use your gem here.
 
-gem "rcs-common", ">= 8.0.5", :path => "../rcs-common"
+gem "rcs-common", ">= 8.1.0", :path => "../rcs-common"
 
 gem 'em-http-request'
 gem 'em-websocket'
@@ -33,11 +33,11 @@ platforms :jruby do
   gem 'jruby-openssl'
 end
 
-platforms :ruby do
+#platforms :ruby do
   # to be removed after migration from 7.0
   gem 'mysql2', "= 0.3.3"
   gem 'xml-simple'
-end
+#end
 
 # Add dependencies to develop your gem here.
 # Include everything needed to run rake, tests, features, etc.
