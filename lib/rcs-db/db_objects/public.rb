@@ -8,7 +8,7 @@ class PublicDocument
   include Mongoid::Timestamps
 
   field :name, type: String
-  field :user, type: Array
+  field :user, type: String
   field :factory, type: Array
   field :time, type: Integer
 
