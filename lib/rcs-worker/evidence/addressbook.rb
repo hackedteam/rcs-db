@@ -8,7 +8,9 @@ module AddressbookProcessing
     {"type" => :addressbook,
      "data.name" => self[:data][:name],
      "data.contact" => self[:data][:contact],
-     "data.info" => self[:data][:info]}
+     "data.info" => self[:data][:info],
+     "data.program" => self[:data][:program],
+     "data.type" => self[:data][:type]}
   end
 
   def type
