@@ -8,6 +8,7 @@ Collector:
 DB:
     - option to create a custom CA for certificates
     - HASP drivers updated to 6.23
+    - MongoDB updated to 2.0.6
     - stats for the worker (rcs-worker-stats)
     - utility to update the license file
     - ability to change the license file form console
@@ -17,4 +18,5 @@ DB:
     - automatic push of exploit with multiple files on server side
     - fix for the evidence move while moving active targets
     - fix for the status check of the shards
+    - fix for exporting the date in calendar evidence
     - fixed a bug in the streaming function for files

