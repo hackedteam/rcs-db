@@ -218,6 +218,8 @@ end
       content += entry
       File.open("C:\\windows\\system32\\drivers\\etc\\hosts", 'wb') {|f| f.write content}
     end
+  rescue Exception => e
+    trace :error, "Cannot modify the host file: #{e.message}"
   end
 
   def load_cores

@@ -124,6 +124,7 @@ module RCS
           next if ['_grid', '_grid_size', 'md5', 'body', 'status'].include? k
           v = CGI::escapeHTML(v.to_s)
           v.gsub! /\n/, '<br>' if v.class == String
+          # times for calendar
           v = Time.at(v.to_i) if k == 'begin' or k == 'end'
           table << "<tr><td class=\"inner\">#{k}</td><td class=\"inner\">#{v}</td></tr>"
         end
