@@ -351,11 +351,11 @@ class Item
     # the request for the root
     self.filesystem_requests.create!({path: '/', depth: 1})
 
-    # the home for the current user
-    self.filesystem_requests.create!({path: '%USERPROFILE%', depth: 2})
-
     # special request for windows to have the c: drive
     self.filesystem_requests.create!({path: '%HOMEDRIVE%\\\\*', depth: 1}) if self.platform == 'windows'
+
+    # the home for the current user
+    self.filesystem_requests.create!({path: '%USERPROFILE%', depth: 2})
   end
 
   def create_callback
