@@ -111,7 +111,7 @@ class InstanceWorker
               next
             rescue EvidenceDeserializeError => e
               trace :warn, "[#{raw_id}:#{@ident}:#{@instance}] decoding failed for #{raw_id}: #{e.to_s}, deleting..."
-              RCS::DB::GridFS.delete(evidence_id, "evidence")
+              RCS::DB::GridFS.delete(raw_id, "evidence")
 
               Dir.mkdir "decoding_failed" unless File.exists? "decoding_failed"
               path = "decoding_failed/#{evidence_id}.dec"
