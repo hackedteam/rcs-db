@@ -1,28 +1,35 @@
 
-TODO (daVinci 8.x.x):
+TODO 8.1.0:
 
     fix worker on move or delete
     connectors for audio
 
     fix utf-8 encoding in export
 
-    fix tar creation during export (corrupted file)
+    chat peer not as string but array
+
+    documentation of connectors
 
 --------------------------------------
 
-    get ram information from shards
+TODO 8.2.0:
+
+    keyword split for text search
+
+    ocr for images
+
+    differentiate between input/output connectors:
+        - connector for translation
+        - xml format
+        - implement transport layers:
+        - proprietary for read-only db
+        - sftp
+
+--------------------------------------
 
     incremental backup
 
     archive option for targets
-
-    connectors:
-     - xml format
-     - implement transport layers:
-        - proprietary for read-only db
-        - sftp
-
-    documentation of connectors
 
 ======================================
 
