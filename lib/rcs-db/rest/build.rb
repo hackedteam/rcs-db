@@ -47,10 +47,6 @@ class BuildController < RESTController
     require_auth_level :tech
 
     unless @params.empty?
-      if File.exist? Config.instance.temp(@params['key'])
-        FileUtils.cp Config.instance.temp(@params['key']), Config.instance.cert('symbian.key')
-        FileUtils.rm_rf Config.instance.temp(@params['key'])
-      end
       if not @params['uids'].empty?
         File.open(Config.instance.cert("symbian.yaml"), 'wb') {|f| f.write @params['uids'].to_yaml}
       end
@@ -58,7 +54,6 @@ class BuildController < RESTController
 
     # retrieve the current conf and return it
     current_conf = {}
-    current_conf[:key] = File.exist? Config.instance.cert('symbian.key')
 
     if File.exist? Config.instance.cert('symbian.yaml')
       yaml = File.open(Config.instance.cert("symbian.yaml"), 'rb') {|f| f.read}

@@ -84,8 +84,9 @@ class Frontend
 
         # save the filename in the public documents
         unless saved
+          user = ::User.find(user)
           ::PublicDocument.create({name: File.basename(filename, '.*'),
-                                   user: [user],
+                                   user: user[:name],
                                    factory: [factory[:_id]],
                                    time: Time.now.getutc.to_i})
           saved = true

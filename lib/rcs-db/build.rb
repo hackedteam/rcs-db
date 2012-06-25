@@ -157,6 +157,19 @@ class Build
     end
   end
 
+  def patch_file(params)
+    # open the file for binary patch
+    file = File.open(path(params[:file]), 'rb+')
+    content = file.read
+
+    # pass the content to the caller and save its modification
+    content = yield content
+
+    file.rewind
+    file.write content
+    file.close
+  end
+
   def scramble_name(name, offset)
    alphabet = '_BqwHaF8TkKDMfOzQASx4VuXdZibUIeylJWhj0m5o2ErLt6vGRN9sY1n3Ppc7g-C'
 

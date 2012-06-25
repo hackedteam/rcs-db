@@ -1354,7 +1354,7 @@ if false
 end
 
 # frontend
-if true
+if false
   puts "frontend.index"
   res = http.request_get("/public", {'Cookie' => cookie})
   puts res.body

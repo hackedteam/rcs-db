@@ -119,14 +119,11 @@ class BuildSymbian < Build
     trace :debug, "Build: creating sisx files"
 
     params['cert'] or raise "no cert provided"
-    
-    # this file is provided by the console
+    params['key'] or raise "no key provided"
+
+    # this certificate are provided by the console
     FileUtils.mv(Config.instance.temp(params['cert']), path('symbian.cer'))
-
-    raise "Cannot find private key file" unless File.exist? Config.instance.cert('symbian.key')
-
-    # this is global
-    FileUtils.cp(Config.instance.cert('symbian.key'), @tmpdir)
+    FileUtils.mv(Config.instance.temp(params['key']), path('symbian.key'))
 
     CrossPlatform.exec path('signsis'), "-s uninstaller.sis uninstaller.sisx ../symbian.cer ../symbian.key", {chdir: path('symbian3')}
     File.exist? path('symbian3/uninstaller.sisx') or raise("signsis failed for uninstaller symbian3")
