@@ -36,7 +36,7 @@ class Channel
     @start_time = evidence[:data][:start_time]
     @written_samples = 0
     @needs_resampling = @sample_rate
-    @resampled = false
+    #@resampled = false
     @wav_data = Array.new # array of 32 bit float samples
     @status = :open
     trace :debug, "[channel #{to_s}] ceating new channel #{@name} - start_time: #{@start_time} sample_rate: #{@sample_rate}"
@@ -59,9 +59,11 @@ class Channel
     @status == :closed
   end
 
+=begin
   def resampled?
     @resampled
   end
+=end
 
   def needs_resampling?
     @needs_resampling != @sample_rate
@@ -72,7 +74,8 @@ class Channel
     @needs_resampling = sample_rate
     trace :debug, "[channel #{to_s}] resampling channel from #{@sample_rate} to #{@needs_resampling}"
     @wav_data = SRC::Resampler.new(@needs_resampling).resample_channel(@wav_data, @sample_rate)
-    @resampled = true
+    #@resampled = true
+    @written_samples = @wav_data.size
   end
 
   def resample(evidence)
