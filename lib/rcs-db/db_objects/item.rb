@@ -415,6 +415,9 @@ class Item
           Evidence.collection_class(self.path.last).destroy_all(conditions: { aid: self._id.to_s })
           trace :info, "Deleting evidence for agent #{self.name} done."
         end
+      when 'factory'
+        # delete all the pushed documents of this factory
+        ::PublicDocument.destroy_all({conditions: {factory: [self[:_id]]}})
     end
 
     RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'destroy'})
