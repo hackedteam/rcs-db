@@ -454,6 +454,9 @@ class Item
           agent.status = 'closed'
           agent.save
         end
+      when 'factory'
+        # delete all the pushed documents of this factory
+        ::PublicDocument.destroy_all({conditions: {factory: [self[:_id]]}})
     end
   end
 

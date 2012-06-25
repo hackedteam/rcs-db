@@ -6,8 +6,6 @@ TODO 8.1.0:
 
     fix utf-8 encoding in export
 
-    - Nel FileManager per i  link degli exploit dovrebbe cancellare automaticamente quelli delle operation chiuse
-
     documentation of connectors
 
 --------------------------------------
