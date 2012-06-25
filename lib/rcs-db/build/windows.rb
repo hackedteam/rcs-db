@@ -221,7 +221,7 @@ class BuildWindows < Build
     do_signature = false
 
     # not requested but the cert is present
-    if params.nil? and File.exist? Config.instance.cert("windows.pfx")
+    if (params.nil? or not params.has_key? 'sign') and File.exist? Config.instance.cert("windows.pfx")
       do_signature = true
     end
 
