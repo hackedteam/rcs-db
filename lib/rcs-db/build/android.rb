@@ -22,9 +22,9 @@ class BuildAndroid < Build
 
     apktool = path('apktool.jar')
     Dir[path('core.*.apk')].each do |d| 
-      trace :debug, "unpack: #{d}" 
+      #trace :debug, "unpack: #{d}"
       version = d.scan(/core.android.(.*).apk/).flatten.first		
-      trace :debug, "version: #{version}"
+      #trace :debug, "version: #{version}"
 
       CrossPlatform.exec "java", "-jar #{apktool} d #{d} #{@tmpdir}/apk.#{version}"
       
@@ -44,9 +44,9 @@ class BuildAndroid < Build
     params['demo'] = LicenseManager.instance.can_build_platform :android, params['demo']
       
     Dir[path('core.*.apk')].each do |d| 
-      trace :debug, "patch: #{d}" 
+      #trace :debug, "patch: #{d}"
       version = d.scan(/core.android.(.*).apk/).flatten.first		
-      trace :debug, "version: #{version}"
+      #trace :debug, "version: #{version}"
       
       # add the file to be patched to the params
       # these params will be passed to the super
