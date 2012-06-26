@@ -9,13 +9,13 @@
 ;--------------------------------
 ;General
   
-  !define PACKAGE_NAME "rcs-agents"
+  !define PACKAGE_NAME "RCS-Agents"
   !Define /file PACKAGE_VERSION "..\config\VERSION_BUILD"
 
   
   ;Name and file
   Name "RCS-Agents"
-  OutFile "RCS-Agents-${PACKAGE_VERSION}.exe"
+  OutFile "rcs-agents-${PACKAGE_VERSION}.exe"
 
   ;Default installation folder
   InstallDir "C:\RCS\"
