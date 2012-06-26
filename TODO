@@ -4,9 +4,9 @@ TODO 8.1.0:
     fix worker on move or delete
     connectors for audio
 
-    fix utf-8 encoding in export
-
     documentation of connectors
+
+    note search
 
 --------------------------------------
 
@@ -15,6 +15,8 @@ TODO 8.2.0:
     keyword split for text search
 
     chat peer not as string but array
+
+    targets recordings (schedario)
 
     ocr for images
 

