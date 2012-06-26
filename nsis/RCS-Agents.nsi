@@ -9,7 +9,7 @@
 ;--------------------------------
 ;General
   
-  !define PACKAGE_NAME "RCS-Agents"
+  !define PACKAGE_NAME "rcs-agents"
   !Define /file PACKAGE_VERSION "..\config\VERSION_BUILD"
 
   
