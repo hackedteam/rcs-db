@@ -44,8 +44,6 @@ class BuildWindows < Build
         content.binary_patch 'PFTBBP', @funcname
       rescue
         raise "Funcname marker not found"
-      ensure
-        content
       end
     end
 
@@ -57,8 +55,6 @@ class BuildWindows < Build
         content.binary_patch_at_offset offset + 8, SecureRandom.random_bytes(4)
       rescue Exception => e
         raise "Build time ident marker not found: #{e.message}"
-      ensure
-        content
       end
     end
 
@@ -70,8 +66,6 @@ class BuildWindows < Build
         content.binary_patch 'PFTBBP', @funcname
       rescue
         raise "Funcname marker not found"
-      ensure
-        content
       end
     end
 
@@ -83,8 +77,6 @@ class BuildWindows < Build
         content.binary_patch 'f7Hk0f5usd04apdvqw13F5ed25soV5eD', signature
       rescue
         raise "Signature marker not found"
-      ensure
-        content
       end
     end
 
