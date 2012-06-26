@@ -38,7 +38,7 @@ class Alerting
         end
       end
     rescue Exception => e
-      trace :warn, "Cannot handle alert: #{e.message}"
+      trace :warn, "Cannot handle alert (new_sync): #{e.message}"
       trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
     end
 
@@ -67,13 +67,16 @@ class Alerting
         end
       end
     rescue Exception => e
-      trace :warn, "Cannot handle alert: #{e.message}"
+      trace :warn, "Cannot handle alert (new_instance): #{e.message}"
       trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
     end
 
     def new_evidence(evidence)
       ::Alert.where(:enabled => true, :action => 'EVIDENCE').each do |alert|
-        agent = ::Item.find(evidence.aid)
+        agent = ::Item.where({_id: evidence.aid, _kind: 'agent'}).first
+
+        # not found
+        next if agent.nil?
 
         # skip non matching agents
         next unless match_path(alert, agent)
@@ -111,7 +114,7 @@ class Alerting
                          body: "An evidence matching this alert [#{agent.name} #{alert.evidence} #{alert.keywords}] has arrived into the system.")
       end
     rescue Exception => e
-      trace :warn, "Cannot handle alert: #{e.message}"
+      trace :warn, "Cannot handle alert (new_evidence): #{e.message}"
       trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
     end
 

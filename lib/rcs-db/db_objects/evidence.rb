@@ -183,6 +183,9 @@ class Evidence
       end
     end
 
+    #filter on note
+    filter_hash[:note] = Regexp.new("#{filter.delete('note')}", true) if filter['note']
+
     return filter, filter_hash, target
   end
 

