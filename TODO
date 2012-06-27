@@ -1,9 +1,6 @@
 
 TODO 8.1.0:
 
-    fix worker on move or delete
-    connectors for audio
-
     documentation of connectors
 
 --------------------------------------
@@ -11,6 +8,8 @@ TODO 8.1.0:
 TODO 8.2.0:
 
     keyword split for text search
+
+    custom filters
 
     chat peer not as string but array
 

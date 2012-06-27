@@ -16,6 +16,7 @@ DB:
     - the filesystem of the agent is not retrieved by default, you have to schedule it
     - moving an agent will now create a task with progress bar
     - automatic push of exploit with multiple files on server side
+    - ability to search in the evidence note
     - fix for the evidence move while moving active targets
     - fix for the status check of the shards
     - fix for exporting the date in calendar evidence
