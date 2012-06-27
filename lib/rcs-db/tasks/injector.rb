@@ -32,7 +32,10 @@ class InjectorTask
       # use the key of the hash to avoid duplicates
       redirect_user["#{rule.ident} #{rule.ident_param}"] ||= tag
 
+      # automatic patterns for rules
       rule.resource = 'javadl-esd.sun.com/update/1.6.0/map*1.6.0.xml' if rule.action == 'INJECT-UPGRADE'
+      rule.resource = '*.youtube.com/watch*' if rule.action == 'INJECT-HTML-FLASH'
+
       redirect_url << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.probability} #{rule.resource}"
 
       case rule.action
