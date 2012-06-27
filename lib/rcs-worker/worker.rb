@@ -137,6 +137,7 @@ end
 
 class Worker
   include Tracer
+  extend Tracer
   
   attr_reader :type, :audio_processor
 
@@ -167,7 +168,7 @@ class Worker
         # set the thread pool size
         EM.threadpool_size = 50
         
-        resume_pending_evidences
+        Worker::resume_pending_evidences
 
         EM::start_server("0.0.0.0", port, HTTPHandler)
         trace :info, "Listening on port #{port}"
@@ -195,7 +196,7 @@ class Worker
     
   end
 
-  def resume_pending_evidences
+  def self.resume_pending_evidences
     begin
       db = Mongoid.database
       evidences = db.collection('grid.evidence.files').find({metadata: {shard: RCS::DB::Config.instance.global['SHARD']}}, {sort: ["_id", :asc]})
@@ -217,6 +218,7 @@ class Worker
             c.update_attributes("data.status" => :completed)
           end
         end
+
       end
     rescue Exception => e
       trace :error, "Cannot process pending evidences: #{e.message}"

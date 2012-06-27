@@ -229,7 +229,7 @@ class Call
   def close!
     # TODO: flush channels if samples queued
     @channels.each_value {|c| c.close!}
-    update_attributes("data.status" => :completed) #unless @evidence.nil?
+    update_data({status: :completed}) #unless @evidence.nil?
     trace :debug, "[CALL #{@id}] closing call for #{@peer}, starting at #{@start_time}"
     true
   end
@@ -319,14 +319,14 @@ class Call
     end
   end
 
-  def update_attributes(hash)
-    @evidence.update_attributes(hash) unless @evidence.nil?
+  def update_data(hash)
+    @evidence.update_attributes(@evidence.data.merge!(hash)) unless @evidence.nil?
   end
 
   def store(peer, program, start_time, agent, target)
 
-    evidence = ::Evidence.collection_class(target[:_id].to_s)
-    evidence.create do |ev|
+    coll = ::Evidence.collection_class(target[:_id].to_s)
+    coll.create do |ev|
       ev._id = @bid
       ev.aid = agent[:_id].to_s
       ev.type = :call
@@ -348,9 +348,8 @@ class Call
       RCS::Worker::StatsManager.instance.add evidence: 1
 
       ev.save
-      return ev
+      ev
     end
-
   end
   
   def file_name
@@ -386,9 +385,7 @@ end
 class CallProcessor
   include Tracer
 
-  def initialize(agent, target)
-    @agent = agent
-    @target = target
+  def initialize
     @call = nil
   end
 
@@ -425,14 +422,17 @@ class CallProcessor
     evidence[:end_call]
   end
   
-  def feed(evidence)
+  def feed(evidence, agent, target)
+    @agent = agent
+    @target = target
+
     if end_call? evidence
       close_call {|evidence| yield evidence}
       @call = nil
       return nil, 0
     end
     
-    call = get_call(evidence) {|evidence| yield evidence}
+    call = get_call(evidence) #{|evidence| yield evidence}
     return nil if call.nil?
     
     call.feed evidence do |sample_rate, left_pcm, right_pcm|
@@ -459,9 +459,7 @@ class CallProcessor
 
     fs.open(call.file_name, 'a') do |f|
       f.write mp3_bytes
-      call.update_attributes("data.duration" => call.duration)
-      call.update_attributes("data._grid" => f.files_id)
-      call.update_attributes("data._grid_size" => f.file_length)
+      call.update_data({_grid: f.files_id, _grid_size: f.file_length, duration: call.duration})
     end
   end
 
