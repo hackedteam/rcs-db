@@ -15,7 +15,7 @@
   
   ;Name and file
   Name "RCS-Agents"
-  OutFile "RCS-Agents-${PACKAGE_VERSION}.exe"
+  OutFile "rcs-agents-${PACKAGE_VERSION}.exe"
 
   ;Default installation folder
   InstallDir "C:\RCS\"
