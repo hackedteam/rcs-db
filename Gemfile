@@ -5,7 +5,7 @@ gem "rcs-common", ">= 8.1.0", :path => "../rcs-common"
 
 gem 'em-http-request'
 gem 'em-websocket'
-gem 'em-http-server'
+gem 'em-http-server', ">= 0.1.3"
 
 gem 'eventmachine', ">= 1.0.0.beta.4"
 

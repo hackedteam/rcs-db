@@ -186,6 +186,9 @@ class BuildWindows < Build
   def sign(params)
     trace :debug, "Build: signing: #{params}"
 
+    # don't sign cooked file (its not a valid PE)
+    return if @cooked
+
     # perform the signature
     CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('output')}" if to_be_signed?(params)
   end
