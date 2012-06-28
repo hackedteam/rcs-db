@@ -55,7 +55,6 @@ class InstanceWorker
     @agent = Item.agents.where({ident: @ident, instance: @instance, status: 'open'}).first
     raise InvalidAgentTarget.new("Agent \'#{@ident}:#{@instance}\' cannot be found.") if @agent.nil?
     @target = @agent.get_parent
-    trace :debug, "GET_AGENT_TARGET agent: #{@agent['name']} target: #{@target['name']}"
   end
 
   def initialize(instance, ident)
@@ -173,8 +172,6 @@ class InstanceWorker
                 evidence_id, index = processor.feed(ev, @agent, @target) do |evidence|
                   # check if there are matching alerts for this evidence
                   RCS::DB::Alerting.new_evidence(evidence) unless evidence.nil?
-
-                  trace :debug, "FORWARDING #{evidence.type}"
 
                   # forward the evidence to connectors (if any)
                   RCS::DB::Connectors.new_evidence(evidence) unless evidence.nil?
