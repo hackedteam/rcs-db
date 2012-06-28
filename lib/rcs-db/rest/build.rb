@@ -48,15 +48,15 @@ class BuildController < RESTController
 
     unless @params.empty?
       if not @params['uids'].empty?
-        File.open(Config.instance.cert("symbian.yaml"), 'wb') {|f| f.write @params['uids'].to_yaml}
+        File.open(Config.instance.cert("symbian.uids"), 'wb') {|f| f.write @params['uids'].to_yaml}
       end
     end
 
     # retrieve the current conf and return it
     current_conf = {}
 
-    if File.exist? Config.instance.cert('symbian.yaml')
-      yaml = File.open(Config.instance.cert("symbian.yaml"), 'rb') {|f| f.read}
+    if File.exist? Config.instance.cert('symbian.uids')
+      yaml = File.open(Config.instance.cert("symbian.uids"), 'rb') {|f| f.read}
       uids = YAML.load(yaml)
 
       # the UIDS must be 8 chars (padded with zeros)
