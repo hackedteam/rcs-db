@@ -403,7 +403,7 @@ class CallProcessor
     return @call if @call.accept? evidence and not @call.closed?
 
     # otherwise, close the call
-    close_call {|evidence| yield evidence}
+    close_call
     @call = create_call(evidence)
     @call
   end
@@ -432,7 +432,7 @@ class CallProcessor
       return nil, 0
     end
     
-    call = get_call(evidence) #{|evidence| yield evidence}
+    call = get_call(evidence)
     return nil if call.nil?
     
     call.feed evidence do |sample_rate, left_pcm, right_pcm|

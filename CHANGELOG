@@ -4,6 +4,7 @@ Changelog for 8.1.0
 Collector:
     - purge command (on request) for agents with evidence too old or too big
     - auto-compact of the evidence cache to keep disk usage low
+    - fix for target ip address incorrectly reported when passing thru anonymizers
 
 DB:
     - option to create a custom CA for certificates
