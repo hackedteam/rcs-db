@@ -115,7 +115,7 @@ class InstanceWorker
               RCS::DB::GridFS.delete(raw_id, "evidence")
 
               Dir.mkdir "decoding_failed" unless File.exists? "decoding_failed"
-              path = "decoding_failed/#{evidence_id}.dec"
+              path = "decoding_failed/#{raw_id}.dec"
               f = File.open(path, 'wb') {|f| f.write decoded_data}
               trace :debug, "[#{raw_id}] forwarded undecoded evidence #{raw_id} to #{path}"
               next
