@@ -495,8 +495,6 @@ class Config
 
     end
 
-    puts "ORIGINAL: #{$original_dir}"
-
     optparse.parse(argv)
 
     # execute the configurator

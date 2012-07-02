@@ -1,6 +1,7 @@
 # save the execution dir
 # useful during configuration to get filename paths
 $invocation_directory = Dir.pwd
+$invocation_directory = ENV['CWD'] if ENV['CWD']
 
 # ensure the working dir is correct
 $execution_directory = File.dirname(File.dirname(File.realpath(__FILE__)))
