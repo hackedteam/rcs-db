@@ -333,7 +333,7 @@ Section "Install Section" SecInstall
         DetailPrint "Installing VC redistributable (x64).."
         nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_x64 /q"
 
-      DetailPrint "Installing drivers.."
+      DetailPrint "Installing HASP drivers.."
       nsExec::ExecToLog "$INSTDIR\DB\bin\haspdinst -i -cm -kp -fi"
       SimpleSC::SetServiceFailure "hasplms" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
     !endif
