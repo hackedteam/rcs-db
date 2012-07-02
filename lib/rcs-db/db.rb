@@ -87,11 +87,11 @@ class Application
       # ensure the temp dir is present
       Dir::mkdir(Config.instance.temp) if not File.directory?(Config.instance.temp)
 
-      # ensure mongo users for authentication
-      DB.instance.ensure_mongo_auth
-
       # ensure the sharding is enabled
       DB.instance.enable_sharding
+
+      # ensure mongo users for authentication
+      DB.instance.ensure_mongo_auth
 
       # ensure all indexes are in place
       DB.instance.create_indexes

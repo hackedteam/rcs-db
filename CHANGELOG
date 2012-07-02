@@ -4,4 +4,4 @@ Changelog for 8.2.0
 Collector:
 
 DB:
-    - utility to see realtime mongodb logs (rcs-db-mongo-log)
+
