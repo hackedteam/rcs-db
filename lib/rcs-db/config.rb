@@ -252,65 +252,64 @@ class Config
   def generate_certificates(options)
     trace :info, "Generating ssl certificates..."
 
-    old_dir = Dir.pwd
-    Dir.chdir File.join(Dir.pwd, CERT_DIR)
+    Dir.chdir File.join(Dir.pwd, CERT_DIR) do
 
-    File.open('index.txt', 'wb+') { |f| f.write '' }
-    File.open('serial.txt', 'wb+') { |f| f.write '01' }
+      File.open('index.txt', 'wb+') { |f| f.write '' }
+      File.open('serial.txt', 'wb+') { |f| f.write '01' }
 
-    # to create the CA
-    if options[:gen_ca] or !File.exist?('rcs-ca.crt')
-      trace :info, "Generating a new CA authority..."
-      # default one
-      subj = "/CN=\"RCS Certification Authority\"/O=\"HT srl\""
-      # if specified...
-      subj = "/CN=\"#{options[:ca_name]}\"" if options[:ca_name]
-      system "openssl req -subj #{subj} -batch -days 3650 -nodes -new -x509 -keyout rcs-ca.key -out rcs-ca.crt -config openssl.cnf"
+      # to create the CA
+      if options[:gen_ca] or !File.exist?('rcs-ca.crt')
+        trace :info, "Generating a new CA authority..."
+        # default one
+        subj = "/CN=\"RCS Certification Authority\"/O=\"HT srl\""
+        # if specified...
+        subj = "/CN=\"#{options[:ca_name]}\"" if options[:ca_name]
+        system "openssl req -subj #{subj} -batch -days 3650 -nodes -new -x509 -keyout rcs-ca.key -out rcs-ca.crt -config openssl.cnf"
+      end
+
+      return unless File.exist? 'rcs-ca.crt'
+
+      trace :info, "Generating db certificate..."
+      # the cert for the db server
+      system "openssl req -subj /CN=#{@global['CN']} -batch -days 3650 -nodes -new -keyout #{@global['DB_KEY']} -out rcs-db.csr -config openssl.cnf"
+
+      return unless File.exist? @global['DB_KEY']
+
+      trace :info, "Generating collector certificate..."
+      # the cert used by the collectors
+      system "openssl req -subj /CN=collector -batch -days 3650 -nodes -new -keyout rcs-collector.key -out rcs-collector.csr -config openssl.cnf"
+
+      return unless File.exist? 'rcs-collector.key'
+
+      trace :info, "Signing certificates..."
+      # signing process
+      system "openssl ca -batch -days 3650 -out #{@global['DB_CERT']} -in rcs-db.csr -extensions server -config openssl.cnf"
+      system "openssl ca -batch -days 3650 -out rcs-collector.crt -in rcs-collector.csr -config openssl.cnf"
+
+      return unless File.exist? @global['DB_CERT']
+
+      trace :info, "Creating certificates bundles..."
+      File.open(@global['DB_CERT'], 'ab+') {|f| f.write File.read('rcs-ca.crt')}
+
+      # create the PEM file for all the collectors
+      File.open(@global['CA_PEM'], 'wb+') do |f|
+        f.write File.read('rcs-collector.crt')
+        f.write File.read('rcs-collector.key')
+        f.write File.read('rcs-ca.crt')
+      end
+
+      trace :info, "Removing temporary files..."
+      # CA related files
+      ['index.txt', 'index.txt.old', 'index.txt.attr', 'index.txt.attr.old', 'serial.txt', 'serial.txt.old'].each do |f|
+        File.delete f
+      end
+
+      # intermediate certificate files
+      ['01.pem', '02.pem', 'rcs-collector.csr', 'rcs-collector.crt', 'rcs-collector.key', 'rcs-db.csr'].each do |f|
+        File.delete f
+      end
+
     end
-
-    return unless File.exist? 'rcs-ca.crt'
-
-    trace :info, "Generating db certificate..."
-    # the cert for the db server
-    system "openssl req -subj /CN=#{@global['CN']} -batch -days 3650 -nodes -new -keyout #{@global['DB_KEY']} -out rcs-db.csr -config openssl.cnf"
-
-    return unless File.exist? @global['DB_KEY']
-
-    trace :info, "Generating collector certificate..."
-    # the cert used by the collectors
-    system "openssl req -subj /CN=collector -batch -days 3650 -nodes -new -keyout rcs-collector.key -out rcs-collector.csr -config openssl.cnf"
-
-    return unless File.exist? 'rcs-collector.key'
-
-    trace :info, "Signing certificates..."
-    # signing process
-    system "openssl ca -batch -days 3650 -out #{@global['DB_CERT']} -in rcs-db.csr -extensions server -config openssl.cnf"
-    system "openssl ca -batch -days 3650 -out rcs-collector.crt -in rcs-collector.csr -config openssl.cnf"
-
-    return unless File.exist? @global['DB_CERT']
-
-    trace :info, "Creating certificates bundles..."
-    File.open(@global['DB_CERT'], 'ab+') {|f| f.write File.read('rcs-ca.crt')}
-    
-    # create the PEM file for all the collectors
-    File.open(@global['CA_PEM'], 'wb+') do |f|
-      f.write File.read('rcs-collector.crt')
-      f.write File.read('rcs-collector.key')
-      f.write File.read('rcs-ca.crt')
-    end
-
-    trace :info, "Removing temporary files..."
-    # CA related files
-    ['index.txt', 'index.txt.old', 'index.txt.attr', 'index.txt.attr.old', 'serial.txt', 'serial.txt.old'].each do |f|
-      File.delete f
-    end
-
-    # intermediate certificate files
-    ['01.pem', '02.pem', 'rcs-collector.csr', 'rcs-collector.crt', 'rcs-collector.key', 'rcs-db.csr'].each do |f|
-      File.delete f
-    end
-
-    Dir.chdir old_dir
     trace :info, "done."
   end
 
@@ -374,6 +373,11 @@ class Config
     return Dir.pwd + '/mongodb/' + os + '/' + file + ext
   end
 
+  def self.file_path(file)
+    return file if File.file?(file)
+    return File.join($invocation_directory, file)
+  end
+
   # executed from rcs-db-config
   def self.run!(*argv)
     # reopen the class and declare any empty trace method
@@ -433,7 +437,7 @@ class Config
         options[:gen_keystores] = true
       end
       opts.on('--sign-cert FILE', String, 'Use this certificate (pfx) to sign the executables' ) do |file|
-        options[:pfx_cert] = file
+        options[:pfx_cert] = file_path(file)
       end
       opts.on('--sign-pass PASSWORD', String, 'Password for the pfx certificate' ) do |pass|
         options[:pfx_pass] = pass
@@ -490,6 +494,8 @@ class Config
       end
 
     end
+
+    puts "ORIGINAL: #{$original_dir}"
 
     optparse.parse(argv)
 
