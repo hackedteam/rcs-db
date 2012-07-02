@@ -1,24 +1,7 @@
 
-Changelog for 8.1.0
+Changelog for 8.2.0
 
 Collector:
-    - purge command (on request) for agents with evidence too old or too big
-    - auto-compact of the evidence cache to keep disk usage low
-    - fix for target ip address incorrectly reported when passing thru anonymizers
 
 DB:
-    - option to create a custom CA for certificates
-    - HASP drivers updated to 6.23
-    - MongoDB updated to 2.0.6
-    - stats for the worker (rcs-worker-stats)
-    - utility to update the license file
-    - ability to change the license file form console
-    - console can be installed by accessing: https://db_address/console
-    - the filesystem of the agent is not retrieved by default, you have to schedule it
-    - moving an agent will now create a task with progress bar
-    - automatic push of exploit with multiple files on server side
-    - ability to search in the evidence note
-    - fix for the evidence move while moving active targets
-    - fix for the status check of the shards
-    - fix for exporting the date in calendar evidence
-    - fixed a bug in the streaming function for files
+    - utility to see realtime mongodb logs (rcs-db-mongo-log)
