@@ -170,9 +170,10 @@ class DB
     # make sure the CN is resolved properly in IPv4
     content = File.open("C:\\windows\\system32\\drivers\\etc\\hosts", 'rb') {|f| f.read}
 
-    entry = "\n127.0.0.1\t#{Config.instance.global['CN']}"
+    entry = "\r\n127.0.0.1\t#{Config.instance.global['CN']}\r\n"
 
-    unless content[entry]
+    # check if already present and that is a name (not ip address)
+    if not content[entry] and (Config.instance.global['CN'] =~ /\w\./ > 0)
       trace :info, "Adding CN (#{Config.instance.global['CN']}) to /etc/hosts file"
       content += entry
       File.open("C:\\windows\\system32\\drivers\\etc\\hosts", 'wb') {|f| f.write content}
