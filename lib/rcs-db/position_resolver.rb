@@ -41,7 +41,15 @@ class PositionResolver
         location = {}
 
         if request['ip_address']
-          location = get_geoip(request['ip_address']['ipv4'])
+
+          ip = request['ip_address']['ipv4']
+
+          # check if it's a valid ip address
+          if /(?:[0-9]{1,3}\.){3}[0-9]{1,3}/.match(ip).nil? or private_address?(ip)
+            return {'location' => {}, 'address' => {}}
+          end
+
+          location = get_geoip(ip)
         elsif request['location'] or request['wifi_towers'] or request['cell_towers']
           common = {request_address: true, address_language: 'en_US', version: '1.1.0', host: 'maps.google.com'}
           request.merge! common
@@ -115,6 +123,17 @@ class PositionResolver
       end
 
       PositionResolver.get q[:map]
+    end
+
+    def private_address?(ip)
+      return true if ip.start_with?('127.')
+      return true if ip.start_with?('10.')
+      return true if ip.start_with?('169.254')
+      return true if ip.start_with?('192.168.')
+      prefix = ip.slice(0..5)
+      return true if prefix >= '172.16' and prefix <= '172.31'
+
+      return false
     end
 
   end

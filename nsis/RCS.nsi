@@ -28,6 +28,7 @@
   Var installShard
 
   Var adminpass
+  Var adminpassconfirm
   Var masterAddress
   Var localAddress
   Var masterCN
@@ -431,12 +432,6 @@ Section "Install Section" SecInstall
     #nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=444'
 	SimpleFC::AddPort 443 "RCS Database" 6 0 2 "" 1
 	SimpleFC::AddPort 444 "RCS Database" 6 0 2 "" 1
-	
-	DetailPrint "Fixing evidence format..."
-	SetDetailsPrint "textonly"
-	nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\db_update.rb"
-	SetDetailsPrint "both"
-	DetailPrint "done"
 	
     !cd '..'
     WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
@@ -928,7 +923,10 @@ Function FuncInsertCredentials
   ${NSD_CreateLabel} 5u 22u 40u 10u "Password:"
   ${NSD_CreatePassword} 50u 20u 200u 12u ""
   Pop $1
-
+  ${NSD_CreateLabel} 5u 37u 40u 10u "Confirm:"
+  ${NSD_CreatePassword} 50u 35u 200u 12u ""
+  Pop $2
+  
   ${NSD_SetFocus} $1
   
   nsDialogs::Show
@@ -936,10 +934,16 @@ FunctionEnd
 
 Function FuncInsertCredentialsLeave
   ${NSD_GetText} $1 $adminpass
+	${NSD_GetText} $2 $adminpassconfirm
 
   StrCmp $adminpass "" 0 +3
     MessageBox MB_OK|MB_ICONSTOP "Password for user 'admin' cannot be empty"
     Abort
+    
+  StrCmp $adminpass $adminpassconfirm +3 0
+    MessageBox MB_OK|MB_ICONSTOP "Password does not match the confirmations"
+    Abort
+    
 FunctionEnd
 
 

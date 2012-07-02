@@ -48,7 +48,7 @@ class Collector
       coll = Collector.new
       coll.type = 'local'
       coll.instance = instance
-      coll.name = 'Collector Node'
+      coll.name = "Collector Node on #{local_address}"
       coll.desc = "Collector Node on #{local_address}"
       coll.internal_address = local_address
       coll.address = ext_address

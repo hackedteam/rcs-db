@@ -34,6 +34,7 @@ class Application
 
     # ensure the log directory is present
     Dir::mkdir(Dir.pwd + '/log') if not File.directory?(Dir.pwd + '/log')
+    Dir::mkdir(Dir.pwd + '/log/err') if not File.directory?(Dir.pwd + '/log/err')
 
     # initialize the tracing facility
     begin
@@ -53,7 +54,7 @@ class Application
     begin
       build = File.read(Dir.pwd + '/config/VERSION_BUILD')
       version = File.read(Dir.pwd + '/config/VERSION')
-      trace :info, "Starting the RCS Database #{version} (#{build})..."
+      trace :fatal, "Starting the RCS Database #{version} (#{build})..."
 
       # ensure the temp directory is empty
       FileUtils.rm_rf(Config.instance.temp)
@@ -86,6 +87,9 @@ class Application
       # ensure the temp dir is present
       Dir::mkdir(Config.instance.temp) if not File.directory?(Config.instance.temp)
 
+      # ensure mongo users for authentication
+      DB.instance.ensure_mongo_auth
+
       # ensure the sharding is enabled
       DB.instance.enable_sharding
 
@@ -99,9 +103,6 @@ class Application
 
       # ensure at least one user (admin) is active
       DB.instance.ensure_admin
-
-      # ensure mongo users for authentication
-      DB.instance.ensure_mongo_auth
 
       # ensure we have the signatures for the agents
       DB.instance.ensure_signatures

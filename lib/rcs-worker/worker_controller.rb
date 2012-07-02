@@ -1,6 +1,7 @@
 
 require 'json'
 require_relative 'queue_manager'
+require_relative 'worker'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -13,8 +14,8 @@ class WorkerController
   include RCS::Tracer
 
   def get
-    puts "GET"
-    server_error("method not implemented")
+    Worker::resume_pending_evidences
+    ok('Rescheduled evidences for processing.')
   end
   
   def post

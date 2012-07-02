@@ -80,6 +80,7 @@ class Shard
         if shard['_id'] == id
           host, port = shard['host'].split(':')
           db = DB.instance.new_connection("rcs", host, port.to_i)
+          return {'errmsg' => "Cannot establish connection to #{host}:#{port}"} if db.nil?
           return db.stats
         end
       end

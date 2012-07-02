@@ -8,7 +8,7 @@ class TopologyTask
   include RCS::Tracer
 
   def total
-    ::Collector.where({type: 'remote'}).count + 1
+    ::Collector.where({type: 'remote'}).count + 2
   end
   
   def next_entry
@@ -33,7 +33,7 @@ class TopologyTask
       raise "Cannot push to #{anon.name}" unless Frontend.nc_push(anon.address)
     end
     
-    @description = "Topology applied successfully"
+    yield @description = "Topology applied successfully"
   end
 end
 

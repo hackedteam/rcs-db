@@ -81,7 +81,7 @@ module Parser
   # - JSON encoded POST content ("{"q": ["pippo", "pluto"], "filter": "all"}") will be treated as a CGI query
   # - multipart POST will be parsed correctly and :content contains all the parts
   #
-  def prepare_request(method, uri, query, cookie, content_type, content)
+  def prepare_request(method, uri, query, content, http, peer)
     controller, uri_params = parse_uri uri
     
     params = Hash.new
@@ -97,18 +97,21 @@ module Parser
     request[:uri] = uri
     request[:uri_params] = uri_params
     request[:params] = params
-    request[:cookie] = guid_from_cookie(cookie)
+    request[:cookie] = guid_from_cookie(http[:cookie])
     # if not content_type is provided, default to urlencoded
-    request[:content_type] = content_type || 'application/x-www-form-urlencoded'
+    request[:content_type] = http[:content_type] || 'application/x-www-form-urlencoded'
 
     if request[:content_type]['multipart/form-data']
-      request[:content] = parse_multipart_content(content, content_type)
+      request[:content] = parse_multipart_content(content, http[:content_type])
       request[:content][:type] = 'multipart'
     else
       # use 'content' as a string instead of symbol because it is a string in the multipart decoding
       request[:content] = {'content' => content}
       request[:content][:type] = json_content.empty? ? 'binary' : 'json'
     end
+
+    request[:headers] = http
+    request[:peer] = peer
 
     return request
   end

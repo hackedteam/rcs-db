@@ -17,6 +17,7 @@ log4r_config:
       outputters:
         - stderr
         - logfile
+        - errfile
 
   outputters:
     - type     : StderrOutputter
@@ -34,6 +35,17 @@ log4r_config:
       date_pattern: '%Y-%m-%d'
       trunc       : 'false'
       dirname     : "#{HOME}/log"
+      formatter   :
+        date_pattern: '%Y-%m-%d %H:%M:%S %z'
+        pattern     : '%d [%l]: %x %m'
+        type        : PatternFormatter
+
+    - type        : DateFileOutputter
+      name        : errfile
+      level       : ERROR
+      date_pattern: '%Y-%m-%d'
+      trunc       : 'false'
+      dirname     : "#{HOME}/log/err"
       formatter   :
         date_pattern: '%Y-%m-%d %H:%M:%S %z'
         pattern     : '%d [%l]: %x %m'

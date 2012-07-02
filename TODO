@@ -1,30 +1,38 @@
 
-TODO (daVinci 8.x.x):
+TODO 8.2.0:
 
-    stats for worker
+    update ruby & eventmachine
 
-    ip addresses of the sync
+    keyword split for text search
 
-    update license method
+    custom filters
 
-    symbian configuration method
+    chat peer not as string but array
 
-    purge command
+    targets recordings (schedario)
 
+    ocr for images
 
-    use em-http-server in db and worker
+    differentiate between input/output connectors:
+        - connector for translation
+        - xml format
+        - implement transport layers:
+        - proprietary for read-only db
+        - sftp
 
-    documentation of connectors
+--------------------------------------
 
-    fix collector tests
+    incremental backup
+
+    archive option for targets
+
+======================================
 
     mongo authentication
 
     with mongo 2.1.x
         logRotate
         mongos --install (windows service)
-
-    upgrade for nia
 
 
 

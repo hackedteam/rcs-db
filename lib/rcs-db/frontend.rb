@@ -26,7 +26,7 @@ class Frontend
 
       # send the push request
       http = Net::HTTP.new(nc.address, 80)
-      resp = http.request_put("/RCS-NC_#{address}", '', headers)
+      resp = http.send_request('PUSH', "#{address}", '', headers)
 
       return false unless resp.body == "OK"
       
@@ -37,33 +37,6 @@ class Frontend
 
     return true
   end
-
-  def self.collector_put(filename, content)
-    begin
-      raise "no collector found" if ::Status.where({type: 'collector'}).any_in(status: [::Status::OK, ::Status::WARN]).count == 0
-      # put the file on every collector, we cannot know where it will be requested
-      ::Status.where({type: 'collector'}).any_in(status: [::Status::OK, ::Status::WARN]).each do |collector|
-
-        next if collector.address.nil?
-        
-        trace :info, "Frontend: Putting #{filename} to #{collector.name} (#{collector.address})"
-
-        headers = {}
-        sig = ::Signature.where({scope: 'server'}).first
-        headers['X-Auth-Frontend'] = sig[:value]
-
-        # send the push request
-        http = Net::HTTP.new(collector.address, 80)
-        resp = http.request_put("/#{filename}", content, headers)
-
-        raise "wrong response from collector" unless resp.body == "OK"
-      end
-    rescue Exception => e
-      trace :error, "Frontend Collector PUT: #{e.message}"
-      raise "Cannot put file on collector"
-    end
-  end
-
 
   def self.proxy(method, host, url, content = nil, headers = {})
     begin
@@ -78,11 +51,76 @@ class Frontend
 
       # send the push request
       http = Net::HTTP.new(collector.address, 80)
-      http.send_request('HEAD', "/#{method}/#{host}#{url}", content, headers)
+      http.send_request('PROXY', "/#{method}/#{host}#{url}", content, headers)
 
     rescue Exception => e
       trace :error, "Frontend Collector PROXY: #{e.message}"
       raise "Cannot proxy the request"
+    end
+  end
+
+  def self.collector_put(filename, content, factory, user)
+    begin
+      raise "no collector found" if ::Status.where({type: 'collector'}).any_in(status: [::Status::OK, ::Status::WARN]).count == 0
+
+      saved = false
+
+      # put the file on every collector, we cannot know where it will be requested
+      ::Status.where({type: 'collector'}).any_in(status: [::Status::OK, ::Status::WARN]).each do |collector|
+
+        next if collector.address.nil?
+        
+        trace :info, "Frontend: Putting #{filename} to #{collector.name} (#{collector.address})"
+
+        headers = {}
+        sig = ::Signature.where({scope: 'server'}).first
+        headers['X-Auth-Frontend'] = sig[:value]
+
+        # send the request
+        http = Net::HTTP.new(collector.address, 80)
+        resp = http.request_put("/#{filename}", content, headers)
+
+        raise resp.body unless resp.body == "OK"
+
+        # save the filename in the public documents
+        unless saved
+          user = ::User.find(user)
+          ::PublicDocument.create({name: File.basename(filename, '.*'),
+                                   user: user[:name],
+                                   factory: [factory[:_id]],
+                                   time: Time.now.getutc.to_i})
+          saved = true
+        end
+      end
+    rescue Exception => e
+      trace :error, "Frontend Collector PUT: #{e.message}"
+      raise "Cannot put file on collector: #{e.message}"
+    end
+  end
+
+  def self.collector_del(filename)
+    begin
+      raise "no collector found" if ::Status.where({type: 'collector'}).any_in(status: [::Status::OK, ::Status::WARN]).count == 0
+      # put the file on every collector, we cannot know where it will be requested
+      ::Status.where({type: 'collector'}).any_in(status: [::Status::OK, ::Status::WARN]).each do |collector|
+
+        next if collector.address.nil?
+
+        trace :info, "Frontend: Deleting #{filename} from #{collector.name} (#{collector.address})"
+
+        headers = {}
+        sig = ::Signature.where({scope: 'server'}).first
+        headers['X-Auth-Frontend'] = sig[:value]
+
+        # send the request
+        http = Net::HTTP.new(collector.address, 80)
+        resp = http.send_request('DELETE', "/#{filename}", nil, headers)
+
+        raise "wrong response from collector" unless resp.body == "OK"
+      end
+    rescue Exception => e
+      trace :error, "Frontend Collector DELETE: #{e.message}"
+      raise "Cannot delete file from collector"
     end
   end
 

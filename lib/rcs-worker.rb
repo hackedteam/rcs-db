@@ -1,5 +1,11 @@
+# save the execution dir
+# useful during configuration to get filename paths
+$invocation_directory = Dir.pwd
+$invocation_directory = ENV['CWD'] if ENV['CWD']
+
 # ensure the working dir is correct
-Dir.chdir File.dirname(File.dirname(File.realpath(__FILE__)))
+$execution_directory = File.dirname(File.dirname(File.realpath(__FILE__)))
+Dir.chdir $execution_directory
 
 # load the bundler gem (those taken from git and not installed in rubygems)
 #Bundler.setup

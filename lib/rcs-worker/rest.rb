@@ -84,10 +84,6 @@ module RESTController
       RESTResponse.new(STATUS_SERVER_ERROR, message, {}, callback)
     end
 
-    def stream_file(filename, callback=nil)
-      RESTFileStream.new(filename, callback)
-    end
-
     def self.get(request)
       CollectorController
     end
