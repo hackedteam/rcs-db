@@ -93,7 +93,7 @@ class DB
   end
 
   # insert here the class to be indexed
-  @@classes_to_be_indexed = [::Audit, ::User, ::Group, ::Alert, ::Core, ::Collector, ::Injector, ::Item, ::PublicDocument]
+  @@classes_to_be_indexed = [::Audit, ::User, ::Group, ::Alert, ::Core, ::Collector, ::Injector, ::Item, ::PublicDocument, ::EvidenceFilter]
 
   def create_indexes
     db = DB.instance.new_connection("rcs")
@@ -215,6 +215,11 @@ class DB
       end
       File.delete(core_file)
     end
+  end
+
+  def create_evidence_filters
+    trace :debug, "Creating default evidence filters"
+    ::EvidenceFilter.create_default
   end
 
 end

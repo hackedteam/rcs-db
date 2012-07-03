@@ -142,7 +142,11 @@ class Evidence
     filter = params['filter'].dup if params.has_key? 'filter' and params['filter'].is_a? Hash
 
     # if not specified the filter on the date is last 24 hours
-    filter['from'] = Time.now.to_i - 86400 if filter['from'].nil?
+    filter['from'] = Time.now.to_i - 86400 if filter['from'].nil? or filter['from'] == '24h'
+    filter['from'] = Time.now.to_i - 7*86400 if filter['from'] == 'week'
+    filter['from'] = Time.now.to_i - 30*86400 if filter['from'] == 'month'
+    filter['from'] = Time.now.to_i if filter['from'] == 'now'
+
     filter['to'] = Time.now.to_i if filter['to'].nil?
 
     # to remove a filter set it to 0

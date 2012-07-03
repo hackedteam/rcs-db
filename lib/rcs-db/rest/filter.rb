@@ -11,7 +11,7 @@ class FilterController < RESTController
     require_auth_level :view
 
     mongoid_query do
-      filters = ::EvidenceFilter.any_of({user: [@session[:user][:_id]]}, {user: []})
+      filters = ::EvidenceFilter.any_of({user: [@session[:user][:_id]]}, {user: []}).order_by([[:name, :asc]])
       return ok(filters)
     end
   end
