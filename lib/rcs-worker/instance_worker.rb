@@ -128,7 +128,7 @@ class InstanceWorker
             end
 
             ev_type = ''
- ``
+
             evidences.each do |ev|
 
               next if ev.empty?
