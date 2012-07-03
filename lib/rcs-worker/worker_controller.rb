@@ -28,12 +28,10 @@ class WorkerController
   end
   
   def delete
-    puts "DELETE"
     server_error("method not implemented")
   end
   
   def put
-    puts "PUT"
     server_error("method not implemented")
   end
   
