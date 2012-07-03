@@ -165,15 +165,19 @@ class DB
   end
 
   def ensure_cn_resolution
+    # only for windows
     return unless RbConfig::CONFIG['host_os'] =~ /mingw/
+
+    # don't add if it's an ip address
+    return unless Config.instance.global['CN'] =~ /[a-zA-Z]/
 
     # make sure the CN is resolved properly in IPv4
     content = File.open("C:\\windows\\system32\\drivers\\etc\\hosts", 'rb') {|f| f.read}
 
     entry = "\r\n127.0.0.1\t#{Config.instance.global['CN']}\r\n"
 
-    # check if already present and that is a name (not ip address)
-    if not content[entry] and (Config.instance.global['CN'] =~ /\w\./ > 0)
+    # check if already present
+    unless content[entry]
       trace :info, "Adding CN (#{Config.instance.global['CN']}) to /etc/hosts file"
       content += entry
       File.open("C:\\windows\\system32\\drivers\\etc\\hosts", 'wb') {|f| f.write content}

@@ -47,8 +47,6 @@ class Evidence
         protected
 
         def create_callback
-          # skip migrated logs, the stats are calculated by the migration script
-          return if (self[:_mid] != nil and self[:_mid] > 0)
           return if STAT_EXCLUSION.include? self.type
           agent = Item.find self.aid
           agent.stat.evidence ||= {}
