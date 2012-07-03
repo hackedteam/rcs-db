@@ -7,6 +7,8 @@ TODO 8.2.0:
 
     custom filters
 
+    config templates
+
     policies?
 
     chat peer not as string but array
