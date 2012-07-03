@@ -1353,7 +1353,7 @@ if false
 
 end
 
-# frontend
+# public files
 if false
   puts "frontend.index"
   res = http.request_get("/public", {'Cookie' => cookie})
@@ -1367,6 +1367,25 @@ if false
   
 end
 
+# filters
+if false
+  puts "fitler.index"
+  res = http.request_get("/filter", {'Cookie' => cookie})
+  puts res.body
+  puts
+=begin  
+  puts "fitler.create"
+  res = http.request_post("/filter", {name: "public", filter: "ciao"}.to_json, {'Cookie' => cookie})
+  puts res.body
+  puts
+
+  puts "fitler.create"
+  res = http.request_post("/filter", {name: "private", filter: "bau", private: true}.to_json, {'Cookie' => cookie})
+  puts res.body
+  puts
+=end
+  
+end
 
 # logout
 res = http.request_post('/auth/logout', nil, {'Cookie' => cookie})
