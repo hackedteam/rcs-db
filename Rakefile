@@ -93,7 +93,7 @@ task :protect do
   execute "Copying the rgloader" do
     RGPATH = RUBYENCPATH + '/rgloader'
     Dir.mkdir(Dir.pwd + '/lib/rgloader')
-    files = Dir[RGPATH + '/**']
+    files = Dir[RGPATH + '/*']
     # keep only the interesting files (1.9.3 windows, macos, linux)
     files.delete_if {|v| v.match(/rgloader\./)}
     files.delete_if {|v| v.match(/19[\.12]/)}
