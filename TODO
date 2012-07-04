@@ -13,7 +13,7 @@ TODO 8.2.0:
     chat peer not as string but array
 
     correlation:
-        targets recordings (schedario)
+        target records (schedario)
         global target position (http://www.zeit.de/datenschutz/malte-spitz-data-retention)
 
     ocr for images
