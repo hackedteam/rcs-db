@@ -3,6 +3,12 @@ TODO 8.2.0:
 
     update ruby & eventmachine
 
+    clock sync with console on ws startup
+
+    push notification for new console
+
+    fix the worker queue reporting wrong number
+
     keyword split for text search
 
     *custom filters

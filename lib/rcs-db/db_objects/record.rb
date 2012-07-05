@@ -10,7 +10,7 @@ class Record
   field :name, type: String
 
 
-  field :target, type: Array
+  field :path, type: Array
 
   index :name
   index :target
