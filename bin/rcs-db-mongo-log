@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+
+# ensure the working dir is correct
+Dir.chdir File.dirname(File.dirname(File.realpath(__FILE__)))
+
+spawn "bin/baretail.exe log/mongoc.log log/mongos.log log/mongod.log"
+
