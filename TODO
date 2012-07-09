@@ -3,11 +3,7 @@ TODO 8.2.0:
 
     update ruby & eventmachine
 
-    fix the worker queue reporting wrong number
-
     keyword split for text search
-
-    different cert for network
 
     first time sync with NIA & TNI
 

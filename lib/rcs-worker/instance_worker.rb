@@ -242,6 +242,10 @@ class InstanceWorker
     @state == :stopped
   end
 
+  def state
+    @state
+  end
+
   def forwarding?
     RCS::DB::Config.instance.global['FORWARD'] == true
   end

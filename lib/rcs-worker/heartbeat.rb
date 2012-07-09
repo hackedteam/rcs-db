@@ -40,7 +40,8 @@ class HeartBeat
       ip = 'unknown'
     end
 
-    message = SystemStatus.my_error_msg || "Processing evidence from #{QueueManager.instance.how_many_processing} agents."
+    msg = QueueManager.instance.how_many_processing > 0 ? "Processing evidence from #{QueueManager.instance.how_many_processing} agents." : 'Idle...'
+    message = SystemStatus.my_error_msg || msg
 
     # report our status
     status = SystemStatus.my_status
