@@ -1367,6 +1367,14 @@ if false
   
 end
 
+# template
+if false
+  puts "template.index"
+  res = http.request_get("/template", {'Cookie' => cookie})
+  puts res.body
+  puts
+end
+
 # filters
 if false
   puts "fitler.index"

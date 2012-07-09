@@ -359,7 +359,7 @@ Section "Install Section" SecInstall
       ; write the config yaml
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --defaults --CN $masterCN"
       ; generate the SSL cert
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-ca --generate-certs"
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-ca --generate-certs --generate-certs-anon"
       ; generate the keystores
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-keystores"
       SetDetailsPrint "both"

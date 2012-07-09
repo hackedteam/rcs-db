@@ -2,7 +2,9 @@
 Changelog for 8.2.0
 
 Collector:
+    - fix path traversal http request from public directory
 
 DB:
     - configuration templates
     - evidence filters can now be saved for future reuse
+
