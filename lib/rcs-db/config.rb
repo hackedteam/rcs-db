@@ -335,7 +335,7 @@ class Config
       return unless File.exist? 'rcs-anon.key'
 
       trace :info, "Signing certificates..."
-      system "openssl ca -batch -days 3650 -out rcs-anon.crt -in rcs-anon.csr -config openssl.cnf"
+      system "openssl ca -batch -days 3650 -out rcs-anon.crt -in rcs-anon.csr -config openssl.cnf -name CA_network"
 
       trace :info, "Creating certificates bundles..."
 
