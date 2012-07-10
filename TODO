@@ -1,7 +1,7 @@
 
 TODO 8.2.0:
 
-    update ruby & eventmachine
+    upgrade to mongoid 3.0.x
 
     keyword split for text search
 

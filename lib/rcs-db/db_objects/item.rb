@@ -57,7 +57,8 @@ class Item
   embeds_many :download_requests, class_name: "DownloadRequest"
   embeds_many :upgrade_requests, class_name: "UpgradeRequest"
   embeds_many :upload_requests, class_name: "UploadRequest"
-  
+  embeds_many :exec_requests, class_name: "ExecRequest"
+
   embeds_one :stat
 
   embeds_many :configs, class_name: "Configuration"
@@ -533,6 +534,14 @@ class UploadRequest
     # remove the content from the grid
     RCS::DB::GridFS.delete self[:_grid].first unless self[:_grid].nil?
   end
+end
+
+class ExecRequest
+  include Mongoid::Document
+
+  field :command, type: String
+
+  embedded_in :item
 end
 
 class Stat
