@@ -9,7 +9,6 @@ require_relative 'config'
 require 'rcs-common/trace'
 
 # system
-require 'mysql2' unless RUBY_PLATFORM =~ /java/
 require 'mongo'
 require 'mongoid'
 require 'rbconfig'
@@ -34,46 +33,6 @@ class DB
     @auth_pass = File.binread(Config.instance.file('mongodb.key')) if File.exist?(Config.instance.file('mongodb.key'))
   end
 
-unless RUBY_PLATFORM =~ /java/
-  def mysql_connect(user, pass, host)
-    begin
-      @mysql = Mysql2::Client.new(:host => host, :username => user, :password => pass, :database => 'rcs')
-      trace :info, "Connected to MySQL [#{user}:#{pass}]"
-      @available = true
-    rescue Exception => e
-      trace :fatal, "Cannot connect to MySQL: #{e.message}"
-      @available = false
-      raise
-    end
-  end
-  
-  def mysql_query(query, opts={:symbolize_keys => true})
-    begin
-      @semaphore.synchronize do
-        # execute the query
-        @mysql.query(query, opts)
-      end
-    rescue Mysql2::Error => e
-      trace :error, "#{e.message}. Retrying ..."
-      sleep 0.05
-      retry
-    rescue Exception => e
-      trace :error, "MYSQL ERROR [#{e.sql_state}][#{e.error_number}]: #{e.message}"
-      trace :error, "MYSQL QUERY: #{query}"
-      @available = false if e.error_number == 2006
-      raise
-    end
-  end
-  
-  def mysql_escape(*strings)
-    strings.each do |s|
-      s.replace @mysql.escape(s) if s.class == String
-    end
-  end
-end
-
-  # MONGO
-  
   def connect
     begin
       # this is required for mongoid >= 2.4.2
@@ -138,7 +97,7 @@ end
   end
 
   # insert here the class to be indexed
-  @@classes_to_be_indexed = [::Audit, ::User, ::Group, ::Alert, ::Core, ::Collector, ::Injector, ::Item, ::PublicDocument]
+  @@classes_to_be_indexed = [::Audit, ::User, ::Group, ::Alert, ::Core, ::Collector, ::Injector, ::Item, ::PublicDocument, ::EvidenceFilter]
 
   def create_indexes
     db = DB.instance.new_connection("rcs")
@@ -210,13 +169,18 @@ end
   end
 
   def ensure_cn_resolution
+    # only for windows
     return unless RbConfig::CONFIG['host_os'] =~ /mingw/
+
+    # don't add if it's an ip address
+    return unless Config.instance.global['CN'] =~ /[a-zA-Z]/
 
     # make sure the CN is resolved properly in IPv4
     content = File.open("C:\\windows\\system32\\drivers\\etc\\hosts", 'rb') {|f| f.read}
 
-    entry = "\n127.0.0.1\t#{Config.instance.global['CN']}"
+    entry = "\r\n127.0.0.1\t#{Config.instance.global['CN']}\r\n"
 
+    # check if already present
     unless content[entry]
       trace :info, "Adding CN (#{Config.instance.global['CN']}) to /etc/hosts file"
       content += entry
@@ -255,6 +219,11 @@ end
       end
       File.delete(core_file)
     end
+  end
+
+  def create_evidence_filters
+    trace :debug, "Creating default evidence filters"
+    ::EvidenceFilter.create_default
   end
 
 end

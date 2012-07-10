@@ -13,11 +13,16 @@ class SignatureController < RESTController
     require_auth_level :server, :admin, :sys
     
     begin
-      if @params['_id'] == 'cert'
+      if @params['_id'] == 'server.pem'
         sig = {}
         sig[:filename] = Config.instance.global['CA_PEM']
         sig[:value] = File.open(Config.instance.cert('CA_PEM'), 'rb') {|f| f.read}
         trace :info, "[#{@request[:peer]}] Requested the CA certificate"
+      elsif @params['_id'] == 'network.pem'
+        sig = {}
+        sig[:filename] = 'rcs-network.pem'
+        sig[:value] = File.open(Config.instance.cert('rcs-network.pem'), 'rb') {|f| f.read}
+        trace :info, "[#{@request[:peer]}] Requested the network certificate"
       else
         sig = ::Signature.where({scope: @params['_id']}).first
         trace :info, "[#{@request[:peer]}] Requested the '#{@params['_id']}' signature [#{sig[:value]}]"

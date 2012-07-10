@@ -42,7 +42,7 @@ log4r_config:
 
     - type        : DateFileOutputter
       name        : errfile
-      level       : ERROR
+      level       : WARN
       date_pattern: '%Y-%m-%d'
       trunc       : 'false'
       dirname     : "#{HOME}/log/err"

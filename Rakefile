@@ -1,5 +1,6 @@
 require "bundler/gem_tasks"
 require 'rake'
+require 'rbconfig'
 
 require 'rake/testtask'
 Rake::TestTask.new(:test) do |test|
@@ -24,7 +25,7 @@ end
 desc "Housekeeping for the project"
 task :clean do
   execute "Cleaning the log directory" do
-    Dir['./log/*'].each do |f|
+    Dir['./log/*.log'].each do |f|
       File.delete(f)
     end
   end
@@ -34,10 +35,34 @@ desc "Create the NSIS installer for windows"
 task :nsis do
   puts "Housekeeping..."
   Rake::Task[:clean].invoke
-  execute "Creating NSIS installer" do
-    # invoke the nsis builder
-    system "\"C:\\Program Files (x86)\\NSIS\\makensis.exe\" /V2 ./nsis/RCS.nsi"
-  end
+  Rake::Task[:protect].invoke
+
+	VERSION = File.read('config/VERSION_BUILD')
+	MAKENSIS = "\"C:\\Program Files (x86)\\NSIS\\makensis.exe\""
+
+  execute 'Generating RCS-Exploit NSIS installer...' do
+ 		system "#{MAKENSIS} /V1 ./nsis/RCS-Exploits.nsi"
+	end
+		
+	execute 'Signing RCS-Exploits installer...' do
+		system "./nsis/SignTool.exe sign /P password /f ./nsis/HT.pfx ./nsis/rcs-exploits-#{VERSION}.exe"
+	end
+
+	execute 'Generating RCS-Agent NSIS installer...' do
+		system "#{MAKENSIS} /V1 ./nsis/RCS-Agents.nsi"
+	end
+		
+	execute 'Signing RCS-Agents installer...' do
+		system "./nsis/SignTool.exe sign /P password /f ./nsis/HT.pfx ./nsis/rcs-agents-#{VERSION}.exe"
+	end
+	
+	execute 'Generating RCS NSIS installer...' do
+		system "#{MAKENSIS} /V1 ./nsis/RCS.nsi"
+	end
+		
+	execute 'Signing RCS installer...' do
+		system "./nsis/SignTool.exe sign /P password /f ./nsis/HT.pfx ./nsis/rcs-setup-#{VERSION}.exe"
+	end
 end
 
 desc "Remove the protected release code"
@@ -49,7 +74,14 @@ task :unprotect do
   end
 end
 
-RUBYENCPATH = '/Applications/Development/RubyEncoder'
+case RbConfig::CONFIG['host_os']
+  when /darwin/
+    RUBYENCPATH = '/Applications/Development/RubyEncoder'
+    RUBYENC = "#{RUBYENCPATH}/bin/rubyencoder"
+  when /mingw/
+    RUBYENCPATH = 'C:/Program Files (x86)/RubyEncoder'
+    RUBYENC = "\"C:\\Program Files (x86)\\RubyEncoder\\bin\\rubyencoder.exe\""
+end
 
 desc "Create the encrypted code for release"
 task :protect do
@@ -72,11 +104,11 @@ task :protect do
   end
   execute "Encrypting code" do
     # we have to change the current dir, otherwise rubyencoder
-    # will recreate the lib/rcs-collector structure under rcs-collector-release
+    # will recreate the lib/rcs-db structure under rcs-db-release
     Dir.chdir "lib/rcs-db/"
-    system "#{RUBYENCPATH}/bin/rubyencoder -o ../rcs-db-release -r --ruby 1.9.2 *.rb */*.rb"
+    system "#{RUBYENC} -o ../rcs-db-release -r --ruby 1.9.2 *.rb */*.rb"
     Dir.chdir "../rcs-worker"
-    system "#{RUBYENCPATH}/bin/rubyencoder -o ../rcs-worker-release -r --ruby 1.9.2 *.rb */*.rb"
+    system "#{RUBYENC} -o ../rcs-worker-release -r --ruby 1.9.2 *.rb */*.rb"
     Dir.chdir "../.."
   end
   execute "Copying libs" do

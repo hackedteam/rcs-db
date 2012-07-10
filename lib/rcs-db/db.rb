@@ -71,9 +71,6 @@ class Application
       # we need the certs
       return 1 unless Config.instance.check_certs
 
-      # make sure the backup dir is present
-      FileUtils.mkdir_p(Config.instance.global['BACKUP_DIR']) if not File.directory?(Config.instance.global['BACKUP_DIR'])
-
       # ensure that the CN is resolved to 127.0.0.1 in the /etc/host file
       # this is to avoid IPv6 resolution under windows 2008
       DB.instance.ensure_cn_resolution
@@ -86,6 +83,9 @@ class Application
 
       # ensure the temp dir is present
       Dir::mkdir(Config.instance.temp) if not File.directory?(Config.instance.temp)
+
+      # make sure the backup dir is present
+      FileUtils.mkdir_p(Config.instance.global['BACKUP_DIR']) if not File.directory?(Config.instance.global['BACKUP_DIR'])
 
       # ensure the sharding is enabled
       DB.instance.enable_sharding
@@ -109,6 +109,9 @@ class Application
 
       # load cores in the /cores dir
       DB.instance.load_cores
+
+      # create the default filters
+      DB.instance.create_evidence_filters
 
       # perform any pending operation in the journal
       OffloadManager.instance.recover

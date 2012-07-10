@@ -196,7 +196,7 @@ class InstanceWorker
             retry
           rescue Exception => e
             trace :fatal, "[#{raw_id}:#{@ident}:#{@instance}] Unrecoverable error processing evidence #{raw_id}: #{e.message}"
-            trace :debug, "[#{raw_id}:#{@ident}:#{@instance}] EXCEPTION: " + e.backtrace.join("\n")
+            trace :fatal, "[#{raw_id}:#{@ident}:#{@instance}] EXCEPTION: " + e.backtrace.join("\n")
 
             Dir.mkdir "decoding_failed" unless File.exists? "decoding_failed"
             path = "decoding_failed/#{raw_id}.dec"
@@ -240,6 +240,10 @@ class InstanceWorker
   
   def stopped?
     @state == :stopped
+  end
+
+  def state
+    @state
   end
 
   def forwarding?

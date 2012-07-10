@@ -466,7 +466,19 @@ class AgentController < RESTController
       return ok
     end
   end
-  
+
+  # fucking flex that does not support the DELETE http method
+  def upload_destroy
+    require_auth_level :tech
+
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+      agent.upload_requests.destroy_all(conditions: { _id: @params['upload']})
+      Audit.log :actor => @session[:user][:name], :action => "agent.upload", :desc => "Removed an upload request for agent '#{agent['name']}'"
+      return ok
+    end
+  end
+
   # retrieve the list of upgrade for a given agent
   def upgrades
     require_auth_level :server, :tech

@@ -21,7 +21,7 @@ class QueueManager
   end
 
   def how_many_processing
-    @instances.size
+    @instances.select {|k, processor| processor.state == :running}.size
   end
 
   def queue(instance, ident, evidence)
