@@ -40,6 +40,10 @@ task :nsis do
 	VERSION = File.read('config/VERSION_BUILD')
 	MAKENSIS = "\"C:\\Program Files (x86)\\NSIS\\makensis.exe\""
 
+  FileUtils.rm_rf "./nsis/rcs-exploits-#{VERSION}.exe"
+  FileUtils.rm_rf "./nsis/rcs-agents-#{VERSION}.exe"
+  FileUtils.rm_rf "./nsis/rcs-setup-#{VERSION}.exe"
+
   execute 'Generating RCS-Exploit NSIS installer...' do
  		system "#{MAKENSIS} /V1 ./nsis/RCS-Exploits.nsi"
 	end
