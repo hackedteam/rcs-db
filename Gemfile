@@ -20,7 +20,6 @@ gem 'uuidtools'
 gem 'ffi'
 # MIME decoding
 gem 'mail'
-gem 'RocketAMF', :git => "https://github.com/rubyamf/rocketamf.git"
 
 # databases
 gem 'mongo', "= 1.6.4", :git => "git://github.com/danielemilan/mongo-ruby-driver.git", :branch => "1.6.4_append"
