@@ -395,14 +395,14 @@ class LicenseManager
         # remove a link if the pointed item is not present or
         # the pointed item does not link back to it
         next_hop = ::Collector.first(conditions: {_id: coll.next[0]})
-        if not coll.next[0].nil? and (next_hop.nil? or next_hop.prev[0] != coll[:_id])
+        if not coll.next[0].nil? and (next_hop.nil? or next_hop.prev[0] != coll[:_id].to_s)
           trace :warn, "Fixing the anonymizer chain: #{coll['name']} [next]"
           coll.next = [nil]
           coll.save
         end
 
         prev_hop = ::Collector.first(conditions: {_id: coll.prev[0]})
-        if not coll.prev[0].nil? and (prev_hop.nil? or prev_hop.next[0] != coll[:_id])
+        if not coll.prev[0].nil? and (prev_hop.nil? or prev_hop.next[0] != coll[:_id].to_s)
           trace :warn, "Fixing the anonymizer chain: #{coll['name']} [prev]"
           coll.prev = [nil]
           coll.save
