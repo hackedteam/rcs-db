@@ -1,7 +1,7 @@
 source "http://rubygems.org"
 # Add dependencies required to use your gem here.
 
-gem "rcs-common", ">= 8.1.0", :path => "../rcs-common"
+gem "rcs-common", ">= 8.2.0", :path => "../rcs-common"
 
 gem 'em-http-request'
 gem 'em-websocket'
@@ -20,7 +20,6 @@ gem 'uuidtools'
 gem 'ffi'
 # MIME decoding
 gem 'mail'
-gem 'RocketAMF', :git => "https://github.com/rubyamf/rocketamf.git"
 
 # databases
 gem 'mongo', "= 1.6.4", :git => "git://github.com/danielemilan/mongo-ruby-driver.git", :branch => "1.6.4_append"

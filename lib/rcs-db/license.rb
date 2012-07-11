@@ -36,7 +36,7 @@ class LicenseManager
   include RCS::Tracer
   include RCS::Crypt
 
-  LICENSE_VERSION = '8.0'
+  LICENSE_VERSION = '8.2'
   LICENSE_FILE = 'rcs.lic'
 
   DONT_STEAL_RCS = "Ò€‹›ﬁﬂ‡°·‚æ…¬˚∆˙©ƒ∂ß´®†¨ˆøΩ≈ç√∫˜µ≤¡™£¢∞§¶•ªº"

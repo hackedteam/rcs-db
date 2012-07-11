@@ -28,18 +28,20 @@ class Evidence
         field :note, type: String
         field :aid, type: String            # agent BSON_ID
         field :data, type: Hash
-    
+        field :kw, type: Array              # keywords for full text search
+
         store_in Evidence.collection_name('#{target}')
 
         after_create :create_callback
         before_destroy :destroy_callback
 
-        index :type
-        index :da
-        index :dr
-        index :aid
-        index :rel
-        index :blo
+        index :type, background: true
+        index :da, background: true
+        index :dr, background: true
+        index :aid, background: true
+        index :rel, background: true
+        index :blo, background: true
+        index :kw, background: true
         shard_key :type, :da, :aid
 
         STAT_EXCLUSION = ['filesystem', 'info', 'command', 'ip']

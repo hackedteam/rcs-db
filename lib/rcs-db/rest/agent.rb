@@ -630,6 +630,41 @@ class AgentController < RESTController
     end
   end
 
+  def exec
+    require_auth_level :server, :tech, :view
+
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+
+      case @request[:method]
+        when 'GET'
+          list = agent.exec_requests
+          return ok(list)
+        when 'POST'
+          agent.exec_requests.create(@params['exec'])
+          trace :info, "[#{@request[:peer]}] Added download request #{@params['exec']}"
+          Audit.log :actor => @session[:user][:name], :action => "agent.exec", :desc => "Added a command execution request for agent '#{agent['name']}'"
+        when 'DELETE'
+          agent.exec_requests.destroy_all(conditions: { _id: @params['exec']})
+          trace :info, "[#{@request[:peer]}] Deleted the EXEC #{@params['exec']}"
+      end
+
+      return ok
+    end
+  end
+
+  # fucking flex that does not support the DELETE http method
+  def exec_destroy
+    require_auth_level :tech
+
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+      agent.exec_requests.destroy_all(conditions: { _id: @params['exec']})
+      Audit.log :actor => @session[:user][:name], :action => "agent.exec", :desc => "Removed a command execution request for agent '#{agent['name']}'"
+      return ok
+    end
+  end
+
 end
 
 end #DB::
