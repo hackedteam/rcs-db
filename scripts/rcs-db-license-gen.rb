@@ -13,7 +13,7 @@ require 'time'
 class LicenseGenerator
   include Singleton
 
-  LICENSE_VERSION = '8.0'
+  LICENSE_VERSION = '8.2'
 
   def initialize
     # default values.
