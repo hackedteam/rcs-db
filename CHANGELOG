@@ -6,6 +6,7 @@ Collector:
 
 DB:
     - Ruby updated to 1.9.3-p194
+    - utilities to restart the rcs services
     - configuration templates
     - evidence filters can now be saved for future reuse
     - not interesting evidence field are no more exported to connectors
