@@ -1,3 +1,9 @@
 @echo off
 
-net %* RCSWorker
+IF %1 == restart (
+  net stop RCSWorker
+  net start RCSWorker
+) ELSE (
+	net %1 RCSWorker
+)
+
