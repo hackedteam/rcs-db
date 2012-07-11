@@ -5,7 +5,9 @@ TODO 8.2.0:
 
     keyword split for text search
 
-    don't forward note, kw and other irrelevant fields
+    bat for services restart
+
+    fix target and operation evidence size
 
     first time sync with NIA & TNI
 

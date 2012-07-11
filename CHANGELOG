@@ -2,7 +2,6 @@
 Changelog for 8.2.0
 
 Collector:
-    - fix path traversal http request from public directory
     - support for command execution during sync
 
 DB:
