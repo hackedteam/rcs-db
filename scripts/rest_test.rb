@@ -1136,19 +1136,25 @@ if false
   
 end
 
-#location
+# position
 if false
+  # TEST TORINO
+  loc = {map: {wifi_towers: [{mac_address: '00:21:1C:7A:D6:22', signal_strength: -76, ssid: 'OMNI-LOBBY'}]}}
+  puts 'location.wifi'
+  res = http.request_post('/position', loc.to_json, {'Cookie' => cookie})
+  puts res.body
+=begin
   # GPS
   loc = {map: {location: {latitude: 45.12345, longitude: 9.54321}}}
   puts 'location.gps'
-  res = http.request_post('/location', loc.to_json, {'Cookie' => cookie})
+  res = http.request_post('/position', loc.to_json, {'Cookie' => cookie})
   puts res.body
 
   # CELL
   loc = {map: {cell_towers: [{mobile_country_code: 222, mobile_network_code: 1, location_area_code: 61208, cell_id: 528, signal_strength: -92, timing_advance: 0, age: 0}
                             ], radio_type: 'gsm'}}
   puts 'location.cell'
-  res = http.request_post('/location', loc.to_json, {'Cookie' => cookie})
+  res = http.request_post('/position', loc.to_json, {'Cookie' => cookie})
   puts res.body
   
   # WIFI
@@ -1164,14 +1170,15 @@ if false
          ]}
        }
   puts 'location.wifi'
-  res = http.request_post('/location', loc.to_json, {'Cookie' => cookie})
+  res = http.request_post('/position', loc.to_json, {'Cookie' => cookie})
   puts res.body
 
   # IP
   loc = {map: {ip_address: {ipv4: '8.8.8.8'}}}
   puts 'location.ip'
-  res = http.request_post('/location', loc.to_json, {'Cookie' => cookie})
+  res = http.request_post('/position', loc.to_json, {'Cookie' => cookie})
   puts res.body
+=end
 end
 
 # fake sync

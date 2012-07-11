@@ -105,6 +105,7 @@ class DB
     @@classes_to_be_indexed.each do |k|
       # get the metadata of the collection
       coll = db.collection(k.collection_name)
+
       # skip if already indexed
       begin
         next if coll.stats['nindexes'] > 1
@@ -114,6 +115,22 @@ class DB
       trace :info, "Creating indexes for #{k.collection_name}"
       k.create_indexes
     end
+
+    # TODO: remove in 8.3
+    # ensure indexes on every evidence collection
+    collections = Mongoid::Config.master.collection_names
+    collections.keep_if {|x| x['evidence.']}
+    collections.delete_if {|x| x['grid.'] or x['files'] or x['chunks']}
+    collections.each do |coll_name|
+      coll = db.collection(coll_name)
+      e = Evidence.collection_class(coll_name.split('.').last)
+      # number of index + _id + shard_key
+      next if coll.stats['nindexes'] == e.index_options.size + 2
+      trace :info, "Creating indexes for #{coll_name}"
+      e.create_indexes
+    end
+
+
   end
 
   def enable_sharding
