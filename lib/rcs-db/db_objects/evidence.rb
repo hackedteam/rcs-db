@@ -28,7 +28,7 @@ class Evidence
         field :note, type: String
         field :aid, type: String            # agent BSON_ID
         field :data, type: Hash
-        field :kw, type: Array              # keywords for full text search
+        field :kw, type: Array, default: [] # keywords for full text search
 
         store_in Evidence.collection_name('#{target}')
 

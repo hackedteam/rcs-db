@@ -129,8 +129,6 @@ class DB
       trace :info, "Creating indexes for #{coll_name}"
       e.create_indexes
     end
-
-
   end
 
   def enable_sharding

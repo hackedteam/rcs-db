@@ -5,7 +5,7 @@ TODO 8.2.0:
 
     keyword split for text search
 
-    bat for services restart
+    migrate old data to keyword
 
     fix target and operation evidence size
 

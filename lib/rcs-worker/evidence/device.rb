@@ -7,5 +7,11 @@ module DeviceProcessing
   def type
     :device
   end
+
+  def process
+    puts self[:data]
+    puts self[:data][:content].keywords
+  end
+
 end # DeviceProcessing
 end # RCS

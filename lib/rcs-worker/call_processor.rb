@@ -347,6 +347,9 @@ class Call
       # TODO: where do we add the size to the stats? (probably in the same place where we will forward to connectors)
       RCS::Worker::StatsManager.instance.add evidence: 1
 
+      # keyword full search
+      ev.kw = self[:kw]
+
       ev.save
       ev
     end
