@@ -145,7 +145,11 @@ class InstanceWorker
                 ev.extend DefaultProcessing
               end
 
+              # post processing
               ev.process if ev.respond_to? :process
+
+              # full text indexing
+              ev.respond_to?(:keyword_index) ? ev.keyword_index : ev.default_keyword_index
 
               trace :debug, "[#{raw_id}:#{@ident}:#{@instance}] processing evidence of type #{ev[:type]} (#{raw.bytesize} bytes)"
 

@@ -35,6 +35,15 @@ module SingleEvidence
       evs.has_next?
     end
 
+    def default_keyword_index
+      self[:kw] = []
+
+      self[:data].each_value do |value|
+        next unless value.is_a? String
+        self[:kw] += value.keywords
+      end
+    end
+
     def store(agent, target)
       agent = get_agent
       return nil if agent.nil?
