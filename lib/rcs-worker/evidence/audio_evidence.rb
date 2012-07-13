@@ -28,6 +28,7 @@ module AudioEvidence
         next unless value.is_a? String
         self[:kw] += value.keywords
       end
+      self[:kw].uniq!
     end
 
     def store(agent, target)
