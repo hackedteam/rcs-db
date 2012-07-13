@@ -254,6 +254,9 @@ class Config
   def generate_certificates(options)
     trace :info, "Generating ssl certificates..."
 
+    # ensure dir is present
+    FileUtils.mkdir_p File.join(Dir.pwd, CERT_DIR)
+
     Dir.chdir File.join(Dir.pwd, CERT_DIR) do
 
       File.open('index.txt', 'wb+') { |f| f.write '' }
@@ -317,6 +320,9 @@ class Config
 
   def generate_certificates_anon
     trace :info, "Generating anon ssl certificates..."
+
+    # ensure dir is present
+    FileUtils.mkdir_p File.join(Dir.pwd, CERT_DIR)
 
     Dir.chdir File.join(Dir.pwd, CERT_DIR) do
 

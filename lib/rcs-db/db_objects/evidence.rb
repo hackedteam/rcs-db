@@ -185,20 +185,25 @@ class Evidence
   end
 
   def self.parse_info_keywords(filter, filter_hash)
+
+    info = filter.delete('info')
+
     # check if it's in the form of specific field name:
     #   field1:value1,field2:value2,etc,etc
     #
-    if /[[:alpha:]]:[[:alpha:]]/ =~ filter['info']
-      key_values = filter.delete('info').split(',')
+    if /[[:alpha:]]:[[:alpha:]]/ =~ info
+      key_values = info.split(',')
       key_values.each do |kv|
         k, v = kv.split(':')
         k.downcase!
         filter_hash["data.#{k}"] = Regexp.new("#{v}", true)
+        # add the keyword search to cut the nscanned item
+        filter_hash[:kw.all] ||= v.keywords
       end
     else
       # otherwise we use it for full text search with keywords
       # the search matches if all the keywords are matched inside the evidence
-      filter_hash[:kw.all] = filter.delete('info').keywords
+      filter_hash[:kw.all] = info.keywords
     end
   rescue Exception => e
     trace :error, "Invalid filter for data [#{e.message}], ignoring..."
