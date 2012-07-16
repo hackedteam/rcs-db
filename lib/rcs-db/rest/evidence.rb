@@ -68,9 +68,14 @@ class EvidenceController < RESTController
       @params.delete('_id')
       @params.delete('target')
 
-      trace :fatal, "CANNOT MODIFY DATA #{@params['data']}" if @params.has_key? 'data'
-
+      # data cannot be modified !!!
       @params.delete('data')
+
+      # keyword index for note
+      if @params.has_key? 'note'
+        evidence[:kw] += @params['note'].keywords
+        evidence.save
+      end
 
       @params.each_pair do |key, value|
         if evidence[key.to_s] != value

@@ -10,3 +10,4 @@ DB:
     - configuration templates
     - evidence filters can now be saved for future reuse
     - not interesting evidence field are no more exported to connectors
+    - more accurate evidence size recalculation for targets and operations

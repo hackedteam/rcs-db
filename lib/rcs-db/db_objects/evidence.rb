@@ -179,7 +179,11 @@ class Evidence
     parse_info_keywords(filter, filter_hash) if filter.has_key? 'info'
 
     #filter on note
-    filter_hash[:note] = Regexp.new("#{filter.delete('note')}", true) if filter['note']
+    if filter['note']
+      note = filter.delete('note')
+      filter_hash[:note] = Regexp.new("#{note}", true)
+      filter_hash[:kw.all] = note.keywords
+    end
 
     return filter, filter_hash, target
   end
