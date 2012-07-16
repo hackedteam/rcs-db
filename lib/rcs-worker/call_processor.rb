@@ -36,7 +36,6 @@ class Channel
     @start_time = evidence[:data][:start_time]
     @written_samples = 0
     @needs_resampling = @sample_rate
-    #@resampled = false
     @wav_data = Array.new # array of 32 bit float samples
     @status = :open
     trace :debug, "[channel #{to_s}] ceating new channel #{@name} - start_time: #{@start_time} sample_rate: #{@sample_rate}"
@@ -58,12 +57,6 @@ class Channel
   def closed?
     @status == :closed
   end
-
-=begin
-  def resampled?
-    @resampled
-  end
-=end
 
   def needs_resampling?
     @needs_resampling != @sample_rate
@@ -215,7 +208,7 @@ class Call
       @sample_rate = (@channels.values.min_by {|c| c.sample_rate}).sample_rate
 
       #resample channels (if necessary)
-      @channels.values.each {|c| c.resample_channel(@sample_rate) unless c.resampled?}
+      @channels.values.each {|c| c.resample_channel(@sample_rate)}
 
       # fill in later channel
       fillin_gap = a[1].start_time - a[0].start_time
