@@ -54,9 +54,9 @@ class BuildSymbian < Build
   def sign(params)
     trace :debug, "Build: signing: #{params}"
 
-    raise "Cannot find UIDS file" unless File.exist? Config.instance.cert("symbian.yaml")
+    raise "Cannot find UIDS file" unless File.exist? Config.instance.cert("symbian.uids")
 
-    yaml = File.open(Config.instance.cert("symbian.yaml"), 'rb') {|f| f.read}
+    yaml = File.open(Config.instance.cert("symbian.uids"), 'rb') {|f| f.read}
     uids = YAML.load(yaml)
 
     # the UIDS must be 8 chars (padded with zeros)

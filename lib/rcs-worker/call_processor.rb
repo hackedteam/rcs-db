@@ -340,6 +340,9 @@ class Call
       # TODO: where do we add the size to the stats? (probably in the same place where we will forward to connectors)
       RCS::Worker::StatsManager.instance.add evidence: 1
 
+      # keyword full search
+      ev.kw = self[:kw]
+
       ev.save
       ev
     end
@@ -396,7 +399,7 @@ class CallProcessor
     return @call if @call.accept? evidence and not @call.closed?
 
     # otherwise, close the call
-    close_call {|evidence| yield evidence}
+    close_call
     @call = create_call(evidence)
     @call
   end
@@ -425,7 +428,7 @@ class CallProcessor
       return nil, 0
     end
     
-    call = get_call(evidence) #{|evidence| yield evidence}
+    call = get_call(evidence)
     return nil if call.nil?
     
     call.feed evidence do |sample_rate, left_pcm, right_pcm|

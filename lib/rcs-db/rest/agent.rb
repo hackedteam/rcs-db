@@ -466,7 +466,19 @@ class AgentController < RESTController
       return ok
     end
   end
-  
+
+  # fucking flex that does not support the DELETE http method
+  def upload_destroy
+    require_auth_level :tech
+
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+      agent.upload_requests.destroy_all(conditions: { _id: @params['upload']})
+      Audit.log :actor => @session[:user][:name], :action => "agent.upload", :desc => "Removed an upload request for agent '#{agent['name']}'"
+      return ok
+    end
+  end
+
   # retrieve the list of upgrade for a given agent
   def upgrades
     require_auth_level :server, :tech
@@ -604,16 +616,58 @@ class AgentController < RESTController
           purge = agent.purge unless agent.purge.nil?
           return ok(purge)
         when 'POST'
+          # purge local pending requests
+          agent.upload_requests.destroy_all
+          agent.filesystem_requests.destroy_all
+          agent.download_requests.destroy_all
+          agent.upgrade_requests.destroy_all
+          agent.upgradable = false
+
           agent.purge = @params['purge']
           agent.save
           trace :info, "[#{@request[:peer]}] Added purge request #{@params['purge']}"
-          Audit.log :actor => @session[:user][:name], :action => "agent.purge", :desc => "Added a purge request for agent '#{agent['name']}'"
+          Audit.log :actor => @session[:user][:name], :action => "agent.purge", :desc => "Issued a purge request for agent '#{agent['name']}'"
         when 'DELETE'
           agent.purge = [0, 0]
           agent.save
           trace :info, "[#{@request[:peer]}] Purge command reset"
       end
 
+      return ok
+    end
+  end
+
+  def exec
+    require_auth_level :server, :tech, :view
+
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+
+      case @request[:method]
+        when 'GET'
+          list = agent.exec_requests
+          return ok(list)
+        when 'POST'
+          agent.exec_requests.create(@params['exec'])
+          trace :info, "[#{@request[:peer]}] Added download request #{@params['exec']}"
+          Audit.log :actor => @session[:user][:name], :action => "agent.exec", :desc => "Added a command execution request for agent '#{agent['name']}'"
+        when 'DELETE'
+          agent.exec_requests.destroy_all(conditions: { _id: @params['exec']})
+          trace :info, "[#{@request[:peer]}] Deleted the EXEC #{@params['exec']}"
+      end
+
+      return ok
+    end
+  end
+
+  # fucking flex that does not support the DELETE http method
+  def exec_destroy
+    require_auth_level :tech
+
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+      agent.exec_requests.destroy_all(conditions: { _id: @params['exec']})
+      Audit.log :actor => @session[:user][:name], :action => "agent.exec", :desc => "Removed a command execution request for agent '#{agent['name']}'"
       return ok
     end
   end

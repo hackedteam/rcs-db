@@ -3,6 +3,6 @@
 set CWD=%CD%
 cd /D C:\RCS\DB
 
-ruby bin\rcs-remove-version-seven %*
+ruby bin\rcs-db-mongo-log %*
 
 cd /D %CWD%

@@ -51,8 +51,14 @@ class Connectors
         # ensure the dest dir is created
         FileUtils.mkdir_p path
 
+        # don't export interesting fields
+        exported = evidence.as_document
+        exported.delete('blo')
+        exported.delete('note')
+        exported.delete('kw')
+
         # dump the evidence
-        File.open(File.join(path, evidence[:_id].to_s + '.json'), 'wb') {|d| d.write evidence.to_json}
+        File.open(File.join(path, evidence[:_id].to_s + '.json'), 'wb') {|d| d.write exported.to_json}
 
         # dump the binary (if any)
         if evidence[:data][:_grid]
@@ -61,7 +67,7 @@ class Connectors
         end
         
         # delete the evidence if the rule specify to not store it in the db
-        evidence.destroy! unless f.keep
+        evidence.destroy unless f.keep
       end
     end
     

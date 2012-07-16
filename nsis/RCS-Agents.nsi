@@ -12,7 +12,6 @@
   !define PACKAGE_NAME "RCS-Agents"
   !Define /file PACKAGE_VERSION "..\config\VERSION_BUILD"
 
-  
   ;Name and file
   Name "RCS-Agents"
   OutFile "rcs-agents-${PACKAGE_VERSION}.exe"

@@ -1,6 +1,8 @@
 require 'mongoid'
 require_relative '../shard'
 
+require 'rcs-common/keywords'
+
 #module RCS
 #module DB
 
@@ -28,18 +30,20 @@ class Evidence
         field :note, type: String
         field :aid, type: String            # agent BSON_ID
         field :data, type: Hash
-    
+        field :kw, type: Array, default: [] # keywords for full text search
+
         store_in Evidence.collection_name('#{target}')
 
         after_create :create_callback
         before_destroy :destroy_callback
 
-        index :type
-        index :da
-        index :dr
-        index :aid
-        index :rel
-        index :blo
+        index :type, background: true
+        index :da, background: true
+        index :dr, background: true
+        index :aid, background: true
+        index :rel, background: true
+        index :blo, background: true
+        index :kw, background: true
         shard_key :type, :da, :aid
 
         STAT_EXCLUSION = ['filesystem', 'info', 'command', 'ip']
@@ -47,8 +51,6 @@ class Evidence
         protected
 
         def create_callback
-          # skip migrated logs, the stats are calculated by the migration script
-          return if (self[:_mid] != nil and self[:_mid] > 0)
           return if STAT_EXCLUSION.include? self.type
           agent = Item.find self.aid
           agent.stat.evidence ||= {}
@@ -144,7 +146,11 @@ class Evidence
     filter = params['filter'].dup if params.has_key? 'filter' and params['filter'].is_a? Hash
 
     # if not specified the filter on the date is last 24 hours
-    filter['from'] = Time.now.to_i - 86400 if filter['from'].nil?
+    filter['from'] = Time.now.to_i - 86400 if filter['from'].nil? or filter['from'] == '24h'
+    filter['from'] = Time.now.to_i - 7*86400 if filter['from'] == 'week'
+    filter['from'] = Time.now.to_i - 30*86400 if filter['from'] == 'month'
+    filter['from'] = Time.now.to_i if filter['from'] == 'now'
+
     filter['to'] = Time.now.to_i if filter['to'].nil?
 
     # to remove a filter set it to 0
@@ -170,72 +176,42 @@ class Evidence
     filter_hash[date.lte] = filter.delete('to') if filter.has_key? 'to'
 
     # custom filters for info
-    if filter.has_key? 'info'
-      begin
-        key_values = filter.delete('info').split(',')
-        key_values.each do |kv|
-          k, v = kv.split(':')
-          k.downcase!
-          filter_hash["data.#{k}"] = Regexp.new("#{v}", true)
-        end
-      rescue Exception => e
-        trace :error, "Invalid filter for data [#{e.message}], ignoring..."
-      end
-    end
+    parse_info_keywords(filter, filter_hash) if filter.has_key? 'info'
 
     #filter on note
-    filter_hash[:note] = Regexp.new("#{filter.delete('note')}", true) if filter['note']
+    if filter['note']
+      note = filter.delete('note')
+      filter_hash[:note] = Regexp.new("#{note}", true)
+      filter_hash[:kw.all] = note.keywords
+    end
 
     return filter, filter_hash, target
   end
 
-  def self.common_mongo_filter(params)
-    filter = {}
-    filter = JSON.parse(params['filter']) if params.has_key? 'filter'
+  def self.parse_info_keywords(filter, filter_hash)
 
-    # target id
-    target_id = filter.delete('target')
+    info = filter.delete('info')
 
-    # default date filtering is last 24 hours
-    filter['from'] = Time.now.to_i - 86400 if filter['from'].nil?
-    filter['to'] = Time.now.to_i if filter['to'].nil?
-
-    filter_hash = {}
-
-    # agent filter
-    filter_hash["aid"] = filter.delete('agent') if filter['agent']
-
-    # date filter
-    date = filter.delete('date')
-    date ||= 'da'
-
-    # do not account for filesystem and info evidences
-    filter_hash["type"] = {"$nin" => ['filesystem', 'info', 'command', 'ip']} unless filter['type']
-
-    filter_hash[date] = Hash.new
-    filter_hash[date]["$gte"] = filter.delete('from') if filter.has_key? 'from'
-    filter_hash[date]["$lte"] = filter.delete('to') if filter.has_key? 'to'
-
-    if filter.has_key? 'info'
-      begin
-        key_values = filter.delete('info').split(',')
-        key_values.each do |kv|
-          k, v = kv.split(':')
-          filter_hash["data.#{k}"] = Regexp.new("#{v}", true)
-        end
-      rescue Exception => e
-        trace :error, "Invalid filter for data [#{e.message}], ignoring..."
+    # check if it's in the form of specific field name:
+    #   field1:value1,field2:value2,etc,etc
+    #
+    if /[[:alpha:]]:[[:alpha:]]/ =~ info
+      key_values = info.split(',')
+      key_values.each do |kv|
+        k, v = kv.split(':')
+        k.downcase!
+        filter_hash["data.#{k}"] = Regexp.new("#{v}", true)
+        # add the keyword search to cut the nscanned item
+        filter_hash[:kw.all] ||= v.keywords
       end
+    else
+      # otherwise we use it for full text search with keywords
+      # the search matches if all the keywords are matched inside the evidence
+      filter_hash[:kw.all] = info.keywords
     end
-
-    # remaining filters
-    filter.each_key do |k|
-      filter_hash[k] = {"$in" => filter[k]}
-    end
-
-    return filter, filter_hash, target_id
+  rescue Exception => e
+    trace :error, "Invalid filter for data [#{e.message}], ignoring..."
   end
-
 
   def self.offload_move_evidence(params)
     old_target = ::Item.find(params[:old_target_id])

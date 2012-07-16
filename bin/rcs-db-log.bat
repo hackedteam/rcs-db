@@ -3,6 +3,6 @@
 set CWD=%CD%
 cd /D C:\RCS\DB
 
-ruby bin\rcs-db-migrate %*
+ruby bin\rcs-db-log %*
 
 cd /D %CWD%

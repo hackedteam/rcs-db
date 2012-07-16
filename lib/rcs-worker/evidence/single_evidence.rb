@@ -35,6 +35,16 @@ module SingleEvidence
       evs.has_next?
     end
 
+    def default_keyword_index
+      self[:kw] = []
+
+      self[:data].each_value do |value|
+        next unless value.is_a? String
+        self[:kw] += value.keywords
+      end
+      self[:kw].uniq!
+    end
+
     def store(agent, target)
       agent = get_agent
       return nil if agent.nil?
@@ -63,6 +73,9 @@ module SingleEvidence
         size = ev.data.to_s.size
         size += ev.data[:_grid_size] unless ev.data[:_grid_size].nil?
         RCS::Worker::StatsManager.instance.add evidence: 1, evidence_size: size
+
+        # keyword full search
+        ev.kw = self[:kw]
 
         ev.save
         ev

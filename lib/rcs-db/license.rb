@@ -36,7 +36,7 @@ class LicenseManager
   include RCS::Tracer
   include RCS::Crypt
 
-  LICENSE_VERSION = '8.0'
+  LICENSE_VERSION = '8.2'
   LICENSE_FILE = 'rcs.lic'
 
   DONT_STEAL_RCS = "Ò€‹›ﬁﬂ‡°·‚æ…¬˚∆˙©ƒ∂ß´®†¨ˆøΩ≈ç√∫˜µ≤¡™£¢∞§¶•ªº"
@@ -388,6 +388,25 @@ class LicenseManager
           curr.save
         end until next_id.nil?
         offending.destroy
+      end
+
+      # consistency check of the chain
+      ::Collector.all.each do |coll|
+        # remove a link if the pointed item is not present or
+        # the pointed item does not link back to it
+        next_hop = ::Collector.first(conditions: {_id: coll.next[0]})
+        if not coll.next[0].nil? and (next_hop.nil? or next_hop.prev[0] != coll[:_id].to_s)
+          trace :warn, "Fixing the anonymizer chain: #{coll['name']} [next]"
+          coll.next = [nil]
+          coll.save
+        end
+
+        prev_hop = ::Collector.first(conditions: {_id: coll.prev[0]})
+        if not coll.prev[0].nil? and (prev_hop.nil? or prev_hop.next[0] != coll[:_id].to_s)
+          trace :warn, "Fixing the anonymizer chain: #{coll['name']} [prev]"
+          coll.prev = [nil]
+          coll.save
+        end
       end
 
       if ::Injector.count > @limits[:nia][0]

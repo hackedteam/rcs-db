@@ -57,7 +57,8 @@ class Item
   embeds_many :download_requests, class_name: "DownloadRequest"
   embeds_many :upgrade_requests, class_name: "UpgradeRequest"
   embeds_many :upload_requests, class_name: "UploadRequest"
-  
+  embeds_many :exec_requests, class_name: "ExecRequest"
+
   embeds_one :stat
 
   embeds_many :configs, class_name: "Configuration"
@@ -110,7 +111,7 @@ class Item
       when 'operation'
         self.stat.size = 0;
         self.stat.grid_size = 0;
-        targets = Item.where(_kind: 'target').also_in(path: [self._id])
+        targets = Item.where(_kind: 'target').also_in(path: [self._id]).only(:stat)
         targets.each do |t|
           self.stat.size += t.stat.size
           self.stat.grid_size += t.stat.grid_size
@@ -120,21 +121,30 @@ class Item
         end
         self.save
       when 'target'
-        self.stat.grid_size = 0;
         self.stat.evidence = {}
         self.stat.dashboard = {}
-        agents = Item.where(_kind: 'agent', deleted: false).also_in(path: [self._id])
+        agents = Item.where(_kind: 'agent', deleted: false).also_in(path: [self._id]).only(:stat)
         agents.each do |a|
           self.stat.evidence.merge!(a.stat.evidence) {|k,o,n| o+n }
           self.stat.dashboard.merge!(a.stat.dashboard) {|k,o,n| o+n }
-          self.stat.grid_size += a.stat.grid_size
           if (not a.stat.last_sync.nil?) and (self.stat.last_sync.nil? or a.stat.last_sync > self.stat.last_sync)
             self.stat.last_sync = a.stat.last_sync
           end
         end
         db = Mongoid.database
-        collection = db.collections.select {|c| c.name == Evidence.collection_name(self._id.to_s)}
-        self.stat.size = collection.first.stats()['size'].to_i unless collection.empty?
+        # evidence size
+        collection = db.collection('evidence.' + self._id.to_s)
+        self.stat.size = collection.stats['size'].to_i
+        # grid size
+        begin
+          collection = db.collection('grid.' + self._id.to_s + '.files')
+          self.stat.grid_size = collection.stats['size'].to_i
+          collection = db.collection('grid.' + self._id.to_s + '.chunks')
+          self.stat.grid_size += collection.stats['size'].to_i
+        rescue Mongo::OperationFailure
+          # the grid collection is not present
+          self.stat.grid_size = 0
+        end
         self.save
       when 'agent'
         self.stat.evidence = {}
@@ -533,6 +543,14 @@ class UploadRequest
     # remove the content from the grid
     RCS::DB::GridFS.delete self[:_grid].first unless self[:_grid].nil?
   end
+end
+
+class ExecRequest
+  include Mongoid::Document
+
+  field :command, type: String
+
+  embedded_in :item
 end
 
 class Stat

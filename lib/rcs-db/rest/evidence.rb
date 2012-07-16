@@ -68,9 +68,14 @@ class EvidenceController < RESTController
       @params.delete('_id')
       @params.delete('target')
 
-      trace :fatal, "CANNOT MODIFY DATA #{@params['data']}" if @params.has_key? 'data'
-
+      # data cannot be modified !!!
       @params.delete('data')
+
+      # keyword index for note
+      if @params.has_key? 'note'
+        evidence[:kw] += @params['note'].keywords
+        evidence.save
+      end
 
       @params.each_pair do |key, value|
         if evidence[key.to_s] != value
@@ -297,52 +302,15 @@ class EvidenceController < RESTController
       if @params.has_key? 'startIndex' and @params.has_key? 'numItems'
         start_index = @params['startIndex'].to_i
         num_items = @params['numItems'].to_i
-        query = filtering.where(filter_hash).without(:body).order_by([[:dr, :asc], [:_id, :asc]]).skip(start_index).limit(num_items)
+        query = filtering.where(filter_hash).without(:body, :kw).order_by([[:dr, :asc], [:_id, :asc]]).skip(start_index).limit(num_items)
       else
         # without paging, return everything
-        query = filtering.where(filter_hash).without(:body).order_by([[:dr, :asc], [:_id, :asc]])
+        query = filtering.where(filter_hash).without(:body, :kw).order_by([[:dr, :asc], [:_id, :asc]])
       end
 
       return ok(query, {gzip: true})
     end
   end
-
-=begin
-  def index_amf
-    require_auth_level :view
-
-    mongoid_query do
-
-      filter, filter_hash, target_id = ::Evidence.common_mongo_filter @params
-
-      db = Mongoid.database
-      coll = db.collection("evidence.#{target_id}")
-
-      opts = {sort: ["da", :ascending]}
-
-      start_time = Time.now
-
-      #paging
-      if @params.has_key? 'startIndex' and @params.has_key? 'numItems'
-        opts[:skip] = @params['startIndex'].to_i
-        opts[:limit] = @params['numItems'].to_i
-        array = coll.find(filter_hash, opts).to_a
-      else
-        array = coll.find(filter_hash, opts).to_a
-      end
-
-      trace :debug, "[index_amf] queried mongodb for #{array.size} evidences in #{Time.now - start_time}"
-      start_time = Time.now
-
-      array.is_array_collection = true
-      amf = RocketAMF.serialize(array, 3)
-
-      trace :debug, "[index_amf] AMF serialized #{array.size} evidences in #{Time.now - start_time}"
-
-      return ok(amf, {content_type: 'binary/octet-stream', gzip: true})
-    end
-  end
-=end
 
   def count
     require_auth_level :view
@@ -359,6 +327,8 @@ class EvidenceController < RESTController
       end
 
       num_evidence = filtering.where(filter_hash).count
+
+      pp filtering.where(filter_hash).execute.explain
 
       # Flex RPC does not accept 0 (zero) as return value for a pagination (-1 is a safe alternative)
       num_evidence = -1 if num_evidence == 0

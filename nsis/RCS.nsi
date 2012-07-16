@@ -333,7 +333,7 @@ Section "Install Section" SecInstall
         DetailPrint "Installing VC redistributable (x64).."
         nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_x64 /q"
 
-      DetailPrint "Installing drivers.."
+      DetailPrint "Installing HASP drivers.."
       nsExec::ExecToLog "$INSTDIR\DB\bin\haspdinst -i -cm -kp -fi"
       SimpleSC::SetServiceFailure "hasplms" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
     !endif
@@ -359,7 +359,7 @@ Section "Install Section" SecInstall
       ; write the config yaml
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --defaults --CN $masterCN"
       ; generate the SSL cert
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-ca --generate-certs"
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-ca --generate-certs --generate-certs-anon"
       ; generate the keystores
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-keystores"
       SetDetailsPrint "both"

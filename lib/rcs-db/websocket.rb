@@ -66,7 +66,7 @@ class WebSocketManager
     end
 
     # grant the access to the client
-    ws.send({type: 'auth', result: 'granted'}.to_json)
+    ws.send({type: 'auth', result: 'granted', time: Time.now.getutc.to_i}.to_json)
 
     # save the websocket handle in the session for later use in push messages
     @sessions[msg['cookie']] = ws

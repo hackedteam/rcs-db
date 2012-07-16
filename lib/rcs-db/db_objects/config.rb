@@ -16,7 +16,7 @@ class Configuration
   field :sent, type: Integer
   field :activated, type: Integer
 
-  field :config, type: String
+  field :config, type: String   #json
   
   embedded_in :item
 
@@ -34,7 +34,7 @@ class Template
   field :desc, type: String
   field :user, type: String
 
-  field :config, type: String
+  field :config, type: String   #json
 
   store_in :templates
 end

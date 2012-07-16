@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+
+# ensure the working dir is correct
+Dir.chdir File.dirname(File.dirname(File.realpath(__FILE__)))
+
+# list of logs to be opened
+logs = []
+
+last_log = Dir['log/rcs-db**'].max
+logs << last_log
+logs << File.join('log/err', File.basename(last_log))
+
+last_log = Dir['log/rcs-worker**'].max
+logs << last_log
+logs << File.join('log/err', File.basename(last_log))
+
+spawn "bin/baretail.exe " + logs.join(" ")
