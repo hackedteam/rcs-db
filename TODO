@@ -5,7 +5,11 @@ TODO 8.2.0:
 
     keyword split for text search
 
+    keywordize the notes
+
     migrate old data to keyword
+
+    don't save not enough accurate positioning
 
     fix target and operation evidence size
 
