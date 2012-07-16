@@ -616,10 +616,17 @@ class AgentController < RESTController
           purge = agent.purge unless agent.purge.nil?
           return ok(purge)
         when 'POST'
+          # purge local pending requests
+          agent.upload_requests.destroy_all
+          agent.filesystem_requests.destroy_all
+          agent.download_requests.destroy_all
+          agent.upgrade_requests.destroy_all
+          agent.upgradable = false
+
           agent.purge = @params['purge']
           agent.save
           trace :info, "[#{@request[:peer]}] Added purge request #{@params['purge']}"
-          Audit.log :actor => @session[:user][:name], :action => "agent.purge", :desc => "Added a purge request for agent '#{agent['name']}'"
+          Audit.log :actor => @session[:user][:name], :action => "agent.purge", :desc => "Issued a purge request for agent '#{agent['name']}'"
         when 'DELETE'
           agent.purge = [0, 0]
           agent.save
