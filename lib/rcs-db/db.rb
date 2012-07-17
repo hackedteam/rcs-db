@@ -10,6 +10,7 @@ require_relative 'license'
 require_relative 'tasks'
 require_relative 'offload_manager'
 require_relative 'statistics'
+require_relative 'backup'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -115,6 +116,9 @@ class Application
 
       # perform any pending operation in the journal
       OffloadManager.instance.recover
+
+      # ensure the backup of metadata
+      BackupManager.ensure_backup
 
       # enter the main loop (hopefully will never exit from it)
       Events.new.setup Config.instance.global['LISTENING_PORT']

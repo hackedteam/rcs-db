@@ -95,9 +95,6 @@ class Config
     # default password if not configured in the config file
     Config.instance.global['CERT_PASSWORD'] ||= 'password'
 
-    # generate the network cert if not existent (retrocomp for 8.1.1 which introduced it)
-    generate_certificates_anon unless File.exist? Config.instance.cert('rcs-network.pem')
-
     return true
   end
 

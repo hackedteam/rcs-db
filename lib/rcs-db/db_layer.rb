@@ -116,7 +116,6 @@ class DB
       k.create_indexes
     end
 
-    # TODO: remove in 8.3
     # ensure indexes on every evidence collection
     collections = Mongoid::Config.master.collection_names
     collections.keep_if {|x| x['evidence.']}
@@ -128,6 +127,7 @@ class DB
       next if coll.stats['nindexes'] == e.index_options.size + 2
       trace :info, "Creating indexes for #{coll_name}"
       e.create_indexes
+      Shard.set_key(coll, {type: 1, da: 1, aid: 1})
     end
   end
 

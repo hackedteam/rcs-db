@@ -70,10 +70,6 @@ class BackupManager
       # don't backup the logs of the components
       collections.delete_if {|x| x['logs.']}
 
-      # remove it here, it will not be dumped in the main cycle
-      # we call a dump on it later with grid_filter applied on it
-      collections.delete_if {|x| x['fs.']}
-
       grid_filter = "{}"
       item_filter = "{}"
       params = {what: backup.what, coll: collections, ifilter: item_filter, gfilter: grid_filter}
@@ -111,20 +107,23 @@ class BackupManager
         end
       end
 
-      # gridfs entries linked to backed up collections
-      command = mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.files -q \"#{params[:gfilter]}\""
-      trace :debug, "Backup: #{command}"
-      ret = system command
-      trace :debug, "Backup result: #{ret}"
-      raise unless ret
+      # don't backup cores when saving metadata
+      if backup.what != 'metadata'
+        # gridfs entries linked to backed up collections
+        command = mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.files -q \"#{params[:gfilter]}\""
+        trace :debug, "Backup: #{command}"
+        ret = system command
+        trace :debug, "Backup result: #{ret}"
+        raise unless ret
 
-      # use the same query to retrieve the chunk list
-      params[:gfilter]['_id'] = 'files_id' unless params[:gfilter]['_id'].nil?
-      command = mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.chunks -q \"#{params[:gfilter]}\""
-      trace :debug, "Backup: #{command}"
-      ret = system command
-      trace :debug, "Backup result: #{ret}"
-      raise unless ret
+        # use the same query to retrieve the chunk list
+        params[:gfilter]['_id'] = 'files_id' unless params[:gfilter]['_id'].nil?
+        command = mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.chunks -q \"#{params[:gfilter]}\""
+        trace :debug, "Backup: #{command}"
+        ret = system command
+        trace :debug, "Backup result: #{ret}"
+        raise unless ret
+      end
 
       Audit.log :actor => '<system>', :action => 'backup.end', :desc => "Backup #{backup.name} completed"
 
@@ -181,6 +180,22 @@ class BackupManager
     params[:ifilter] += "0]}}"
     params[:gfilter] += "0]}}"
 
+  end
+
+  def self.ensure_backup
+    trace :info, "Ensuring the metadata backup is present..."
+    return if ::Backup.exists?(conditions: {enabled: true, what: 'metadata'})
+
+    b = ::Backup.new
+    b.enabled = true
+    b.what = 'metadata'
+    b.when = {time: "00:00", month: [], week: [0]}
+    b.name = 'AutomaticMetadata'
+    b.lastrun = ""
+    b.status = 'QUEUED'
+    b.save
+
+    trace :info, "Metadata backup job created"
   end
 
 end

@@ -3,15 +3,17 @@ TODO 8.2.0:
 
     upgrade to mongoid 3.0.x
 
-    keyword split for text search
+    upgrade mongodb 2.0.7
 
-    keywordize the notes
+    keyword split for text search
 
     migrate old data to keyword
 
     don't save not enough accurate positioning
 
-    fix target and operation evidence size
+    recreate accessible while logged in
+
+
 
     first time sync with NIA & TNI
 
