@@ -41,19 +41,21 @@ class PositionResolver
         location = {}
 
         if request['ip_address']
-
           ip = request['ip_address']['ipv4']
-
           # check if it's a valid ip address
           if /(?:[0-9]{1,3}\.){3}[0-9]{1,3}/.match(ip).nil? or private_address?(ip)
             return {'location' => {}, 'address' => {}}
           end
-
           location = get_geoip(ip)
         elsif request['location'] or request['wifi_towers'] or request['cell_towers']
           common = {request_address: true, address_language: 'en_US', version: '1.1.0', host: 'maps.google.com'}
           request.merge! common
           location = get_google(request)
+
+          # avoid too large ranges, usually incorrect positioning
+          if not location['accuracy'].nil? and location['accuracy'] > 10000
+            raise "not enough accuracy: #{location.inspect}"
+          end
         else
           raise "Don't know what to search for"
         end
@@ -71,16 +73,16 @@ class PositionResolver
     def get_google(request)
       # Gears API: http://code.google.com/apis/gears/geolocation_network_protocol.html
       # Gears Wiki: http://code.google.com/p/gears/wiki/GeolocationAPI
-      Timeout::timeout(3) do
+      Timeout::timeout(5) do
         response = Frontend.proxy('POST', 'www.google.com', '/loc/json', request.to_json)
         response.kind_of? Net::HTTPSuccess or raise(response.body)
         resp = JSON.parse(response.body)
-        resp['location'] or raise('invalid response')
+        resp['location'] or raise("invalid response: #{resp}")
       end
     end
     
     def get_geoip(ip)
-      Timeout::timeout(3) do
+      Timeout::timeout(5) do
         response = Frontend.proxy('GET', 'geoiptool.com', "/webapi.php?type=1&IP=#{ip}")
         response.kind_of? Net::HTTPSuccess or raise(response.body)
         resp = response.body.match /onLoad=.crearmapa([^)]*)/

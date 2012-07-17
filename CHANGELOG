@@ -11,3 +11,4 @@ DB:
     - evidence filters can now be saved for future reuse
     - not interesting evidence field are no more exported to connectors
     - more accurate evidence size recalculation for targets and operations
+    - the metadata backup is now created automatically if not present
