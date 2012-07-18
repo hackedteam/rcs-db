@@ -328,8 +328,6 @@ class EvidenceController < RESTController
 
       num_evidence = filtering.where(filter_hash).count
 
-      #pp filtering.where(filter_hash).execute.explain
-
       # Flex RPC does not accept 0 (zero) as return value for a pagination (-1 is a safe alternative)
       num_evidence = -1 if num_evidence == 0
       return ok(num_evidence)

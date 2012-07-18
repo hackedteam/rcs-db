@@ -5,12 +5,15 @@ TODO 8.2.0:
 
     upgrade mongodb 2.0.7
 
-    keyword split for text search
-
     migrate old data to keyword
 
     recreate accessible while logged in
 
+    check worker version (for shards)
+
+    ocr for images
+        - separate installer
+        - separate process
 
 
     first time sync with NIA & TNI
@@ -23,7 +26,6 @@ TODO 8.2.0:
         target records (schedario)
         global target position (http://www.zeit.de/datenschutz/malte-spitz-data-retention)
 
-    ocr for images
 
     differentiate between input/output connectors:
         - connector for translation
