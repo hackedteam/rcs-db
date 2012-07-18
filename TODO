@@ -9,8 +9,6 @@ TODO 8.2.0:
 
     recreate accessible while logged in
 
-    check worker version (for shards)
-
     ocr for images
         - separate installer
         - separate process

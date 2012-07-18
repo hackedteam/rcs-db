@@ -51,7 +51,7 @@ class HeartBeat
 
     begin
       # send the status to the db
-      ::Status.status_update component, ip, status, message, stats, 'worker'
+      ::Status.status_update component, ip, status, message, stats, 'worker', $version
     rescue Exception => e
       trace :fatal, "Cannot perform status update: #{e.message}"
       trace :fatal, e.backtrace
