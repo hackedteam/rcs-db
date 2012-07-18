@@ -151,8 +151,8 @@ class AgentController < RESTController
         doc[:configs] = []
       end
 
-      # make item accessible to this user
-      SessionManager.instance.add_single_accessible(@session, item._id)
+      # make item accessible to the users
+      SessionManager.instance.rebuild_all_accessible
 
       Audit.log :actor => @session[:user][:name],
                 :action => "factory.create",
@@ -346,7 +346,7 @@ class AgentController < RESTController
     agent.add_infection_files if agent.platform == 'windows'
 
     # add the new agent to all the accessible list of all users
-    SessionManager.instance.add_accessible(factory, agent)
+    SessionManager.instance.add_accessible_agent(factory, agent)
 
     # check for alerts on this new instance
     Alerting.new_instance agent

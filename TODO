@@ -7,8 +7,6 @@ TODO 8.2.0:
 
     migrate old data to keyword
 
-    recreate accessible while logged in
-
     ocr for images
         - separate installer
         - separate process
