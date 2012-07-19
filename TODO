@@ -7,6 +7,13 @@ TODO 8.2.0:
 
     migrate old data to keyword (indexer)
 
+    when worker start, print the recovery activity
+    worker does not recover when running
+
+    check backup for operation or target
+
+    smtp auth for alerts
+
     ocr for images
         - separate installer
         - separate process

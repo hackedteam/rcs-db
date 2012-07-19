@@ -36,16 +36,17 @@ class OffloadManager
 
   def run(task)
 
-    # the unique ident of this task
-    task[:id] = SecureRandom.uuid
+    # recovered task already have the id and are in the journal
+    unless task.has_key? :recover
+      # the unique ident of this task
+      task[:id] = SecureRandom.uuid
+      # save the task in the journal for recover purpose
+      journal_add task
+    end
 
     trace :info, "Offload task running: #{task[:name]} [#{task[:id]}]"
 
-    # save the task in the journal for recover purpose
-    journal_add task unless task.has_key? :recover
-
-    # every task is a separate thread
-    Thread.new do
+    job = lambda do
       begin
         # perform the task
         unless task[:method].nil?
@@ -56,14 +57,21 @@ class OffloadManager
         journal_del task
 
         trace :info, "Offload task completed: #{task[:name]} [#{task[:id]}]"
-
       rescue Exception => e
         trace :error, "Cannot perform offload task: #{e.message}"
         trace :fatal, "backtrace: " + e.backtrace.join("\n")
-      ensure
-        Thread.exit
       end
     end
+
+    # if we are recovering just perform the task waiting for it to finish
+    # this is more safe than executing all the task in parallel
+    # but will increase the starting time of the db. it will not be ready
+    # until all the task are recovered
+    job.call if task.has_key? :recover
+
+    # every task is a separate thread during normal activity
+    # this method is called by threads that need to return as quick as possible
+    Thread.new { job.call; Thread.exit } unless task.has_key? :recover
   end
 
   def add_task(task)

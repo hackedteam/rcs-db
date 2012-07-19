@@ -12,34 +12,6 @@ require_relative 'db_objects/evidence'
 
 class Indexer
 
-  def self.index_collection(evidence)
-    chunk = 100
-    cursor = 0
-    count = evidence.where(:kw.exists => false).count
-    puts "#{count} evidence to be indexed"
-
-    # divide in chunks to avoid timeouts
-    while cursor < count do
-
-      evidence.where(:kw.exists => false).limit(chunk).skip(cursor).each do |evi|
-        #puts "."
-        kw = []
-
-        evi[:data].each_value do |value|
-          next unless value.is_a? String
-          kw += value.keywords
-        end
-        kw.uniq!
-
-        puts kw.inspect
-      end
-
-      cursor += chunk
-      puts "#{count - cursor} evidence left" if count - cursor > 0
-    end
-
-  end
-
   def self.run
     puts "Full text search keyword indexer running..."
 
@@ -67,7 +39,37 @@ class Indexer
       current = Evidence.collection_class(coll_name.split('.').last)
       index_collection(current)
     end
+  end
 
+  def self.index_collection(evidence)
+    chunk = 100
+    cursor = 0
+    count = evidence.where(:kw.exists => false).count
+    puts "#{count} evidence to be indexed"
+
+    # divide in chunks to avoid timeouts
+    while cursor < count do
+
+      evidence.where(:kw.exists => false).limit(chunk).skip(cursor).each do |evi|
+        #puts "."
+        kw = keywordize(evi[:type], evi[:data])
+
+        puts kw.inspect
+      end
+
+      cursor += chunk
+      puts "#{count - cursor} evidence left" if count - cursor > 0
+    end
+  end
+
+
+  def self.keywordize(type, data)
+    kw = []
+    data.each_value do |value|
+      next unless value.is_a? String
+      kw += value.keywords
+    end
+    kw.uniq!
   end
 
 end

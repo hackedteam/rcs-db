@@ -68,7 +68,7 @@ class DB
       trace :warn, "AUTH: #{e.message}"
     end
     delta = Time.now - time
-    trace :warn, "Opening new connection is too slow (%f), check name resolution" % delta if delta > 0.5
+    trace :warn, "Opening new connection is too slow (%f)" % delta if delta > 0.5 and Config.instance.global['PERF']
     return db
   rescue Mongo::AuthenticationError => e
     trace :fatal, "AUTH: #{e.message}"
