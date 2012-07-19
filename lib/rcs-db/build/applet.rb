@@ -64,7 +64,10 @@ class BuildApplet < Build
     CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} win", {:chdir => path('')} if File.exist? path('win')
     CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} mac", {:chdir => path('')} if File.exist? path('mac')
 
-    File.open(path(@appname + '.html'), 'wb') {|f| f.write "<applet width='1' height='1' code=WebEnhancer archive='#{@appname}.jar'></applet>"}
+    # prepare the html file
+    index_content = File.open(path('index.html'), 'rb') {|f| f.read}
+    index_content['[:APPNAME:]'] = @appname
+    File.open(path(@appname + '.html'), 'wb') {|f| f.write index_content}
 
     @outputs = [@appname + '.jar', @appname + '.html']
   end
