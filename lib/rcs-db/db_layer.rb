@@ -27,7 +27,6 @@ class DB
 
   def initialize
     @available = false
-    @semaphore = Mutex.new
     @auth_required = false
     @auth_user = 'root'
     @auth_pass = File.binread(Config.instance.file('mongodb.key')) if File.exist?(Config.instance.file('mongodb.key'))

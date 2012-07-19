@@ -60,6 +60,8 @@ class ConsoleController < RESTController
     # and avoid exiting from it
     return not_found() unless file.start_with? Dir.pwd + "/console"
 
+    return not_found() unless File.exist? file
+
     return stream_file(file)
   end
 

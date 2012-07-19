@@ -5,7 +5,7 @@ TODO 8.2.0:
 
     upgrade mongodb 2.0.7
 
-    migrate old data to keyword
+    migrate old data to keyword (indexer)
 
     ocr for images
         - separate installer
