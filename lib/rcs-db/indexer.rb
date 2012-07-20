@@ -1,10 +1,11 @@
 #!/usr/bin/env ruby
 
 #
-#
+# Full text search keyword indexer
 #
 
 require 'mongoid'
+require 'set'
 
 require 'rcs-common/trace'
 
@@ -52,7 +53,7 @@ class Indexer
 
       evidence.where(:kw.exists => false).limit(chunk).skip(cursor).each do |evi|
         #puts "."
-        kw = keywordize(evi[:type], evi[:data])
+        kw = keywordize(evi[:type], evi[:data], evi[:note])
 
         puts kw.inspect
       end
@@ -63,13 +64,17 @@ class Indexer
   end
 
 
-  def self.keywordize(type, data)
-    kw = []
+  def self.keywordize(type, data, note)
+    kw = SortedSet.new
+
     data.each_value do |value|
       next unless value.is_a? String
       kw += value.keywords
     end
-    kw.uniq!
+
+    kw += note.keywords unless note.nil?
+
+    kw.to_a
   end
 
 end
