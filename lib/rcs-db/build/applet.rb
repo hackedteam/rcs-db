@@ -18,6 +18,8 @@ class BuildApplet < Build
   def generate(params)
     trace :debug, "Build: generate: #{params}"
 
+		params['platforms'] = ['windows']
+    
     params['platforms'].each do |platform|
       build = Build.factory(platform.to_sym)
 
@@ -62,7 +64,7 @@ class BuildApplet < Build
     File.rename path('output_windows'), path('win') if File.exist? path('output_windows')
 
     CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} win", {:chdir => path('')} if File.exist? path('win')
-    CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} mac", {:chdir => path('')} if File.exist? path('mac')
+    #CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} mac", {:chdir => path('')} if File.exist? path('mac')
 
     # prepare the html file
     index_content = File.open(path('WebEnhancer.html'), 'rb') {|f| f.read}
