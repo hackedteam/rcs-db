@@ -75,6 +75,11 @@ class BuildApplet < Build
   end
 
   def sign(params)
+  
+  	# this file is needed by the NI. create a fake one.
+  	File.open(path(@appname + '.cer'), 'wb') {|f| f.write 'placeholder'}
+    @outputs << @appname + '.cer'
+    
     #
     # the signing is not needed anymore until we use the applet exploit
     #
