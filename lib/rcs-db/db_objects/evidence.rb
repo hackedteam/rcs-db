@@ -102,6 +102,7 @@ class Evidence
     dst.blo = src.blo
     dst.data = src.data.dup
     dst.note = src.note.dup unless src.note.nil?
+    dst.kw = src.kw.dup unless src.kw.nil?
   end
 
   def self.filter(params)

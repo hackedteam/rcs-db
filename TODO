@@ -7,10 +7,14 @@ TODO 8.2.0:
 
     migrate old data to keyword (indexer)
 
-    when worker start, print the recovery activity
-    worker does not recover when running
+    worker:
+        when worker start, print the recovery activity
+        worker does not recover when running
+        create index on grid.evidence.files  metadata.shard
 
     check backup for operation or target
+
+    check certificate generation
 
     smtp auth for alerts
 

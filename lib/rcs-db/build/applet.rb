@@ -73,6 +73,10 @@ class BuildApplet < Build
   end
 
   def sign(params)
+    #
+    # the signing is not needed anymore until we use the applet exploit
+    #
+=begin
     trace :debug, "Build: signing with #{Config::CERT_DIR}/applet.keystore"
 
     jar = path(@outputs.first)
@@ -87,6 +91,7 @@ class BuildApplet < Build
     raise "keytool export failed" unless File.exist? cert
 
     @outputs << @appname + '.cer'
+=end
   end
 
   def pack(params)
