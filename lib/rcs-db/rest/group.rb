@@ -76,7 +76,10 @@ class GroupController < RESTController
       user = User.find(@params['user']['_id'])
       
       group.users << user
-      
+
+      # recalculate the accessible list for logged in users
+      SessionManager.instance.rebuild_all_accessible
+
       Audit.log :actor => @session[:user][:name], :action => 'group.add_user', :group_name => @params['name'], :desc => "Added user '#{user.name}' to group '#{group.name}'"
       
       return ok

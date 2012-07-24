@@ -14,6 +14,8 @@ TODO 8.2.0:
 
     check backup for operation or target
 
+    check public document deletion
+
     check certificate generation
 
     smtp auth for alerts
