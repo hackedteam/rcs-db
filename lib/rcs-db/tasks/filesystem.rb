@@ -48,8 +48,15 @@ class FilesystemTask
     # header
     yield ['agent', 'path', 'date', 'size'].to_csv
 
+    # perform de-duplication and sorting at app-layer and not in mongo
+    # because the data set can be larger the mongo is able to handle
+    data = filtering.to_a
+
+    data.uniq! {|x| x[:data]['path']}
+    data.sort! {|x, y| x[:data]['path'].downcase <=> y[:data]['path'].downcase}
+    
     # one row per evidence
-    filtering.order_by([["data.path", :asc]]).each do |fs|
+    data.each do |fs|
       agent = Item.find(fs.aid)
       yield [agent.name, fs.data['path'], Time.at(fs.da).getutc, fs.data['size'].to_i.to_s_bytes].to_csv
     end
