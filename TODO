@@ -18,6 +18,10 @@ TODO 8.2.0:
 
     check certificate generation
 
+    filesystem manager for requests
+
+    configuration for contact (facebook, twitter...)
+
     smtp auth for alerts
 
     ocr for images
