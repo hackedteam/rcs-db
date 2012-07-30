@@ -205,6 +205,23 @@ class BuildWindows < Build
 
   end
 
+  def ghost(params)
+    trace :debug, "Build: ghost: #{params}"
+
+    # patching for the ghost
+    patch_file(:file => 'ghost') do |content|
+      begin
+        content.binary_patch 'PFTBBP', [params[:sync][0]].pack('I')
+        content.binary_patch 'PFTBBP', [params[:sync][0]].pack('I')
+        content.binary_patch 'PFTBBP', [params[:build]].pack('I')
+        content.binary_patch 'PFTBBP', [params[:instance]].pack('I')
+      rescue
+        raise "Funcname marker not found"
+      end
+    end
+
+  end
+
   private
 
   def add_random(file)

