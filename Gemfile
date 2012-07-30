@@ -12,7 +12,7 @@ gem 'eventmachine', ">= 1.0.0.beta.4"
 # TAR/GZIP compression
 gem "minitar", ">= 0.5.5", :git => "git://github.com/danielemilan/minitar.git", :branch => "master"
 
-gem 'rubyzip', ">= 0.9.5"
+gem 'rubyzip'
 
 gem 'bcrypt-ruby'
 gem 'plist'
@@ -20,13 +20,12 @@ gem 'uuidtools'
 gem 'ffi'
 # MIME decoding
 gem 'mail'
-gem 'RocketAMF', :git => "https://github.com/rubyamf/rocketamf.git"
 
 # databases
-gem 'mongo', "= 1.6.1", :git => "git://github.com/danielemilan/mongo-ruby-driver.git", :branch => "1.6.1_append"
+gem 'mongo', "= 1.6.4", :git => "git://github.com/danielemilan/mongo-ruby-driver.git", :branch => "1.6.4_append"
 gem 'mongoid'
-gem 'bson', "= 1.6.1"
-gem 'bson_ext', "= 1.6.1"
+gem 'bson', "= 1.6.4"
+gem 'bson_ext', "= 1.6.4"
 
 platforms :jruby do
   gem 'json'

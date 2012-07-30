@@ -17,6 +17,7 @@ class EvidenceManager
   SYNC_IN_PROGRESS = 1
   SYNC_TIMEOUTED = 2
   SYNC_PROCESSING = 3
+  SYNC_GHOST = 4
   
   def store_evidence(ident, instance, content)
     shard_id = EvidenceDispatcher.instance.shard_id ident, instance
