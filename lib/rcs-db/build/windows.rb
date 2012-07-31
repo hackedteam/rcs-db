@@ -211,15 +211,14 @@ class BuildWindows < Build
     # patching for the ghost
     patch_file(:file => 'ghost') do |content|
       begin
-        content.binary_patch 'PFTBBP', [params[:sync][0]].pack('I')
-        content.binary_patch 'PFTBBP', [params[:sync][0]].pack('I')
-        content.binary_patch 'PFTBBP', [params[:build]].pack('I')
-        content.binary_patch 'PFTBBP', [params[:instance]].pack('I')
+        content.binary_patch 'ADDRESS1', params[:sync][0]
+        content.binary_patch 'ADDRESS2', params[:sync][1]
+        content.binary_patch "\xde\xad\xbe\xe1", [params[:build]].pack('I')
+        content.binary_patch "\xde\xad\xbe\xe2", [params[:instance]].pack('I')
       rescue
-        raise "Funcname marker not found"
+        raise "Ghost marker not found"
       end
     end
-
   end
 
   private

