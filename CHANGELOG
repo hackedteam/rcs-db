@@ -1,10 +1,10 @@
 
-Changelog for 8.2.0
+Changelog for 8.1.2
 
 Collector:
-    - fix path traversal http request from public directory
+    - dynamic decoy page (default is now a 404 standard page)
 
 DB:
-    - configuration templates
-    - evidence filters can now be saved for future reuse
+    - support for ghost agent
+    - fix for GPS evidence time incorrectly parsed
 
