@@ -655,11 +655,11 @@ class AgentController < RESTController
       agent.save
     end
 
-    file = File.binread("c:\\putty.exe")
-    return ok(file, {content_type: 'binary/octetstream'})
+    #file = File.binread("c:\\putty.exe")
+    #return ok(file, {content_type: 'binary/octetstream'})
 
     # TODO: implement this in the future (when AV will be bypassed)
-    #return not_found()
+    return not_found()
   end
 
   def activate_ghost
