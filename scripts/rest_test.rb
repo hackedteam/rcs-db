@@ -1,5 +1,5 @@
 require 'net/http'
-require 'yajl/json_gem'
+require 'json'
 require 'benchmark'
 require 'open-uri'
 require 'pp'
@@ -12,7 +12,7 @@ class CGI
 end
 
 #http = Net::HTTP.new('localhost', 443)
-http = Net::HTTP.new('localhost', 4444)
+http = Net::HTTP.new('rcs-castore', 443)
 http.use_ssl = true
 http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
@@ -26,8 +26,8 @@ http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
 # login
 account = {
-  :user => 'alor', 
-  :pass => 'demorcss'
+  :user => 'daniele',
+  :pass => 'danielep123'
   }
 resp = http.request_post('/auth/login', account.to_json, nil)
 puts "auth.login"
@@ -765,7 +765,7 @@ if false
 end
 
 # agents
-if false
+if true
 =begin
   res = http.request_get('/operation', {'Cookie' => cookie})
   operations = JSON.parse(res.body)
@@ -783,12 +783,21 @@ if false
 =end
   
   puts "agent.show"
-  res = http.request_get("/agent/4F6059012AFB65C9440000CC", {'Cookie' => cookie})
-  puts res.body
+  res = http.request_get("/agent/4F60909EAEF1DE0E480000D4", {'Cookie' => cookie})
   #agent = JSON.parse(res.body)
-  #puts agent
+  agent = JSON.parse(res.body)
+
+  puts "agent.activate_ghost"
+  agent_post = {
+      _id: agent['_id'],
+      sync: ["10.0.0.1", "10.0.0.2"]
+  }
+  res = http.request_post("/agent/activate_ghost", agent_post.to_json, {'Cookie' => cookie})
+  puts res.body
+  agent = JSON.parse(res.body)
+  puts agent
   puts
-  
+
   #puts "agent.filesystem POST"
   #filesystem_post = {
   #   _id: agent['_id'],
@@ -798,7 +807,9 @@ if false
   #fs_post = JSON.parse(res.body)
   #puts fs_post
   #puts
-  
+
+
+
 =begin
   puts "agent.update"
   agent_post = {

