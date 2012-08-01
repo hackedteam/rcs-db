@@ -18,6 +18,10 @@ TODO 8.2.0:
 
     check certificate generation
 
+    ip sync in the report
+
+    advanced deletion
+
     filesystem manager for requests
 
     configuration for contact (facebook, twitter...)

@@ -151,7 +151,10 @@ class AgentController < RESTController
         doc[:configs] = []
       end
 
-      # make item accessible to the users
+      # make item accessible to the current user (immediately)
+      SessionManager.instance.add_accessible(@session, item._id)
+
+      # make item accessible to all the other users (in a thread)
       SessionManager.instance.rebuild_all_accessible
 
       Audit.log :actor => @session[:user][:name],
