@@ -8,8 +8,6 @@ TODO 8.2.0:
         worker does not recover when running
         create index on grid.evidence.files  metadata.shard
 
-    check public document deletion
-
     check certificate generation
 
     ip sync in the report

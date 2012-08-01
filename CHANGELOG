@@ -14,3 +14,4 @@ DB:
     - the metadata backup is now created automatically if not present
     - new operations, targets and factory are displayed to other users upon refresh
     - fix for operation and target backup not performing correctly
+    - fix for file manager not deleting all entries in some cases
