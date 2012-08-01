@@ -197,6 +197,9 @@ class SessionManager
     Thread.new do
       trace :debug, "Rebuilding accessible list..."
       ::Session.all.each do |sess|
+        # skip authenticated collector
+        next if sess[:level].include? :server
+
         user = ::User.find(sess[:user].first)
         sess[:accessible] = get_accessible(user)
         sess.save
