@@ -23,9 +23,10 @@ gem 'mail'
 
 # databases
 gem 'mongo', "= 1.6.4", :git => "git://github.com/danielemilan/mongo-ruby-driver.git", :branch => "1.6.4_append"
-gem 'mongoid', "< 3.0.0"
 gem 'bson', "= 1.6.4"
 gem 'bson_ext', "= 1.6.4"
+
+gem 'mongoid', "< 3.0.0"
 
 platforms :jruby do
   gem 'json'
