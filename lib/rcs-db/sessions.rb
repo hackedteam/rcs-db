@@ -195,15 +195,21 @@ class SessionManager
   def rebuild_all_accessible
     # create a new thread to be fast returning from this method
     Thread.new do
-      trace :debug, "Rebuilding accessible list..."
-      ::Session.all.each do |sess|
-        # skip authenticated collector
-        next if sess[:level].include? :server
+      begin
+        trace :debug, "Rebuilding accessible list..."
+        ::Session.all.each do |sess|
+          # skip authenticated collector
+          next if sess[:level].include? :server
 
-        user = ::User.find(sess[:user].first)
-        sess[:accessible] = get_accessible(user)
-        sess.save
-        trace :debug, "Accessible for #{user[:name]} rebuilt"
+          user = ::User.find(sess[:user].first)
+          sess[:accessible] = get_accessible(user)
+          sess.save
+          trace :debug, "Accessible for #{user[:name]} rebuilt"
+        end
+      rescue Exception => e
+        trace :error, "Rebuilding accessible list failed: #{e.message}"
+      ensure
+        Thread.exit
       end
     end
   end

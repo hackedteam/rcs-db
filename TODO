@@ -17,6 +17,7 @@ TODO 8.2.0:
     advanced deletion
 
     filesystem manager for requests
+    filesystem split in chunks
 
     configuration for contact (facebook, twitter...)
 
