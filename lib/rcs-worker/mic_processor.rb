@@ -45,7 +45,7 @@ module Worker
     def feed(evidence)
       @raw_counter += 1
       
-      @timecode = tc evidence
+      @timecode = evidence[:da]
       @duration += (1.0 * evidence[:wav].size) / @sample_rate
 
       left_pcm = Array.new evidence[:wav]
