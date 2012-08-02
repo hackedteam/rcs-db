@@ -21,20 +21,6 @@ module AudioEvidence
       ::Item.agents.where({instance: info[:instance]}).first
     end
 
-    def default_keyword_index
-      self[:kw] = []
-
-      self[:data].each_pair do |key, value|
-        next if key == :grid_content
-        next unless value.is_a? String
-        self[:kw] += value.keywords
-      end
-      self[:kw].uniq!
-    rescue Exception => e
-      trace :error, "KEYWORD ERROR: #{e.message}"
-      trace :error, "EXCEPTION: " + e.backtrace.join("\n")
-    end
-
     def store(agent, target)
       trace :debug, "storage of audio evidence still not implemented!"
     end
