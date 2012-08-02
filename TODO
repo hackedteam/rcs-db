@@ -1,10 +1,6 @@
 
 TODO 8.2.0:
 
-    upgrade to mongoid 3.0.x
-
-    upgrade mongodb 2.0.7
-
     migrate old data to keyword (indexer)
 
     worker:
@@ -12,17 +8,24 @@ TODO 8.2.0:
         worker does not recover when running
         create index on grid.evidence.files  metadata.shard
 
-    check backup for operation or target
-
     check public document deletion
 
     check certificate generation
+
+    ip sync in the report
+
+    advanced deletion
 
     filesystem manager for requests
 
     configuration for contact (facebook, twitter...)
 
     smtp auth for alerts
+
+
+    upgrade to mongoid 3.0.x
+
+    upgrade mongodb 2.0.7
 
     ocr for images
         - separate installer
@@ -34,6 +37,9 @@ TODO 8.2.0:
     policies?
 
     chat peer not as string but array
+
+
+TODO FUTURE:
 
     correlation:
         target records (schedario)

