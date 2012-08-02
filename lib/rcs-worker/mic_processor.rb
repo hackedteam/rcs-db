@@ -24,7 +24,6 @@ module Worker
       @mic_id = evidence[:data][:mic_id]
       @sample_rate = evidence[:data][:sample_rate]
       @start_time = evidence[:da]
-      @timecode = @start_time
       @duration = 0
       @raw_counter = 0
 
@@ -46,7 +45,6 @@ module Worker
     def feed(evidence)
       @raw_counter += 1
       
-      @timecode = evidence[:da]
       @duration += (1.0 * evidence[:wav].size) / @sample_rate
 
       left_pcm = Array.new evidence[:wav]
