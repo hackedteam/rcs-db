@@ -8,7 +8,13 @@ TODO 8.2.0:
         worker does not recover when running
         create index on grid.evidence.files  metadata.shard
 
+    fix for mic over 30 min
+
     check certificate generation
+
+    smtp auth for alerts
+
+    improve network controller connections
 
     ip sync in the report
 
@@ -18,7 +24,6 @@ TODO 8.2.0:
 
     configuration for contact (facebook, twitter...)
 
-    smtp auth for alerts
 
 
     upgrade to mongoid 3.0.x

