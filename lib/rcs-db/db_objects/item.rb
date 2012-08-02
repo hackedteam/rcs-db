@@ -331,7 +331,6 @@ class Item
         end
       when 'osx'
         add_upgrade('inputmanager', File.join(build.tmpdir, 'inputmanager'))
-        add_upgrade('xpc', File.join(build.tmpdir, 'xpc'))
         add_upgrade('driver', File.join(build.tmpdir, 'driver'))
       when 'ios'
         add_upgrade('dylib', File.join(build.tmpdir, 'dylib'))
