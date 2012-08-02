@@ -23,7 +23,7 @@ module Worker
       @target = target
       @mic_id = evidence[:data][:mic_id]
       @sample_rate = evidence[:data][:sample_rate]
-      @timecode = tc evidence
+      @timecode = evidence[:da]
       @duration = 0
       @raw_counter = 0
 
@@ -35,11 +35,7 @@ module Worker
     end
 
     def file_name
-      @mic_id.to_i.to_s
-    end
-
-    def tc(evidence)
-      evidence[:da]
+      "#{@mic_id.to_i.to_s}:#{@timecode}"
     end
 
     def close!
