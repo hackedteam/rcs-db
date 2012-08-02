@@ -169,6 +169,8 @@ class Config
     @global['BACKUP_DIR'] = options[:backup] unless options[:backup].nil?
     @global['SMTP'] = options[:smtp] unless options[:smtp].nil?
     @global['SMTP_FROM'] = options[:smtp_from] unless options[:smtp_from].nil?
+    @global['SMTP_USER'] = options[:smtp_user] unless options[:smtp_user].nil?
+    @global['SMTP_PASS'] = options[:smtp_pass] unless options[:smtp_pass].nil?
 
     # changing the CN is a risky business :)
     if options[:newcn]
@@ -511,6 +513,12 @@ class Config
       end
       opts.on( '-f', '--mail-from EMAIL', String, 'Use this sender for alert emails' ) do |from|
         options[:smtp_from] = from
+      end
+      opts.on( '--mail-user USER', String, 'Use this username to authenticate alert emails' ) do |user|
+        options[:smtp_user] = user
+      end
+      opts.on( '--mail-pass PASS', String, 'Use this password to authenticate alert emails' ) do |pass|
+        options[:smtp_pass] = pass
       end
 
       opts.separator ""

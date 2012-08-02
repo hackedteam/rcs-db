@@ -13,5 +13,6 @@ DB:
     - more accurate evidence size recalculation for targets and operations
     - the metadata backup is now created automatically if not present
     - new operations, targets and factory are displayed to other users upon refresh
+    - smtp authentication for alert emails
     - fix for operation and target backup not performing correctly
     - fix for file manager not deleting all entries in some cases
