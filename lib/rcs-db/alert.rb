@@ -256,10 +256,12 @@ Date: #{Time.now}
 #{body}
 END_OF_MESSAGE
 
+      auth = Config.instance.global['SMTP_AUTH'] ? Config.instance.global['SMTP_AUTH'].to_sym : nil
+
       Net::SMTP.start(host, port, Config.instance.global['CN'],
                                   Config.instance.global['SMTP_USER'],
                                   Config.instance.global['SMTP_PASS'],
-                                  Config.instance.global['SMTP_AUTH']) do |smtp|
+                                  auth) do |smtp|
         # send the message
         smtp.send_message msgstr, Config.instance.global['SMTP_FROM'], to
       end

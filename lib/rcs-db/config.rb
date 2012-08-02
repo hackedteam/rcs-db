@@ -171,6 +171,7 @@ class Config
     @global['SMTP_FROM'] = options[:smtp_from] unless options[:smtp_from].nil?
     @global['SMTP_USER'] = options[:smtp_user] unless options[:smtp_user].nil?
     @global['SMTP_PASS'] = options[:smtp_pass] unless options[:smtp_pass].nil?
+    @global['SMTP_AUTH'] = options[:smtp_auth] unless options[:smtp_auth].nil?
 
     # changing the CN is a risky business :)
     if options[:newcn]
@@ -519,6 +520,9 @@ class Config
       end
       opts.on( '--mail-pass PASS', String, 'Use this password to authenticate alert emails' ) do |pass|
         options[:smtp_pass] = pass
+      end
+      opts.on( '--mail-auth TYPE', String, 'SMTP auth type: (plain, login or cram_md5)' ) do |auth|
+        options[:smtp_auth] = auth
       end
 
       opts.separator ""
