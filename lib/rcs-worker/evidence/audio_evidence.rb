@@ -24,11 +24,15 @@ module AudioEvidence
     def default_keyword_index
       self[:kw] = []
 
-      self[:data].each_value do |value|
+      self[:data].each_pair do |key, value|
+        next if key == :grid_content
         next unless value.is_a? String
         self[:kw] += value.keywords
       end
       self[:kw].uniq!
+    rescue Exception => e
+      trace :error, "KEYWORD ERROR: #{e.message}"
+      trace :error, "EXCEPTION: " + e.backtrace.join("\n")
     end
 
     def store(agent, target)
