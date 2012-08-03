@@ -410,7 +410,7 @@ class EvidenceController < RESTController
       filtering = filtering.any_in(:aid => [agent[:_id]]) unless agent.nil?
 
       # perform de-duplication and sorting at app-layer and not in mongo
-      # because the data set can be larger the mongo is able to handle
+      # because the data set can be larger than mongo is able to handle
       data = filtering.to_a
 
       data.uniq! {|x| x[:data]['path']}
