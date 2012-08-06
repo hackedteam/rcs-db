@@ -42,7 +42,8 @@ class Configuration
   end
 
   def add_ghost
-    return if is_ghost_present?
+    # be sure to overwrite any other ghost present
+    remove_ghost if is_ghost_present?
 
     config = JSON.parse self.config
 
