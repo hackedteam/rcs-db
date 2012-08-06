@@ -150,7 +150,7 @@ class BackupManager
     items = ::Item.any_of({_id: id}, {path: id})
 
     raise "cannot perform partial backup: invalid ObjectId" if items.empty?
-    
+
     # remove all the collections except 'items'
     params[:coll].delete_if {|c| c != 'items'}
 
