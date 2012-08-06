@@ -16,6 +16,8 @@ TODO 8.2.0:
 
     advanced deletion
 
+    split arch of the applets
+
     filesystem manager for requests
     filesystem split in chunks
 
