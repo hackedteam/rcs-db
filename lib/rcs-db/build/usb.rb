@@ -65,9 +65,10 @@ class BuildUSB < Build
       f.puts "CODEC=#{names[:codec]}"
       f.puts "DLL64=#{names[:core64]}"
 
-      # TODO: reinsert those after AV signature
+      # TODO: driver removal
       f.puts "HDRV=null"
       f.puts "DRIVER64=null"
+
       #f.puts "HDRV=#{names[:driver]}"
       #f.puts "DRIVER64=#{names[:driver64]}"
 
