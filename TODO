@@ -39,6 +39,7 @@ TODO 8.2.0:
     first time sync with NIA & TNI
 
     policies?
+        - license for upload & execute
 
     chat peer not as string but array
 
