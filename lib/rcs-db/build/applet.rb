@@ -54,7 +54,7 @@ class BuildApplet < Build
     obfuscated = buf.unpack("c*").collect {|c| c ^ pass_char}
     File.open(outputfile,"wb") { |f| f.write(obfuscated.pack("c*")) }
   end
-  
+
   def melt(params)
     trace :debug, "Build: melt #{params}"
 
@@ -67,12 +67,12 @@ class BuildApplet < Build
     end
     
     if File.exists?(path('w.jar'))
-      FileUtils.cp path('w.jar'), path(@appname + '.jar') 
+      FileUtils.cp path('w.jar'), path(@appname + '.jar')
       @app_type = :normal
       classname = "Html5"
     end
 
-    #obfuscate output_* with xor 0xff 
+    # obfuscate output_* with xor 0xff
     xor_encrypt(path('output_windows'), path('w')) if File.exists? path('output_windows')
     xor_encrypt(path('output_osx'), path('m')) if File.exists? path('output_osx')
 

@@ -26,7 +26,6 @@ module Worker
       @start_time = evidence[:da]
       @duration = 0
       @raw_counter = 0
-
       @evidence = store evidence[:da], agent, @target
     end
 
