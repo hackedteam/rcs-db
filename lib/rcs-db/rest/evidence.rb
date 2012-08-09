@@ -395,6 +395,8 @@ class EvidenceController < RESTController
 
     mongoid_query do
 
+      start = Time.now
+
       # filter by target
       target = Item.where({_id: @params['target']}).first
       return not_found("Target not found") if target.nil?
@@ -409,12 +411,29 @@ class EvidenceController < RESTController
       filtering = Evidence.collection_class(target[:_id]).where({:type => 'filesystem'})
       filtering = filtering.any_in(:aid => [agent[:_id]]) unless agent.nil?
 
+      if @params['filter']
+        trace :debug, "Filter = #{@params['filter']}"
+
+        filtering = filtering.and({"data.path".to_sym => Regexp.new(@params['filter'], true)})
+
+        trace :debug, filtering.inspect
+      end
+
+      trace :debug, "After filtering: #{Time.now - start}"
+
       # perform de-duplication and sorting at app-layer and not in mongo
       # because the data set can be larger than mongo is able to handle
       data = filtering.to_a
 
+      trace :debug, "After array (#{data.size}): #{Time.now - start}"
+
       data.uniq! {|x| x[:data]['path']}
+
+      trace :debug, "After unique: #{Time.now - start}"
+
       data.sort! {|x, y| x[:data]['path'].downcase <=> y[:data]['path'].downcase}
+
+      trace :debug, "After sort: #{Time.now - start}"
 
       return ok(data)
     end

