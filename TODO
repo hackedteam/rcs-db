@@ -1,6 +1,11 @@
 
 TODO 8.2.0:
 
+    watermark:
+        - encrypted cores
+        - patch the markers
+
+
     update ruby & eventmachine
 
     keyword split for text search

