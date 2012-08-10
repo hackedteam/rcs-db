@@ -1,4 +1,5 @@
 
+<<<<<<< HEAD
 Changelog for 8.2.0
 
 Collector:
@@ -18,3 +19,11 @@ DB:
     - fix for operation and target backup not performing correctly
     - fix for file manager not deleting all entries in some cases
 
+=======
+Changelog for 8.1.4
+
+Collector:
+
+DB:
+    - Watermark for cores
+>>>>>>> water

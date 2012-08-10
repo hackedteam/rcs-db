@@ -130,6 +130,47 @@ class BuildAndroid < Build
 
   end
 
+  def unique(core)
+
+    Zip::ZipFile.open(core) do |z|
+      z.each do |f|
+        f_path = path(f.name)
+        FileUtils.mkdir_p(File.dirname(f_path))
+
+        # skip empty dirs
+        next if File.directory?(f.name)
+
+        z.extract(f, f_path) unless File.exist?(f_path)
+      end
+    end
+
+    apktool = path('apktool.jar')
+    Dir[path('core.*.apk')].each do |apk|
+      version = apk.scan(/core.android.(.*).apk/).flatten.first
+
+      CrossPlatform.exec "java", "-jar #{apktool} d -s #{apk} #{@tmpdir}/apk.#{version}"
+
+      core_content = File.open(path("apk.#{version}/res/raw/resources.bin"), "rb") { |f| f.read }
+      add_magic(core_content)
+      File.open(path("apk.#{version}/res/raw/resources.bin"), "wb") { |f| f.write core_content }
+
+      FileUtils.rm_rf apk
+
+      CrossPlatform.exec "java", "-jar #{apktool} b #{@tmpdir}/apk.#{version} #{apk}", {add_path: @tmpdir}
+
+      core_content = File.open(apk, "rb") { |f| f.read }
+
+      Zip::ZipFile.open(core) do |z|
+        z.file.open(File.basename(apk), "wb") { |f| f.write core_content }
+      end
+    end
+
+  rescue Exception => e
+    trace :fatal, e.message
+    trace :fatal, e.backtrace.join("\n")
+
+  end
+
 end
 
 end #DB::

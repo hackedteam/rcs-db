@@ -2,7 +2,7 @@
 :serial: 'off'
 :version: '8.2'
 :type: reusable
-:expiry: '2015-01-01 00:00:00 UTC'
+:expiry: '2014-01-01 00:00:00 UTC'
 :maintenance: '2013-01-01 00:00:00 UTC'
 :users: .inf
 :agents:
@@ -50,11 +50,12 @@
 :deletion: true
 :archive: false
 :digest: !binary |-
-  Y2I0YzQxOWU3YTkzNjczZTg1N2U2ZWQ3ZDBjNzg4YWY1MGEzNGMyNw==
+  OWFhYjBiNTdlN2ZiNWY2OTI1N2VhYTdjNTdmYThjYTcwNjUwYzYzMQ==
+:check: LOuWAplu
 :signature: !binary |-
-  ODI4OTUzOTUyY2MxNTdmOWI3MDdlMjQ1MWU5YjQ3MzNjYjUwODIyMmYzYjRl
-  ZTY4ZjMzN2IxYWIzZmI3YTk2Mw==
+  Y2Y0ZjdjNjQ2ZmNiYWQ4NDc4OTQwMWU2MDA5YzViYjEyZWFmOGVjYjgyOWI3
+  YzQ4YWEyNzA0ZDg1YWRkMTNmNw==
 :integrity: !binary |-
-  ZGY0MmZjYmUzOGZmZGI3YmE3MjkzMDNkODNlZjEwNDA1M2ZlZGY3ZWYxNDRi
-  YTU5Yzk1ZjJmZTAyMDNlMTg3ZmQyNzMzOTUwOGQzZmI0ZTI5ZTlkMzViNzIz
-  MDkyZDM4
+  NmE0OWNjNzIyOWVjZDc3MjBhMTg3ZTlkODZjMzQyNzYwMGUwNjNmY2ZmZWM0
+  ZWQyNzI5MjNmYzA1MWZiZTI0M2E5OWE1NGNlYWM0ZTkxMTQyNWRiN2JlMWRm
+  YjUzYWNl

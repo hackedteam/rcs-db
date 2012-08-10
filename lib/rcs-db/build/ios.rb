@@ -106,6 +106,14 @@ class BuildIOS < Build
 
   end
 
+  def unique(core)
+    Zip::ZipFile.open(core) do |z|
+      core_content = z.file.open('core', "rb") { |f| f.read }
+      add_magic(core_content)
+      z.file.open('core', "wb") { |f| f.write core_content }
+    end
+  end
+
 end
 
 end #DB::

