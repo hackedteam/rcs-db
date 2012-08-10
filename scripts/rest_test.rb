@@ -1332,7 +1332,7 @@ if false
 end
 
 # filesystem
-if true
+if false
   
   filter = "^C:\\\\Windows$"
   filter = "^[[:alpha:]]:$"

@@ -7,6 +7,7 @@ TODO 8.2.0:
         when worker start, print the recovery activity
         worker does not recover when running
         create index on grid.evidence.files  metadata.shard
+        no kw index on encoded mail
 
     check certificate generation
 
