@@ -58,7 +58,7 @@ class CoreController < RESTController
       core.name = @params['_id']
 
       # write in a temporary file
-      temp = Config.instance.temp("#{id}-%f" % Time.now)
+      temp = Config.instance.temp("#{@params['_id']}")
       File.open(temp, 'wb+') {|f| f.write @request[:content]['content']}
 
       Zip::ZipFile.open(temp) do |z|
@@ -67,7 +67,7 @@ class CoreController < RESTController
 
       Core.make_unique(temp)
 
-      content = File.open(temp, 'wb+') {|f| f.read}
+      content = File.open(temp, 'rb+') {|f| f.read}
 
       core[:_grid] = [ GridFS.put(content, {filename: @params['_id']}) ]
       core[:_grid_size] = @request[:content]['content'].bytesize

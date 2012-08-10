@@ -57,7 +57,7 @@ class Core
 
     core = Build.factory(name.to_sym)
     core.unique(file)
-
+    core.clean
   end
 
 end #Core
