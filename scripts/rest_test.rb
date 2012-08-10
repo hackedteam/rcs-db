@@ -1336,6 +1336,8 @@ if true
   
   filter = "^C:\\\\Windows$"
   filter = "^[[:alpha:]]:$"
+  filter = "[root]"
+  filter = "c:\\windows\\"
   
   puts "evidence.filesystem"
   res = http.request_get(URI.escape("/evidence/filesystem?target=4F86902a2afb6512a700006f&agent=5008225C2AFB654A4F003B9B&filter=#{filter}"), {'Cookie' => cookie})

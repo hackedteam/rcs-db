@@ -412,28 +412,23 @@ class EvidenceController < RESTController
       filtering = filtering.any_in(:aid => [agent[:_id]]) unless agent.nil?
 
       if @params['filter']
-        trace :debug, "Filter = #{@params['filter']}"
 
-        filtering = filtering.and({"data.path".to_sym => Regexp.new(@params['filter'], true)})
+        # complete the request with some regex magic...
+        filter = "^" + Regexp.escape(@params['filter']) + "[^\\\\\\\/]+$"
 
-        trace :debug, filtering.inspect
+        # special case if they request the root
+        filter = "^([[:alpha:]]:|\\|\/)$" if @params['filter'] == "[root]"
+
+        filtering = filtering.and({"data.path".to_sym => Regexp.new(filter, true)})
       end
-
-      trace :debug, "After filtering: #{Time.now - start}"
 
       # perform de-duplication and sorting at app-layer and not in mongo
       # because the data set can be larger than mongo is able to handle
       data = filtering.to_a
-
-      trace :debug, "After array (#{data.size}): #{Time.now - start}"
-
       data.uniq! {|x| x[:data]['path']}
-
-      trace :debug, "After unique: #{Time.now - start}"
-
       data.sort! {|x, y| x[:data]['path'].downcase <=> y[:data]['path'].downcase}
 
-      trace :debug, "After sort: #{Time.now - start}"
+      trace :debug, "Filesystem request #{filter} resulted in #{data.size} entries"
 
       return ok(data)
     end

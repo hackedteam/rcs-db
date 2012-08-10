@@ -613,6 +613,18 @@ class AgentController < RESTController
     end
   end
 
+  # fucking flex that does not support the DELETE http method
+  def filesystem_destroy
+    require_auth_level :tech
+
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+      agent.filesystem_requests.destroy_all(conditions: { _id: @params['filesystem']})
+      Audit.log :actor => @session[:user][:name], :action => "agent.filesystem", :desc => "Removed a filesystem request for agent '#{agent['name']}'"
+      return ok
+    end
+  end
+
   def purge
     require_auth_level :server, :tech, :view
 
