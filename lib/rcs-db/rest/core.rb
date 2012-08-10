@@ -58,13 +58,15 @@ class CoreController < RESTController
       core.name = @params['_id']
 
       # write in a temporary file
-      temp = Config.instance.temp("#{@params['_id']}")
+      temp = Config.instance.temp("#{@params['_id']}.zip")
       File.open(temp, 'wb+') {|f| f.write @request[:content]['content']}
 
+      # exctract the version
       Zip::ZipFile.open(temp) do |z|
         core.version = z.file.open('version', "rb") { |f| f.read }
       end
 
+      # add the magic
       Core.make_unique(temp)
 
       content = File.open(temp, 'rb+') {|f| f.read}
