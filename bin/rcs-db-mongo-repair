@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+
+require 'rbconfig'
+
+# ensure the working dir is correct
+Dir.chdir File.dirname(File.dirname(File.realpath(__FILE__)))
+
+# select the correct dir based upon the platform we are running on
+case RbConfig::CONFIG['host_os']
+  when /darwin/
+    os = 'macos'
+    ext = ''
+  when /mingw/
+    os = 'win'
+    ext = '.exe'
+end
+
+datadir = Dir.pwd + '/data'
+logdir = Dir.pwd + '/log'
+
+# the mongod executable
+mongod = Dir.pwd + '/mongodb/' + os + '/mongod' + ext
+
+# the data path
+parameters = "--repair --dbpath #{datadir} --logpath #{logdir}/mongod-repair.log --nojournal"
+
+# custom arguments
+custom = ARGV.join(' ')
+
+# execute it
+exec mongod + ' ' + parameters + ' ' + custom 

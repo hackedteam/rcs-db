@@ -256,7 +256,13 @@ Date: #{Time.now}
 #{body}
 END_OF_MESSAGE
 
-      Net::SMTP.start(host, port) do |smtp|
+      auth = Config.instance.global['SMTP_AUTH'] ? Config.instance.global['SMTP_AUTH'].to_sym : nil
+
+      Net::SMTP.start(host, port, Config.instance.global['CN'],
+                                  Config.instance.global['SMTP_USER'],
+                                  Config.instance.global['SMTP_PASS'],
+                                  auth) do |smtp|
+        # send the message
         smtp.send_message msgstr, Config.instance.global['SMTP_FROM'], to
       end
     rescue Exception => e

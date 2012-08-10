@@ -331,7 +331,6 @@ class Item
         end
       when 'osx'
         add_upgrade('inputmanager', File.join(build.tmpdir, 'inputmanager'))
-        add_upgrade('xpc', File.join(build.tmpdir, 'xpc'))
         add_upgrade('driver', File.join(build.tmpdir, 'driver'))
       when 'ios'
         add_upgrade('dylib', File.join(build.tmpdir, 'dylib'))
@@ -563,6 +562,7 @@ class Stat
   field :last_sync_status, type: Integer
   field :last_child, type: Array
   field :size, type: Integer, :default => 0
+  field :ghost, type: Boolean, :default => false
   field :grid_size, type: Integer, :default => 0
   field :evidence, type: Hash, :default => {}
   field :dashboard, type: Hash, :default => {}

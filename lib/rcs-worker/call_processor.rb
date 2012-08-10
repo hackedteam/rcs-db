@@ -341,7 +341,10 @@ class Call
       RCS::Worker::StatsManager.instance.add evidence: 1
 
       # keyword full search
-      ev.kw = self[:kw]
+      ev.kw = []
+      ev.kw += peer.keywords
+      ev.kw += program.keywords
+      ev.kw.uniq!
 
       ev.save
       ev

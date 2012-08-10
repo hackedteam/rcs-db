@@ -23,7 +23,7 @@ module Worker
       @target = target
       @mic_id = evidence[:data][:mic_id]
       @sample_rate = evidence[:data][:sample_rate]
-      @timecode = tc evidence
+      @start_time = evidence[:da]
       @duration = 0
       @raw_counter = 0
 
@@ -35,11 +35,7 @@ module Worker
     end
 
     def file_name
-      @mic_id.to_i.to_s
-    end
-
-    def tc(evidence)
-      evidence[:da]
+      "#{@mic_id.to_i.to_s}:#{@start_time}"
     end
 
     def close!
@@ -48,8 +44,6 @@ module Worker
 
     def feed(evidence)
       @raw_counter += 1
-      
-      @timecode = tc evidence
       @duration += (1.0 * evidence[:wav].size) / @sample_rate
 
       left_pcm = Array.new evidence[:wav]
@@ -81,9 +75,6 @@ module Worker
         # update the evidence statistics
         # TODO: where do we add the size to the stats? (probably in the same place where we will forward to connectors)
         RCS::Worker::StatsManager.instance.add evidence: 1
-
-        # keyword full search
-        ev.kw = self[:kw]
 
         ev.save
         ev

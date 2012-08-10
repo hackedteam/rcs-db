@@ -93,7 +93,7 @@ class BackupManager
       # create the backup of the collection (common)
       params[:coll].each do |coll|
         if coll == 'items'
-          command = mongodump + " -c #{coll} -q \"#{params[:ifilter]}\""
+          command = mongodump + " -c #{coll} -q #{params[:ifilter]}"
           trace :debug, "Backup: #{command}"
           ret = system command
           trace :debug, "Backup result: #{ret}"
@@ -110,7 +110,7 @@ class BackupManager
       # don't backup cores when saving metadata
       if backup.what != 'metadata'
         # gridfs entries linked to backed up collections
-        command = mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.files -q \"#{params[:gfilter]}\""
+        command = mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.files -q #{params[:gfilter]}"
         trace :debug, "Backup: #{command}"
         ret = system command
         trace :debug, "Backup result: #{ret}"
@@ -118,7 +118,7 @@ class BackupManager
 
         # use the same query to retrieve the chunk list
         params[:gfilter]['_id'] = 'files_id' unless params[:gfilter]['_id'].nil?
-        command = mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.chunks -q \"#{params[:gfilter]}\""
+        command = mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.chunks -q #{params[:gfilter]}"
         trace :debug, "Backup: #{command}"
         ret = system command
         trace :debug, "Backup result: #{ret}"
@@ -150,7 +150,7 @@ class BackupManager
     items = ::Item.any_of({_id: id}, {path: id})
 
     raise "cannot perform partial backup: invalid ObjectId" if items.empty?
-    
+
     # remove all the collections except 'items'
     params[:coll].delete_if {|c| c != 'items'}
 
@@ -180,6 +180,22 @@ class BackupManager
     params[:ifilter] += "0]}}"
     params[:gfilter] += "0]}}"
 
+    # insert the correct delimiter and escape characters
+    if RbConfig::CONFIG['host_os'] =~ /mingw/
+      params[:ifilter].gsub! "\"", "\\\""
+      params[:ifilter].prepend "\""
+      params[:ifilter] << "\""
+
+      params[:gfilter].gsub! "\"", "\\\""
+      params[:gfilter].prepend "\""
+      params[:gfilter] << "\""
+    else
+      params[:ifilter].prepend "'"
+      params[:ifilter] << "'"
+
+      params[:gfilter].prepend "'"
+      params[:gfilter] << "'"
+    end
   end
 
   def self.ensure_backup

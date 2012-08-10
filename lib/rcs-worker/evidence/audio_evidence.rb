@@ -22,13 +22,7 @@ module AudioEvidence
     end
 
     def default_keyword_index
-      self[:kw] = []
 
-      self[:data].each_value do |value|
-        next unless value.is_a? String
-        self[:kw] += value.keywords
-      end
-      self[:kw].uniq!
     end
 
     def store(agent, target)

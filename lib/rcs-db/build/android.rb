@@ -24,7 +24,7 @@ class BuildAndroid < Build
     Dir[path('core.*.apk')].each do |d| 
       version = d.scan(/core.android.(.*).apk/).flatten.first
 
-      CrossPlatform.exec "java", "-jar #{apktool} d #{d} #{@tmpdir}/apk.#{version}"
+      CrossPlatform.exec "java", "-jar #{apktool} d -s #{d} #{@tmpdir}/apk.#{version}"
       
       if File.exist?(path("apk.#{version}/res/raw/resources.bin"))
         @outputs << ["apk.#{version}/res/raw/resources.bin", "apk.#{version}/res/raw/config.bin"]

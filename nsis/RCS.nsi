@@ -501,7 +501,7 @@ Section "Install Section" SecInstall
     File /r "lib\rcs-collector-release\*.*"
   
     SetOutPath "$INSTDIR\Collector\config"
-    File "config\decoy.html"
+    File "config\decoy.rb"
     File "config\trace.yaml"
     File "config\VERSION"
     File "config\VERSION_BUILD"

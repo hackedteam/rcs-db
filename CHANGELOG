@@ -6,6 +6,7 @@ Collector:
 
 DB:
     - Ruby updated to 1.9.3-p194
+    - HASP driver updated to 6.25
     - utilities to restart the rcs services
     - configuration templates
     - evidence filters can now be saved for future reuse
@@ -13,3 +14,6 @@ DB:
     - more accurate evidence size recalculation for targets and operations
     - the metadata backup is now created automatically if not present
     - new operations, targets and factory are displayed to other users upon refresh
+    - smtp authentication for alert emails
+    - fix for operation and target backup not performing correctly
+    - fix for file manager not deleting all entries in some cases
