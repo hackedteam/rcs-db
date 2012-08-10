@@ -29,8 +29,6 @@ TODO 8.2.0:
 
     upgrade to mongoid 3.0.x
 
-    upgrade mongodb 2.0.7
-
     ocr for images
         - separate installer
         - separate process
