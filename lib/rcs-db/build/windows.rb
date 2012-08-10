@@ -218,8 +218,12 @@ class BuildWindows < Build
     Zip::ZipFile.open(core) do |z|
       core_content = z.file.open('core', "rb") { |f| f.read }
       add_magic(core_content)
-      z.file.open('core', "wb") { |f| f.write core_content }
+      File.open(Config.instance.temp('core'), "wb") {|f| f.write core_content}
     end
+
+    # update with the zip utility since rubyzip corrupts zip file made by winzip or 7zip
+    CrossPlatform.exec "zip", "-j -u #{core} #{Config.instance.temp('core')}"
+    FileUtils.rm_rf Config.instance.temp('core')
   end
 
   def ghost(params)

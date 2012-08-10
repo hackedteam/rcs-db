@@ -160,15 +160,10 @@ class BuildAndroid < Build
 
       core_content = File.open(apk, "rb") { |f| f.read }
 
-      Zip::ZipFile.open(core) do |z|
-        z.file.open(File.basename(apk), "wb") { |f| f.write core_content }
-      end
+      # update with the zip utility since rubyzip corrupts zip file made by winzip or 7zip
+      CrossPlatform.exec "zip", "-j -u #{core} #{apk}"
+      FileUtils.rm_rf Config.instance.temp('apk')
     end
-
-  rescue Exception => e
-    trace :fatal, e.message
-    trace :fatal, e.backtrace.join("\n")
-
   end
 
 end
