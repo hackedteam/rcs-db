@@ -41,9 +41,11 @@ class Indexer
     puts "Found #{collections.count} collection to be indexed..."
 
     collections.each_with_index do |coll_name, index|
+      tid = coll_name.split('.').last
+      t = ::Item.find(tid)
       puts
-      puts "Indexing #{coll_name} - %.0f %%" % ((index+1) * 100 / collections.count)
-      current = Evidence.collection_class(coll_name.split('.').last)
+      puts "Indexing #{t.name} - %.0f %%" % ((index + 1) * 100 / collections.count)
+      current = Evidence.collection_class(tid)
       index_collection(current)
     end
 
@@ -63,7 +65,7 @@ class Indexer
         #puts "."
         kw = keywordize(evi[:type], evi[:data], evi[:note])
 
-        #puts kw.inspect
+        #puts evi.type if kw.inspect.size > 1000
       end
 
       cursor += chunk
