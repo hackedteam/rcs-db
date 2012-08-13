@@ -13,7 +13,7 @@ require_relative 'db_objects/evidence'
 
 class Indexer
 
-  def self.run
+  def self.run(target)
     puts "Full text search keyword indexer running..."
 
     # this is required for mongoid >= 2.4.2
@@ -28,18 +28,26 @@ class Indexer
 
     # load the collection list
     collections = Mongoid::Config.master.collection_names
-    collections.keep_if {|x| x['evidence.']}
+
+    if target.downcase == 'all'
+      collections.keep_if {|x| x['evidence.']}
+    else
+      id = ::Item.where({:_kind => 'target', :name => Regexp.new(target)}).first[:_id]
+      collections.keep_if {|x| x["evidence.#{id}"]}
+    end
+
     collections.delete_if {|x| x['grid.'] or x['files'] or x['chunks']}
 
     puts "Found #{collections.count} collection to be indexed..."
 
-    collections.each do |coll_name|
+    collections.each_with_index do |coll_name, index|
       puts
-      puts "Indexing #{coll_name}"
-      #coll = db.collection(coll_name)
+      puts "Indexing #{coll_name} - %.0f %%" % ((index+1) * 100 / collections.count)
       current = Evidence.collection_class(coll_name.split('.').last)
       index_collection(current)
     end
+
+    return 0
   end
 
   def self.index_collection(evidence)
@@ -55,12 +63,17 @@ class Indexer
         #puts "."
         kw = keywordize(evi[:type], evi[:data], evi[:note])
 
-        puts kw.inspect
+        #puts kw.inspect
       end
 
       cursor += chunk
-      puts "#{count - cursor} evidence left" if count - cursor > 0
+      if count - cursor > 0
+        print "#{count - cursor} evidence left - %.2f %%     \r" % (cursor*100/count)
+      else
+        puts 'done - 100 %                        '
+      end
     end
+
   end
 
 

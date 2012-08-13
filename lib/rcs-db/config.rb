@@ -5,6 +5,8 @@
 # from RCS::Common
 require 'rcs-common/trace'
 
+require_relative 'indexer'
+
 # system
 require 'yaml'
 require 'pp'
@@ -139,6 +141,9 @@ class Config
       reset_admin options
       return 0
     end
+
+    # keyword indexing
+    return Indexer.run options[:kw_index] if options[:kw_index]
 
     # load the current config
     load_from_file
@@ -532,6 +537,9 @@ class Config
       end
       opts.on( '-B', '--backup-dir DIR', String, 'The directory to be used for backups' ) do |dir|
         options[:backup] = dir
+      end
+      opts.on( '--index TARGET', String, 'Calculate the full text index for this target' ) do |target|
+        options[:kw_index] = target
       end
       opts.on( '-h', '--help', 'Display this screen' ) do
         puts opts
