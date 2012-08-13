@@ -52,7 +52,7 @@ class BuildOSX < Build
 
     core = scramble_name(@factory.seed, 3)
     core_backup = scramble_name(core, 32)
-    dir = scramble_name(core[0..7], 7) + '.app'
+    dir = scramble_name(core[0..7], 7)
     config = scramble_name(core[0] < core_backup[0] ? core : core_backup, 1)
     inputmanager = scramble_name(config, 2)
     driver = scramble_name(config, 4)
