@@ -6,10 +6,10 @@ require 'digest/md5'
 
 require 'rcs-common/trace'
 
-require_relative 'speex'
-require_relative 'wave'
-require_relative 'src'
-require_relative 'mp3lame'
+require_relative 'libs/wave'
+require_relative 'libs/SRC/srcsrc'
+require_relative 'libs/lame/lame'
+require_relative 'libs/speex/speex'
 
 module RCS
 module Worker

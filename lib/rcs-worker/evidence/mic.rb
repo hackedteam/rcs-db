@@ -1,7 +1,7 @@
 require 'stringio'
 
-require_relative '../amr'
-require_relative '../speex'
+require_relative '../libs/amr/amr'
+require_relative '../libs/speex/speex'
 require_relative '../call_processor'
 require_relative 'audio_evidence'
 

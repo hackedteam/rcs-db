@@ -46,9 +46,9 @@ module Speex
     base_path = File.dirname(__FILE__)
 	case RbConfig::CONFIG['host_os']
         when /darwin/
-			ffi_lib File.join(base_path, 'libs/speex/macos/libspeex.1.5.0.dylib')
+			ffi_lib File.join(base_path, 'macos/libspeex.1.5.0.dylib')
         when /mingw/
-			ffi_lib File.join(base_path, 'libs/speex/win/libspeex.dll')
+			ffi_lib File.join(base_path, 'win/libspeex.dll')
 	end
     
 	ffi_convention :stdcall

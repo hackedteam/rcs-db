@@ -1,6 +1,6 @@
 module RCS
 
-require_relative '../speex'
+require_relative '../libs/speex/speex'
 require_relative '../call_processor'
 require_relative 'audio_evidence'
 
