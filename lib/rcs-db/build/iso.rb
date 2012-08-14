@@ -45,7 +45,7 @@ class BuildISO < Build
       names = build.scrambled.dup if platform == 'windows'
 
       # copy the scrambled files in our directories
-      build.scrambled.keep_if {|k, v| k != :dir and k != :reg}.each_pair do |k, v|
+      build.scrambled.keep_if {|k, v| k != :dir and k != :reg and k != :olddir and k != :oldreg}.each_pair do |k, v|
         FileUtils.mkdir_p(path("winpe/RCSPE/files/#{platform.upcase}"))
         FileUtils.cp(File.join(build.tmpdir, v), path("winpe/RCSPE/files/#{platform.upcase}/" + v))
       end
