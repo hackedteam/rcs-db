@@ -26,30 +26,25 @@ class Indexer
 
     puts "Connected to MongoDB..."
 
-    # load the collection list
-    collections = Mongoid::Config.master.collection_names
+    targets = []
 
     if target.downcase == 'all'
-      collections.keep_if {|x| x['evidence.']}
+      targets = ::Item.where({:_kind => 'target'})
     else
-      t = ::Item.where({:_kind => 'target', :name => Regexp.new(target, true)}).first
-      if t.nil?
-        puts "Target not found"
-        return 1
-      end
-      collections.keep_if {|x| x["evidence.#{t[:_id]}"]}
+      targets = ::Item.where({:_kind => 'target', :name => Regexp.new(target, true)})
     end
 
-    collections.delete_if {|x| x['grid.'] or x['files'] or x['chunks']}
+    puts "Found #{targets.count} collection to be indexed..."
 
-    puts "Found #{collections.count} collection to be indexed..."
+    if targets.empty?
+      puts "Target not found"
+      return 1
+    end
 
-    collections.each_with_index do |coll_name, index|
-      tid = coll_name.split('.').last
-      t = ::Item.find(tid)
+    targets.each_with_index do |target, index|
       puts
-      puts "Indexing #{t.name} - %.0f %%" % ((index + 1) * 100 / collections.count)
-      current = Evidence.collection_class(tid)
+      puts "Indexing #{target.name} - %.0f %%" % ((index + 1) * 100 / targets.count)
+      current = Evidence.collection_class(target[:_id].to_s)
       index_collection(current)
     end
 
@@ -66,7 +61,12 @@ class Indexer
     while cursor < count do
 
       evidence.where(:kw.exists => false).limit(chunk).each do |evi|
-        evi[:kw] = keywordize(evi[:type], evi[:data], evi[:note])
+        begin
+          evi[:kw] = keywordize(evi[:type], evi[:data], evi[:note])
+        rescue Exception => e
+          evi[:kw] = []
+        end
+
         evi.save
       end
 
@@ -112,12 +112,12 @@ class Indexer
         kw += add.keywords
       end
     end
-    unless data['cell'].nil?
+    unless data['cell'].nil? or not data['cell'].is_a? Hash
       data['cell'].each_value do |cell|
         kw << cell.to_s
       end
     end
-    unless data['wifi'].nil?
+    unless data['wifi'].nil? or not data['wifi'].is_a? Array
       data['wifi'].each do |wifi|
         kw += [wifi['mac'].keywords, wifi['bssid'].keywords ].flatten
       end
