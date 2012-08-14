@@ -44,8 +44,10 @@ module RCS
     def keyword_index
       self[:kw] = []
 
-      self[:kw] += self[:data][:latitude].to_s.keywords unless self[:data][:latitude].nil?
-      self[:kw] += self[:data][:longitude].to_s.keywords unless self[:data][:longitude].nil?
+      puts self[:data].inspect
+
+      self[:kw] += self[:data]['latitude'].to_s.keywords unless self[:data]['latitude'].nil?
+      self[:kw] += self[:data]['longitude'].to_s.keywords unless self[:data]['longitude'].nil?
 
       unless self[:data]['address'].nil?
         self[:data]['address'].each_value do |add|
@@ -69,6 +71,9 @@ module RCS
       end
 
       self[:kw].uniq!
+
+      puts self[:kw].inspect
+
     end
 
     def type

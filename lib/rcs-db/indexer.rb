@@ -32,8 +32,12 @@ class Indexer
     if target.downcase == 'all'
       collections.keep_if {|x| x['evidence.']}
     else
-      id = ::Item.where({:_kind => 'target', :name => Regexp.new(target)}).first[:_id]
-      collections.keep_if {|x| x["evidence.#{id}"]}
+      t = ::Item.where({:_kind => 'target', :name => Regexp.new(target, true)}).first
+      if t.nil?
+        puts "Target not found"
+        return 1
+      end
+      collections.keep_if {|x| x["evidence.#{t[:_id]}"]}
     end
 
     collections.delete_if {|x| x['grid.'] or x['files'] or x['chunks']}
@@ -53,7 +57,7 @@ class Indexer
   end
 
   def self.index_collection(evidence)
-    chunk = 100
+    chunk = 500
     cursor = 0
     count = evidence.where(:kw.exists => false).count
     puts "#{count} evidence to be indexed"
@@ -62,10 +66,10 @@ class Indexer
     while cursor < count do
 
       evidence.where(:kw.exists => false).limit(chunk).skip(cursor).each do |evi|
-        #puts "."
         kw = keywordize(evi[:type], evi[:data], evi[:note])
 
-        #puts evi.type if kw.inspect.size > 1000
+        evi[:kw] = kw
+        evi.save
       end
 
       cursor += chunk
@@ -80,6 +84,12 @@ class Indexer
 
 
   def self.keywordize(type, data, note)
+
+    # don't index those types
+    return [] if ['filesystem', 'mic', 'ip'].include? type
+
+    return keywordize_position(data, note) if type == 'position'
+
     kw = SortedSet.new
 
     data.each_value do |value|
@@ -92,9 +102,36 @@ class Indexer
     kw.to_a
   end
 
-end
+  def self.keywordize_position(data, note)
+    kw = SortedSet.new
 
+    kw += data['latitude'].to_s.keywords unless data['latitude'].nil?
+    kw += data['longitude'].to_s.keywords unless data['longitude'].nil?
 
-if __FILE__ == $0
-  Indexer.run
+    unless data['address'].nil?
+      data['address'].each_value do |add|
+        kw += add.keywords
+      end
+    end
+    unless data['cell'].nil?
+      data['cell'].each_value do |cell|
+        kw << cell.to_s
+      end
+    end
+    unless data['wifi'].nil?
+      data['wifi'].each do |wifi|
+        kw += [wifi['mac'].keywords, wifi['bssid'].keywords ].flatten
+      end
+    end
+
+    data.each_value do |value|
+      next unless value.is_a? String
+      kw += value.keywords
+    end
+
+    kw += note.keywords unless note.nil?
+
+    kw.to_a
+  end
+
 end
