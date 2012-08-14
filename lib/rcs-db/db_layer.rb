@@ -128,6 +128,11 @@ class DB
       e.create_indexes
       Shard.set_key(coll, {type: 1, da: 1, aid: 1})
     end
+
+    # index on shard id for the worker
+    coll = db.collection('grid.evidence.files')
+    coll.create_index('metadata.shard')
+
   end
 
   def enable_sharding
