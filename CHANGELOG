@@ -11,6 +11,7 @@ DB:
     - utilities to restart the rcs services
     - configuration templates
     - evidence filters can now be saved for future reuse
+    - full text search for the info evidence field
     - not interesting evidence field are no more exported to connectors
     - more accurate evidence size recalculation for targets and operations
     - the metadata backup is now created automatically if not present

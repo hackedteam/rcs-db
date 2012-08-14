@@ -1,8 +1,6 @@
 
 TODO 8.2.0:
 
-    migrate old data to keyword (indexer)
-
     worker:
         when worker start, print the recovery activity
         worker does not recover when running

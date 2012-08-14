@@ -65,14 +65,13 @@ class Indexer
     # divide in chunks to avoid timeouts
     while cursor < count do
 
-      evidence.where(:kw.exists => false).limit(chunk).skip(cursor).each do |evi|
-        kw = keywordize(evi[:type], evi[:data], evi[:note])
-
-        evi[:kw] = kw
+      evidence.where(:kw.exists => false).limit(chunk).each do |evi|
+        evi[:kw] = keywordize(evi[:type], evi[:data], evi[:note])
         evi.save
       end
 
       cursor += chunk
+
       if count - cursor > 0
         print "#{count - cursor} evidence left - %.2f %%     \r" % (cursor*100/count)
       else
