@@ -31,7 +31,6 @@ class Config
                     'CERT_PASSWORD' => 'password',
                     'LISTENING_PORT' => 443,
                     'HB_INTERVAL' => 15,
-                    'WORKER_PORT' => 5150,
                     'BACKUP_DIR' => 'backup',
                     'POSITION' => true,
                     'PERF' => false,
@@ -170,7 +169,6 @@ class Config
     @global['CERT_PASSWORD'] = options[:pfx_pass] unless options[:pfx_pass].nil?
     @global['LISTENING_PORT'] = options[:port] unless options[:port].nil?
     @global['HB_INTERVAL'] = options[:hb_interval] unless options[:hb_interval].nil?
-    @global['WORKER_PORT'] = options[:worker_port] unless options[:worker_port].nil?
     @global['BACKUP_DIR'] = options[:backup] unless options[:backup].nil?
     @global['SMTP'] = options[:smtp] unless options[:smtp].nil?
     @global['SMTP_FROM'] = options[:smtp_from] unless options[:smtp_from].nil?
@@ -467,9 +465,6 @@ class Config
       end
       opts.on( '-b', '--db-heartbeat SEC', Integer, 'Time in seconds between two heartbeats' ) do |sec|
         options[:hb_interval] = sec
-      end
-      opts.on( '-w', '--worker-port PORT', Integer, 'Listen on tcp/PORT for worker' ) do |port|
-        options[:worker_port] = port
       end
       opts.on( '-n', '--CN CN', String, 'Common Name for the server' ) do |cn|
         options[:cn] = cn

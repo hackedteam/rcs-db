@@ -44,9 +44,6 @@ class EvidenceController < RESTController
 
       # update the evidence statistics
       StatsManager.instance.add evidence: 1, evidence_size: @request[:content]['content'].bytesize
-
-      # notify the worker
-      RCS::DB::EvidenceDispatcher.instance.notify id, shard_id, ident, instance
     rescue Exception => e
       trace :warn, "Cannot save evidence: #{e.message}"
       trace :fatal, e.backtrace.join("\n")

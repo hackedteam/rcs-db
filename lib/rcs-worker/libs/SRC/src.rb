@@ -25,9 +25,9 @@ module SRC
 	  base_path = File.dirname(__FILE__)
 	  case RbConfig::CONFIG['host_os']
         when /darwin/
-			ffi_lib File.join(base_path, 'libs/SRC/macos/libsamplerate.0.dylib')
+			ffi_lib File.join(base_path, 'macos/libsamplerate.0.dylib')
         when /mingw/
-			ffi_lib File.join(base_path, 'libs/SRC/win/libsamplerate.dll')
+			ffi_lib File.join(base_path, 'win/libsamplerate.dll')
 	  end
 	  
     attach_function :simple, :src_simple, [:pointer, :int, :int], :int

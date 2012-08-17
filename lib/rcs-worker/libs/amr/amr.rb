@@ -5,8 +5,8 @@ require 'rbconfig'
 
 require 'rcs-common/trace'
 
-require_relative 'src'
-require_relative 'wave'
+require_relative '../SRC/src'
+require_relative '../wave'
 
 module AMR
   extend RCS::Tracer
@@ -15,9 +15,9 @@ module AMR
   base_path = File.dirname(__FILE__)
   case RbConfig::CONFIG['host_os']
     when /darwin/
-  	  ffi_lib File.join(base_path, 'libs/amr/macos/libopencore-amrnb.0.dylib')
+  	  ffi_lib File.join(base_path, 'macos/libopencore-amrnb.0.dylib')
     when /mingw/
-  		ffi_lib File.join(base_path, 'libs/amr/win/libopencore-amrnb-0.dll')
+  		ffi_lib File.join(base_path, 'win/libopencore-amrnb-0.dll')
   end
 
   AMR_FRAME_SIZE = 160

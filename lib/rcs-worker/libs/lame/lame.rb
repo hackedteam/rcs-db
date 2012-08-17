@@ -11,9 +11,9 @@ module MP3Lame
   base_path = File.dirname(__FILE__)
   case RbConfig::CONFIG['host_os']
     when /darwin/
-  	  ffi_lib File.join(base_path, 'libs/lame/macos/libmp3lame.0.dylib')
+  	  ffi_lib File.join(base_path, 'macos/libmp3lame.0.dylib')
     when /mingw/
-  		ffi_lib File.join(base_path, 'libs/lame/win/libmp3lame.dll')
+  		ffi_lib File.join(base_path, 'win/libmp3lame.dll')
   end
   
   ffi_convention :stdcall
