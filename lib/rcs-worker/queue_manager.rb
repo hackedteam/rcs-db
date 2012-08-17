@@ -68,6 +68,8 @@ class QueueManager
           # get the ident from the filename
           ident, instance = ev['filename'].split(":")
 
+          trace :debug, "Queuing evidence #{ev['_id']}"
+
           # queue the evidence
           QueueManager.instance.queue instance, ident, ev['_id'].to_s
 
