@@ -45,8 +45,6 @@ class Worker
       # set the thread pool size
       EM.threadpool_size = 50
 
-      #Worker::resume_pending_evidences
-
       # set up the heartbeat (the interval is in the config)
       EM.defer(proc{ HeartBeat.perform })
       EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
@@ -54,37 +52,28 @@ class Worker
       # calculate and save the stats
       EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }
 
+      # this is the actual polling
+      EM::PeriodicTimer.new(1) { EM.defer(proc{ QueueManager.instance.check_new }) }
+
       trace :info, "Worker '#{RCS::DB::Config.instance.global['SHARD']}' ready!"
     end
     
   end
 
-  def self.resume_pending_evidences
+  def self.close_recording_calls
     begin
-      db = Mongoid.database
-      evidences = db.collection('grid.evidence.files').find({metadata: {shard: RCS::DB::Config.instance.global['SHARD']}}, {sort: ["_id", :asc]})
-      trace :info, "No pending evidence to be processed." unless evidences.has_next?
-      evidences.each do |ev|
-        ident, instance = ev['filename'].split(":")
-
-        # resume pending evidence
-        QueueManager.instance.queue instance, ident, ev['_id'].to_s
-
-        # close recording calls for this agent
-        agent = Item.agents.where({ident: ident, instance: instance}).first
-        unless agent.nil?
-          target = agent.get_parent
-          calls = ::Evidence.collection_class(target[:_id].to_s).where({"type" => :call, "data.status" => :recording})
-          trace :info, "No calls left in recording state." unless calls.empty?
-          calls.each do |c|
-            trace :debug, "Call #{c} is now set to completed."
-            c.update_attributes("data.status" => :completed)
-          end
+      trace :info, "Checking for pending calls..."
+      # close recording calls for all targets
+      targets = Item.targets
+      targets.each do |target|
+        calls = ::Evidence.collection_class(target[:_id].to_s).where({"type" => :call, "data.status" => :recording})
+        trace :info, "Closing pending calls for #{target.name}" unless calls.empty?
+        calls.each do |c|
+          c.update_attributes("data.status" => :completed)
         end
-
       end
     rescue Exception => e
-      trace :error, "Cannot process pending evidences: #{e.message}"
+      trace :error, "Cannot process pending calls: #{e.message}"
     end
   end
 
@@ -131,6 +120,9 @@ class Application
         trace :warn, "Cannot connect to MongoDB, retrying..."
         sleep 5
       end
+
+      # close any pending call
+      Worker.close_recording_calls
 
       # do the dirty job!
       Worker.new.run

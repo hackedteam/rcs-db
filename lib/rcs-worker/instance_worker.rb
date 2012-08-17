@@ -49,7 +49,6 @@ class InstanceWorker
   include RCS::Tracer
 
   SLEEP_TIME = 30
-  RESUME_TIME = 10
 
   def get_agent_target
     @agent = Item.agents.where({ident: @ident, instance: @instance, status: 'open'}).first
@@ -228,11 +227,10 @@ class InstanceWorker
   def resume
     @state = :running
     @seconds_sleeping = 0
-    trace :debug, "[#{@agent['ident']}:#{@agent['instance']}] #{@evidences.size} evidences in queue for processing."
+    #trace :debug, "[#{@agent['ident']}:#{@agent['instance']}] #{@evidences.size} evidences in queue for processing."
   end
   
   def take_some_rest
-    #resume_pending if @seconds_sleeping % RESUME_TIME == 0
     sleep 1
     @seconds_sleeping += 1
   end
@@ -267,23 +265,6 @@ class InstanceWorker
         EM.defer @process
       end
     end
-  end
-
-  def resume_pending
-    trace :info, "[#{@agent['ident']}:#{@agent['instance']}] resuming pending evidences."
-    db = Mongoid.database
-    evidences = db.collection('grid.evidence.files').find({filename: "#{@ident}:#{@instance}", metadata: {shard: RCS::DB::Config.instance.global['SHARD']}}, {sort: ["_id", :asc]})
-    trace :info, "[#{@agent['ident']}:#{@agent['instance']}] no resumable evidences to process." if @evidences.empty?
-    evidences.each do |ev|
-      ident, instance = ev['filename'].split(":")
-
-      # resume pending evidence
-      QueueManager.instance.queue instance, ident, ev['_id'].to_s
-    end
-
-    trace :info, "[#{@agent['ident']}:#{@agent['instance']}] done resuming."
-  rescue Exception => e
-    trace :error, "[#{e.class}] #{e.message}"
   end
 
   def to_s

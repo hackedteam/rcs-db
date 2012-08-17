@@ -7,7 +7,7 @@ require 'digest/md5'
 require 'rcs-common/trace'
 
 require_relative 'libs/wave'
-require_relative 'libs/SRC/srcsrc'
+require_relative 'libs/SRC/src'
 require_relative 'libs/lame/lame'
 require_relative 'libs/speex/speex'
 

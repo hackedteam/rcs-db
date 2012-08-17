@@ -6,7 +6,7 @@ require 'rbconfig'
 require 'rcs-common/trace'
 
 require_relative '../SRC/src'
-require_relative 'wave'
+require_relative '../wave'
 
 module AMR
   extend RCS::Tracer
