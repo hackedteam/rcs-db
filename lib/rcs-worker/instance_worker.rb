@@ -106,7 +106,7 @@ class InstanceWorker
                 decoded_data += data unless data.nil?
               end
             rescue EmptyEvidenceError => e
-              trace :info, "[#{raw_id}:#{@ident}:#{@instance}] deleting empty evidence #{raw_id}"
+              trace :debug, "[#{raw_id}:#{@ident}:#{@instance}] deleting empty evidence #{raw_id}"
               RCS::DB::GridFS.delete(raw_id, "evidence")
               next
             rescue EvidenceDeserializeError => e
@@ -248,10 +248,6 @@ class InstanceWorker
     @state
   end
 
-  def forwarding?
-    RCS::DB::Config.instance.global['FORWARD'] == true
-  end
-  
   def sleeping_too_much?
     @seconds_sleeping >= SLEEP_TIME
   end
