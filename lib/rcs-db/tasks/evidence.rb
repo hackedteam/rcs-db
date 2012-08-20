@@ -18,7 +18,7 @@ module RCS
       end
 
       def total
-        num = ::Evidence.filtered_count @params
+        num = ::Evidence.report_count @params
         trace :info, "Exporting #{num} evidence..."
         return num
       end
@@ -26,7 +26,7 @@ module RCS
       def next_entry
         @description = "Exporting #{@total} evidence"
 
-        evidence = ::Evidence.filter @params
+        evidence = ::Evidence.report_filter @params
 
         export(evidence, index: :da, target: @params['filter']['target']) do |type, filename, opts|
           yield type, filename, opts

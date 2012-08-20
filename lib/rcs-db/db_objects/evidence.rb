@@ -22,15 +22,15 @@ class Evidence
       class Evidence_#{target}
         include Mongoid::Document
 
-        field :da, type: Integer            # date acquired
-        field :dr, type: Integer            # date received
+        field :da, type: Integer                      # date acquired
+        field :dr, type: Integer                      # date received
         field :type, type: String
-        field :rel, type: Integer           # relevance (tag)
-        field :blo, type: Boolean           # blotter (report)
+        field :rel, type: Integer, default: 0         # relevance (tag)
+        field :blo, type: Boolean, default: false     # blotter (report)
         field :note, type: String
-        field :aid, type: String            # agent BSON_ID
+        field :aid, type: String                      # agent BSON_ID
         field :data, type: Hash
-        field :kw, type: Array, default: [] # keywords for full text search
+        field :kw, type: Array, default: []           # keywords for full text search
 
         store_in Evidence.collection_name('#{target}')
 
@@ -105,21 +105,40 @@ class Evidence
     dst.kw = src.kw.dup unless src.kw.nil?
   end
 
-  def self.filter(params)
+  def self.report_filter(params)
 
     filter, filter_hash, target = ::Evidence.common_filter params
     raise "Target not found" if filter.nil?
 
     # copy remaining filtering criteria (if any)
-    filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info', 'command', 'ip'])
+    filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info'])
     filter.each_key do |k|
       filtering = filtering.any_in(k.to_sym => filter[k])
     end
+
+    puts filtering.inspect
 
     query = filtering.where(filter_hash).order_by([[:da, :asc]])
 
     return query
   end
+
+  def self.report_count(params)
+
+    filter, filter_hash, target = ::Evidence.common_filter params
+    raise "Target not found" if filter.nil?
+
+    # copy remaining filtering criteria (if any)
+    filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info'])
+    filter.each_key do |k|
+      filtering = filtering.any_in(k.to_sym => filter[k])
+    end
+
+    num_evidence = filtering.where(filter_hash).count
+
+    return num_evidence
+  end
+
 
   def self.filtered_count(params)
 
