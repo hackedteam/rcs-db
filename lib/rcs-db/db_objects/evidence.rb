@@ -20,15 +20,15 @@ class Evidence
       class Evidence_#{target}
         include Mongoid::Document
 
-        field :da, type: Integer            # date acquired
-        field :dr, type: Integer            # date received
+        field :da, type: Integer                      # date acquired
+        field :dr, type: Integer                      # date received
         field :type, type: String
-        field :rel, type: Integer           # relevance (tag)
-        field :blo, type: Boolean           # blotter (report)
+        field :rel, type: Integer, default: 0         # relevance (tag)
+        field :blo, type: Boolean, default: false     # blotter (report)
         field :note, type: String
-        field :aid, type: String            # agent BSON_ID
+        field :aid, type: String                      # agent BSON_ID
         field :data, type: Hash
-    
+
         store_in Evidence.collection_name('#{target}')
 
         after_create :create_callback
