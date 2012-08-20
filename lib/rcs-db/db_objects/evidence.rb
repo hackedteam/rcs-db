@@ -116,8 +116,6 @@ class Evidence
       filtering = filtering.any_in(k.to_sym => filter[k])
     end
 
-    puts filtering.inspect
-
     query = filtering.where(filter_hash).order_by([[:da, :asc]])
 
     return query

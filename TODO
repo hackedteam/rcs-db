@@ -1,15 +1,9 @@
 
 TODO 8.2.0:
 
-    improve network controller connections (split services)
-
-    report export based on received time
-
     advanced deletion
-
-    split arch of the applets
-
-    configuration for contact (facebook, twitter...)
+    incremental backup
+    archive option for targets
 
 
 
@@ -41,10 +35,6 @@ TODO FUTURE:
         - implement transport layers:
         - proprietary for read-only db
         - sftp
-
-    incremental backup
-
-    archive option for targets
 
 ======================================
 
