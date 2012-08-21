@@ -13,6 +13,8 @@ class Backup
   field :name, type: String
   field :lastrun, type: String
   field :status, type: String
+  field :incremental, type: Boolean, default: false
+  field :incremental_ids, type: Hash, :default => {}
 
   store_in :backups
 end

@@ -85,6 +85,25 @@ class BackupManager
           partial_backup(params)
       end
 
+      # save the last backed up objects to be used in the next run
+      # do this here, so we are sure that the mongodump below will include these ids
+      if backup.incremental
+        db = Mongoid::Config.master
+
+        incremental_ids = {}
+
+        params[:coll].each do |coll|
+          next unless (coll['evidence.'] || coll['grid.'])
+          # get the last bson object id
+          ev = db.collection(coll).find().sort({_id: -1}).limit(1).first
+          incremental_ids[coll.to_s.gsub(".", "_")] = ev['_id'].to_s unless ev.nil?
+        end
+
+        trace :debug, "Incremental ids: #{incremental_ids.inspect}"
+
+        backup.incremental_ids = incremental_ids
+      end
+
       # the command of the mongodump
       mongodump = Config.mongo_exec_path('mongodump')
       mongodump += " -o #{Config.instance.global['BACKUP_DIR']}/#{backup.name}-#{now.strftime('%Y-%m-%d-%H-%M')}"
@@ -92,19 +111,16 @@ class BackupManager
 
       # create the backup of the collection (common)
       params[:coll].each do |coll|
-        if coll == 'items'
-          command = mongodump + " -c #{coll} -q #{params[:ifilter]}"
-          trace :debug, "Backup: #{command}"
-          ret = system command
-          trace :debug, "Backup result: #{ret}"
-          raise unless ret
-        else
-          command = mongodump + " -c #{coll}"
-          trace :debug, "Backup: #{command}"
-          ret = system command
-          trace :debug, "Backup result: #{ret}"
-          raise unless ret
-        end
+        command = mongodump + " -c #{coll}"
+
+        command += " -q #{params[:ifilter]}" if coll == 'items'
+
+        command += incremental_filter(coll, backup) if backup.incremental
+
+        trace :debug, "Backup: #{command}"
+        ret = system command
+        trace :debug, "Backup result: #{ret}"
+        raise unless ret
       end
 
       # don't backup cores when saving metadata
@@ -181,21 +197,24 @@ class BackupManager
     params[:gfilter] += "0]}}"
 
     # insert the correct delimiter and escape characters
-    if RbConfig::CONFIG['host_os'] =~ /mingw/
-      params[:ifilter].gsub! "\"", "\\\""
-      params[:ifilter].prepend "\""
-      params[:ifilter] << "\""
+    shell_escape(params[:ifilter])
+    shell_escape(params[:gfilter])
 
-      params[:gfilter].gsub! "\"", "\\\""
-      params[:gfilter].prepend "\""
-      params[:gfilter] << "\""
-    else
-      params[:ifilter].prepend "'"
-      params[:ifilter] << "'"
+  end
 
-      params[:gfilter].prepend "'"
-      params[:gfilter] << "'"
+  def self.incremental_filter(coll, backup)
+
+    filter = ""
+
+    id = backup.incremental_ids[coll.to_s.gsub(".", "_")]
+
+    unless id.nil?
+      filter = "{\"_id\": {\"$gt\": ObjectId(\"#{id}\") }}"
+      shell_escape(filter)
+      filter = " -q #{filter}"
     end
+
+    return filter
   end
 
   def self.ensure_backup
@@ -212,6 +231,30 @@ class BackupManager
     b.save
 
     trace :info, "Metadata backup job created"
+  end
+
+  def self.restore_backup(params)
+
+    command = Config.mongo_exec_path('mongorestore')
+    command += " --drop" if params['drop']
+    command += " #{Config.instance.global['BACKUP_DIR']}/#{params['_id']}"
+
+    trace :debug, "Restoring backup: #{command}"
+
+    system command
+  end
+
+
+  def self.shell_escape(string)
+    # insert the correct delimiter and escape characters
+    if RbConfig::CONFIG['host_os'] =~ /mingw/
+      string.gsub! "\"", "\\\""
+      string.prepend "\""
+      string << "\""
+    else
+      string.prepend "'"
+      string << "'"
+    end
   end
 
 end

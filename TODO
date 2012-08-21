@@ -2,10 +2,11 @@
 TODO 8.2.0:
 
     advanced deletion
-    incremental backup
     archive option for targets
 
+    contacts parsing for local accounts
 
+    check worker speed on multiple evidence (alerting?)
 
     upgrade to mongoid 3.0.x
 
@@ -19,12 +20,11 @@ TODO 8.2.0:
     policies?
         - license for upload & execute
 
-    chat peer not as string but array
-
 
 TODO FUTURE:
 
     correlation:
+        chat peer not as string but array
         target records (schedario)
         global target position (http://www.zeit.de/datenschutz/malte-spitz-data-retention)
 
@@ -40,14 +40,7 @@ TODO FUTURE:
 
     mongo authentication
 
-    with mongo 2.1.x
+    with mongo 2.2.x
         logRotate
         mongos --install (windows service)
 
-
-
-    investigate JRuby
-        - Threads !!!  Thread.exit  ->   Thread.kill Thread.current   ????
-        http://www.ruby-forum.com/topic/217747
-        http://caldersphere.rubyforge.org/warbler/
-        http://github.com/rawr/rawr
