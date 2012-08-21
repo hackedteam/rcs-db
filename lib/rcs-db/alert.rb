@@ -8,6 +8,7 @@ require_relative 'push'
 require 'rcs-common/trace'
 
 require 'net/smtp'
+require 'lrucache'
 
 module RCS
 module DB
@@ -98,12 +99,10 @@ class Alerting
         end
 
         # if we don't want to be alerted, don't insert in the queue
-        return if alert.type == 'NONE'
+        next if alert.type == 'NONE'
 
         # put the matching alert in the queue the suppression will be done there
         # and the mail will be sent accordingly to the 'type' of alert
-        user = ::User.find(alert.user_id)
-
         # complete the path of the evidence (operation + target + agent)
         path = agent.path + [BSON::ObjectId.from_string(evidence.aid)]
 
@@ -150,7 +149,19 @@ class Alerting
     end
 
     def is_accessible?(user, agent)
-      SessionManager.instance.get_accessible(user).include? agent._id
+
+      # use a cache to store accessible list, they are very slow to compute
+      # we cannot calculate them for each evidence
+      @acc_cache ||= LRUCache.new(:ttl => 1.hour)
+
+      # get from the cache
+      accessible = @acc_cache.fetch(user._id) || SessionManager.instance.get_accessible(user)
+
+      # store in the cache
+      @acc_cache.store(user._id, accessible)
+
+      # check if the agent is accessible
+      accessible.include? agent._id
     end
 
     def alert_fast_queue(params)

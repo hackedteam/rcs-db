@@ -16,8 +16,8 @@
   - true
   - true
   :linux:
-  - false
-  - false
+  - true
+  - true
   :android:
   - true
   - true
@@ -50,12 +50,12 @@
 :deletion: true
 :archive: false
 :digest: !binary |-
-  OWFhYjBiNTdlN2ZiNWY2OTI1N2VhYTdjNTdmYThjYTcwNjUwYzYzMQ==
+  ODllOTljMmJjZmZlOTA2NGI5Zjk1MDhjNjQ5MWQ4NTgyOWM4NGQzNg==
 :check: LOuWAplu
 :signature: !binary |-
-  Y2Y0ZjdjNjQ2ZmNiYWQ4NDc4OTQwMWU2MDA5YzViYjEyZWFmOGVjYjgyOWI3
-  YzQ4YWEyNzA0ZDg1YWRkMTNmNw==
+  ZGMxNzc5NzQyYzkwZDFlZTk5MmFiNDE3MzBmMjMyY2JjOTQyYTJlMzJmYzgy
+  MWQzNGQ3NDU1OGJkMWI3NTYwMA==
 :integrity: !binary |-
-  NmE0OWNjNzIyOWVjZDc3MjBhMTg3ZTlkODZjMzQyNzYwMGUwNjNmY2ZmZWM0
-  ZWQyNzI5MjNmYzA1MWZiZTI0M2E5OWE1NGNlYWM0ZTkxMTQyNWRiN2JlMWRm
-  YjUzYWNl
+  OTEyYWU5ZTc0YmRkN2U3NzMyNDE3Y2ZjNWYwMDIzNWE5ODFjMDAwMDYxZjAx
+  ZjViZDMzMzdlM2ZmNWJiM2FjMzNhNDdiZjE0OTE4ZDI4YjgwYjk0YzZlNzk3
+  YzAxNzFl

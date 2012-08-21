@@ -6,8 +6,6 @@ TODO 8.2.0:
 
     contacts parsing for local accounts
 
-    check worker speed on multiple evidence (alerting?)
-
     upgrade to mongoid 3.0.x
 
     ocr for images

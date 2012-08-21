@@ -18,6 +18,7 @@ gem 'bcrypt-ruby'
 gem 'plist'
 gem 'uuidtools'
 gem 'ffi'
+gem 'lrucache'
 # MIME decoding
 gem 'mail'
 
