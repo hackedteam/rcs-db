@@ -109,6 +109,10 @@ class BuildWindows < Build
       end
     end
 
+    # code obfuscator
+    CrossPlatform.exec path('packer32'), "#{path('core')}"
+    CrossPlatform.exec path('packer64'), "#{path('core64')}"
+
     # signature for the patched code
     CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('core')}" if to_be_signed?(params)
     CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('core64')}" if to_be_signed?(params)

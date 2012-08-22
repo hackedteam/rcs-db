@@ -4,10 +4,6 @@ TODO 8.2.0:
     advanced deletion
     archive option for targets
 
-    contacts parsing for local accounts
-
-    upgrade to mongoid 3.0.x
-
     ocr for images
         - separate installer
         - separate process
@@ -17,6 +13,9 @@ TODO 8.2.0:
 
     policies?
         - license for upload & execute
+
+
+    upgrade to mongoid 3.0.x
 
 
 TODO FUTURE:
