@@ -1,20 +1,17 @@
 
 TODO 8.2.0:
 
-    watermark:
-        - encrypted cores
-        - patch the markers
+    advanced deletion
+    archive option for targets
+
+    ocr for images
+        - separate installer
+        - separate process
+
+    upgrade to mongoid 3.0.x
 
 
-    update ruby & eventmachine
-
-    keyword split for text search
-
-    first time sync with NIA & TNI
-
-    policies?
-
-    chat peer not as string but array
+TODO FUTURE:
 
     correlation:
         target records (schedario)
