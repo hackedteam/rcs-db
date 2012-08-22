@@ -100,8 +100,6 @@ class BackupManager
         end
 
         trace :debug, "Incremental ids: #{incremental_ids.inspect}"
-
-        backup.incremental_ids = incremental_ids
       end
 
       # the command of the mongodump
@@ -151,6 +149,9 @@ class BackupManager
       backup.save
       return
     end
+
+    # save the latest ids saved in backup
+    backup.incremental_ids = incremental_ids if backup.incremental
 
     backup.lastrun = Time.now.getutc.strftime('%Y-%m-%d %H:%M')
     backup.status = 'COMPLETED'

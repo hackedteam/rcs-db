@@ -3,6 +3,7 @@ Changelog for 8.2.0
 
 Collector:
     - support for command execution during sync
+    - support for partial evidence transfer
 
 DB:
     - Ruby updated to 1.9.3-p194
