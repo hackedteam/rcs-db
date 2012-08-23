@@ -191,7 +191,7 @@ class InstanceWorker
             end
 
             processing_time = Time.now - start_time
-            trace :info, "[#{raw_id}] processed #{ev_type.upcase} for agent #{@agent['name']} in #{processing_time} sec"
+            trace :info, "[#{raw_id}] processed #{ev_type.upcase} for agent #{@agent['name']} (#{@agent.ident}) in #{processing_time} sec"
 
           rescue Mongo::ConnectionFailure => e
             trace :error, "[#{raw_id}:#{@ident}:#{@instance}] cannot connect to database, retrying in 5 seconds ..."
