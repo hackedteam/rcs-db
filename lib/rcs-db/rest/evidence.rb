@@ -128,6 +128,16 @@ class EvidenceController < RESTController
     end
   end
 
+  def destroy_all
+    require_auth_level :admin
+
+    return conflict("Unable to delete") unless LicenseManager.instance.check :deletion
+
+    trace :debug, "DELETE: #{@params}"
+
+    return ok
+  end
+
   def body
     require_auth_level :view
 

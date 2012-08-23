@@ -15,6 +15,7 @@ DB:
     - full text search for the info evidence field
     - not interesting evidence field are no more exported to connectors
     - more accurate evidence size recalculation for targets and operations
+    - support for incremental backups
     - the metadata backup is now created automatically if not present
     - new operations, targets and factory are displayed to other users upon refresh
     - smtp authentication for alert emails
