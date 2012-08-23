@@ -257,8 +257,8 @@ class InstanceWorker
 
     @semaphore.synchronize do
       if stopped?
-        trace :debug, "deferring work for #{@agent['ident']}:#{@agent['instance']}"
         resume
+        trace :debug, "deferring work for #{@agent['ident']}:#{@agent['instance']}"
         EM.defer @process
       end
     end
