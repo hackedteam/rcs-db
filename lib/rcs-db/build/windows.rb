@@ -186,7 +186,7 @@ class BuildWindows < Build
                                           path('output')
     else
       # we have to create a silent installer
-      cook(params['admin'])
+      cook(params)
       File.exist? path('output') || raise("output file not created")
 
       cooked = File.open(path('output'), 'rb') {|f| f.read}
