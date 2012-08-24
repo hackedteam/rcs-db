@@ -284,6 +284,33 @@ class Evidence
     trace :info, "Evidence Move: completed for #{agent.name}"
   end
 
+
+  def self.offload_delete_evidence(params)
+
+    conditions = {}
+
+    target = ::Item.find(params['target'])
+    if params['agent']
+      agent = ::Item.find(params['agent'])
+      conditions[:aid] = agent._id.to_s
+    end
+
+    conditions[:rel] = params['rel']
+
+    date = params['date']
+    date ||= 'da'
+    date = date.to_sym
+    conditions[date.gte] = params['from']
+    conditions[date.lte] = params['to']
+
+    trace :info, "Deleting evidence for target #{target.name} #{params}"
+
+    Evidence.collection_class(target._id.to_s).where(conditions).any_in(:rel => params['rel']).destroy_all
+
+    trace :info, "Deleting evidence for target #{target.name} done."
+
+  end
+
 end
 
 #end # ::DB
