@@ -290,6 +290,7 @@ class Evidence
     conditions = {}
 
     target = ::Item.find(params['target'])
+
     if params['agent']
       agent = ::Item.find(params['agent'])
       conditions[:aid] = agent._id.to_s
@@ -309,6 +310,15 @@ class Evidence
 
     trace :info, "Deleting evidence for target #{target.name} done."
 
+    # recalculate the stats for each agent of this target
+    agents = Item.where(_kind: 'agent').also_in(path: [target._id])
+    agents.each do |a|
+      ::Evidence::TYPES.each do |type|
+        count = Evidence.collection_class(target[:_id]).where({aid: a._id.to_s, type: type}).count
+        a.stat.evidence[type] = count
+      end
+      a.save
+    end
   end
 
 end

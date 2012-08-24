@@ -408,8 +408,7 @@ class EvidenceController < RESTController
       stats = []
       ::Evidence::TYPES.each do |type|
         query = {type: type}.merge(condition)
-        count = Evidence.collection_class(target[:_id]).where(query).count
-        stats << {type: type, count: count}
+        stats << {type: type, count: Evidence.collection_class(target[:_id]).where(query).count}
       end
 
       total = stats.collect {|b| b[:count]}.inject(:+)
