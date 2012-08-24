@@ -49,7 +49,7 @@ task :nsis do
 	end
 		
 	execute 'Signing RCS-Exploits installer...' do
-		system "./nsis/SignTool.exe sign /P password /f ./nsis/HT.pfx ./nsis/rcs-exploits-#{VERSION}.exe"
+		system "./nsis/SignTool.exe sign /P GeoMornellaChallenge7 /f ./nsis/HT.pfx ./nsis/rcs-exploits-#{VERSION}.exe"
 	end
 
 	execute 'Generating RCS-Agent NSIS installer...' do
@@ -57,7 +57,7 @@ task :nsis do
 	end
 		
 	execute 'Signing RCS-Agents installer...' do
-		system "./nsis/SignTool.exe sign /P password /f ./nsis/HT.pfx ./nsis/rcs-agents-#{VERSION}.exe"
+		system "./nsis/SignTool.exe sign /P GeoMornellaChallenge7 /f ./nsis/HT.pfx ./nsis/rcs-agents-#{VERSION}.exe"
 	end
 	
 	execute 'Generating RCS NSIS installer...' do
@@ -65,7 +65,7 @@ task :nsis do
 	end
 		
 	execute 'Signing RCS installer...' do
-		system "./nsis/SignTool.exe sign /P password /f ./nsis/HT.pfx ./nsis/rcs-setup-#{VERSION}.exe"
+		system "./nsis/SignTool.exe sign /P GeoMornellaChallenge7 /f ./nsis/HT.pfx ./nsis/rcs-setup-#{VERSION}.exe"
 	end
 end
 

