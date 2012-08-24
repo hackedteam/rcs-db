@@ -20,7 +20,8 @@ DB:
     - new operations, targets and factory are displayed to other users upon refresh
     - smtp authentication for alert emails
     - export report now includes commands and ip
-    - you can chose between acquired and received time in the export report
+    - report creation let you chose between acquired and received time
+    - evidence can be delete in batch and not only selectively (provided you have the license)
     - fix for operation and target backup not performing correctly
     - fix for file manager not deleting all entries in some cases
 
