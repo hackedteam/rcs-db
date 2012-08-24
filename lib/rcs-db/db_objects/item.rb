@@ -399,6 +399,8 @@ class Item
     ::Injector.all.each {|p| p.delete_rule_by_item(self._id)}
     # remove the connector rules that contains the item
     ::Connector.all.each {|p| p.delete_if_item(self._id)}
+    # remove backups for operations or targets
+    ::Backup.all.each {|b| b.delete_if_item(self._id)}
 
     case self._kind
       when 'operation'

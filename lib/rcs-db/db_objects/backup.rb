@@ -17,6 +17,14 @@ class Backup
   field :incremental_ids, type: Hash, :default => {}
 
   store_in :backups
+
+  def delete_if_item(id)
+    if self.what[id.to_s]
+      trace :debug, "Deleting Backup because it contains #{id}"
+      self.destroy
+    end
+  end
+
 end
 
 #end # ::DB
