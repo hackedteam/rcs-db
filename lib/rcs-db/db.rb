@@ -108,7 +108,7 @@ class Application
       DB.instance.ensure_signatures
 
       # load cores in the /cores dir
-      DB.instance.load_cores
+      Core.load_all
 
       # create the default filters
       DB.instance.create_evidence_filters

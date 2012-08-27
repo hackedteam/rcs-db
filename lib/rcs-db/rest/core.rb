@@ -56,15 +56,23 @@ class CoreController < RESTController
       # replace the new one
       core = ::Core.new
       core.name = @params['_id']
-      core[:_grid] = [ GridFS.put(@request[:content]['content'], {filename: @params['_id']}) ]
-      core[:_grid_size] = @request[:content]['content'].bytesize
 
-      # get the version from inside the zip file
-      temp = GridFS.to_tmp core[:_grid].first
+      # write in a temporary file
+      temp = Config.instance.temp("#{@params['_id']}.zip")
+      File.open(temp, 'wb+') {|f| f.write @request[:content]['content']}
 
+      # exctract the version
       Zip::ZipFile.open(temp) do |z|
         core.version = z.file.open('version', "rb") { |f| f.read }
       end
+
+      # add the magic
+      Core.make_unique(temp)
+
+      content = File.open(temp, 'rb+') {|f| f.read}
+
+      core[:_grid] = [ GridFS.put(content, {filename: @params['_id']}) ]
+      core[:_grid_size] = @request[:content]['content'].bytesize
 
       FileUtils.rm_rf(temp)
 

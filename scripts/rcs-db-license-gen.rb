@@ -13,7 +13,7 @@ require 'time'
 class LicenseGenerator
   include Singleton
 
-  LICENSE_VERSION = '8.0'
+  LICENSE_VERSION = '8.1'
 
   def initialize
     # default values.
@@ -44,7 +44,9 @@ class LicenseGenerator
                :shards => 1,
                :exploits => false,
                :deletion => false,
-               :collectors => {:collectors => 1, :anonymizers => 0}}
+               :collectors => {:collectors => 1, :anonymizers => 0},
+               :check => SecureRandom.urlsafe_base64(8).slice(0..7)
+    }
   end
 
   def load_license_file(file)
@@ -88,7 +90,8 @@ class LicenseGenerator
 
     # the license is not for this version
     if values[:version] != LICENSE_VERSION
-      abort "Invalid License File: version is not #{LICENSE_VERSION}"
+      puts "Invalid License File: version is not #{LICENSE_VERSION}, fixing it..."
+      values[:version] = LICENSE_VERSION
     end
 
     # wrong date
@@ -132,6 +135,9 @@ class LicenseGenerator
     if options[:input]
       load_license_file options[:input]
     end
+
+    # add the watermark if not already present
+    @limits[:check] = SecureRandom.urlsafe_base64(8).slice(0..7) unless @limits[:check]
 
     # check if the input file is valid
     check_integrity @limits
