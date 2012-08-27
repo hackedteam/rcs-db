@@ -77,7 +77,7 @@ class BackupManager
       case backup.what
         when 'metadata'
           # don't backup evidence collections
-          params[:coll].delete_if {|x| x['evidence.'] || x['grid.']}
+          params[:coll].delete_if {|x| x['evidence.'] || x['grid.'] || x['cores']}
         when 'full'
           # we backup everything... woah !!
         else
