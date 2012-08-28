@@ -28,7 +28,9 @@ module RCS
 
         evidence = ::Evidence.report_filter @params
 
-        export(evidence, index: :da, target: @params['filter']['target'], note: @params['include_note']) do |type, filename, opts|
+        @display_notes = (@params['note'] == false) ? false : true
+
+        export(evidence, index: :da, target: @params['filter']['target']) do |type, filename, opts|
           yield type, filename, opts
         end
 
@@ -70,20 +72,24 @@ module RCS
             <th scope="col" class="rel">tag</th>
             <th scope="col" class="type">type</th>
             <th scope="col" class="info">info</th>
-            <th scope="col" class="note">note</th>
+            #{@display_notes ? "<th scope=\"col\" class=\"note\">note</th>": ''}
           </tr>
         </thead>
         <tbody>
         eof
       end
 
-      def html_evidence_table_row(row, note)
+      def html_evidence_table_row(row)
         <<-eof
       <tr>
-        <td class="id">#{row[:_id]}</td><td class="agent">#{row[:agent]}</td>
-        <td class="acquired">#{Time.at(row[:da]).strftime('%Y-%m-%d %H:%M:%S')}</td><td class="received">#{Time.at(row[:dr]).strftime('%Y-%m-%d %H:%M:%S')}</td>
-        <td class="rel#{row[:rel]}"></td><td class="type">#{row[:type]}</td>
-        <td class="info">#{html_data_renderer(row)}</td><td class="note">#{note ? row[:note]: ''}</td>
+        <td class="id">#{row[:_id]}</td>
+        <td class="agent">#{row[:agent]}</td>
+        <td class="acquired">#{Time.at(row[:da]).strftime('%Y-%m-%d %H:%M:%S')}</td>
+        <td class="received">#{Time.at(row[:dr]).strftime('%Y-%m-%d %H:%M:%S')}</td>
+        <td class="rel#{row[:rel]}"></td>
+        <td class="type">#{row[:type]}</td>
+        <td class="info">#{html_data_renderer(row)}</td>
+        #{@display_notes ? "<td class=\"note\">" + row[:note].to_s + "</td>" : ''}
       </tr>
         eof
       rescue Exception => e
@@ -308,7 +314,7 @@ module RCS
             end
 
             # write the current evidence
-            out[:content] << html_evidence_table_row(e, opts[:note])
+            out[:content] << html_evidence_table_row(e)
 
             # if the log does not have grid, yield it now, else add to the queue (it will be yielded later)
             if e[:data]['_grid'].nil?
