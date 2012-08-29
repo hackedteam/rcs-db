@@ -1,19 +1,18 @@
 
 TODO 8.2.0:
 
+    optimize call recoring flag reset
+
     archive option for targets
+
+    policies?
+        - license for upload & execute
 
     ocr for images
         - separate installer
         - separate process
 
     first time sync with NIA & TNI
-
-    policies?
-        - license for upload & execute
-
-
-    upgrade to mongoid 3.0.x
 
 
 TODO FUTURE:
@@ -34,6 +33,8 @@ TODO FUTURE:
 ======================================
 
     mongo authentication
+
+    upgrade to mongoid 3.0.x
 
     with mongo 2.2.x
         logRotate

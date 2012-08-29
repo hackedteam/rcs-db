@@ -21,6 +21,7 @@ DB:
     - smtp authentication for alert emails
     - export report now includes commands and ip
     - report creation let you chose between acquired and received time
+    - report creation let you chose if you want the notes or not
     - evidence can be delete in batch and not only selectively (provided you have the license)
     - fix for operation and target backup not performing correctly
     - fix for file manager not deleting all entries in some cases

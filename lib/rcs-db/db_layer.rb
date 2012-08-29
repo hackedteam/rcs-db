@@ -37,10 +37,12 @@ class DB
       # this is required for mongoid >= 2.4.2
       ENV['MONGOID_ENV'] = 'yes'
 
-      Mongoid.load!(Dir.pwd + '/config/mongoid.yaml')
       Mongoid.configure do |config|
         config.master = Mongo::Connection.new(Config.instance.global['CN'], 27017, pool_size: 50, pool_timeout: 15).db('rcs')
+        config.persist_in_safe_mode = true
+        #config.raise_not_found_error = false
       end
+
       trace :info, "Connected to MongoDB"
 
       # check if we need to authenticate
