@@ -296,7 +296,6 @@ Section "Install Section" SecInstall
     File /r "lib\rcs-worker-release\*.*"
 
     SetOutPath "$INSTDIR\DB\config"
-    File "config\mongoid.yaml"
     File "config\mongodb.key"
     File "config\trace.yaml"
     File "config\export.zip"
