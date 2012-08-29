@@ -66,11 +66,7 @@ class Worker
       # close recording calls for all targets
       targets = Item.targets
       targets.each do |target|
-        calls = ::Evidence.collection_class(target[:_id].to_s).where({"type" => :call, "data.status" => :recording})
-        trace :info, "Closing pending calls for #{target.name}" unless calls.empty?
-        calls.each do |c|
-          c.update_attributes("data.status" => :completed)
-        end
+        ::Evidence.collection_class(target[:_id].to_s).where({"type" => :call, "data.status" => :recording}).update_all("data.status" => :completed)
       end
     rescue Exception => e
       trace :error, "Cannot process pending calls: #{e.message}"

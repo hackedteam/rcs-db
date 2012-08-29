@@ -1329,6 +1329,12 @@ if false
  res = http.request_get("/agent/uploads/4F6059012AFB65C9440000CC", {'Cookie' => cookie})
  puts res.body
  puts
+
+ puts "agent.filesystems"
+ res = http.request_get("/agent/filesystems/5008225C2AFB654A4F003B9B", {'Cookie' => cookie})
+ puts res.body
+ puts
+ 
 end
 
 # filesystem
@@ -1337,7 +1343,8 @@ if false
   filter = "^C:\\\\Windows$"
   filter = "^[[:alpha:]]:$"
   filter = "[root]"
-  filter = "c:\\windows\\"
+  #filter = "c:\\windows\\"
+  filter = "C:\\"
   
   puts "evidence.filesystem"
   res = http.request_get(URI.escape("/evidence/filesystem?target=4F86902a2afb6512a700006f&agent=5008225C2AFB654A4F003B9B&filter=#{filter}"), {'Cookie' => cookie})

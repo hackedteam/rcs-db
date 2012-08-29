@@ -575,7 +575,7 @@ class AgentController < RESTController
 
   # retrieve the list of filesystem for a given agent
   def filesystems
-    require_auth_level :server, :tech
+    require_auth_level :server, :tech, :view
 
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
@@ -615,7 +615,7 @@ class AgentController < RESTController
 
   # fucking flex that does not support the DELETE http method
   def filesystem_destroy
-    require_auth_level :tech
+    require_auth_level :tech, :view
 
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first

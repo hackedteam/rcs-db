@@ -1,9 +1,12 @@
 
 TODO 8.2.0:
 
-    optimize call recoring flag reset
+    archive option for targets / operations
+        - archive in a backup
+        - archive and delete
+        - want to close?
+        - want to delete?
 
-    archive option for targets
 
     policies?
         - license for upload & execute
