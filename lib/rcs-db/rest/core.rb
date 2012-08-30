@@ -102,6 +102,9 @@ class CoreController < RESTController
       # if the uploaded file is the 'version' file, update the version of the core accordingly
       core.version = @request[:content]['content'] if new_entry == 'version'
 
+      # add the magic
+      Core.make_unique(temp, core.name.to_sym) if new_entry == 'core'
+
       content = File.open(temp, 'rb') {|f| f.read}
 
       # delete the old one

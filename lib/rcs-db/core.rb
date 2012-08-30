@@ -48,14 +48,14 @@ class Core
 
   end
 
-  def self.make_unique(file)
+  def self.make_unique(file, platform = nil)
 
     name = File.basename(file, '.*')
 
     # process only the real agent cores
     return if ['anon', 'applet', 'offline', 'qrcode', 'u3', 'upgrade', 'wap'].include? name
 
-    core = Build.factory(name.to_sym)
+    core = Build.factory(platform || name.to_sym)
     core.unique(file)
     core.clean
   end
