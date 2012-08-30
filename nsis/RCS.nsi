@@ -373,11 +373,9 @@ Section "Install Section" SecInstall
       DetailPrint "done"      
       
       DetailPrint "Creating service RCS Master Router..."
-      nsExec::Exec "$INSTDIR\DB\bin\nssm.exe install RCSMasterRouter $INSTDIR\DB\mongodb\win\mongos.exe --logpath $INSTDIR\DB\log\mongos.log --logappend --configdb $masterCN"
+      nsExec::Exec '$INSTDIR\DB\mongodb\win\mongos.exe --logpath $INSTDIR\DB\log\mongos.log --logappend --configdb $masterCN --install --serviceName RCSMasterRouter --serviceDisplayName "RCS Master Router" --serviceDescription "Remote Control System Master Router for shards"'
       SimpleSC::SetServiceFailure "RCSMasterRouter" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSMasterRouter" "DisplayName" "RCS Master Router"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSMasterRouter" "Description" "Remote Control System Master Router for shards"
-      DetailPrint "done"   
+      DetailPrint "done"
       
       DetailPrint "Creating service RCS Shard..."
       nsExec::Exec '$INSTDIR\DB\mongodb\win\mongod.exe --dbpath $INSTDIR\DB\data --journal --nssize 64 --logpath $INSTDIR\DB\log\mongod.log --logappend --shardsvr --rest --install --serviceName RCSShard --serviceDisplayName "RCS Shard" --serviceDescription "Remote Control System DB Shard for data storage"'
@@ -397,7 +395,8 @@ Section "Install Section" SecInstall
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSWorker" "DisplayName" "RCS Worker"
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSWorker" "Description" "Remote Control System Worker for data decoding"
       DetailPrint "done"
-
+    ${Else}
+      nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --migrate-mongos22"
     ${EndIf}
     
     SetDetailsPrint "both"

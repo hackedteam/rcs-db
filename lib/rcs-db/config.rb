@@ -176,6 +176,8 @@ class Config
     @global['SMTP_PASS'] = options[:smtp_pass] unless options[:smtp_pass].nil?
     @global['SMTP_AUTH'] = options[:smtp_auth] unless options[:smtp_auth].nil?
 
+    migrate_mongos22 if options[:mongos22]
+
     # changing the CN is a risky business :)
     if options[:newcn]
       # change the command line of the RCS Master Router service accordingly to the new CN
@@ -402,14 +404,30 @@ class Config
     end
   end
 
+  def migrate_mongos22
+    # TODO: remove in 8.3
+    return unless RbConfig::CONFIG['host_os'] =~ /mingw/
+    trace :info, "Changing the startup option of the Router Master"
+    mongos_command = "\"C:\\RCS\\DB\\mongodb\\win\\mongos.exe\" "
+    Win32::Registry::HKEY_LOCAL_MACHINE.open('SYSTEM\CurrentControlSet\services\RCSMasterRouter\Parameters', Win32::Registry::Constants::KEY_ALL_ACCESS) do |reg|
+      mongos_command += reg['AppParameters']
+    end
+    mongos_command += " --service"
+    Win32::Registry::HKEY_LOCAL_MACHINE.open('SYSTEM\CurrentControlSet\services\RCSMasterRouter', Win32::Registry::Constants::KEY_ALL_ACCESS) do |reg|
+      reg['ImagePath'] = mongos_command
+    end
+    #Win32::Registry::HKEY_LOCAL_MACHINE.delete('SYSTEM\CurrentControlSet\services\RCSMasterRouter\Parameters')
+  rescue Exception => e
+    trace :fatal, "ERROR: Cannot write registry: #{e.message}"
+  end
 
   def change_router_service_parameter
     return unless RbConfig::CONFIG['host_os'] =~ /mingw/
     trace :info, "Changing the startup option of the Router Master"
-    Win32::Registry::HKEY_LOCAL_MACHINE.open('SYSTEM\CurrentControlSet\services\RCSMasterRouter\Parameters', Win32::Registry::Constants::KEY_ALL_ACCESS) do |reg|
-      original_value = reg['AppParameters']
+    Win32::Registry::HKEY_LOCAL_MACHINE.open('SYSTEM\CurrentControlSet\services\RCSMasterRouter', Win32::Registry::Constants::KEY_ALL_ACCESS) do |reg|
+      original_value = reg['ImagePath']
       new_value = original_value.gsub(/--configdb [^ ]*/, "--configdb #{@global['CN']}")
-      reg['AppParameters'] = new_value
+      reg['ImagePath'] = new_value
     end
   rescue Exception => e
     trace :fatal, "ERROR: Cannot write registry: #{e.message}"
@@ -471,6 +489,9 @@ class Config
       end
       opts.on( '-N', '--new-CN', 'Use this option to update the CN in the db and registry' ) do
         options[:newcn] = true
+      end
+      opts.on('--migrate-mongos22', 'Migrate the mongos service to the new version' ) do
+        options[:mongos22] = true
       end
 
       opts.separator ""

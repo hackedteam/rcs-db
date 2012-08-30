@@ -1,6 +1,13 @@
 
 TODO 8.2.0:
 
+    backup of config db
+
+    with mongo 2.2.x
+        logRotate
+        mongos --install (windows service)
+
+
     archive option for targets / operations
         - archive in a backup
         - archive and delete
@@ -38,8 +45,3 @@ TODO FUTURE:
     mongo authentication
 
     upgrade to mongoid 3.0.x
-
-    with mongo 2.2.x
-        logRotate
-        mongos --install (windows service)
-
