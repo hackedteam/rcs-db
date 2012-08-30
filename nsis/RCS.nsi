@@ -332,6 +332,9 @@ Section "Install Section" SecInstall
       DetailPrint "Installing VC redistributable 2008 (x64).."
       nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_2008_x64 /q"
 
+      DetailPrint "Installing VC redistributable 2010 (x86).."
+      nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_2010_x86 /q"
+      
       DetailPrint "Installing VC redistributable 2010 (x64).."
       nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_2010_x64 /q"
 
