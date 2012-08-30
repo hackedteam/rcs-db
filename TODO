@@ -5,7 +5,6 @@ TODO 8.2.0:
 
     with mongo 2.2.x
         logRotate
-        mongos --install (windows service)
 
 
     archive option for targets / operations
