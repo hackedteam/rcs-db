@@ -416,7 +416,7 @@ class Config
     Win32::Registry::HKEY_LOCAL_MACHINE.open('SYSTEM\CurrentControlSet\services\RCSMasterRouter', Win32::Registry::Constants::KEY_ALL_ACCESS) do |reg|
       reg['ImagePath'] = mongos_command
     end
-    #Win32::Registry::HKEY_LOCAL_MACHINE.delete('SYSTEM\CurrentControlSet\services\RCSMasterRouter\Parameters')
+    Win32::Registry::HKEY_LOCAL_MACHINE.delete_key('SYSTEM\CurrentControlSet\services\RCSMasterRouter\Parameters', true)
   rescue Exception => e
     trace :fatal, "ERROR: Cannot write registry: #{e.message}"
   end
