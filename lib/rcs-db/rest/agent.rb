@@ -703,6 +703,8 @@ class AgentController < RESTController
     mongoid_query do
       agent = Item.where({_kind: 'agent', ident: ident, instance: Regexp.new(instance.prepend('^'))}).first
 
+      return if agent.nil?
+      
       trace :info, "[#{@request[:peer]}] Ghost Agent request for #{agent.ident} #{agent.instance}"
 
       # update the stats
