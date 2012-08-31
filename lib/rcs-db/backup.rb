@@ -139,11 +139,24 @@ class BackupManager
         raise unless ret
       end
 
+      # backup the config db
+      if backup.what == 'metadata' or backup.what == 'full'
+        mongodump = Config.mongo_exec_path('mongodump')
+        mongodump += " -o #{Config.instance.global['BACKUP_DIR']}/#{backup.name}_config-#{now.strftime('%Y-%m-%d-%H-%M')}"
+        mongodump += " -d config"
+
+        trace :debug, "Backup: #{command}"
+        ret = system mongodump
+        trace :debug, "Backup result: #{ret}"
+        raise unless ret
+      end
+
       Audit.log :actor => '<system>', :action => 'backup.end', :desc => "Backup #{backup.name} completed"
 
     rescue Exception => e
       Audit.log :actor => '<system>', :action => 'backup.end', :desc => "Backup #{backup.name} failed"
       trace :error, "Backup #{backup.name} failed: #{e.message}"
+      puts e.backtrace.join("\n")
       backup.lastrun = Time.now.getutc.strftime('%Y-%m-%d %H:%M')
       backup.status = 'ERROR'
       backup.save

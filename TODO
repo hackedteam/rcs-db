@@ -1,9 +1,6 @@
 
 TODO 8.2.0:
 
-    backup of config db
-
-
     archive option for targets / operations
         - archive in a backup
         - archive and delete
