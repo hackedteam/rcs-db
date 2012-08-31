@@ -219,6 +219,9 @@ class Events
         # calculate and save the stats
         EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }
 
+        # log rotation
+        EM::PeriodicTimer.new(60) { EM.defer(proc{ DB.instance.logrotate }) }
+
       end
     rescue RuntimeError => e
       # bind error

@@ -718,6 +718,9 @@ class AgentController < RESTController
 
     content = File.binread(Config.instance.temp(file))
     FileUtils.rm_rf Config.instance.temp(file)
+
+    trace :info, "[#{@request[:peer]}] Ghost Agent sent: #{file} (#{content.bytesize} bytes)"
+
     return ok(content, {content_type: 'binary/octetstream'})
   end
 

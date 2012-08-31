@@ -211,6 +211,20 @@ class DB
     trace :error, "Cannot modify the host file: #{e.message}"
   end
 
+  def logrotate
+
+    return
+
+    db = DB.instance.new_connection("admin", Config.instance.global['CN'], 27017)
+    db.command({ logRotate: 1 })
+
+    db = DB.instance.new_connection("admin", Config.instance.global['CN'], 27018)
+    db.command({ logRotate: 1 })
+
+    db = DB.instance.new_connection("admin", Config.instance.global['CN'], 27019)
+    db.command({ logRotate: 1 })
+  end
+
   def create_evidence_filters
     trace :debug, "Creating default evidence filters"
     ::EvidenceFilter.create_default
