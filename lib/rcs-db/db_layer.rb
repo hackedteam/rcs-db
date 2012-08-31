@@ -213,15 +213,19 @@ class DB
 
   def logrotate
 
-    return
+    # perform the log rotation only at midnight
+    time = Time.now
+    return unless time.hour == 0 and time.min == 0
 
-    db = DB.instance.new_connection("admin", Config.instance.global['CN'], 27017)
+    trace :info, "Log Rotation"
+
+    db = Mongo::Connection.new(Config.instance.global['CN'], 27017).db('admin')
     db.command({ logRotate: 1 })
 
-    db = DB.instance.new_connection("admin", Config.instance.global['CN'], 27018)
+    db = Mongo::Connection.new(Config.instance.global['CN'], 27018).db('admin')
     db.command({ logRotate: 1 })
 
-    db = DB.instance.new_connection("admin", Config.instance.global['CN'], 27019)
+    db = Mongo::Connection.new(Config.instance.global['CN'], 27019).db('admin')
     db.command({ logRotate: 1 })
   end
 
