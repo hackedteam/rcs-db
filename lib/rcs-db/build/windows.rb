@@ -68,8 +68,8 @@ class BuildWindows < Build
         dir = scramble_name(core[0..7], 7)
         reg = '*' + scramble_name(dir, 1)[1..-1]
         content.binary_patch 'IaspdPDuFMfnm_apggLLL712j', reg.ljust(25, "\x00")
-      rescue
-        raise "Registry key marker not found"
+      rescue Exception => e
+        raise "Registry key marker not found: #{e.message}"
       end
     end
 
