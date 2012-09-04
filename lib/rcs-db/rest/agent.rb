@@ -397,8 +397,8 @@ class AgentController < RESTController
 
     case @request[:method]
       when 'GET'
-        config = agent.configs.where(:activated.exists => false).last
-        return not_found if config.nil?
+        config = agent.configs.last
+        return not_found if config.nil? or config.activated
 
         # we have sent the configuration, wait for activation
         config.sent = Time.now.getutc.to_i
@@ -413,7 +413,7 @@ class AgentController < RESTController
         return ok(enc_config, {content_type: 'binary/octet-stream'})
         
       when 'DELETE'
-        config = agent.configs.where(:activated.exists => false).last
+        config = agent.configs.last
         # consistency check (don't allow a config which is activated but never sent)
         config.sent = Time.now.getutc.to_i if config.sent.nil? or config.sent == 0
         config.activated = Time.now.getutc.to_i
