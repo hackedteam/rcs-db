@@ -7,15 +7,24 @@ TODO 8.2.0:
         - want to close?
         - want to delete?
 
-
-    policies?
-        - license for upload & execute
-
     ocr for images
         - separate installer
         - separate process
 
     first time sync with NIA & TNI
+
+
+TODO 8.3.0
+
+    policies?
+        - license for upload & execute
+
+    differentiate between input/output connectors:
+        - connector for translation
+        - xml format
+        - implement transport layers:
+        - proprietary for read-only db
+        - sftp
 
 
 TODO FUTURE:
@@ -25,13 +34,6 @@ TODO FUTURE:
         target records (schedario)
         global target position (http://www.zeit.de/datenschutz/malte-spitz-data-retention)
 
-
-    differentiate between input/output connectors:
-        - connector for translation
-        - xml format
-        - implement transport layers:
-        - proprietary for read-only db
-        - sftp
 
 ======================================
 

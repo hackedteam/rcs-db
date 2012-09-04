@@ -448,7 +448,6 @@ class Item
 
   def self.offload_destroy_callback(params)
     item = ::Item.find(params[:id])
-    raise "item not found" if item.nil?
     item.destroy_callback
   rescue Exception => e
     trace :error, "Offload destroy: #{e.message}"

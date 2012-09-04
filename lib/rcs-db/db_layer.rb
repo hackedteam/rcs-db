@@ -134,7 +134,6 @@ class DB
     # index on shard id for the worker
     coll = db.collection('grid.evidence.files')
     coll.create_index('metadata.shard')
-
   end
 
   def enable_sharding
