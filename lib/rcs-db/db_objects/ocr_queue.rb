@@ -7,6 +7,9 @@ class OCRQueue
   include Mongoid::Document
   extend RCS::Tracer
 
+  QUEUED = 0
+  PROCESSED = 1
+
   field :target_id, type: String
   field :evidence_id, type: String
   field :flag, type: Integer
@@ -18,6 +21,7 @@ class OCRQueue
 
     trace :debug, "Adding to OCR queue: #{target_id} #{evidence_id}"
 
+    OCRQueue.create!({target_id: target_id.to_s, evidence_id: evidence_id.to_s, flag: QUEUED})
   end
 
 end

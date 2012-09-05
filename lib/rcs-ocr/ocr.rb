@@ -7,9 +7,11 @@ require_relative 'processor'
 if File.directory?(Dir.pwd + '/lib/rcs-ocr-release')
   require 'rcs-db-release/config'
   require 'rcs-db-release/db_layer'
+  require 'rcs-db-release/grid'
 else
   require 'rcs-db/config'
   require 'rcs-db/db_layer'
+  require 'rcs-db/grid'
 end
 
 # from RCS::Common
