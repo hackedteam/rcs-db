@@ -434,8 +434,8 @@ Section "Install Section" SecInstall
     DetailPrint "Adding firewall rule for port 443/tcp and 444/tcp..."
     #nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=443'
     #nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=444'
-	SimpleFC::AddPort 443 "RCS Database" 6 0 2 "" 1
-	SimpleFC::AddPort 444 "RCS Database" 6 0 2 "" 1
+    SimpleFC::AddPort 443 "RCS Database" 6 0 2 "" 1
+    SimpleFC::AddPort 444 "RCS Database" 6 0 2 "" 1
 	
     !cd '..'
     WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
@@ -514,7 +514,7 @@ Section "Install Section" SecInstall
     
     DetailPrint "Adding firewall rule for port 80/tcp..."
     #nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSCollector" dir=in action=allow protocol=TCP localport=80'
-	SimpleFC::AddPort 80 "RCS Collector" 6 0 2 "" 1
+    SimpleFC::AddPort 80 "RCS Collector" 6 0 2 "" 1
 	
     !cd '..'
     

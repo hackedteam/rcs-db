@@ -43,6 +43,7 @@ task :nsis do
   FileUtils.rm_rf "./nsis/rcs-exploits-#{VERSION}.exe"
   FileUtils.rm_rf "./nsis/rcs-agents-#{VERSION}.exe"
   FileUtils.rm_rf "./nsis/rcs-setup-#{VERSION}.exe"
+  FileUtils.rm_rf "./nsis/rcs-ocr-#{VERSION}.exe"
 
   execute 'Generating RCS-Exploit NSIS installer...' do
  		system "#{MAKENSIS} /V1 ./nsis/RCS-Exploits.nsi"
@@ -59,14 +60,22 @@ task :nsis do
 	execute 'Signing RCS-Agents installer...' do
 		system "./nsis/SignTool.exe sign /P GeoMornellaChallenge7 /f ./nsis/HT.pfx ./nsis/rcs-agents-#{VERSION}.exe"
 	end
-	
+
 	execute 'Generating RCS NSIS installer...' do
 		system "#{MAKENSIS} /V1 ./nsis/RCS.nsi"
 	end
 		
 	execute 'Signing RCS installer...' do
 		system "./nsis/SignTool.exe sign /P GeoMornellaChallenge7 /f ./nsis/HT.pfx ./nsis/rcs-setup-#{VERSION}.exe"
-	end
+  end
+
+  execute 'Generating RCS-OCR NSIS installer...' do
+    system "#{MAKENSIS} /V1 ./nsis/RCS-OCR.nsi"
+  end
+
+  execute 'Signing RCS-OCR installer...' do
+    system "./nsis/SignTool.exe sign /P GeoMornellaChallenge7 /f ./nsis/HT.pfx ./nsis/rcs-ocr-#{VERSION}.exe"
+  end
 end
 
 desc "Remove the protected release code"
@@ -75,6 +84,7 @@ task :unprotect do
     FileUtils.rm_rf(Dir.pwd + '/lib/rgloader') if File.exist?(Dir.pwd + '/lib/rgloader')
     FileUtils.rm_rf(Dir.pwd + '/lib/rcs-db-release') if File.exist?(Dir.pwd + '/lib/rcs-db-release')
     FileUtils.rm_rf(Dir.pwd + '/lib/rcs-worker-release') if File.exist?(Dir.pwd + '/lib/rcs-worker-release')
+    FileUtils.rm_rf(Dir.pwd + '/lib/rcs-ocr-release') if File.exist?(Dir.pwd + '/lib/rcs-ocr-release')
   end
 end
 
@@ -93,6 +103,7 @@ task :protect do
   execute "Creating release folder" do
     Dir.mkdir(Dir.pwd + '/lib/rcs-db-release') if not File.directory?(Dir.pwd + '/lib/rcs-db-release')
     Dir.mkdir(Dir.pwd + '/lib/rcs-worker-release') if not File.directory?(Dir.pwd + '/lib/rcs-worker-release')
+    Dir.mkdir(Dir.pwd + '/lib/rcs-ocr-release') if not File.directory?(Dir.pwd + '/lib/rcs-ocr-release')
   end
   execute "Copying the rgloader" do
     RGPATH = RUBYENCPATH + '/rgloader'
@@ -113,6 +124,8 @@ task :protect do
     system "#{RUBYENC} -o ../rcs-db-release -r --ruby 1.9.2 *.rb */*.rb"
     Dir.chdir "../rcs-worker"
     system "#{RUBYENC} -o ../rcs-worker-release -r --ruby 1.9.2 *.rb */*.rb"
+    Dir.chdir "../rcs-ocr"
+    system "#{RUBYENC} -o ../rcs-ocr-release -r --ruby 1.9.2 *.rb */*.rb"
     Dir.chdir "../.."
   end
   execute "Copying libs" do

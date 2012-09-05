@@ -1,6 +1,8 @@
 
 TODO 8.2.0:
 
+    review index on evidence
+
     archive option for targets / operations
         - archive in a backup
         - archive and delete
