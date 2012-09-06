@@ -54,6 +54,9 @@ class Processor
     file = RCS::DB::GridFS.get ev[:data]['_grid'], entry['target_id']
     File.open(temp, 'wb') {|d| d.write file.read}
 
+    trace :debug, "IMAGE: #{temp}"
+    trace :debug, "OCR: #{output}"
+
     # invoke the ocr on the temp file and get the result
     Weaver.transform temp, output
 
@@ -77,6 +80,7 @@ class Processor
 
   rescue Exception => e
     trace :error, "Cannot process evidence: #{e.message}"
+    trace :fatal, e.backtrace.join("\n")
   end
 
 

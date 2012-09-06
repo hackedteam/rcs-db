@@ -4,6 +4,7 @@
 
 # from RCS::Common
 require 'rcs-common/trace'
+require 'rcs-common/utf16le'
 
 require 'ffi'
 
@@ -47,17 +48,14 @@ class Weaver
       # cannot run on macos
       return  if RbConfig::CONFIG['host_os'] =~ /darwin/
 
-      # NULL terminate the strings
-      input_file << "\x00"
-      output_file << "\x00"
-
       # allocate the memory
       inf = FFI::MemoryPointer.from_string(input_file.to_utf16le_binary)
       outf = FFI::MemoryPointer.from_string(output_file.to_utf16le_binary)
 
       # call the actual method in the DLL
-      SDL.OCRDump(inf, outf)
+      ret = SDL.OCRDump(inf, outf)
 
+      trace :debug, "SDL ret: #{ret}"
     end
 
   end
