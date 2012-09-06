@@ -85,13 +85,15 @@ Section "Install Section" SecInstall
   IntCmp $R0 1 alreadyinstalled
 
     DetailPrint "Creating service RCS OCR..."
-    nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSOCR $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-ocr"
+    nsExec::Exec "$INSTDIR\DB\bin\nssm.exe install RCSOCR $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-ocr"
     SimpleSC::SetServiceFailure "RCSOCR" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
     WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSOCR" "DisplayName" "RCS OCR"
     WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSOCR" "Description" "Remote Control System OCR processor"
     DetailPrint "done"
 
     WriteRegDWORD HKLM "Software\HT\RCS" "ocr" 0x00000001
+
+    nsExec::Exec "regedit /s $INSTDIR\DB\ocr\ocr-key.reg"
 
     DetailPrint "Starting RCS OCR..."
     SimpleSC::StartService "RCSOCR" "" 30

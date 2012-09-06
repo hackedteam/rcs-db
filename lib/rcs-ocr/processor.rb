@@ -41,6 +41,7 @@ class Processor
     ev = Evidence.collection_class(entry['target_id']).find(entry['evidence_id'])
 
     trace :debug, ev.inspect
+    start = Time.now
 
     temp = RCS::DB::Config.instance.temp(ev[:data]['_grid'].to_s)
     output = temp + '.ocr'
@@ -67,6 +68,8 @@ class Processor
 
     # TODO: enable this
     #ev.save
+
+    trace :info, "Evidence processed in #{Time.now - start} seconds"
 
   rescue Exception => e
     trace :error, "Cannot process evidence: #{e.message}"
