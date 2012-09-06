@@ -65,10 +65,13 @@ class Processor
     ocr_text = File.open(output, 'r') {|f| f.read}
 
     FileUtils.rm_rf temp
-    FileUtils.rm_rf output
+    #FileUtils.rm_rf output
 
     # update the evidence with the new text
     ev[:data][:body] = ocr_text
+
+    trace :debug, "KEYWORDS: " + ocr_text.keywords.inspect
+
     ev[:kw] += ocr_text.keywords
 
     trace :debug, ev.inspect
