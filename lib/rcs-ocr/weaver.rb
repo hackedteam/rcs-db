@@ -28,7 +28,7 @@ module SDL
 
   # we can use the HASP dongle only on windows
   if RbConfig::CONFIG['host_os'] =~ /mingw/
-    ffi_lib File.join(Dir.pwd, 'ocr/ocr.dll')
+    ffi_lib File.join(Dir.pwd, 'ocr.dll')
 
     ffi_convention :stdcall
 

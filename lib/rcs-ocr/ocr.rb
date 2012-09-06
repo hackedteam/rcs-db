@@ -1,7 +1,6 @@
 #
 #  The main file of the ocr
 #
-require_relative 'processor'
 
 # from RCS::DB
 if File.directory?(Dir.pwd + '/lib/rcs-ocr-release')
@@ -16,6 +15,8 @@ end
 
 # from RCS::Common
 require 'rcs-common/trace'
+
+require_relative 'processor'
 
 module RCS
 module OCR

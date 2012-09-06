@@ -4,7 +4,11 @@
 # the evidence to be processed are queued by the workers
 #
 
+# we need to execute the weaver inside the ocr directory
+# to satisfy all the dll dependencies
+Dir.chdir 'ocr'
 require_relative 'weaver'
+Dir.chdir '..'
 
 require 'rcs-common/trace'
 require 'fileutils'
