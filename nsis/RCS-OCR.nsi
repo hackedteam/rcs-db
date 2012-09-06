@@ -93,7 +93,7 @@ Section "Install Section" SecInstall
 
     WriteRegDWORD HKLM "Software\HT\RCS" "ocr" 0x00000001
 
-    nsExec::Exec "regedit /s $INSTDIR\DB\ocr\ocr-key.reg"
+    nsExec::Exec "reg import $INSTDIR\DB\ocr\ocr-key.reg"
 
     DetailPrint "Starting RCS OCR..."
     SimpleSC::StartService "RCSOCR" "" 30

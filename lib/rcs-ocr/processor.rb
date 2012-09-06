@@ -61,7 +61,7 @@ class Processor
     FileUtils.rm_rf output
 
     # update the evidence with the new text
-    ev[:data][:ocr] = ocr_text
+    ev[:data][:body] = ocr_text
     ev[:kw] += ocr_text.keywords
 
     trace :debug, ev.inspect

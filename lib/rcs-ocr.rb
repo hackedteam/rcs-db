@@ -12,7 +12,7 @@ Dir.chdir $execution_directory
 
 # release file are encrypted and stored in a different directory
 if File.directory?(Dir.pwd + '/lib/rcs-ocr-release')
-  require_relative 'rcs-ocr-release/db'
+  require_relative 'rcs-ocr-release/ocr'
 # otherwise we are using development code
 elsif File.directory?(Dir.pwd + '/lib/rcs-ocr')
   puts "WARNING: Executing clear text code... (debug only)"
