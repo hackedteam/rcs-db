@@ -1,5 +1,5 @@
 #
-#  SDL Language Weaver handling stuff
+#  LEADTOOLS interface
 #
 
 # from RCS::Common
@@ -24,7 +24,7 @@ module OCR
   }
 =end
 
-module SDL
+module LEADTOOLS
   extend FFI::Library
 
   # we can use the HASP dongle only on windows
@@ -38,7 +38,7 @@ module SDL
 
 end
 
-class Weaver
+class LeadTools
   extend RCS::Tracer
 
   class << self
@@ -57,9 +57,7 @@ class Weaver
       outf = FFI::MemoryPointer.from_string(output_null.to_utf16le_binary)
 
       # call the actual method in the DLL
-      ret = SDL.OCRDump(inf, outf)
-
-      trace :debug, "SDL ret: #{ret}"
+      LEADTOOLS.OCRDump(inf, outf)
     end
 
   end
