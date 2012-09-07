@@ -49,8 +49,8 @@ class LeadTools
       return  if RbConfig::CONFIG['host_os'] =~ /darwin/
 
       # null terminate the strings for the DLL
-      input_null = input_file + "\x00"
-      output_null = output_file + "\x00"
+      input_null = input_file.gsub("/", "\\") + "\x00"
+      output_null = output_file.gsub("/", "\\") + "\x00"
 
       # allocate the memory
       inf = FFI::MemoryPointer.from_string(input_null.to_utf16le_binary)

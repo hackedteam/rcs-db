@@ -1,16 +1,17 @@
 
 TODO 8.2.0:
 
+    nsis add path for OCR??
+
     review index on evidence
+
+    certs on shard?
 
     archive option for targets / operations
         - archive in a backup
         - archive and delete
         - want to close?
         - want to delete?
-
-    ocr for images
-        - uninstaller for nsis
 
     first time sync with NIA & TNI
 

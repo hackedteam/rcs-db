@@ -33,6 +33,7 @@ class Processor
       if entry = coll.find_and_modify({query: {flag: OCRQueue::QUEUED}, update: {"$set" => {flag: OCRQueue::PROCESSED}}})
         process entry
       else
+        trace :debug, "Nothing to do, waiting..."
         sleep 1
       end
     end
@@ -58,9 +59,7 @@ class Processor
     if LeadTools.transform(temp, output)
       raise "output file not found" unless File.exist?(output)
     else
-      trace :info, "Evidence NOT processed (#{size.to_s_bytes})"
-      #FileUtils.mv temp, temp + '.jpg'
-      return
+      raise "unable to process"
     end
 
     ocr_text = File.open(output, 'r') {|f| f.read}
@@ -78,6 +77,8 @@ class Processor
 
   rescue Exception => e
     trace :error, "Cannot process evidence: #{e.message}"
+    #FileUtils.rm_rf temp
+    FileUtils.mv temp, temp + '.jpg'
   end
 
 
