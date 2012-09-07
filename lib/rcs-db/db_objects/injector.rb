@@ -54,6 +54,21 @@ class Injector
     end
   end
 
+  def disable_on_sync(factory)
+    modified = false
+    self.rules.each do |rule|
+      if rule.disable_sync and rule.action_param == factory[:_id].to_s
+        trace :info, "Disabling rule by sync of #{factory.name}"
+        rule.enabled = false
+        rule.save
+        modified = true
+      end
+    end
+
+    # push the rules to the NIA
+    InjectorTask.new('injector', nil, {injector_id: self[:_id]}).run if modified
+  end
+
 end
 
 

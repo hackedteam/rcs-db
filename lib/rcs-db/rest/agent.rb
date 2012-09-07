@@ -354,6 +354,9 @@ class AgentController < RESTController
     # check for alerts on this new instance
     Alerting.new_instance agent
 
+    # notify the injectors of the infection
+    ::Injector.all.each {|p| p.disable_on_sync(factory)}
+
     status = {:deleted => agent[:deleted], :status => agent[:status].upcase, :_id => agent[:_id]}
     return ok(status)
   end
