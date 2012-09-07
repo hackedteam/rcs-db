@@ -79,6 +79,7 @@ class Processor
     trace :error, "Cannot process evidence: #{e.message}"
     #FileUtils.rm_rf temp
     FileUtils.mv temp, temp + '.jpg'
+    exit!
   end
 
 

@@ -27,4 +27,5 @@ DB:
     - support for pluggable OCR module to scan screenshots taken by agents
     - fix for operation and target backup not performing correctly
     - fix for file manager not deleting all entries in some cases
+    - fix for the "disable on sync" flag for injectors
 

@@ -66,7 +66,7 @@ class Injector
     end
 
     # push the rules to the NIA
-    InjectorTask.new('injector', nil, {injector_id: self[:_id]}).run if modified
+    RCS::DB::InjectorTask.new('injector', nil, {'injector_id' => self[:_id]}).run if modified
   end
 
 end
