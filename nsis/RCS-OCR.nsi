@@ -52,6 +52,10 @@
   !insertmacro MUI_PAGE_WELCOME
   !insertmacro MUI_PAGE_INSTFILES
 
+  ;Uninstaller pages
+  !insertmacro MUI_UNPAGE_WELCOME
+  !insertmacro MUI_UNPAGE_INSTFILES
+
 ;--------------------------------
 ;Languages
 
@@ -106,7 +110,47 @@ Section "Install Section" SecInstall
   done:
 
   !cd "nsis"
-  
+
+  DetailPrint "Writing uninstall informations..."
+  SetDetailsPrint "textonly"
+  WriteUninstaller "$INSTDIR\setup\RCS-ORC-uninstall.exe"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSOCR" "DisplayName" "RCS OCR"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSOCR" "DisplayIcon" "$INSTDIR\setup\RCS.ico"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSOCR" "DisplayVersion" "${PACKAGE_VERSION}"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSOCR" "UninstallString" "$INSTDIR\setup\RCS-OCR-uninstall.exe"
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSOCR" "NoModify" 0x00000001
+  WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSOCR" "NoRepair" 0x00000001
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSOCR" "InstDir" "$INSTDIR"
+
+  SetDetailsPrint "both"
+
+SectionEnd
+
+Section Uninstall
+  DetailPrint "Stopping RCS OCR Services..."
+  SimpleSC::StopService "RCSOCR" 1
+  DetailPrint "done"
+
+  DetailPrint "Removing RCS OCR Services..."
+  SimpleSC::RemoveService "RCSOCR"
+  DetailPrint "done"
+
+  DetailPrint ""
+  DetailPrint "Deleting files..."
+  SetDetailsPrint "textonly"
+  ReadRegStr $INSTDIR HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCS" "InstDir"
+
+  RMDir /r "$INSTDIR\DB\ocr"
+
+  SetDetailsPrint "both"
+  DetailPrint "done"
+
+  DetailPrint ""
+  DetailPrint "Removing registry keys..."
+  DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSOCR"
+  DeleteRegKey HKLM "Software\HT\RCS\ocr"
+  DetailPrint "done"
+
 SectionEnd
 
 
