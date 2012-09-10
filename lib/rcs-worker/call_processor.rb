@@ -215,7 +215,7 @@ class Call
       @sample_rate = (@channels.values.min_by {|c| c.sample_rate}).sample_rate
 
       #resample channels (if necessary)
-      @channels.values.each {|c| c.resample_channel(@sample_rate) unless c.resampled?}
+      @channels.values.each {|c| c.resample_channel(@sample_rate)}
 
       # fill in later channel
       fillin_gap = a[1].start_time - a[0].start_time
