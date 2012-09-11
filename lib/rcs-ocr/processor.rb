@@ -74,12 +74,12 @@ class Processor
 
     ev.save
 
-    trace :info, "Evidence processed in #{Time.now - start} seconds (#{size.to_s_bytes})"
+    trace :info, "Evidence processed in #{Time.now - start} seconds - image #{size.to_s_bytes} -> text #{data[:body].size.to_s_bytes}"
 
   rescue Exception => e
     trace :error, "Cannot process evidence: #{e.message}"
-    trace :error, e.backtrace.join("\n")
-    FileUtils.rm_rf temp
+    #trace :error, e.backtrace.join("\n")
+    #FileUtils.rm_rf temp
     #FileUtils.mv temp, temp + '.jpg'
     #exit!
   end
