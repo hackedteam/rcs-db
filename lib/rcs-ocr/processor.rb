@@ -63,8 +63,13 @@ class Processor
     FileUtils.rm_rf temp
     FileUtils.rm_rf output
 
+    # take a copy of evidence data (we need to do this to trigger the mongoid save)
+    data = ev[:data].dup
+    # remove invalid UTF-8 chars
+    data[:body] = ocr_text.encode('UTF-8', 'UTF-8', :invalid => :replace).gsub(/([^[:alnum:]])+/u, ' ')
+
     # update the evidence with the new text
-    ev[:data][:body] = ocr_text
+    ev[:data] = data
     ev[:kw] += ocr_text.keywords
 
     ev.save
@@ -73,9 +78,10 @@ class Processor
 
   rescue Exception => e
     trace :error, "Cannot process evidence: #{e.message}"
-    #FileUtils.rm_rf temp
-    FileUtils.mv temp, temp + '.jpg'
-    exit!
+    trace :error, e.backtrace.join("\n")
+    FileUtils.rm_rf temp
+    #FileUtils.mv temp, temp + '.jpg'
+    #exit!
   end
 
 
