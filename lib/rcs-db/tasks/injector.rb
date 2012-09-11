@@ -22,6 +22,9 @@ class InjectorTask
     intercept_files = []
     vector_files = {}
 
+    # TODO: check for 8.2.0
+    raise "Version too old, please update the component" if injector.version < 2012091201
+
     injector.rules.where(:enabled => true).each do |rule|
 
       tag = injector.redirection_tag + (base + progressive).to_s
