@@ -29,7 +29,7 @@ class Processor
       if entry = coll.find_and_modify({query: {flag: OCRQueue::QUEUED}, update: {"$set" => {flag: OCRQueue::PROCESSED}}})
         process entry
       else
-        trace :debug, "Nothing to do, waiting..."
+        #trace :debug, "Nothing to do, waiting..."
         sleep 1
       end
     end
