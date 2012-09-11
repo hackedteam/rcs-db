@@ -151,37 +151,6 @@
 !macroend
 !define EnvUnset "!insertmacro _EnvUnset"
 
-!macro _EnvUnsetRCS7
-   ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
-
-   StrCpy $R1 0
-   ${Do}
-      IntOp $R1 $R1 + 1
-      ${WordFind} $R0 ";" "E+$R1" $R2
-      IfErrors 0 +2
-         ${Break}
-
-      StrCmp $R2 "C:\RCSDB\java\bin" 0 +2
-         ${Continue}
-
-      StrCmp $R2 "C:\RCSDB\ruby\bin" 0 +2
-         ${Continue}
-
-      StrCpy $R3 "$R3$R2;"
-   ${Loop}
-
-   ${If} $R2 == 1
-      StrCpy $R3 $R0
-   ${Else}
-      StrCpy $R3 $R3 -1
-   ${EndIf}
-
-   WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R3"
-
-   SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
-!macroend
-!define EnvUnsetRCS7 "!insertmacro _EnvUnsetRCS7"
-
 ;--------------------------------
 ;Installer Sections
 
@@ -246,7 +215,6 @@ Section "Install Section" SecInstall
   File "DB\nsis\RCS.ico"
 
   DetailPrint "Setting up the path..."
-  ${EnvUnsetRCS7}
   ${EnvUnset}
   ${EnvSet}
   DetailPrint "done" 

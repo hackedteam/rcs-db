@@ -62,11 +62,28 @@
   !insertmacro MUI_LANGUAGE "English"
 
 ;--------------------------------
+
+!macro _EnvSet
+   ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
+   StrCpy $R0 "$R0;$INSTDIR\DB\ocr"
+   WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R0"
+   System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("Path", "$R0").r0'
+
+   SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
+!macroend
+!define EnvSet "!insertmacro _EnvSet"
+
+;--------------------------------
 ;Installer Sections
 
 Section "Install Section" SecInstall
 
   SetDetailsPrint "both"
+
+  DetailPrint "Setting up the path..."
+  ${EnvSet}
+  DetailPrint "done"
+
   DetailPrint "Extracting OCR files..."
   SetDetailsPrint "textonly"
   !cd '..'
