@@ -121,6 +121,9 @@ class DB
     collections = Mongoid::Config.master.collection_names
     collections.keep_if {|x| x['evidence.']}
     collections.delete_if {|x| x['grid.'] or x['files'] or x['chunks']}
+
+    trace :debug, "Indexing #{collections.size} collections"
+
     collections.each do |coll_name|
       coll = db.collection(coll_name)
       e = Evidence.collection_class(coll_name.split('.').last)

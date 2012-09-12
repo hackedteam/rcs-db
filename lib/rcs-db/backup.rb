@@ -156,7 +156,6 @@ class BackupManager
     rescue Exception => e
       Audit.log :actor => '<system>', :action => 'backup.end', :desc => "Backup #{backup.name} failed"
       trace :error, "Backup #{backup.name} failed: #{e.message}"
-      puts e.backtrace.join("\n")
       backup.lastrun = Time.now.getutc.strftime('%Y-%m-%d %H:%M')
       backup.status = 'ERROR'
       backup.save

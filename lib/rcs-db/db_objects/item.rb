@@ -418,8 +418,8 @@ class Item
         end
         trace :info, "Dropping evidence for target #{self.name}"
         # drop the evidence collection of this target
-        Mongoid.database.drop_collection Evidence.collection_name(self._id.to_s)
-        RCS::DB::GridFS.delete_collection(self._id.to_s)
+        Evidence.collection_class(self._id.to_s).collection.drop
+        RCS::DB::GridFS.drop_collection(self._id.to_s)
       when 'agent'
         # dropping flag is set only by cascading from target
         unless self[:dropping]
