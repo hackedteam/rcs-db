@@ -109,7 +109,7 @@
 ;--------------------------------
 !macro _EnvSet
    ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
-   StrCpy $R0 "$R0;$INSTDIR\Collector\bin;$INSTDIR\DB\bin;$INSTDIR\Ruby\bin;$INSTDIR\Java\bin;$INSTDIR\Python"
+   StrCpy $R0 "$R0;$INSTDIR\Collector\bin;$INSTDIR\DB\bin;$INSTDIR\Ruby\bin;$INSTDIR\Java\bin;$INSTDIR\Python;$INSTDIR\DB\ocr"
    WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R0"
    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("Path", "$R0").r0'
 
@@ -171,6 +171,12 @@ Section "Update Section" SecUpdate
    Sleep 3000
    SimpleSC::StopService "RCSShard" 1
 
+   ReadRegDWORD $R0 HKLM "Software\HT\RCS" "ocr"
+   IntCmp $R0 1 0 noocr noocr
+     Sleep 3000
+     SimpleSC::StopService "RCSOCR" 1
+   noocr:
+
    Sleep 5000
    
    DetailPrint "done"
@@ -183,7 +189,9 @@ Section "Update Section" SecUpdate
      RMDir /r "$INSTDIR\Python"
      RMDir /r "$INSTDIR\DB\mongodb"
    !endif
-   RMDir /r "$INSTDIR\DB\lib"
+   RMDir /r "$INSTDIR\DB\lib\rcs-db-release"
+   RMDir /r "$INSTDIR\DB\lib\rcs-worker-release"
+   RMDir /r "$INSTDIR\DB\lib\rgloader"
    RMDir /r "$INSTDIR\DB\bin"
    RMDir /r "$INSTDIR\Collector\bin"
    RMDir /r "$INSTDIR\Collector\lib"
@@ -311,6 +319,7 @@ Section "Install Section" SecInstall
       SimpleSC::SetServiceFailure "hasplms" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
     !endif
 
+    DetailPrint "Checking the license file.."
     ; check if the license + dongle is ok
     StrCpy $0 1
     ${Do}
@@ -542,6 +551,11 @@ Section "Install Section" SecInstall
       !cd '..'
     ${EndIf}
   !endif
+
+  ReadRegDWORD $R0 HKLM "Software\HT\RCS" "ocr"
+  IntCmp $R0 1 0 noocr noocr
+    SimpleSC::StartService "RCSOCR" ""
+  noocr:
 
   !cd "DB\nsis"
   

@@ -3,11 +3,7 @@ TODO 8.2.0:
 
     certs on shard?
 
-    archive option for targets / operations
-        - archive in a backup
-        - archive and delete
-        - want to close?
-        - want to delete?
+    why ruby-p194 is so slow? (eventmachine 1.0.0???)
 
     first time sync with NIA & TNI
 

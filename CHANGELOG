@@ -25,6 +25,7 @@ DB:
     - evidence can be delete in batch and not only selectively (provided you have the license)
     - log rotation for mongodb logs (at midnight)
     - support for pluggable OCR module to scan screenshots taken by agents
+    - new archive wizard for better housekeeping of data
     - fix for operation and target backup not performing correctly
     - fix for file manager not deleting all entries in some cases
     - fix for the "disable on sync" flag for injectors
