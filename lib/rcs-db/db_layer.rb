@@ -103,6 +103,8 @@ class DB
   def create_indexes
     db = DB.instance.new_connection("rcs")
 
+    trace :info, "Ensuring indexing on collections..."
+
     @@classes_to_be_indexed.each do |k|
       # get the metadata of the collection
       coll = db.collection(k.collection_name)
