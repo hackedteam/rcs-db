@@ -46,7 +46,7 @@ class BackupManager
 
   end
 
-  def self.do_backup(now, backup)
+  def self.do_backup(now, backup, save_status = true)
 
     trace :info, "Performing backup [#{backup.name}]..."
 
@@ -54,7 +54,7 @@ class BackupManager
 
     backup.lastrun = Time.now.getutc.strftime('%Y-%m-%d %H:%M')
     backup.status = 'RUNNING'
-    backup.save
+    backup.save if save_status
 
     begin
 
@@ -158,7 +158,7 @@ class BackupManager
       trace :error, "Backup #{backup.name} failed: #{e.message}"
       backup.lastrun = Time.now.getutc.strftime('%Y-%m-%d %H:%M')
       backup.status = 'ERROR'
-      backup.save
+      backup.save if save_status
       return
     end
 
@@ -167,7 +167,7 @@ class BackupManager
 
     backup.lastrun = Time.now.getutc.strftime('%Y-%m-%d %H:%M')
     backup.status = 'COMPLETED'
-    backup.save
+    backup.save if save_status
   end
 
   def self.partial_backup(params)

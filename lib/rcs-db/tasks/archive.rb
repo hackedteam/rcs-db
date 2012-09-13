@@ -21,10 +21,22 @@ class ArchiveTask
   def next_entry
     yield @description = "Archiving #{@item[:name]}"
 
-    yield do_backup if @params['backup']
-    yield do_clean if @params['clean']
-    yield do_close if @params['close']
-    yield do_destroy if @params['destroy']
+    if @params['backup']
+      @description = "Backup in progress..."
+      yield do_backup
+    end
+    if @params['clean']
+      @description = "Deleting live data..."
+      yield do_clean
+    end
+    if @params['close']
+      @description = "Closing..."
+      yield do_close
+    end
+    if @params['destroy']
+      @description = "Destroying #{@item[:name]}"
+      yield do_destroy
+    end
 
     yield @description = "#{@item[:name]} archived successfully"
   end
@@ -33,23 +45,15 @@ class ArchiveTask
   def do_backup
     trace :info, "Creating backup for #{@item._kind} #{@item.name}"
 
-    begin
-      # create a fake backup job to handle the process
-      backup = ::Backup.new
-      backup.name = "Archive_#{@item.name.gsub(' ', '')}"
-      backup.what = "#{@item._kind}:#{@item._id}"
+    # create a fake backup job to handle the process
+    backup = ::Backup.new
+    backup.name = "Archive_#{@item.name.gsub(' ', '')}"
+    backup.what = "#{@item._kind}:#{@item._id}"
 
-      # perform the backup job
-      BackupManager.do_backup Time.now.getutc, backup
+    # perform the backup job
+    BackupManager.do_backup(Time.now.getutc, backup, false)
 
-      # save information from the finished backup
-      status = backup.status
-    ensure
-      # remove the fake backup job
-      backup.destroy
-    end
-
-    raise "Error while performing backup" if status != 'COMPLETED'
+    raise "Error while performing backup" if backup.status != 'COMPLETED'
   end
 
   def do_clean
@@ -58,16 +62,12 @@ class ArchiveTask
       next if item._kind != 'target'
       trace :info, "Cleaning #{item.name} - #{item._id}"
 
-      db = DB.instance.new_connection("rcs")
-
-      # drop the collections to delete all the documents in a fast way
-      Evidence.collection_class(item._id).collection.drop
-      GridFS.drop_collection(item._id.to_s)
-
-      # recreate the collection for the target
-      collection = db.collection(Evidence.collection_name(item._id))
-      Evidence.collection_class(item._id).create_indexes
-      RCS::DB::Shard.set_key(collection, {type: 1, da: 1, aid: 1})
+      item.drop_evidence_collections
+      item.create_evidence_collections
+    end
+    # restat all the subitem statistics
+    ::Item.any_of({_id: @item._id}, {path: @item._id}).each do |item|
+      item.restat
     end
   end
 

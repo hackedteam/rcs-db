@@ -371,13 +371,7 @@ class Item
   def create_callback
     case self._kind
       when 'target'
-        # create the collection for the target's evidence and shard it
-        db = Mongoid.database
-        collection = db.collection(Evidence.collection_name(self._id))
-        # ensure indexes
-        Evidence.collection_class(self._id).create_indexes
-        # enable sharding only if not enabled
-        RCS::DB::Shard.set_key(collection, {type: 1, da: 1, aid: 1})
+        self.create_evidence_collections
     end
 
     RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'create'})
@@ -417,9 +411,7 @@ class Item
           agent.destroy
         end
         trace :info, "Dropping evidence for target #{self.name}"
-        # drop the evidence collection of this target
-        Evidence.collection_class(self._id.to_s).collection.drop
-        RCS::DB::GridFS.drop_collection(self._id.to_s)
+        self.drop_evidence_collections
       when 'agent'
         # dropping flag is set only by cascading from target
         unless self[:dropping]
@@ -437,6 +429,26 @@ class Item
     trace :error, "ERROR: #{e.message}"
     trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
     raise
+  end
+
+  def drop_evidence_collections
+    return if self._kind != 'target'
+
+    # drop the evidence collection of this target
+    Evidence.collection_class(self._id.to_s).collection.drop
+    RCS::DB::GridFS.drop_collection(self._id.to_s)
+  end
+
+  def create_evidence_collections
+    return if self._kind != 'target'
+
+    # create the collection for the target's evidence and shard it
+    db = Mongoid.database
+    collection = db.collection(Evidence.collection_name(self._id))
+    # ensure indexes
+    Evidence.collection_class(self._id).create_indexes
+    # enable sharding only if not enabled
+    RCS::DB::Shard.set_key(collection, {type: 1, da: 1, aid: 1})
   end
 
   def self.offload_destroy(params)
