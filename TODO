@@ -35,3 +35,7 @@ TODO FUTURE:
     upgrade to mongoid 3.0.x
 
     mega refactoring on rest methods
+      - agent
+      - evidence
+      - factory (direct mongo query)
+      - operation (direct mongo query)

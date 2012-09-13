@@ -49,7 +49,7 @@ class GroupController < RESTController
         end
       end
       
-      result = group.update_attributes(@params)
+      group.update_attributes(@params)
       
       return ok(group)
     end
@@ -94,7 +94,10 @@ class GroupController < RESTController
       user = User.find(@params['user']['_id'])
 
       group.users.delete(user)
-      
+
+      # recalculate the accessible list for logged in users
+      SessionManager.instance.rebuild_all_accessible
+
       Audit.log :actor => @session[:user][:name], :action => 'group.remove_user', :group_name => @params['name'], :desc => "Removed user '#{user.name}' from group '#{group.name}'"
       
       return ok
@@ -106,11 +109,14 @@ class GroupController < RESTController
 
     mongoid_query do
       group = Group.find(@params['_id'])
-      oper = Item.find(@params['operation']['_id'])
+      operation = Item.find(@params['operation']['_id'])
 
-      group.items << oper
+      group.items << operation
 
-      Audit.log :actor => @session[:user][:name], :action => 'group.add_operation', :group_name => @params['name'], :desc => "Added operation '#{oper.name}' to group '#{group.name}'"
+      # recalculate the accessible list for logged in users
+      SessionManager.instance.rebuild_all_accessible
+
+      Audit.log :actor => @session[:user][:name], :action => 'group.add_operation', :group_name => @params['name'], :desc => "Added operation '#{operation.name}' to group '#{group.name}'"
 
       return ok
     end
@@ -121,11 +127,14 @@ class GroupController < RESTController
 
     mongoid_query do
       group = Group.find(@params['_id'])
-      oper = Item.find(@params['operation']['_id'])
+      operation = Item.find(@params['operation']['_id'])
 
-      group.items.delete(oper)
+      group.items.delete(operation)
 
-      Audit.log :actor => @session[:user][:name], :action => 'group.remove_operation', :group_name => @params['name'], :desc => "Removed operation '#{oper.name}' from group '#{group.name}'"
+      # recalculate the accessible list for logged in users
+      SessionManager.instance.rebuild_all_accessible
+
+      Audit.log :actor => @session[:user][:name], :action => 'group.remove_operation', :group_name => @params['name'], :desc => "Removed operation '#{operation.name}' from group '#{group.name}'"
 
       return ok
     end
