@@ -3,8 +3,6 @@ TODO 8.2.0:
 
     why ruby-p194 is so slow? (mongo ruby driver?)
 
-    bson_ext 1.7.0  does not work on windows
-
     scout agent
 
     first time sync with NIA & TNI

@@ -246,6 +246,24 @@ class BackupManager
     trace :info, "Metadata backup job created"
   end
 
+  def self.backup_index
+    index = []
+
+    Dir[Config.instance.global['BACKUP_DIR'] + '/*'].each do |dir|
+      dirsize = 0
+      # consider only valid backups dir (containing 'rcs' or 'config')
+      next unless File.exist?(dir + '/rcs') or File.exist?(dir + '/config')
+      Find.find(dir + '/rcs') { |f| dirsize += File.stat(f).size } if File.exist?(dir + '/rcs')
+      Find.find(dir + '/config') { |f| dirsize += File.stat(f).size } if File.exist?(dir + '/config')
+      # the name is in the first half of the directory name
+      name = File.basename(dir).split('-')[0]
+      time = File.stat(dir).ctime.getutc
+      index << {_id: File.basename(dir), name: name, when: time.strftime('%Y-%m-%d %H:%M'), size: dirsize}
+    end
+
+    return index
+  end
+
   def self.restore_backup(params)
 
     command = Config.mongo_exec_path('mongorestore')

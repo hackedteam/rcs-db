@@ -102,7 +102,7 @@ class AlertController < RESTController
     end
   end
 
-    # returns the counters grouped by status
+  # returns the counters grouped by status
   def counters
     require_auth_level :view
 
