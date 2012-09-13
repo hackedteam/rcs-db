@@ -1,7 +1,6 @@
 #
-# Controller for Backups
+# Controller for public documents on collectors
 #
-
 
 module RCS
 module DB

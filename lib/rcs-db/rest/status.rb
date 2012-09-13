@@ -24,9 +24,7 @@ class StatusController < RESTController
     require_auth_level :server
     
     # the ip address is not specified, we take the peer address
-    if @params['address'] == ''
-      @params['address'] = @request[:peer]
-    end
+    @params['address'] = @request[:peer] if @params['address'] == ''
     
     # save the status to the db
     stats = {:disk => @params['disk'], :cpu => @params['cpu'], :pcpu => @params['pcpu']}
