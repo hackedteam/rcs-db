@@ -49,13 +49,14 @@
 :exploits: true
 :deletion: true
 :archive: false
+:scout: false
 :digest: !binary |-
-  NzVjYWYzOGY1MjE4ZTIxMjdkYWVhYjNhNjM0NTBmMWJkMjUzMTdlNQ==
+  M2E4OGIwNzJmZmE4M2RkMzFiNDI1NjcxNTNjMmQ2MDRjZGIzYzE5NA==
 :check: LOuWAplu
 :signature: !binary |-
-  NjAzZWEwMDJlNzFiYjhiNzMwNmY2MTU4YjBhYTEzNjkwYzIwM2YzNTJjNzkx
-  Yzk4ODk0MDNlY2RmMjQ5MmFjNw==
+  MTgyNGI3MTVhZjAxNWZhOTQ3NjhmMjE1OGJiMWI5MTZhYjMyMmZlMjE1NzYw
+  NzI3MWFlODEwM2VlMDlhMDkyYQ==
 :integrity: !binary |-
-  ZTNjZDJhNzk5YTJkZmQzYmE4YTVjZDgyZGRkNTMzZTUzYmZiYzc0YzU0NTFj
-  MmRhYTQwMDI2NTE0ZTdiNjM3NmI5NjI2YjNjODkzNTIyZTc0YmNkNDc0Njk5
-  NzhiZmQw
+  NWFjNGU4N2RiYjlkZTVhNDI3OTUwMzU4ZjAwZWM5ZmRhZjg3ZWY0MTEzNjI5
+  OTk5NGU4ZDc1N2NhMjg0NDI2MDMzMDU4ODBiZDZiZjkxNmIwMWQyMWJhNWVj
+  ZmVjZDVk

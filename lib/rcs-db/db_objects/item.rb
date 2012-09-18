@@ -41,6 +41,7 @@ class Item
   field :deleted, type: Boolean, default: false
   field :uninstalled, type: Boolean
   field :demo, type: Boolean
+  field :scout, type: Boolean
   field :upgradable, type: Boolean
   field :purge, type: Array, default: [0, 0]
 

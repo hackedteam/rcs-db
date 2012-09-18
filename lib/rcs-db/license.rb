@@ -74,6 +74,7 @@ class LicenseManager
                :exploits => false,
                :deletion => false,
                :archive => false,
+               :scout => true,
                :collectors => {:collectors => 1, :anonymizers => 0}}
   end
 
@@ -92,7 +93,7 @@ class LicenseManager
     File.open(lic_file, "rb") do |f|
       lic = YAML.load(f.read)
 
-      # check the autenticity of the license
+      # check the authenticity of the license
       unless crypt_check(lic)
         trace :fatal, 'Invalid License File: corrupted integrity check'
         exit!
@@ -225,6 +226,8 @@ class LicenseManager
 
     @limits[:deletion] = limit[:deletion] unless limit[:deletion].nil?
     @limits[:archive] = limit[:archive] unless limit[:archive].nil?
+
+    @limits[:scout] = limit[:scout] unless limit[:scout].nil?
   end
 
   
@@ -332,6 +335,9 @@ class LicenseManager
 
       when :archive
         return @limits[:archive]
+
+      when :scout
+        return @limits[:scout]
 
       when :shards
         if Shard.count() < @limits[:shards]

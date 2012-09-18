@@ -3,7 +3,16 @@ TODO 8.2.0:
 
     why ruby-p194 is so slow? (mongo ruby driver?)
 
+    check certs generation on install
+
     scout agent
+      - protocol
+      - license (in console)
+      - build flag
+      - build scout
+      - nia rules flag
+
+    refactor -DEMO into a flag
 
     first time sync with NIA & TNI
 
@@ -34,10 +43,10 @@ TODO FUTURE:
 
     upgrade to mongoid 3.0.x
 
-    mega refactoring on rest methods
-      - agent
-      - evidence
+    Refactoring on rest methods:
+      - agent (too much logic here)
+      - evidence (too much logic here)
       - factory (direct mongo query)
       - operation (direct mongo query)
       - search (direct mongo query)
-      - target
+      - target (direct mongo query, move has too much logic)
