@@ -75,7 +75,7 @@ class EvidenceManager
     # print the table header
     puts
     puts table_line
-    puts '|' + 'instance'.center(57) + '|' + 'subtype'.center(12) + '|' +
+    puts '|' + 'instance'.center(57) + '|' + 'platform'.center(12) + '|' +
          'last sync time'.center(25) + '|' + 'logs'.center(6) + '|' + 'size'.center(13) + '|'
     puts table_line
 

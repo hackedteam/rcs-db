@@ -14,6 +14,8 @@ TODO 8.2.0:
 
     refactor -DEMO into a flag
 
+    checking for pending calls in worker is too slowwwww
+
     first time sync with NIA & TNI
 
 TODO 8.3.0

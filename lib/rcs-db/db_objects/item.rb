@@ -40,8 +40,8 @@ class Item
   field :platform, type: String
   field :deleted, type: Boolean, default: false
   field :uninstalled, type: Boolean
-  field :demo, type: Boolean
-  field :scout, type: Boolean
+  field :demo, type: Boolean, default: false
+  field :scout, type: Boolean, default: false
   field :upgradable, type: Boolean
   field :purge, type: Array, default: [0, 0]
 
