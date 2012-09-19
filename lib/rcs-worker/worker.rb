@@ -118,7 +118,7 @@ class Application
       end
 
       # close any pending call
-      Worker.close_recording_calls
+      #Worker.close_recording_calls  # (too slow)
 
       # do the dirty job!
       Worker.new.run
