@@ -166,6 +166,7 @@ class InjectorController < RESTController
       rule.action = @params['rule']['action']
       rule.action_param = @params['rule']['action_param']
       rule.action_param_name = @params['rule']['action_param_name']
+      rule.scout = @params['rule']['scout']
 
       target = ::Item.find(@params['rule']['target_id'].first)
       return not_found("Target not found") if target.nil?

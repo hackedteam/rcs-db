@@ -90,6 +90,7 @@ class InjectorRule
   field :action, type: String
   field :action_param, type: String
   field :action_param_name, type: String
+  field :scout, type: Boolean, default: true
 
   field :_grid, type: Array
 

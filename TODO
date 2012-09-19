@@ -6,13 +6,7 @@ TODO 8.2.0:
     check certs generation on install
 
     scout agent
-      - protocol
-      - license (in console)
-      - build flag
       - build scout
-      - nia rules flag
-
-    refactor -DEMO into a flag
 
     checking for pending calls in worker is too slowwwww
 
