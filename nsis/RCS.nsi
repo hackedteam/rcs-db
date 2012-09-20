@@ -338,11 +338,23 @@ Section "Install Section" SecInstall
       DetailPrint ""
       DetailPrint "Writing the configuration..."
       SetDetailsPrint "textonly"
+      SetDetailsPrint "both"
       ; write the config yaml
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --defaults --CN $masterCN"
+      DetailPrint "done"
+
       ; generate the SSL cert
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-ca --generate-certs --generate-certs-anon"
+      DetailPrint "Generating CA and certs..."
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-ca --generate-certs"
+      DetailPrint "done"
+
+      ; generate the SSL cert for anon
+      DetailPrint "Generating anonymizer certs..."
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-certs-anon"
+      DetailPrint "done"
+
       ; generate the keystores
+      DetailPrint "Generating keystores..."
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-keystores"
       SetDetailsPrint "both"
       DetailPrint "done"
