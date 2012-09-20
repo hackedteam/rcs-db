@@ -387,6 +387,11 @@ Section "Install Section" SecInstall
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSWorker" "DisplayName" "RCS Worker"
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSWorker" "Description" "Remote Control System Worker for data decoding"
       DetailPrint "done"
+
+      ; write the admin pass into the file that will be loaded on the first start
+      FileOpen $4 "$INSTDIR\DB\config\admin_pass" w
+      FileWrite $4 "$adminpass"
+      FileClose $4
     ${Else}
       nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --migrate-mongos22"
     ${EndIf}
@@ -414,11 +419,6 @@ Section "Install Section" SecInstall
     DetailPrint "Starting RCS Worker..."
     SimpleSC::StartService "RCSWorker" "" 30
     Sleep 5000
-	
-    ${If} $installUPGRADE != ${BST_CHECKED}
-      DetailPrint "Setting the Admin password..."
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --reset-admin $adminpass"
-    ${EndIf}
       
     DetailPrint "Adding firewall rule for port 443/tcp and 444/tcp..."
     #nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=443'

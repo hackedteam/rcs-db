@@ -165,7 +165,13 @@ class DB
       trace :warn, "No ADMIN found, creating a default admin user..."
       User.where(name: 'admin').delete_all
       user = User.create(name: 'admin') do |u|
-        u[:pass] = u.create_password('adminp123')
+        if File.exist? Config.instance.file('admin_pass')
+          pass = File.read(Config.instance.file('admin_pass'))
+          FileUtils.rm_rf Config.instance.file('admin_pass')
+        else
+          pass = 'adminp123'
+        end
+        u[:pass] = u.create_password(pass)
         u[:enabled] = true
         u[:desc] = 'Default admin user'
         u[:privs] = ['ADMIN', 'SYS', 'TECH', 'VIEW']
