@@ -118,7 +118,7 @@ class InjectorController < RESTController
           require_auth_level :sys, :tech
           
           klass = CappedLog.collection_class injector[:_id]
-          logs = klass.all
+          logs = klass.all.order_by([[:_id, :asc]])
           return ok(logs)
 
         when 'POST'

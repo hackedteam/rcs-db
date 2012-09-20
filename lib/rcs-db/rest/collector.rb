@@ -161,7 +161,7 @@ class CollectorController < RESTController
           require_auth_level :sys
 
           klass = CappedLog.collection_class collector[:_id]
-          logs = klass.all
+          logs = klass.all.order_by([[:_id, :asc]])
           return ok(logs)
 
         when 'POST'
