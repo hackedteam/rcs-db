@@ -313,24 +313,13 @@ class Item
     build.unpack
     build.patch({'demo' => self.demo})
 
-    if self.version < 2012041601 and ['windows', 'osx', 'ios'].include? self.platform
-      trace :info, "Upgrading #{self.name} from 7.x to 8.x"
-      # file needed to upgrade from version 7.x to daVinci
-      content = self.configs.last.encrypted_config(self[:confkey])
-      self.upload_requests.create!({filename: 'nc-7-8dv.cfg', _grid: [RCS::DB::GridFS.put(content, {filename: 'nc-7-8dv.cfg'})] })
-    end
-
     # then for each platform we have differences
     case self.platform
       when 'windows'
-        if self.version < 2012041601
-          add_upgrade('dll64', File.join(build.tmpdir, 'core64'))
-        else
-          add_upgrade('core64', File.join(build.tmpdir, 'core64'))
-          # TODO: driver removal
-          #add_upgrade('driver', File.join(build.tmpdir, 'driver'))
-          #add_upgrade('driver64', File.join(build.tmpdir, 'driver64'))
-        end
+        add_upgrade('core64', File.join(build.tmpdir, 'core64'))
+        # TODO: driver removal
+        #add_upgrade('driver', File.join(build.tmpdir, 'driver'))
+        #add_upgrade('driver64', File.join(build.tmpdir, 'driver64'))
       when 'osx'
         add_upgrade('inputmanager', File.join(build.tmpdir, 'inputmanager'))
         add_upgrade('driver', File.join(build.tmpdir, 'driver'))
