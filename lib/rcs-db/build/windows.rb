@@ -250,7 +250,6 @@ class BuildWindows < Build
   private
 
   def cook
-
     if @scout
       cook_param = '-S ' + path('scout') + ' -O ' + path('output')
     else
