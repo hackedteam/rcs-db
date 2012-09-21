@@ -274,8 +274,8 @@ class AgentController < RESTController
   def status
     require_auth_level :server, :tech
     
-    demo = @params['demo']
-    scout = @params['scout']
+    demo = (@params['demo'] == 'true') ? true : false
+    scout = (@params['scout'] == 'true') ? true : false
     platform = @params['platform'].downcase
 
     # retro compatibility for older agents (pre 8.0) sending win32, win64, ios, osx
