@@ -354,6 +354,7 @@ class Item
     build.load({'_id' => factory._id})
     build.unpack
     build.patch({'demo' => self.demo})
+    build.scramble
     build.melt({'bit64' => true, 'codec' => true, 'scout' => false})
 
     add_upgrade('elite', File.join(build.tmpdir, 'output'))
