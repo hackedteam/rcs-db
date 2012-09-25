@@ -25,6 +25,19 @@ class Configuration
     aes_encrypt(self.config + Digest::SHA1.digest(self.config), Digest::MD5.digest(confkey))
   end
 
+  def sync_host
+    # search for the first sync action and take the sync address
+    config = JSON.parse(self.config)
+    config['actions'].each do |action|
+      action['subactions'].each do |sub|
+        if sub['action'] == 'synchronize'
+          return sub['host']
+        end
+      end
+    end
+    return nil
+  end
+
   def is_ghost_entry?(h)
     h.has_value? "Ghost In The Shell"
   end

