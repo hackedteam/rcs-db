@@ -51,14 +51,33 @@ class Connectors
         # ensure the dest dir is created
         FileUtils.mkdir_p path
 
-        # don't export interesting fields
-        exported = evidence.as_document
+        # make a deep copy to prepare it for export
+        exported = evidence.as_document.dup
+        exported['data'] = evidence['data'].dup
+
+        # don't export uninteresting fields
         exported.delete('blo')
         exported.delete('note')
         exported.delete('kw')
 
+        # insert operation and target references
+        exported['oid'] = operation[:_id].to_s
+        exported['tid'] = target[:_id].to_s
+
+        exported['operation'] = operation.name
+        exported['target'] = target.name
+        exported['agent'] = agent.name
+
+        if exported['data'][:_grid]
+          exported['data'].delete(:_grid)
+          exported['data'][:_bin_size] = exported['data'].delete(:_grid_size)
+        end
+
+        # convert it to json
+        exported = exported.to_json
+
         # dump the evidence
-        File.open(File.join(path, evidence[:_id].to_s + '.json'), 'wb') {|d| d.write exported.to_json}
+        File.open(File.join(path, evidence[:_id].to_s + '.json'), 'wb') {|d| d.write exported}
 
         # dump the binary (if any)
         if evidence[:data][:_grid]
