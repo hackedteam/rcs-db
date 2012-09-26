@@ -7,20 +7,19 @@ gem 'em-http-request'
 gem 'em-websocket'
 gem 'em-http-server', ">= 0.1.3"
 
-gem 'eventmachine', ">= 1.0.0.beta.4"
+gem 'eventmachine', ">= 1.0.0"
 
 # TAR/GZIP compression
 gem "minitar", ">= 0.5.5", :git => "git://github.com/danielemilan/minitar.git", :branch => "master"
 
 gem 'rubyzip'
-
 gem 'bcrypt-ruby'
 gem 'plist'
 gem 'uuidtools'
 gem 'ffi'
 gem 'lrucache'
-# MIME decoding
 gem 'mail'
+gem 'rest-client'
 
 # databases
 gem 'mongo', "= 1.7.0", :git => "git://github.com/danielemilan/mongo-ruby-driver.git", :branch => "1.7.0-append"
