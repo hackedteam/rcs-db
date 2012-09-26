@@ -39,8 +39,8 @@ module SingleEvidence
       self[:kw] = []
 
       self[:data].each_value do |value|
-        next unless value.is_a? String
-        self[:kw] += value.keywords
+        next unless value.is_a? String or value.is_a? Symbol
+        self[:kw] += value.to_s.keywords
       end
       self[:kw].uniq!
     end

@@ -92,8 +92,8 @@ class Indexer
     kw = SortedSet.new
 
     data.each_value do |value|
-      next unless value.is_a? String
-      kw += value.keywords
+      next unless value.is_a? String or value.is_a? Symbol
+      kw += value.to_s.keywords
     end
 
     kw += note.keywords unless note.nil?
