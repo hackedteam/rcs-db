@@ -76,6 +76,9 @@ class Processor
 
     trace :info, "Evidence processed in #{Time.now - start} seconds - image #{size.to_s_bytes} -> text #{data[:body].size.to_s_bytes}"
 
+    # add to the translation queue
+    #TransQueue.add(entry['target_id'], ev._id)
+
   rescue Exception => e
     trace :error, "Cannot process evidence: #{e.message}"
     #trace :error, e.backtrace.join("\n")
