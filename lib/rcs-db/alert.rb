@@ -86,7 +86,7 @@ class Alerting
         next unless (alert.evidence == '*' or alert.evidence == evidence.type)
 
         # skip if none of the values in the "data" match the keywords
-        next if evidence.data.values.select {|v| v =~ Regexp.new(alert.keywords)}.empty?
+        next if evidence.data.values.select {|v| v =~ Regexp.new(alert.keywords, true)}.empty?
 
         # we MUST not dispatch alert for element that are not accessible by the user
         user = ::User.find(alert.user_id)

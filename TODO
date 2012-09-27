@@ -3,6 +3,8 @@ TODO 8.2.0:
 
     why ruby-p194 is so slow? (mongo ruby driver?) (only on win2003?)
 
+    regexp check on device before upgrade!
+
     delete log collection not capped
 
     first time sync with NIA & TNI
