@@ -120,6 +120,9 @@ class Application
       # ensure the backup of metadata
       BackupManager.ensure_backup
 
+      # clean the capped logs collections
+      DB.instance.clean_capped_logs
+
       # enter the main loop (hopefully will never exit from it)
       Events.new.setup Config.instance.global['LISTENING_PORT']
       

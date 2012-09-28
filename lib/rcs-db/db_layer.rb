@@ -153,7 +153,7 @@ class DB
 
   def shard_audit
     # enable shard on audit log, it will increase its size forever and ever
-    db = Mongoid.database
+    db = DB.instance.new_connection("rcs")
     audit = db.collection('audit')
     Shard.set_key(audit, {time: 1, actor: 1}) unless audit.stats['sharded']
   end
@@ -242,6 +242,19 @@ class DB
   def create_evidence_filters
     trace :debug, "Creating default evidence filters"
     ::EvidenceFilter.create_default
+  end
+
+  def clean_capped_logs
+    # drop all the temporary capped logs collections
+    collections = Mongoid::Config.master.collection_names
+    collections.keep_if {|x| x['logs.']}
+
+    db = DB.instance.new_connection("rcs")
+
+    collections.each do |coll_name|
+      trace :debug, "Dropping: #{coll_name}"
+      db.collection(coll_name).drop
+    end
   end
 
 end

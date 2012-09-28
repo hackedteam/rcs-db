@@ -5,8 +5,6 @@ TODO 8.2.0:
 
     regexp check on device before upgrade!
 
-    delete log collection not capped
-
     first time sync with NIA & TNI
 
 TODO 8.3.0
