@@ -492,7 +492,10 @@ Section "Install Section" SecInstall
     
     SetOutPath "$INSTDIR\Collector\lib\rcs-collector-release"
     File /r "lib\rcs-collector-release\*.*"
-  
+
+    ; make sure the cache is clean after upgrade
+    Delete "$INSTDIR\Collector\config\cache.db"
+
     SetOutPath "$INSTDIR\Collector\config"
     File "config\decoy.rb"
     File "config\trace.yaml"

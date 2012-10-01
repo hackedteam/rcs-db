@@ -41,7 +41,10 @@ class DB
         config.master = Mongo::Connection.new(Config.instance.global['CN'], 27017, pool_size: 50, pool_timeout: 15).db('rcs')
         config.persist_in_safe_mode = true
         #config.raise_not_found_error = false
+        #config.logger = ::Logger.new($stdout)
       end
+
+      #puts Mongoid.config.settings.inspect
 
       trace :info, "Connected to MongoDB"
 
