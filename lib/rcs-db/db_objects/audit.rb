@@ -83,7 +83,7 @@ class Audit
 
     # desc filters must be handled as a regexp
     if filter.has_key? 'desc'
-      filter_hash[:desc] = Regexp.new(filter.delete('desc'), true)
+      filter_hash[:desc] = Regexp.new(filter.delete('desc'), Regexp::IGNORECASE)
     end
 
     return filter, filter_hash
@@ -105,7 +105,7 @@ class Audit
     filter_hash["time"]["$gte"] = filter.delete('from') if filter.has_key? 'from'
     filter_hash["time"]["$lte"] = filter.delete('to') if filter.has_key? 'to'
 
-    filter_hash["desc"] = Regexp.new(filter.delete('desc'), true) if filter.has_key? 'desc'
+    filter_hash["desc"] = Regexp.new(filter.delete('desc'), Regexp::IGNORECASE) if filter.has_key? 'desc'
 
     # remaining filters
     filter.each_key do |k|

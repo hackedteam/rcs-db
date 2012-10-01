@@ -450,7 +450,7 @@ class EvidenceController < RESTController
         filter = "^[[:alpha:]]:$" if @params['filter'] == "[root]" and ['windows', 'winmo', 'symbian'].include? agent.platform
         filter = "^\/$" if @params['filter'] == "[root]" and ['blackberry', 'android', 'osx', 'ios', 'linux'].include? agent.platform
 
-        filtering = filtering.and({"data.path".to_sym => Regexp.new(filter, true)})
+        filtering = filtering.and({"data.path".to_sym => Regexp.new(filter, Regexp::IGNORECASE)})
       end
 
       # perform de-duplication and sorting at app-layer and not in mongo

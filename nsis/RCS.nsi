@@ -276,6 +276,7 @@ Section "Install Section" SecInstall
     File "config\trace.yaml"
     File "config\export.zip"
     File "config\logo.png"
+    File "config\blacklist"
     File "config\VERSION_BUILD"
     File "config\VERSION"
     SetDetailsPrint "both"

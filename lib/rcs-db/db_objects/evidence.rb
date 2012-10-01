@@ -199,7 +199,7 @@ class Evidence
     #filter on note
     if filter['note']
       note = filter.delete('note')
-      filter_hash[:note] = Regexp.new("#{note}", true)
+      filter_hash[:note] = Regexp.new("#{note}", Regexp::IGNORECASE)
       filter_hash[:kw.all] = note.keywords
     end
 
@@ -218,7 +218,7 @@ class Evidence
       key_values.each do |kv|
         k, v = kv.split(':')
         k.downcase!
-        filter_hash["data.#{k}"] = Regexp.new("#{v}", true)
+        filter_hash["data.#{k}"] = Regexp.new("#{v}", Regexp::IGNORECASE)
         # add the keyword search to cut the nscanned item
         filter_hash[:kw.all] ||= v.keywords
       end

