@@ -30,6 +30,8 @@ class User
   
   store_in :users
 
+  before_destroy :destroy_callback
+
   def create_password(password)
     self[:pass] = BCrypt::Password.create(password).to_s
   end
@@ -69,6 +71,10 @@ class User
       self.recent_ids.delete(id)
       self.save
     end
+  end
+
+  def destroy_callback
+    ::Session.destroy_all(conditions: {user: [ self._id ]})
   end
 
 end

@@ -295,7 +295,7 @@ class AgentController < RESTController
 
     # yes it is, return the status
     unless agent.nil?
-      trace :info, "#{agent[:name]} status is #{agent[:status]} [#{agent[:ident]}:#{agent[:instance]}]"
+      trace :info, "#{agent[:name]} status is #{agent[:status]} [#{agent[:ident]}:#{agent[:instance]}] (demo: #{demo}, scout: #{scout})"
 
       # if the agent was queued, but now we have a license, use it and set the status to open
       # a demo agent will never be queued

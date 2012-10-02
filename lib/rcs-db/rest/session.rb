@@ -18,9 +18,10 @@ class SessionController < RESTController
     # the console needs sessions with the User object inside
     # so, we have to reconstruct a fake list here
     SessionManager.instance.all.each do |sess|
+
       # create a fake object with a real user reference
       session = {}
-      session[:user] = ::User.find(sess[:user]).first
+      session[:user] = ::User.where({_id: sess[:user].first}).first
       session[:level] = sess[:level]
       session[:address] = sess[:address]
       session[:cookie] = sess[:cookie]
