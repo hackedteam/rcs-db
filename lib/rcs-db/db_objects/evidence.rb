@@ -218,6 +218,10 @@ class Evidence
       key_values.each do |kv|
         k, v = kv.split(':')
         k.downcase!
+
+        # special case for email (the field is called "rcpt" but presented as "to")
+        k = 'rcpt' if k == 'to'
+
         filter_hash["data.#{k}"] = Regexp.new("#{v}", Regexp::IGNORECASE)
         # add the keyword search to cut the nscanned item
         filter_hash[:kw.all] ||= v.keywords
