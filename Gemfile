@@ -20,6 +20,7 @@ gem 'ffi'
 gem 'lrucache'
 gem 'mail'
 gem 'rest-client'
+gem 'xml-simple'
 
 # databases
 gem 'mongo', "= 1.7.0", :git => "git://github.com/danielemilan/mongo-ruby-driver.git", :branch => "1.7.0-append"
