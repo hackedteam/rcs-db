@@ -20,7 +20,7 @@ class CompactTask
 
       db = DB.instance.new_connection("rcs", host, port.to_i)
 
-      db.collection_names.sort.keep_if {|c| c['logs.'].nil? and c['system.'].nil?}.each do |coll|
+      db.collection_names.sort.keep_if {|c| c['logs.'].nil? and c['system.'].nil?  and c['_queue'].nil?}.each do |coll|
         yield @description = "Compacting #{coll}"
         db.command({compact: coll})
       end
