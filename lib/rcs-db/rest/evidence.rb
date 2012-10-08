@@ -118,7 +118,7 @@ class EvidenceController < RESTController
 
       evidence = Evidence.collection_class(target[:_id]).find(@params['_id'])
       agent = Item.find(evidence[:aid])
-      agent.stat.evidence[evidence.type] -= 1
+      agent.stat.evidence[evidence.type] -= 1 if agent.stat.evidence[evidence.type]
       agent.stat.size -= evidence.data.to_s.length
       agent.stat.grid_size -= evidence.data[:_grid_size] unless evidence.data[:_grid].nil?
       agent.save
