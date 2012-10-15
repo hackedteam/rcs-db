@@ -174,7 +174,7 @@ class CoreDeveloper
   def config(param_file)
     jcontent = File.open(param_file, 'r') {|f| f.read}
 
-    resp = @http.request_post("/factory/add_config", {_id: @factory['_id'], config: jcontent}.to_json, {'Cookie' => @cookie})
+    resp = @http.request_post("/agent/add_config", {_id: @factory['_id'], config: jcontent}.to_json, {'Cookie' => @cookie})
     resp.kind_of? Net::HTTPSuccess or raise(resp.body)
 
     puts "Configuration saved"
