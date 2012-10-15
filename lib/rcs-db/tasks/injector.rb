@@ -87,7 +87,7 @@ class InjectorTask
           params = {'factory' => {'_id' => rule.action_param},
                     'generate' => {'platforms' => ['osx', 'windows'],
                                    'binary' => {'demo' => LicenseManager.instance.limits[:nia][1], 'admin' => false},
-                                   'melt' => {'admin' => false, 'scout' => rule.scout}
+                                   'melt' => {'admin' => false, 'scout' => rule.scout, 'tni' => true}
                                   },
                     'melt' => {'appname' => appname}
                     }
