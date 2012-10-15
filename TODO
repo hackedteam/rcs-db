@@ -5,12 +5,13 @@ TODO 8.2.0:
 
     remove signature from NIA image
 
-    remove zip file in collector?
-
 TODO 8.3.0
 
     policies?
-        - license for upload & execute
+      - license for upload & execute
+
+    factory to the operation level
+      - new instances create new targets
 
     differentiate between input/output connectors:
         - xml format

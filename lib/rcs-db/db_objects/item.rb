@@ -75,7 +75,7 @@ class Item
   after_create :create_callback
   before_destroy :destroy_callback
 
-  before_update :status_change_callback
+  after_update :status_change_callback
   after_update :notify_callback
 
   before_create :do_checksum

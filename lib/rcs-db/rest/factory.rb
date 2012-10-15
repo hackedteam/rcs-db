@@ -64,8 +64,10 @@ class FactoryController < RESTController
     
     mongoid_query do
       item = Item.factories.any_in(_id: @session[:accessible]).find(@params['_id'])
-      item.destroy
-      
+      item.deleted = true
+      item.status = 'closed'
+      item.save
+
       Audit.log :actor => @session[:user][:name],
                 :action => "#{item._kind}.delete",
                 (item._kind + '_name').to_sym => @params['name'],
