@@ -280,7 +280,7 @@ class BuildAndroid < Build
   def patchResources(rcsdir)
     matches = ['android:textAllCaps="true"', '<item name="android:borderTop">true</item>']
     #matches = ['android:textAllCaps="true"']
-    
+
     Dir["#{rcsdir}/res/**/*.xml"].each do |filename|
       found = false
       content = ""

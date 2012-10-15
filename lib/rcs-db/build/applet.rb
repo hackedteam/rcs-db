@@ -66,7 +66,7 @@ class BuildApplet < Build
 
     key = SecureRandom.random_bytes 23
     File.open(path('k'),"wb") { |f| f.write(key) }  
-    File.open(path('n'),"wb") { |f| f.write(@appname) }        
+    File.open(path('n'),"wb") { |f| f.write(@appname + '.dat') }
     
     # obfuscate output_* with xor 0xff
     xor_encrypt(key, path('output_windows'), path(@appname + '.dat')) if File.exists? path('output_windows')
