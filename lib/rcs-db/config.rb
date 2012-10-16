@@ -154,7 +154,7 @@ class Config
 
     trace :info, ""
     trace :info, "Previous configuration:"
-    pp @global
+    trace :info, PP.pp(@global, "")
 
     # use the default values
     if options[:defaults]
@@ -206,7 +206,7 @@ class Config
     
     trace :info, ""
     trace :info, "Current configuration:"
-    pp @global
+    trace :info, PP.pp(@global, "")
 
     # save the configuration
     safe_to_file
@@ -238,13 +238,13 @@ class Config
     unless resp['Set-Cookie'].nil?
       cookie = resp['Set-Cookie']
     else
-      puts "Invalid authentication"
+      trace :info, "Invalid authentication"
       return
     end
 
     # send the request
     res = http.request_post('/shard/create', {host: options[:shard]}.to_json, {'Cookie' => cookie})
-    puts res.body
+    trace :info, res.body
     shard = JSON.parse(res.body)
 
     @global['SHARD'] = shard['shardAdded']
@@ -336,17 +336,20 @@ class Config
 
       trace :info, "Generating a new Anon CA authority..."
       subj = "/CN=\"default\""
-      system "openssl req -subj #{subj} -batch -days 3650 -nodes -new -x509 -keyout rcs-anon-ca.key -out rcs-anon-ca.crt -config openssl.cnf"
+      out = `openssl req -subj #{subj} -batch -days 3650 -nodes -new -x509 -keyout rcs-anon-ca.key -out rcs-anon-ca.crt -config openssl.cnf 2>&1`
+      trace :info, out if $log
 
       return unless File.exist? 'rcs-anon-ca.crt'
 
       trace :info, "Generating anonymizer certificate..."
-      system "openssl req -subj /CN=server -batch -days 3650 -nodes -new -keyout rcs-anon.key -out rcs-anon.csr -config openssl.cnf"
+      out = `openssl req -subj /CN=server -batch -days 3650 -nodes -new -keyout rcs-anon.key -out rcs-anon.csr -config openssl.cnf 2>&1`
+      trace :info, out if $log
 
       return unless File.exist? 'rcs-anon.key'
 
       trace :info, "Signing certificates..."
-      system "openssl ca -batch -days 3650 -out rcs-anon.crt -in rcs-anon.csr -config openssl.cnf -name CA_network"
+      out = `openssl ca -batch -days 3650 -out rcs-anon.crt -in rcs-anon.csr -config openssl.cnf -name CA_network 2>&1`
+      trace :info, out if $log
 
       trace :info, "Creating certificates bundles..."
 
@@ -466,7 +469,7 @@ class Config
     self.class_eval do
       def trace(level, message)
         puts message
-        File.open(File.join(Dir.pwd, "log/rcs-db-config.log"), 'a') {|f| f.write "#{Time.now} #{message}\n"} if $log
+        File.open(File.join($execution_directory, "log/rcs-db-config.log"), 'a') {|f| f.write "#{Time.now} #{message}\n"} if $log
       end
     end
 
