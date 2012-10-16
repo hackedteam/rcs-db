@@ -337,26 +337,33 @@ Section "Install Section" SecInstall
     ; fresh install
     ${If} $installUPGRADE != ${BST_CHECKED}
       DetailPrint ""
+      DetailPrint "Setting localhost to resolve in IPv4..."
+
+      FileOpen $4 "C:\Windows\System32\Drivers\etc\hosts" a
+      FileWrite $4 "\n127.0.0.1\tlocalhost\n"
+      FileClose $4
+
+      DetailPrint ""
       DetailPrint "Writing the configuration..."
       SetDetailsPrint "textonly"
       SetDetailsPrint "both"
       ; write the config yaml
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --defaults --CN $masterCN"
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --defaults --CN $masterCN --log"
       DetailPrint "done"
 
       ; generate the SSL cert
       DetailPrint "Generating CA and certs..."
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-ca --generate-certs"
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-ca --generate-certs --log"
       DetailPrint "done"
 
       ; generate the SSL cert for anon
       DetailPrint "Generating anonymizer certs..."
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-certs-anon"
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-certs-anon --log"
       DetailPrint "done"
 
       ; generate the keystores
       DetailPrint "Generating keystores..."
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-keystores"
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-keystores --log"
       SetDetailsPrint "both"
       DetailPrint "done"
 
@@ -394,7 +401,7 @@ Section "Install Section" SecInstall
       FileWrite $4 "$adminpass"
       FileClose $4
     ${Else}
-      nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --migrate-mongos22"
+      nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --migrate-mongos22 --log"
     ${EndIf}
     
     SetDetailsPrint "both"

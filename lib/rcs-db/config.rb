@@ -466,6 +466,7 @@ class Config
     self.class_eval do
       def trace(level, message)
         puts message
+        File.open(File.join(Dir.pwd, "log/rcs-db-config.log"), 'a') {|f| f.write "#{Time.now} #{message}\n"} if $log
       end
     end
 
@@ -556,6 +557,9 @@ class Config
       end
       opts.on( '--index TARGET', String, 'Calculate the full text index for this target' ) do |target|
         options[:kw_index] = target
+      end
+      opts.on( '--log', 'Log all operation to a file' ) do
+        $log = true
       end
       opts.on( '-h', '--help', 'Display this screen' ) do
         puts opts
