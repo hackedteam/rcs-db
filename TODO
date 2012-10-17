@@ -13,20 +13,21 @@ TODO 8.3.0
     factory to the operation level
       - new instances create new targets
 
+
+
+TODO FUTURE:
+
     differentiate between input/output connectors:
         - xml format
         - implement transport layers:
         - proprietary for read-only db
         - sftp
 
-
-TODO FUTURE:
-
     correlation:
         chat peer not as string but array
         target records (schedario)
         global target position (http://www.zeit.de/datenschutz/malte-spitz-data-retention)
-
+        inter-target query
 
 ======================================
 

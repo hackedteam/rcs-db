@@ -17,7 +17,7 @@ class Injector
   field :redirect, type: String
   field :port, type: Integer
   field :poll, type: Boolean
-  field :version, type: Integer
+  field :version, type: Integer, default: 0
   field :configured, type: Boolean, default: false
   field :upgradable, type: Boolean, default: false
   field :redirection_tag, type: String

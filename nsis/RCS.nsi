@@ -340,7 +340,8 @@ Section "Install Section" SecInstall
       DetailPrint "Setting localhost to resolve in IPv4..."
 
       FileOpen $4 "C:\Windows\System32\Drivers\etc\hosts" a
-      FileWrite $4 "\n127.0.0.1\tlocalhost\n"
+      FileSeek $4 0 END
+      FileWrite $4 "$\r$\n127.0.0.1$\tlocalhost$\r$\n"
       FileClose $4
 
       DetailPrint ""
