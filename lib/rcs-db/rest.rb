@@ -267,7 +267,6 @@ class RESTController
     return @session[:level].include? :server
   end
 
-  # TODO: mongoid_query doesn't belong here
   def mongoid_query(&block)
     begin
       yield

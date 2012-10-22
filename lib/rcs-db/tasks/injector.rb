@@ -22,8 +22,8 @@ class InjectorTask
     intercept_files = []
     vector_files = {}
 
-    # TODO: check for 8.2.0
-    raise "Version too old, please update the component" if injector.version < 2012091201
+    # TODO: check for release
+    raise "Version too old, please update the component" if injector.version < 2012102901
 
     injector.rules.where(:enabled => true).each do |rule|
 
