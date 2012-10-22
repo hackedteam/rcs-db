@@ -10,9 +10,34 @@ class User
   include Mongoid::Timestamps
 
   PRIVS = ['ADMIN',
+            'ADMIN_USERS',
+            'ADMIN_OPERATIONS',
+            'ADMIN_TARGETS',
+            'ADMIN_AUDIT',
+            'ADMIN_LICENSE',
+            'ADMIN_PROFILES',
            'SYS',
+            'SYS_FRONTEND',
+            'SYS_BACKEND',
+            'SYS_BACKUP',
+            'SYS_INJECTOR',
+            'SYS_CONNECTORS',
            'TECH',
-           'VIEW']
+            'TECH_FACTORIES',
+            'TECH_BUILD',
+            'TECH_CONFIG',
+            'TECH_EXEC',
+            'TECH_UPLOAD',
+            'TECH_IMPORT',
+            'TECH_NI_RULES',
+           'VIEW',
+            'VIEW_ALERTS',
+            'VIEW_FILESYSTEM',
+            'VIEW_EDIT',
+            'VIEW_DELETE',
+            'VIEW_EXPORT',
+            'VIEW_PROFILES'
+          ]
 
   field :name, type: String
   field :pass, type: String
