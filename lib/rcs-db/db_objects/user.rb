@@ -9,6 +9,11 @@ class User
   include Mongoid::Document
   include Mongoid::Timestamps
 
+  PRIVS = ['ADMIN',
+           'SYS',
+           'TECH',
+           'VIEW']
+
   field :name, type: String
   field :pass, type: String
   field :desc, type: String

@@ -7,12 +7,43 @@ TODO 8.2.0:
 
 TODO 8.3.0
 
-    policies?
-      - license for upload & execute
+    license for upload & execute
 
     factory to the operation level
       - new instances create new targets
 
+    policies
+      - ADMIN
+        - manage users & groups
+        - create operations
+        - create targets
+        - access audit
+        - change license
+        - edit profiles
+      - SYS
+        - manage frontend
+        - manage backend
+        - manage backups
+        - manage network injectors
+        - manage connectors
+      - TECH
+        - create factories
+        - build vectors
+        - change configuration
+        - execute commands
+        - upload files
+        - import evidence
+        - manage network injectors rules
+      - VIEW
+        - manage alerts
+        - schedule filesystem
+        - edit evidence
+        - delete evidence (disabled by default)
+        - export evidence
+        - edit profiles
+
+
+    target profiles
 
 
 TODO FUTURE:

