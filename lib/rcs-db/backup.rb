@@ -115,9 +115,14 @@ class BackupManager
 
         command += incremental_filter(coll, backup) if backup.incremental
 
-        trace :debug, "Backup: #{command}"
+        trace :info, "Backup: #{command}"
         ret = system command
-        trace :debug, "Backup result: #{ret}"
+        trace :info, "Backup result: #{ret}"
+
+        if ret == false
+          out = `#{command} 2>&1`
+          trace :warn, "Backup output: #{out}"
+        end
         raise unless ret
       end
 
@@ -125,17 +130,17 @@ class BackupManager
       if backup.what != 'metadata'
         # gridfs entries linked to backed up collections
         command = mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.files -q #{params[:gfilter]}"
-        trace :debug, "Backup: #{command}"
+        trace :info, "Backup: #{command}"
         ret = system command
-        trace :debug, "Backup result: #{ret}"
+        trace :info, "Backup result: #{ret}"
         raise unless ret
 
         # use the same query to retrieve the chunk list
         params[:gfilter]['_id'] = 'files_id' unless params[:gfilter]['_id'].nil?
         command = mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.chunks -q #{params[:gfilter]}"
-        trace :debug, "Backup: #{command}"
+        trace :info, "Backup: #{command}"
         ret = system command
-        trace :debug, "Backup result: #{ret}"
+        trace :info, "Backup result: #{ret}"
         raise unless ret
       end
 
@@ -145,9 +150,9 @@ class BackupManager
         mongodump += " -o #{Config.instance.global['BACKUP_DIR']}/#{backup.name}_config-#{now.strftime('%Y-%m-%d-%H-%M')}"
         mongodump += " -d config"
 
-        trace :debug, "Backup: #{command}"
+        trace :info, "Backup: #{command}"
         ret = system mongodump
-        trace :debug, "Backup result: #{ret}"
+        trace :info, "Backup result: #{ret}"
         raise unless ret
       end
 
