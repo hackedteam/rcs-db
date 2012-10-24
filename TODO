@@ -3,9 +3,12 @@ TODO 8.2.0:
 
     why ruby-p194 is so slow? (mongo ruby driver?) (only on win2003?)
 
-    remove signature from NIA image
-
     failed backup?
+
+    replace console
+
+  ERRORE OCR:
+    Cannot process evidence: incompatible encoding regexp match (US-ASCII regexp with UTF-8 string)
 
 TODO 8.3.0
 

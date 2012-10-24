@@ -63,6 +63,9 @@ class Application
       # config file parsing
       return 1 unless RCS::DB::Config.instance.load_from_file
 
+      # ensure the temp dir is present
+      Dir::mkdir(RCS::DB::Config.instance.temp) if not File.directory?(RCS::DB::Config.instance.temp)
+
       # connect to MongoDB
       until RCS::DB::DB.instance.connect
         trace :warn, "Cannot connect to MongoDB, retrying..."
