@@ -2,6 +2,7 @@
 TODO 8.2.0:
 
     why ruby-p194 is so slow? (mongo ruby driver?) (only on win2003?)
+    trying ruby-p286
 
     failed backup (mongodump 2.2 error look for fix from mongo)
 

