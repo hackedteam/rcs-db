@@ -106,6 +106,8 @@ class DB
   def create_indexes
     db = DB.instance.new_connection("rcs")
 
+    trace :info, "Database size is: " + db.stats['dataSize'].to_s_bytes
+
     trace :info, "Ensuring indexing on collections..."
 
     @@classes_to_be_indexed.each do |k|
@@ -134,7 +136,7 @@ class DB
       e = Evidence.collection_class(coll_name.split('.').last)
       # number of index + _id + shard_key
       next if coll.stats['nindexes'] == e.index_options.size + 2
-      trace :info, "Creating indexes for #{coll_name}"
+      trace :info, "Creating indexes for #{coll_name} - " + coll.stats['size'].to_s_bytes
       e.create_indexes
       Shard.set_key(coll, {type: 1, da: 1, aid: 1})
     end
