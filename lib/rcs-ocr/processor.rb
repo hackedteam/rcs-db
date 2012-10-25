@@ -8,6 +8,7 @@ require_relative 'leadtools'
 
 require 'rcs-common/trace'
 require 'rcs-common/fixnum'
+require 'rcs-common/sanitize'
 require 'fileutils'
 
 module RCS
@@ -66,7 +67,7 @@ class Processor
     # take a copy of evidence data (we need to do this to trigger the mongoid save)
     data = ev[:data].dup
     # remove invalid UTF-8 chars
-    data[:body] = ocr_text.encode('UTF-8', 'UTF-8', :invalid => :replace).gsub(/([^[:alnum:]\n\r])+/u, ' ')
+    data[:body] = ocr_text.remove_invalid_chars
 
     # update the evidence with the new text
     ev[:data] = data
