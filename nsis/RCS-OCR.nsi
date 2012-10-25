@@ -84,6 +84,9 @@ Section "Install Section" SecInstall
   ${EnvSet}
   DetailPrint "done"
 
+  DetailPrint "Stopping RCS OCR..."
+  SimpleSC::StopService "RCSOCR" 1
+
   DetailPrint "Extracting OCR files..."
   SetDetailsPrint "textonly"
   !cd '..'
@@ -116,15 +119,10 @@ Section "Install Section" SecInstall
 
     nsExec::Exec "reg import $INSTDIR\DB\ocr\ocr-key.reg"
 
-    DetailPrint "Starting RCS OCR..."
-    SimpleSC::StartService "RCSOCR" "" 30
-    Goto done
-
   alreadyinstalled:
-    DetailPrint "ReStarting RCS OCR..."
-    SimpleSC::RestartService "RCSOCR" "" 30
 
-  done:
+  DetailPrint "Starting RCS OCR..."
+  SimpleSC::StartService "RCSOCR" "" 30
 
   !cd "nsis"
 
