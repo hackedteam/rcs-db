@@ -248,6 +248,9 @@ class BuildWindows < Build
         raise "Ghost marker not found: #{e.message}"
       end
     end
+
+    # perform the signature
+    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('ghost')}" if to_be_signed?(params)
   end
 
   private
