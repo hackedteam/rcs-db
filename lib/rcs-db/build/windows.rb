@@ -383,8 +383,8 @@ class BuildWindows < Build
         icon_file = "icons/#{icon}.ico"
         info = {name: 'FlashUtil', version: '11.5.500.104', desc: 'Adobe Flash Player Installer/Uninstaller 11.5 r500', company: 'Adobe Systems Incorporated', copyright: 'Copyright (c) 1996 Adobe Systems Incorporated'}
       else
-        icon_file = "icons/#{info[:name]}.ico"
         info = scout_name(seed)
+        icon_file = "icons/#{info[:name]}.ico"
     end
 
     # change the icon
