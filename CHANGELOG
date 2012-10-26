@@ -6,7 +6,6 @@ Collector:
     - support for partial evidence transfer
 
 DB:
-    - Ruby updated to 1.9.3-p194
     - MongoDB updated to 2.2.0
     - HASP driver updated to 6.25
     - utilities to restart the rcs services
