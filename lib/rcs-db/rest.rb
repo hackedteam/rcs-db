@@ -294,7 +294,7 @@ end # RESTController
 
 class InvalidController < RESTController
   def act!
-    trace :error, "Invalid controller invoked: #{@request[:controller]}/#{@request[:action]}. Replied 404."
+    trace :error, "Invalid controller invoked: #{@request[:controller]}/#{@request[:action]} from #{@request[:peer]}. Replied 404."
     not_found('File not found')
   end
 end
