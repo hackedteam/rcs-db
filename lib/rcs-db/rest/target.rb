@@ -37,7 +37,8 @@ class TargetController < RESTController
   
   def create
     require_auth_level :admin
-    
+    require_auth_level :admin_targets
+
     # to create a target, we need to owning operation
     return bad_request('INVALID_OPERATION') unless @params.has_key? 'operation'
     
@@ -73,7 +74,8 @@ class TargetController < RESTController
 
   def update
     require_auth_level :admin
-    
+    require_auth_level :admin_targets
+
     updatable_fields = ['name', 'desc', 'status']
 
     mongoid_query do
@@ -98,6 +100,7 @@ class TargetController < RESTController
 
   def destroy
     require_auth_level :admin
+    require_auth_level :admin_targets
 
     mongoid_query do
       item = Item.targets.any_in(_id: @session[:accessible]).find(@params['_id'])
@@ -116,6 +119,7 @@ class TargetController < RESTController
 
   def move
     require_auth_level :admin
+    require_auth_level :admin_targets
 
     mongoid_query do
       operation = ::Item.operations.find(@params['operation'])
