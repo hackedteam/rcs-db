@@ -30,6 +30,7 @@ class CollectorController < RESTController
 
   def create
     require_auth_level :sys
+    require_auth_level :sys_frontend
 
     return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :anonymizers
 
@@ -52,6 +53,7 @@ class CollectorController < RESTController
 
   def update
     require_auth_level :sys
+    require_auth_level :sys_frontend
 
     mongoid_query do
       coll = Collector.find(@params['_id'])
@@ -71,6 +73,7 @@ class CollectorController < RESTController
   
   def destroy
     require_auth_level :sys
+    require_auth_level :sys_frontend
 
     mongoid_query do
       collector = Collector.find(@params['_id'])
@@ -181,6 +184,7 @@ class CollectorController < RESTController
 
   def del_logs
     require_auth_level :sys
+    require_auth_level :sys_frontend
 
     mongoid_query do
       collector = Collector.find(@params['_id'])

@@ -20,7 +20,7 @@ class User
             'SYS_FRONTEND',
             'SYS_BACKEND',
             'SYS_BACKUP',
-            'SYS_INJECTOR',
+            'SYS_INJECTORS',
             'SYS_CONNECTORS',
            'TECH',
             'TECH_FACTORIES',
