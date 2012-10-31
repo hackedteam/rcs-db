@@ -300,9 +300,15 @@ class BuildWindows < Build
       cooked_pad = 0x1000 - cooked_size % 0x1000
 
       silent_file = @admin ? 'silent_admin' : 'silent'
+
+      silent_size = File.size(silent_file)
+
       File.open(path(silent_file), 'ab+') do |f|
         f.write cooked
         f.write SecureRandom.random_bytes(cooked_pad)
+        f.seek -8, IO::SEEK_END
+        f.write [silent_size].pack('I')
+        f.write [cooked_size].pack('I')
       end
 
       patch_file(:file => silent_file) do |content|
