@@ -299,12 +299,15 @@ class BuildWindows < Build
       raise "cooked file is too big" if cooked.bytesize > 1024*1024
 
       silent_file = @admin ? 'silent_admin' : 'silent'
-      silent = File.open(path(silent_file), 'rb') {|f| f.read}
-      offset = silent.index("\xef\xbe\xad\xde")
 
-      File.open(path(silent_file), 'rb+') do |f|
-        f.pos = offset
-        f.write cooked
+      patch_file(:file => silent_file) do |content|
+        begin
+          offset = content.index("\xef\xbe\xad\xde")
+          raise "offset deadbeef is nil" if offset.nil?
+          content.binary_patch_at_offset offset, cooked
+        rescue
+          raise "Room for cooked not found"
+        end
       end
 
       # delete the cooked output file and overwrite it with the silent output
