@@ -394,7 +394,7 @@ class Item
 
   def notify_callback
     # we are only interested if the properties changed are:
-    interesting = ['name', 'desc', 'status', 'instance', 'version', 'deleted', 'uninstalled']
+    interesting = ['name', 'desc', 'status', 'instance', 'version', 'deleted', 'uninstalled', 'scout']
     return if not interesting.collect {|k| changes.include? k}.inject(:|)
 
     RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'modify'})
