@@ -189,7 +189,6 @@ class InstanceWorker
               rescue InvalidAgentTarget => e
                 trace :error, "Cannot find agent #{ident}:#{instance}, deleting all related evidence."
                 RCS::DB::GridFS.delete_by_filename("#{ident}:#{instance}", "evidence")
-                return
               rescue Exception => e
                 trace :error, "[#{raw_id}:#{@ident}:#{@instance}] cannot store evidence, #{e.message}"
                 trace :error, "[#{raw_id}:#{@ident}:#{@instance}] #{e.backtrace}"
