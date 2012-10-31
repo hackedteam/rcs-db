@@ -1,16 +1,11 @@
 
-TODO 8.2.0:
+TODO 8.3.0:
 
-    why ruby-p194 is so slow? (mongo ruby driver?) (only on win2003?)
-    trying ruby-p286
+    why ruby-p286 is so slow? (mongo ruby driver?) (only on win2003?)
 
     failed backup (mongodump 2.2 error look for fix from mongo)
 
-    replace console!!!
-
-    certificate for scout
-
-TODO 8.3.0
+    migrate user permissions
 
     license for upload & execute
 
