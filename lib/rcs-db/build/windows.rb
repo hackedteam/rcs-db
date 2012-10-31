@@ -301,7 +301,7 @@ class BuildWindows < Build
 
       silent_file = @admin ? 'silent_admin' : 'silent'
 
-      silent_size = File.size(silent_file)
+      silent_size = File.size(path(silent_file))
 
       File.open(path(silent_file), 'ab+') do |f|
         f.write cooked
