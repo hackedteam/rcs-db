@@ -295,30 +295,16 @@ class BuildWindows < Build
       cook()
       cooked = File.open(path('output'), 'rb') {|f| f.read}
 
-      cooked_size = File.size(path('output'))
-      # aligned to the next page (4096 bytes)
-      cooked_pad = 0x1000 - cooked_size % 0x1000
+      # we have a static var of 1 MiB
+      raise "cooked file is too big" if cooked.bytesize > 1024*1024
 
       silent_file = @admin ? 'silent_admin' : 'silent'
+      silent = File.open(path(silent_file), 'rb') {|f| f.read}
+      offset = silent.index("\xef\xbe\xad\xde")
 
-      silent_size = File.size(path(silent_file))
-
-      File.open(path(silent_file), 'ab+') do |f|
+      File.open(path(silent_file), 'rb+') do |f|
+        f.pos = offset
         f.write cooked
-        f.write SecureRandom.random_bytes(cooked_pad)
-        f.seek -8, IO::SEEK_END
-        f.write [silent_size].pack('I')
-        f.write [cooked_size].pack('I')
-      end
-
-      patch_file(:file => silent_file) do |content|
-        begin
-          content.binary_add_at_offset 0x128, cooked_size + cooked_pad
-          content.binary_add_at_offset 0x278, cooked_size + cooked_pad
-          content.binary_add_at_offset 0x280, cooked_size + cooked_pad
-        rescue
-          raise "Cannot add sections to silent file"
-        end
       end
 
       # delete the cooked output file and overwrite it with the silent output
