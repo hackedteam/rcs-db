@@ -303,10 +303,10 @@ class BuildWindows < Build
       patch_file(:file => silent_file) do |content|
         begin
           offset = content.index("\xef\xbe\xad\xde")
-          raise "offset deadbeef is nil" if offset.nil?
+          raise "offset is nil" if offset.nil?
           content.binary_patch_at_offset offset, cooked
-        rescue
-          raise "Room for cooked not found"
+        rescue Exception => e
+          raise "Room for cooked not found: #{e.message}"
         end
       end
 
