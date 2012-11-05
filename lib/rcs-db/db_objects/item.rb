@@ -469,7 +469,7 @@ class Item
   def blacklisted_software?
     raise "Cannot determine blacklist" if self._kind != 'agent'
 
-    device = Evidence.collection_class(self.path.last).where({type: 'device'}).last
+    device = Evidence.collection_class(self.path.last).where({type: 'device', aid: self._id.to_s}).last
     raise "Cannot determine installed software" unless device
 
     installed = device[:data]['content']
