@@ -81,7 +81,7 @@ class Status
         # a component is marked failed after 2 minutes (if not already marked)
         if Time.now.getutc.to_i - m[:time] > 120 and m[:status] != ERROR
           m[:status] = ERROR
-          trace :warn, "Component #{m[:name]} is not responding, marking failed..."
+          trace :warn, "Component #{m[:name]} (#{m[:address]}) is not responding, marking failed..."
           RCS::DB::Audit.log :actor => '<system>', :action => 'alert', :desc => "Component #{m[:name]} is not responding, marking failed..."
           m.info = 'Not sending status update for more than 2 minutes'
           m.save
