@@ -357,6 +357,10 @@ class AgentController < RESTController
         doc[:status] = :open
         doc[:desc] = "Created automatically on first sync from: #{factory.name}"
       end
+
+      # make the target accessible to the users
+      SessionManager.instance.add_accessible_item(factory, target)
+
       agent.path = factory.path + target._id
     end
 
@@ -390,7 +394,7 @@ class AgentController < RESTController
     end
 
     # add the new agent to all the accessible list of all users
-    SessionManager.instance.add_accessible_agent(factory, agent)
+    SessionManager.instance.add_accessible_item(factory, agent)
 
     # check for alerts on this new instance
     Alerting.new_instance agent
