@@ -11,7 +11,6 @@ class GroupController < RESTController
   
   def index
     require_auth_level :admin
-    require_auth_level :admin_users
 
     groups = Group.all
     return ok(groups)
