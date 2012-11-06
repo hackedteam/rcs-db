@@ -32,7 +32,7 @@ class EvidenceController < RESTController
   # the instance is passed as parameter to the uri
   # the content is passed as body of the request
   def create
-    require_auth_level :server, :tech
+    require_auth_level :server, :tech_import
 
     return conflict if @request[:content]['content'].nil?
 
@@ -57,6 +57,7 @@ class EvidenceController < RESTController
 
   def update
     require_auth_level :view
+    require_auth_level :view_edit
 
     mongoid_query do
       target = Item.where({_id: @params['target']}).first
@@ -108,7 +109,7 @@ class EvidenceController < RESTController
   end
 
   def destroy
-    require_auth_level :admin
+    require_auth_level :view_delete
 
     return conflict("Unable to delete") unless LicenseManager.instance.check :deletion
 
@@ -132,7 +133,7 @@ class EvidenceController < RESTController
   end
 
   def destroy_all
-    require_auth_level :admin
+    require_auth_level :view_delete
 
     return conflict("Unable to delete") unless LicenseManager.instance.check :deletion
 
@@ -165,7 +166,7 @@ class EvidenceController < RESTController
 
   # used to report that the activity of an instance is starting
   def start
-    require_auth_level :server, :tech
+    require_auth_level :server, :tech_import
     
     # create a phony session
     session = @params.symbolize
@@ -235,7 +236,7 @@ class EvidenceController < RESTController
 
   # used by the collector to update the synctime during evidence transfer
   def start_update
-    require_auth_level :server, :tech
+    require_auth_level :server, :tech_import
 
     # create a phony session
     session = @params.symbolize
@@ -276,7 +277,7 @@ class EvidenceController < RESTController
 
   # used to report that the processing of an instance has finished
   def stop
-    require_auth_level :server, :tech
+    require_auth_level :server, :tech_import
 
     # create a phony session
     session = @params.symbolize
@@ -420,6 +421,7 @@ class EvidenceController < RESTController
 
   def filesystem
     require_auth_level :view
+    require_auth_level :view_filesystem
 
     mongoid_query do
 
@@ -466,7 +468,7 @@ class EvidenceController < RESTController
   end
 
   def commands
-    require_auth_level :view, :tech
+    require_auth_level :view, :tech_exec
 
     mongoid_query do
 

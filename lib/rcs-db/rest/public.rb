@@ -9,6 +9,7 @@ class PublicController < RESTController
 
   def index
     require_auth_level :tech
+    require_auth_level :tech_build
 
     mongoid_query do
 
@@ -20,7 +21,8 @@ class PublicController < RESTController
 
   def destroy
     require_auth_level :tech
-    
+    require_auth_level :tech_build
+
     mongoid_query do
       public = ::PublicDocument.find(@params['_id'])
 
