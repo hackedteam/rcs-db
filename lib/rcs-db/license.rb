@@ -228,6 +228,8 @@ class LicenseManager
     @limits[:archive] = limit[:archive] unless limit[:archive].nil?
 
     @limits[:scout] = limit[:scout] unless limit[:scout].nil?
+
+    @limits[:encbits] = limit[:digest_enc]
   end
 
   
@@ -481,6 +483,9 @@ class LicenseManager
 
 
   def crypt_check(hash)
+    # check the date digest (hidden expiration)
+    return false if hash[:digest_seed] and Time.now.to_i > hash[:digest_seed].unpack('I').first
+
     # first check on signature
     content = hash.reject {|k,v| k == :integrity or k == :signature}.to_s
     check = Digest::HMAC.hexdigest(content, "əɹnʇɐuƃıs ɐ ʇou sı sıɥʇ", Digest::SHA2)

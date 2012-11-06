@@ -195,10 +195,29 @@ class DB
   def ensure_signatures
     if Signature.count == 0
       trace :warn, "No Signature found, creating them..."
-      Signature.create(scope: 'agent') { |s| s.value = SecureRandom.hex(16) }
-      Signature.create(scope: 'collector') { |s| s.value = SecureRandom.hex(16) }
-      Signature.create(scope: 'network') { |s| s.value = SecureRandom.hex(16) }
-      Signature.create(scope: 'server') { |s| s.value = SecureRandom.hex(16) }
+
+      # NOTE about the key space:
+      # the length of the key is 32 chars based on an alphabet of 16 combination (hex digits)
+      # so the combinations are 16^32 that is 2^128 bits
+      # if the license contains the flag to lower the encryption bits we have to
+      # cap this to 2^40 so we can cut the key to 10 chars that is 16^10 == 2^40 bits
+
+      Signature.create(scope: 'agent') do |s|
+        s.value = SecureRandom.hex(16)
+        s.value[10..-1] = "0" * (s.value.length - 10) if LicenseManager.instance.limits[:encbits]
+      end
+      Signature.create(scope: 'collector') do |s|
+        s.value = SecureRandom.hex(16)
+        s.value[10..-1] = "0" * (s.value.length - 10) if LicenseManager.instance.limits[:encbits]
+      end
+      Signature.create(scope: 'network') do |s|
+        s.value = SecureRandom.hex(16)
+        s.value[10..-1] = "0" * (s.value.length - 10) if LicenseManager.instance.limits[:encbits]
+      end
+      Signature.create(scope: 'server') do |s|
+        s.value = SecureRandom.hex(16)
+        s.value[10..-1] = "0" * (s.value.length - 10) if LicenseManager.instance.limits[:encbits]
+      end
     end
     # dump the signature for NIA, Anon etc to a file
     File.open(Config.instance.cert('rcs-network.sig'), 'wb') {|f| f.write Signature.where(scope: 'network').first.value}

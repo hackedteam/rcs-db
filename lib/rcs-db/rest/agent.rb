@@ -146,8 +146,8 @@ class AgentController < RESTController
         seed = (0..11).inject('') {|x,y| x += alphabet[rand(0..alphabet.size-1)]}
         seed.setbyte(8, 46)
         doc[:seed] = seed
-        doc[:confkey] = (0..31).inject('') {|x,y| x += alphabet[rand(0..alphabet.size-1)]}
-        doc[:logkey] = (0..31).inject('') {|x,y| x += alphabet[rand(0..alphabet.size-1)]}
+        doc[:confkey] = calculate_random_key
+        doc[:logkey] = calculate_random_key
         doc[:configs] = []
       end
 
@@ -170,6 +170,25 @@ class AgentController < RESTController
 
       ok(item)
     end
+  end
+
+  def calculate_random_key
+    # pur alphabet is 64 combination
+    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-'
+
+    # NOTE about the key space:
+    # the length of the key is 32 chars based on an alphabet of 64 combination
+    # so the combinations are 64^32 that is 2^192 bits
+
+    key = (0..31).inject('') {|x,y| x += alphabet[rand(0..alphabet.size-1)]}
+
+    # reduce the key space if needed
+    # if the license contains the flag to lower the encryption bits we have to
+    # cap this to 2^40 so we can cut the key to 6 chars that is 64^6 == 2^36 bits
+
+    key[6..-1] = "-" * (key.length - 6) if LicenseManager.instance.limits[:encbits]
+
+    return key
   end
 
   def get_new_ident
