@@ -5,4 +5,5 @@ Collector:
 
 DB:
     - More granularity on user permissions
+    - Factories can be created at the operation level and will create a new target on each new instance
 
