@@ -342,6 +342,24 @@ class AgentController < RESTController
     # clone the new instance from the factory
     agent = factory.clone_instance
 
+    # check where the factory is:
+    # if inside a target, just create the instance
+    # if inside an operation, we have to create a target for each instance
+    parent = Item.find(factory.path.last)
+
+    if parent[:_kind] == 'target'
+      agent.path = factory.path
+    elsif parent[:_kind] == 'operation'
+      target = Item.create(name: factory.name) do |doc|
+        doc[:_kind] = :target
+        doc[:path] = factory.path
+        doc.stat = ::Stat.new
+        doc[:status] = :open
+        doc[:desc] = "Created automatically on first sync from: #{factory.name}"
+      end
+      agent.path = factory.path + target._id
+    end
+
     # specialize it with the platform and the unique instance
     agent.platform = platform
     agent.instance = @params['instance'].downcase
