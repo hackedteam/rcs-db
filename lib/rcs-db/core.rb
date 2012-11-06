@@ -40,10 +40,11 @@ class Core
         core[:_grid] = [ GridFS.put(File.open(core_file, 'rb+') {|f| f.read}, {filename: name}) ]
         core[:_grid_size] = File.size(core_file)
         core.save
+
+        File.delete(core_file)
       rescue Exception => e
         trace :error, "Cannot load core #{name}: #{e.message}"
       end
-      File.delete(core_file)
     end
 
   end
