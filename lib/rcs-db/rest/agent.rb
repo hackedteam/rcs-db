@@ -117,6 +117,7 @@ class AgentController < RESTController
   
   def create
     require_auth_level :tech
+    require_auth_level :tech_factories
 
     # to create a target, we need to owning operation
     return bad_request('INVALID_OPERATION') unless @params.has_key? 'operation'
@@ -182,7 +183,8 @@ class AgentController < RESTController
 
   def add_config
     require_auth_level :tech
-    
+    require_auth_level :tech_config
+
     mongoid_query do
       agent = Item.any_in(_id: @session[:accessible]).find(@params['_id'])
 
@@ -219,6 +221,7 @@ class AgentController < RESTController
 
   def update_config
     require_auth_level :tech
+    require_auth_level :tech_config
 
     mongoid_query do
       agent = Item.any_in(_id: @session[:accessible]).where(_kind: 'agent').find(@params['_id'])
@@ -233,6 +236,7 @@ class AgentController < RESTController
 
   def del_config
     require_auth_level :tech
+    require_auth_level :tech_config
 
     mongoid_query do
       agent = Item.any_in(_id: @session[:accessible]).where(_kind: 'agent').find(@params['_id'])
@@ -484,6 +488,8 @@ class AgentController < RESTController
           trace :info, "[#{@request[:peer]}] Requested the UPLOAD #{@params['upload']} -- #{content.file_length.to_s_bytes}"
           return ok(content.read, {content_type: content.content_type})
         when 'POST'
+          require_auth_level :tech_upload
+
           upl = @params['upload']
           file = @params['upload'].delete 'file'
           upl['_grid'] = [ GridFS.put(File.open(Config.instance.temp(file), 'rb+') {|f| f.read}, {filename: upl['filename']}) ]
@@ -503,6 +509,7 @@ class AgentController < RESTController
   # fucking flex that does not support the DELETE http method
   def upload_destroy
     require_auth_level :tech
+    require_auth_level :tech_upload
 
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
@@ -537,6 +544,8 @@ class AgentController < RESTController
           trace :debug, "[#{@request[:peer]}] Requested the UPGRADE #{@params['upgrade']} -- #{content.file_length.to_s_bytes}"
           return ok(content.read, {content_type: content.content_type})
         when 'POST'
+          require_auth_level :tech_build
+
           Audit.log :actor => @session[:user][:name], :action => "agent.upgrade", :desc => "Requested an upgrade for agent '#{agent['name']}'"
           trace :info, "Agent #{agent.name} scheduled for upgrade"
           agent.upgrade!
@@ -693,6 +702,8 @@ class AgentController < RESTController
           list = agent.exec_requests
           return ok(list)
         when 'POST'
+          require_auth_level :tech_exec
+
           agent.exec_requests.create(@params['exec'])
           trace :info, "[#{@request[:peer]}] Added download request #{@params['exec']}"
           Audit.log :actor => @session[:user][:name], :action => "agent.exec", :desc => "Added a command execution request for agent '#{agent['name']}'"
@@ -708,6 +719,7 @@ class AgentController < RESTController
   # fucking flex that does not support the DELETE http method
   def exec_destroy
     require_auth_level :tech
+    require_auth_level :tech_exec
 
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
@@ -750,6 +762,7 @@ class AgentController < RESTController
 
   def activate_ghost
     require_auth_level :tech
+    require_auth_level :tech_build
 
     agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
 

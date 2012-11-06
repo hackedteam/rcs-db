@@ -9,6 +9,7 @@ class TemplateController < RESTController
 
   def index
     require_auth_level :tech
+    require_auth_level :tech_config
 
     mongoid_query do
 
@@ -20,6 +21,7 @@ class TemplateController < RESTController
 
   def create
     require_auth_level :tech
+    require_auth_level :tech_config
 
     mongoid_query do
       t = ::Template.new
@@ -36,6 +38,7 @@ class TemplateController < RESTController
 
   def update
     require_auth_level :tech
+    require_auth_level :tech_config
 
     mongoid_query do
       template = ::Template.find(@params['_id'])
@@ -55,7 +58,8 @@ class TemplateController < RESTController
 
   def destroy
     require_auth_level :tech
-    
+    require_auth_level :tech_config
+
     mongoid_query do
       template = ::Template.find(@params['_id'])
       Audit.log :actor => @session[:user][:name], :action => 'template.destroy', :desc => "Deleted the template: #{template[:desc]}"
