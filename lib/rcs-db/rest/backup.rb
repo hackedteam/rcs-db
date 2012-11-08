@@ -28,6 +28,7 @@ class BackupjobController < RESTController
       b.what = @params['what']
       b.when = @params['when']
       b.name = @params['name']
+      b.incremental = @params['incremental']
       b.lastrun = ""
       b.status = 'QUEUED'
       b.save
@@ -64,6 +65,13 @@ class BackupjobController < RESTController
       @params.delete('_id')
 
       @params.each_pair do |key, value|
+
+        # modifying the incremental flag, reset the ids
+        if key == 'incremental'
+          backup.incremental_ids = {}
+          backup.save
+        end
+
         if backup[key.to_s] != value
           Audit.log :actor => @session[:user][:name], :action => 'backupjob.update', :desc => "Updated '#{key}' to '#{value}' for backup #{backup[:name]}"
         end
@@ -94,16 +102,7 @@ class BackuparchiveController < RESTController
   def index
     require_auth_level :sys
 
-    index = []
-
-    Dir[Config.instance.global['BACKUP_DIR'] + '/*'].each do |dir|
-      dirsize = 0
-      next unless File.exist?(dir + '/rcs')
-      Find.find(dir + '/rcs') { |f| dirsize += File.stat(f).size }
-      name = File.basename(dir).split('-')[0]
-      time = File.stat(dir).ctime.getutc
-      index << {_id: File.basename(dir), name: name, when: time.strftime('%Y-%m-%d %H:%M'), size: dirsize}
-    end
+    index = BackupManager.backup_index
 
     return ok(index)
   end
@@ -129,13 +128,11 @@ class BackuparchiveController < RESTController
   def restore
     require_auth_level :sys
 
-    command = Config.mongo_exec_path('mongorestore')
-    command += " --drop" if @params['drop']
-    command += " #{Config.instance.global['BACKUP_DIR']}/#{@params['_id']}"
+    ret = BackupManager.restore_backup(@params)
 
     Audit.log :actor => @session[:user][:name], :action => 'backup.restore', :desc => "Restored the backup #{@params['_id']} from the archive"
 
-    if system command
+    if ret
       return ok()
     else
       return server_error("Cannot restore backup")

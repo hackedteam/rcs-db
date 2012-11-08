@@ -18,6 +18,8 @@ class QueueManager
   def initialize
     @instances = {}
     @semaphore = Mutex.new
+    @polling_mutex = Mutex.new
+    @last_id = "0"
   end
 
   def how_many_processing
@@ -47,6 +49,39 @@ class QueueManager
     end
     str
   end
+
+  def check_new
+    return if @polling_mutex.locked?
+
+    @polling_mutex.synchronize do
+      #trace :debug, "Checking for new evidence..."
+
+      begin
+        db = Mongoid.database
+        evidences = db.collection('grid.evidence.files').find({metadata: {shard: RCS::DB::Config.instance.global['SHARD']}}, {sort: ["_id", :asc]})
+        evidences.each do |ev|
+
+          # don't queue already queued ids.
+          # we rely here on the fact the id are ascending
+          next if @last_id.to_s >= ev['_id'].to_s
+
+          # get the ident from the filename
+          ident, instance = ev['filename'].split(":")
+
+          trace :debug, "Queuing evidence #{ev['_id']}"
+
+          # queue the evidence
+          QueueManager.instance.queue instance, ident, ev['_id'].to_s
+
+          # remember the last processed id
+          @last_id = ev['_id']
+        end
+      rescue Exception => e
+        trace :error, "Cannot process pending evidences: #{e.message}"
+      end
+    end
+  end
+
 end
 
 end # ::Worker

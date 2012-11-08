@@ -51,10 +51,14 @@ config/certs/symbian.cer
 
 # config
 config/config.yaml
+config/db_stats
+config/task_journal
+config/worker_stats
 
 # encrypted code
 lib/rcs-db-release
 lib/rcs-worker-release
+lib/rcs-ocr-release
 
 # evidences
 ./evidence

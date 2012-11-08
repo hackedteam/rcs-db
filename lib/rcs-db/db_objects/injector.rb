@@ -17,7 +17,7 @@ class Injector
   field :redirect, type: String
   field :port, type: Integer
   field :poll, type: Boolean
-  field :version, type: Integer
+  field :version, type: Integer, default: 0
   field :configured, type: Boolean, default: false
   field :upgradable, type: Boolean, default: false
   field :redirection_tag, type: String
@@ -35,10 +35,13 @@ class Injector
 
   embeds_many :rules, class_name: "InjectorRule"
 
-  after_destroy :destroy_callback
+  before_destroy :destroy_callback
 
   protected
   def destroy_callback
+    # destroy all the rules to cleanup the saved files in the grid
+    self.rules.destroy_all
+    # remove the log collection
     Mongoid.database.drop_collection CappedLog.collection_name(self._id.to_s)
     # make sure to delete the binary config in the grid
     RCS::DB::GridFS.delete self[:_grid].first unless self[:_grid].nil?
@@ -52,6 +55,21 @@ class Injector
         rule.destroy
       end
     end
+  end
+
+  def disable_on_sync(factory)
+    modified = false
+    self.rules.each do |rule|
+      if rule.disable_sync and rule.action_param == factory[:_id].to_s
+        trace :info, "Disabling rule by sync of #{factory.name}"
+        rule.enabled = false
+        rule.save
+        modified = true
+      end
+    end
+
+    # push the rules to the NIA
+    RCS::DB::InjectorTask.new('injector', nil, {'injector_id' => self[:_id]}).run if modified
   end
 
 end
@@ -72,12 +90,13 @@ class InjectorRule
   field :action, type: String
   field :action_param, type: String
   field :action_param_name, type: String
+  field :scout, type: Boolean, default: true
 
   field :_grid, type: Array
 
   embedded_in :injector
 
-  after_destroy :destroy_callback
+  before_destroy :destroy_callback
 
   protected
 

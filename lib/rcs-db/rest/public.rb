@@ -1,7 +1,6 @@
 #
-# Controller for Backups
+# Controller for public documents on collectors
 #
-
 
 module RCS
 module DB
@@ -24,6 +23,9 @@ class PublicController < RESTController
     
     mongoid_query do
       public = ::PublicDocument.find(@params['_id'])
+
+      # avoid error on request of already deleted documents
+      return ok() if public.nil?
 
       Frontend.collector_del(public[:name])
       Audit.log :actor => @session[:user][:name], :action => 'frontend.delete', :desc => "Deleted the file [#{public[:name]}] from the public folder"

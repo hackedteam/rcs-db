@@ -40,7 +40,7 @@ class AuditController < RESTController
       ok(query, {gzip: true})
     end
   end
-  
+
   def count
     require_auth_level :admin
 

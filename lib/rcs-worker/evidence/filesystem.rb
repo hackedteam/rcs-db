@@ -27,7 +27,7 @@ module FilesystemProcessing
         .where(:type => 'filesystem',
                :aid => agent._id,
                :dr.lt => self[:dr].to_i,
-               'data.path' => Regexp.new(Regexp.escape(baseline), true)).each do |e|
+               'data.path' => Regexp.new(Regexp.escape(baseline), Regexp::IGNORECASE)).each do |e|
         e.delete
       end
 

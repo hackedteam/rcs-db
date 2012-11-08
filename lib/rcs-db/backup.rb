@@ -46,7 +46,7 @@ class BackupManager
 
   end
 
-  def self.do_backup(now, backup)
+  def self.do_backup(now, backup, save_status = true)
 
     trace :info, "Performing backup [#{backup.name}]..."
 
@@ -54,7 +54,7 @@ class BackupManager
 
     backup.lastrun = Time.now.getutc.strftime('%Y-%m-%d %H:%M')
     backup.status = 'RUNNING'
-    backup.save
+    backup.save if save_status
 
     begin
 
@@ -77,12 +77,29 @@ class BackupManager
       case backup.what
         when 'metadata'
           # don't backup evidence collections
-          params[:coll].delete_if {|x| x['evidence.'] || x['grid.']}
+          params[:coll].delete_if {|x| x['evidence.'] || x['grid.'] || x['cores'] || x['ocr_queue']}
         when 'full'
           # we backup everything... woah !!
         else
           # backup single item (operation or target)
           partial_backup(params)
+      end
+
+      # save the last backed up objects to be used in the next run
+      # do this here, so we are sure that the mongodump below will include these ids
+      if backup.incremental
+        db = Mongoid::Config.master
+
+        incremental_ids = {}
+
+        params[:coll].each do |coll|
+          next unless (coll['evidence.'] || coll['grid.'])
+          # get the last bson object id
+          ev = db.collection(coll).find().sort({_id: -1}).limit(1).first
+          incremental_ids[coll.to_s.gsub(".", "_")] = ev['_id'].to_s unless ev.nil?
+        end
+
+        trace :debug, "Incremental ids: #{incremental_ids.inspect}"
       end
 
       # the command of the mongodump
@@ -92,36 +109,50 @@ class BackupManager
 
       # create the backup of the collection (common)
       params[:coll].each do |coll|
-        if coll == 'items'
-          command = mongodump + " -c #{coll} -q #{params[:ifilter]}"
-          trace :debug, "Backup: #{command}"
-          ret = system command
-          trace :debug, "Backup result: #{ret}"
-          raise unless ret
-        else
-          command = mongodump + " -c #{coll}"
-          trace :debug, "Backup: #{command}"
-          ret = system command
-          trace :debug, "Backup result: #{ret}"
-          raise unless ret
+        command = mongodump + " -c #{coll}"
+
+        command += " -q #{params[:ifilter]}" if coll == 'items'
+
+        command += incremental_filter(coll, backup) if backup.incremental
+
+        trace :info, "Backup: #{command}"
+        ret = system command
+        trace :info, "Backup result: #{ret}"
+
+        if ret == false
+          out = `#{command} 2>&1`
+          trace :warn, "Backup output: #{out}"
         end
+        raise unless ret
       end
 
       # don't backup cores when saving metadata
       if backup.what != 'metadata'
         # gridfs entries linked to backed up collections
         command = mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.files -q #{params[:gfilter]}"
-        trace :debug, "Backup: #{command}"
+        trace :info, "Backup: #{command}"
         ret = system command
-        trace :debug, "Backup result: #{ret}"
+        trace :info, "Backup result: #{ret}"
         raise unless ret
 
         # use the same query to retrieve the chunk list
         params[:gfilter]['_id'] = 'files_id' unless params[:gfilter]['_id'].nil?
         command = mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.chunks -q #{params[:gfilter]}"
-        trace :debug, "Backup: #{command}"
+        trace :info, "Backup: #{command}"
         ret = system command
-        trace :debug, "Backup result: #{ret}"
+        trace :info, "Backup result: #{ret}"
+        raise unless ret
+      end
+
+      # backup the config db
+      if backup.what == 'metadata' or backup.what == 'full'
+        mongodump = Config.mongo_exec_path('mongodump')
+        mongodump += " -o #{Config.instance.global['BACKUP_DIR']}/#{backup.name}_config-#{now.strftime('%Y-%m-%d-%H-%M')}"
+        mongodump += " -d config"
+
+        trace :info, "Backup: #{command}"
+        ret = system mongodump
+        trace :info, "Backup result: #{ret}"
         raise unless ret
       end
 
@@ -132,13 +163,16 @@ class BackupManager
       trace :error, "Backup #{backup.name} failed: #{e.message}"
       backup.lastrun = Time.now.getutc.strftime('%Y-%m-%d %H:%M')
       backup.status = 'ERROR'
-      backup.save
+      backup.save if save_status
       return
     end
 
+    # save the latest ids saved in backup
+    backup.incremental_ids = incremental_ids if backup.incremental
+
     backup.lastrun = Time.now.getutc.strftime('%Y-%m-%d %H:%M')
     backup.status = 'COMPLETED'
-    backup.save
+    backup.save if save_status
   end
 
   def self.partial_backup(params)
@@ -181,21 +215,24 @@ class BackupManager
     params[:gfilter] += "0]}}"
 
     # insert the correct delimiter and escape characters
-    if RbConfig::CONFIG['host_os'] =~ /mingw/
-      params[:ifilter].gsub! "\"", "\\\""
-      params[:ifilter].prepend "\""
-      params[:ifilter] << "\""
+    shell_escape(params[:ifilter])
+    shell_escape(params[:gfilter])
 
-      params[:gfilter].gsub! "\"", "\\\""
-      params[:gfilter].prepend "\""
-      params[:gfilter] << "\""
-    else
-      params[:ifilter].prepend "'"
-      params[:ifilter] << "'"
+  end
 
-      params[:gfilter].prepend "'"
-      params[:gfilter] << "'"
+  def self.incremental_filter(coll, backup)
+
+    filter = ""
+
+    id = backup.incremental_ids[coll.to_s.gsub(".", "_")]
+
+    unless id.nil?
+      filter = "{\"_id\": {\"$gt\": ObjectId(\"#{id}\") }}"
+      shell_escape(filter)
+      filter = " -q #{filter}"
     end
+
+    return filter
   end
 
   def self.ensure_backup
@@ -212,6 +249,48 @@ class BackupManager
     b.save
 
     trace :info, "Metadata backup job created"
+  end
+
+  def self.backup_index
+    index = []
+
+    Dir[Config.instance.global['BACKUP_DIR'] + '/*'].each do |dir|
+      dirsize = 0
+      # consider only valid backups dir (containing 'rcs' or 'config')
+      next unless File.exist?(dir + '/rcs') or File.exist?(dir + '/config')
+      Find.find(dir + '/rcs') { |f| dirsize += File.stat(f).size } if File.exist?(dir + '/rcs')
+      Find.find(dir + '/config') { |f| dirsize += File.stat(f).size } if File.exist?(dir + '/config')
+      # the name is in the first half of the directory name
+      name = File.basename(dir).split('-')[0]
+      time = File.stat(dir).ctime.getutc
+      index << {_id: File.basename(dir), name: name, when: time.strftime('%Y-%m-%d %H:%M'), size: dirsize}
+    end
+
+    return index
+  end
+
+  def self.restore_backup(params)
+
+    command = Config.mongo_exec_path('mongorestore')
+    command += " --drop" if params['drop']
+    command += " #{Config.instance.global['BACKUP_DIR']}/#{params['_id']}"
+
+    trace :debug, "Restoring backup: #{command}"
+
+    system command
+  end
+
+
+  def self.shell_escape(string)
+    # insert the correct delimiter and escape characters
+    if RbConfig::CONFIG['host_os'] =~ /mingw/
+      string.gsub! "\"", "\\\""
+      string.prepend "\""
+      string << "\""
+    else
+      string.prepend "'"
+      string << "'"
+    end
   end
 
 end

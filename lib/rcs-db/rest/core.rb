@@ -99,12 +99,13 @@ class CoreController < RESTController
         z.file.open(new_entry, "wb") { |f| f.write @request[:content]['content'] }
       end
 
-      content = File.open(temp, 'rb') {|f| f.read}
-
       # if the uploaded file is the 'version' file, update the version of the core accordingly
-      if new_entry == 'version'
-        core.version = @request[:content]['content']
-      end
+      core.version = @request[:content]['content'] if new_entry == 'version'
+
+      # add the magic
+      Core.make_unique(temp, core.name.to_sym) if new_entry == 'core'
+
+      content = File.open(temp, 'rb') {|f| f.read}
 
       # delete the old one
       GridFS.delete core[:_grid].first

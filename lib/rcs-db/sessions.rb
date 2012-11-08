@@ -9,6 +9,7 @@ require 'rcs-common/trace'
 
 # system
 require 'uuidtools'
+require 'set'
 
 module RCS
 module DB
@@ -124,8 +125,12 @@ class SessionManager
           # don't log timeout for the server
           unless session[:level].include? :server
 
-            user = User.find(session[:user].first)
-            next if user.nil?
+            user = User.where({_id: session[:user].first}).first
+            # keep the sessions clean of invalid users
+            if user.nil?
+              session.destroy
+              next
+            end
 
             Audit.log :actor => user[:name], :action => 'logout', :user_name => user[:name], :desc => "User '#{user[:name]}' has been logged out for timeout"
             trace :info, "User '#{user[:name]}' has been logged out for timeout"
@@ -152,25 +157,26 @@ class SessionManager
   def get_accessible(user)
     
     # the list of accessible Items
-    accessible = []
-    
+    accessible = Set.new
+
     # search all the groups which the user belongs to
     ::Group.any_in({_id: user.group_ids}).each do |group|
       # add all the accessible operations
       accessible += group.item_ids
-      # for each operation search the Items belonging to it
-      group.item_ids.each do |operation|
-        # it is enough to search in the _path to check the membership
-        ::Item.any_in({path: [operation]}).each do |item|
-          accessible << item[:_id]
-        end
+    end
+
+    # for each operation search the Items belonging to it
+    accessible.dup.each do |operation|
+      # it is enough to search in the _path to check the membership
+      ::Item.any_in({path: [operation]}).each do |item|
+        accessible << item[:_id]
       end
     end
 
-    return accessible
+    return accessible.to_a
   end
 
-  def add_accessible(factory, agent)
+  def add_accessible_agent(factory, agent)
     # add to all the active session the new agent
     # if the factory of the agent is in the accessible list, we are sure that even
     # the agent will be in the list
@@ -182,11 +188,33 @@ class SessionManager
     end
   end
 
-  def add_single_accessible(session, id)
+  def add_accessible(session, id)
     # persist it in the db
     ::Session.where({cookie: session[:cookie]}).each do |sess|
       sess[:accessible] = sess[:accessible] + [ id ]
       sess.save
+    end
+  end
+
+  def rebuild_all_accessible
+    # create a new thread to be fast returning from this method
+    Thread.new do
+      begin
+        trace :debug, "Rebuilding accessible list..."
+        ::Session.all.each do |sess|
+          # skip authenticated collector
+          next if sess[:level].include? :server
+
+          user = ::User.find(sess[:user].first)
+          sess[:accessible] = get_accessible(user)
+          sess.save
+          trace :debug, "Accessible for #{user[:name]} rebuilt"
+        end
+      rescue Exception => e
+        trace :error, "Rebuilding accessible list failed: #{e.message}"
+      ensure
+        Thread.exit
+      end
     end
   end
 

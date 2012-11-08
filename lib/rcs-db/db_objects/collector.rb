@@ -37,6 +37,13 @@ class Collector
   end
 
   public
+
+  def config
+    # get the next hop collector
+    next_hop = Collector.find(self.prev[0]) if self.prev[0]
+    (next_hop and next_hop.address.length > 0) ? next_hop.address + ':80' : '-'
+  end
+
   def self.collector_login(instance, version, ext_address, local_address)
 
     coll = Collector.where({type: 'local'}).any_in({instance: [instance, 'MIGRATED']}).first

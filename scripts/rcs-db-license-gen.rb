@@ -13,7 +13,7 @@ require 'time'
 class LicenseGenerator
   include Singleton
 
-  LICENSE_VERSION = '8.1'
+  LICENSE_VERSION = '8.2'
 
   def initialize
     # default values.
@@ -44,6 +44,7 @@ class LicenseGenerator
                :shards => 1,
                :exploits => false,
                :deletion => false,
+               :scout => true,
                :collectors => {:collectors => 1, :anonymizers => 0},
                :check => SecureRandom.urlsafe_base64(8).slice(0..7)
     }

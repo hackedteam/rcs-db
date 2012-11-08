@@ -267,7 +267,6 @@ class RESTController
     return @session[:level].include? :server
   end
 
-  # TODO: mongoid_query doesn't belong here
   def mongoid_query(&block)
     begin
       yield
@@ -295,7 +294,7 @@ end # RESTController
 
 class InvalidController < RESTController
   def act!
-    trace :error, "Invalid controller invoked: #{@request[:controller]}/#{@request[:action]}. Replied 404."
+    trace :error, "[#{@request[:peer]}] Invalid controller invoked: #{@request[:controller]}/#{@request[:action]}. Replied 404."
     not_found('File not found')
   end
 end

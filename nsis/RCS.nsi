@@ -109,7 +109,7 @@
 ;--------------------------------
 !macro _EnvSet
    ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
-   StrCpy $R0 "$R0;$INSTDIR\Collector\bin;$INSTDIR\DB\bin;$INSTDIR\Ruby\bin;$INSTDIR\Java\bin;$INSTDIR\Python"
+   StrCpy $R0 "$R0;$INSTDIR\Collector\bin;$INSTDIR\DB\bin;$INSTDIR\Ruby\bin;$INSTDIR\Java\bin;$INSTDIR\Python;$INSTDIR\DB\ocr"
    WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R0"
    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("Path", "$R0").r0'
 
@@ -151,37 +151,6 @@
 !macroend
 !define EnvUnset "!insertmacro _EnvUnset"
 
-!macro _EnvUnsetRCS7
-   ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
-
-   StrCpy $R1 0
-   ${Do}
-      IntOp $R1 $R1 + 1
-      ${WordFind} $R0 ";" "E+$R1" $R2
-      IfErrors 0 +2
-         ${Break}
-
-      StrCmp $R2 "C:\RCSDB\java\bin" 0 +2
-         ${Continue}
-
-      StrCmp $R2 "C:\RCSDB\ruby\bin" 0 +2
-         ${Continue}
-
-      StrCpy $R3 "$R3$R2;"
-   ${Loop}
-
-   ${If} $R2 == 1
-      StrCpy $R3 $R0
-   ${Else}
-      StrCpy $R3 $R3 -1
-   ${EndIf}
-
-   WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R3"
-
-   SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
-!macroend
-!define EnvUnsetRCS7 "!insertmacro _EnvUnsetRCS7"
-
 ;--------------------------------
 ;Installer Sections
 
@@ -202,6 +171,12 @@ Section "Update Section" SecUpdate
    Sleep 3000
    SimpleSC::StopService "RCSShard" 1
 
+   ReadRegDWORD $R0 HKLM "Software\HT\RCS" "ocr"
+   IntCmp $R0 1 0 noocr noocr
+     Sleep 3000
+     SimpleSC::StopService "RCSOCR" 1
+   noocr:
+
    Sleep 5000
    
    DetailPrint "done"
@@ -214,7 +189,9 @@ Section "Update Section" SecUpdate
      RMDir /r "$INSTDIR\Python"
      RMDir /r "$INSTDIR\DB\mongodb"
    !endif
-   RMDir /r "$INSTDIR\DB\lib"
+   RMDir /r "$INSTDIR\DB\lib\rcs-db-release"
+   RMDir /r "$INSTDIR\DB\lib\rcs-worker-release"
+   RMDir /r "$INSTDIR\DB\lib\rgloader"
    RMDir /r "$INSTDIR\DB\bin"
    RMDir /r "$INSTDIR\Collector\bin"
    RMDir /r "$INSTDIR\Collector\lib"
@@ -246,7 +223,6 @@ Section "Install Section" SecInstall
   File "DB\nsis\RCS.ico"
 
   DetailPrint "Setting up the path..."
-  ${EnvUnsetRCS7}
   ${EnvUnset}
   ${EnvSet}
   DetailPrint "done" 
@@ -296,11 +272,12 @@ Section "Install Section" SecInstall
     File /r "lib\rcs-worker-release\*.*"
 
     SetOutPath "$INSTDIR\DB\config"
-    File "config\mongoid.yaml"
     File "config\mongodb.key"
     File "config\trace.yaml"
     File "config\export.zip"
     File "config\logo.png"
+    File "config\blacklist"
+    File "config\certs\windows.pfx"
     File "config\VERSION_BUILD"
     File "config\VERSION"
     SetDetailsPrint "both"
@@ -344,6 +321,7 @@ Section "Install Section" SecInstall
       SimpleSC::SetServiceFailure "hasplms" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
     !endif
 
+    DetailPrint "Checking the license file.."
     ; check if the license + dongle is ok
     StrCpy $0 1
     ${Do}
@@ -360,14 +338,34 @@ Section "Install Section" SecInstall
     ; fresh install
     ${If} $installUPGRADE != ${BST_CHECKED}
       DetailPrint ""
+      DetailPrint "Setting localhost to resolve in IPv4..."
+
+      FileOpen $4 "C:\Windows\System32\Drivers\etc\hosts" a
+      FileSeek $4 0 END
+      FileWrite $4 "$\r$\n127.0.0.1$\tlocalhost$\r$\n"
+      FileClose $4
+
+      DetailPrint ""
       DetailPrint "Writing the configuration..."
       SetDetailsPrint "textonly"
+      SetDetailsPrint "both"
       ; write the config yaml
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --defaults --CN $masterCN"
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --defaults --CN $masterCN --log"
+      DetailPrint "done"
+
       ; generate the SSL cert
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-ca --generate-certs --generate-certs-anon"
+      DetailPrint "Generating CA and certs..."
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-ca --generate-certs --log"
+      DetailPrint "done"
+
+      ; generate the SSL cert for anon
+      DetailPrint "Generating anonymizer certs..."
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-certs-anon --log"
+      DetailPrint "done"
+
       ; generate the keystores
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-keystores"
+      DetailPrint "Generating keystores..."
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-keystores --log"
       SetDetailsPrint "both"
       DetailPrint "done"
 
@@ -377,11 +375,9 @@ Section "Install Section" SecInstall
       DetailPrint "done"      
       
       DetailPrint "Creating service RCS Master Router..."
-      nsExec::Exec "$INSTDIR\DB\bin\nssm.exe install RCSMasterRouter $INSTDIR\DB\mongodb\win\mongos.exe --logpath $INSTDIR\DB\log\mongos.log --logappend --configdb $masterCN"
+      nsExec::Exec '$INSTDIR\DB\mongodb\win\mongos.exe --logpath $INSTDIR\DB\log\mongos.log --logappend --configdb $masterCN --install --serviceName RCSMasterRouter --serviceDisplayName "RCS Master Router" --serviceDescription "Remote Control System Master Router for shards"'
       SimpleSC::SetServiceFailure "RCSMasterRouter" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSMasterRouter" "DisplayName" "RCS Master Router"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSMasterRouter" "Description" "Remote Control System Master Router for shards"
-      DetailPrint "done"   
+      DetailPrint "done"
       
       DetailPrint "Creating service RCS Shard..."
       nsExec::Exec '$INSTDIR\DB\mongodb\win\mongod.exe --dbpath $INSTDIR\DB\data --journal --nssize 64 --logpath $INSTDIR\DB\log\mongod.log --logappend --shardsvr --rest --install --serviceName RCSShard --serviceDisplayName "RCS Shard" --serviceDescription "Remote Control System DB Shard for data storage"'
@@ -402,6 +398,12 @@ Section "Install Section" SecInstall
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSWorker" "Description" "Remote Control System Worker for data decoding"
       DetailPrint "done"
 
+      ; write the admin pass into the file that will be loaded on the first start
+      FileOpen $4 "$INSTDIR\DB\config\admin_pass" w
+      FileWrite $4 "$adminpass"
+      FileClose $4
+    ${Else}
+      nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --migrate-mongos22 --log"
     ${EndIf}
     
     SetDetailsPrint "both"
@@ -427,17 +429,12 @@ Section "Install Section" SecInstall
     DetailPrint "Starting RCS Worker..."
     SimpleSC::StartService "RCSWorker" "" 30
     Sleep 5000
-	
-    ${If} $installUPGRADE != ${BST_CHECKED}
-      DetailPrint "Setting the Admin password..."
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --reset-admin $adminpass"
-    ${EndIf}
       
     DetailPrint "Adding firewall rule for port 443/tcp and 444/tcp..."
     #nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=443'
     #nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=444'
-	SimpleFC::AddPort 443 "RCS Database" 6 0 2 "" 1
-	SimpleFC::AddPort 444 "RCS Database" 6 0 2 "" 1
+    SimpleFC::AddPort 443 "RCS Database" 6 0 2 "" 1
+    SimpleFC::AddPort 444 "RCS Database" 6 0 2 "" 1
 	
     !cd '..'
     WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
@@ -505,7 +502,10 @@ Section "Install Section" SecInstall
     
     SetOutPath "$INSTDIR\Collector\lib\rcs-collector-release"
     File /r "lib\rcs-collector-release\*.*"
-  
+
+    ; make sure the cache is clean after upgrade
+    Delete "$INSTDIR\Collector\config\cache.db"
+
     SetOutPath "$INSTDIR\Collector\config"
     File "config\decoy.rb"
     File "config\trace.yaml"
@@ -516,7 +516,7 @@ Section "Install Section" SecInstall
     
     DetailPrint "Adding firewall rule for port 80/tcp..."
     #nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSCollector" dir=in action=allow protocol=TCP localport=80'
-	SimpleFC::AddPort 80 "RCS Collector" 6 0 2 "" 1
+    SimpleFC::AddPort 80 "RCS Collector" 6 0 2 "" 1
 	
     !cd '..'
     
@@ -576,6 +576,11 @@ Section "Install Section" SecInstall
       !cd '..'
     ${EndIf}
   !endif
+
+  ReadRegDWORD $R0 HKLM "Software\HT\RCS" "ocr"
+  IntCmp $R0 1 0 noocr noocr
+    SimpleSC::StartService "RCSOCR" ""
+  noocr:
 
   !cd "DB\nsis"
   

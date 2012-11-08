@@ -18,7 +18,7 @@ module RCS
       end
 
       def total
-        num = ::Evidence.filtered_count @params
+        num = ::Evidence.report_count @params
         trace :info, "Exporting #{num} evidence..."
         return num
       end
@@ -26,7 +26,9 @@ module RCS
       def next_entry
         @description = "Exporting #{@total} evidence"
 
-        evidence = ::Evidence.filter @params
+        evidence = ::Evidence.report_filter @params
+
+        @display_notes = (@params['note'] == false) ? false : true
 
         export(evidence, index: :da, target: @params['filter']['target']) do |type, filename, opts|
           yield type, filename, opts
@@ -70,7 +72,7 @@ module RCS
             <th scope="col" class="rel">tag</th>
             <th scope="col" class="type">type</th>
             <th scope="col" class="info">info</th>
-            <th scope="col" class="note">note</th>
+            #{@display_notes ? "<th scope=\"col\" class=\"note\">note</th>": ''}
           </tr>
         </thead>
         <tbody>
@@ -80,10 +82,14 @@ module RCS
       def html_evidence_table_row(row)
         <<-eof
       <tr>
-        <td class="id">#{row[:_id]}</td><td class="agent">#{row[:agent]}</td>
-        <td class="acquired">#{Time.at(row[:da]).strftime('%Y-%m-%d %H:%M:%S')}</td><td class="received">#{Time.at(row[:dr]).strftime('%Y-%m-%d %H:%M:%S')}</td>
-        <td class="rel#{row[:rel]}"></td><td class="type">#{row[:type]}</td>
-        <td class="info">#{html_data_renderer(row)}</td><td class="note">#{row[:note]}</td>
+        <td class="id">#{row[:_id]}</td>
+        <td class="agent">#{row[:agent]}</td>
+        <td class="acquired">#{Time.at(row[:da]).strftime('%Y-%m-%d %H:%M:%S')}</td>
+        <td class="received">#{Time.at(row[:dr]).strftime('%Y-%m-%d %H:%M:%S')}</td>
+        <td class="rel#{row[:rel]}"></td>
+        <td class="type">#{row[:type]}</td>
+        <td class="info">#{html_data_renderer(row)}</td>
+        #{@display_notes ? "<td class=\"note\">" + row[:note].to_s + "</td>" : ''}
       </tr>
         eof
       rescue Exception => e

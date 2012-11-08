@@ -87,7 +87,7 @@ class GridFS
       items.each {|item| delete(item["_id"], collection_name(collection))}
     end
 
-    def delete_collection(name)
+    def drop_collection(name)
       Mongoid.database.drop_collection DEFAULT_GRID_NAME + '.' + name + '.files'
       Mongoid.database.drop_collection DEFAULT_GRID_NAME + '.' + name + '.chunks'
     end

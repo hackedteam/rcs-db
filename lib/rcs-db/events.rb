@@ -219,8 +219,8 @@ class Events
         # calculate and save the stats
         EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }
 
-        # TODO: remove this
-        #check_thread_pool
+        # log rotation
+        EM::PeriodicTimer.new(60) { EM.defer(proc{ DB.instance.logrotate }) }
 
       end
     rescue RuntimeError => e
@@ -232,21 +232,6 @@ class Events
       raise
     end
 
-  end
-
-  def check_thread_pool
-    Thread.new do
-      loop do
-        statuses = Hash.new(0)
-
-        Thread.list.each { |t| statuses[t.status] += 1 }
-
-        trace :debug, "Threads: " + statuses.inspect
-        trace :debug, "Connections: " + Mongoid.master.connection.read_pool.inspect
-
-        sleep 2
-      end
-    end
   end
 
 end #Events

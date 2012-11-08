@@ -92,7 +92,7 @@ class CrossPlatform
         # restore the environment
         ENV['PATH'] = ENV['PATH'].gsub("#{options[:add_path]}#{separator}", '') if options[:add_path]
 
-        success or raise(ExecFailed.new("failed to execute command", File.basename(original_command)))
+        success or raise(ExecFailed.new("failed to execute command", File.basename(original_command) + " #{params}"))
         return
       end
 
@@ -111,7 +111,7 @@ class CrossPlatform
           output = f.read
           process = Process.waitpid2(f.pid)[1]
         }
-        process.success? || raise(ExecFailed.new("failed to execute command", File.basename(original_command), process.exitstatus, output))
+        process.success? || raise(ExecFailed.new("failed to execute command", File.basename(original_command) + " #{params}", process.exitstatus, output))
       else
         # setup the pipe to read the output of the child command
         # redirect stderr to stdout and read only stdout
@@ -131,7 +131,7 @@ class CrossPlatform
         wr.close
         output = rd.read
 
-        $?.success? || raise(ExecFailed.new("failed to execute command", File.basename(original_command), $?.exitstatus, output))
+        $?.success? || raise(ExecFailed.new("failed to execute command", File.basename(original_command) + " #{params}", $?.exitstatus, output))
       end
     end
 

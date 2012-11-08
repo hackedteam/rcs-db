@@ -19,7 +19,7 @@ class CappedLog
         field :type, type: String
         field :desc, type: String
 
-        store_in CappedLog.collection_name('#{id}'), capped: true, max: 10_000, size: 2_000_000
+        store_in CappedLog.collection_name('#{id}'), capped: true, max: 5000, size: 2_000_000
       end
     END
     

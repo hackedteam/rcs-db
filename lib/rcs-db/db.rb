@@ -10,6 +10,7 @@ require_relative 'license'
 require_relative 'tasks'
 require_relative 'offload_manager'
 require_relative 'statistics'
+require_relative 'backup'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -53,8 +54,8 @@ class Application
 
     begin
       build = File.read(Dir.pwd + '/config/VERSION_BUILD')
-      version = File.read(Dir.pwd + '/config/VERSION')
-      trace :fatal, "Starting the RCS Database #{version} (#{build})..."
+      $version = File.read(Dir.pwd + '/config/VERSION')
+      trace :fatal, "Starting the RCS Database #{$version} (#{build})..."
 
       # ensure the temp directory is empty
       FileUtils.rm_rf(Config.instance.temp)
@@ -115,6 +116,12 @@ class Application
 
       # perform any pending operation in the journal
       OffloadManager.instance.recover
+
+      # ensure the backup of metadata
+      BackupManager.ensure_backup
+
+      # clean the capped logs collections
+      DB.instance.clean_capped_logs
 
       # enter the main loop (hopefully will never exit from it)
       Events.new.setup Config.instance.global['LISTENING_PORT']

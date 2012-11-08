@@ -70,12 +70,11 @@ class InjectorController < RESTController
 
     mongoid_query do
       injector = Injector.find(@params['_id'])
-      injector_name = injector.name
-      # make sure to destroy all the rules
-      injector.rules.destroy_all
+
+      Audit.log :actor => @session[:user][:name], :action => 'injector.destroy', :desc => "Deleted the injector '#{injector.name}'"
+
       injector.destroy
-      Audit.log :actor => @session[:user][:name], :action => 'injector.destroy', :desc => "Deleted the injector '#{injector_name}'"
-      
+
       return ok
     end
   end
@@ -119,7 +118,7 @@ class InjectorController < RESTController
           require_auth_level :sys, :tech
           
           klass = CappedLog.collection_class injector[:_id]
-          logs = klass.all
+          logs = klass.all.order_by([[:_id, :asc]])
           return ok(logs)
 
         when 'POST'
@@ -143,12 +142,8 @@ class InjectorController < RESTController
     mongoid_query do
       injector = Injector.find(@params['_id'])
 
-      # we cannot call delete_all on a capped collection
-      # we must drop it:
-      # http://www.mongodb.org/display/DOCS/Capped+Collections#CappedCollections-UsageandRestrictions
-      db = Mongoid.database
-      logs = db.collection(CappedLog.collection_name(injector[:_id]))
-      logs.drop
+      # we cannot call delete_all on a capped collection, must drop it
+      Mongoid.database.collection(CappedLog.collection_name(injector[:_id])).drop
 
       return ok
     end
@@ -171,6 +166,7 @@ class InjectorController < RESTController
       rule.action = @params['rule']['action']
       rule.action_param = @params['rule']['action_param']
       rule.action_param_name = @params['rule']['action_param_name']
+      rule.scout = @params['rule']['scout']
 
       target = ::Item.find(@params['rule']['target_id'].first)
       return not_found("Target not found") if target.nil?

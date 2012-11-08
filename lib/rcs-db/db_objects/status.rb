@@ -28,13 +28,14 @@ class Status
   field :cpu, type: Integer
   field :disk, type: Integer
   field :type, type: String
+  field :version, type: String
   
   store_in :statuses
 
   class << self
 
     # updates or insert the status of a component
-    def status_update(name, address, status, info, stats, type)
+    def status_update(name, address, status, info, stats, type, version)
 
       #trace :debug, "#{name}, #{address}, #{status}, #{info}, #{stats}"
 
@@ -46,6 +47,7 @@ class Status
       monitor[:disk] = stats[:disk]
       monitor[:time] = Time.now.getutc.to_i
       monitor[:type] = type
+      monitor[:version] = version
 
       # check the low resource conditions
       if (status == 'OK' and (monitor[:disk] <= 15 or monitor[:cpu] >= 85 or monitor[:pcpu] >= 85))
@@ -79,7 +81,7 @@ class Status
         # a component is marked failed after 2 minutes (if not already marked)
         if Time.now.getutc.to_i - m[:time] > 120 and m[:status] != ERROR
           m[:status] = ERROR
-          trace :warn, "Component #{m[:name]} is not responding, marking failed..."
+          trace :warn, "Component #{m[:name]} (#{m[:address]}) is not responding, marking failed..."
           RCS::DB::Audit.log :actor => '<system>', :action => 'alert', :desc => "Component #{m[:name]} is not responding, marking failed..."
           m.info = 'Not sending status update for more than 2 minutes'
           m.save
@@ -97,6 +99,15 @@ class Status
           # notify all that the monitor has changed
           RCS::DB::PushManager.instance.notify('monitor')
         end
+
+        # check worker version
+        if ['worker', 'collector', 'nc'].include? m[:type] and m[:version] != $version
+          m[:status] = ERROR
+          trace :warn, "Component #{m[:name]} has version #{m[:version]}, should be #{$version}"
+          m[:info] = "Component version is #{m[:version]}, should be #{$version}"
+          m.save
+        end
+
       end
     end
   end

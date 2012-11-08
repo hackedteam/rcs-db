@@ -29,12 +29,6 @@ class BuildController < RESTController
 
       trace :info, "Output: #{build.outputs} #{File.size(build.path(build.outputs.first)).to_s_bytes}"
 
-      #if RbConfig::CONFIG['host_os'] =~ /mingw/
-      #  content = File.binread(build.path(build.outputs.first))
-      #  build.clean
-      #  return ok(content, {content_type: 'binary/octet-stream'})
-      #end
-
       return stream_file(build.path(build.outputs.first), proc { build.clean })
     rescue Exception => e
       return server_error(e.message)

@@ -119,7 +119,7 @@ class CoreDeveloper
     resp.kind_of? Net::HTTPSuccess or raise(resp.body)
   end
 
-  def retrieve_factory(ident, show)
+  def retrieve_factory(ident, show, jsonfile)
     raise("you must specify a factory") if ident.nil?
 
     resp = @http.request_get('/factory', {'Cookie' => @cookie})
@@ -134,7 +134,7 @@ class CoreDeveloper
 
     puts "Using factory: #{@factory['ident']} #{@factory['name']}"
 
-	  if show
+    if show
       resp = @http.request_get("/factory/#{@factory['_id']}", {'Cookie' => @cookie})
       resp.kind_of? Net::HTTPSuccess or raise(resp.body)
       factory = JSON.parse(resp.body)
@@ -155,14 +155,26 @@ class CoreDeveloper
       puts
 
       puts "CONFIG JSON:"
-      puts factory['configs'].first['config']
+      configJson=JSON.parse(factory['configs'].first['config'])
+      #puts JSON.pretty_generate(configJson)
+      puts configJson
+    end
+
+    if jsonfile
+      puts "Saving config to: " + jsonfile
+      resp = @http.request_get("/factory/#{@factory['_id']}", {'Cookie' => @cookie})
+      resp.kind_of? Net::HTTPSuccess or raise(resp.body)
+      factory = JSON.parse(resp.body)
+      configJson=JSON.parse(factory['configs'].first['config'])
+
+      File.open(jsonfile, 'w') { |f| f.write(JSON.pretty_generate(configJson)) }
     end
   end
 
   def config(param_file)
     jcontent = File.open(param_file, 'r') {|f| f.read}
 
-    resp = @http.request_post("/factory/add_config", {_id: @factory['_id'], config: jcontent}.to_json, {'Cookie' => @cookie})
+    resp = @http.request_post("/agent/add_config", {_id: @factory['_id'], config: jcontent}.to_json, {'Cookie' => @cookie})
     resp.kind_of? Net::HTTPSuccess or raise(resp.body)
 
     puts "Configuration saved"
@@ -238,7 +250,7 @@ class CoreDeveloper
       c.list if options[:list]
 
       # building options
-      c.retrieve_factory(options[:factory], options[:show_conf]) if options[:factory]
+      c.retrieve_factory(options[:factory], options[:show_conf], options[:json_conf]) if options[:factory]
       c.output = options[:output]
       c.config(options[:config]) if options[:config]
       c.cert = c.upload(options[:cert]) if options[:cert]
@@ -248,11 +260,13 @@ class CoreDeveloper
     rescue Exception => e
       puts "FATAL: #{e.message}"
       puts "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
+      return 1
     ensure
       # clean the session
       c.logout
     end
     
+    return 0
   end
 
 end
@@ -303,10 +317,14 @@ optparse = OptionParser.new do |opts|
   opts.separator ""
   opts.separator "Core building:"
   opts.on( '-f', '--factory IDENT', String, 'factory to be used' ) do |ident|
-    options[:factory] = ident
+    factory="RCS_0000000000"
+    options[:factory] = factory[0..-ident.size-1] + ident
   end
   opts.on( '-S', '--show-conf', 'show the config of the factory' ) do
     options[:show_conf] = true
+  end
+   opts.on( '-j', '--json JSON_FILE', String, 'save the config json in a file' ) do |file|
+    options[:json_conf] = file
   end
   opts.on( '-b', '--build PARAMS_FILE', String, 'build the factory. PARAMS_FILE is a json file with the parameters' ) do |params|
     options[:build] = params
@@ -348,7 +366,9 @@ optparse = OptionParser.new do |opts|
 end
 
 optparse.parse(ARGV)
+pp options
 
 # execute the configurator
-CoreDeveloper.run(options)
-
+r = CoreDeveloper.run(options)
+puts "return #{r}"
+exit r

@@ -1,6 +1,8 @@
 require 'mongoid'
 require_relative '../shard'
 
+require 'rcs-common/keywords'
+
 #module RCS
 #module DB
 
@@ -28,18 +30,20 @@ class Evidence
         field :note, type: String
         field :aid, type: String                      # agent BSON_ID
         field :data, type: Hash
+        field :kw, type: Array, default: []           # keywords for full text search
 
         store_in Evidence.collection_name('#{target}')
 
         after_create :create_callback
         before_destroy :destroy_callback
 
-        index :type
-        index :da
-        index :dr
-        index :aid
-        index :rel
-        index :blo
+        index :type, background: true
+        index :da, background: true
+        index :dr, background: true
+        index :aid, background: true
+        index :rel, background: true
+        index :blo, background: true
+        index :kw, background: true
         shard_key :type, :da, :aid
 
         STAT_EXCLUSION = ['filesystem', 'info', 'command', 'ip']
@@ -98,15 +102,16 @@ class Evidence
     dst.blo = src.blo
     dst.data = src.data.dup
     dst.note = src.note.dup unless src.note.nil?
+    dst.kw = src.kw.dup unless src.kw.nil?
   end
 
-  def self.filter(params)
+  def self.report_filter(params)
 
     filter, filter_hash, target = ::Evidence.common_filter params
     raise "Target not found" if filter.nil?
 
     # copy remaining filtering criteria (if any)
-    filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info', 'command', 'ip'])
+    filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info'])
     filter.each_key do |k|
       filtering = filtering.any_in(k.to_sym => filter[k])
     end
@@ -115,6 +120,23 @@ class Evidence
 
     return query
   end
+
+  def self.report_count(params)
+
+    filter, filter_hash, target = ::Evidence.common_filter params
+    raise "Target not found" if filter.nil?
+
+    # copy remaining filtering criteria (if any)
+    filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info'])
+    filter.each_key do |k|
+      filtering = filtering.any_in(k.to_sym => filter[k])
+    end
+
+    num_evidence = filtering.where(filter_hash).count
+
+    return num_evidence
+  end
+
 
   def self.filtered_count(params)
 
@@ -172,72 +194,46 @@ class Evidence
     filter_hash[date.lte] = filter.delete('to') if filter.has_key? 'to'
 
     # custom filters for info
-    if filter.has_key? 'info'
-      begin
-        key_values = filter.delete('info').split(',')
-        key_values.each do |kv|
-          k, v = kv.split(':')
-          k.downcase!
-          filter_hash["data.#{k}"] = Regexp.new("#{v}", true)
-        end
-      rescue Exception => e
-        trace :error, "Invalid filter for data [#{e.message}], ignoring..."
-      end
-    end
+    parse_info_keywords(filter, filter_hash) if filter.has_key? 'info'
 
     #filter on note
-    filter_hash[:note] = Regexp.new("#{filter.delete('note')}", true) if filter['note']
+    if filter['note']
+      note = filter.delete('note')
+      filter_hash[:note] = Regexp.new("#{note}", Regexp::IGNORECASE)
+      filter_hash[:kw.all] = note.keywords
+    end
 
     return filter, filter_hash, target
   end
 
-  def self.common_mongo_filter(params)
-    filter = {}
-    filter = JSON.parse(params['filter']) if params.has_key? 'filter'
+  def self.parse_info_keywords(filter, filter_hash)
 
-    # target id
-    target_id = filter.delete('target')
+    info = filter.delete('info')
 
-    # default date filtering is last 24 hours
-    filter['from'] = Time.now.to_i - 86400 if filter['from'].nil?
-    filter['to'] = Time.now.to_i if filter['to'].nil?
+    # check if it's in the form of specific field name:
+    #   field1:value1,field2:value2,etc,etc
+    #
+    if /[[:alpha:]]:[[:alpha:]]/ =~ info
+      key_values = info.split(',')
+      key_values.each do |kv|
+        k, v = kv.split(':')
+        k.downcase!
 
-    filter_hash = {}
+        # special case for email (the field is called "rcpt" but presented as "to")
+        k = 'rcpt' if k == 'to'
 
-    # agent filter
-    filter_hash["aid"] = filter.delete('agent') if filter['agent']
-
-    # date filter
-    date = filter.delete('date')
-    date ||= 'da'
-
-    # do not account for filesystem and info evidences
-    filter_hash["type"] = {"$nin" => ['filesystem', 'info', 'command', 'ip']} unless filter['type']
-
-    filter_hash[date] = Hash.new
-    filter_hash[date]["$gte"] = filter.delete('from') if filter.has_key? 'from'
-    filter_hash[date]["$lte"] = filter.delete('to') if filter.has_key? 'to'
-
-    if filter.has_key? 'info'
-      begin
-        key_values = filter.delete('info').split(',')
-        key_values.each do |kv|
-          k, v = kv.split(':')
-          filter_hash["data.#{k}"] = Regexp.new("#{v}", true)
-        end
-      rescue Exception => e
-        trace :error, "Invalid filter for data [#{e.message}], ignoring..."
+        filter_hash["data.#{k}"] = Regexp.new("#{v}", Regexp::IGNORECASE)
+        # add the keyword search to cut the nscanned item
+        filter_hash[:kw.all] ||= v.keywords
       end
+    else
+      # otherwise we use it for full text search with keywords
+      # the search matches if all the keywords are matched inside the evidence
+      filter_hash[:kw.all] = info.keywords
     end
-
-    # remaining filters
-    filter.each_key do |k|
-      filter_hash[k] = {"$in" => filter[k]}
-    end
-
-    return filter, filter_hash, target_id
+  rescue Exception => e
+    trace :error, "Invalid filter for data [#{e.message}], ignoring..."
   end
-
 
   def self.offload_move_evidence(params)
     old_target = ::Item.find(params[:old_target_id])
@@ -290,6 +286,43 @@ class Evidence
     end
 
     trace :info, "Evidence Move: completed for #{agent.name}"
+  end
+
+
+  def self.offload_delete_evidence(params)
+
+    conditions = {}
+
+    target = ::Item.find(params['target'])
+
+    if params['agent']
+      agent = ::Item.find(params['agent'])
+      conditions[:aid] = agent._id.to_s
+    end
+
+    conditions[:rel] = params['rel']
+
+    date = params['date']
+    date ||= 'da'
+    date = date.to_sym
+    conditions[date.gte] = params['from']
+    conditions[date.lte] = params['to']
+
+    trace :info, "Deleting evidence for target #{target.name} #{params}"
+
+    Evidence.collection_class(target._id.to_s).where(conditions).any_in(:rel => params['rel']).destroy_all
+
+    trace :info, "Deleting evidence for target #{target.name} done."
+
+    # recalculate the stats for each agent of this target
+    agents = Item.where(_kind: 'agent').also_in(path: [target._id])
+    agents.each do |a|
+      ::Evidence::TYPES.each do |type|
+        count = Evidence.collection_class(target[:_id]).where({aid: a._id.to_s, type: type}).count
+        a.stat.evidence[type] = count
+      end
+      a.save
+    end
   end
 
 end

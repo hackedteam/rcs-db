@@ -58,8 +58,8 @@ class OperationController < RESTController
         end
       end
 
-      # make item accessible to this user
-      SessionManager.instance.add_single_accessible(@session, item._id)
+      # make item accessible to the users
+      SessionManager.instance.rebuild_all_accessible
 
       Audit.log :actor => @session[:user][:name],
                 :action => "operation.create",

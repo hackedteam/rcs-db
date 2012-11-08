@@ -22,7 +22,10 @@ class ConsoleController < RESTController
     # retrieve the latest console in the directory
     last_console = Dir[Dir.pwd + '/console/rcs-console*.air'].sort.last
 
-    return not_found if last_console.nil?
+    if last_console.nil?
+      trace :info, "No console package found"
+      return not_found
+    end
 
     ver = Regexp.new('.*?(rcs-console-)([0-9]{10})', Regexp::IGNORECASE).match(last_console)
     console_version = ver[2]
@@ -50,6 +53,15 @@ class ConsoleController < RESTController
 
   def show
     file = Dir.pwd + "/console/#{@params['_id']}"
+
+    # complete the request of the client
+    file = File.realdirpath(file)
+
+    # and avoid exiting from it
+    return not_found() unless file.start_with? Dir.pwd + "/console"
+
+    return not_found() unless File.exist? file
+
     return stream_file(file)
   end
 

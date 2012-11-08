@@ -6,10 +6,10 @@ require 'digest/md5'
 
 require 'rcs-common/trace'
 
-require_relative 'speex'
-require_relative 'wave'
-require_relative 'src'
-require_relative 'mp3lame'
+require_relative 'libs/wave'
+require_relative 'libs/SRC/src'
+require_relative 'libs/lame/lame'
+require_relative 'libs/speex/speex'
 
 module RCS
 module Worker
@@ -36,7 +36,6 @@ class Channel
     @start_time = evidence[:data][:start_time]
     @written_samples = 0
     @needs_resampling = @sample_rate
-    #@resampled = false
     @wav_data = Array.new # array of 32 bit float samples
     @status = :open
     trace :debug, "[channel #{to_s}] ceating new channel #{@name} - start_time: #{@start_time} sample_rate: #{@sample_rate}"
@@ -58,12 +57,6 @@ class Channel
   def closed?
     @status == :closed
   end
-
-=begin
-  def resampled?
-    @resampled
-  end
-=end
 
   def needs_resampling?
     @needs_resampling != @sample_rate
@@ -347,7 +340,13 @@ class Call
       # TODO: where do we add the size to the stats? (probably in the same place where we will forward to connectors)
       RCS::Worker::StatsManager.instance.add evidence: 1
 
-      ev.save
+      # keyword full search
+      ev.kw = []
+      ev.kw += peer.keywords
+      ev.kw += program.keywords
+      ev.kw.uniq!
+
+      ev.safely.save!
       ev
     end
   end

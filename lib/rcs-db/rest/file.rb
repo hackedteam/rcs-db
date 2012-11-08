@@ -18,8 +18,7 @@ class FileController < RESTController
     require_auth_level :none
     
     file_name = @params['_id']
-    file_path = Config.instance.temp(file_name)
-    File.unlink file_path
+    FileUtils.rm_rf Config.instance.temp(file_name)
     
     ok
   end

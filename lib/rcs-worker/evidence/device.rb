@@ -7,5 +7,6 @@ module DeviceProcessing
   def type
     :device
   end
+
 end # DeviceProcessing
 end # RCS

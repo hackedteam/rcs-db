@@ -36,7 +36,8 @@ class LicenseManager
   include RCS::Tracer
   include RCS::Crypt
 
-  LICENSE_VERSION = '8.1'
+  LICENSE_VERSION = '8.2'
+
   LICENSE_FILE = 'rcs.lic'
 
   DONT_STEAL_RCS = "Ò€‹›ﬁﬂ‡°·‚æ…¬˚∆˙©ƒ∂ß´®†¨ˆøΩ≈ç√∫˜µ≤¡™£¢∞§¶•ªº"
@@ -73,6 +74,7 @@ class LicenseManager
                :exploits => false,
                :deletion => false,
                :archive => false,
+               :scout => true,
                :collectors => {:collectors => 1, :anonymizers => 0}}
   end
 
@@ -91,7 +93,7 @@ class LicenseManager
     File.open(lic_file, "rb") do |f|
       lic = YAML.load(f.read)
 
-      # check the autenticity of the license
+      # check the authenticity of the license
       unless crypt_check(lic)
         trace :fatal, 'Invalid License File: corrupted integrity check'
         exit!
@@ -224,6 +226,10 @@ class LicenseManager
 
     @limits[:deletion] = limit[:deletion] unless limit[:deletion].nil?
     @limits[:archive] = limit[:archive] unless limit[:archive].nil?
+
+    @limits[:scout] = limit[:scout] unless limit[:scout].nil?
+
+    @limits[:encbits] = limit[:digest_enc]
   end
 
   
@@ -331,6 +337,9 @@ class LicenseManager
 
       when :archive
         return @limits[:archive]
+
+      when :scout
+        return @limits[:scout]
 
       when :shards
         if Shard.count() < @limits[:shards]
@@ -474,6 +483,9 @@ class LicenseManager
 
 
   def crypt_check(hash)
+    # check the date digest (hidden expiration)
+    return false if hash[:digest_seed] and Time.now.to_i > hash[:digest_seed].unpack('I').first
+
     # first check on signature
     content = hash.reject {|k,v| k == :integrity or k == :signature}.to_s
     check = Digest::HMAC.hexdigest(content, "əɹnʇɐuƃıs ɐ ʇou sı sıɥʇ", Digest::SHA2)

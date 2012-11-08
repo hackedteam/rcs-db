@@ -41,6 +41,41 @@ module RCS
       self[:data].merge!(reply)
     end
 
+    def keyword_index
+      self[:kw] = []
+
+      puts self[:data].inspect
+
+      self[:kw] += self[:data]['latitude'].to_s.keywords unless self[:data]['latitude'].nil?
+      self[:kw] += self[:data]['longitude'].to_s.keywords unless self[:data]['longitude'].nil?
+
+      unless self[:data]['address'].nil?
+        self[:data]['address'].each_value do |add|
+          self[:kw] += add.keywords
+        end
+      end
+      unless self[:data][:cell].nil?
+        self[:data][:cell].each_value do |cell|
+          self[:kw] << cell.to_s
+        end
+      end
+      unless self[:data][:wifi].nil?
+        self[:data][:wifi].each do |wifi|
+          self[:kw] += [wifi[:mac].keywords, wifi[:bssid].keywords ].flatten
+        end
+      end
+
+      self[:data].each_value do |value|
+        next unless value.is_a? String
+        self[:kw] += value.keywords
+      end
+
+      self[:kw].uniq!
+
+      puts self[:kw].inspect
+
+    end
+
     def type
       :position
     end

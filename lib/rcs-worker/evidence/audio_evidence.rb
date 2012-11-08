@@ -21,6 +21,10 @@ module AudioEvidence
       ::Item.agents.where({instance: info[:instance]}).first
     end
 
+    def default_keyword_index
+
+    end
+
     def store(agent, target)
       trace :debug, "storage of audio evidence still not implemented!"
     end

@@ -7,11 +7,15 @@ Dir.chdir File.dirname(File.dirname(File.realpath(__FILE__)))
 logs = []
 
 last_log = Dir['log/rcs-db**'].max
-logs << last_log
-logs << File.join('log/err', File.basename(last_log))
+unless last_log.nil?
+  logs << last_log
+  logs << File.join('log/err', File.basename(last_log))
+end
 
 last_log = Dir['log/rcs-worker**'].max
-logs << last_log
-logs << File.join('log/err', File.basename(last_log))
+unless last_log.nil?
+  logs << last_log
+  logs << File.join('log/err', File.basename(last_log))
+end
 
 spawn "bin/baretail.exe " + logs.join(" ")

