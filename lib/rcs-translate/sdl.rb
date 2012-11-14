@@ -15,8 +15,8 @@ class SDL
 
   class << self
 
-    # TODO: put it in the conf file
-    SDL_SERVER = "172.16.42.17:8090"
+    # take the address from the conf file
+    SDL_SERVER = Config.instance.global['SDL_SERVER']
     SDL_URL = "http://#{SDL_SERVER}/lwserver-rest-5.3/v1/lang-pairs/_/sync-translations"
 
     def translate(input_file, output_file)
