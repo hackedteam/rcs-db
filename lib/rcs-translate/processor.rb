@@ -70,6 +70,9 @@ class Processor
     ev[:data] = data
     ev[:kw] += translated_text.keywords
 
+    # make them unique to remove duplicate in case of "no translation"
+    ev[:kw].uniq!
+
     ev.save
 
     trace :info, "Evidence #{ev[:type]} processed in #{Time.now - start} seconds - text #{size.to_s_bytes} -> tr #{data[:tr].size.to_s_bytes}"
@@ -92,14 +95,21 @@ class Processor
         content = evidence[:data]['content']
       when 'message'
         if evidence[:data][:type] == 'mail'
-          file = RCS::DB::GridFS.get evidence[:data]['_grid'], target
-          content = file.read
+          # EML format not supported yet...
+          #file = RCS::DB::GridFS.get evidence[:data]['_grid'], target
+          #content = file.read
+
+          # take the parsed body
+          content = evidence[:data]['body']
         else
+          # sms and mms
           content = evidence[:data]['content']
         end
       when 'file'
-        file = RCS::DB::GridFS.get evidence[:data]['_grid'], target
-        content = file.read
+        # not supported yet...
+        #file = RCS::DB::GridFS.get evidence[:data]['_grid'], target
+        #content = file.read
+        raise 'unsupported format'
       when 'screenshot'
         content = evidence[:data]['body']
       else
