@@ -156,6 +156,8 @@ Section Uninstall
   ReadRegStr $INSTDIR HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCS" "InstDir"
 
   RMDir /r "$INSTDIR\DB\ocr"
+  RMDir /r "$INSTDIR\DB\lib\rcs-ocr-release"
+  Delete "$INSTDIR\DB\lib\rcs-ocr.rb"
 
   SetDetailsPrint "both"
   DetailPrint "done"
