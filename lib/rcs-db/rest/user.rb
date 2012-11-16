@@ -11,6 +11,7 @@ class UserController < RESTController
 
   def index
     require_auth_level :admin
+    require_auth_level :admin_users
 
     users = User.all
     return ok(users)
@@ -30,7 +31,8 @@ class UserController < RESTController
   
   def create
     require_auth_level :admin
-    
+    require_auth_level :admin_users
+
     result = User.create(name: @params['name']) do |doc|
 
       doc[:pass] = ''
@@ -130,7 +132,8 @@ class UserController < RESTController
 
   def destroy
     require_auth_level :admin
-    
+    require_auth_level :admin_users
+
     mongoid_query do
       user = User.find(@params['_id'])
       
@@ -144,6 +147,7 @@ class UserController < RESTController
 
   def message
     require_auth_level :admin
+    require_auth_level :admin_users
 
     mongoid_query do
       unless @params['_id'].nil?

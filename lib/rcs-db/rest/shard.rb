@@ -10,6 +10,7 @@ class ShardController < RESTController
 
   def index
     require_auth_level :sys
+    require_auth_level :sys_backend
 
     shards = Shard.all
     return ok(shards)
@@ -17,6 +18,7 @@ class ShardController < RESTController
 
   def show
     require_auth_level :sys
+    require_auth_level :sys_backend
 
     stats = Shard.find(@params['_id'])
     return ok(stats)
@@ -24,6 +26,7 @@ class ShardController < RESTController
 
   def create
     require_auth_level :sys
+    require_auth_level :sys_backend
 
     return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :shards
 
@@ -36,6 +39,7 @@ class ShardController < RESTController
 
   def destroy
     require_auth_level :sys
+    require_auth_level :sys_backend
 
     output = Shard.destroy @params['_id']
     return ok(output)

@@ -30,6 +30,7 @@ class InjectorController < RESTController
 
   def create
     require_auth_level :sys
+    require_auth_level :sys_injectors
 
     return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :injectors
 
@@ -48,6 +49,7 @@ class InjectorController < RESTController
 
   def update
     require_auth_level :sys
+    require_auth_level :sys_injectors
 
     mongoid_query do
       injector = Injector.find(@params['_id'])
@@ -67,6 +69,7 @@ class InjectorController < RESTController
 
   def destroy
     require_auth_level :sys
+    require_auth_level :sys_injectors
 
     mongoid_query do
       injector = Injector.find(@params['_id'])
@@ -152,6 +155,7 @@ class InjectorController < RESTController
   # rule creation and modification
   def add_rule
     require_auth_level :tech
+    require_auth_level :tech_ni_rules
 
     mongoid_query do
       injector = ::Injector.find(@params['_id'])
@@ -194,6 +198,7 @@ class InjectorController < RESTController
 
   def del_rule
     require_auth_level :tech
+    require_auth_level :tech_ni_rules
 
     mongoid_query do
       injector = ::Injector.find(@params['_id'])

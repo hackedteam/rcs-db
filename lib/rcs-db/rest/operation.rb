@@ -36,7 +36,8 @@ class OperationController < RESTController
   
   def create
     require_auth_level :admin
-    
+    require_auth_level :admin_operations
+
     mongoid_query do
       item = Item.create(name: @params['name']) do |doc|
         doc[:_kind] = :operation
@@ -72,7 +73,8 @@ class OperationController < RESTController
   
   def update
     require_auth_level :admin
-    
+    require_auth_level :admin_operations
+
     updatable_fields = ['name', 'desc', 'status', 'contact']
 
     mongoid_query do
@@ -106,6 +108,7 @@ class OperationController < RESTController
   
   def destroy
     require_auth_level :admin
+    require_auth_level :admin_operations
 
     mongoid_query do
       item = Item.operations.any_in(_id: @session[:accessible]).find(@params['_id'])

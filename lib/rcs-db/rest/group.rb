@@ -18,6 +18,7 @@ class GroupController < RESTController
 
   def show
     require_auth_level :admin
+    require_auth_level :admin_users
 
     mongoid_query do
       group = Group.find(@params['_id'])
@@ -27,7 +28,8 @@ class GroupController < RESTController
   
   def create
     require_auth_level :admin
-    
+    require_auth_level :admin_users
+
     result = Group.create(name: @params['name'])
     return conflict(result.errors[:name]) unless result.persisted?
 
@@ -38,6 +40,7 @@ class GroupController < RESTController
   
   def update
     require_auth_level :admin
+    require_auth_level :admin_users
 
     mongoid_query do
       group = Group.find(@params['_id'])
@@ -57,6 +60,7 @@ class GroupController < RESTController
   
   def destroy
     require_auth_level :admin
+    require_auth_level :admin_users
 
     mongoid_query do
       group = Group.find(@params['_id'])
@@ -70,6 +74,7 @@ class GroupController < RESTController
 
   def add_user
     require_auth_level :admin
+    require_auth_level :admin_users
 
     mongoid_query do
       group = Group.find(@params['_id'])
@@ -88,7 +93,8 @@ class GroupController < RESTController
   
   def del_user
     require_auth_level :admin
-    
+    require_auth_level :admin_users
+
     mongoid_query do
       group = Group.find(@params['_id'])
       user = User.find(@params['user']['_id'])
@@ -106,6 +112,7 @@ class GroupController < RESTController
 
   def add_operation
     require_auth_level :admin
+    require_auth_level :admin_users
 
     mongoid_query do
       group = Group.find(@params['_id'])
@@ -124,6 +131,7 @@ class GroupController < RESTController
 
   def del_operation
     require_auth_level :admin
+    require_auth_level :admin_users
 
     mongoid_query do
       group = Group.find(@params['_id'])
@@ -142,7 +150,8 @@ class GroupController < RESTController
 
   def alert
     require_auth_level :admin
-    
+    require_auth_level :admin_users
+
     mongoid_query do
       
       groups = Group.all

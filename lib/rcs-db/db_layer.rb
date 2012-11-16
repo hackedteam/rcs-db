@@ -179,7 +179,7 @@ class DB
         u[:pass] = u.create_password(pass)
         u[:enabled] = true
         u[:desc] = 'Default admin user'
-        u[:privs] = ['ADMIN', 'SYS', 'TECH', 'VIEW']
+        u[:privs] = ::User::PRIVS
         u[:locale] = 'en_US'
         u[:timezone] = 0
       end
