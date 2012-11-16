@@ -373,7 +373,7 @@ class AgentController < RESTController
     if parent[:_kind] == 'target'
       agent.path = factory.path
     elsif parent[:_kind] == 'operation'
-      target = Item.create(name: factory.name) do |doc|
+      target = Item.create(name: agent.name) do |doc|
         doc[:_kind] = :target
         doc[:path] = factory.path
         doc.stat = ::Stat.new

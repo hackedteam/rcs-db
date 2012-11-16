@@ -26,7 +26,6 @@ class Processor
     loop do
       # get the first entry from the queue and mark it as processed to avoid
       # conflicts with multiple processors
-      #if entry = coll.find_and_modify({query: {flag: TransQueue::QUEUED}, update: {"$set" => {flag: TransQueue::PROCESSED}}})
       if entry = coll.find_and_modify({query: {flag: TransQueue::QUEUED}, update: {"$set" => {flag: TransQueue::PROCESSED}}})
         process entry
       else
