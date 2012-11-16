@@ -58,7 +58,7 @@ class Application
     begin
       build = File.read(Dir.pwd + '/config/VERSION_BUILD')
       $version = File.read(Dir.pwd + '/config/VERSION')
-      trace :fatal, "Starting the OCR Processor #{$version} (#{build})..."
+      trace :fatal, "Starting the TRANSLATE Processor #{$version} (#{build})..."
 
       # config file parsing
       return 1 unless RCS::DB::Config.instance.load_from_file
