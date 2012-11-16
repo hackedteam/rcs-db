@@ -378,13 +378,13 @@ class AgentController < RESTController
         doc[:path] = factory.path
         doc.stat = ::Stat.new
         doc[:status] = :open
-        doc[:desc] = "Created automatically on first sync from: #{factory.name}"
+        doc[:desc] = "Created automatically on first sync from: #{agent.name}"
       end
 
       # make the target accessible to the users
       SessionManager.instance.add_accessible_item(factory, target)
 
-      agent.path = factory.path + target._id
+      agent.path = factory.path << target._id
     end
 
     # specialize it with the platform and the unique instance
