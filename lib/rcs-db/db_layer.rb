@@ -281,6 +281,20 @@ class DB
     end
   end
 
+  def migrate_users_to_ext_privs
+    ::User.where({:ext_privs.ne => true}).each do |user|
+      trace :info, "Migrating user: #{user.name} to the new privs schema..."
+      privs = user.privs
+      privs += User::PRIVS.select{|p| p['ADMIN_']} if privs.include? 'ADMIN'
+      privs += User::PRIVS.select{|p| p['SYS_']} if privs.include? 'SYS'
+      privs += User::PRIVS.select{|p| p['TECH_']} if privs.include? 'TECH'
+      privs += User::PRIVS.select{|p| p['VIEW_']} if privs.include? 'VIEW'
+      user.privs = privs
+      user.ext_privs = true
+      user.save
+    end
+  end
+
 end
 
 end #DB::

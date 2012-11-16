@@ -5,10 +5,6 @@ TODO 8.3.0:
 
     failed backup (mongodump 2.2 error look for fix from mongo)
 
-    migrate user permissions
-
-    license for upload & execute
-
     target profiles
 
     ocr & translate in the license

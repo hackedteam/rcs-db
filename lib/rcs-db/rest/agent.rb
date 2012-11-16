@@ -119,24 +119,30 @@ class AgentController < RESTController
     require_auth_level :tech
     require_auth_level :tech_factories
 
-    # to create a target, we need to owning operation
+    puts @params.inspect
+
+    # need a path to put the factory
     return bad_request('INVALID_OPERATION') unless @params.has_key? 'operation'
-    return bad_request('INVALID_TARGET') unless @params.has_key? 'target'
 
     mongoid_query do
 
       operation = ::Item.operations.find(@params['operation'])
       return bad_request('INVALID_OPERATION') if operation.nil?
 
-      target = ::Item.targets.find(@params['target'])
-      return bad_request('INVALID_TARGET') if target.nil?
+      if @params['target'].nil?
+        target = nil
+      else
+        target = ::Item.targets.find(@params['target'])
+        return bad_request('INVALID_TARGET') if target.nil?
+      end
 
       # used to generate log/conf keys and seed
       alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-'
 
       item = Item.create!(desc: @params['desc']) do |doc|
         doc[:_kind] = :factory
-        doc[:path] = [operation._id, target._id]
+        doc[:path] = [operation._id]
+        doc[:path] << target._id unless target.nil?
         doc[:status] = :open
         doc[:type] = @params['type']
         doc[:ident] = get_new_ident
@@ -161,7 +167,7 @@ class AgentController < RESTController
       Audit.log :actor => @session[:user][:name],
                 :action => "factory.create",
                 :operation_name => operation['name'],
-                :target_name => target['name'],
+                :target_name => target ? target['name'] : '',
                 :agent_name => item['name'],
                 :desc => "Created factory '#{item['name']}'"
 

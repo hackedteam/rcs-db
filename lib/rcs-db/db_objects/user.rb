@@ -44,6 +44,8 @@ class User
   field :desc, type: String
   field :contact, type: String
   field :privs, type: Array
+  # TODO: remove in 8.4
+  field :ext_privs, type: Boolean
   field :enabled, type: Boolean
   field :locale, type: String
   field :timezone, type: Integer

@@ -36,7 +36,7 @@ class LicenseManager
   include RCS::Tracer
   include RCS::Crypt
 
-  LICENSE_VERSION = '8.2'
+  LICENSE_VERSION = '8.3'
 
   LICENSE_FILE = 'rcs.lic'
 
@@ -75,6 +75,8 @@ class LicenseManager
                :deletion => false,
                :archive => false,
                :scout => true,
+               :ocr => true,
+               :translate => false,
                :collectors => {:collectors => 1, :anonymizers => 0}}
   end
 
@@ -230,6 +232,9 @@ class LicenseManager
     @limits[:scout] = limit[:scout] unless limit[:scout].nil?
 
     @limits[:encbits] = limit[:digest_enc]
+
+    @limits[:ocr] = limit[:ocr]
+    @limits[:translate] = limit[:translate]
   end
 
   

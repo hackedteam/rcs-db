@@ -1,6 +1,6 @@
 ---
 :serial: 'off'
-:version: '8.2'
+:version: '8.3'
 :type: reusable
 :expiry: '2014-01-01 00:00:00 UTC'
 :maintenance: '2013-01-01 00:00:00 UTC'
@@ -51,12 +51,12 @@
 :archive: false
 :scout: false
 :digest: !binary |-
-  YzhkZDNmYmFmODU5ZjU3MWI2MTNiNzg2ZDNkNDJmYjA0NGRiMGVmNQ==
+  YWJmODFjMWQ5YWI4NzAzNDFhZmRmYjBiN2YxMzUxNmZkYmY0YjlmYw==
 :check: LOuWAplu
 :signature: !binary |-
-  NzIwZWJjOWQ4ZjIzM2NkYmY4NGFkN2YzNzViOWI3Y2QwNzdkYjhmYjlhMGNj
-  NGIzMTgzNmUxNTliOWUzODE3ZQ==
+  NmI4MzViYjg5N2FmZjRiMzY2OTMyMzhmZGYxN2MxZTY2MmVkNjRiOGIzN2Jl
+  YjkzOTVlOGVkOGQyZWFlODZjMg==
 :integrity: !binary |-
-  YTczYTAzZmNiOGU0YjRlZTE5MmRiZjlkMTFjZjc0N2U2MzE5ZjZmMGJjMDJm
-  MDVjNGY3MWIwNWIwNzQ5YjBmMjg1N2EwMTkzZWEyMTdkYTIyZDMxZmFlMDJl
-  YjY1NWYy
+  YTMzOTEyNWMxOGNlMzA0YTdhNDFkZDA0ODI5ODc3ZTUwZDRlMDZkMTY3N2Nj
+  Y2Y3NTQyY2ZmMjFkZDAzZTk1ZDVlMWU3MWZlMmNkNjIzM2IzN2VkODAxNGUy
+  NTBmYWUz

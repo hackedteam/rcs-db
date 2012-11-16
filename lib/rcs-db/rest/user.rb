@@ -43,6 +43,7 @@ class UserController < RESTController
       doc[:desc] = @params['desc']
       doc[:contact] = @params['contact']
       doc[:privs] = @params['privs']
+      doc[:ext_privs] = true
       doc[:enabled] = @params['enabled']
       doc[:locale] = @params['locale']
       doc[:timezone] = @params['timezone']
