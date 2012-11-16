@@ -60,19 +60,6 @@ class Worker
     
   end
 
-  def self.close_recording_calls
-    begin
-      trace :info, "Checking for pending calls..."
-      # close recording calls for all targets
-      targets = Item.targets
-      targets.each do |target|
-        ::Evidence.collection_class(target[:_id].to_s).where({"type" => :call, "data.status" => :recording}).update_all("data.status" => :completed)
-      end
-    rescue Exception => e
-      trace :error, "Cannot process pending calls: #{e.message}"
-    end
-  end
-
 end
 
 class Application
@@ -117,8 +104,8 @@ class Application
         sleep 5
       end
 
-      # close any pending call
-      #Worker.close_recording_calls  # (too slow)
+      # load the license from the db (saved by db)
+      $license = RCS::DB::LicenseManager.instance.load_from_db
 
       # do the dirty job!
       Worker.new.run

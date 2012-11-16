@@ -180,10 +180,14 @@ class InstanceWorker
                   RCS::DB::Connectors.new_evidence(evidence) unless evidence.nil?
 
                   # add to the ocr processor queue
-                  OCRQueue.add(@target._id, evidence._id) if evidence and evidence.type == 'screenshot'
+                  if $license['ocr']
+                    OCRQueue.add(@target._id, evidence._id) if evidence and evidence.type == 'screenshot'
+                  end
 
                   # add to the translation queue
-                  TransQueue.add(@target._id, evidence._id) if evidence and ['keylog', 'chat', 'clipboard', 'message'].include? evidence.type
+                  if $license['translate']
+                    TransQueue.add(@target._id, evidence._id) if evidence and ['keylog', 'chat', 'clipboard', 'message'].include? evidence.type
+                  end
                 end
 
               rescue InvalidAgentTarget => e

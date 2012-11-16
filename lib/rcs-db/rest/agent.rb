@@ -119,8 +119,6 @@ class AgentController < RESTController
     require_auth_level :tech
     require_auth_level :tech_factories
 
-    puts @params.inspect
-
     # need a path to put the factory
     return bad_request('INVALID_OPERATION') unless @params.has_key? 'operation'
 

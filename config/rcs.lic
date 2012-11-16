@@ -50,13 +50,15 @@
 :deletion: true
 :archive: false
 :scout: false
+:ocr: true
+:translate: true
 :digest: !binary |-
-  YWJmODFjMWQ5YWI4NzAzNDFhZmRmYjBiN2YxMzUxNmZkYmY0YjlmYw==
+  MDU0OTZlODU5NDg2Mzk2MDExMzY4NDM5OTJmNDA2MGE2NDM4YzVlZA==
 :check: LOuWAplu
 :signature: !binary |-
-  NmI4MzViYjg5N2FmZjRiMzY2OTMyMzhmZGYxN2MxZTY2MmVkNjRiOGIzN2Jl
-  YjkzOTVlOGVkOGQyZWFlODZjMg==
+  M2I5ZmVkYzRjMTVjMDMzMzRiZjBmNjBhMGRjZjk4ZDc4NDIxMzNjNzlhZThi
+  MDc5MTcyNzRiNmRiNjZmYzBkZQ==
 :integrity: !binary |-
-  YTMzOTEyNWMxOGNlMzA0YTdhNDFkZDA0ODI5ODc3ZTUwZDRlMDZkMTY3N2Nj
-  Y2Y3NTQyY2ZmMjFkZDAzZTk1ZDVlMWU3MWZlMmNkNjIzM2IzN2VkODAxNGUy
-  NTBmYWUz
+  ZGE5ZmM0ODEzMTNmYWExZDc5NzQ5MGM0Y2Y3YzA3N2ZhMzViNDA3MDM0YmVl
+  NjA3MzYzMjBiODEyZjg1M2YzM2QwMDliYjRjNzQyMDI2MTc0ZTQxMDA1Njcw
+  YTI4ZDkw

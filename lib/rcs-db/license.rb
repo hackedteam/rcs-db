@@ -356,12 +356,24 @@ class LicenseManager
     return false
   end
 
+  def store_in_db
+    db = DB.instance.new_connection("rcs")
+    db['license'].update({}, @limits, {:upsert  => true})
+  end
+
+  def load_from_db
+    db = DB.instance.new_connection("rcs")
+    db['license'].find({}).first
+  end
 
   def periodic_check
     begin
 
       # periodically check for license file
       load_license(true)
+
+      # add it to the database so it is accessible to all the components (other than db)
+      store_in_db
 
       # check the consistency of the database (if someone tries to tamper it)
       if ::User.count(conditions: {enabled: true}) > @limits[:users]

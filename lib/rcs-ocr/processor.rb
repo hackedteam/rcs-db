@@ -78,7 +78,9 @@ class Processor
     trace :info, "Evidence processed in #{Time.now - start} seconds - image #{size.to_s_bytes} -> text #{data[:body].size.to_s_bytes}"
 
     # add to the translation queue
-    TransQueue.add(entry['target_id'], ev._id)
+    if $license['translate']
+      TransQueue.add(entry['target_id'], ev._id)
+    end
 
   rescue Exception => e
     trace :error, "Cannot process evidence: #{e.message}"
