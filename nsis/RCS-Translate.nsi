@@ -71,6 +71,8 @@ Section "Install Section" SecInstall
   DetailPrint "Stopping RCS Translate..."
   SimpleSC::StopService "RCSTranslate" 1
 
+  !cd '..'
+
   SetOutPath "$INSTDIR\DB\lib"
   File "lib\rcs-translate.rb"
 
