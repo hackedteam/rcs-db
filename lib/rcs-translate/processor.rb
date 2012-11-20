@@ -89,6 +89,8 @@ class Processor
   def self.dump_to_file(target, evidence, file)
     content = ''
 
+    trace :debug, "Extracting evidence #{evidence[:type]} to #{file}"
+
     case evidence[:type]
       when 'keylog'
         content = evidence[:data]['content']
@@ -119,7 +121,9 @@ class Processor
         raise 'unknown format'
     end
 
-    File.open(file, 'w') {|f| f.write content} if content
+    raise "no content" unless content
+
+    File.open(file, 'w') {|f| f.write content}
   end
 
 end
