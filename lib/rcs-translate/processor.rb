@@ -55,10 +55,14 @@ class Processor
       raise "unable to process"
     end
 
-    translated_text = File.open(output, 'r') {|f| f.read}
-
     FileUtils.rm_rf temp
-    FileUtils.rm_rf output
+
+    if File.exist?(output)
+      translated_text = File.open(output, 'r') {|f| f.read}
+      FileUtils.rm_rf output
+    else
+      raise "no output file"
+    end
 
     # take a copy of evidence data (we need to do this to trigger the mongoid save)
     data = ev[:data].dup

@@ -15,13 +15,14 @@ class SDL
 
   class << self
 
-    # take the address from the conf file
-    SDL_SERVER = RCS::DB::Config.instance.global['SDL_SERVER']
-    SDL_URL = "http://#{SDL_SERVER}/lwserver-rest-5.3/v1/lang-pairs/_/sync-translations"
-
     def translate(input_file, output_file)
+
+      # take the address from the conf file
+      sdl_server = RCS::DB::Config.instance.global['SDL_SERVER']
+      sdl_url = "http://#{sdl_server}/lwserver-rest-5.3/v1/lang-pairs/_/sync-translations"
+
       # send the request to the SDL server
-      response = RestClient.post SDL_URL, {:target_lang_id => 'eng',
+      response = RestClient.post sdl_url, {:target_lang_id => 'eng',
                                            :source_document => File.new(input_file, 'rb'),
                                            :multipart => true}
       # something went wrong
@@ -32,7 +33,8 @@ class SDL
 
       return true
     rescue Exception => e
-      trace :debug, "Error with SDL server: #{e.message}"
+      trace :error, "Error with SDL server: #{e.message}"
+      trace :debug, "EXCEPTION: #{e.backtrace.join("\n")}"
       return false
     end
 
