@@ -7,6 +7,26 @@ TODO 8.3.0:
 
     target profiles
 
+    entities:
+      - manual (confirmed)
+      - automatic (confirmed / unconfirmed)
+      - ghost (not shown)
+
+    entities type:
+      - person
+        - personal identification (name, birth, others)
+        - photos
+        - locations
+        - accounts (type, handle, password)
+
+      - location
+        - address (lat, long, radius)
+
+    flows:
+      - message
+      - call
+
+
 TODO FUTURE:
 
     differentiate between input/output connectors:

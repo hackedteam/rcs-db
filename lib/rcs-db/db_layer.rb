@@ -288,7 +288,7 @@ class DB
       privs += User::PRIVS.select{|p| p['ADMIN_']} if privs.include? 'ADMIN'
       privs += User::PRIVS.select{|p| p['SYS_']} if privs.include? 'SYS'
       privs += User::PRIVS.select{|p| p['TECH_']} if privs.include? 'TECH'
-      privs += User::PRIVS.select{|p| p['VIEW_']} if privs.include? 'VIEW'
+      privs += User::PRIVS.select{|p| p['VIEW_'] and not p['VIEW_DELETE']} if privs.include? 'VIEW'
       user.privs = privs
       user.ext_privs = true
       user.save
