@@ -304,7 +304,7 @@ class BuildWindows < Build
 
       patch_file(:file => silent_file) do |content|
         begin
-          offset = content.index("\xef\xbe\xad\xde")
+          offset = content.index("\xef\xbe\xad\xde".force_encoding('ASCII-8BIT'))
           raise "offset is nil" if offset.nil?
           content.binary_patch_at_offset offset, cooked
         rescue Exception => e
