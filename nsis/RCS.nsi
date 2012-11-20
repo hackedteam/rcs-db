@@ -277,9 +277,12 @@ Section "Install Section" SecInstall
     File "config\export.zip"
     File "config\logo.png"
     File "config\blacklist"
-    File "config\certs\windows.pfx"
     File "config\VERSION_BUILD"
     File "config\VERSION"
+
+    SetOutPath "$INSTDIR\DB\config\certs"
+    File "config\certs\windows.pfx"
+
     SetDetailsPrint "both"
     DetailPrint "done"
 
