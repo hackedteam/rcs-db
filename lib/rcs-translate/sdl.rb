@@ -32,6 +32,9 @@ class SDL
 
       #trace :debug, "RESPONSE: #{response.body}"
 
+      # fix the HTML tags
+      fix_html_entities(content)
+
       # write the result to the output file
       File.open(output_file, 'w') {|f| f.write response.body}
 
@@ -39,6 +42,13 @@ class SDL
     rescue Exception => e
       trace :error, "Error with SDL server: #{e.message} | #{e.backtrace.first}"
       return false
+    end
+
+    def fix_html_entities(content)
+      # for some reason SDL output changes <html> to < html >
+      # so we have to fix it by removing the spaces
+      content.gsub!("< ", "<")
+      content.gsub!(" >", ">")
     end
 
   end
