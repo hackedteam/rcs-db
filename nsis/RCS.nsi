@@ -407,6 +407,7 @@ Section "Install Section" SecInstall
       FileClose $4
     ${Else}
       nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --migrate-mongos22 --log"
+      nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --sign-pass password"
     ${EndIf}
     
     SetDetailsPrint "both"
