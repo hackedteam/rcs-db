@@ -33,7 +33,7 @@ class SDL
       #trace :debug, "RESPONSE: #{response.body}"
 
       # fix the HTML tags
-      fix_html_entities(content)
+      fix_html_entities(response.body)
 
       # write the result to the output file
       File.open(output_file, 'w') {|f| f.write response.body}

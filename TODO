@@ -5,6 +5,10 @@ TODO 8.3.0:
 
     failed backup (mongodump 2.2 error look for fix from mongo)
 
+    resolve position!!!
+
+    stop translate service during upgrade NSIS
+
     target profiles
 
     entities:
