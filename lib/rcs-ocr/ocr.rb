@@ -75,7 +75,7 @@ class Application
       end
 
       # load the license from the db (saved by db)
-      #$license = RCS::DB::LicenseManager.instance.load_from_db
+      $license = RCS::DB::LicenseManager.instance.load_from_db
 
       # the infinite processing loop
       Processor.run
