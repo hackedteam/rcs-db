@@ -79,6 +79,12 @@ Section "Install Section" SecInstall
   SetOutPath "$INSTDIR\DB\lib\rcs-translate-release"
   File /r "lib\rcs-translate-release\*.*"
 
+  SetOutPath "$INSTDIR\DB\lib\rcs-ocr-release"
+  File /r "lib\rcs-ocr-release\*.*"
+  
+  SetOutPath "$INSTDIR\DB\lib\rcs-worker-release"
+  File "lib\rcs-worker-release\instance_worker.rb"
+
   SetOutPath "$INSTDIR\DB\bin"
   File /r "bin\rcs-translate"
 
