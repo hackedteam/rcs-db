@@ -74,7 +74,7 @@ class PositionResolver
       # Gears API: http://code.google.com/apis/gears/geolocation_network_protocol.html
       # Gears Wiki: http://code.google.com/p/gears/wiki/GeolocationAPI
       Timeout::timeout(5) do
-        response = Frontend.proxy('POST', 'www.google.com', '/loc/json', request.to_json)
+        response = Frontend.proxy('POST', 'http', 'www.google.com', '/loc/json', request.to_json)
         response.kind_of? Net::HTTPSuccess or raise(response.body)
         resp = JSON.parse(response.body)
         resp['location'] or raise("invalid response: #{resp}")
@@ -83,7 +83,7 @@ class PositionResolver
     
     def get_geoip(ip)
       Timeout::timeout(5) do
-        response = Frontend.proxy('GET', 'geoiptool.com', "/webapi.php?type=1&IP=#{ip}")
+        response = Frontend.proxy('GET', 'http', 'geoiptool.com', "/webapi.php?type=1&IP=#{ip}")
         response.kind_of? Net::HTTPSuccess or raise(response.body)
         resp = response.body.match /onLoad=.crearmapa([^)]*)/
         coords = resp.to_s.split('"')
