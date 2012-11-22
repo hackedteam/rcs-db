@@ -38,20 +38,20 @@ class Frontend
     return true
   end
 
-  def self.proxy(method, host, url, content = nil, headers = {})
+  def self.proxy(method, proto, host, url, content = nil, headers = {})
     begin
       raise "no collector found" if ::Status.where({type: 'collector'}).any_in(status: [::Status::OK, ::Status::WARN]).count == 0
       # request to one of the collectors
       collector = ::Status.where({type: 'collector'}).any_in(status: [::Status::OK, ::Status::WARN]).sample
 
-      trace :debug, "Frontend: Proxying #{host} #{url} to #{collector.name}"
+      trace :debug, "Frontend: Proxying #{method} #{proto} #{host} #{url} to #{collector.name}"
 
       sig = ::Signature.where({scope: 'server'}).first
       headers['X-Auth-Frontend'] = sig[:value]
 
       # send the push request
       http = Net::HTTP.new(collector.address, 80)
-      http.send_request('PROXY', "/#{method}/#{host}#{url}", content, headers)
+      http.send_request('PROXY', "/#{method}/#{proto}/#{host}#{url}", content, headers)
 
     rescue Exception => e
       trace :error, "Frontend Collector PROXY: #{e.message}"
