@@ -53,7 +53,7 @@ class PositionResolver
 
         elsif request['gpsPosition']
           # GPS to address
-          location = get_google_geocoding(request[:gpsPosition])
+          location = get_google_geocoding(request['gpsPosition'])
         elsif request['wifiAccessPoints'] or request['cellTowers']
           # wireless to GPS
           location = get_google_geoposition(request)
@@ -76,6 +76,7 @@ class PositionResolver
         return location
       rescue Exception => e
         trace :warn, "Error retrieving location: #{e.message}"
+        trace :debug, "#{e.backtrace.join("\n")}"
         return {'location' => {}, 'address' => {}}
       end
     end
