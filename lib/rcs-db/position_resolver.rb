@@ -40,22 +40,32 @@ class PositionResolver
 
         location = {}
 
-        if request['ip_address']
-          ip = request['ip_address']['ipv4']
+        if request['ipAddress']
+          ip = request['ipAddress']['ipv4']
+
           # check if it's a valid ip address
-          if /(?:[0-9]{1,3}\.){3}[0-9]{1,3}/.match(ip).nil? or private_address?(ip)
-            return {'location' => {}, 'address' => {}}
-          end
+          return {'location' => {}, 'address' => {}} if /(?:[0-9]{1,3}\.){3}[0-9]{1,3}/.match(ip).nil? or private_address?(ip)
+
+          # IP to GPS
           location = get_geoip(ip)
-        elsif request['location'] or request['wifi_towers'] or request['cell_towers']
-          common = {request_address: true, address_language: 'en_US', version: '1.1.0', host: 'maps.google.com'}
-          request.merge! common
-          location = get_google(request)
+          # GPS to address
+          location.merge! get_google_geocoding(location)
+
+        elsif request['gpsPosition']
+          # GPS to address
+          location = get_google_geocoding(request[:gpsPosition])
+        elsif request['wifiAccessPoints'] or request['cellTowers']
+          # wireless to GPS
+          location = get_google_geoposition(request)
 
           # avoid too large ranges, usually incorrect positioning
-          if not location['accuracy'].nil? and location['accuracy'] > 10000
+          if not location['accuracy'].nil? and location['accuracy'] > 15000
             raise "not enough accuracy: #{location.inspect}"
           end
+
+          # GPS to address
+          location.merge! get_google_geocoding(location)
+
         else
           raise "Don't know what to search for"
         end
@@ -70,25 +80,39 @@ class PositionResolver
       end
     end
 
-    def get_google(request)
-      # Gears API: http://code.google.com/apis/gears/geolocation_network_protocol.html
-      # Gears Wiki: http://code.google.com/p/gears/wiki/GeolocationAPI
+    def get_google_geoposition(request)
+      # https://developers.google.com/maps/documentation/business/geolocation/
+      # The api-key is linked to rcs.devel.map@gmail.com / rcs-devel0
+      #
+      api_key = 'AIzaSyAmG3O2wuA9Hj2L5an-ofRndUwVSrqElLM'
       Timeout::timeout(5) do
-        response = Frontend.proxy('POST', 'www.google.com', '/loc/json', request.to_json)
+        response = Frontend.proxy('POST', 'https', 'www.googleapis.com', "/geolocation/v1/geolocate?key=#{api_key}", request.to_json, {"Content-Type" => "application/json"})
         response.kind_of? Net::HTTPSuccess or raise(response.body)
         resp = JSON.parse(response.body)
-        resp['location'] or raise("invalid response: #{resp}")
+        raise('invalid response') unless resp['location']
+        {'latitude' => resp['location']['lat'], 'longitude' => resp['location']['lng'], 'accuracy' => resp['accuracy']}
       end
     end
-    
+
+    def get_google_geocoding(request)
+      # https://developers.google.com/maps/documentation/geocoding/#ReverseGeocoding
+      Timeout::timeout(5) do
+        response = Frontend.proxy('GET', 'http', 'maps.googleapis.com', "/maps/api/geocode/json?latlng=#{request['latitude']},#{request['longitude']}&sensor=false")
+        response.kind_of? Net::HTTPSuccess or raise(response.body)
+        resp = JSON.parse(response.body)
+        raise('invalid response') unless resp['results']
+        {'address' => {'text' => resp['results'].first['formatted_address']}}
+      end
+    end
+
     def get_geoip(ip)
       Timeout::timeout(5) do
-        response = Frontend.proxy('GET', 'geoiptool.com', "/webapi.php?type=1&IP=#{ip}")
+        response = Frontend.proxy('GET', 'http', 'geoiptool.com', "/webapi.php?type=1&IP=#{ip}")
         response.kind_of? Net::HTTPSuccess or raise(response.body)
         resp = response.body.match /onLoad=.crearmapa([^)]*)/
         coords = resp.to_s.split('"')
         raise('not found') if (coords[3] == '' and coords[1] == '') or coords[3].nil? or coords[1].nil?
-        {'latitude' => coords[3].to_f, 'longitude' => coords[1].to_f, 'accuracy' => 20000, 'address' => {'country' => coords[7]}}
+        {'latitude' => coords[3].to_f, 'longitude' => coords[1].to_f, 'accuracy' => 20000}
       end
     end
 
@@ -105,23 +129,23 @@ class PositionResolver
 
       case data['type']
         when 'GPS'
-          q = {map: {'location' => {latitude: data['latitude'], longitude: data['longitude']}}}
+          q = {map: {'gpsPosition' => {'latitude' => data['latitude'], 'longitude' => data['longitude']}}}
         when 'WIFI'
           towers = []
           data['wifi'].each do |wifi|
-            towers << {mac_address: wifi[:mac], signal_strength: wifi[:sig], ssid: wifi[:bssid]}
+            towers << {macAddress: wifi[:mac], signalStrength: wifi[:sig]}
           end
-          q = {map: {'wifi_towers' => towers}}
+          q = {map: {'wifiAccessPoints' => towers}}
         when 'GSM'
-          q = {map: {'cell_towers' => [
-              {mobile_country_code: data['cell']['mcc'], mobile_network_code: data['cell']['mnc'], location_area_code: data['cell']['lac'], cell_id: data['cell']['cid'], signal_strength: data['cell']['db'], timing_advance: data['cell']['adv'], age: data['cell']['age']}
-          ], radio_type: 'gsm'}}
+          q = {map: {'cellTowers' => [
+              {mobileCountryCode: data['cell']['mcc'], mobileNetworkCode: data['cell']['mnc'], locationAreaCode: data['cell']['lac'], cellId: data['cell']['cid'], signalStrength: data['cell']['db'], timingAdvance: data['cell']['adv'], age: data['cell']['age']}
+          ], radioType: 'gsm'}}
         when 'CDMA'
-          q = {map: {'cell_towers' => [
-              {mobile_country_code: data['cell']['mcc'], mobile_network_code: data['cell']['sid'], location_area_code: data['cell']['nid'], cell_id: data['cell']['bid'], signal_strength: data['cell']['db'], timing_advance: data['cell']['adv'], age: data['cell']['age']}
-          ], radio_type: 'cdma'}}
+          q = {map: {'cellTowers' => [
+              {mobileCountryCode: data['cell']['mcc'], mobileNetworkCode: data['cell']['sid'], locationAreaCode: data['cell']['nid'], cellId: data['cell']['bid'], signalStrength: data['cell']['db'], timingAdvance: data['cell']['adv'], age: data['cell']['age']}
+          ], radioType: 'cdma'}}
         when 'IPv4'
-          q = {map: {'ip_address' => {ipv4: data['ip']}}}
+          q = {map: {'ipAddress' => {'ipv4' => data['ip']}}}
       end
 
       PositionResolver.get q[:map]
