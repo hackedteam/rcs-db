@@ -69,6 +69,9 @@ Section "Install Section" SecInstall
   SetOutPath "$INSTDIR\DB\cores"
   File /r "cores\*.*"
 
+  SetOutPath "$INSTDIR\DB\config"
+  File "config\blacklist"
+
   SetDetailsPrint "both"
   DetailPrint "done"
 
