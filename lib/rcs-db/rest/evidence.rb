@@ -219,7 +219,7 @@ class EvidenceController < RESTController
   def insert_sync_address(target, agent, address)
 
     # resolv the position of the address
-    position = PositionResolver.get({'ip_address' => {'ipv4' => address}})
+    position = PositionResolver.get({'ipAddress' => {'ipv4' => address}})
 
     # add the evidence to the target
     ev = Evidence.dynamic_new(target[:_id])
