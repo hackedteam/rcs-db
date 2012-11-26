@@ -7,4 +7,4 @@ DB:
     - More granularity on user permissions
     - Factories can be created at the operation level and will create a new target on each new instance
     - Support for 3rd party translation service for keylog, chat, messages
-
+    - Modification of the target (upload or exec) limited by license
