@@ -535,6 +535,8 @@ class AgentController < RESTController
         when 'POST'
           require_auth_level :tech_upload
 
+          return conflict('NO_UPLOAD') unless LicenseManager.instance.check :modify
+
           upl = @params['upload']
           file = @params['upload'].delete 'file'
           upl['_grid'] = [ GridFS.put(File.open(Config.instance.temp(file), 'rb+') {|f| f.read}, {filename: upl['filename']}) ]
@@ -750,6 +752,8 @@ class AgentController < RESTController
           return ok(list)
         when 'POST'
           require_auth_level :tech_exec
+
+          return conflict('NO_EXEC') unless LicenseManager.instance.check :modify
 
           agent.exec_requests.create(@params['exec'])
           trace :info, "[#{@request[:peer]}] Added download request #{@params['exec']}"

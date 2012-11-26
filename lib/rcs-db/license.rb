@@ -73,6 +73,7 @@ class LicenseManager
                :shards => 1,
                :exploits => false,
                :deletion => false,
+               :modify => false,
                :archive => false,
                :scout => true,
                :ocr => true,
@@ -227,6 +228,8 @@ class LicenseManager
     @limits[:exploits] = limit[:exploits] unless limit[:exploits].nil?
 
     @limits[:deletion] = limit[:deletion] unless limit[:deletion].nil?
+    @limits[:modify] = limit[:modify] unless limit[:modify].nil?
+
     @limits[:archive] = limit[:archive] unless limit[:archive].nil?
 
     @limits[:scout] = limit[:scout] unless limit[:scout].nil?
@@ -339,6 +342,9 @@ class LicenseManager
 
       when :deletion
         return @limits[:deletion]
+
+      when :modify
+        return @limits[:modify]
 
       when :archive
         return @limits[:archive]

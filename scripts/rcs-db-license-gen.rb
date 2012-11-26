@@ -44,6 +44,7 @@ class LicenseGenerator
                :shards => 1,
                :exploits => false,
                :deletion => false,
+               :modify => false,
                :scout => true,
                :ocr => true,
                :translate => false,

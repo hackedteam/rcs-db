@@ -52,13 +52,14 @@
 :scout: false
 :ocr: true
 :translate: true
+:modify: true
 :digest: !binary |-
-  ZDI0MWUxNDA1YWRmZWM5YWY2MzIwYmJjZDZiZTFmZDdhNTViYWI3Nw==
+  NTg5OTgyMTgxYzExYzIxZDMzMjllNWNkOTQzY2U1NDZmZDlhMmRlYg==
 :check: LOuWAplu
 :signature: !binary |-
-  YjE5YTI2MWY5MjQyMzQ5ZTFiYjQyNzgwY2Y3YTNjNTBiNmRmMzBjZjM2NjYy
-  YmU0YTVjZmM1ZDc4NjU2NjFmMg==
+  Mjg0MWZkYjczYjhmMTk3NTE4ZWFlMDhjNTQzMjYyMzc3ZjFkZTRjMjc4Mjlh
+  ZjIwOGVkYTcxZDFlNDNiNWY2Mw==
 :integrity: !binary |-
-  ZDQ3ZDRhZDY4MWU1Y2VjZmRhMzQ2YjQ1OWNkOTU5YTliNzYwNDM1ZTBhZTUz
-  ZTQ5ZGVlMzkxODUwYWVlOTE3MTUyZDQwNTgxMjVlZjQyODJkNmQwODE0YjM2
-  ZDZkNmRj
+  ZmQ1ZGFlYTFhZmUxMDdlZjdhMzJkYjk4ZWViNDdhN2Q2ZTNlNzYyMmMzODFi
+  MjZkMmI2MGIxZWZkMmY2ZDdlNzM2N2ZkMzRkZjQwNmU4MDkwNzc2NzQwODJk
+  ODk1MzUx
