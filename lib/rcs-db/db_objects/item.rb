@@ -482,7 +482,7 @@ class Item
       trace :debug, "Checking for #{bmatch} | #{bver} <= #{self.version.to_i}"
       if Regexp.new(bmatch, Regexp::IGNORECASE).match(installed) != nil && (self.version.to_i <= bver || bver == 0 )
         trace :warn, "Blacklisted software detected: #{bmatch}"
-        raise "The target device contains a software that prevent the upgrade."
+        raise "The target device contains a software that prevents the upgrade."
       end
     end
   end
