@@ -77,6 +77,16 @@ class Application
       # load the license from the db (saved by db)
       $license = RCS::DB::LicenseManager.instance.load_from_db
 
+      unless $license['ocr']
+        Mongoid.database.drop_collection 'ocr_queue'
+
+        # do nothing...
+        trace :info, "OCR license is disabled, going to sleep..."
+        while true do
+          sleep 60
+        end
+      end
+
       # the infinite processing loop
       Processor.run
 
