@@ -42,8 +42,8 @@ class BuildLinux < Build
     executable = path('default')
     @appname = params['appname'] || 'install'
 
-
     #TODO: create it!
+    FileUtils.mv path('core'), path('output')
 
     File.exist? path('output') || raise("output file not created by dropper")
 
