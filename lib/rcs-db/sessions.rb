@@ -171,6 +171,9 @@ class SessionManager
       ::Item.any_in({path: [operation]}).each do |item|
         accessible << item[:_id]
       end
+      ::Entity.any_in({path: [operation]}).each do |item|
+        accessible << item[:_id]
+      end
     end
 
     return accessible.to_a

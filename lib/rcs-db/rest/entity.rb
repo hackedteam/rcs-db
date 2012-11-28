@@ -12,11 +12,8 @@ class EntityController < RESTController
     require_auth_level :view
     require_auth_level :view_profiles
 
-    #TODO: filter on accessible
-    #where({_id: {"$in" => @session[:accessible]}})
-
     mongoid_query do
-      entities = ::Entity.all
+      entities = ::Entity.where({_id: {"$in" => @session[:accessible]}})
       return ok(entities)
     end
   end
@@ -68,8 +65,7 @@ class EntityController < RESTController
     require_auth_level :view_profiles
 
     mongoid_query do
-      e = ::Entity.find(@params['_id'])
-      #e = ::Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
+      e = ::Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
       @params.delete('_id')
 
       @params.each_pair do |key, value|
@@ -93,12 +89,9 @@ class EntityController < RESTController
 
     mongoid_query do
 
-      e = Entity.find(@params['_id'])
+      e = Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
       Audit.log :actor => @session[:user][:name], :action => 'entity.destroy', :desc => "Deleted the entity #{e.name}"
       e.destroy
-
-      # TODO: push notification
-      #PushManager.instance.notify('alert', {rcpt: @session[:user][:_id]})
 
       return ok
     end
