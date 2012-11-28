@@ -24,6 +24,7 @@ class Entity
   embeds_one :current_position, class_name: "EntityPosition"
 
   index :name
+  index :type
   index :path
 
   store_in :entities
