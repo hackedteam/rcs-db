@@ -1,32 +1,8 @@
 
-Changelog for 8.2.0
+Changelog for 8.2.1
 
 Collector:
-    - support for command execution during sync
-    - support for partial evidence transfer
 
 DB:
-    - MongoDB updated to 2.2.1
-    - HASP driver updated to 6.25
-    - utilities to restart the rcs services
-    - configuration templates
-    - evidence filters can now be saved for future reuse
-    - full text search for the info evidence field
-    - not interesting evidence field are no more exported to connectors
-    - more accurate evidence size recalculation for targets and operations
-    - support for incremental backups
-    - the metadata backup is now created automatically if not present
-    - new operations, targets and factory are displayed to other users upon refresh
-    - smtp authentication for alert emails
-    - export report now includes commands and ip
-    - report creation let you chose between acquired and received time
-    - report creation let you chose if you want the notes or not
-    - evidence can be delete in batch and not only selectively (provided you have the license)
-    - log rotation for mongodb logs (at midnight)
-    - support for pluggable OCR module to scan screenshots taken by agents
-    - new archive wizard for better housekeeping of data
-    - exported evidence via connectors are now more verbose
-    - fix for operation and target backup not performing correctly
-    - fix for file manager not deleting all entries in some cases
-    - fix for the "disable on sync" flag for injectors
-
+    - fix for mic recording at 48 KHz
+    - fix for rare case in which the configuration prevented the build of an agent
