@@ -9,8 +9,6 @@ TODO 8.3.0:
 
     checksum on license in db
 
-    stop translate service during upgrade NSIS
-
     target profiles
 
     entities:

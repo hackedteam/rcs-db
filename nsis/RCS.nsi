@@ -177,6 +177,12 @@ Section "Update Section" SecUpdate
      SimpleSC::StopService "RCSOCR" 1
    noocr:
 
+   ReadRegDWORD $R0 HKLM "Software\HT\RCS" "translate"
+   IntCmp $R0 1 0 notrans notrans
+     Sleep 3000
+     SimpleSC::StopService "RCSTranslate" 1
+   notrans:
+
    Sleep 5000
    
    DetailPrint "done"
@@ -585,6 +591,11 @@ Section "Install Section" SecInstall
   IntCmp $R0 1 0 noocr noocr
     SimpleSC::StartService "RCSOCR" ""
   noocr:
+
+  ReadRegDWORD $R0 HKLM "Software\HT\RCS" "translate"
+  IntCmp $R0 1 0 notrans notrans
+    SimpleSC::StartService "RCSTranslate" ""
+  notrans:
 
   !cd "DB\nsis"
   
