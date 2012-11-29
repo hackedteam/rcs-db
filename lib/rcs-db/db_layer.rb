@@ -281,6 +281,7 @@ class DB
     end
   end
 
+  # TODO: remove in 8.4
   def migrate_users_to_ext_privs
     ::User.where({:ext_privs.ne => true}).each do |user|
       trace :info, "Migrating user: #{user.name} to the new privs schema..."
@@ -292,6 +293,22 @@ class DB
       user.privs = privs
       user.ext_privs = true
       user.save
+    end
+  end
+
+  # TODO: remove in 8.4
+  def create_targets_entities
+    ::Item.targets.each do |target|
+      if ::Entity.any_in({path: [target._id]}).empty?
+        trace :info, "Creating entity for target: #{target.name}"
+        ::Entity.create! do |entity|
+          entity.type = :person
+          entity.level = :automatic
+          entity.path = target.path + [target._id]
+          entity.name = target.name
+          entity.desc = target.desc
+        end
+      end
     end
   end
 
