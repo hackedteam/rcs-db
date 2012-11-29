@@ -9,6 +9,10 @@ class Entity
 
   # this is the type of entity: person, location, etc
   field :type, type: Symbol
+
+  # the level of trust of the entity (manual, automatic, suggested, ghost)
+  field :level, type: Symbol
+
   # membership of this entity (inside operation or target)
   field :path, type: Array
 
@@ -35,7 +39,7 @@ class Entity
 
   def create_callback
     # make item accessible to the users
-    SessionManager.instance.rebuild_all_accessible
+    RCS::DB::SessionManager.instance.rebuild_all_accessible
 
     RCS::DB::PushManager.instance.notify('entity', {id: self._id, action: 'create'})
   end
@@ -51,6 +55,11 @@ class Entity
   def destroy_callback
     RCS::DB::PushManager.instance.notify('entity', {id: self._id, action: 'destroy'})
   end
+
+  def merge(merging)
+    # TODO: merge the entities
+  end
+
 end
 
 
@@ -59,6 +68,9 @@ class EntityHandle
   include Mongoid::Timestamps
 
   embedded_in :entity
+
+  # the level of trust of the entity
+  field :level, type: Symbol
 
   field :type, type: Symbol
   field :name, type: String
@@ -70,6 +82,9 @@ class EntityPosition
   include Mongoid::Timestamps
 
   embedded_in :entity
+
+  # the level of trust of the entity
+  field :level, type: Symbol
 
   field :latitude, type: Float
   field :longitude, type: Float

@@ -52,6 +52,7 @@ class EntityController < RESTController
         doc[:name] = @params['name']
         doc[:type] = @params['type'].to_sym
         doc[:desc] = @params['desc']
+        doc[:level] = :manual
       end
 
       Audit.log :actor => @session[:user][:name], :action => 'entity.create', :desc => "Created a new entity named #{e.name}"

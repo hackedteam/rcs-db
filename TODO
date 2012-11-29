@@ -7,7 +7,7 @@ TODO 8.3.0:
 
     resolve position!!!
 
-    improve access time to the dongle
+    checksum on license in db
 
     stop translate service during upgrade NSIS
 
@@ -18,15 +18,8 @@ TODO 8.3.0:
       - automatic (confirmed / unconfirmed)
       - ghost (not shown)
 
-    entities type:
-      - person
-        - personal identification (name, birth, others)
-        - photos
-        - locations
-        - accounts (type, handle, password)
+    aggregates:
 
-      - location
-        - address (lat, long, radius)
 
     flows:
       - message
