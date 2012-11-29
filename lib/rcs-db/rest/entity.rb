@@ -98,6 +98,52 @@ class EntityController < RESTController
     end
   end
 
+  def add_photo
+    require_auth_level :view
+    require_auth_level :view_profiles
+
+    mongoid_query do
+
+      e = Entity.any_in(_id: @session[:accessible]).find(@request[:content]['_id'])
+      id = e.add_photo(@request[:content]['content'])
+
+      Audit.log :actor => @session[:user][:name], :action => 'entity.add_photo', :desc => "Added a new photo to #{e.name}"
+
+      return ok(id)
+    end
+  end
+
+  def add_photo_from_grid
+    require_auth_level :view
+    require_auth_level :view_profiles
+
+    mongoid_query do
+
+      e = Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
+      file = GridFS.get @params['_grid'], @params['target_id']
+      id = e.add_photo(file.read)
+
+      Audit.log :actor => @session[:user][:name], :action => 'entity.add_photo', :desc => "Added a new photo to #{e.name}"
+
+      return ok(id)
+    end
+  end
+
+  def del_photo
+    require_auth_level :view
+    require_auth_level :view_profiles
+
+    mongoid_query do
+
+      e = Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
+      return not_found() unless e.del_photo(@params['photo_id'])
+
+      Audit.log :actor => @session[:user][:name], :action => 'entity.del_photo', :desc => "Deleted a photo from #{e.name}"
+
+      return ok
+    end
+
+  end
 
 end
 

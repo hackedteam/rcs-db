@@ -59,6 +59,8 @@ class BuildLinux < Build
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
       z.file.open(@appname, "wb") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
       z.file.chmod(0755, @appname)
+
+      z.file.open('config', "wb") { |f| f.write File.open(path('config'), 'rb') {|f| f.read} }
     end
 
     # this is the only file we need to output after this point

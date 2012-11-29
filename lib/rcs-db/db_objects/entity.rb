@@ -57,7 +57,48 @@ class Entity
   end
 
   def merge(merging)
-    # TODO: merge the entities
+    raise "cannot merge different type of entities" unless self.type == merging.type
+    raise "cannot merge entities belonging to different targets" unless self.path == merging.path
+
+    # merge the name and description only if empty
+    self.name = merging.name if self.name.nil? or self.name.eql? ""
+    self.desc = merging.desc if self.desc.nil? or self.desc.eql? ""
+
+    # merge the photos
+    self.photos = self.photos + merging.photos
+
+    # merge the handles
+    merging.handles.each do |handle|
+      self.handles << handle
+    end
+
+    #merge the positions
+    merging.positions.each do |pos|
+      self.positions << pos
+    end
+
+    # merge the current position only if newer
+    self.current_position = merging.current_position if self.current_position.time < merging.current_position.time
+
+    # save the mergee and destroy the merger
+    self.save
+    merging.destroy
+  end
+
+  def add_photo(content)
+    # put the content in the grid collection of the target owning this entity
+    id = GridFS.put(content, {filename: self[:_id].to_s}, self.path.last.to_s)
+
+    self.photos ||= []
+    self.photos << id
+    self.save
+
+    return id
+  end
+
+  def del_photo(id)
+    self.photos.delete(id)
+    self.save
   end
 
 end
