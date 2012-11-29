@@ -1427,6 +1427,16 @@ if false
   
 end
 
+# entities
+if true
+  puts "entity.index"
+  res = http.request_get("/entity", {'Cookie' => cookie})
+  puts res.body
+  puts
+  
+  
+end
+
 # logout
 res = http.request_post('/auth/logout', nil, {'Cookie' => cookie})
 puts
