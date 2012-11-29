@@ -19,11 +19,22 @@ module MicProcessing
     self[:wav] = []
     return if self[:data][:grid_content].nil?
 
-    codec = :amr if self[:data][:sample_rate] & LOG_AUDIO_AMR == 1
-    self[:data][:sample_rate] &= ~LOG_AUDIO_AMR # clear codec bit if set
+    # AMR encoding uses the first bit to signal it
+    if self[:data][:sample_rate] & LOG_AUDIO_AMR == 1
+      codec = :amr
+      # clear codec bit if set
+      self[:data][:sample_rate] &= ~LOG_AUDIO_AMR
+    end
 
-    codec ||= :speex if self[:data][:sample_rate] == 44100
-    codec ||= :speex_mobile if self[:data][:sample_rate] == 8000
+    # SPEEX for mobile is recorded at 8 KHz
+    if self[:data][:sample_rate] == 8000
+      codec = :speex_mobile
+    end
+
+    # SPEEX for desktop is recorded at 44100 or 48000
+    if [44100, 48000].include? self[:data][:sample_rate]
+      codec = :speex
+    end
 
     # speex decode
     data = self[:data][:grid_content]
