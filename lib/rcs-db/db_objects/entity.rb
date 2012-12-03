@@ -7,7 +7,7 @@ class Entity
   include Mongoid::Document
   include Mongoid::Timestamps
 
-  # this is the type of entity: person, location, etc
+  # this is the type of entity: target, person, location, etc
   field :type, type: Symbol
 
   # the level of trust of the entity (manual, automatic, suggested, ghost)
@@ -33,13 +33,16 @@ class Entity
 
   store_in :entities
 
+  scope :targets, where(type: :target)
+
   after_create :create_callback
   before_destroy :destroy_callback
   after_update :notify_callback
 
   def create_callback
     # make item accessible to the users
-    RCS::DB::SessionManager.instance.rebuild_all_accessible
+    parent = ::Item.find(self.path.last)
+    RCS::DB::SessionManager.instance.add_accessible_item(parent, self)
 
     RCS::DB::PushManager.instance.notify('entity', {id: self._id, action: 'create'})
   end

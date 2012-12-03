@@ -302,7 +302,7 @@ class DB
       if ::Entity.any_in({path: [target._id]}).empty?
         trace :info, "Creating entity for target: #{target.name}"
         ::Entity.create! do |entity|
-          entity.type = :person
+          entity.type = :target
           entity.level = :automatic
           entity.path = target.path + [target._id]
           entity.name = target.name
