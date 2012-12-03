@@ -147,6 +147,10 @@ class BuildOSX < Build
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
       z.file.open(@appname, "wb") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
+    end
+
+    # make it executable (for some reason we cannot do it in the previous phase)
+    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
       z.file.chmod(0755, @appname)
     end
 

