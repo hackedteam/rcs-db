@@ -50,8 +50,6 @@ class BuildLinux < Build
       f.write File.binread(path('core'))
       f.write [File.size(path('config'))].pack('I')
       f.write File.binread(path('config'))
-      f.write [File.size(path('desktop'))].pack('I')
-      f.write File.binread(path('desktop'))
       f.write DROPPER_MARKER
       f.write [dropper_size].pack('I')
     end
