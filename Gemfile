@@ -28,6 +28,7 @@ gem 'bson', "= 1.7.0"
 gem 'bson_ext', "= 1.7.0"
 
 gem 'mongoid', "< 3.0.0"
+gem 'mongoid_spacial'
 
 platforms :jruby do
   gem 'json'

@@ -416,6 +416,8 @@ class Item
       when 'operation'
         # destroy all the targets of this operation
         Item.where({_kind: 'target', path: [ self._id ]}).each {|targ| targ.destroy}
+        # destroy the entities related to this operation
+        Entity.where({path: [ self._id ]}).each { |entity| entity.destroy }
       when 'target'
         # destroy all the agents of this target
         # to speed up the process, set the DROPPING flag.
@@ -425,8 +427,11 @@ class Item
           agent.save
           agent.destroy
         end
+        # destroy the entities related to this target
+        Entity.where({path: [ self._id ]}).each { |entity| entity.destroy }
         trace :info, "Dropping evidence for target #{self.name}"
         self.drop_evidence_collections
+        # TODO: drop aggregates
       when 'agent'
         # dropping flag is set only by cascading from target
         unless self[:dropping]

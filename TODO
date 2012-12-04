@@ -11,6 +11,8 @@ TODO 8.3.0:
 
     target profiles
 
+    backup aggregated data for entities
+
     entities:
       - manual (confirmed)
       - automatic (confirmed / unconfirmed)

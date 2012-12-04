@@ -59,6 +59,15 @@ class TargetController < RESTController
         doc[:desc] = @params['desc']
       end
 
+      # also create the relative entity
+      Entity.create! do |entity|
+        entity.type = :target
+        entity.level = :automatic
+        entity.path = item.path + [item._id]
+        entity.name = item.name
+        entity.desc = item.desc
+      end
+
       # make item accessible to the users
       SessionManager.instance.rebuild_all_accessible
 

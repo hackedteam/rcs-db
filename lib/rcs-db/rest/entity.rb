@@ -91,6 +91,10 @@ class EntityController < RESTController
     mongoid_query do
 
       e = Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
+
+      # entity created by target cannot be deleted manually, they will disappear with their target
+      return conflict('CANNOT_DELETE_TARGET_ENTITY') if e.type == :target
+
       Audit.log :actor => @session[:user][:name], :action => 'entity.destroy', :desc => "Deleted the entity #{e.name}"
       e.destroy
 

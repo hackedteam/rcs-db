@@ -1,5 +1,5 @@
 require 'mongoid'
-
+require 'mongoid_spacial'
 #module RCS
 #module DB
 
@@ -7,7 +7,7 @@ class Entity
   include Mongoid::Document
   include Mongoid::Timestamps
 
-  # this is the type of entity: target, person, location, etc
+  # this is the type of entity: target, person, position, etc
   field :type, type: Symbol
 
   # the level of trust of the entity (manual, automatic, suggested, ghost)
@@ -30,10 +30,13 @@ class Entity
   index :name
   index :type
   index :path
+  index "handles.name"
 
   store_in :entities
 
   scope :targets, where(type: :target)
+  scope :persons, where(type: :person)
+  scope :positions, where(type: :position)
 
   after_create :create_callback
   before_destroy :destroy_callback
@@ -123,6 +126,7 @@ end
 
 class EntityPosition
   include Mongoid::Document
+  include Mongoid::Spacial::Document
   include Mongoid::Timestamps
 
   embedded_in :entity
@@ -130,11 +134,12 @@ class EntityPosition
   # the level of trust of the entity
   field :level, type: Symbol
 
-  field :latitude, type: Float
-  field :longitude, type: Float
+  # using geospatial index in mongodb
+  field :coords, type: Array, spacial: true
   field :accuracy, type: Integer
-  field :address, type: String
 
+  field :address, type: String
+  field :desc, type: String
   field :time, type: Integer
 end
 
