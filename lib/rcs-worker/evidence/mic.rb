@@ -24,15 +24,11 @@ module MicProcessing
       codec = :amr
       # clear codec bit if set
       self[:data][:sample_rate] &= ~LOG_AUDIO_AMR
-    end
-
-    # SPEEX for mobile is recorded at 8 KHz
-    if self[:data][:sample_rate] == 8000
+    elsif self[:data][:sample_rate] == 8000
+      # SPEEX for mobile is recorded at 8 KHz
       codec = :speex_mobile
-    end
-
-    # SPEEX for desktop is recorded at 44100 or 48000
-    if [44100, 48000].include? self[:data][:sample_rate]
+    elsif [44100, 48000].include? self[:data][:sample_rate]
+      # SPEEX for desktop is recorded at 44100 or 48000
       codec = :speex
     end
 
