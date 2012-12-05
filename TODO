@@ -1,8 +1,7 @@
 
 TODO 8.3.0:
 
-    why ruby-p286 is so slow? (mongo ruby driver?) (only on Win2003?)
-    sentinel drivers don't work under Win2012
+    why ruby-p327 is so slow? (only on Win2003)
 
     failed backup (mongodump 2.2 error look for fix from mongo)
 

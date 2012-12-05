@@ -149,6 +149,9 @@ class LicenseGenerator
     # the real stuff is here
     calculate_integrity @limits
 
+    # override the version
+    @limits[:version] = options[:version] if options[:version]
+
     # write the output file
     if options[:output]
       save_license_file options[:output]
@@ -179,6 +182,10 @@ class LicenseGenerator
 
       opts.on( '-o', '--output FILE', String, 'Output license file' ) do |file|
         options[:output] = file
+      end
+
+      opts.on( '-V', '--version VERSION', String, 'Version of the license' ) do |ver|
+        options[:version] = ver
       end
 
       opts.on( '-v', '--verbose', 'Verbose mode' ) do
