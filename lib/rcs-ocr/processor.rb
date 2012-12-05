@@ -28,6 +28,8 @@ class Processor
       # get the first entry from the queue and mark it as processed to avoid
       # conflicts with multiple processors
       if entry = coll.find_and_modify({query: {flag: OCRQueue::QUEUED}, update: {"$set" => {flag: OCRQueue::PROCESSED}}})
+        count = coll.find({flag: OCRQueue::QUEUED}).count()
+        trace :info, "#{count} evidence to be processed in queue"
         process entry
       else
         #trace :debug, "Nothing to do, waiting..."
