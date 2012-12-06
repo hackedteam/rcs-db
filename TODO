@@ -2,12 +2,13 @@
 TODO 8.3.0:
 
     why ruby-p327 is so slow? (only on Win2003)
-
     failed backup (mongodump 2.2 error look for fix from mongo)
 
     resolve position!!!
 
     checksum on license in db
+
+    search for entities
 
     parse screenshot for config of scout
 

@@ -1,5 +1,5 @@
 require 'mongoid'
-require 'mongoid_spacial'
+#require 'mongoid_spacial'
 #module RCS
 #module DB
 
@@ -126,7 +126,7 @@ end
 
 class EntityPosition
   include Mongoid::Document
-  include Mongoid::Spacial::Document
+#  include Mongoid::Spacial::Document
   include Mongoid::Timestamps
 
   embedded_in :entity
@@ -135,7 +135,7 @@ class EntityPosition
   field :level, type: Symbol
 
   # using geospatial index in mongodb
-  field :coords, type: Array, spacial: true
+#  field :coords, type: Array, spacial: true
   field :accuracy, type: Integer
 
   field :address, type: String

@@ -18,4 +18,16 @@ unless last_log.nil?
   logs << File.join('log/err', File.basename(last_log))
 end
 
+last_log = Dir['log/rcs-aggregator**'].max
+unless last_log.nil?
+  logs << last_log
+  logs << File.join('log/err', File.basename(last_log))
+end
+
+last_log = Dir['log/rcs-intelligence**'].max
+unless last_log.nil?
+  logs << last_log
+  logs << File.join('log/err', File.basename(last_log))
+end
+
 spawn "bin/baretail.exe " + logs.join(" ")

@@ -12,9 +12,15 @@ class EntityController < RESTController
     require_auth_level :view
     require_auth_level :view_profiles
 
+    filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
+    filter ||= {}
+
+    filter.merge!({_id: {"$in" => @session[:accessible]}})
+
     mongoid_query do
-      entities = ::Entity.where({_id: {"$in" => @session[:accessible]}})
-      return ok(entities)
+      db = Mongoid.database
+      j = db.collection('entities').find(filter, :fields => ["type", "level", "name", "path"])
+      ok(j)
     end
   end
 
