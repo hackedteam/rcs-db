@@ -196,8 +196,8 @@ class LicenseManager
     @limits[:type] = limit[:type]
     @limits[:serial] = limit[:serial]
 
-    @limits[:expiry] = Time.parse(limit[:expiry]).getutc unless limit[:expiry].nil?
-    @limits[:maintenance] = Time.parse(limit[:maintenance]).getutc unless limit[:maintenance].nil?
+    @limits[:expiry] = limit[:expiry].nil? ? nil : Time.parse(limit[:expiry]).getutc
+    @limits[:maintenance] = limit[:maintenance].nil? ? nil : Time.parse(limit[:maintenance]).getutc
 
     @limits[:users] = limit[:users]
 
@@ -217,27 +217,28 @@ class LicenseManager
     @limits[:collectors][:collectors] = limit[:collectors][:collectors] unless limit[:collectors][:collectors].nil?
     @limits[:collectors][:anonymizers] = limit[:collectors][:anonymizers] unless limit[:collectors][:anonymizers].nil?
 
-    @limits[:nia] = limit[:nia] unless limit[:nia].nil?
+    @limits[:nia] = limit[:nia]
+    @limits[:rmi] = limit[:rmi]
 
-    @limits[:alerting] = limit[:alerting] unless limit[:alerting].nil?
-    @limits[:correlation] = limit[:correlation] unless limit[:correlation].nil?
-    @limits[:connectors] = limit[:connectors] unless limit[:connectors].nil?
-    @limits[:rmi] = limit[:rmi] unless limit[:rmi].nil?
+    @limits[:alerting] = limit[:alerting]
+    @limits[:connectors] = limit[:connectors]
 
-    @limits[:shards] = limit[:shards] unless limit[:shards].nil?
-    @limits[:exploits] = limit[:exploits] unless limit[:exploits].nil?
+    @limits[:shards] = limit[:shards]
+    @limits[:exploits] = limit[:exploits]
 
-    @limits[:deletion] = limit[:deletion] unless limit[:deletion].nil?
-    @limits[:modify] = limit[:modify] unless limit[:modify].nil?
+    @limits[:deletion] = limit[:deletion]
+    @limits[:modify] = limit[:modify]
 
-    @limits[:archive] = limit[:archive] unless limit[:archive].nil?
+    @limits[:archive] = limit[:archive]
 
-    @limits[:scout] = limit[:scout] unless limit[:scout].nil?
+    @limits[:scout] = limit[:scout]
 
     @limits[:encbits] = limit[:digest_enc]
 
     @limits[:ocr] = limit[:ocr]
     @limits[:translate] = limit[:translate]
+    @limits[:correlation] = limit[:correlation]
+
   end
 
   
