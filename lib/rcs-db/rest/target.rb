@@ -152,6 +152,12 @@ class TargetController < RESTController
         ::Connector.all.each {|a| a.update_path(agent._id, agent.path + [agent._id])}
       end
 
+      # also move the linked entity
+      Entity.any_in({type: :target}).also_in({path: [ target._id ]}).each do |entity|
+        entity.path = target.path + [target._id]
+        entity.save
+      end
+
       Audit.log :actor => @session[:user][:name],
                 :action => "#{target._kind}.move",
                 (target._kind + '_name').to_sym => @params['name'],
