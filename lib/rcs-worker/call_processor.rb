@@ -460,6 +460,8 @@ class CallProcessor
       f.write mp3_bytes
       call.update_data({_grid: f.files_id, _grid_size: f.file_length, duration: call.duration})
     end
+    @agent.stat.size += mp3_bytes.size
+    @agent.save
   end
 
   def to_s
