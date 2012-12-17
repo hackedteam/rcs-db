@@ -93,7 +93,7 @@ class Entity
 
   def add_photo(content)
     # put the content in the grid collection of the target owning this entity
-    id = GridFS.put(content, {filename: self[:_id].to_s}, self.path.last.to_s)
+    id = RCS::DB::GridFS.put(content, {filename: self[:_id].to_s}, self.path.last.to_s)
 
     self.photos ||= []
     self.photos << id
@@ -104,6 +104,7 @@ class Entity
 
   def del_photo(id)
     self.photos.delete(id)
+    RCS::DB::GridFS.delete(id, self.path.last.to_s)
     self.save
   end
 

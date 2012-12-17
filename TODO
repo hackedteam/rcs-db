@@ -6,9 +6,13 @@ TODO 8.3.0:
 
     resolve position!!!
 
+    check the ev size on instances
+
     checksum on license in db
 
     search for entities
+
+    move target -> move entity
 
     parse screenshot for config of scout
 
