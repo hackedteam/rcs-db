@@ -18,8 +18,8 @@ class Accounts
     ::Item.targets.each do |target|
       trace :debug, "Target: #{target.name}"
 
-      Evidence.collection_class(target[:_id])
-      
+      Evidence.collection_class(target[:_id]).where()
+
     end
 
   end
