@@ -88,8 +88,7 @@ class Application
       # never reached...
 
     rescue Interrupt
-      trace :info, "System shutdown. Bye bye!"
-      Audit.log :actor => '<system>', :action => 'shutdown', :desc => "System shutdown"
+      trace :info, "User asked to exit. Bye bye!"
       return 0
     rescue Exception => e
       trace :fatal, "FAILURE: " << e.message

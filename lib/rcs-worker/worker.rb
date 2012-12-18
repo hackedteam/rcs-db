@@ -4,7 +4,6 @@
 
 # relatives
 require_relative 'call_processor'
-require_relative 'evidence/call'
 require_relative 'heartbeat'
 require_relative 'backlog'
 require_relative 'statistics'

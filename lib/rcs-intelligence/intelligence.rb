@@ -2,13 +2,18 @@
 #  The main file of the Intelligence module (correlation)
 #
 
+require_relative 'heartbeat'
+require_relative 'accounts'
+
 # from RCS::DB
-if File.directory?(Dir.pwd + '/lib/rcs-ocr-release')
+if File.directory?(Dir.pwd + '/lib/rcs-intelligence-release')
+  require 'rcs-db-release/db'
   require 'rcs-db-release/config'
   require 'rcs-db-release/license'
   require 'rcs-db-release/db_layer'
   require 'rcs-db-release/grid'
 else
+  require 'rcs-db/db'
   require 'rcs-db/config'
   require 'rcs-db/license'
   require 'rcs-db/db_layer'
@@ -18,10 +23,47 @@ end
 # from RCS::Common
 require 'rcs-common/trace'
 
-require_relative 'processor'
+require 'eventmachine'
 
 module RCS
 module Intelligence
+
+class Intelligence
+  include Tracer
+  extend Tracer
+
+  def run
+
+    # all the events are handled here
+    EM::run do
+      # if we have epoll(), prefer it over select()
+      EM.epoll
+
+      # set the thread pool size
+      EM.threadpool_size = 50
+
+      # set up the heartbeat (the interval is in the config)
+      EM.defer(proc{ HeartBeat.perform })
+      EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
+
+      # calculate and save the stats
+      #EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }
+
+      # retrieve the account information (this is free event without license)
+      # TODO: interval is in minutes, multiply by 60
+      EM.defer(proc{ Accounts.retrieve })
+      EM::PeriodicTimer.new(RCS::DB::Config.instance.global['INT_INTERVAL']) { EM.defer(proc{ Accounts.retrieve }) }
+
+      if $license['correlation']
+        # TODO: perform the statistical analysis
+      end
+
+      trace :info, "Intelligence Module ready!"
+    end
+
+  end
+
+end
 
 class Application
   include RCS::Tracer
@@ -77,13 +119,13 @@ class Application
       # load the license from the db (saved by db)
       $license = RCS::DB::LicenseManager.instance.load_from_db
 
-      #TODO: do everything
+      # do the dirty job!
+      Intelligence.new.run
 
       # never reached...
 
     rescue Interrupt
-      trace :info, "System shutdown. Bye bye!"
-      Audit.log :actor => '<system>', :action => 'shutdown', :desc => "System shutdown"
+      trace :info, "User asked to exit. Bye bye!"
       return 0
     rescue Exception => e
       trace :fatal, "FAILURE: " << e.message

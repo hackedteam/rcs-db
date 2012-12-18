@@ -101,7 +101,7 @@ class Status
         end
 
         # check worker version
-        if ['worker', 'collector', 'nc'].include? m[:type] and m[:version] != $version
+        if ['worker', 'collector', 'nc', 'intelligence'].include? m[:type] and m[:version] != $version
           m[:status] = ERROR
           trace :warn, "Component #{m[:name]} has version #{m[:version]}, should be #{$version}"
           m[:info] = "Component version is #{m[:version]}, should be #{$version}"
