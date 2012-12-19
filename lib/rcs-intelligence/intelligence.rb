@@ -52,7 +52,7 @@ class Intelligence
       # retrieve the account information (this is free event without license)
       # TODO: interval is in minutes, multiply by 60
       EM.defer(proc{ Accounts.retrieve })
-      EM::PeriodicTimer.new(RCS::DB::Config.instance.global['INT_INTERVAL']) { EM.defer(proc{ Accounts.retrieve }) }
+      #EM::PeriodicTimer.new(RCS::DB::Config.instance.global['INT_INTERVAL']) { EM.defer(proc{ Accounts.retrieve }) }
 
       if $license['correlation']
         # TODO: perform the statistical analysis

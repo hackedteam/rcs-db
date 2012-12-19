@@ -42,6 +42,8 @@ module MicProcessing
       when :amr
         self[:wav] = AMR.get_wav_frames data
     end
+
+    #trace :debug, "Sample rate: #{self[:data][:sample_rate]} | data: #{data.size} | wav: #{self[:wav].size}"
   end
 
   def type
