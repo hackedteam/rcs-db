@@ -11,3 +11,4 @@ DB:
   - Modification of the target (upload or exec) limited by license
   - HASP drivers updated to 6.51 (support for 2012)
   - fix for size of evidence of an instance reported incorrectly
+  - fix for position resolving of gsm and gps

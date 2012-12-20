@@ -22,21 +22,34 @@ class Accounts
 
       ::Item.targets.each do |target|
 
-        # TODO: skip if no new evidence arrived
+        # retrieve the entity of this target
         entity = ::Entity.targets.also_in(path: [target[:_id]]).first
 
-        trace :debug, "Target: #{target.name} Entity: #{entity.name}"
+        # skip if there's nothing new to analyze
+        next if entity[:analyzed][:handles]
 
-        Evidence.collection_class(target[:_id]).where({type: 'password'}).each do |ev|
+        trace :info, "Analyzing entity #{entity.name} for new handles"
+
+        last = entity[:analyzed][:handles_last]
+
+        # passwords parsing
+        # here we extract every account that seems an email address
+        Evidence.collection_class(target[:_id]).where({type: 'password', :da.gt => last}).each do |ev|
           add_handle(entity, ev[:data])
+          last = ev.da if ev.da > last
         end
 
-        Evidence.collection_class(target[:_id]).where({type: 'addressbook'}).each do |ev|
-          # skip contacts that are not the target
-          next unless ev[:data]['type'] == :target
+        # addressbook
+        # here we extract every account marked as "local" by the addressbook module
+        Evidence.collection_class(target[:_id]).where({type: 'addressbook', 'data.type' => :target, :da.gt => last}).each do |ev|
           add_handle(entity, ev[:data])
+          last = ev.da if ev.da > last
         end
 
+        # mark it as analyzed
+        entity[:analyzed][:handles] = true
+        entity[:analyzed][:handles_last] = last
+        entity.save
       end
 
     end

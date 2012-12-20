@@ -68,5 +68,38 @@ class AggregatorQueue
 
 end
 
+class IntelligenceQueue
+  include Mongoid::Document
+  extend RCS::Tracer
+
+  QUEUED = 0
+  PROCESSED = 1
+
+  INTELLIGENCE_TYPES = ['addressbook', 'password']
+
+  field :target_id, type: String
+  field :evidence_id, type: String
+  field :flag, type: Integer
+
+  store_in :aggregator_queue, capped: true, max: 500_000, size: 100_000_000
+
+  def self.add(target_id, evidence_id, type)
+    # skip not interesting evidence
+    return unless AGGREGATOR_TYPES.include? type
+
+    # mark the entity as dirty so the module can analyze it
+    if ['addressbook', 'password'].include? type
+      entity = ::Entity.targets.also_in(path: [target_id]).first
+      entity[:analyzed] = false
+      entity.safe
+    end
+
+
+    #trace :debug, "Adding to INTELLI queue: #{target_id} #{evidence_id}"
+    #AggregatorQueue.create!({target_id: target_id.to_s, evidence_id: evidence_id.to_s, flag: QUEUED})
+  end
+
+end
+
 #end # ::DB
 #end # ::RCS

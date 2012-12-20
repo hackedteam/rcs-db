@@ -22,6 +22,9 @@ class Entity
   # list of grid id for the photos
   field :photos, type: Array
 
+  # used by the intelligence module to know what to analyze
+  field :analyzed, type: Hash, default: {handles: false, handles_last: 0}
+
   embeds_many :handles, class_name: "EntityHandle"
   embeds_many :positions, class_name: "EntityPosition"
 

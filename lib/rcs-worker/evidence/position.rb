@@ -61,7 +61,7 @@ module RCS
       end
       unless self[:data][:wifi].nil?
         self[:data][:wifi].each do |wifi|
-          self[:kw] += [wifi[:mac].keywords, wifi[:bssid].keywords ].flatten
+          self[:kw] += [wifi[:mac].keywords, wifi[:ssid].keywords ].flatten
         end
       end
 
