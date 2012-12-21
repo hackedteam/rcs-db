@@ -240,6 +240,9 @@ class InstanceWorker
     if $license['correlation']
       AggregatorQueue.add(@target._id, evidence._id, evidence.type)
     end
+
+    # pass the info to the intelligence module to extract handles
+    IntelligenceQueue.add(@target._id, evidence._id, evidence.type) if ['addressbook', 'password'].include? evidence.type
   end
 
   def resume

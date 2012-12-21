@@ -91,7 +91,7 @@ class IntelligenceQueue
     if ['addressbook', 'password'].include? type
       entity = ::Entity.targets.also_in(path: [target_id]).first
       entity[:analyzed] = false
-      entity.safe
+      entity.save
     end
 
 

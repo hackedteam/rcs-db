@@ -37,7 +37,8 @@ module RCS
 
       return if reply['latitude'].nil? or reply['longitude'].nil?
 
-      self[:data]['accuracy'] = 20 if self[:data][:type] == 'GPS'
+      # fallback if the accuracy is ZERO
+      self[:data][:accuracy] = 50 if self[:data][:type] == 'GPS' and self[:data][:accuracy] == 0
       self[:data].merge!(reply)
     end
 
