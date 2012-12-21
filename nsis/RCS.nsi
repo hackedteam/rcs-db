@@ -165,6 +165,10 @@ Section "Update Section" SecUpdate
    Sleep 3000
    SimpleSC::StopService "RCSWorker" 1
    Sleep 3000
+   SimpleSC::StopService "RCSAggregator" 1
+   Sleep 3000
+   SimpleSC::StopService "RCSIntelligence" 1
+   Sleep 3000
    SimpleSC::StopService "RCSMasterRouter" 1
    Sleep 3000
    SimpleSC::StopService "RCSMasterConfig" 1
@@ -197,6 +201,8 @@ Section "Update Section" SecUpdate
    !endif
    RMDir /r "$INSTDIR\DB\lib\rcs-db-release"
    RMDir /r "$INSTDIR\DB\lib\rcs-worker-release"
+   RMDir /r "$INSTDIR\DB\lib\rcs-aggregator-release"
+   RMDir /r "$INSTDIR\DB\lib\rcs-intelligence-release"
    RMDir /r "$INSTDIR\DB\lib\rgloader"
    RMDir /r "$INSTDIR\DB\bin"
    RMDir /r "$INSTDIR\Collector\bin"
@@ -276,6 +282,12 @@ Section "Install Section" SecInstall
 
     SetOutPath "$INSTDIR\DB\lib\rcs-worker-release"
     File /r "lib\rcs-worker-release\*.*"
+
+    SetOutPath "$INSTDIR\DB\lib\rcs-aggregator-release"
+    File /r "lib\rcs-aggregator-release\*.*"
+
+    SetOutPath "$INSTDIR\DB\lib\rcs-intelligence-release"
+    File /r "lib\rcs-intelligence-release\*.*"
 
     SetOutPath "$INSTDIR\DB\config"
     File "config\mongodb.key"
@@ -407,13 +419,39 @@ Section "Install Section" SecInstall
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSWorker" "Description" "Remote Control System Worker for data decoding"
       DetailPrint "done"
 
+      DetailPrint "Creating service RCS Aggregator..."
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSAggregator $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-aggregator"
+      SimpleSC::SetServiceFailure "RCSAggregator" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSAggregator" "DisplayName" "RCS Aggregator"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSAggregator" "Description" "Remote Control System Aggregator for data intelligence"
+      DetailPrint "done"
+
+      DetailPrint "Creating service RCS Intelligence..."
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSIntelligence $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-intelligence"
+      SimpleSC::SetServiceFailure "RCSIntelligence" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "DisplayName" "RCS Intelligence"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "Description" "Remote Control System Intelligence data correlator"
+      DetailPrint "done"
+
       ; write the admin pass into the file that will be loaded on the first start
       FileOpen $4 "$INSTDIR\DB\config\admin_pass" w
       FileWrite $4 "$adminpass"
       FileClose $4
     ${Else}
-      nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --migrate-mongos22 --log"
-      nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --sign-pass password"
+      ; TODO remove for 8.4
+      DetailPrint "Creating service RCS Aggregator..."
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSAggregator $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-aggregator"
+      SimpleSC::SetServiceFailure "RCSAggregator" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSAggregator" "DisplayName" "RCS Aggregator"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSAggregator" "Description" "Remote Control System Aggregator for data intelligence"
+      DetailPrint "done"
+
+      DetailPrint "Creating service RCS Intelligence..."
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSIntelligence $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-intelligence"
+      SimpleSC::SetServiceFailure "RCSIntelligence" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "DisplayName" "RCS Intelligence"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "Description" "Remote Control System Intelligence data correlator"
+      DetailPrint "done"
     ${EndIf}
     
     SetDetailsPrint "both"
@@ -439,7 +477,15 @@ Section "Install Section" SecInstall
     DetailPrint "Starting RCS Worker..."
     SimpleSC::StartService "RCSWorker" "" 30
     Sleep 5000
-      
+
+    DetailPrint "Starting RCS Aggregator..."
+    SimpleSC::StartService "RCSAggregator" "" 30
+    Sleep 5000
+
+    DetailPrint "Starting RCS Intelligence..."
+    SimpleSC::StartService "RCSIntelligence" "" 30
+    Sleep 5000
+
     DetailPrint "Adding firewall rule for port 443/tcp and 444/tcp..."
     #nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=443'
     #nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=444'
@@ -472,13 +518,18 @@ Section "Install Section" SecInstall
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSWorker" "DisplayName" "RCS Worker"
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSWorker" "Description" "Remote Control System Worker for data decoding"
       DetailPrint "done"
-      
+
+      DetailPrint "Creating service RCS Aggregator..."
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSAggregator $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-aggregator"
+      SimpleSC::SetServiceFailure "RCSAggregator" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSAggregator" "DisplayName" "RCS Aggregator"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSAggregator" "Description" "Remote Control System Aggregator for data intelligence"
+      DetailPrint "done"
+
       DetailPrint "Starting RCS Shard..."
       SimpleSC::StartService "RCSShard" "" 30
       Sleep 3000
-      DetailPrint "Starting RCS Worker..."
-      SimpleSC::StartService "RCSWorker" "" 30
-    
+
       DetailPrint "Writing the configuration..."
       SetDetailsPrint "textonly"
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --defaults --CN $masterAddress"
@@ -492,6 +543,9 @@ Section "Install Section" SecInstall
     Sleep 3000
     DetailPrint "Starting RCS Worker..."
     SimpleSC::StartService "RCSWorker" "" 30
+
+    DetailPrint "Starting RCS Aggregator..."
+    SimpleSC::StartService "RCSAggregator" "" 30
 
     !cd '..'
     WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
@@ -618,6 +672,8 @@ Section Uninstall
   DetailPrint "Stopping RCS Services..."
   SimpleSC::StopService "RCSCollector" 1
   SimpleSC::StopService "RCSWorker" 1
+  SimpleSC::StopService "RCSAggregator" 1
+  SimpleSC::StopService "RCSIntelligence" 1
   SimpleSC::StopService "RCSDB" 1
   SimpleSC::StopService "RCSMasterRouter" 1
   SimpleSC::StopService "RCSMasterConfig" 1
@@ -627,6 +683,8 @@ Section Uninstall
   DetailPrint "Removing RCS Services..."
   SimpleSC::RemoveService "RCSCollector"
   SimpleSC::RemoveService "RCSWorker"
+  SimpleSC::RemoveService "RCSAggregator"
+  SimpleSC::RemoveService "RCSIntelligence"
   SimpleSC::RemoveService "RCSDB"
   SimpleSC::RemoveService "RCSMasterRouter"
   SimpleSC::RemoveService "RCSMasterConfig"
