@@ -50,7 +50,7 @@ class AggregatorQueue
   QUEUED = 0
   PROCESSED = 1
 
-  AGGREGATOR_TYPES = []
+  AGGREGATOR_TYPES = ['call', 'message', 'chat']
 
   field :target_id, type: String
   field :evidence_id, type: String

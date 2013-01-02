@@ -4,8 +4,6 @@
 # the evidence to be processed are queued by the workers
 #
 
-require_relative 'leadtools'
-
 require 'rcs-common/trace'
 require 'rcs-common/fixnum'
 require 'rcs-common/sanitize'
@@ -20,8 +18,6 @@ class Processor
   def self.run
     db = Mongoid.database
     coll = db.collection('aggregator_queue')
-
-    trace :info, "Aggregator ready to go..."
 
     # infinite processing loop
     loop do
@@ -41,7 +37,11 @@ class Processor
 
   def self.process(entry)
     ev = Evidence.collection_class(entry['target_id']).find(entry['evidence_id'])
+    target = Item.find(entry['target_id'])
 
+    trace :info, "Processing #{ev.type} for target #{target.name}"
+
+    puts ev.data.inspect
 
   rescue Exception => e
     trace :error, "Cannot process evidence: #{e.message}"

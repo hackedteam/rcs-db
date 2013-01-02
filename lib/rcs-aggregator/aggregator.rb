@@ -4,11 +4,13 @@
 
 # from RCS::DB
 if File.directory?(Dir.pwd + '/lib/rcs-ocr-release')
+  require 'rcs-db-release/db'
   require 'rcs-db-release/config'
   require 'rcs-db-release/license'
   require 'rcs-db-release/db_layer'
   require 'rcs-db-release/grid'
 else
+  require 'rcs-db/db'
   require 'rcs-db/config'
   require 'rcs-db/license'
   require 'rcs-db/db_layer'
@@ -19,9 +21,41 @@ end
 require 'rcs-common/trace'
 
 require_relative 'processor'
+require_relative 'heartbeat'
 
 module RCS
 module Aggregator
+
+class Aggregator
+  include Tracer
+  extend Tracer
+
+  def run
+
+    # all the events are handled here
+    EM::run do
+      # if we have epoll(), prefer it over select()
+      EM.epoll
+
+      # set the thread pool size
+      EM.threadpool_size = 50
+
+      # set up the heartbeat (the interval is in the config)
+      EM.defer(proc{ HeartBeat.perform })
+      EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
+
+      # calculate and save the stats
+      #EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }
+
+      # use a thread for the infinite processor waiting on the queue
+      EM.defer(proc{ Processor.run })
+
+      trace :info, "Aggregator Module ready!"
+    end
+
+  end
+
+end
 
 class Application
   include RCS::Tracer
@@ -88,7 +122,7 @@ class Application
       end
 
       # the infinite processing loop
-      Processor.run
+      Aggregator.new.run
 
       # never reached...
 
