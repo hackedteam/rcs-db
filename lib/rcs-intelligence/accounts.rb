@@ -18,7 +18,7 @@ class Accounts
 
     def retrieve
       count = ::Item.targets.count
-      trace :info, "Retrieving accounts #{count} targets"
+      trace :info, "Retrieving accounts for #{count} targets"
 
       ::Item.targets.each do |target|
 
@@ -26,11 +26,11 @@ class Accounts
         entity = ::Entity.targets.also_in(path: [target[:_id]]).first
 
         # skip if there's nothing new to analyze
-        next if entity[:analyzed][:handles]
+        next if entity[:analyzed]['handles']
 
         trace :info, "Analyzing entity #{entity.name} for new handles"
 
-        last = entity[:analyzed][:handles_last]
+        last = entity[:analyzed]['handles_last']
 
         # passwords parsing
         # here we extract every account that seems an email address
@@ -47,8 +47,7 @@ class Accounts
         end
 
         # mark it as analyzed
-        entity[:analyzed][:handles] = true
-        entity[:analyzed][:handles_last] = last
+        entity[:analyzed] = {'handles' => true, 'handles_last' => last}
         entity.save
       end
 

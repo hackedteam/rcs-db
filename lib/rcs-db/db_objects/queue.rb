@@ -85,17 +85,18 @@ class IntelligenceQueue
 
   def self.add(target_id, evidence_id, type)
     # skip not interesting evidence
-    return unless AGGREGATOR_TYPES.include? type
+    return unless INTELLIGENCE_TYPES.include? type
 
     # mark the entity as dirty so the module can analyze it
     if ['addressbook', 'password'].include? type
       entity = ::Entity.targets.also_in(path: [target_id]).first
-      entity[:analyzed] = false
+      # recreate the hash to trigger the mongoid save
+      entity[:analyzed] = {'handles' => false, 'handles_last' => entity[:analyzed]['handles_last']}
       entity.save
     end
 
 
-    #trace :debug, "Adding to INTELLI queue: #{target_id} #{evidence_id}"
+    #trace :debug, "Adding to INTELLIGENCE queue: #{target_id} #{evidence_id}"
     #AggregatorQueue.create!({target_id: target_id.to_s, evidence_id: evidence_id.to_s, flag: QUEUED})
   end
 

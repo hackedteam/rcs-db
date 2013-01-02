@@ -387,6 +387,14 @@ class Item
     case self._kind
       when 'target'
         self.create_evidence_collections
+        # also create the relative entity
+        Entity.create! do |entity|
+          entity.type = :target
+          entity.level = :automatic
+          entity.path = self.path + [self._id]
+          entity.name = self.name
+          entity.desc = self.desc
+        end
     end
 
     RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'create'})

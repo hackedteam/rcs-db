@@ -173,7 +173,7 @@ class InstanceWorker
                 ev_type = ev[:type]
 
                 evidence_id, index = processor.feed(ev, @agent, @target) do |evidence|
-                  save_evidence(evidence) unless evidence
+                  save_evidence(evidence) unless evidence.nil?
                 end
 
               rescue InvalidAgentTarget => e
