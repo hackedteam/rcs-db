@@ -154,6 +154,36 @@ class EntityController < RESTController
     end
   end
 
+  def add_handle
+    require_auth_level :view
+    require_auth_level :view_profiles
+
+    mongoid_query do
+
+      e = Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
+      e.handles.create!(level: :manual, type: @params['type'], name: @params['name'])
+
+      Audit.log :actor => @session[:user][:name], :action => 'entity.add_handle', :desc => "Added a new handle to #{e.name}"
+
+      return ok
+    end
+  end
+
+  def del_handle
+    require_auth_level :view
+    require_auth_level :view_profiles
+
+    mongoid_query do
+
+      e = Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
+      e.handles..destroy_all(conditions: { _id: @params['handle_id'] })
+
+      Audit.log :actor => @session[:user][:name], :action => 'entity.del_handle', :desc => "Deleted an handle from #{e.name}"
+
+      return ok
+    end
+  end
+
 end
 
 end #DB::

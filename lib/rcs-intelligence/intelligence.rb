@@ -49,10 +49,10 @@ class Intelligence
       # calculate and save the stats
       #EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }
 
-      # retrieve the account information (this is free event without license)
-      # TODO: interval is in minutes, multiply by 60
+      # retrieve the account information (this is free even without license)
       EM.defer(proc{ Accounts.retrieve })
-      EM::PeriodicTimer.new(RCS::DB::Config.instance.global['INT_INTERVAL']) { EM.defer(proc{ Accounts.retrieve }) }
+      # interval is in minutes
+      EM::PeriodicTimer.new(RCS::DB::Config.instance.global['INT_INTERVAL'] * 60) { EM.defer(proc{ Accounts.retrieve }) }
 
       if $license['correlation']
         # TODO: perform the statistical analysis
