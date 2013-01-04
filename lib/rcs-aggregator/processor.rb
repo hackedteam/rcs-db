@@ -42,7 +42,7 @@ class Processor
     trace :info, "Processing #{ev.type} for target #{target.name}"
 
     # extract peer(s) from call, mail, chat, sms
-    data = extract_data(ev) if ['CALL', 'CHAT', 'MESSAGE'].include? ev.type
+    data = extract_data(ev) if ['call', 'chat', 'message'].include? ev.type
 
     trace :debug, ev.data.inspect
     trace :debug, "PARSED: #{data.inspect}"
@@ -59,11 +59,11 @@ class Processor
     data = {}
 
     case ev.type
-      when 'CALL'
+      when 'call'
         data = {:peer => ev.data['peer'], :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['program'], :duration => ev.data['duration']}
-      when 'CHAT'
+      when 'chat'
         data = {:peer => ev.data['peer'], :versus => nil, :type => ev.data['program']}
-      when 'MESSAGE'
+      when 'message'
         if ev.data['type'] == :mail
           data = {:peer => ev.data['incoming'] == 1 ? ev.data['from'] : ev.data['rcpt'], :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['type']}
         else
