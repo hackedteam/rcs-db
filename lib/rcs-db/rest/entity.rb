@@ -19,7 +19,7 @@ class EntityController < RESTController
 
     mongoid_query do
       db = Mongoid.database
-      j = db.collection('entities').find(filter, :fields => ["type", "level", "name", "path"])
+      j = db.collection('entities').find(filter, :fields => ["type", "level", "name", "path", "photos"])
       ok(j)
     end
   end

@@ -54,6 +54,9 @@ class Accounts
     end
 
     def add_handle(entity, data)
+
+      trace :debug, "Parsing handle data: #{data.inspect}"
+
       # target account in the contacts (addressbook)
       if [:facebook, :twitter, :gmail, :bbm, :whatsapp, :phone].include? data['program']
         unless data['info'].length == 0

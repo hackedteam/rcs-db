@@ -255,7 +255,7 @@ class Call
 
     unless queueing?
       if dual_channel?
-        @evidence ||= store @peer, @program, @start_time, @agent, @target
+        @evidence ||= store(@peer, @program, @incoming, @start_time, @agent, @target)
 
         num_samples = [@channels[:outgoing].wav_data.size, @channels[:incoming].wav_data.size].min
         @duration += (1.0 * num_samples) / @sample_rate
@@ -265,7 +265,7 @@ class Call
 
         yield @sample_rate, left_pcm, right_pcm
       elsif single_channel?
-        @evidence ||= store @peer, @program, @start_time, @agent, @target
+        @evidence ||= store(@peer, @program, @incoming, @start_time, @agent, @target)
 
         channel = @channels.values[0]
         num_samples = channel.wav_data.size

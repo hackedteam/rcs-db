@@ -56,6 +56,8 @@ class Processor
   end
 
   def self.extract_data(ev)
+    data = {}
+
     case ev.type
       when 'CALL'
         data = {:peer => ev.data['peer'], :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['program'], :duration => ev.data['duration']}
