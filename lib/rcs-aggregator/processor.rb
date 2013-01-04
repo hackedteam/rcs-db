@@ -41,7 +41,11 @@ class Processor
 
     trace :info, "Processing #{ev.type} for target #{target.name}"
 
-    puts ev.data.inspect
+    # extract peer(s) from call, mail, chat, sms
+    data = extract_data(ev) if ['CALL', 'CHAT', 'MESSAGE'].include? ev.type
+
+    trace :debug, ev.data.inspect
+    trace :debug, "PARSED: #{data.inspect}"
 
   rescue Exception => e
     trace :error, "Cannot process evidence: #{e.message}"
@@ -51,6 +55,22 @@ class Processor
     #exit!
   end
 
+  def self.extract_data(ev)
+    case ev.type
+      when 'CALL'
+        data = {:peer => ev.data['peer'], :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['program'], :duration => ev.data['duration']}
+      when 'CHAT'
+        data = {:peer => ev.data['peer'], :versus => nil, :type => ev.data['program']}
+      when 'MESSAGE'
+        if ev.data['type'] == :mail
+          data = {:peer => ev.data['incoming'] == 1 ? ev.data['from'] : ev.data['rcpt'], :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['type']}
+        else
+          data = {:peer => ev.data['incoming'] == 1 ? ev.data['from'] : ev.data['rcpt'], :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['type']}
+        end
+    end
+
+    return data
+  end
 
 end
 
