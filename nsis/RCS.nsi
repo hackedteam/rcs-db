@@ -299,12 +299,16 @@ Section "Install Section" SecInstall
 
     SetOutPath "$INSTDIR\DB\config\certs"
     File "config\certs\openssl.cnf"
+    File "config\certs\globalsign.cer"
 
     SetDetailsPrint "both"
     DetailPrint "done"
 
     DetailPrint "Installing license.."
     CopyFiles /SILENT $masterLicense "$INSTDIR\DB\config\rcs.lic"
+
+    ;DetailPrint "Installing globalsign certificate.."
+    ;nsExec::ExecToLog "certmgr.exe /add /c $INSTDIR\DB\config\certs\globalsign.cer /s /r localMachine CA"
 
     !ifdef FULL_INSTALL
       DetailPrint "Installing VC redistributable 2008 (x86).."
