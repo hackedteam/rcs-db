@@ -45,20 +45,29 @@ class Processor
     data = extract_data(ev) if ['call', 'chat', 'message'].include? ev.type
 
     trace :debug, ev.data.inspect
-    trace :debug, "PARSED: #{data.inspect}"
 
     # already exist?
     #   update
     # else
     #   create new one
-    #
 
-    agg = Aggregate.dynamic_new(entry['target_id'])
-    agg.day = Time.at(ev.da).strftime('%Y%m%d')
-    agg.type = ev.type
+    type = ev.type
     # for mail and sms use the actual one from the parsed data
-    agg.type = data[:type] if agg.type.eql? 'message'
-    agg.data = data
+    type = data[:type] if type.eql? 'message'
+
+    # we need to find a document that is in the same day, same type and that have the same peer and versus
+    # if not found, create a new entry, otherwise increment the number of occurrences
+    params = {day: Time.at(ev.da).strftime('%Y%m%d'), type: type, data: {peer: data[:peer], versus: data[:versus]}}
+
+    # find the existing aggregate or create a new one
+    agg = Aggregate.collection_class(entry['target_id']).find_or_create_by(params)
+
+    # we are sure we have the object persisted in the db
+    # so we have to perform an atomic operation because we have multiple aggregator working concurrently
+    agg.inc(:count, 1)
+
+    # sum up the duration of all the calls
+    agg.inc(:duration, data[:duration]) if type.eql? 'call'
 
     trace :debug, agg.inspect
 
@@ -74,7 +83,7 @@ class Processor
       when 'call'
         data = {:peer => ev.data['peer'], :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['program'], :duration => ev.data['duration']}
       when 'chat'
-        data = {:peer => ev.data['peer'], :type => ev.data['program']}
+        data = {:peer => ev.data['peer'], :versus => nil, :type => ev.data['program']}
       when 'message'
         if ev.data['type'] == :mail
           data = {:peer => ev.data['incoming'] == 1 ? ev.data['from'] : ev.data['rcpt'], :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['type']}

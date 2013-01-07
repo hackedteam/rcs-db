@@ -16,8 +16,10 @@ class Aggregate
       class Aggregate_#{target}
         include Mongoid::Document
 
-        field :day, type: String            # day of aggregation
+        field :day, type: String                      # day of aggregation
         field :type, type: String
+        field :count, type: Integer, default: 0
+        field :duration, type: Integer, default: 0    # for calls
         field :data, type: Hash
 
         store_in Aggregate.collection_name('#{target}')
