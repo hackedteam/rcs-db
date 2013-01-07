@@ -47,12 +47,24 @@ class Processor
     trace :debug, ev.data.inspect
     trace :debug, "PARSED: #{data.inspect}"
 
+    # already exist?
+    #   update
+    # else
+    #   create new one
+    #
+
+    agg = Aggregate.dynamic_new(entry['target_id'])
+    agg.day = Time.at(ev.da).strftime('%Y%m%d')
+    agg.type = ev.type
+    # for mail and sms use the actual one from the parsed data
+    agg.type = data[:type] if agg.type.eql? 'message'
+    agg.data = data
+
+    trace :debug, agg.inspect
+
   rescue Exception => e
     trace :error, "Cannot process evidence: #{e.message}"
     #trace :error, e.backtrace.join("\n")
-    #FileUtils.rm_rf temp
-    #FileUtils.mv temp, temp + '.jpg'
-    #exit!
   end
 
   def self.extract_data(ev)
@@ -62,7 +74,7 @@ class Processor
       when 'call'
         data = {:peer => ev.data['peer'], :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['program'], :duration => ev.data['duration']}
       when 'chat'
-        data = {:peer => ev.data['peer'], :versus => nil, :type => ev.data['program']}
+        data = {:peer => ev.data['peer'], :type => ev.data['program']}
       when 'message'
         if ev.data['type'] == :mail
           data = {:peer => ev.data['incoming'] == 1 ? ev.data['from'] : ev.data['rcpt'], :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['type']}

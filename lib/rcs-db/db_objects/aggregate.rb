@@ -16,20 +16,16 @@ class Aggregate
       class Aggregate_#{target}
         include Mongoid::Document
 
-        field :date, type: String            # period of aggregation
+        field :day, type: String            # day of aggregation
         field :type, type: String
         field :data, type: Hash
 
         store_in Aggregate.collection_name('#{target}')
 
         index :type, background: true
-        index :da, background: true
-        index :dr, background: true
-        index :aid, background: true
-        index :rel, background: true
-        index :blo, background: true
-        index :kw, background: true
-        shard_key :type, :da, :aid
+        index :day, background: true
+        index "data.peer", background: true
+        shard_key :type, :day
 
       end
     END

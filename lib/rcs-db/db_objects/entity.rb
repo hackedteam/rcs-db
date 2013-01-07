@@ -106,7 +106,7 @@ class Entity
   end
 
   def del_photo(id)
-    self.photos.delete(id)
+    self.photos.delete(BSON::ObjectId.from_string(id))
     RCS::DB::GridFS.delete(id, self.path.last.to_s)
     self.save
   end
