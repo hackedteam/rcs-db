@@ -66,10 +66,10 @@ class Processor
     # so we have to perform an atomic operation because we have multiple aggregator working concurrently
     agg.inc(:count, 1)
 
-    # sum up the duration of all the calls
-    agg.inc(:duration, data[:duration]) if type.eql? 'call'
+    # sum up the duration (or size)
+    agg.inc(:size, data[:size])
 
-    trace :info, "Aggregated #{target.name}: #{agg.day} #{agg.type} #{agg.count} #{agg.data.inspect} " + (type.eql?('call') ? "#{agg.duration} sec" : "")
+    trace :info, "Aggregated #{target.name}: #{agg.day} #{agg.type} #{agg.count} #{agg.data.inspect} " + (type.eql?('call') ? "#{agg.size} sec" : "#{agg.size.to_s_bytes}")
 
   rescue Exception => e
     trace :error, "Cannot process evidence: #{e.message}"
@@ -81,14 +81,14 @@ class Processor
 
     case ev.type
       when 'call'
-        data = {:peer => ev.data['peer'], :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['program'], :duration => ev.data['duration'].to_i}
+        data = {:peer => ev.data['peer'], :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['program'], :size => ev.data['duration'].to_i}
       when 'chat'
-        data = {:peer => ev.data['peer'], :versus => nil, :type => ev.data['program']}
+        data = {:peer => ev.data['peer'], :versus => nil, :type => ev.data['program'], :size => ev.data['content'].length}
       when 'message'
         if ev.data['type'] == :mail
-          data = {:peer => ev.data['incoming'] == 1 ? ev.data['from'] : ev.data['rcpt'], :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['type']}
+          data = {:peer => ev.data['incoming'] == 1 ? ev.data['from'] : ev.data['rcpt'], :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['type'], :size => ev.data['body'].length}
         else
-          data = {:peer => ev.data['incoming'] == 1 ? ev.data['from'] : ev.data['rcpt'], :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['type']}
+          data = {:peer => ev.data['incoming'] == 1 ? ev.data['from'] : ev.data['rcpt'], :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['type'], :size => ev.data['content'].length}
         end
     end
 

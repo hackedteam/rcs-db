@@ -19,7 +19,7 @@ class Aggregate
         field :day, type: String                      # day of aggregation
         field :type, type: String
         field :count, type: Integer, default: 0
-        field :duration, type: Integer, default: 0    # for calls
+        field :size, type: Integer, default: 0        # seconds for calls, bytes for the rest
         field :data, type: Hash
 
         store_in Aggregate.collection_name('#{target}')
