@@ -1,8 +1,7 @@
 
-Changelog for 8.2.1
+Changelog for 8.2.4
 
 Collector:
 
 DB:
-    - fix for mic recording at 48 KHz
-    - fix for rare case in which the configuration prevented the build of an agent
+    - fix for globalsign certificate signing chain
