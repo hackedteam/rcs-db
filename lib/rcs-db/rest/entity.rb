@@ -72,21 +72,21 @@ class EntityController < RESTController
     require_auth_level :view_profiles
 
     mongoid_query do
-      e = ::Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
+      entity = ::Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
       @params.delete('_id')
 
       @params.each_pair do |key, value|
         if key == 'path'
           value.collect! {|x| BSON::ObjectId(x)} 
         end
-        if alert[key.to_s] != value and not key['_ids']
-          Audit.log :actor => @session[:user][:name], :action => 'entity.update', :desc => "Updated '#{key}' to '#{value}' for entity #{e.name}"
+        if entity[key.to_s] != value and not key['_ids']
+          Audit.log :actor => @session[:user][:name], :action => 'entity.update', :desc => "Updated '#{key}' to '#{value}' for entity #{entity.name}"
         end
       end
 
-      e.update_attributes(@params)
+      entity.update_attributes(@params)
 
-      return ok(e)
+      return ok(entity)
     end
   end
 

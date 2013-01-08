@@ -99,14 +99,14 @@ class Entity
     id = RCS::DB::GridFS.put(content, {filename: self[:_id].to_s}, self.path.last.to_s)
 
     self.photos ||= []
-    self.photos << id
+    self.photos << id.to_s
     self.save
 
     return id
   end
 
   def del_photo(id)
-    self.photos.delete(BSON::ObjectId.from_string(id))
+    self.photos.delete(id)
     RCS::DB::GridFS.delete(id, self.path.last.to_s)
     self.save
   end
