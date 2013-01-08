@@ -69,11 +69,11 @@ class Processor
     # sum up the duration of all the calls
     agg.inc(:duration, data[:duration]) if type.eql? 'call'
 
-    trace :debug, agg.inspect
+    trace :info, "Aggregated #{target.name}: #{agg.day} #{agg.type} #{agg.count} #{agg.data.inspect} " + (type.eql?('call') ? "#{agg.duration} sec" : "")
 
   rescue Exception => e
     trace :error, "Cannot process evidence: #{e.message}"
-    #trace :error, e.backtrace.join("\n")
+    trace :error, e.backtrace.join("\n")
   end
 
   def self.extract_data(ev)
@@ -81,7 +81,7 @@ class Processor
 
     case ev.type
       when 'call'
-        data = {:peer => ev.data['peer'], :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['program'], :duration => ev.data['duration']}
+        data = {:peer => ev.data['peer'], :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['program'], :duration => ev.data['duration'].to_i}
       when 'chat'
         data = {:peer => ev.data['peer'], :versus => nil, :type => ev.data['program']}
       when 'message'
