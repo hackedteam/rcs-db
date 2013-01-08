@@ -18,7 +18,7 @@ class Accounts
 
     def retrieve
       count = ::Item.targets.count
-      trace :info, "Retrieving accounts for #{count} targets"
+      trace :debug, "Retrieving accounts for #{count} targets"
 
       ::Item.targets.each do |target|
 

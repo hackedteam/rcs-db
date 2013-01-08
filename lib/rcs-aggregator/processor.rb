@@ -73,7 +73,7 @@ class Processor
 
   rescue Exception => e
     trace :error, "Cannot process evidence: #{e.message}"
-    trace :error, e.backtrace.join("\n")
+    trace :fatal, e.backtrace.join("\n")
   end
 
   def self.extract_data(ev)

@@ -77,7 +77,7 @@ class BackupManager
       case backup.what
         when 'metadata'
           # don't backup evidence collections
-          params[:coll].delete_if {|x| x['evidence.'] || x['grid.'] || x['cores'] || x['ocr_queue']}
+          params[:coll].delete_if {|x| x['evidence.'] || x['aggregate.'] || x['grid.'] || x['cores'] || x['ocr_queue']}
         when 'full'
           # we backup everything... woah !!
         else
@@ -93,7 +93,7 @@ class BackupManager
         incremental_ids = {}
 
         params[:coll].each do |coll|
-          next unless (coll['evidence.'] || coll['grid.'])
+          next unless (coll['evidence.'] || coll['aggregate.'] || coll['grid.'])
           # get the last bson object id
           ev = db.collection(coll).find().sort({_id: -1}).limit(1).first
           incremental_ids[coll.to_s.gsub(".", "_")] = ev['_id'].to_s unless ev.nil?
@@ -199,6 +199,7 @@ class BackupManager
       case item[:_kind]
         when 'target'
           params[:coll] << "evidence.#{item._id}"
+          params[:coll] << "aggregate.#{item._id}"
           params[:coll] << "grid.#{item._id}.files"
           params[:coll] << "grid.#{item._id}.chunks"
 
