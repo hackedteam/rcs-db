@@ -29,6 +29,20 @@ class Aggregate
         index "data.peer", background: true
         shard_key :type, :day
 
+        after_create :create_callback
+
+        protected
+
+        def create_callback
+          # enable sharding only if not enabled
+          db = Mongoid.database
+          coll = db.collection(Aggregate.collection_name('#{target}'))
+          unless coll.stats['sharded']
+            Aggregate.collection_class('#{target}').create_indexes
+            RCS::DB::Shard.set_key(coll, {type: 1, day: 1})
+          end
+        end
+
       end
     END
     

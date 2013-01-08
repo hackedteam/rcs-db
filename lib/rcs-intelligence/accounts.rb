@@ -58,7 +58,7 @@ class Accounts
       trace :debug, "Parsing handle data: #{data.inspect}"
 
       # target account in the contacts (addressbook)
-      if [:facebook, :twitter, :gmail, :skype, :bbm, :whatsapp, :phone].include? data['program']
+      if [:facebook, :twitter, :gmail, :skype, :bbm, :whatsapp, :phone, :mail, :linkedin].include? data['program']
         unless data['info'].length == 0
           type = data['program']
           name = data['info']
