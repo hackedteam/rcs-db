@@ -1429,13 +1429,26 @@ end
 
 # entities
 if true
-  puts "entity.index"
-  res = http.request_get("/entity", {'Cookie' => cookie})
+  #puts "entity.index"
+  #res = http.request_get("/entity", {'Cookie' => cookie})
+  #puts res.body
+  #puts
+  
+  puts "entity.show"
+  res = http.request_get("/entity/50D19ACF2AFB65246B00000A", {'Cookie' => cookie})
   puts res.body
   puts
-  
+
+  puts "entity.most_contacted"
+  filter = URI.escape("_id=50D19ACF2AFB65246B00000A&from=20130109&to=20130109&num=1")
+  res = http.request_get("/entity/most_contacted?#{filter}", {'Cookie' => cookie})
+  puts res.body
+  puts
+
   
 end
+
+
 
 # logout
 res = http.request_post('/auth/logout', nil, {'Cookie' => cookie})

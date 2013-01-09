@@ -176,11 +176,28 @@ class EntityController < RESTController
     mongoid_query do
 
       e = Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
-      e.handles..destroy_all(conditions: { _id: @params['handle_id'] })
+      e.handles.destroy_all(conditions: { _id: @params['handle_id'] })
 
       Audit.log :actor => @session[:user][:name], :action => 'entity.del_handle', :desc => "Deleted an handle from #{e.name}"
 
       return ok
+    end
+  end
+
+  def most_contacted
+    require_auth_level :view
+    require_auth_level :view_profiles
+
+    return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :correlation
+
+    mongoid_query do
+      entity = Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
+      return conflict('NO_AGGREGATES_FOR_ENTITY') unless entity.type.eql? :target
+
+      # extract the most contacted peers for this entity
+      contacted = Aggregate.most_contacted(entity.path.last.to_s, @params)
+
+      return ok(contacted)
     end
   end
 
