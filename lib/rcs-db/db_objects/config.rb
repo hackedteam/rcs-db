@@ -38,6 +38,19 @@ class Configuration
     return nil
   end
 
+  def screenshot_enabled?
+    # search for the configuration of the screenshot
+    config = JSON.parse(self.config)
+    config['actions'].each do |action|
+      action['subactions'].each do |sub|
+        if sub['action'] == 'module' and sub['status'] == 'start' and sub['module'] == 'screenshot'
+          return true
+        end
+      end
+    end
+    return false
+  end
+
   def is_ghost_entry?(h)
     h.has_value? "Ghost In The Shell"
   end
