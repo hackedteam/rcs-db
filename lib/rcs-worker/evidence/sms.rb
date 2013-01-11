@@ -8,4 +8,13 @@ module RCS
       :message
     end
   end # ::SmsProcessing
+
+  module SmsnewProcessing
+    extend SingleEvidence
+
+    def type
+      :message
+    end
+  end # ::SmsnewProcessing
+
 end # ::RCS

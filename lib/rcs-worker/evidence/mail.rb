@@ -1,11 +1,11 @@
 require_relative 'single_evidence'
 
 module RCS
-module ChatskypeProcessing
+module MailProcessing
   extend SingleEvidence
 
   def type
-    :chat
+    :message
   end
-end # ChatskypeProcessing
-end # RCS
+end # ::Mailraw
+end # ::RCS

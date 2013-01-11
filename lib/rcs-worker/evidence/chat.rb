@@ -8,4 +8,13 @@ module ChatProcessing
     :chat
   end
 end # ChatProcessing
+
+module ChatskypeProcessing
+  extend SingleEvidence
+
+  def type
+    :chat
+  end
+end # ChatskypeProcessing
+
 end # RCS
