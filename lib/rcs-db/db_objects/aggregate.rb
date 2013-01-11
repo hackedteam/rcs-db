@@ -107,8 +107,12 @@ class Aggregate
     limit = params['num'].to_i - 1 if params['num']
     limit ||= 4
 
-    # sort the most contacted and cut the first N
-    top = group.collect {|s| s.sort {|e| e[sort_by]}.reverse.slice(0..limit) }
+    # sort the most contacted and cut the first N (also calculate the percentage)
+    top = group.collect do |set|
+      total = set.inject(0) {|sum, e| sum + e[sort_by]}
+      set.each {|e| e[:percent] = (e[sort_by] * 100 / total).round(1)}
+      set.sort {|x,y| x[sort_by] <=> y[sort_by]}.reverse.slice(0..limit)
+    end
 
     return top
   end

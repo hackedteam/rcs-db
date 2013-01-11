@@ -201,6 +201,24 @@ class EntityController < RESTController
     end
   end
 
+  def last_position
+    require_auth_level :view
+    require_auth_level :view_profiles
+
+    return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :correlation
+
+    mongoid_query do
+      entity = Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
+      return conflict('NO_AGGREGATES_FOR_ENTITY') unless entity.type.eql? :target
+
+      target = Item.find(entity.path.last)
+      evi = Evidence.collection_class(target[:_id].to_s).where(type: 'position').last
+
+      return ok(evi)
+    end
+  end
+
+
 end
 
 end #DB::
