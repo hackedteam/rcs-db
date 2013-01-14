@@ -81,13 +81,13 @@ class IntelligenceQueue
   field :evidence_id, type: String
   field :flag, type: Integer
 
-  store_in :aggregator_queue, capped: true, max: 500_000, size: 100_000_000
+  store_in :intelligence_queue, capped: true, max: 500_000, size: 100_000_000
 
   def self.add(target_id, evidence_id, type)
     # skip not interesting evidence
     return unless INTELLIGENCE_TYPES.include? type
 
-    # mark the entity as dirty so the module can analyze it
+    # mark the entity as dirty so the module can analyze it to search for new handles
     if ['addressbook', 'password'].include? type
       entity = ::Entity.targets.also_in(path: [target_id]).first
       # recreate the hash to trigger the mongoid save
@@ -95,9 +95,11 @@ class IntelligenceQueue
       entity.save
     end
 
-
-    #trace :debug, "Adding to INTELLIGENCE queue: #{target_id} #{evidence_id}"
-    #AggregatorQueue.create!({target_id: target_id.to_s, evidence_id: evidence_id.to_s, flag: QUEUED})
+    # perform correlation on these evidence
+    if ['position'].include? type
+      trace :debug, "Adding to INTELLIGENCE queue: #{target_id} #{evidence_id}"
+      IntelligenceQueue.create!({target_id: target_id.to_s, evidence_id: evidence_id.to_s, flag: QUEUED})
+    end
   end
 
 end

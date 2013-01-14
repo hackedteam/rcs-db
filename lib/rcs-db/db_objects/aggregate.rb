@@ -85,7 +85,7 @@ class Aggregate
               };"
 
     # from/to period to consider
-    options = {:query => {:day => {'$gte' => params['from'], '$lte' => params['to']} },
+    options = {:query => {:day => {'$gte' => params['from'], '$lte' => params['to']}, :type => {'$in' => ['call', 'chat', 'mail', 'sms', 'mms']} },
                :out => {:inline => 1}, :raw => true }
 
     # execute the map reduce job
