@@ -25,15 +25,17 @@ class Entity
   # used by the intelligence module to know what to analyze
   field :analyzed, type: Hash, default: {handles: false, handles_last: 0}
 
-  embeds_many :handles, class_name: "EntityHandle"
-  embeds_many :positions, class_name: "EntityPosition"
+  # last known position of a target
+  # position is = {lat, long, accuracy, time}
+  field :last_position, type: Hash, default: {}
 
-  embeds_one :current_position, class_name: "EntityPosition"
+  embeds_many :handles, class_name: "EntityHandle"
 
   index :name
   index :type
   index :path
   index "handles.name"
+  index "analyzed.handles"
 
   store_in :entities
 
@@ -55,7 +57,7 @@ class Entity
 
   def notify_callback
     # we are only interested if the properties changed are:
-    interesting = ['name', 'desc', 'current_position']
+    interesting = ['name', 'desc', 'last_position']
     return if not interesting.collect {|k| changes.include? k}.inject(:|)
 
     RCS::DB::PushManager.instance.notify('entity', {id: self._id, action: 'modify'})

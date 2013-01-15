@@ -20,6 +20,8 @@ TODO 9.0.0
     drop support for windows 2003
     upgrade to ruby 1.9.3-p365
     upgrade to mongoid 3.0.x
+    upgrade to mongo-ruby-driver 1.8
+    gridfs append + moped?
 
     create entity form most_contacted
     associate entity from most_contacted

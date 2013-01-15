@@ -2,9 +2,6 @@
 #  The main file of the Intelligence module (correlation)
 #
 
-require_relative 'heartbeat'
-require_relative 'accounts'
-
 # from RCS::DB
 if File.directory?(Dir.pwd + '/lib/rcs-intelligence-release')
   require 'rcs-db-release/db'
@@ -22,6 +19,10 @@ end
 
 # from RCS::Common
 require 'rcs-common/trace'
+
+require_relative 'heartbeat'
+require_relative 'accounts'
+require_relative 'processor'
 
 require 'eventmachine'
 
@@ -55,7 +56,8 @@ class Intelligence
       EM::PeriodicTimer.new(RCS::DB::Config.instance.global['INT_INTERVAL'] * 60) { EM.defer(proc{ Accounts.retrieve }) }
 
       if $license['correlation']
-        # TODO: perform the statistical analysis
+        # use a thread for the infinite processor waiting on the queue
+        EM.defer(proc{ Processor.run })
       end
 
       trace :info, "Intelligence Module ready!"
