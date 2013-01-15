@@ -55,7 +55,7 @@ class Processor
     entity.last_position = {time: evidence[:da],
                             latitude: evidence[:data]['latitude'],
                             longitude: evidence[:data]['longitude'],
-                            accuracy: evidence[:data]['accuracy']
+                            accuracy: evidence[:data]['accuracy'].to_i
                            }
 
     trace :debug, "Saving last position for #{entity.name}: #{entity.last_position.inspect}"

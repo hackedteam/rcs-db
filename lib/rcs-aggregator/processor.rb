@@ -52,8 +52,7 @@ class Processor
     #   create new one
 
     type = ev.type
-    # for mail and sms use the actual one from the parsed data
-    type = data[:type] if type.eql? 'message'
+    type = data[:type] unless data[:type].nil?
 
     # we need to find a document that is in the same day, same type and that have the same peer and versus
     # if not found, create a new entry, otherwise increment the number of occurrences
@@ -88,7 +87,7 @@ class Processor
           data = {:peer => ev.data['peer'], :versus => nil, :type => ev.data['program'], :size => ev.data['content'].length}
         else
           # new chat format
-          data = {:peer => ev.data['incoming'] == 1 ? ev.data['from'] : ev.data['rcpt'], :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['type'], :size => ev.data['content'].length}
+          data = {:peer => ev.data['incoming'] == 1 ? ev.data['from'] : ev.data['rcpt'], :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['program'], :size => ev.data['content'].length}
         end
       when 'message'
         if ev.data['type'] == :mail
