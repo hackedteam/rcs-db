@@ -79,7 +79,9 @@ class Accounts
         add_domain(name, data['service'])
         create_entity_handle(entity, :automatic, :mail, name) if is_mail?(name)
       end
-
+    rescue Exception => e
+      trace :error, "Cannot add handle: " + e.message
+      trace :fatal, e.backtrace.join("\n")
     end
 
     def create_entity_handle(entity, level, type, name)

@@ -41,9 +41,26 @@ class Processor
 
     trace :info, "Processing #{ev.type} for entity #{entity.name}"
 
+    # save the last position of the entity
+    save_last_position(ev, entity) if ev.type.eql? 'position'
+
   rescue Exception => e
     trace :error, "Cannot process evidence: #{e.message}"
     trace :fatal, e.backtrace.join("\n")
+  end
+
+  def self.save_last_position(evidence, entity)
+    return if evidence[:data]['latitude'].nil? or evidence[:data]['longitude'].nil?
+
+    entity.last_position = {time: evidence[:da],
+                            latitude: evidence[:data]['latitude'],
+                            longitude: evidence[:data]['longitude'],
+                            accuracy: evidence[:data]['accuracy']
+                           }
+
+    trace :debug, "Saving last position for #{entity.name}: #{entity.last_position.inspect}"
+
+    entity.save
   end
 
 

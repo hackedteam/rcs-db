@@ -83,7 +83,13 @@ class Processor
       when 'call'
         data = {:peer => ev.data['peer'], :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['program'], :size => ev.data['duration'].to_i}
       when 'chat'
-        data = {:peer => ev.data['peer'], :versus => nil, :type => ev.data['program'], :size => ev.data['content'].length}
+        if ev.data['peer']
+          # old chat format
+          data = {:peer => ev.data['peer'], :versus => nil, :type => ev.data['program'], :size => ev.data['content'].length}
+        else
+          # new chat format
+          data = {:peer => ev.data['incoming'] == 1 ? ev.data['from'] : ev.data['rcpt'], :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['type'], :size => ev.data['content'].length}
+        end
       when 'message'
         if ev.data['type'] == :mail
           data = {:peer => ev.data['incoming'] == 1 ? ev.data['from'] : ev.data['rcpt'], :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['type'], :size => ev.data['body'].length}
