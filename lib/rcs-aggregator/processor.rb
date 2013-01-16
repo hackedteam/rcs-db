@@ -48,18 +48,18 @@ class Processor
 
     trace :debug, ev.data.inspect
 
-    data.each do |entry|
+    data.each do |datum|
       # already exist?
       #   update
       # else
       #   create new one
 
       type = ev.type
-      type = entry[:type] unless entry[:type].nil?
+      type = datum[:type] unless datum[:type].nil?
 
       # we need to find a document that is in the same day, same type and that have the same peer and versus
       # if not found, create a new entry, otherwise increment the number of occurrences
-      params = {day: Time.at(ev.da).strftime('%Y%m%d'), type: type, data: {peer: entry[:peer], versus: entry[:versus]}}
+      params = {day: Time.at(ev.da).strftime('%Y%m%d'), type: type, data: {peer: datum[:peer], versus: datum[:versus]}}
 
       # find the existing aggregate or create a new one
       agg = Aggregate.collection_class(entry['target_id']).find_or_create_by(params)
@@ -69,7 +69,7 @@ class Processor
       agg.inc(:count, 1)
 
       # sum up the duration (or size)
-      agg.inc(:size, entry[:size])
+      agg.inc(:size, datum[:size])
 
       trace :info, "Aggregated #{target.name}: #{agg.day} #{agg.type} #{agg.count} #{agg.data.inspect} " + (type.eql?('call') ? "#{agg.size} sec" : "#{agg.size.to_s_bytes}")
     end
