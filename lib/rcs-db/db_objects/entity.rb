@@ -1,11 +1,13 @@
 require 'mongoid'
-#require 'mongoid_spacial'
+require 'mongoid_spacial'
+
 #module RCS
 #module DB
 
 class Entity
   include Mongoid::Document
   include Mongoid::Timestamps
+  include Mongoid::Spacial::Document
 
   # this is the type of entity: target, person, position, etc
   field :type, type: Symbol
@@ -26,8 +28,10 @@ class Entity
   field :analyzed, type: Hash, default: {handles: false, handles_last: 0}
 
   # last known position of a target
-  # position is = {lat, long, accuracy, time}
-  field :last_position, type: Hash, default: {}
+  # using geospatial index in mongodb
+  field :position, type: Array, spacial: {lat: :latitude, lng: :longitude}
+  # position_addr contains {time, accuracy}
+  field :position_attr, type: Hash, default: {}
 
   embeds_many :handles, class_name: "EntityHandle"
 
@@ -36,6 +40,7 @@ class Entity
   index :path
   index "handles.name"
   index "analyzed.handles"
+  spacial_index :position
 
   store_in :entities
 
@@ -113,6 +118,15 @@ class Entity
     self.save
   end
 
+  def last_position=(hash)
+    self.position = {latitude: hash[:latitude], longitude: hash[:longitude]}
+    self.position_attr = {time: hash[:time], accuracy: hash[:accuracy]}
+  end
+
+  def last_position
+    return {lat: self.position[:lat], lng: self.position[:lng], time: self.position_attr[:time], accuracy: self.position_attr[:accuracy]}
+  end
+
 end
 
 
@@ -130,24 +144,6 @@ class EntityHandle
 
 end
 
-class EntityPosition
-  include Mongoid::Document
-#  include Mongoid::Spacial::Document
-  include Mongoid::Timestamps
-
-  embedded_in :entity
-
-  # the level of trust of the entity
-  field :level, type: Symbol
-
-  # using geospatial index in mongodb
-#  field :coords, type: Array, spacial: true
-  field :accuracy, type: Integer
-
-  field :address, type: String
-  field :desc, type: String
-  field :time, type: Integer
-end
 
 
 #end # ::DB

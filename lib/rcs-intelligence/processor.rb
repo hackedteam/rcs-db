@@ -52,15 +52,13 @@ class Processor
   def self.save_last_position(evidence, entity)
     return if evidence[:data]['latitude'].nil? or evidence[:data]['longitude'].nil?
 
-    entity.last_position = {time: evidence[:da],
-                            latitude: evidence[:data]['latitude'],
-                            longitude: evidence[:data]['longitude'],
-                            accuracy: evidence[:data]['accuracy'].to_i
-                           }
+    entity.last_position = {latitude: evidence[:data]['latitude'].to_f,
+                            longitude: evidence[:data]['longitude'].to_f,
+                            time: evidence[:da],
+                            accuracy: evidence[:data]['accuracy'].to_i}
+    entity.save
 
     trace :debug, "Saving last position for #{entity.name}: #{entity.last_position.inspect}"
-
-    entity.save
   end
 
 

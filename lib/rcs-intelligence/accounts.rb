@@ -16,6 +16,8 @@ class Accounts
 
   class << self
 
+    ADDRESSBOOK_TYPE = [:facebook, :twitter, :gmail, :skype, :bbm, :whatsapp, :phone, :mail, :linkedin]
+
     def retrieve
       count = ::Item.targets.count
       trace :debug, "Retrieving accounts for #{count} targets"
@@ -58,16 +60,15 @@ class Accounts
       trace :debug, "Parsing handle data: #{data.inspect}"
 
       # target account in the contacts (addressbook)
-      if [:facebook, :twitter, :gmail, :skype, :bbm, :whatsapp, :phone, :mail, :linkedin].include? data['program']
+      if ADDRESSBOOK_TYPES.include? data['program']
         unless data['info'].length == 0
           type = data['program']
           name = data['info']
           name = name.split(':')[1].chomp.strip if name[":"]
           create_entity_handle(entity, :automatic, type, name)
         end
-
-      # mail accounts from email clients saving account to the device
       elsif data['program'] =~ /outlook|mail/i
+        # mail accounts from email clients saving account to the device
         name = data['user']
         add_domain(name, data['service'])
         create_entity_handle(entity, :automatic, :mail, name) if is_mail?(name)

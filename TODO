@@ -10,8 +10,7 @@ TODO 8.3.0:
     search for entities
 
     aggregates:
-      fix chat peer!! (no versus, no rcpt)
-      check mail with multiple to: or cc:
+      chat & mail with multiple to: or cc:
       places
 
 
