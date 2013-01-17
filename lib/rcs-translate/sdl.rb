@@ -21,6 +21,7 @@ class SDL
       sdl_server = RCS::DB::Config.instance.global['SDL_SERVER']
       sdl_url = "http://#{sdl_server}/lwserver-rest-5.3/v1/lang-pairs/_/sync-translations"
 
+      trace :debug, "Connecting to #{sdl_url}"
       #trace :debug, "REQUEST: #{File.read(input_file)}"
 
       # send the request to the SDL server
