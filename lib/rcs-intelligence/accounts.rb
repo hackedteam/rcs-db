@@ -60,7 +60,7 @@ class Accounts
       trace :debug, "Parsing handle data: #{data.inspect}"
 
       # target account in the contacts (addressbook)
-      if ADDRESSBOOK_TYPES.include? data['program']
+      if ADDRESSBOOK_TYPE.include? data['program']
         unless data['info'].length == 0
           type = data['program']
           handle = data['info']
