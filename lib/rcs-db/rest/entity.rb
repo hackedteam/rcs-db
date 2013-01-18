@@ -161,7 +161,7 @@ class EntityController < RESTController
     mongoid_query do
 
       e = Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
-      e.handles.create!(level: :manual, type: @params['type'], name: @params['name'])
+      e.handles.create!(level: :manual, type: @params['type'], name: @params['name'], handle: @params['handle'])
 
       Audit.log :actor => @session[:user][:name], :action => 'entity.add_handle', :desc => "Added a new handle to #{e.name}"
 

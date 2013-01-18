@@ -141,7 +141,7 @@ class EntityHandle
 
   field :type, type: Symbol
   field :name, type: String
-
+  field :handle, type: String
 end
 
 

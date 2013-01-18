@@ -63,36 +63,36 @@ class Accounts
       if ADDRESSBOOK_TYPES.include? data['program']
         unless data['info'].length == 0
           type = data['program']
-          name = data['info']
-          name = name.split(':')[1].chomp.strip if name[":"]
-          create_entity_handle(entity, :automatic, type, name)
+          handle = data['info']
+          handle = handle.split(':')[1].chomp.strip if handle[":"]
+          create_entity_handle(entity, :automatic, type, handle, data['name'])
         end
       elsif data['program'] =~ /outlook|mail/i
         # mail accounts from email clients saving account to the device
-        name = data['user']
+        handle = data['user']
         add_domain(name, data['service'])
-        create_entity_handle(entity, :automatic, :mail, name) if is_mail?(name)
+        create_entity_handle(entity, :automatic, :mail, handle, '') if is_mail?(name)
       end
 
-      # infer on the user to discover email addresses
+      # infer on the user to discover email addresses (for passwords)
       if data['user']
         name = data['user']
         add_domain(name, data['service'])
-        create_entity_handle(entity, :automatic, :mail, name) if is_mail?(name)
+        create_entity_handle(entity, :automatic, :mail, name, '') if is_mail?(name)
       end
     rescue Exception => e
       trace :error, "Cannot add handle: " + e.message
       trace :fatal, e.backtrace.join("\n")
     end
 
-    def create_entity_handle(entity, level, type, name)
+    def create_entity_handle(entity, level, type, name, handle)
       # don't add if already exist
-      return if entity.handles.where({type: type, name: name}).count != 0
+      return if entity.handles.where({type: type, name: name, handle: handle}).count != 0
 
       trace :info, "Adding handle [#{type} #{name}] to entity: #{entity.name}"
 
       # add to the list of handles
-      entity.handles.create!(level: :automatic, type: type, name: name)
+      entity.handles.create!(level: :automatic, type: type, name: name, handle: handle)
     end
 
     def is_mail?(value)

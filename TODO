@@ -9,6 +9,8 @@ TODO 8.3.0:
 
     search for entities
 
+    extract actual mail from "ciccio" <pippo@me.com> in aggregator
+
     aggregates:
       places
 
@@ -23,6 +25,8 @@ TODO 9.0.0
 
     create entity form most_contacted
     associate entity from most_contacted
+
+    identity relation if two entities have the same handles
 
     entities:
       - manual (confirmed)
