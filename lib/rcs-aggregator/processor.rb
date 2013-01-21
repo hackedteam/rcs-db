@@ -106,8 +106,10 @@ class Processor
         # multiple rcpts creates multiple entries
         ev.data['rcpt'].split(',').each do |rcpt|
           if ev.data['type'] == :mail
-            #TODO: extract email from string "ciccio" <ask@me.it>
-            data << {:peer => ev.data['incoming'] == 1 ? ev.data['from'] : rcpt.strip, :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['type'], :size => ev.data['body'].length}
+            #extract email from string "Ask Me" <ask@me.it>
+            from = ev.data['from'].scan(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i).first
+            to = rcpt.strip.scan(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i).first
+            data << {:peer => ev.data['incoming'] == 1 ? from : to, :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['type'], :size => ev.data['body'].length}
           else
             data << {:peer => ev.data['incoming'] == 1 ? ev.data['from'] : rcpt.strip, :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['type'], :size => ev.data['content'].length}
           end
