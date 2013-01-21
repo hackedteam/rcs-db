@@ -89,7 +89,7 @@ class Accounts
       # don't add if already exist
       return if entity.handles.where({type: type, name: name, handle: handle}).count != 0
 
-      trace :info, "Adding handle [#{type} #{name}] to entity: #{entity.name}"
+      trace :info, "Adding handle [#{type} #{name} #{handle}] to entity: #{entity.name}"
 
       # add to the list of handles
       entity.handles.create!(level: :automatic, type: type, name: name, handle: handle)

@@ -1434,13 +1434,16 @@ if true
   #puts res.body
   #puts
   
+  entity = '50D19ACF2AFB65246B00000A'
+  #entity = '50FD0AD7AEF1DE1658000092'
+  
   puts "entity.show"
-  res = http.request_get("/entity/50D19ACF2AFB65246B00000A", {'Cookie' => cookie})
+  res = http.request_get("/entity/#{entity}", {'Cookie' => cookie})
   puts res.body
   puts
 
   puts "entity.most_contacted"
-  filter = URI.escape("_id=50D19ACF2AFB65246B00000A&from=20130109&to=20130109&num=1")
+  filter = URI.escape("_id=#{entity}&from=20130101&to=20130121&num=5")
   res = http.request_get("/entity/most_contacted?#{filter}", {'Cookie' => cookie})
   puts res.body
   puts

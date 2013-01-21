@@ -65,6 +65,9 @@ class Aggregate
   end
 
   def self.most_contacted(target, params)
+
+    most_contacted_types = ['call', 'chat', 'mail', 'sms', 'mms', 'facebook', 'gmail', 'skype', 'bbm', 'whatsapp']
+
     db = Mongoid.database
     aggregate = db.collection(Aggregate.collection_name(target))
 
@@ -85,7 +88,7 @@ class Aggregate
               };"
 
     # from/to period to consider
-    options = {:query => {:day => {'$gte' => params['from'], '$lte' => params['to']}, :type => {'$in' => ['call', 'chat', 'mail', 'sms', 'mms']} },
+    options = {:query => {:day => {'$gte' => params['from'], '$lte' => params['to']}, :type => {'$in' => most_contacted_types} },
                :out => {:inline => 1}, :raw => true }
 
     # execute the map reduce job
@@ -112,6 +115,14 @@ class Aggregate
       total = set.inject(0) {|sum, e| sum + e[sort_by]}
       set.each {|e| e[:percent] = (e[sort_by] * 100 / total).round(1)}
       set.sort {|x,y| x[sort_by] <=> y[sort_by]}.reverse.slice(0..limit)
+    end
+
+    # resolve the names of the peer from the db of entities
+    top.each do |t|
+      t.each do |e|
+        e[:peer_name] = Entity.from_handle(e[:type], e[:peer], target)
+        e.delete(:peer_name) unless e[:peer_name]
+      end
     end
 
     return top

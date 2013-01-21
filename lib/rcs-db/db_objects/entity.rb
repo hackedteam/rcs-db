@@ -127,6 +127,23 @@ class Entity
     return {lat: self.position[:lat], lng: self.position[:lng], time: self.position_attr[:time], accuracy: self.position_attr[:accuracy]}
   end
 
+  def self.from_handle(type, handle, target_id = nil)
+    type = 'phone' if ['call', 'sms', 'mms'].include? type
+    # find if there is an entity owning that handle
+    entity = Entity.where({"handles.type" => type, "handles.handle" => handle}).first
+    return entity.name if entity
+
+    # if no target (scope) is provided, don't search in the addressbook
+    return nil unless target_id
+
+    # use the fulltext (kw) search to be fast
+    Evidence.collection_class(target_id).where({type: 'addressbook', :kw.all => handle.keywords }).each do |e|
+      return e[:data]['name']
+    end
+
+    return nil
+  end
+
 end
 
 
