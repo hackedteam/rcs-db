@@ -82,6 +82,9 @@ class Processor
 
     trace :info, "Evidence #{ev[:type]} processed in #{Time.now - start} seconds - text #{size.to_s_bytes} -> tr #{data[:tr].size.to_s_bytes}"
 
+    # check if there are matching alerts for this evidence
+    RCS::DB::Alerting.new_evidence(ev)
+
   rescue Exception => e
     trace :error, "Cannot process evidence: #{e.message}"
     #trace :error, e.backtrace.join("\n")

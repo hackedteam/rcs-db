@@ -2,6 +2,7 @@
 Changelog for 8.3.0
 
 Collector:
+  - Fixed the automatic external ip resolve on startup
 
 DB:
   - MongoDB updated to 2.2.2
@@ -15,3 +16,4 @@ DB:
   - fix for position resolving of gsm and gps
   - ghost agent is not available anymore
   - screenshots are configurable during scout creation
+  - alerts now works on text taken from OCR or Translation

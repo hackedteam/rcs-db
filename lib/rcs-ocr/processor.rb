@@ -79,6 +79,9 @@ class Processor
 
     trace :info, "Evidence processed in #{Time.now - start} seconds - image #{size.to_s_bytes} -> text #{data[:body].size.to_s_bytes}"
 
+    # check if there are matching alerts for this evidence
+    RCS::DB::Alerting.new_evidence(ev)
+
     # add to the translation queue
     if $license['translate']
       TransQueue.add(entry['target_id'], ev._id)

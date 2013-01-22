@@ -1,15 +1,18 @@
 
 TODO 8.3.0:
 
+    TEST:
+      - alert on keyword for OCR
+
     failed backup (mongodump 2.2 error look for fix from mongo)
 
     resolve position!!!
 
     checksum on license in db
 
-    search for entities
+    whatis my ip
 
-    check on peer "" for chat (twitter)
+    search for entities
 
     aggregates:
       places
