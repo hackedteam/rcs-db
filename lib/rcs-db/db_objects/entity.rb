@@ -124,7 +124,7 @@ class Entity
   end
 
   def last_position
-    return {lat: self.position[:lat], lng: self.position[:lng], time: self.position_attr[:time], accuracy: self.position_attr[:accuracy]}
+    return {lat: self.position[:latitude], lng: self.position[:longitude], time: self.position_attr[:time], accuracy: self.position_attr[:accuracy]}
   end
 
   def self.from_handle(type, handle, target_id = nil)

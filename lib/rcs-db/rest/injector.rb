@@ -257,6 +257,40 @@ class InjectorController < RESTController
     end
   end
 
+  def upgrade
+    require_auth_level :server, :sys
+
+    mongoid_query do
+      injector = ::Injector.find(@params['_id'])
+
+      case @request[:method]
+        when 'GET'
+          return not_found unless injector.upgradable
+
+          trace :info, "Upgrading #{injector.name}"
+
+          build = Build.factory(:injector)
+          build.load(nil)
+          build.unpack
+
+          injector.upgradable = false
+          injector.save
+
+          return stream_file(build.path('injector.deb'), proc { build.clean })
+
+        when 'POST'
+          Audit.log :actor => @session[:user][:name], :action => 'injector.upgrade', :desc => "Upgraded the Network Injector '#{injector[:name]}'"
+
+          injector.upgradable = true
+          injector.save
+
+          return server_error("Cannot push to #{injector.name}") unless Frontend.nc_push(injector.address)
+
+          return ok
+      end
+    end
+  end
+
 end
 
 end #DB::
