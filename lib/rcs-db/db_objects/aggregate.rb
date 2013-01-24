@@ -69,6 +69,10 @@ class Aggregate
     most_contacted_types = ['call', 'chat', 'mail', 'sms', 'mms', 'facebook', 'gmail', 'skype', 'bbm', 'whatsapp']
 
     db = Mongoid.database
+
+    # avoid creating a job if the aggregate does not exist
+    return [] unless db.collection_names.include? Aggregate.collection_name(target)
+
     aggregate = db.collection(Aggregate.collection_name(target))
 
     # emit count and size for each tuple of peer/type

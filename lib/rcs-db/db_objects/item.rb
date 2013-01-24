@@ -433,10 +433,11 @@ class Item
           agent.destroy
         end
         # destroy the entities related to this target
-        Entity.where({path: [ self._id ]}).each { |entity| entity.destroy }
+        Entity.any_in({path: [ self._id ]}).each { |entity| entity.destroy }
         trace :info, "Dropping evidence for target #{self.name}"
+        # drop evidence and aggregates
         self.drop_evidence_collections
-        # TODO: drop aggregates
+        Aggregate.collection_class(self._id.to_s).collection.drop
       when 'agent'
         # dropping flag is set only by cascading from target
         unless self[:dropping]

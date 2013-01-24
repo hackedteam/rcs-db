@@ -1,10 +1,4 @@
 
-  return [] if aggregate not present
-
-  licenza su intelligence
-
-  jump a evidence su most_contacted
-
 TODO 8.3.0:
 
     TEST:
@@ -15,8 +9,6 @@ TODO 8.3.0:
     upgrade to mongo-ruby-driver 1.8.2
 
     resolve position!!!
-
-    target deletion -> entity deletion
 
     checksum on license in db
 
