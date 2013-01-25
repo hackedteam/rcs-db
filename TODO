@@ -6,7 +6,7 @@ TODO 8.3.0:
 
     failed backup (mongodump 2.2 error look for fix from mongo)
 
-    upgrade to mongo-ruby-driver 1.8.2
+    M/R is damned slow!!! (check aggregation)
 
     resolve position!!!
 

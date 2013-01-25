@@ -482,6 +482,7 @@ class LicenseManager
 
     rescue Exception => e
       trace :fatal, "Cannot perform license check: #{e.message}"
+      #trace :fatal, "Cannot perform license check: #{e.backtrace}"
       exit!
     end
   end

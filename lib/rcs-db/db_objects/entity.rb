@@ -38,7 +38,8 @@ class Entity
   index :name
   index :type
   index :path
-  index "handles.name"
+  index "handles.type"
+  index "handles.handle"
   index "analyzed.handles"
   spacial_index :position
 
@@ -128,6 +129,9 @@ class Entity
   end
 
   def self.from_handle(type, handle, target_id = nil)
+
+    return nil unless handle
+
     type = 'phone' if ['call', 'sms', 'mms'].include? type
     # find if there is an entity owning that handle
     entity = Entity.where({"handles.type" => type, "handles.handle" => handle}).first

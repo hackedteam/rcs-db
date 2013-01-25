@@ -73,8 +73,13 @@ class Aggregate
     # avoid creating a job if the aggregate does not exist
     return [] unless db.collection_names.include? Aggregate.collection_name(target)
 
-    aggregate = db.collection(Aggregate.collection_name(target))
+    collection = db.collection(Aggregate.collection_name(target))
 
+    #
+    # Map Reduce is slow as hell!!!
+    # let's try if the Mongo::Aggregation framework is better...
+    #
+=begin
     # emit count and size for each tuple of peer/type
     map = "function() {
              emit({peer: this.data.peer, type: this.type}, {count: this.count, size: this.size});
@@ -96,13 +101,33 @@ class Aggregate
                :out => {:inline => 1}, :raw => true }
 
     # execute the map reduce job
-    reduced = aggregate.map_reduce(map, reduce, options)
-
+    reduced = collection.map_reduce(map, reduce, options)
     # extract the results
     contacted = reduced['results']
-
     # normalize them in a better form
     contacted.collect! {|e| {peer: e['_id']['peer'], type: e['_id']['type'], count: e['value']['count'], size: e['value']['size']}}
+
+    #trace :debug, reduced['results']
+    #trace :debug, ""
+=end
+
+    #
+    # Damned Mongo:Aggregation is slow as well!!!
+    #
+    pipeline = [{ "$match" => {:day => {'$gte' => params['from'], '$lte' => params['to']}, :type => {'$in' => most_contacted_types} }},
+                { "$group" =>
+                  { _id: { peer: "$data.peer", type: "$type" },
+                    count: { "$sum" => "$count" },
+                    size: { "$sum" => "$size" },
+                  }
+                }]
+    # extract the results
+    contacted = collection.aggregate(pipeline)
+
+    trace :debug, contacted
+
+    # normalize them in a better form
+    contacted.collect! {|e| {peer: e['_id']['peer'], type: e['_id']['type'], count: e['count'], size: e['size']}}
 
     # group them by type
     group = contacted.to_set.classify {|e| e[:type]}.values

@@ -11,8 +11,8 @@ class CGI
   end
 end
 
-#http = Net::HTTP.new('localhost', 4444)
-http = Net::HTTP.new('rcs-castore', 443)
+http = Net::HTTP.new('localhost', 4444)
+#http = Net::HTTP.new('rcs-castore', 443)
 http.use_ssl = true
 http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
@@ -1434,8 +1434,8 @@ if true
   #puts res.body
   #puts
   
-  #entity = '50D19ACF2AFB65246B00000A'
-  entity = '50FD0AD7AEF1DE1658000092'
+  entity = '50D19ACF2AFB65246B00000A'
+  #entity = '50FD0AD7AEF1DE1658000092'
   
   puts "entity.show"
   res = http.request_get("/entity/#{entity}", {'Cookie' => cookie})
