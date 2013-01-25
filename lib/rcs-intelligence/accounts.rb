@@ -14,13 +14,17 @@ class Accounts
   include Tracer
   extend Tracer
 
+  @@running = false
+
   class << self
 
     ADDRESSBOOK_TYPE = [:facebook, :twitter, :gmail, :skype, :bbm, :whatsapp, :phone, :mail, :linkedin]
 
     def retrieve
 
-      if @running
+      # avoid two thread at the same time
+      # we are called by the eventmachine reactory
+      if @@running
         trace :debug, "Account retrieval already running, skipping..."
         return
       end
