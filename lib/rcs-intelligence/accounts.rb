@@ -19,6 +19,14 @@ class Accounts
     ADDRESSBOOK_TYPE = [:facebook, :twitter, :gmail, :skype, :bbm, :whatsapp, :phone, :mail, :linkedin]
 
     def retrieve
+
+      if @running
+        trace :debug, "Account retrieval already running, skipping..."
+        return
+      end
+
+      @@running = true
+
       count = ::Item.targets.count
       trace :debug, "Retrieving accounts for #{count} targets"
 
@@ -53,6 +61,8 @@ class Accounts
         entity.save
       end
 
+    ensure
+      @@running = false
     end
 
     def add_handle(entity, data)
