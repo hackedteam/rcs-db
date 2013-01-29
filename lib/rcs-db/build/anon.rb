@@ -82,6 +82,10 @@ class BuildAnon < Build
 
   end
 
+  def unique(core)
+    # nothing to do here...
+  end
+
 end
 
 end #DB::

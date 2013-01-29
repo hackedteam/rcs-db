@@ -15,6 +15,10 @@ class BuildInjector < Build
     @platform = 'injector'
   end
 
+  def unique(core)
+    # nothing to do here...
+  end
+
 end
 
 end #DB::
