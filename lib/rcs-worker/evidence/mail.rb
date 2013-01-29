@@ -7,5 +7,5 @@ module MailProcessing
   def type
     :message
   end
-end # ::Mailraw
+end # ::Mail
 end # ::RCS

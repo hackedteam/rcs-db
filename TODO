@@ -6,15 +6,18 @@ TODO 8.3.0:
 
     failed backup (mongodump 2.2 error look for fix from mongo)
 
-    M/R is damned slow!!! (check aggregation)
-
     resolve position!!!
 
     checksum on license in db
 
+    translate on demand
+
+    doc text extractor
+
     search for entities
 
     aggregates:
+      skype call / skype chat
       places
 
 

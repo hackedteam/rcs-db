@@ -1,8 +1,7 @@
 require 'helper'
 
-=begin
 
-class TestSpeex < Test::Unit::TestCase
+class PositionerTest < Test::Unit::TestCase
 
   # Called before every test method runs. Can be used
   # to set up fixture information.
@@ -18,9 +17,9 @@ class TestSpeex < Test::Unit::TestCase
   end
 
   # Fake test
-  def test_presence
-    assert_true Speex.respond_to? :decoder_init
+  def test_fail
+
+    # To change this template use File | Settings | File Templates.
+    fail("Not implemented")
   end
 end
-
-=end

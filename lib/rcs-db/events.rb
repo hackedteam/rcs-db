@@ -9,6 +9,7 @@ require_relative 'rest'
 require_relative 'sessions'
 require_relative 'backup'
 require_relative 'alert'
+require_relative 'parser'
 require_relative 'websocket'
 require_relative 'push'
 
