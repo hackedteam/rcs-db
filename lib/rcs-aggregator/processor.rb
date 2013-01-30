@@ -97,21 +97,36 @@ class Processor
           end
         else
           # new chat format
-          # multiple rcpts creates multiple entries
-          ev.data['rcpt'].split(',').each do |rcpt|
-            data << {:peer => ev.data['incoming'] == 1 ? ev.data['from'] : rcpt.strip, :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['program'], :size => ev.data['content'].length}
+          if ev.data['incoming'] == 1
+            data << {:peer => ev.data['from'], :versus => :in, :type => ev.data['program'], :size => ev.data['content'].length}
+          else
+            # multiple rcpts creates multiple entries
+            ev.data['rcpt'].split(',').each do |rcpt|
+              data << {:peer => rcpt.strip, :versus => :out, :type => ev.data['program'], :size => ev.data['content'].length}
+            end
           end
         end
       when 'message'
         # multiple rcpts creates multiple entries
-        ev.data['rcpt'].split(',').each do |rcpt|
-          if ev.data['type'] == :mail
+        if ev.data['type'] == :mail
+          if ev.data['incoming'] == 1
             #extract email from string "Ask Me" <ask@me.it>
             from = ev.data['from'].scan(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i).first
-            to = rcpt.strip.scan(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i).first
-            data << {:peer => ev.data['incoming'] == 1 ? from : to, :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['type'], :size => ev.data['body'].length}
+            data << {:peer => from, :versus => :in, :type => ev.data['type'], :size => ev.data['body'].length}
           else
-            data << {:peer => ev.data['incoming'] == 1 ? ev.data['from'] : rcpt.strip, :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['type'], :size => ev.data['content'].length}
+            ev.data['rcpt'].split(',').each do |rcpt|
+              #extract email from string "Ask Me" <ask@me.it>
+              to = rcpt.strip.scan(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i).first
+              data << {:peer => to, :versus => :out, :type => ev.data['type'], :size => ev.data['body'].length}
+            end
+          end
+        else
+          if ev.data['incoming'] == 1
+            data << {:peer => ev.data['from'], :versus => :in, :type => ev.data['type'], :size => ev.data['content'].length}
+          else
+            ev.data['rcpt'].split(',').each do |rcpt|
+              data << {:peer => rcpt.strip, :versus => :out, :type => ev.data['type'], :size => ev.data['content'].length}
+            end
           end
         end
     end
