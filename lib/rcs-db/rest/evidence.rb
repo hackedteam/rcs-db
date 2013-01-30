@@ -5,7 +5,7 @@
 require_relative '../db_layer'
 require_relative '../evidence_manager'
 require_relative '../evidence_dispatcher'
-require_relative '../position_resolver'
+require_relative '../position/resolver'
 require_relative '../connectors'
 
 # rcs-common

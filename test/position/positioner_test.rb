@@ -1,5 +1,5 @@
-require 'helper'
-
+require_relative '../helper'
+require_db 'position/resolver'
 
 class PositionerTest < Test::Unit::TestCase
 
@@ -20,6 +20,6 @@ class PositionerTest < Test::Unit::TestCase
   def test_fail
 
     # To change this template use File | Settings | File Templates.
-    fail("Not implemented")
+    #fail("Not implemented")
   end
 end

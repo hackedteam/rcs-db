@@ -1,7 +1,7 @@
 source "http://rubygems.org"
 # Add dependencies required to use your gem here.
 
-gem "rcs-common", ">= 8.2.0", :path => "../rcs-common"
+gem "rcs-common", ">= 8.3.0", :path => "../rcs-common"
 
 gem 'em-http-request'
 gem 'em-websocket'
@@ -29,6 +29,7 @@ gem 'bson_ext', "= 1.8.2"
 
 gem 'mongoid', "< 3.0.0"
 gem 'mongoid_spacial'
+gem 'rvincenty'
 
 platforms :jruby do
   gem 'json'

@@ -2,7 +2,7 @@
 #  Class for translating locations (cell, wifi, ip) into coordinates
 #
 
-require_relative 'frontend'
+require_relative '../frontend'
 
 # from RCS::Common
 require 'rcs-common/trace'

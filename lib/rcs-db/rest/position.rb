@@ -1,4 +1,4 @@
-require_relative '../position_resolver'
+require_relative '../position/resolver'
 
 module RCS
 module DB
