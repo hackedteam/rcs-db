@@ -169,6 +169,22 @@ class PointTest < Test::Unit::TestCase
     assert_equal 0, a.distance(b)
   end
 
+  def test_distance_parallels
+    # distance between two parallels varies between 110.57 and 111.69 km
+
+    # at the equator
+    parallels = 110574
+    a = Point.new({lat: 0, lon: 0})
+    b = Point.new({lat: 1, lon: 0})
+    assert_equal parallels, a.distance(b)
+
+    # at the pole
+    parallels = 111693
+    a = Point.new({lat: 89, lon: 0})
+    b = Point.new({lat: 90, lon: 0})
+    assert_equal parallels, a.distance(b)
+  end
+
 end
 
 end

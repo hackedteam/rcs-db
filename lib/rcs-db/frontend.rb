@@ -26,10 +26,13 @@ class Frontend
 
       # send the push request
       http = Net::HTTP.new(nc.address, 80)
+      http.read_timeout = 500
       resp = http.send_request('PUSH', "#{address}", '', headers)
 
       return false unless resp.body == "OK"
-      
+
+    rescue EOFError => e
+      trace :error, "Frontend NC PUSH (ignored): #{e.message}"
     rescue Exception => e
       trace :error, "Frontend NC PUSH: #{e.message}"
       return false
