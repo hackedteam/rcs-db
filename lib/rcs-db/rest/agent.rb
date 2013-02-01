@@ -797,7 +797,7 @@ class AgentController < RESTController
       agent.stat[:ghost] = true
       agent.save
 
-      file = "#{agent.ident}:#{agent.instance}.exe"
+      file = "#{agent.ident}_#{agent.instance}.exe"
 
       return not_found() unless File.exist? Config.instance.temp(file)
 
