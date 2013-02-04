@@ -58,7 +58,7 @@ class PositionerTest < Test::Unit::TestCase
     assert_empty emitted
 
     # set it to 3 minutes to emit a point
-    positioner = Positioner.new(3*10)
+    positioner = Positioner.new(time: 3*10)
     emitted = emit_staying(positioner, points)
     assert_not_empty emitted
     assert_equal 1, emitted.size
@@ -307,7 +307,7 @@ class PositionerTest < Test::Unit::TestCase
     2013-01-15 20:59:30 45.5215891 9.5951431 45"
 
     points = load_points(data)
-    positioner = Positioner.new(0)
+    positioner = Positioner.new(time: 0)
     emitted = emit_staying(positioner, points + [Point.new])
     assert_not_empty emitted
     assert_equal 1, emitted.size
@@ -330,12 +330,12 @@ class PositionerTest < Test::Unit::TestCase
     2013-01-15 20:59:30 45.5215891 9.5951431 3500"
 
     points = load_points(data)
-    positioner = Positioner.new(0)
+    positioner = Positioner.new(time: 0)
     emitted = emit_staying(positioner, points + [Point.new])
     assert_empty emitted
 
     # change the filter on the radius
-    positioner = Positioner.new(0, 3500)
+    positioner = Positioner.new(time: 0, radius: 3500)
     emitted = emit_staying(positioner, points + [Point.new])
     assert_not_empty emitted
     assert_equal 1, emitted.size

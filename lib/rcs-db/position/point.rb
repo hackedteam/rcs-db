@@ -16,6 +16,11 @@ class Point
   # to obtain 2sigma on gps precision = 80%
   # http://en.wikipedia.org/wiki/Standard_deviation
   INTERSECT_DELTA = 1.281552
+  # the distance to be considered near (in meters)
+  NEAR_DISTANCE = 500
+  # minimum radius of a point for the best_similar method
+  MINIMUM_SIMILAR_RADIUS = 20
+  # minimum radius assigned for invalid values
   MIN_RADIUS = 30
   # Earth radius in kilometers
   EARTH_RADIUS = 6371
@@ -98,6 +103,34 @@ class Point
     # two circles overlap if the distance between the centers
     # plus the minimum radius is less than the bigger radius
     a.distance(b) + [a.r, b.r].min <= [a.r, b.r].max
+  end
+
+  def near?(b)
+    distance(b) <= NEAR_DISTANCE
+  end
+
+  def similar_to?(b)
+    # to circles are considered similar if:
+    # - they overlap
+    # - they intersect but are near each other
+    return true if self.class.overlapped?(self, b)
+
+    return true if intersect?(b) and near?(b)
+
+    return false
+  end
+
+  def self.best_similar(*points)
+    # to find the best similar, just check if they are all similar
+    return nil if not points.combination(2).all? {|c| c.first.similar_to? c.last}
+
+    # and then take the smaller (more precise) one
+    best = points.min_by {|x| x.r}
+
+    # adjust the radius to avoid too precise points
+    best.r = MINIMUM_SIMILAR_RADIUS if best.r < MINIMUM_SIMILAR_RADIUS
+
+    return best
   end
 
 end

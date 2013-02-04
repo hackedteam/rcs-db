@@ -30,10 +30,10 @@ class Positioner
   # maximum radius for a place to be considered good (in meters)
   MAX_RADIUS_FOR_PLACE = 500
   
-  def initialize(time = MIN_TIME_IN_A_PLACE, radius = MAX_RADIUS_FOR_PLACE, win = WINDOW_SIZE)
-    @window_size = win
-    @min_time = time
-    @max_radius = radius
+  def initialize(params = {})
+    @window_size = params[:win] || WINDOW_SIZE
+    @min_time = params[:time] || MIN_TIME_IN_A_PLACE
+    @max_radius = params[:radius] || MAX_RADIUS_FOR_PLACE
     reset
   end
 

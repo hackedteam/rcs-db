@@ -5,7 +5,7 @@ Collector:
   - Fixed the automatic external ip resolve on startup
 
 DB:
-  - MongoDB updated to 2.2.2
+  - MongoDB updated to 2.2.3
   - Target records
   - More granularity on user permissions
   - Factories can be created at the operation level and will create a new target on each new instance
