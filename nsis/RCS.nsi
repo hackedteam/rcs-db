@@ -263,6 +263,8 @@ Section "Install Section" SecInstall
     SetOutPath "$INSTDIR\DB\lib"
     File "lib\rcs-db.rb"
     File "lib\rcs-worker.rb"
+    File "lib\rcs-aggregator.rb"
+    File "lib\rcs-intelligence.rb"
     File /r "lib\rgloader"
  
     SetOutPath "$INSTDIR\DB\log"
