@@ -9,12 +9,12 @@ module RCS
     end
   end # ::SmsProcessing
 
-  module SmsnewProcessing
+  module SmsoldProcessing
     extend SingleEvidence
 
     def type
       :message
     end
-  end # ::SmsnewProcessing
+  end # ::SmsoldProcessing
 
 end # ::RCS
