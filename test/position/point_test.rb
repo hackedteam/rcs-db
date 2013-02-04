@@ -33,6 +33,17 @@ class PointTest < Test::Unit::TestCase
     assert_equal expected[:time], point.time
   end
 
+  def test_same_point
+    a = Point.new({lat: 123, lon: 456, r: 10, time: Time.now})
+    b = Point.new({lat: 123, lon: 456, r: 10, time: Time.now})
+    c = Point.new({lat: 123, lon: 789, r: 10, time: Time.now})
+    assert_true a.same_point? b
+    assert_true b.same_point? a
+
+    assert_false a.same_point? c
+    assert_false b.same_point? c
+  end
+
   def test_intersect_same
     a = Point.new({lat: 0, lon: 0, r: 10})
     b = Point.new({lat: 0, lon: 0, r: 10})
@@ -262,6 +273,19 @@ class PointTest < Test::Unit::TestCase
     assert_equal expected.lat, result.lat
     assert_equal expected.lon, result.lon
     assert_equal expected.r, result.r
+  end
+
+  def test_best_similar_same_radius
+    a = Point.new({lat: 45.4768394, lon: 9.1919074, r: 20, time: Time.now})
+    b = Point.new({lat: 45.4768005, lon: 9.1917216, r: 20, time: Time.now + 1})
+
+    # the first one (in time) must win
+    assert_equal a, Point.best_similar(a, b)
+
+    # invert the time
+    b.time -= 10
+
+    assert_equal b, Point.best_similar(a, b)
   end
 
   def test_best_similar_not_intersecting

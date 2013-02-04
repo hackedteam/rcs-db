@@ -34,6 +34,7 @@ class Positioner
     @window_size = params[:win] || WINDOW_SIZE
     @min_time = params[:time] || MIN_TIME_IN_A_PLACE
     @max_radius = params[:radius] || MAX_RADIUS_FOR_PLACE
+    @similar = params[:similar] || nil
     reset
   end
 
@@ -79,12 +80,18 @@ class Positioner
         # the target is moving (from a previously recorded stay position), emit the 'staying' period
         # filtering on the minimum time in a place
         if @start and minimum_time? and within_max_radius?
-          yield Point.new({time: @start.time,
+          out = Point.new({time: @start.time,
                            start: @start.time,
                            end: @point_buffer.last.time,
                            lat: @curr_point.lat,
                            lon: @curr_point.lon,
                            r: @curr_point.r})
+
+          # check for already outputted points in the history
+          # if the similar manager is not provided, output all the points
+          out = @similar.find(out) if @similar
+
+          yield out
         end
         # reset the buffer
         reset

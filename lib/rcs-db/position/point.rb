@@ -19,7 +19,7 @@ class Point
   # the distance to be considered near (in meters)
   NEAR_DISTANCE = 500
   # minimum radius of a point for the best_similar method
-  MINIMUM_SIMILAR_RADIUS = 20
+  MINIMUM_SIMILAR_RADIUS = 30
   # minimum radius assigned for invalid values
   MIN_RADIUS = 30
   # Earth radius in kilometers
@@ -52,7 +52,11 @@ class Point
   def to_s
     "#{self.lat} #{self.lon} #{self.r} - #{self.time} (#{self.start} #{self.end})"
   end
-  
+
+  def same_point?(b)
+    self.lat == b.lat and self.lon == b.lon and self.r == b.r
+  end
+
 =begin
   # Haversine formula to calculate the distance between two coordinates
   def distance(point)
@@ -125,7 +129,13 @@ class Point
     return nil if not points.combination(2).all? {|c| c.first.similar_to? c.last}
 
     # and then take the smaller (more precise) one
-    best = points.min_by {|x| x.r}
+    best = points.min do |x, y|
+      if x.r == y.r
+        x.time <=> y.time
+      else
+        x.r <=> y.r
+      end
+    end
 
     # adjust the radius to avoid too precise points
     best.r = MINIMUM_SIMILAR_RADIUS if best.r < MINIMUM_SIMILAR_RADIUS
