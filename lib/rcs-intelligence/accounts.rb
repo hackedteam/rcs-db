@@ -85,25 +85,35 @@ class Accounts
         # mail accounts from email clients saving account to the device
         handle = data['user']
         add_domain(name, data['service'])
-        create_entity_handle(entity, :automatic, :mail, handle, '') if is_mail?(name)
+        type = service =~ /gmail|google/i ? :gmail : :mail
+        create_entity_handle(entity, :automatic, type, handle, '') if is_mail?(name)
       end
 
       # infer on the user to discover email addresses (for passwords)
       if data['user']
         name = data['user']
         add_domain(name, data['service'])
-        create_entity_handle(entity, :automatic, :mail, name, '') if is_mail?(name)
+        type = service =~ /gmail|google/i ? :gmail : :mail
+        create_entity_handle(entity, :automatic, type, name, '') if is_mail?(name)
       end
     rescue Exception => e
       trace :error, "Cannot add handle: " + e.message
       trace :fatal, e.backtrace.join("\n")
     end
 
-    def create_entity_handle(entity, level, type, name, handle)
+    def create_entity_handle(entity, level, type, handle, name)
       # don't add if already exist
       return if entity.handles.where({type: type, name: name, handle: handle}).count != 0
 
-      trace :info, "Adding handle [#{type} #{name} #{handle}] to entity: #{entity.name}"
+      # update the name if the handle is already present
+      entity.handles.where({type: type, handle: handle}).first do |h|
+        trace :info, "Modifying handle [#{type}, #{handle}, #{name}] on entity: #{entity.name}"
+        h.name = name
+        h.save
+        return
+      end
+
+      trace :info, "Adding handle [#{type}, #{handle}, #{name}] to entity: #{entity.name}"
 
       # add to the list of handles
       entity.handles.create!(level: :automatic, type: type, name: name, handle: handle)
