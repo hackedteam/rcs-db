@@ -63,7 +63,7 @@ class Processor
         processed = LeadTools.transform(temp, output)
       when 'file'
         # invoke the text extractor on the temp file and get the result
-        #processed = Tika.transform(temp, output)
+        processed = Tika.transform(temp, output)
     end
 
     raise "unable to process" unless processed
