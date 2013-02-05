@@ -8,11 +8,17 @@ if File.directory?(Dir.pwd + '/lib/rcs-ocr-release')
   require 'rcs-db-release/license'
   require 'rcs-db-release/db_layer'
   require 'rcs-db-release/grid'
+  require 'rcs-db-release/exec'
+  require 'rcs-db-release/alert'
+  require 'rcs-db-release/sessions'
 else
   require 'rcs-db/config'
   require 'rcs-db/license'
   require 'rcs-db/db_layer'
   require 'rcs-db/grid'
+  require 'rcs-db/exec'
+  require 'rcs-db/alert'
+  require 'rcs-db/sessions'
 end
 
 # from RCS::Common

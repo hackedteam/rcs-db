@@ -228,7 +228,9 @@ class InstanceWorker
 
     # add to the ocr processor queue
     if $license['ocr']
-      OCRQueue.add(@target._id, evidence._id) if evidence.type == 'screenshot'
+      if evidence.type == 'screenshot' or (evidence.type == 'file' and evidence.data[:type] == :capture)
+        OCRQueue.add(@target._id, evidence._id)
+      end
     end
 
     # add to the translation queue

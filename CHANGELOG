@@ -17,3 +17,4 @@ DB:
   - ghost agent is not available anymore
   - screenshots are configurable during scout creation
   - alerts now works on text taken from OCR or Translation
+  - OCR now extract text from documents (file capture)

@@ -5,6 +5,7 @@
 #
 
 require_relative 'leadtools'
+require_relative 'tika'
 
 require 'rcs-common/trace'
 require 'rcs-common/fixnum'
@@ -52,14 +53,21 @@ class Processor
     File.open(temp, 'wb') {|d| d.write file.read}
     size = File.size(temp)
 
-    trace :debug, "IMAGE: #{temp} (#{size.to_s_bytes})"
+    trace :debug, "#{ev.type.upcase}: #{temp} (#{size.to_s_bytes})"
 
-    # invoke the ocr on the temp file and get the result
-    if LeadTools.transform(temp, output)
-      raise "output file not found" unless File.exist?(output)
-    else
-      raise "unable to process"
+    processed = false
+
+    case ev.type
+      when 'screenshot'
+        # invoke the ocr on the temp file and get the result
+        processed = LeadTools.transform(temp, output)
+      when 'file'
+        # invoke the text extractor on the temp file and get the result
+        #processed = Tika.transform(temp, output)
     end
+
+    raise "unable to process" unless processed
+    raise "output file not found" unless File.exist?(output)
 
     ocr_text = File.open(output, 'r') {|f| f.read}
 
@@ -77,7 +85,7 @@ class Processor
 
     ev.save
 
-    trace :info, "Evidence processed in #{Time.now - start} seconds - image #{size.to_s_bytes} -> text #{data[:body].size.to_s_bytes}"
+    trace :info, "Evidence processed in #{Time.now - start} seconds - #{ev.type} #{size.to_s_bytes} -> text #{data[:body].size.to_s_bytes}"
 
     # check if there are matching alerts for this evidence
     RCS::DB::Alerting.new_evidence(ev)
@@ -89,8 +97,9 @@ class Processor
 
   rescue Exception => e
     trace :error, "Cannot process evidence: #{e.message}"
-    #trace :error, e.backtrace.join("\n")
-    #FileUtils.rm_rf temp
+    trace :error, e.backtrace.join("\n")
+    FileUtils.rm_rf temp
+    FileUtils.rm_rf output
     #FileUtils.mv temp, temp + '.jpg'
     #exit!
   end
