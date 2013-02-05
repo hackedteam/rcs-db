@@ -96,7 +96,7 @@ class IntelligenceQueue
     end
 
     # perform correlation on these evidence
-    if ['position'].include? type
+    if ['position', 'camera'].include? type
       trace :debug, "Adding to INTELLIGENCE queue: #{target_id} #{evidence_id}"
       IntelligenceQueue.create!({target_id: target_id.to_s, evidence_id: evidence_id.to_s, flag: QUEUED})
     end

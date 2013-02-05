@@ -44,10 +44,14 @@ class Processor
     # save the last position of the entity
     save_last_position(ev, entity) if ev.type.eql? 'position'
 
+    # save picture of the target
+    save_first_camera(ev, entity) if ev.type.eql? 'camera'
+
   rescue Exception => e
     trace :error, "Cannot process evidence: #{e.message}"
     trace :fatal, e.backtrace.join("\n")
   end
+
 
   def self.save_last_position(evidence, entity)
     return if evidence[:data]['latitude'].nil? or evidence[:data]['longitude'].nil?
@@ -59,6 +63,16 @@ class Processor
     entity.save
 
     trace :debug, "Saving last position for #{entity.name}: #{entity.last_position.inspect}"
+  end
+
+
+  def self.save_first_camera(evidence, entity)
+    return unless entity.photos.empty?
+
+    file = GridFS.get(BSON::ObjectId.from_string(evidence.data['_grid']), entity.path.last.to_s)
+    entity.add_photo(file.read)
+
+    trace :debug, "Saving first camera for #{entity.name}"
   end
 
 

