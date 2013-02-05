@@ -93,11 +93,11 @@ class Processor
         else
           # new call format
           if ev.data['incoming'] == 1
-            data << {:peer => ev.data['from'], :versus => :in, :type => ev.data['program'], :size => ev.data['content'].length}
+            data << {:peer => ev.data['from'], :versus => :in, :type => ev.data['program'], :size => ev.data['duration'].to_i}
           else
             # multiple rcpts creates multiple entries
             ev.data['rcpt'].split(',').each do |rcpt|
-              data << {:peer => rcpt.strip, :versus => :out, :type => ev.data['program'], :size => ev.data['content'].length}
+              data << {:peer => rcpt.strip, :versus => :out, :type => ev.data['program'], :size => ev.data['duration'].to_i}
             end
           end
         end
