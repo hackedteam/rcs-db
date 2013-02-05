@@ -75,7 +75,7 @@ class IntelligenceQueue
   QUEUED = 0
   PROCESSED = 1
 
-  INTELLIGENCE_TYPES = ['addressbook', 'password', 'position']
+  INTELLIGENCE_TYPES = ['addressbook', 'password', 'position', 'camera']
 
   field :target_id, type: String
   field :evidence_id, type: String
