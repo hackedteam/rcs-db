@@ -56,7 +56,7 @@ class ResolverTest < Test::Unit::TestCase
     request = {'wifiAccessPoints' => wifi}
 
     position = PositionResolver.get(request)
-    expected = {"latitude"=>45.476504, "longitude"=>9.1907414, "accuracy"=>52.0}
+    expected = {"latitude"=>45.476518299999995, "longitude"=>9.1907749, "accuracy"=>52.0}
 
     assert_equal expected['latitude'], position['latitude']
     assert_equal expected['longitude'], position['longitude']

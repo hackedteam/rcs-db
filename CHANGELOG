@@ -11,7 +11,7 @@ DB:
   - Factories can be created at the operation level and will create a new target on each new instance
   - Support for 3rd party translation service for keylog, chat, messages
   - Modification of the target (upload or exec) limited by license
-  - HASP drivers updated to 6.51 (support for 2012)
+  - HASP drivers updated to 6.51 (support for Win2012)
   - fix for size of evidence of an instance reported incorrectly
   - fix for position resolving of gsm and gps
   - ghost agent is not available anymore

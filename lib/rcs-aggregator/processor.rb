@@ -84,9 +84,22 @@ class Processor
 
     case ev.type
       when 'call'
-        # multiple peers creates multiple entries
-        ev.data['peer'].split(',').each do |peer|
-          data << {:peer => peer.strip, :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['program'], :size => ev.data['duration'].to_i}
+        if ev.data['peer']
+          # old call format
+          # multiple peers creates multiple entries
+          ev.data['peer'].split(',').each do |peer|
+            data << {:peer => peer.strip, :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['program'], :size => ev.data['duration'].to_i}
+          end
+        else
+          # new call format
+          if ev.data['incoming'] == 1
+            data << {:peer => ev.data['from'], :versus => :in, :type => ev.data['program'], :size => ev.data['content'].length}
+          else
+            # multiple rcpts creates multiple entries
+            ev.data['rcpt'].split(',').each do |rcpt|
+              data << {:peer => rcpt.strip, :versus => :out, :type => ev.data['program'], :size => ev.data['content'].length}
+            end
+          end
         end
       when 'chat'
         if ev.data['peer']
