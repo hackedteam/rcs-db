@@ -22,7 +22,7 @@ class Entity
   field :desc, type: String
 
   # list of grid id for the photos
-  field :photos, type: Array
+  field :photos, type: Array, default: []
 
   # used by the intelligence module to know what to analyze
   field :analyzed, type: Hash, default: {handles: false, handles_last: 0}
