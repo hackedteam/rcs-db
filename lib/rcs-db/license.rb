@@ -77,7 +77,7 @@ class LicenseManager
                :archive => false,
                :scout => true,
                :ocr => true,
-               :translate => false,
+               :translation => false,
                :collectors => {:collectors => 1, :anonymizers => 0}}
   end
 
@@ -236,7 +236,7 @@ class LicenseManager
     @limits[:encbits] = limit[:digest_enc]
 
     @limits[:ocr] = limit[:ocr]
-    @limits[:translate] = limit[:translate]
+    @limits[:translation] = limit[:translation]
     @limits[:correlation] = limit[:correlation]
 
   end
@@ -352,6 +352,12 @@ class LicenseManager
 
       when :scout
         return @limits[:scout]
+
+      when :translation
+        return @limits[:translation]
+
+      when :correlation
+        return @limits[:correlation]
 
       when :shards
         if Shard.count() < @limits[:shards]

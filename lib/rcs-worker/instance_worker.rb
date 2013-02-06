@@ -234,8 +234,10 @@ class InstanceWorker
     end
 
     # add to the translation queue
-    if $license['translate']
-      TransQueue.add(@target._id, evidence._id) if ['keylog', 'chat', 'clipboard', 'message'].include? evidence.type
+    if $license['translation'] and ['keylog', 'chat', 'clipboard', 'message'].include? evidence.type
+      TransQueue.add(@target._id, evidence._id)
+      evidence.data[:tr] = "Translation queued..."
+      evidence.save
     end
 
     # add to the aggregator queue

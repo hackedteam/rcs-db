@@ -47,7 +47,7 @@ class LicenseGenerator
                :modify => false,
                :scout => true,
                :ocr => true,
-               :translate => false,
+               :translation => false,
                :collectors => {:collectors => 1, :anonymizers => 0},
                :check => SecureRandom.urlsafe_base64(8).slice(0..7)
     }

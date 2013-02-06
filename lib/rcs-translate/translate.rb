@@ -78,7 +78,7 @@ class Application
       # load the license from the db (saved by db)
       $license = RCS::DB::LicenseManager.instance.load_from_db
 
-      unless $license['translate']
+      unless $license['translation']
         Mongoid.database.drop_collection 'trans_queue'
 
         # do nothing...

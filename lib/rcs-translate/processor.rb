@@ -41,6 +41,9 @@ class Processor
   def self.process(entry)
     ev = Evidence.collection_class(entry['target_id']).find(entry['evidence_id'])
 
+    ev.data[:tr] = "Translation in progress..."
+    ev.save
+
     start = Time.now
 
     temp = RCS::DB::Config.instance.temp(ev[:_id].to_s)
@@ -66,13 +69,8 @@ class Processor
       raise "no output file"
     end
 
-    # take a copy of evidence data (we need to do this to trigger the mongoid save)
-    data = ev[:data].dup
-    # remove invalid UTF-8 chars
-    data[:tr] = translated_text
-
     # update the evidence with the new text
-    ev[:data] = data
+    ev.data[:tr] = translated_text
     ev[:kw] += translated_text.keywords
 
     # make them unique to remove duplicate in case of "no translation"
@@ -80,15 +78,18 @@ class Processor
 
     ev.save
 
-    trace :info, "Evidence #{ev[:type]} processed in #{Time.now - start} seconds - text #{size.to_s_bytes} -> tr #{data[:tr].size.to_s_bytes}"
+    trace :info, "Evidence #{ev[:type]} processed in #{Time.now - start} seconds - text #{size.to_s_bytes} -> tr #{ev.data[:tr].size.to_s_bytes}"
 
     # check if there are matching alerts for this evidence
     RCS::DB::Alerting.new_evidence(ev)
 
+  rescue Mongoid::Errors::DocumentNotFound
+    # the evidence is not in the db anymore, ignore
   rescue Exception => e
-    trace :error, "Cannot process evidence: #{e.message}"
-    #trace :error, e.backtrace.join("\n")
-    sleep 1
+    trace :error, "Cannot process evidence: #{e.class} #{e.message}"
+    trace :error, e.backtrace.join("\n")
+    ev.data[:tr] = "Error while translating, please check the logs..."
+    ev.save
   end
 
   def self.dump_to_file(target, evidence, file)

