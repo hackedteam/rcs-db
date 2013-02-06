@@ -167,7 +167,7 @@ class EvidenceController < RESTController
         evidence.save
       end
 
-      return ok
+      return ok(evidence)
     end
   end
 
