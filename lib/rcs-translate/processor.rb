@@ -41,7 +41,7 @@ class Processor
   def self.process(entry)
     ev = Evidence.collection_class(entry['target_id']).find(entry['evidence_id'])
 
-    ev.data[:tr] = "Translation in progress..."
+    ev.data[:tr] = "TRANS_IN_PROGRESS"
     ev.save
 
     start = Time.now
@@ -88,7 +88,7 @@ class Processor
   rescue Exception => e
     trace :error, "Cannot process evidence: #{e.class} #{e.message}"
     trace :error, e.backtrace.join("\n")
-    ev.data[:tr] = "Error while translating, please check the logs..."
+    ev.data[:tr] = "TRANS_ERROR"
     ev.save
   end
 
