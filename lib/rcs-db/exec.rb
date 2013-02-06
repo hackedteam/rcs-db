@@ -143,8 +143,13 @@ class CrossPlatform
 
       full_command = command + " " + params
 
+      output_file = Config.instance.file(Time.now.to_f.to_s)
+
       # execute and capture the output
-      output = `#{full_command}`
+      `#{full_command} > #{output_file}`
+
+      output = File.binread(output_file)
+      FileUtils.rm_rf output_file
 
       # restore the environment
       ENV['PATH'] = ENV['PATH'].gsub("#{options[:add_path]}#{separator}", '') if options[:add_path]
