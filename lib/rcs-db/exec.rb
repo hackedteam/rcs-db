@@ -137,11 +137,9 @@ class CrossPlatform
 
     def exec_with_output(command, params = "", options = {})
 
-      trace :debug, "Executing with output: #{File.basename(command)}"
+      trace :debug, "Executing with output: #{File.basename(command)} #{params}"
 
       ENV['PATH'] = "#{options[:add_path]}#{separator}" + ENV['PATH'] if options[:add_path]
-
-      trace :debug, "Executing(system): #{command} #{params}"
 
       full_command = command + " " + params
 

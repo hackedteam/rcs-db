@@ -15,10 +15,10 @@ class Tika
   class << self
 
     def transform(input_file, output_file)
-      text = RCS::DB::CrossPlatform.exec_with_output "/usr/bin/java", "-jar ocr/tika/tika.jar -t #{input_file}"
-      meta = RCS::DB::CrossPlatform.exec_with_output "/usr/bin/java", "-jar ocr/tika/tika.jar -m #{input_file}"
+      text = RCS::DB::CrossPlatform.exec_with_output "java", "-jar ocr/tika/tika.jar -t #{input_file}"
+      meta = RCS::DB::CrossPlatform.exec_with_output "java", "-jar ocr/tika/tika.jar -m #{input_file}"
 
-      return false if text.size + meta.size == 0
+      return false if text.nil? or meta.nil? or text.size + meta.size == 0
 
       out = text +
             "\n====== END OF FILE ======\n\n" +

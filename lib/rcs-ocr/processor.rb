@@ -62,6 +62,7 @@ class Processor
         # invoke the ocr on the temp file and get the result
         processed = LeadTools.transform(temp, output)
       when 'file'
+        trace :debug, "Extracting text from: #{File.basename(ev.data['path'])}"
         # invoke the text extractor on the temp file and get the result
         processed = Tika.transform(temp, output)
     end
