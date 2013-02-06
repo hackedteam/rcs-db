@@ -30,6 +30,7 @@ class Processor
         count = coll.find({flag: OCRQueue::QUEUED}).count()
         trace :info, "#{count} evidence to be processed in queue"
         process entry
+        sleep 1
       else
         #trace :debug, "Nothing to do, waiting..."
         sleep 1
@@ -117,10 +118,10 @@ class Processor
           content = evidence[:data]['content']
         end
       when 'file'
-        # not supported yet...
-        #file = RCS::DB::GridFS.get evidence[:data]['_grid'], target
-        #content = file.read
-        raise 'unsupported format'
+        #grid_file = RCS::DB::GridFS.get evidence[:data]['_grid'], target
+        #content = grid_file.read
+        # take the parsed body
+        content = evidence[:data]['body']
       when 'screenshot'
         content = evidence[:data]['body']
       else
