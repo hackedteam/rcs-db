@@ -107,10 +107,10 @@ class CrossPlatform
 
         trace :debug, "Executing(popen): #{command}"
 
-        IO.popen(cmd_run) {|f|
+        IO.popen(cmd_run) do |f|
           output = f.read
           process = Process.waitpid2(f.pid)[1]
-        }
+        end
         process.success? || raise(ExecFailed.new("failed to execute command", File.basename(original_command) + " #{params}", process.exitstatus, output))
       else
         # setup the pipe to read the output of the child command
@@ -139,20 +139,26 @@ class CrossPlatform
 
       trace :debug, "Executing with output: #{File.basename(command)} #{params}"
 
-      ENV['PATH'] = "#{options[:add_path]}#{separator}" + ENV['PATH'] if options[:add_path]
-
       full_command = command + " " + params
 
-      output_file = Config.instance.file(Time.now.to_f.to_s)
+      output = nil
 
-      # execute and capture the output
-      `#{full_command} > #{output_file}`
+      # if the file does not exists, search in the path falling back to 'system'
+      if not File.exist?(command)
+        ENV['PATH'] = "#{options[:add_path]}#{separator}" + ENV['PATH'] if options[:add_path]
 
-      output = File.binread(output_file)
-      FileUtils.rm_rf output_file
+        output = `#{full_command}`
 
-      # restore the environment
-      ENV['PATH'] = ENV['PATH'].gsub("#{options[:add_path]}#{separator}", '') if options[:add_path]
+        # restore the environment
+        ENV['PATH'] = ENV['PATH'].gsub("#{options[:add_path]}#{separator}", '') if options[:add_path]
+      else
+        # we have specified a full path executable, open it with popen
+        full_command += " 2>&1"
+        IO.popen(full_command) do |f|
+          output = f.read
+          process = Process.waitpid2(f.pid)[1]
+        end
+      end
 
       return output
     end

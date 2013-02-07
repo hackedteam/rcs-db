@@ -106,7 +106,7 @@ class Processor
       when 'clipboard'
         content = evidence[:data]['content']
       when 'message'
-        if evidence[:data][:type] == 'mail'
+        if evidence[:data]['type'] == :mail
           # EML format not supported yet...
           #file = RCS::DB::GridFS.get evidence[:data]['_grid'], target
           #content = file.read
