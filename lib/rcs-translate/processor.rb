@@ -113,6 +113,7 @@ class Processor
 
           # take the parsed body
           content = evidence[:data]['body']
+          content = content.strip_html_tags
         else
           # sms and mms
           content = evidence[:data]['content']
