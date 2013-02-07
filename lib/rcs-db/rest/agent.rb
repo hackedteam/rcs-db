@@ -454,7 +454,7 @@ class AgentController < RESTController
     return not_found("Agent not found: #{@params['_id']}") if agent.nil?
 
     # don't send the config to agent too old
-    if (agent.platform == 'blackberry' or agent.platform == 'android')
+    if agent.platform == 'blackberry' or agent.platform == 'android'
       if agent.version < 2012013101
         trace :info, "Agent #{agent.name} is too old (#{agent.version}), new config will be skipped"
         return not_found

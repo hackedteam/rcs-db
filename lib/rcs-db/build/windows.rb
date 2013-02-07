@@ -144,8 +144,8 @@ class BuildWindows < Build
     @appname = params['appname'] || 'agent'
 
     # parse the parameters
-    @cooked = (params['cooked'] == true) ? true : false
-    @admin = (params['admin'] == true) ? true : false
+    @cooked = params['cooked'] ? true : false
+    @admin = params['admin'] ? true : false
     @bit64 = (params['bit64'] == false) ? false : true
     @codec = (params['codec'] == false) ? false : true
     @scout = (params['scout'] == false) ? false : true

@@ -18,7 +18,7 @@ class Evidence
 
   def self.collection_class(target)
 
-    classDefinition = <<-END
+    class_definition = <<-END
       class Evidence_#{target}
         include Mongoid::Document
 
@@ -81,7 +81,7 @@ class Evidence
     if self.const_defined? classname.to_sym
       klass = eval classname
     else
-      eval classDefinition
+      eval class_definition
       klass = eval classname
     end
     

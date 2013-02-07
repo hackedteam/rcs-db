@@ -26,7 +26,7 @@ class BackupjobController < RESTController
 
     mongoid_query do
       b = ::Backup.new
-      b.enabled = @params['enabled'] == true ? true : false
+      b.enabled = @params['enabled'] ? true : false
       b.what = @params['what']
       b.when = @params['when']
       b.name = @params['name']

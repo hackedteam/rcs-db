@@ -203,7 +203,7 @@ class RESTController
   def map_method_to_action(method, no_params)
     case method
       when 'GET'
-        return (no_params == true ? :index : :show)
+        return (no_params ? :index : :show)
       when 'POST'
         return :create
       when 'PUT'

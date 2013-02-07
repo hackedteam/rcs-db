@@ -284,7 +284,7 @@ module RCS
             hour = Time.at(e[opts[:index]]).strftime('%H').to_i
 
             # this is the first element
-            if first_element == true
+            if first_element
               first_element = false
               file_day = day
               out = begin_new_file day
@@ -344,7 +344,7 @@ module RCS
         end
 
         # this is the last element
-        if first_element == false
+        unless first_element
           end_file out
           yield 'stream', out[:name], {content: out[:content]}
         end

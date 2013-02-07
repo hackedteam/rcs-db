@@ -26,6 +26,8 @@ module RCS
           ], radioType: 'cdma'}}
         when 'IPv4'
           q = {map: {ipAddress: {ipv4: self[:data][:ip]}}}
+        else
+          q = {}
       end
 
       http = Net::HTTP.new(RCS::DB::Config.instance.global['CN'], RCS::DB::Config.instance.global['LISTENING_PORT'])

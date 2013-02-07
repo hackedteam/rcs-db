@@ -50,7 +50,7 @@ class Status
       monitor[:version] = version
 
       # check the low resource conditions
-      if (status == 'OK' and (monitor[:disk] <= 15 or monitor[:cpu] >= 85 or monitor[:pcpu] >= 85))
+      if status == 'OK' and (monitor[:disk] <= 15 or monitor[:cpu] >= 85 or monitor[:pcpu] >= 85)
         status = 'WARN'
       end
 

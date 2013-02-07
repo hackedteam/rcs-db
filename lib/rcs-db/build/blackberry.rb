@@ -122,7 +122,7 @@ class BuildBlackberry < Build
     jadfiles.each do |file|
       old_name = file.dup
       
-      if(file['net_rim_bb_lib'])
+      if file['net_rim_bb_lib']
         file['net_rim_bb_lib'] = @appname
       end
 	  

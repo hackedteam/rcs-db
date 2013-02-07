@@ -118,6 +118,7 @@ class DB
       begin
         next if coll.stats['nindexes'] > 1
       rescue Mongo::OperationFailure
+        # ignored
       end
       # create the index
       trace :info, "Creating indexes for #{k.collection_name}"

@@ -142,8 +142,8 @@ class MP3Encoder
     MP3Lame::lame_set_brate( @mp3lame, 128 )
     MP3Lame::lame_set_VBR_q( @mp3lame, 4 )
     MP3Lame::lame_set_VBR_min_bitrate_kbps( @mp3lame, 96 )
-    MP3Lame::lame_set_VBR_max_bitrate_kbps( @mp3lame, 160 );
-    
+    MP3Lame::lame_set_VBR_max_bitrate_kbps( @mp3lame, 160 )
+
     return true if MP3Lame::lame_init_params(@mp3lame) >= 0
     return nil
   end

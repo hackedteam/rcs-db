@@ -41,8 +41,8 @@ class BuildController < RESTController
     require_auth_level :tech
 
     unless @params.empty?
-      if not @params['uids'].empty?
-        File.open(Config.instance.cert("symbian.uids"), 'wb') {|f| f.write @params['uids'].to_yaml}
+      unless @params['uids'].empty?
+        File.open(Config.instance.cert("symbian.uids"), 'wb') { |f| f.write @params['uids'].to_yaml }
       end
     end
 

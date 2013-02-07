@@ -171,7 +171,7 @@ class BuildAndroid < Build
   
   private
   
-  def silent()
+  def silent
 
     apktool = path('apktool.jar')
     File.chmod(0755, path('aapt')) if File.exist? path('aapt')
@@ -201,19 +201,19 @@ class BuildAndroid < Build
     CrossPlatform.exec "java", "-jar #{apktool} d #{path('input')} #{pkgdir}"
 
     # load and mix the manifest and resources
-    newmanifest = parseManifest(rcsdir, pkgdir)
-    style, color = parseStyle(rcsdir, pkgdir)
+    newmanifest = parse_manifest(rcsdir, pkgdir)
+    style, color = parse_style(rcsdir, pkgdir)
 
     # merge the directories
     merge(rcsdir, pkgdir)
 
     # fix the xml headers
-    patchXml("#{rcsdir}/AndroidManifest.xml", newmanifest)
-    patchXml("#{rcsdir}/res/values/styles.xml", style)
-    patchXml("#{rcsdir}/res/values/colors.xml", color)
+    patch_xml("#{rcsdir}/AndroidManifest.xml", newmanifest)
+    patch_xml("#{rcsdir}/res/values/styles.xml", style)
+    patch_xml("#{rcsdir}/res/values/colors.xml", color)
     
     # fix textAllCaps
-    patchResources(rcsdir)
+    patch_resources(rcsdir)
 
     # repack the final application
     apk = path("output.melt.apk")
@@ -222,25 +222,25 @@ class BuildAndroid < Build
     @outputs = ["output.melt.apk"] if File.exist?(apk)
   end
   
-  def parseManifest(rcsdir, pkgdir)
+  def parse_manifest(rcsdir, pkgdir)
     trace :debug, "parse manifest #{rcsdir}, #{pkgdir}"
 
     xmlrcs = XmlSimple.xml_in("#{rcsdir}/AndroidManifest.xml", {'KeepRoot' => true})
     xmlpkg = XmlSimple.xml_in("#{pkgdir}/AndroidManifest.xml", {'KeepRoot' => true})
 
-    mixManifestPermission(xmlpkg, xmlrcs, "uses-permission")
-    mixManifestApplication(xmlpkg, xmlrcs, "receiver")
-    mixManifestApplication(xmlpkg, xmlrcs, "activity")
-    mixManifestApplication(xmlpkg, xmlrcs, "service")
+    mix_manifest_permission(xmlpkg, xmlrcs, "uses-permission")
+    mix_manifest_application(xmlpkg, xmlrcs, "receiver")
+    mix_manifest_application(xmlpkg, xmlrcs, "activity")
+    mix_manifest_application(xmlpkg, xmlrcs, "service")
 
-    return XmlSimple.xml_out(xmlpkg, {'KeepRoot' => true});
+    return XmlSimple.xml_out(xmlpkg, {'KeepRoot' => true})
 
   rescue Exception => e
     trace :error, "Cannot parse Manifest: #{e.message}"
     raise "Cannot parse Manifest: #{e.message}"
   end
 
-  def mixManifestPermission(xmlpkg, xmlrcs, key)
+  def mix_manifest_permission(xmlpkg, xmlrcs, key)
     tmppkg = xmlpkg["manifest"][0]
     tmprcs = xmlrcs["manifest"][0]
 
@@ -251,7 +251,7 @@ class BuildAndroid < Build
     end
   end
   
-  def mixManifestApplication(xmlpkg, xmlrcs, key)
+  def mix_manifest_application(xmlpkg, xmlrcs, key)
     tmppkg = xmlpkg["manifest"][0]["application"][0]
     tmprcs = xmlrcs["manifest"][0]["application"][0]
 
@@ -262,22 +262,22 @@ class BuildAndroid < Build
     end
   end
   
-  def parseStyle(rcsdir, pkgdir)
-    style = mixManifestResources("#{pkgdir}/res/values/styles.xml", "#{rcsdir}/res/values/styles.xml", "style")
-    color = mixManifestResources("#{pkgdir}/res/values/colors.xml", "#{rcsdir}/res/values/colors.xml", "color")
+  def parse_style(rcsdir, pkgdir)
+    style = mix_manifest_resources("#{pkgdir}/res/values/styles.xml", "#{rcsdir}/res/values/styles.xml", "style")
+    color = mix_manifest_resources("#{pkgdir}/res/values/colors.xml", "#{rcsdir}/res/values/colors.xml", "color")
     
-    manifestStyle = XmlSimple.xml_out(style, {'KeepRoot' => true})
-    manifestCol =  XmlSimple.xml_out(color, {'KeepRoot' => true})
+    manifest_style = XmlSimple.xml_out(style, {'KeepRoot' => true})
+    manifest_col =  XmlSimple.xml_out(color, {'KeepRoot' => true})
 
-    return manifestStyle, manifestCol
+    return manifest_style, manifest_col
   end
   
-  def patchXml(file, xml)
+  def patch_xml(file, xml)
     xml.insert(0, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n")
     File.open(file, "w") {|f| f.write xml}
   end
   
-  def patchResources(rcsdir)
+  def patch_resources(rcsdir)
     matches = ['android:textAllCaps="true"', '<item name="android:borderTop">true</item>']
     #matches = ['android:textAllCaps="true"']
 
@@ -303,7 +303,7 @@ class BuildAndroid < Build
   end
 
   
-  def mixManifestResources(from, to, key)
+  def mix_manifest_resources(from, to, key)
     xt = XmlSimple.xml_in to, {'KeepRoot' => true}
 
     if File.exists? from

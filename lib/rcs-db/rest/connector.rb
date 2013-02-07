@@ -25,7 +25,7 @@ class ConnectorController < RESTController
 
     mongoid_query do
       f = ::Connector.new
-      f.enabled = @params['enabled'] == true ? true : false
+      f.enabled = @params['enabled'] ? true : false
       f.name = @params['name']
       f.type = @params['type'] || 'JSON'
       f.raw = @params['raw']

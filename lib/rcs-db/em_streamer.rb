@@ -6,9 +6,9 @@ module EventMachine
     include EventMachine::Deferrable
       
       # Wait until next tick to send more data when 50k is still in the outgoing buffer
-      BackpressureLevel = 50000
+      BACKPRESSURE_LEVEL = 50000
       # Send 16k chunks at a time
-      ChunkSize = 16384
+      CHUNK_SIZE = 16384
       
       # @param [EventMachine::Connection] connection
       # @param [String] grid_io GridFS object
@@ -33,14 +33,14 @@ module EventMachine
         loop do
           break if @connection.closed?
           if @grid_io.file_position < @grid_io.file_length
-            if @connection.get_outbound_data_size > BackpressureLevel
+            if @connection.get_outbound_data_size > BACKPRESSURE_LEVEL
                 EventMachine::next_tick {stream_one_chunk}
                 break
             else
               break unless @grid_io.file_position < @grid_io.file_length
               
               len = @grid_io.file_length - @grid_io.file_position
-              len = ChunkSize if (len > ChunkSize)
+              len = CHUNK_SIZE if (len > CHUNK_SIZE)
               
               @connection.send_data( @grid_io.read( len ))
             end
@@ -58,9 +58,9 @@ module EventMachine
     include EventMachine::Deferrable
 
       # Wait until next tick to send more data when 50k is still in the outgoing buffer
-      BackpressureLevel = 50000
+      BACKPRESSURE_LEVEL = 50000
       # Send 16k chunks at a time
-      ChunkSize = 16384
+      CHUNK_SIZE = 16384
 
       # @param [EventMachine::Connection] connection
       # @param [String] filename Filesystem filename
@@ -92,7 +92,7 @@ module EventMachine
             break
           end
           if @file_io.pos < @size
-            if @connection.get_outbound_data_size > BackpressureLevel
+            if @connection.get_outbound_data_size > BACKPRESSURE_LEVEL
                 # recursively call myself
                 EventMachine::next_tick {stream_one_chunk}
                 break
@@ -100,7 +100,7 @@ module EventMachine
               break unless @file_io.pos < @size
 
               len = @size - @file_io.pos
-              len = ChunkSize if (len > ChunkSize)
+              len = CHUNK_SIZE if (len > CHUNK_SIZE)
 
               @connection.send_data(@file_io.read( len ))
             end

@@ -110,8 +110,8 @@ class Item
   def restat
     case self._kind
       when 'operation'
-        self.stat.size = 0;
-        self.stat.grid_size = 0;
+        self.stat.size = 0
+        self.stat.grid_size = 0
         targets = Item.where(_kind: 'target').also_in(path: [self._id]).only(:stat)
         targets.each do |t|
           self.stat.size += t.stat.size

@@ -165,12 +165,12 @@ module BuildTaskType
           break if finished?
           step
         end
-        unless @file_name.nil?
+        if @file_name.nil?
+          finished if @file_name.nil?
+        else
           FileUtils.cp(@builder.path(@builder.outputs.first), Config.instance.temp(@_id))
           @resource[:size] = File.size(Config.instance.temp(@_id))
           download_available unless @file_name.nil?
-        else
-          finished if @file_name.nil?
         end
         trace :info, "Task #{@_id} completed."
       rescue Exception => e

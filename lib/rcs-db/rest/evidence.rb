@@ -18,7 +18,7 @@ require 'time'
 require 'json'
 
 class BSON::ObjectId
-  def encode_amf ser
+  def encode_amf(ser)
     ser.serialize 3, self.to_s
   end
 end
@@ -140,7 +140,7 @@ class EvidenceController < RESTController
     Audit.log :actor => @session[:user][:name], :action => 'evidence.destroy',
               :desc => "Deleted multi evidence from: #{Time.at(@params['from'])} to: #{Time.at(@params['to'])} relevance: #{@params['rel']} type: #{@params['type']}"
 
-    trace :debug, "Deleting evidence: #{@params}"
+    #trace :debug, "Deleting evidence: #{@params}"
 
     task = {name: "delete multi evidence",
             method: "::Evidence.offload_delete_evidence",
@@ -445,11 +445,11 @@ class EvidenceController < RESTController
 
     mongoid_query do
 
-      start = Time.now
-
       # filter by target
       target = Item.where({_id: @params['target']}).first
       return not_found("Target not found") if target.nil?
+
+      agent = nil
 
       # filter by agent
       if @params.has_key? 'agent'

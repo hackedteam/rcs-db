@@ -45,22 +45,22 @@ class Config
   end
 
   def check_certs
-    if not @global['DB_CERT'].nil?
-      if not File.exist?(Config.instance.cert('DB_CERT'))
+    unless @global['DB_CERT'].nil?
+      unless File.exist?(Config.instance.cert('DB_CERT'))
         trace :fatal, "Cannot open certificate file [#{@global['DB_CERT']}]"
         return false
       end
     end
 
-    if not @global['DB_KEY'].nil?
-      if not File.exist?(Config.instance.cert('DB_KEY'))
+    unless @global['DB_KEY'].nil?
+      unless File.exist?(Config.instance.cert('DB_KEY'))
         trace :fatal, "Cannot open private key file [#{@global['DB_KEY']}]"
         return false
       end
     end
 
-    if not @global['CA_PEM'].nil?
-      if not File.exist?(Config.instance.cert('CA_PEM'))
+    unless @global['CA_PEM'].nil?
+      unless File.exist?(Config.instance.cert('CA_PEM'))
         trace :fatal, "Cannot open PEM file [#{@global['CA_PEM']}]"
         return false
       end
@@ -84,7 +84,7 @@ class Config
     end
 
     # to avoid problems with checks too frequent
-    if (@global['HB_INTERVAL'] and @global['HB_INTERVAL'] < 10)
+    if @global['HB_INTERVAL'] and @global['HB_INTERVAL'] < 10
       trace :fatal, "Interval too short, please increase it"
       return false
     end
@@ -237,11 +237,11 @@ class Config
     # login
     account = {:user => options[:user], :pass => options[:pass] }
     resp = http.request_post('/auth/login', account.to_json, nil)
-    unless resp['Set-Cookie'].nil?
-      cookie = resp['Set-Cookie']
-    else
+    if resp['Set-Cookie'].nil?
       trace :fatal, "Invalid authentication"
       return
+    else
+      cookie = resp['Set-Cookie']
     end
 
     # send the request

@@ -23,7 +23,7 @@ class Processor
     loop do
       # get the first entry from the queue and mark it as processed to avoid
       # conflicts with multiple processors
-      if entry = coll.find_and_modify({query: {flag: IntelligenceQueue::QUEUED}, update: {"$set" => {flag: IntelligenceQueue::PROCESSED}}})
+      if (entry = coll.find_and_modify({query: {flag: IntelligenceQueue::QUEUED}, update: {"$set" => {flag: IntelligenceQueue::PROCESSED}}}))
         count = coll.find({flag: IntelligenceQueue::QUEUED}).count()
         trace :info, "#{count} evidence to be processed in queue"
         process entry
