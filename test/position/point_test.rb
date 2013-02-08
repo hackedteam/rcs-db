@@ -15,6 +15,16 @@ class PointTest < Test::Unit::TestCase
     assert_equal Point::MIN_RADIUS, point.r
   end
 
+  def test_to_s
+    time = Time.now
+    a = Point.new({lat: 123, lon: 456, r: 10, time: time, start: time, end: time})
+
+    output = a.to_s
+    expected = "#{a.lat} #{a.lon} #{a.r} - #{a.time} (#{a.start} #{a.end})"
+
+    assert_equal expected, output
+  end
+
   def test_min_radius
     point = Point.new({r: 0})
     assert_equal Point::MIN_RADIUS, point.r
