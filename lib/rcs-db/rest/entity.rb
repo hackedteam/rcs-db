@@ -201,6 +201,22 @@ class EntityController < RESTController
     end
   end
 
+  def add_place
+    require_auth_level :view
+    require_auth_level :view_profiles
+
+    mongoid_query do
+
+      e = Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
+      return conflict('NOT_A_TARGET') unless e.type.eql? :target
+
+
+      Audit.log :actor => @session[:user][:name], :action => 'entity.add_palce', :desc => "Added a new place to #{e.name}"
+
+      return ok
+    end
+  end
+
 end
 
 end #DB::
