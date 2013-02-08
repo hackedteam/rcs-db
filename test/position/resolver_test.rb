@@ -77,6 +77,14 @@ class ResolverTest < Test::Unit::TestCase
     assert_false position['address'].nil?
   end
 
+  def test_gps_google
+      request = {'gpsPosition' => {"latitude"=>45.4774536, "longitude"=>9.1906932}}
+      position = PositionResolver.get(request)
+      expected = "Via Fatebenesorelle, 2-14, 20121 Milan, Italy"
+
+      assert_equal expected, position['address']['text']
+  end
+
   def test_ip_geoip
     request = {'ipAddress' => {'ipv4' => '93.62.139.46'}}
     position = PositionResolver.get(request)
@@ -85,6 +93,14 @@ class ResolverTest < Test::Unit::TestCase
     assert_equal expected['latitude'], position['latitude']
     assert_equal expected['longitude'], position['longitude']
     assert_equal expected['accuracy'], position['accuracy']
+  end
+
+  def test_local_ip
+    request = {'ipAddress' => {'ipv4' => '192.168.1.1'}}
+    position = PositionResolver.get(request)
+    expected = {'location' => {}, 'address' => {}}
+
+    assert_equal expected, position
   end
 
 =begin
@@ -111,6 +127,24 @@ class ResolverTest < Test::Unit::TestCase
     assert_false position['address'].nil?
   end
 =end
+
+  def test_malformed
+    request = {}
+    position = PositionResolver.get(request)
+    expected = {'location' => {}, 'address' => {}}
+
+    assert_equal expected, position
+  end
+
+  def test_cache
+    request = {'gpsPosition' => {"latitude"=>45.4774536, "longitude"=>9.1906932}}
+    response = {'address' => {'text' => "Via Fatebenesorelle, 2-14, 20121 Milan, Italy"}}
+    PositionResolver.put_cache(request, response)
+
+    position = PositionResolver.get(request)
+
+    assert_equal response, position
+  end
 
 end
 
