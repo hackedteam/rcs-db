@@ -119,6 +119,19 @@ class Entity
     self.save
   end
 
+  def add_place(params)
+    place = Entity.create(name: params[:name]) do |ent|
+      ent.type = :position
+      ent.level = :manual
+      # same path as the belonging entity
+      ent.path = self.path.dup
+      ent.position = {latitude: params[:latitude], longitude: params[:longitude]}
+      ent.position_attr = {accuracy: params[:accuracy]}
+    end
+
+
+  end
+
   def last_position=(hash)
     self.position = {latitude: hash[:latitude], longitude: hash[:longitude]}
     self.position_attr = {time: hash[:time], accuracy: hash[:accuracy]}

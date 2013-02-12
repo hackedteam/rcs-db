@@ -210,6 +210,7 @@ class EntityController < RESTController
       e = Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
       return conflict('NOT_A_TARGET') unless e.type.eql? :target
 
+      e.add_place(name: @params['name'], latitude: @params['latitude'], longitude: @params['longitude'], accuracy: @params['accuracy'])
 
       Audit.log :actor => @session[:user][:name], :action => 'entity.add_palce', :desc => "Added a new place to #{e.name}"
 
