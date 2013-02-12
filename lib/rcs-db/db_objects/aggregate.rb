@@ -28,6 +28,7 @@ class Aggregate
         index :type, background: true
         index :day, background: true
         index "data.peer", background: true
+        index "data.type", background: true
         shard_key :type, :day
 
         after_create :create_callback
