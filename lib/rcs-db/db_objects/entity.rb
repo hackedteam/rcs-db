@@ -33,6 +33,9 @@ class Entity
   # position_addr contains {time, accuracy}
   field :position_attr, type: Hash, default: {}
 
+  # links to other entities
+  field :links, type: Array, default: []
+
   embeds_many :handles, class_name: "EntityHandle"
 
   index :name
@@ -129,7 +132,8 @@ class Entity
       ent.position_attr = {accuracy: params[:accuracy]}
     end
 
-
+    self.links << place._id
+    self.save
   end
 
   def last_position=(hash)
