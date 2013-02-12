@@ -29,7 +29,11 @@ class Status
   field :disk, type: Integer
   field :type, type: String
   field :version, type: String
-  
+
+  index :name
+  index :address
+  index :status
+
   store_in :statuses
 
   class << self
@@ -55,7 +59,7 @@ class Status
       end
 
       # notify all that the monitor has changed only if the status has changed
-      RCS::DB::PushManager.instance.notify('monitor') if monitor[:status] != STATUS_CODE[status]
+      Thread.new { RCS::DB::PushManager.instance.notify('monitor') } if monitor[:status] != STATUS_CODE[status]
 
       case(status)
         when 'OK'

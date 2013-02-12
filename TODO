@@ -7,9 +7,7 @@ TODO 8.3.0:
 
     speed of most_contacted aggregation
 
-    aggregates:
-      skype call / skype chat
-      places
+    insert LRU cache resolving in Entity.from_handle
 
 
 TODO 9.0.0
@@ -21,6 +19,8 @@ TODO 9.0.0
     gridfs append + moped?
 
     rework to speed up the accessible mechanism
+
+    aggregates for places (positioner algorithm)
 
     create entity form most_contacted
     associate entity from most_contacted
