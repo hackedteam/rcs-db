@@ -176,6 +176,9 @@ class SessionManager
       end
     end
 
+    trace :debug, "Accessible list for #{user.name} has #{accessible.size} elements"
+    trace :warn, "Accessible list for #{user.name} has #{accessible.size} elements" if accessible.size >= 100
+
     return accessible.to_a
   end
 

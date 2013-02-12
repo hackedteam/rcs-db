@@ -1,14 +1,9 @@
 
 TODO 8.3.0:
 
-    TEST:
-      - alert on keyword for OCR
-
     failed backup (mongodump 2.2 error look for fix from mongo)
 
     resolve position!!!
-
-    checksum on license in db
 
     speed of most_contacted aggregation
 
@@ -24,6 +19,8 @@ TODO 9.0.0
     upgrade to mongoid 3.0.x
     mongo-ruby-driver 1.8.2 has handle leak ???
     gridfs append + moped?
+
+    rework to speed up the accessible mechanism
 
     create entity form most_contacted
     associate entity from most_contacted

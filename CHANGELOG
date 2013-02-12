@@ -6,10 +6,10 @@ Collector:
 
 DB:
   - MongoDB updated to 2.2.3
-  - Target records
+  - New intelligence section for data correlation
   - More granularity on user permissions
   - Factories can be created at the operation level and will create a new target on each new instance
-  - Support for 3rd party translation service for keylog, chat, messages
+  - Support for 3rd party translation service for keylog, chat, messages, clipboard, files, screenshots
   - Modification of the target (upload or exec) limited by license
   - HASP drivers updated to 6.51 (support for Win2012)
   - fix for size of evidence of an instance reported incorrectly
@@ -17,4 +17,4 @@ DB:
   - ghost agent is not available anymore
   - screenshots are configurable during scout creation
   - alerts now works on text taken from OCR or Translation
-  - OCR now extract text from documents (file capture)
+  - OCR now extract text from all documents (file capture)
