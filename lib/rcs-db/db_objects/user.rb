@@ -15,7 +15,6 @@ class User
             'ADMIN_TARGETS',
             'ADMIN_AUDIT',
             'ADMIN_LICENSE',
-            'ADMIN_PROFILES',
            'SYS',
             'SYS_FRONTEND',
             'SYS_BACKEND',
