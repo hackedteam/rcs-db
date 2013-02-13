@@ -201,6 +201,7 @@ class Item
   end
 
   def add_infection_files
+=begin
     config = JSON.parse(self.configs.last.config)
 
     found = false
@@ -224,7 +225,6 @@ class Item
       config['modules'].each do |mod|
         if mod['module'] == 'infection'
 
-=begin
           if mod['usb'] or mod['vm'] > 0
             factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
             build = RCS::DB::Build.factory(:windows)
@@ -236,12 +236,10 @@ class Item
             add_upgrade('installer', File.join(build.tmpdir, 'output'))
             build.clean
           end
-=end
 
           if mod['mobile']
             factory = ::Item.where({_kind: 'factory', ident: mod['factory']}).first
 
-=begin
             build = RCS::DB::Build.factory(:winmo)
             build.load({'_id' => factory._id})
             build.unpack
@@ -252,7 +250,6 @@ class Item
             add_upgrade('wmcore.002', File.join(build.tmpdir, 'autorun.zoo'))                       
             build.clean
 
-=end
             build = RCS::DB::Build.factory(:blackberry)
             build.load({'_id' => factory._id})
             build.unpack
@@ -271,6 +268,7 @@ class Item
     rescue Exception => e
       trace :error, "Cannot create infection file: #{e.message}"
     end
+=end
 
   end
 
