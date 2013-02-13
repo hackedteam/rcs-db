@@ -283,9 +283,6 @@ class Item
       build.patch({'demo' => self.demo})
 
       # copy the files in the upgrade collection
-      add_upgrade('core64', File.join(build.tmpdir, 'core64'))
-      add_upgrade('rapi', File.join(build.tmpdir, 'rapi'))
-      add_upgrade('codec', File.join(build.tmpdir, 'codec'))
       add_upgrade('sqlite', File.join(build.tmpdir, 'sqlite'))
 
       build.clean
