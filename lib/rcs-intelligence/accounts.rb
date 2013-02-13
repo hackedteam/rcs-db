@@ -93,7 +93,7 @@ class Accounts
       if data['user']
         name = data['user']
         add_domain(name, data['service'])
-        type = service =~ /gmail|google/i ? :gmail : :mail
+        type = /gmail|google/i ? :gmail : :mail
         create_entity_handle(entity, :automatic, type, name, '') if is_mail?(name)
       end
     rescue Exception => e
