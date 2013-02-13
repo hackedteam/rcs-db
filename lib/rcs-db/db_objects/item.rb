@@ -307,6 +307,8 @@ class Item
     self.upgrade_requests.destroy_all if self.upgradable
 
     if self.scout
+      raise "Compromised scout cannot be ugraded" if self.version <= 3
+      
       # check the presence of blacklisted AV in the device evidence
       blacklisted_software?
 
