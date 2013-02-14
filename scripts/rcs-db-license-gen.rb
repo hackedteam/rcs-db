@@ -92,12 +92,6 @@ class LicenseGenerator
   def check_integrity(values)
     puts "Checking integrity..."
 
-    # the license is not for this version
-    if values[:version] != LICENSE_VERSION
-      puts "Invalid License File: version is not #{LICENSE_VERSION}, fixing it..."
-      values[:version] = LICENSE_VERSION
-    end
-
     # wrong date
     if not values[:expiry].nil? and Time.parse(values[:expiry]).getutc < Time.now.getutc
       abort "Invalid License File: license expired on #{Time.parse(values[:expiry]).getutc}"
@@ -143,14 +137,14 @@ class LicenseGenerator
     # add the watermark if not already present
     @limits[:check] = SecureRandom.urlsafe_base64(8).slice(0..7) unless @limits[:check]
 
+    # override the version
+    @limits[:version] = options[:version] if options[:version]
+
     # check if the input file is valid
     check_integrity @limits
 
     # the real stuff is here
     calculate_integrity @limits
-
-    # override the version
-    @limits[:version] = options[:version] if options[:version]
 
     # write the output file
     if options[:output]
