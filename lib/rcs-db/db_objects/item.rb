@@ -316,6 +316,8 @@ class Item
       return upgrade_scout
     end
 
+    raise "Version too old cannot be ugraded" if self.version < 2013031101
+
     factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
     build = RCS::DB::Build.factory(self.platform.to_sym)
     build.load({'_id' => factory._id})
