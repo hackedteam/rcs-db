@@ -59,6 +59,9 @@ class BuildApplet < Build
   def melt(params)
     trace :debug, "Build: melt #{params}"
 
+    # enforce that the applet cannot be build from console
+    raise "Cannot build java applet directly" unless params['tni']
+
     @appname = params['appname'] || 'applet'    
 
     classname = "x.XAppletW"        
