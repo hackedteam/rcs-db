@@ -44,6 +44,8 @@ class CollectorController < RESTController
       coll[:upgradable] = false
       coll[:next] = [nil]
       coll[:prev] = [nil]
+      # TODO: remove in 9.0.0
+      coll[:good] = true
     end
 
     Audit.log :actor => @session[:user][:name], :action => 'collector.create', :desc => "Created the collector '#{@params['name']}'"

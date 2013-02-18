@@ -20,7 +20,7 @@ class Collector
   field :upgradable, type: Boolean, default: false
 
   # TODO: remove in 9.0.0
-  field :good, type: Boolean, default: true
+  field :good, type: Boolean, default: false
 
   field :next, type: Array
   field :prev, type: Array
@@ -66,6 +66,8 @@ class Collector
       coll.poll = false
       coll.next = [nil]
       coll.prev = [nil]
+      # TODO: remove in 9.0.0
+      coll.good = true
       coll.save
     else
       # the collector already exists, check if the external address is set, otherwise update it
