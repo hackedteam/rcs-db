@@ -22,7 +22,7 @@ class SessionManager
     @sessions = {}
   end
 
-  def create(user, level, address, accessible = [])
+  def create(user, level, address, accessible = [], console_version = nil)
     
     # create a new random cookie
     #cookie = SecureRandom.random_bytes(8).unpack('H*').first
@@ -39,6 +39,7 @@ class SessionManager
       s[:address] = address
       s[:time] = Time.now.getutc.to_i
       s[:accessible] = accessible
+      s[:console_version] = console_version
     end
 
     get(cookie)
@@ -86,6 +87,7 @@ class SessionManager
     session[:cookie] = sess[:cookie]
     session[:time] = sess[:time]
     session[:accessible] = sess[:accessible]
+    session[:console_version] = sess[:console_version]
 
     return session
   end

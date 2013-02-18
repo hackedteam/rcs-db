@@ -22,6 +22,7 @@ class Build
 
   attr_reader :outputs
   attr_reader :scrambled
+  attr_reader :funcnames
   attr_reader :platform
   attr_reader :tmpdir
   attr_reader :factory
