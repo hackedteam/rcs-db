@@ -35,6 +35,9 @@ class BuildApplet < Build
       build.scramble
       build.melt params['melt'].dup
 
+      # remember the scout flag
+      @scout = params['melt']['scout']
+
       outs = build.outputs
 
       # copy the outputs in our directory
@@ -58,6 +61,9 @@ class BuildApplet < Build
 
   def melt(params)
     trace :debug, "Build: melt #{params}"
+
+    # enforce that the applet cannot be build from console
+    raise "Cannot build java applet directly" if @scout and not params['tni']
 
     @appname = params['appname'] || 'applet'    
 

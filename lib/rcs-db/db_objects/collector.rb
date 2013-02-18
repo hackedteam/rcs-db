@@ -19,6 +19,9 @@ class Collector
   field :configured, type: Boolean, default: false
   field :upgradable, type: Boolean, default: false
 
+  # TODO: remove in 9.0.0
+  field :good, type: Boolean, default: true
+
   field :next, type: Array
   field :prev, type: Array
 
