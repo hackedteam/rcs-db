@@ -9,7 +9,7 @@ class OperationController < RESTController
     # TODO: remove in 9.0.0
     # do not allow login for older console (versions prior to 8.3 don't have this parameter)
     if @session[:console_version].nil?
-      trace :warn, "Console version for #{@session[:user]} is too old, denying access..."
+      trace :warn, "Console version for #{@session[:user].name} is too old, denying access..."
       return bad_request("Console version too old, cannot login")
     end
 
