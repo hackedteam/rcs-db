@@ -65,14 +65,6 @@ class WebSocketManager
       return
     end
 
-    # do not allow login for older console (versions prior to 8.3 don't have this parameter)
-    if session[:console_version].nil?
-      trace :warn, "Console version for #{session[:user]} is too old, denying access..."
-      ws.send({type: 'auth', result: 'denied'}.to_json)
-      ws.close_websocket
-      return
-    end
-
     # grant the access to the client
     ws.send({type: 'auth', result: 'granted', time: Time.now.getutc.to_i}.to_json)
 

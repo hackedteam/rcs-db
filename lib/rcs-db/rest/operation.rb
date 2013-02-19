@@ -5,7 +5,14 @@ class OperationController < RESTController
   
   def index
     require_auth_level :admin, :tech, :view
-      
+
+    # TODO: remove in 9.0.0
+    # do not allow login for older console (versions prior to 8.3 don't have this parameter)
+    if @session[:console_version].nil?
+      trace :warn, "Console version for #{@session[:user]} is too old, denying access..."
+      return bad_request("Console version too old, cannot login")
+    end
+
     filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
     filter ||= {}
 
