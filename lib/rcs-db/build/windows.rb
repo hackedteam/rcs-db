@@ -102,8 +102,9 @@ class BuildWindows < Build
     patch_build_time('silent')
 
     # code obfuscator
-    CrossPlatform.exec path('packer32'), "#{path('core')}"
-    CrossPlatform.exec path('packer64'), "#{path('core64')}"
+    # TODO: use them!!!
+    #CrossPlatform.exec path('packer32'), "#{path('core')}"
+    #CrossPlatform.exec path('packer64'), "#{path('core64')}"
   end
 
   def scramble
@@ -461,7 +462,7 @@ class BuildWindows < Build
       # take the first letter (ignore nums) of the log key
       # it must be a letter since it's a function name
       first_alpha = @factory.logkey.match(/[a-zA-Z]/)[0]
-      progressive = (('A'..'M').to_a.sample.ord + index).chr
+      progressive = ('A'.ord + first_alpha.ord % 10 + index).chr
       @funcnames[index] = first_alpha + Digest::MD5.digest(@factory.logkey + LicenseManager.instance.limits[:magic]).unpack('H*').first[0..7] + progressive
     end
 
