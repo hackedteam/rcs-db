@@ -34,6 +34,9 @@ class BuildLinux < Build
 
     # invoke the generic patch method with the new params
     super
+
+    # pack the core
+    CrossPlatform.exec path('upx'), "-q --no-color --ultra-brute #{path('core')}"
   end
 
   def melt(params)
