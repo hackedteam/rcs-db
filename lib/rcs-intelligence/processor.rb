@@ -69,7 +69,7 @@ class Processor
   def self.save_first_camera(evidence, entity)
     return unless entity.photos.empty?
 
-    file = GridFS.get(BSON::ObjectId.from_string(evidence.data['_grid']), entity.path.last.to_s)
+    file = RCS::DB::GridFS.get(evidence.data['_grid'], entity.path.last.to_s)
     entity.add_photo(file.read)
 
     trace :debug, "Saving first camera for #{entity.name}"
