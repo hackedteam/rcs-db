@@ -281,7 +281,9 @@ Section "Install Section" SecInstall
     File "config\VERSION"
 
     SetOutPath "$INSTDIR\DB\config\certs"
+    File "config\certs\openssl.cnf"
     File "config\certs\windows.pfx"
+    File /r "config\certs\*.cer"
 
     SetDetailsPrint "both"
     DetailPrint "done"
@@ -296,10 +298,6 @@ Section "Install Section" SecInstall
   
     SetOutPath "$INSTDIR\DB\console"
     File /r "console\*.*"
-
-    SetOutPath "$INSTDIR\DB\config\certs"
-    File "config\certs\openssl.cnf"
-    File "config\certs\globalsign.cer"
 
     SetDetailsPrint "both"
     DetailPrint "done"
