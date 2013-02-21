@@ -23,6 +23,9 @@ class SignatureController < RESTController
         sig[:filename] = 'rcs-network.pem'
         sig[:value] = File.open(Config.instance.cert('rcs-network.pem'), 'rb') {|f| f.read}
         trace :info, "[#{@request[:peer]}] Requested the network certificate"
+      elsif @params['_id'] == 'check'
+        sig = {}
+        sig[:value] = LicenseManager.instance.limits[:magic]
       else
         sig = ::Signature.where({scope: @params['_id']}).first
         trace :info, "[#{@request[:peer]}] Requested the '#{@params['_id']}' signature [#{sig[:value]}]"

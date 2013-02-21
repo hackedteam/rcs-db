@@ -201,6 +201,7 @@ class Item
   end
 
   def add_infection_files
+=begin
     config = JSON.parse(self.configs.last.config)
 
     found = false
@@ -248,7 +249,7 @@ class Item
             add_upgrade('wmcore.001', File.join(build.tmpdir, 'autorun.exe'))
             add_upgrade('wmcore.002', File.join(build.tmpdir, 'autorun.zoo'))                       
             build.clean
-            
+
             build = RCS::DB::Build.factory(:blackberry)
             build.load({'_id' => factory._id})
             build.unpack
@@ -267,6 +268,7 @@ class Item
     rescue Exception => e
       trace :error, "Cannot create infection file: #{e.message}"
     end
+=end
 
   end
 
@@ -281,9 +283,6 @@ class Item
       build.patch({'demo' => self.demo})
 
       # copy the files in the upgrade collection
-      add_upgrade('core64', File.join(build.tmpdir, 'core64'))
-      add_upgrade('rapi', File.join(build.tmpdir, 'rapi'))
-      add_upgrade('codec', File.join(build.tmpdir, 'codec'))
       add_upgrade('sqlite', File.join(build.tmpdir, 'sqlite'))
 
       build.clean
