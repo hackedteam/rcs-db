@@ -302,19 +302,12 @@ class BuildWindows < Build
 
       silent_file = @admin ? 'silent_admin' : 'silent'
 
-      patch_file(:file => silent_file) do |content|
-        begin
-          offset = content.index("\xef\xbe\xad\xde".force_encoding('ASCII-8BIT'))
-          raise "offset is nil" if offset.nil?
-          content.binary_patch_at_offset offset, cooked
-        rescue Exception => e
-          raise "Room for cooked not found: #{e.message}"
-        end
-      end
+      content = File.open(path(silent_file), 'rb') {|f| f.read}
+      offset = content.index("\xef\xbe\xad\xde".force_encoding('ASCII-8BIT'))
+      raise "offset is nil" if offset.nil?
+      output = content.binary_patch_at_offset offset, cooked
 
-      # delete the cooked output file and overwrite it with the silent output
-      FileUtils.rm_rf path('output')
-      FileUtils.cp path(silent_file), path('output')
+      File.open(path('output'), 'wb') {|f| f.write output}
     end
   end
 
