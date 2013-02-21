@@ -150,6 +150,7 @@ class Entity
     return nil unless handle
 
     type = 'phone' if ['call', 'sms', 'mms'].include? type
+
     # find if there is an entity owning that handle
     entity = Entity.where({"handles.type" => type, "handles.handle" => handle}).first
     return entity.name if entity
