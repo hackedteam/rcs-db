@@ -62,7 +62,7 @@ class Processor
                             accuracy: evidence[:data]['accuracy'].to_i}
     entity.save
 
-    trace :debug, "Saving last position for #{entity.name}: #{entity.last_position.inspect}"
+    trace :info, "Saving last position for #{entity.name}: #{entity.last_position.inspect}"
   end
 
 
@@ -72,7 +72,7 @@ class Processor
     file = RCS::DB::GridFS.get(evidence.data['_grid'], entity.path.last.to_s)
     entity.add_photo(file.read)
 
-    trace :debug, "Saving first camera for #{entity.name}"
+    trace :info, "Saving first camera picture for #{entity.name}"
   end
 
 

@@ -8,6 +8,7 @@ require_relative 'sdl'
 
 require 'rcs-common/trace'
 require 'rcs-common/fixnum'
+require 'rcs-common/sanitize'
 require 'fileutils'
 
 module RCS
