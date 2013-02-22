@@ -88,16 +88,16 @@ class Processor
           # old call format
           # multiple peers creates multiple entries
           ev.data['peer'].split(',').each do |peer|
-            data << {:peer => peer.strip, :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['program'], :size => ev.data['duration'].to_i}
+            data << {:peer => peer.strip, :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['program'].downcase, :size => ev.data['duration'].to_i}
           end
         else
           # new call format
           if ev.data['incoming'] == 1
-            data << {:peer => ev.data['from'], :versus => :in, :type => ev.data['program'], :size => ev.data['duration'].to_i}
+            data << {:peer => ev.data['from'], :versus => :in, :type => ev.data['program'].downcase, :size => ev.data['duration'].to_i}
           else
             # multiple rcpts creates multiple entries
             ev.data['rcpt'].split(',').each do |rcpt|
-              data << {:peer => rcpt.strip, :versus => :out, :type => ev.data['program'], :size => ev.data['duration'].to_i}
+              data << {:peer => rcpt.strip, :versus => :out, :type => ev.data['program'].downcase, :size => ev.data['duration'].to_i}
             end
           end
         end
@@ -106,16 +106,16 @@ class Processor
           # old chat format
           # multiple rcpts creates multiple entries
           ev.data['peer'].split(',').each do |peer|
-            data << {:peer => peer.strip, :versus => nil, :type => ev.data['program'], :size => ev.data['content'].length}
+            data << {:peer => peer.strip, :versus => nil, :type => ev.data['program'].downcase, :size => ev.data['content'].length}
           end
         else
           # new chat format
           if ev.data['incoming'] == 1
-            data << {:peer => ev.data['from'], :versus => :in, :type => ev.data['program'], :size => ev.data['content'].length}
+            data << {:peer => ev.data['from'], :versus => :in, :type => ev.data['program'].downcase, :size => ev.data['content'].length}
           else
             # multiple rcpts creates multiple entries
             ev.data['rcpt'].split(',').each do |rcpt|
-              data << {:peer => rcpt.strip, :versus => :out, :type => ev.data['program'], :size => ev.data['content'].length}
+              data << {:peer => rcpt.strip, :versus => :out, :type => ev.data['program'].downcase, :size => ev.data['content'].length}
             end
           end
         end
@@ -125,20 +125,20 @@ class Processor
           if ev.data['incoming'] == 1
             #extract email from string "Ask Me" <ask@me.it>
             from = ev.data['from'].scan(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i).first
-            data << {:peer => from, :versus => :in, :type => ev.data['type'], :size => ev.data['body'].length}
+            data << {:peer => from, :versus => :in, :type => ev.data['type'].downcase, :size => ev.data['body'].length}
           else
             ev.data['rcpt'].split(',').each do |rcpt|
               #extract email from string "Ask Me" <ask@me.it>
               to = rcpt.strip.scan(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i).first
-              data << {:peer => to, :versus => :out, :type => ev.data['type'], :size => ev.data['body'].length}
+              data << {:peer => to, :versus => :out, :type => ev.data['type'].downcase, :size => ev.data['body'].length}
             end
           end
         else
           if ev.data['incoming'] == 1
-            data << {:peer => ev.data['from'], :versus => :in, :type => ev.data['type'], :size => ev.data['content'].length}
+            data << {:peer => ev.data['from'], :versus => :in, :type => ev.data['type'].downcase, :size => ev.data['content'].length}
           else
             ev.data['rcpt'].split(',').each do |rcpt|
-              data << {:peer => rcpt.strip, :versus => :out, :type => ev.data['type'], :size => ev.data['content'].length}
+              data << {:peer => rcpt.strip, :versus => :out, :type => ev.data['type'].downcase, :size => ev.data['content'].length}
             end
           end
         end
