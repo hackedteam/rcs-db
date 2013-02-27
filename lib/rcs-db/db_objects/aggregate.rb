@@ -67,9 +67,7 @@ class Aggregate
 
   def self.most_contacted(target, params)
 
-    start = Time.now
-
-    most_contacted_types = ['call', 'chat', 'mail', 'sms', 'mms', 'facebook', 'gmail', 'skype', 'bbm', 'whatsapp']
+    most_contacted_types = ['call', 'chat', 'mail', 'sms', 'mms', 'facebook', 'gmail', 'skype', 'bbm', 'whatsapp', 'msn', 'adium']
 
     db = Mongoid.database
 
@@ -127,9 +125,6 @@ class Aggregate
     # extract the results
     contacted = collection.aggregate(pipeline)
 
-    trace :debug, contacted
-    trace :warn, "most_contacted: after aggregate #{Time.now - start}"
-
     # normalize them in a better form
     contacted.collect! {|e| {peer: e['_id']['peer'], type: e['_id']['type'], count: e['count'], size: e['size']}}
 
@@ -150,8 +145,6 @@ class Aggregate
       set.sort {|x,y| x[sort_by] <=> y[sort_by]}.reverse.slice(0..limit)
     end
 
-    trace :warn, "most_contacted: after collect #{Time.now - start}"
-
     # resolve the names of the peer from the db of entities
     top.each do |t|
       t.each do |e|
@@ -159,8 +152,6 @@ class Aggregate
         e.delete(:peer_name) unless e[:peer_name]
       end
     end
-
-    trace :warn, "most_contacted: after resolv #{Time.now - start}"
 
     return top
   end
