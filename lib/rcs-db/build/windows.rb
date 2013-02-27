@@ -117,6 +117,7 @@ class BuildWindows < Build
     # TODO: use them!!!
     #CrossPlatform.exec path('packer32'), "#{path('core')}"
     #CrossPlatform.exec path('packer64'), "#{path('core64')}"
+    CrossPlatform.exec path('packer32'), "#{path('scout')}"
   end
 
   def scramble
