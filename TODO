@@ -7,8 +7,6 @@ TODO 8.3.0:
 
     speed of most_contacted aggregation
 
-    insert LRU cache resolving in Entity.from_handle
-
 
 TODO 9.0.0
 

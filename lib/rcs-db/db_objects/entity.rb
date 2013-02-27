@@ -147,19 +147,31 @@ class Entity
 
   def self.from_handle(type, handle, target_id = nil)
 
+    # use a class cache
+    @@acc_cache ||= LRUCache.new(:ttl => 24.hour)
+
     return nil unless handle
 
     type = 'phone' if ['call', 'sms', 'mms'].include? type
 
+    # check if already in cache
+    search_key = "#{type}_#{handle}"
+    name = @@acc_cache.fetch(search_key)
+    return name if name
+
     # find if there is an entity owning that handle
     entity = Entity.where({"handles.type" => type, "handles.handle" => handle}).first
-    return entity.name if entity
+    if entity
+      @@acc_cache.store(search_key, entity.name)
+      return entity.name
+    end
 
     # if no target (scope) is provided, don't search in the addressbook
     return nil unless target_id
 
     # use the fulltext (kw) search to be fast
     Evidence.collection_class(target_id).where({type: 'addressbook', :kw.all => handle.keywords }).each do |e|
+      @@acc_cache.store(search_key, e[:data]['name'])
       return e[:data]['name']
     end
 
