@@ -343,14 +343,15 @@ class Config
       File.open('serial.txt', 'wb+') { |f| f.write '01' }
 
       trace :info, "Generating a new Anon CA authority..."
-      subj = "/CN=\"default\""
+      subj = "/CN=\"#{SecureRandom.base64(20)[0..10]}\""
       out = `openssl req -subj #{subj} -batch -days 3650 -nodes -new -x509 -keyout rcs-anon-ca.key -out rcs-anon-ca.crt -config openssl.cnf 2>&1`
       trace :info, out if $log
 
       return unless File.exist? 'rcs-anon-ca.crt'
 
       trace :info, "Generating anonymizer certificate..."
-      out = `openssl req -subj /CN=server -batch -days 3650 -nodes -new -keyout rcs-anon.key -out rcs-anon.csr -config openssl.cnf 2>&1`
+      subj = "/CN=\"#{SecureRandom.base64(20)[0..10]}\""
+      out = `openssl req -subj #{subj} -batch -days 3650 -nodes -new -keyout rcs-anon.key -out rcs-anon.csr -config openssl.cnf 2>&1`
       trace :info, out if $log
 
       return unless File.exist? 'rcs-anon.key'
