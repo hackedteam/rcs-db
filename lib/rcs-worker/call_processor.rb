@@ -221,7 +221,6 @@ class Call
   end
 
   def close!
-    # TODO: flush channels if samples queued
     @channels.each_value {|c| c.close!}
     update_data({status: :completed}) #unless @evidence.nil?
     trace :debug, "[CALL #{@id}] closing call for #{@peer}, starting at #{@start_time}"
