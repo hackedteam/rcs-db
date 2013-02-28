@@ -28,7 +28,7 @@ class SessionManager
     #cookie = SecureRandom.random_bytes(8).unpack('H*').first
     cookie = UUIDTools::UUID.random_create.to_s
     
-    ::Session.create({:user => []}) do |s|
+    ::Session.create!({:user => []}) do |s|
       if level.include? :server
         s[:user] = [ user ]
       else
