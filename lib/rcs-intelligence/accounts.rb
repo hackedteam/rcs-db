@@ -23,7 +23,7 @@ class Accounts
     def retrieve
 
       # avoid two thread at the same time
-      # we are called by the eventmachine reactory
+      # we are called by the eventmachine reactor
       if @@running
         trace :debug, "Account retrieval already running, skipping..."
         return
