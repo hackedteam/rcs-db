@@ -297,6 +297,7 @@ Section "Install Section" SecInstall
     File "config\export.zip"
     File "config\logo.png"
     File "config\blacklist"
+    File "config\blacklist_analysis"
     File "config\VERSION_BUILD"
     File "config\VERSION"
 
