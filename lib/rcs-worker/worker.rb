@@ -11,9 +11,11 @@ require_relative 'statistics'
 # from RCS::DB
 if File.directory?(Dir.pwd + '/lib/rcs-worker-release')
   require 'rcs-db-release/config'
+  require 'rcs-db-release/license'
   require 'rcs-db-release/db_layer'
 else
   require 'rcs-db/config'
+  require 'rcs-db/license'
   require 'rcs-db/db_layer'
 end
 
