@@ -456,8 +456,13 @@ Section "Install Section" SecInstall
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "DisplayName" "RCS Intelligence"
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "Description" "Remote Control System Intelligence data correlator"
       DetailPrint "done"
+
+      ; generate the SSL cert for anon
+      DetailPrint "Generating anonymizer certs..."
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-certs-anon --log"
+      DetailPrint "done"
     ${EndIf}
-    
+
     SetDetailsPrint "both"
 
     Delete $INSTDIR\DB\data\config\mongod.lock
@@ -573,6 +578,9 @@ Section "Install Section" SecInstall
 
     ; make sure the cache is clean after upgrade
     Delete "$INSTDIR\Collector\config\cache.db"
+
+    ; make sure the certificate is removed on new install
+    Delete "$INSTDIR\Collector\config\rcs-network.pem"
 
     SetOutPath "$INSTDIR\Collector\config"
     File "config\decoy.rb"

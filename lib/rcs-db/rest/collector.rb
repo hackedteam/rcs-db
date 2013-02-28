@@ -131,6 +131,8 @@ class CollectorController < RESTController
         when 'GET'
           return not_found unless collector.upgradable
 
+          raise "Version too old cannot be ugraded" if collector.version < 2013031101
+
           trace :info, "Upgrading #{collector.name}"
 
           build = Build.factory(:anon)
