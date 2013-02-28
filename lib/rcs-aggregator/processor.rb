@@ -57,9 +57,12 @@ class Processor
       type = ev.type
       type = datum[:type] unless datum[:type].nil?
 
+      # twitter does not have a peer to sent message to :)
+      next if type.eql? 'twitter'
+
       # we need to find a document that is in the same day, same type and that have the same peer and versus
       # if not found, create a new entry, otherwise increment the number of occurrences
-      params = {day: Time.at(ev.da).strftime('%Y%m%d'), type: type, data: {peer: datum[:peer], versus: datum[:versus]}}
+      params = {aid: ev.aid, day: Time.at(ev.da).strftime('%Y%m%d'), type: type, data: {peer: datum[:peer], versus: datum[:versus]}}
 
       # find the existing aggregate or create a new one
       agg = Aggregate.collection_class(entry['target_id']).find_or_create_by(params)

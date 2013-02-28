@@ -17,6 +17,7 @@ class Aggregate
       class Aggregate_#{target}
         include Mongoid::Document
 
+        field :aid, type: String                      # agent BSON_ID
         field :day, type: String                      # day of aggregation
         field :type, type: String
         field :count, type: Integer, default: 0
@@ -25,6 +26,7 @@ class Aggregate
 
         store_in Aggregate.collection_name('#{target}')
 
+        index :aid, background: true
         index :type, background: true
         index :day, background: true
         index "data.peer", background: true

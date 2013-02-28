@@ -449,6 +449,8 @@ class Item
         unless self[:dropping]
           trace :info, "Deleting evidence for agent #{self.name}..."
           Evidence.collection_class(self.path.last).destroy_all(conditions: { aid: self._id.to_s })
+          trace :info, "Deleting aggregates for agent #{self.name}..."
+          Aggregate.collection_class(self.path.last).destroy_all(conditions: { aid: self._id.to_s })
           trace :info, "Deleting evidence for agent #{self.name} done."
         end
       when 'factory'
