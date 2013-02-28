@@ -456,12 +456,12 @@ Section "Install Section" SecInstall
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "DisplayName" "RCS Intelligence"
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "Description" "Remote Control System Intelligence data correlator"
       DetailPrint "done"
-
-      ; generate the SSL cert for anon
-      DetailPrint "Generating anonymizer certs..."
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-certs-anon --log"
-      DetailPrint "done"
     ${EndIf}
+
+    ; generate the SSL cert for anon on every install
+    DetailPrint "Generating anonymizer certs..."
+    nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-certs-anon --log"
+    DetailPrint "done"
 
     SetDetailsPrint "both"
 
