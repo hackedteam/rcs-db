@@ -69,6 +69,7 @@ class Item
   index :_kind
   index :ident
   index :instance
+  index :path
 
   store_in :items
 

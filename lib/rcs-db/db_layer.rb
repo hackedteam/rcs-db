@@ -116,7 +116,10 @@ class DB
 
       # skip if already indexed
       begin
-        next if coll.stats['nindexes'] > 1
+        # reindex only collections that don't match the index count + 1
+        # the +1 is the automatic _id index
+        # if the collection is sharded, there is another automatic index (for the sharding)
+        next if coll.stats['nindexes'] == k.index_options.size + 1 + (coll.stats['sharded'] ? 1 : 0)
       rescue Mongo::OperationFailure
         # ignored
       end
