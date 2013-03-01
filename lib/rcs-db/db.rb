@@ -99,6 +99,9 @@ class Application
 
       Audit.log :actor => '<system>', :action => 'startup', :desc => "System started"
 
+      # check if we have to mark items for crisis
+      DB.instance.mark_bad_items if File.exist?(Config.instance.file('mark_bad'))
+
       # enable shard on audit log, it will increase its size forever and ever
       DB.instance.shard_audit
 

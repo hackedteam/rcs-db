@@ -45,6 +45,10 @@ class Item
   field :upgradable, type: Boolean
   field :purge, type: Array, default: [0, 0]
 
+  # used in case of crisis
+  field :good, type: Boolean, default: true
+
+  # checksum
   field :cs, type: String
   
   scope :operations, where(_kind: 'operation')
@@ -317,7 +321,11 @@ class Item
       return upgrade_scout
     end
 
-    raise "Version too old cannot be ugraded" if self.version < 2013031101
+    # in case of elite leak
+    raise "Old elite cannot be ugraded" if self.version <= 2013031101
+
+    # in case of "total crisis"
+    raise "Version too old cannot be ugraded" unless self.good
 
     factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
     build = RCS::DB::Build.factory(self.platform.to_sym)

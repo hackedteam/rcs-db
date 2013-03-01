@@ -1,11 +1,15 @@
 
 TODO 8.3.0:
 
-    failed backup (mongodump 2.2 error look for fix from mongo)
-
     resolve position!!!
 
+    put some 403 error in the collector responses
+
+    check the anon connection against good
+
 TODO 9.0.0
+
+    remove mark_bad from installer
 
     drop support for windows 2003
     upgrade to ruby 1.9.3-p365

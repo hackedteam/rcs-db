@@ -285,6 +285,21 @@ class DB
     end
   end
 
+  def mark_bad_items
+    return unless File.exist?(Config.instance.file('mark_bad'))
+
+    value = File.read(Config.instance.file('mark_bad'))
+    value = value.chomp == 'true' ? true : false
+
+    trace :info, "Marking all old items as bad (#{value})..."
+
+    ::Item.agents.update_all(good: value)
+    ::Item.factories.update_all(good: value)
+    ::Collector.update_all(good: value)
+
+    FileUtils.rm_rf Config.instance.file('mark_bad')
+  end
+
   # TODO: remove in 8.4
   def migrate_users_to_ext_privs
     ::User.where({:ext_privs.ne => true}).each do |user|

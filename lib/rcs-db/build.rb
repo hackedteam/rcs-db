@@ -64,6 +64,7 @@ class Build
       @factory = ::Item.where({_kind: 'factory', _id: params['_id']}).first
       raise "Factory #{params['ident']} not found" if @factory.nil?
       trace :debug, "Build: loaded factory: #{@factory.name}"
+      raise "Factory too old cannot be created" unless @factory.good
     end
   end
 
