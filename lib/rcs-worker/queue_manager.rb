@@ -80,7 +80,7 @@ class QueueManager
         trace :error, "Connection with mongodb lost, exiting..."
         exit!
       rescue Exception => e
-        trace :error, "Cannot process pending evidences: #{e.class} #{e.message}"
+        trace :error, "Cannot process pending evidences: [#{e.class}] #{e.message}"
         if e.message.match(/forcibly closed/)
           trace :error, "Connection with mongodb lost, exiting..."
           exit!
