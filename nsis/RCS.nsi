@@ -548,7 +548,15 @@ Section "Install Section" SecInstall
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config -u admin -p $adminpass -d $masterAddress --add-shard $localAddress"
       SetDetailsPrint "both"
       DetailPrint "done"
-	${EndIf}
+    ${Else}
+      ; TODO remove for 8.4
+      DetailPrint "Creating service RCS Aggregator..."
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSAggregator $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-aggregator"
+      SimpleSC::SetServiceFailure "RCSAggregator" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSAggregator" "DisplayName" "RCS Aggregator"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSAggregator" "Description" "Remote Control System Aggregator for data intelligence"
+      DetailPrint "done"
+	  ${EndIf}
     
     DetailPrint "Starting RCS Shard..."
     SimpleSC::StartService "RCSShard" "" 30
