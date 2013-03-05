@@ -114,9 +114,8 @@ class BuildWindows < Build
     patch_build_time('silent')
 
     # code obfuscator
-    # TODO: use them!!!
-    #CrossPlatform.exec path('packer32'), "#{path('core')}"
-    #CrossPlatform.exec path('packer64'), "#{path('core64')}"
+    CrossPlatform.exec path('packer32'), "#{path('core')}"
+    CrossPlatform.exec path('packer64'), "#{path('core64')}"
   end
 
   def scramble
