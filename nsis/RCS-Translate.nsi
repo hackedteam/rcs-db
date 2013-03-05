@@ -79,9 +79,6 @@ Section "Install Section" SecInstall
   SetOutPath "$INSTDIR\DB\lib\rcs-translate-release"
   File /r "lib\rcs-translate-release\*.*"
 
-  SetOutPath "$INSTDIR\DB\lib\rcs-ocr-release"
-  File /r "lib\rcs-ocr-release\*.*"
-
   SetOutPath "$INSTDIR\DB\bin"
   File /r "bin\rcs-translate"
 
@@ -91,14 +88,14 @@ Section "Install Section" SecInstall
   ReadRegDWORD $R0 HKLM "Software\HT\RCS" "translate"
   IntCmp $R0 1 alreadyinstalled
 
-    DetailPrint "Creating service RCS Translate..."
-    nsExec::Exec "$INSTDIR\DB\bin\nssm.exe install RCSTranslate $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-translate"
-    SimpleSC::SetServiceFailure "RCSTranslate" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-    WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSTranslate" "DisplayName" "RCS Translate"
-    WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSTranslate" "Description" "Remote Control System Translate processor"
-    DetailPrint "done"
+  DetailPrint "Creating service RCS Translate..."
+  nsExec::Exec "$INSTDIR\DB\bin\nssm.exe install RCSTranslate $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-translate"
+  SimpleSC::SetServiceFailure "RCSTranslate" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+  WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSTranslate" "DisplayName" "RCS Translate"
+  WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSTranslate" "Description" "Remote Control System Translate processor"
+  DetailPrint "done"
 
-    WriteRegDWORD HKLM "Software\HT\RCS" "translate" 0x00000001
+  WriteRegDWORD HKLM "Software\HT\RCS" "translate" 0x00000001
 
   alreadyinstalled:
 
