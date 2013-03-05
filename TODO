@@ -3,10 +3,6 @@ TODO 8.3.0:
 
     resolve position!!!
 
-    put some 403 error in the collector responses
-
-    check the anon connection against good
-
 TODO 9.0.0
 
     remove mark_bad from installer
