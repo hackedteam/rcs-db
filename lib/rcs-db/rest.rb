@@ -281,6 +281,9 @@ class RESTController
     rescue BSON::InvalidObjectId => e
       trace :error, "Bad request #{e.class} => #{e.message}"
       return bad_request(e.message)
+    rescue BlacklistError => e
+      trace :error, "Blacklist: #{e.message}"
+      return conflict(e.message)
     rescue Exception => e
       trace :error, e.message
       trace :fatal, "EXCEPTION(#{e.class}): " + e.backtrace.join("\n")

