@@ -520,7 +520,7 @@ class Item
       offending = offending.split('#').first
       offending.strip!
       offending.chomp!
-      next unless offending
+      next if offending.length == 0
       if Regexp.new(offending, Regexp::IGNORECASE).match(installed)
         trace :warn, "Analysis software detected: #{offending}"
         raise BlacklistError.new("The target device contains malware analysis software. Please contact HT support immediately")
