@@ -322,7 +322,7 @@ class Item
     end
 
     # in case of elite leak
-    raise "Old agent cannot be ugraded" if self.version <= 2013031101
+    raise "Old agent cannot be ugraded" if self.version < 2013031101
 
     # in case of "total crisis"
     raise "Version too old cannot be ugraded" unless self.good
