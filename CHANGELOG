@@ -3,6 +3,7 @@ Changelog for 8.3.0
 
 Collector:
   - Fixed the automatic external ip resolve on startup
+  - Old collectors (or anon) cannot be used to sync new agents
 
 DB:
   - MongoDB updated to 2.2.3
