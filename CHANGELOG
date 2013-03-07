@@ -19,3 +19,4 @@ DB:
   - screenshots are configurable during scout creation
   - alerts now works on text taken from OCR or Translation
   - OCR now extract text from all documents (file capture)
+  - This release is the last one that supports Windows 2003

@@ -258,7 +258,7 @@ class Build
   end
 
   def create(params)
-    trace :info, "Building Agent: #{params}"
+    trace :debug, "Building Agent: #{params}"
 
     # if we are in archive mode, no build is allowed
     raise "Cannot build on this system" if LicenseManager.instance.check :archive

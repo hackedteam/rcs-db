@@ -152,6 +152,9 @@ module BuildTaskType
   include FileTask
   
   def initialize(type, file_name, params)
+
+    trace :debug, "Building Task: #{params}"
+
     base_init(type, params)
     file_init(file_name)
     @builder = Build.factory(params['platform'].to_sym)
