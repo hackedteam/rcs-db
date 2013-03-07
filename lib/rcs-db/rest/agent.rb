@@ -354,10 +354,10 @@ class AgentController < RESTController
     factory = Item.where({_kind: 'factory', ident: @params['ident'], status: 'open'}).first
 
     # the status of the factory must be open otherwise no instance can be cloned from it
-    return not_found("Factory is marked as compromised found: #{@params['ident']}") unless factory.good
+    return not_found("Factory not found: #{@params['ident']}") if factory.nil?
 
     # the status of the factory must be open otherwise no instance can be cloned from it
-    return not_found("Factory not found: #{@params['ident']}") if factory.nil?
+    return not_found("Factory is marked as compromised found: #{@params['ident']}") unless factory.good
 
     # increment the instance counter for the factory
     factory[:counter] += 1
