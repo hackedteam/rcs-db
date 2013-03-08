@@ -10,9 +10,11 @@ TODO 9.0.0
     drop support for windows 2003
     upgrade to ruby 1.9.3-p365
     upgrade to mongoid 3.0.x
-    mongo-ruby-driver 1.8.2 has handle leak ???
     gridfs append + moped?
 
+    db = Mongoid.database  cannot be use anymore
+
+    rework to speed up the most_contacted resolv
     rework to speed up the accessible mechanism
 
     aggregates for places (positioner algorithm)

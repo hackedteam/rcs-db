@@ -42,7 +42,7 @@ class Item
   field :uninstalled, type: Boolean
   field :demo, type: Boolean, default: false
   field :scout, type: Boolean, default: false
-  field :upgradable, type: Boolean, default: false
+  field :upgradable, type: Boolean
   field :purge, type: Array, default: [0, 0]
 
   # used in case of crisis

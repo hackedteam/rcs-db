@@ -69,17 +69,17 @@ class Aggregate
 
   def self.most_contacted(target, params)
 
+    start = Time.now
+
     most_contacted_types = ['call', 'chat', 'mail', 'sms', 'mms', 'facebook', 'gmail', 'skype', 'bbm', 'whatsapp', 'msn', 'adium']
 
     db = Mongoid.database
-
-    # avoid creating a job if the aggregate does not exist
-    return [] unless db.collection_names.include? Aggregate.collection_name(target)
-
     collection = db.collection(Aggregate.collection_name(target))
 
+    trace :warn, "most_contacted: connection time #{Time.now - start}" if RCS::DB::Config.instance.global['PERF']
+
     #
-    # Map Reduce is slow as hell!!!
+    # Map Reduce has some downsides
     # let's try if the Mongo::Aggregation framework is better...
     #
 =begin
@@ -115,7 +115,7 @@ class Aggregate
 =end
 
     #
-    # Damned Mongo:Aggregation is slow as well!!!
+    # Mongo:Aggregation is better...
     #
     pipeline = [{ "$match" => {:day => {'$gte' => params['from'], '$lte' => params['to']}, :type => {'$in' => most_contacted_types} }},
                 { "$group" =>
@@ -124,8 +124,12 @@ class Aggregate
                     size: { "$sum" => "$size" },
                   }
                 }]
+
+    time = Time.now
     # extract the results
     contacted = collection.aggregate(pipeline)
+
+    trace :warn, "Aggregation time #{Time.now - time}" if RCS::DB::Config.instance.global['PERF']
 
     # normalize them in a better form
     contacted.collect! {|e| {peer: e['_id']['peer'], type: e['_id']['type'], count: e['count'], size: e['size']}}
@@ -147,6 +151,8 @@ class Aggregate
       set.sort {|x,y| x[sort_by] <=> y[sort_by]}.reverse.slice(0..limit)
     end
 
+    time = Time.now
+
     # resolve the names of the peer from the db of entities
     top.each do |t|
       t.each do |e|
@@ -154,6 +160,10 @@ class Aggregate
         e.delete(:peer_name) unless e[:peer_name]
       end
     end
+
+    trace :warn, "most_contacted: resolv time #{Time.now - time}" if RCS::DB::Config.instance.global['PERF']
+
+    trace :warn, "most_contacted: total time #{Time.now - start}" if RCS::DB::Config.instance.global['PERF']
 
     return top
   end
