@@ -233,33 +233,6 @@ class BuildWindows < Build
     FileUtils.rm_rf Config.instance.temp('scout')
   end
 
-  def ghost(params)
-    trace :debug, "Build: ghost: #{params}"
-
-    # patching for the ghost
-    patch_file(:file => 'ghost') do |content|
-      begin
-        offset = content.index("ADDRESS1")
-        raise "address1 not found" if offset.nil?
-        content.binary_patch_at_offset offset, params[:sync][0]
-        offset = content.index("ADDRESS2")
-        raise "address2 not found" if offset.nil?
-        content.binary_patch_at_offset offset, params[:sync][1]
-
-        sign = ::Signature.where({scope: 'agent'}).first
-        signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
-        content.binary_patch '3j9WmmDgBqyU270FTid3719g64bP4s52', signature
-
-        content.binary_patch "\xe1\xbe\xad\xde".force_encoding('ASCII-8BIT'), [params[:build]].pack('I').force_encoding('ASCII-8BIT')
-        content.binary_patch "\xe2\xbe\xad\xde".force_encoding('ASCII-8BIT'), [params[:instance]].pack('I').force_encoding('ASCII-8BIT')
-      rescue Exception => e
-        trace :error, e.message
-        trace :fatal, e.backtrace.join("\n")
-        raise "Ghost marker not found: #{e.message}"
-      end
-    end
-  end
-
   private
 
   def cook

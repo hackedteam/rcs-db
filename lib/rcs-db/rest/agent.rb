@@ -23,7 +23,7 @@ class AgentController < RESTController
 
     mongoid_query do
       db = Mongoid.database
-      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "upgradable", "demo", "scout", "good", "stat.last_sync", "stat.last_sync_status", "stat.user", "stat.device", "stat.source", "stat.size", "stat.grid_size", "stat.ghost"])
+      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "upgradable", "demo", "scout", "good", "stat.last_sync", "stat.last_sync_status", "stat.user", "stat.device", "stat.source", "stat.size", "stat.grid_size"])
       ok(j)
     end
   end
@@ -493,13 +493,6 @@ class AgentController < RESTController
         config.activated = Time.now.getutc.to_i
         config.save
 
-        # remove the ghost after activating it
-        if config.is_ghost_present?
-          agent.configs.create!(config: config.config)
-          config = agent.configs.last
-          config.remove_ghost
-        end
-
         trace :info, "[#{@request[:peer]}] Configuration sent [#{@params['_id']}]"
     end
     
@@ -781,74 +774,6 @@ class AgentController < RESTController
       Audit.log :actor => @session[:user][:name], :action => "agent.exec", :desc => "Removed a command execution request for agent '#{agent['name']}'"
       return ok
     end
-  end
-
-  def ghost
-    require_auth_level :server
-
-    ident, instance = @params['_id'].split('-')
-
-    mongoid_query do
-      agent = Item.where({_kind: 'agent', ident: ident, instance: Regexp.new(instance.prepend('^'))}).first
-
-      return if agent.nil?
-      trace :info, "[#{@request[:peer]}] Ghost Agent request for #{agent.ident} #{agent.instance}"
-
-      # update the stats
-      agent.stat[:last_sync] = Time.now.getutc.to_i
-      agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_GHOST
-      agent.stat[:ghost] = true
-      agent.save
-
-      file = "#{agent.ident}_#{agent.instance}.exe"
-
-      return not_found() unless File.exist? Config.instance.temp(file)
-
-      content = File.binread(Config.instance.temp(file))
-      FileUtils.rm_rf Config.instance.temp(file)
-
-      trace :info, "[#{@request[:peer]}] Ghost Agent sent: #{file} (#{content.bytesize} bytes)"
-
-      return ok(content, {content_type: 'binary/octetstream'})
-    end
-  end
-
-  def activate_ghost
-    require_auth_level :tech
-    require_auth_level :tech_build
-
-    agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
-
-    trace :info, "[#{@request[:peer]}] Activating Ghost Agent for #{agent.name}"
-
-    factory = ::Item.where({_kind: 'factory', ident: agent.ident}).first
-    build = RCS::DB::Build.factory(:windows)
-    build.load({'_id' => factory._id})
-    build.unpack
-
-    sync = @params['sync']
-    id = agent.ident.slice(4..-1).to_i
-    instance = agent.instance.slice(0..7).to_i(16)
-
-    build.ghost({:sync => sync, :build => id, :instance => instance})
-
-    # add the upload to the agent
-    agent.upload_requests.destroy_all
-    content = File.open(File.join(build.tmpdir, 'ghost'), 'rb+') {|f| f.read}
-    agent.upload_requests.create!({filename: 'ghits', _grid: [RCS::DB::GridFS.put(content, {filename: 'ghits', content_type: 'application/octet-stream'})] })
-
-    build.clean
-
-    # duplicate the current config
-    config = agent.configs.last
-    agent.configs.create!(config: config.config)
-
-    # get the duplicated and add the ghost
-    config = agent.configs.last
-    config.user = @session[:user][:name]
-    config.add_ghost
-
-    return ok()
   end
 
 end
