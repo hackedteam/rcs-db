@@ -21,7 +21,6 @@ class Accounts
     ADDRESSBOOK_TYPE = [:facebook, :twitter, :gmail, :skype, :bbm, :whatsapp, :phone, :mail, :linkedin]
 
     def retrieve
-
       # avoid two thread at the same time
       # we are called by the eventmachine reactor
       if @@running
@@ -85,7 +84,7 @@ class Accounts
         # mail accounts from email clients saving account to the device
         handle = data['user']
         add_domain(name, data['service'])
-        type = data['service'].match(/gmail|google/i) ? :gmail : :mail
+        type = get_type(name, data['service'])
         create_entity_handle(entity, :automatic, type, handle, '') if is_mail?(name)
       end
 
@@ -93,7 +92,7 @@ class Accounts
       if data['user']
         name = data['user']
         add_domain(name, data['service'])
-        type = data['service'].match(/gmail|google/i) ? :gmail : :mail
+        type = get_type(name, data['service'])
         create_entity_handle(entity, :automatic, type, name, '') if is_mail?(name)
       end
     rescue Exception => e
@@ -106,7 +105,7 @@ class Accounts
       return if entity.handles.where({type: type, name: name, handle: handle}).count != 0
 
       # update the name if the handle is already present
-      entity.handles.where({type: type, handle: handle}).first do |h|
+      entity.handles.where({type: type, level: level, handle: handle}).each do |h|
         trace :info, "Modifying handle [#{type}, #{handle}, #{name}] on entity: #{entity.name}"
         h.name = name
         h.save
@@ -116,7 +115,7 @@ class Accounts
       trace :info, "Adding handle [#{type}, #{handle}, #{name}] to entity: #{entity.name}"
 
       # add to the list of handles
-      entity.handles.create!(level: :automatic, type: type, name: name, handle: handle)
+      entity.handles.create!(level: level, type: type, name: name, handle: handle)
     end
 
     def is_mail?(value)
@@ -130,6 +129,24 @@ class Accounts
     def add_domain(user, service)
       user << '@gmail.com' if service =~ /gmail|google/i and not is_mail?(user)
       user << '@hotmail.com' if service =~ /hotmail/i and not is_mail?(user)
+      user << '@facebook.com' if service =~ /facebook/i and not is_mail?(user)
+    end
+
+    def get_type(user, service)
+
+      trace :debug, "get_type #{user} #{service}"
+
+      #if already in email form, check the domain, else check the service
+      to_search = is_mail?(user) ? user : service
+
+      case to_search
+        when /gmail/i
+          return :gmail
+        when /facebook/i
+          return :facebook
+      end
+
+      return :mail
     end
 
   end
