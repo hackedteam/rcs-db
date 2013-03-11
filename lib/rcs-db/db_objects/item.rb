@@ -42,7 +42,7 @@ class Item
   field :uninstalled, type: Boolean
   field :demo, type: Boolean, default: false
   field :scout, type: Boolean, default: false
-  field :upgradable, type: Boolean
+  field :upgradable, type: Boolean, default: false
   field :purge, type: Array, default: [0, 0]
 
   # used in case of crisis
@@ -573,7 +573,7 @@ class Item
     hash = [self._id, self.name, self.counter, self.status, self._kind, self.path]
 
     if self._kind == 'agent'
-      hash << [self.instance, self.type, self.platform, self.deleted, self.uninstalled, self.demo, self.upgradable]
+      hash << [self.instance, self.type, self.platform, self.deleted, self.uninstalled, self.demo, self.upgradable, self.scout, self.good]
     end
 
     aes_encrypt(Digest::SHA1.digest(hash.inspect), Digest::SHA1.digest("∫∑x=1 ∆t")).unpack('H*').first

@@ -293,8 +293,18 @@ class DB
 
     trace :info, "Marking all old items as bad (#{value})..."
 
-    ::Item.agents.update_all(good: value)
-    ::Item.factories.update_all(good: value)
+    # we cannot use update_all since is atomic and does not call the callback
+    # for the checksum recalculation
+    ::Item.agents.each do |agent|
+      agent.good = value
+      agent.upgradable = false
+      agent.save
+    end
+    ::Item.factories.each do |factory|
+      factory.good = value
+      factory.save
+    end
+
     ::Collector.update_all(good: value)
 
     FileUtils.rm_rf Config.instance.file('mark_bad')
