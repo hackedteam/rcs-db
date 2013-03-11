@@ -134,8 +134,6 @@ class Accounts
 
     def get_type(user, service)
 
-      trace :debug, "get_type #{user} #{service}"
-
       #if already in email form, check the domain, else check the service
       to_search = is_mail?(user) ? user : service
 
