@@ -59,6 +59,9 @@ class TargetController < RESTController
         doc[:desc] = @params['desc']
       end
 
+      # make item accessible to the current user (immediately)
+      SessionManager.instance.add_accessible(@session, item._id)
+
       # make item accessible to the users
       SessionManager.instance.rebuild_all_accessible
 

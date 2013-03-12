@@ -24,10 +24,15 @@ class PushManager
         next if ws.nil?
         # we have specified a specific user, skip all the others
         next if message[:rcpt] != nil and session[:user].first != message[:rcpt]
+
+        # TODO: fix this with correct accessibility
         # check for accessibility, if we pass and id, we only want the ws that can access that id
-        next if message[:id] != nil and not session[:accessible].include? message[:id]
+        #next if message[:id] != nil and not session[:accessible].include? message[:id]
+
         # send the message
         WebSocketManager.instance.send(ws, type, message)
+
+        trace :debug, "PUSH Event (sent): #{type} #{message}"
       end
 
     rescue Exception => e
