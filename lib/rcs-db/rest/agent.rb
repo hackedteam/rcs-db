@@ -590,8 +590,9 @@ class AgentController < RESTController
           require_auth_level :tech_build
 
           Audit.log :actor => @session[:user][:name], :action => "agent.upgrade", :desc => "Requested an upgrade for agent '#{agent['name']}'"
-          trace :info, "Agent #{agent.name} scheduled for upgrade"
+          trace :info, "Agent #{agent.name} request for upgrade"
           agent.upgrade!
+          trace :info, "Agent #{agent.name} scheduled for upgrade"
         when 'DELETE'
           agent.upgrade_requests.destroy_all
           agent.upgradable = false
