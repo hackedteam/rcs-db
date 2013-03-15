@@ -594,6 +594,9 @@ Section "Install Section" SecInstall
     ; make sure the certificate is removed on new install
     Delete "$INSTDIR\Collector\config\rcs-network.pem"
 
+    ; remove public entries
+    RMDir /r "$INSTDIR\Collector\public"
+
     SetOutPath "$INSTDIR\Collector\config"
     File "config\decoy.rb"
     File "config\trace.yaml"
