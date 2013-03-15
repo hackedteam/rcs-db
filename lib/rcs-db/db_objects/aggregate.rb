@@ -76,8 +76,6 @@ class Aggregate
     db = Mongoid.database
     collection = db.collection(Aggregate.collection_name(target))
 
-    trace :warn, "most_contacted: connection time #{Time.now - start}" if RCS::DB::Config.instance.global['PERF']
-
     #
     # Map Reduce has some downsides
     # let's try if the Mongo::Aggregation framework is better...
@@ -129,7 +127,7 @@ class Aggregate
     # extract the results
     contacted = collection.aggregate(pipeline)
 
-    trace :warn, "Aggregation time #{Time.now - time}" if RCS::DB::Config.instance.global['PERF']
+    trace :debug, "Most contacted: Aggregation time #{Time.now - time}" if RCS::DB::Config.instance.global['PERF']
 
     # normalize them in a better form
     contacted.collect! {|e| {peer: e['_id']['peer'], type: e['_id']['type'], count: e['count'], size: e['size']}}
@@ -161,9 +159,7 @@ class Aggregate
       end
     end
 
-    trace :warn, "most_contacted: resolv time #{Time.now - time}" if RCS::DB::Config.instance.global['PERF']
-
-    trace :warn, "most_contacted: total time #{Time.now - start}" if RCS::DB::Config.instance.global['PERF']
+    trace :debug, "Most contacted: Resolv time #{Time.now - time}" if RCS::DB::Config.instance.global['PERF']
 
     return top
   end
