@@ -14,7 +14,8 @@ class OCRQueue
   field :evidence_id, type: String
   field :flag, type: Integer
 
-  store_in :ocr_queue, capped: true, max: 100_000, size: 50_000_000
+  # TODO: fix the capped collection, capped: true, max: 100_000, size: 50_000_000
+  store_in collection: 'ocr_queue'
 
   def self.add(target_id, evidence_id)
     trace :debug, "Adding to OCR queue: #{target_id} #{evidence_id}"
@@ -34,7 +35,8 @@ class TransQueue
   field :evidence_id, type: String
   field :flag, type: Integer
 
-  store_in :trans_queue, capped: true, max: 100_000, size: 50_000_000
+  # TODO: fix the capped collection, capped: true, max: 100_000, size: 50_000_000
+  store_in collection: 'trans_queue'
 
   def self.add(target_id, evidence_id)
     trace :debug, "Adding to TRANSLATE queue: #{target_id} #{evidence_id}"
@@ -56,7 +58,8 @@ class AggregatorQueue
   field :evidence_id, type: String
   field :flag, type: Integer
 
-  store_in :aggregator_queue, capped: true, max: 500_000, size: 100_000_000
+  # TODO: fix the capped collection, capped: true, max: 500_000, size: 100_000_000
+  store_in collection: 'aggregator_queue'
 
   def self.add(target_id, evidence_id, type)
     # skip not interesting evidence
@@ -81,7 +84,8 @@ class IntelligenceQueue
   field :evidence_id, type: String
   field :flag, type: Integer
 
-  store_in :intelligence_queue, capped: true, max: 500_000, size: 100_000_000
+  # TODO: fix the capped collection, capped: true, max: 500_000, size: 100_000_000
+  store_in collection: 'intelligence_queue'
 
   def self.add(target_id, evidence_id, type)
     # skip not interesting evidence

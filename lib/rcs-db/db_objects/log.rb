@@ -11,6 +11,8 @@ class CappedLog
 
   def self.collection_class(id)
 
+    #TODO: fix capped collection creation
+
     class_definition = <<-END
       class CappedLog_#{id}
         include Mongoid::Document
@@ -19,7 +21,7 @@ class CappedLog
         field :type, type: String
         field :desc, type: String
 
-        store_in CappedLog.collection_name('#{id}'), capped: true, max: 5000, size: 2_000_000
+        store_in collection: CappedLog.collection_name('#{id}'), capped: true, max: 5000, size: 2_000_000
       end
     END
     

@@ -26,12 +26,12 @@ class Injector
   field :_grid, type: Array
   field :_grid_size, type: Integer
 
-  index :name
-  index :address
-  index :poll
-  index :configured
+  index({name: 1}, {background: true})
+  index({address: 1}, {background: true})
+  index({poll: 1}, {background: true})
+  index({configured: 1}, {background: true})
 
-  store_in :injectors
+  store_in collection: 'injectors'
 
   embeds_many :rules, class_name: "InjectorRule"
 

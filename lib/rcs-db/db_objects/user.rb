@@ -43,8 +43,6 @@ class User
   field :desc, type: String
   field :contact, type: String
   field :privs, type: Array
-  # TODO: remove in 8.4
-  field :ext_privs, type: Boolean
   field :enabled, type: Boolean
   field :locale, type: String
   field :timezone, type: Integer
@@ -56,10 +54,10 @@ class User
   has_and_belongs_to_many :groups, :dependent => :nullify, :autosave => true#, :class_name => "RCS::DB::Group", :foreign_key => "rcs/db/group_ids"
   has_many :alerts
   
-  index :name
-  index :enabled
+  index({name: 1}, {background: true})
+  index({enabled: 1}, {background: true})
   
-  store_in :users
+  store_in collection: 'users'
 
   before_destroy :destroy_callback
 

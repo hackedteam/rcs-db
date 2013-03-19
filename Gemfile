@@ -27,7 +27,7 @@ gem 'mongo', "= 1.8.3", :git => "git://github.com/alor/mongo-ruby-driver.git", :
 gem 'bson', "= 1.8.3"
 gem 'bson_ext', "= 1.8.3"
 
-gem 'mongoid', "< 3.0.0"
+gem 'mongoid'
 gem 'mongoid_spacial'
 gem 'rvincenty'
 

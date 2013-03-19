@@ -16,7 +16,7 @@ class Backup
   field :incremental, type: Boolean, default: false
   field :incremental_ids, type: Hash, :default => {}
 
-  store_in :backups
+  store_in collection: 'backups'
 
   def delete_if_item(id)
     if self.what[id.to_s]

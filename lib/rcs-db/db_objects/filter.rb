@@ -11,9 +11,9 @@ class EvidenceFilter
   field :name, type: String
   field :filter, type: String   # json
 
-  index :name
+  index({name: 1}, {background: true})
 
-  store_in :filters
+  store_in collection: 'filters'
 
   def self.create_default
     EvidenceFilter.destroy_all(conditions: {name: "Skype calls last month"})

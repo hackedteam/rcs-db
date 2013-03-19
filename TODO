@@ -6,6 +6,10 @@ TODO 9.0.0
     upgrade to mongoid 3.0.x
     gridfs append + moped?
 
+    new spacial mongoid
+
+    capped collection must be created by hand (log, queues)
+
     db = Mongoid.database  cannot be used anymore
 
     rework to speed up the most_contacted resolv

@@ -12,9 +12,9 @@ class Core
   field :_grid, type: Array
   field :_grid_size, type: Integer
 
-  index :name
+  index({name: 1}, {background: true})
   
-  store_in :cores
+  store_in collection: 'cores'
 
   after_destroy :destroy_callback
 

@@ -126,11 +126,6 @@ class Application
       # clean the capped logs collections
       DB.instance.clean_capped_logs
 
-      # TODO: remove in 8.4
-      # migrate the users to the new privs schema
-      DB.instance.migrate_users_to_ext_privs
-      DB.instance.create_targets_entities
-
       # enter the main loop (hopefully will never exit from it)
       Events.new.setup Config.instance.global['LISTENING_PORT']
       

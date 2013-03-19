@@ -16,7 +16,7 @@ class Session
 
   validates_uniqueness_of :user
 
-  store_in :sessions
+  store_in collection: 'sessions'
 end
 
 

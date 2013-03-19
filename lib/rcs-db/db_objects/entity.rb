@@ -38,15 +38,16 @@ class Entity
 
   embeds_many :handles, class_name: "EntityHandle"
 
-  index :name
-  index :type
-  index :path
-  index "handles.type"
-  index "handles.handle"
-  index "analyzed.handles"
-  spacial_index :position
+  index({name: 1}, {background: true})
+  index({type: 1}, {background: true})
+  index({path: 1}, {background: true})
+  index({"handles.type" => 1}, {background: true})
+  index({"handles.handle" => 1}, {background: true})
+  index({"analyzed.handles" => 1}, {background: true})
+  #TODO: fix this
+  #spacial_index :position
 
-  store_in :entities
+  store_in collection: 'entities'
 
   scope :targets, where(type: :target)
   scope :persons, where(type: :person)

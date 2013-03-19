@@ -68,14 +68,14 @@ class Item
 
   embeds_many :configs, class_name: "Configuration"
 
-  index :name
-  index :status
-  index :_kind
-  index :ident
-  index :instance
-  index :path
+  index({name: 1}, {background: true})
+  index({status: 1}, {background: true})
+  index({_kind: 1}, {background: true})
+  index({ident: 1}, {background: true})
+  index({instance: 1}, {background: true})
+  index({path: 1}, {background: true})
 
-  store_in :items
+  store_in collection: 'items'
 
   after_create :create_callback
   before_destroy :destroy_callback

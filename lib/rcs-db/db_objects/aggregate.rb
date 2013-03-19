@@ -24,13 +24,13 @@ class Aggregate
         field :size, type: Integer, default: 0        # seconds for calls, bytes for the rest
         field :data, type: Hash
 
-        store_in Aggregate.collection_name('#{target}')
+        store_in collection: Aggregate.collection_name('#{target}')
 
-        index :aid, background: true
-        index :type, background: true
-        index :day, background: true
-        index "data.peer", background: true
-        index "data.type", background: true
+        index({aid: 1}, {background: true})
+        index({type: 1}, {background: true})
+        index({day: 1}, {background: true})
+        index({"data.peer" => 1}, {background: true})
+        index({"data.type" => 1}, {background: true})
         shard_key :type, :day
 
         after_create :create_callback

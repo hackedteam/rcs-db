@@ -18,12 +18,11 @@ class Alert
   field :keywords, type: String
   field :last, type: Integer
 
-  index :enabled
-  index :user_id
+  index({enabled: 1}, {background: true})
 
-  store_in :alerts
+  store_in collection: 'alerts'
 
-  belongs_to :user
+  belongs_to :user, index: true
   embeds_many :logs, class_name: "AlertLog"
 
   def delete_if_item(id)
@@ -65,7 +64,7 @@ class AlertQueue
   field :subject, type: String
   field :body, type: String
 
-  store_in :alertqueue
+  store_in collection: 'alertqueue'
 end
 
 

@@ -32,18 +32,18 @@ class Evidence
         field :data, type: Hash
         field :kw, type: Array, default: []           # keywords for full text search
 
-        store_in Evidence.collection_name('#{target}')
+        store_in collection: Evidence.collection_name('#{target}')
 
         after_create :create_callback
         before_destroy :destroy_callback
 
-        index :type, background: true
-        index :da, background: true
-        index :dr, background: true
-        index :aid, background: true
-        index :rel, background: true
-        index :blo, background: true
-        index :kw, background: true
+        index({type: 1}, {background: true})
+        index({da: 1}, {background: true})
+        index({dr: 1}, {background: true})
+        index({aid: 1}, {background: true})
+        index({rel: 1}, {background: true})
+        index({blo: 1}, {background: true})
+        index({kw: 1}, {background: true})
         shard_key :type, :da, :aid
 
         STAT_EXCLUSION = ['filesystem', 'info', 'command', 'ip']

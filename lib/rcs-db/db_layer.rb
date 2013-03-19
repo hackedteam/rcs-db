@@ -37,6 +37,9 @@ class DB
       # this is required for mongoid >= 2.4.2
       ENV['MONGOID_ENV'] = 'yes'
 
+      #Mongoid.logger = Logger.new($stdout)
+      #Moped.logger = Logger.new($stdout)
+
       Mongoid.configure do |config|
         config.master = Mongo::Connection.new(Config.instance.global['CN'], 27017, pool_size: 50, pool_timeout: 15).db('rcs')
         config.persist_in_safe_mode = true
@@ -308,37 +311,6 @@ class DB
     ::Collector.update_all(good: value)
 
     FileUtils.rm_rf Config.instance.file('mark_bad')
-  end
-
-  # TODO: remove in 8.4
-  def migrate_users_to_ext_privs
-    ::User.where({:ext_privs.ne => true}).each do |user|
-      trace :info, "Migrating user: #{user.name} to the new privs schema..."
-      privs = user.privs
-      privs += User::PRIVS.select{|p| p['ADMIN_']} if privs.include? 'ADMIN'
-      privs += User::PRIVS.select{|p| p['SYS_']} if privs.include? 'SYS'
-      privs += User::PRIVS.select{|p| p['TECH_']} if privs.include? 'TECH'
-      privs += User::PRIVS.select{|p| p['VIEW_'] and not p['VIEW_DELETE']} if privs.include? 'VIEW'
-      user.privs = privs
-      user.ext_privs = true
-      user.save
-    end
-  end
-
-  # TODO: remove in 8.4
-  def create_targets_entities
-    ::Item.targets.each do |target|
-      if ::Entity.any_in({path: [target._id]}).empty?
-        trace :info, "Creating entity for target: #{target.name}"
-        ::Entity.create! do |entity|
-          entity.type = :target
-          entity.level = :automatic
-          entity.path = target.path + [target._id]
-          entity.name = target.name
-          entity.desc = target.desc
-        end
-      end
-    end
   end
 
 end
