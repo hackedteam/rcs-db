@@ -86,7 +86,8 @@ class PositionResolver
       # The api-key is linked to rcs.devel.map@gmail.com / rcs-devel0
       #
       api_key = Config.instance.global['GOOGLE_API_KEY']
-      api_key ||= 'AIzaSyAmG3O2wuA9Hj2L5an-ofRndUwVSrqElLM'
+      #api_key ||= 'AIzaSyAmG3O2wuA9Hj2L5an-ofRndUwVSrqElLM'  # devel 100 a day
+      api_key ||= 'AIzaSyBcx6gdqEog-p0WSWnlrtdGKzPF98_HVEM'   # paid 125.000 requests
       Timeout::timeout(5) do
         response = Frontend.proxy('POST', 'https', 'www.googleapis.com', "/geolocation/v1/geolocate?key=#{api_key}", request.to_json, {"Content-Type" => "application/json"})
         response.kind_of? Net::HTTPSuccess or raise(response.body)
