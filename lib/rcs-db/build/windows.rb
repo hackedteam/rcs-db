@@ -233,6 +233,17 @@ class BuildWindows < Build
     FileUtils.rm_rf Config.instance.temp('scout')
   end
 
+  def scout_name(seed)
+    scout_names = [{name: 'CCC', version: '3.5.0.5', desc: 'Catalys Control Center: Host application',company: 'ATI Technologies Inc.', copyright: '2002-2010'},
+                   {name: 'PDVD9Serv', version: '9.0.3401.1', desc: 'PowerDVD RC Service', company: 'CyberLink Corp.', copyright: 'Copyright (c) CyberLink Corp. 1997-2008'},
+                   {name: 'RtDCpl', version: '1.0.0.12', desc: 'HD Audio Control Panel', company: 'Realtek Semiconductor Corp.', copyright: 'Copyright 2010 (c) Realtek Semiconductor Corp.. All rights reserved.'},
+                   {name: 'sllauncher', version: '5.1.10411.3', desc: 'Microsoft Silverlight Out-of-Browser Launcher', company: 'Microsoft Silverlight', copyright: 'Copyright (c) Microsoft Corporation.All rights reserved.'},
+                   {name: 'WLIDSVCM', version: '7.250.4225.2', desc: 'Microsoft (r) Windows Live ID Service Monitor', company: 'Microsoft (r) CoReXT', copyright: 'Copyright (c) Microsoft Corporation.All rights reserved.'}
+                  ]
+
+    scout_names[seed.ord % scout_names.size]
+  end
+
   private
 
   def cook
@@ -383,17 +394,6 @@ class BuildWindows < Build
                   'RSSFeed', 'IconDB', 'MSCache', 'IEPrefs', 'EVTvwr', 'TServer', 'SMBAuth',
                   'DRM', 'Recovery', 'Registry', 'Cookies', 'MSVault', 'MSDiag', 'MSHelp']
     fake_names[seed.ord % fake_names.size] + ' ' + fakever
-  end
-
-  def scout_name(seed)
-    scout_names = [{name: 'CCC', version: '3.5.0.5', desc: 'Catalys Control Center: Host application',company: 'ATI Technologies Inc.', copyright: '2002-2010'},
-                   {name: 'PDVD9Serv', version: '9.0.3401.1', desc: 'PowerDVD RC Service', company: 'CyberLink Corp.', copyright: 'Copyright (c) CyberLink Corp. 1997-2008'},
-                   {name: 'RtDCpl', version: '1.0.0.12', desc: 'HD Audio Control Panel', company: 'Realtek Semiconductor Corp.', copyright: 'Copyright 2010 (c) Realtek Semiconductor Corp.. All rights reserved.'},
-                   {name: 'sllauncher', version: '5.1.10411.3', desc: 'Microsoft Silverlight Out-of-Browser Launcher', company: 'Microsoft Silverlight', copyright: 'Copyright (c) Microsoft Corporation.All rights reserved.'},
-                   {name: 'WLIDSVCM', version: '7.250.4225.2', desc: 'Microsoft (r) Windows Live ID Service Monitor', company: 'Microsoft (r) CoReXT', copyright: 'Copyright (c) Microsoft Corporation.All rights reserved.'}
-                  ]
-
-    scout_names[seed.ord % scout_names.size]
   end
 
   def customize_scout(seed, icon)
