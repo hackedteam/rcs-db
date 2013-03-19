@@ -1,23 +1,7 @@
 
-Changelog for 8.3.0
+Changelog for 9.0.0
 
 Collector:
-  - Fixed the automatic external ip resolve on startup
-  - Old collectors (or anon) cannot be used to sync new agents
-  - Files are deleted from the public as soon as they are served (for security reasons)
 
 DB:
-  - MongoDB updated to 2.2.3
-  - New intelligence section for data correlation
-  - More granularity on user permissions
-  - Factories can be created at the operation level and will create a new target on each new instance
-  - Support for 3rd party translation service for keylog, chat, messages, clipboard, files, screenshots
-  - Modification of the target (upload or exec) limited by license
-  - HASP drivers updated to 6.51 (support for Win2012)
-  - fix for size of evidence of an instance reported incorrectly
-  - fix for position resolving of gsm and gps
-  - ghost agent is not available anymore
-  - screenshots are configurable during scout creation
-  - alerts now works on text taken from OCR or Translation
-  - OCR now extract text from all documents (file capture)
-  - This release is the last one that supports Windows 2003
+  - MongoDB updated to 2.4.0

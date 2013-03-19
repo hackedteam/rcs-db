@@ -1,13 +1,5 @@
 
-TODO 8.3.0:
-
-    Google api key
-
-    certificate
-
 TODO 9.0.0
-
-    remove mark_bad from installer
 
     drop support for windows 2003
     upgrade to ruby 1.9.3-p365
