@@ -76,24 +76,24 @@ class Accounts
       if ADDRESSBOOK_TYPE.include? data['program']
         unless data['info'].length == 0
           type = data['program']
-          handle = data['info']
+          handle = data['info'].downcase
           handle = handle.split(':')[1].chomp.strip if handle[":"]
           create_entity_handle(entity, :automatic, type, handle, data['name'])
         end
       elsif data['program'] =~ /outlook|mail/i
         # mail accounts from email clients saving account to the device
-        handle = data['user']
-        add_domain(name, data['service'])
-        type = get_type(name, data['service'])
-        create_entity_handle(entity, :automatic, type, handle, '') if is_mail?(name)
+        handle = data['user'].downcase
+        add_domain(handle, data['service'])
+        type = get_type(handle, data['service'])
+        create_entity_handle(entity, :automatic, type, handle, '') if is_mail?(handle)
       end
 
       # infer on the user to discover email addresses (for passwords)
       if data['user']
-        name = data['user']
-        add_domain(name, data['service'])
-        type = get_type(name, data['service'])
-        create_entity_handle(entity, :automatic, type, name, '') if is_mail?(name)
+        handle = data['user'].downcase
+        add_domain(handle, data['service'])
+        type = get_type(handle, data['service'])
+        create_entity_handle(entity, :automatic, type, handle, '') if is_mail?(handle)
       end
     rescue Exception => e
       trace :error, "Cannot add handle: " + e.message
