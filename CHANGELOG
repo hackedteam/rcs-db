@@ -5,3 +5,4 @@ Collector:
 
 DB:
   - MongoDB updated to 2.4.0
+  - Windows 2008 R2 SP1 is now the minimum requirement to install RCS

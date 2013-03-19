@@ -171,7 +171,7 @@ Function .onInit
   ${IfNot} ${AtLeastWin2008R2}
 	  ${IfNot} ${AtLeastWin7}
   	  MessageBox MB_OK "RCS can be installed only on Windows Server 2008 R2 or above"
-    	;Quit
+    	Quit
   	${EndIf}
   ${EndIf}
 

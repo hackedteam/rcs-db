@@ -1,7 +1,6 @@
 
 TODO 9.0.0
 
-    drop support for windows 2003
     upgrade to ruby 1.9.3-p365
     upgrade to mongoid 3.0.x
     gridfs append + moped?
