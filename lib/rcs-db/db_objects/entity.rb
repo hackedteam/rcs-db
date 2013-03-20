@@ -1,5 +1,5 @@
 require 'mongoid'
-require 'mongoid_spacial'
+#require 'mongoid_spacial'
 
 #module RCS
 #module DB
@@ -7,7 +7,7 @@ require 'mongoid_spacial'
 class Entity
   include Mongoid::Document
   include Mongoid::Timestamps
-  include Mongoid::Spacial::Document
+#  include Mongoid::Spacial::Document
 
   # this is the type of entity: target, person, position, etc
   field :type, type: Symbol
@@ -29,7 +29,7 @@ class Entity
 
   # last known position of a target
   # using geospatial index in mongodb
-  field :position, type: Array, spacial: {lat: :latitude, lng: :longitude}
+  field :position, type: Array #, spacial: {lat: :latitude, lng: :longitude}
   # position_addr contains {time, accuracy}
   field :position_attr, type: Hash, default: {}
 

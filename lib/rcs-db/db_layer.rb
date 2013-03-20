@@ -11,6 +11,7 @@ require 'rcs-common/trace'
 # system
 require 'mongo'
 require 'mongoid'
+require 'moped'
 require 'rbconfig'
 
 # require all the DB objects
@@ -37,28 +38,24 @@ class DB
       # this is required for mongoid >= 2.4.2
       ENV['MONGOID_ENV'] = 'yes'
 
-      #Mongoid.logger = Logger.new($stdout)
-      #Moped.logger = Logger.new($stdout)
+      Mongoid.logger = ::Logger.new($stdout)
+      Moped.logger = ::Logger.new($stdout)
 
-      Mongoid.configure do |config|
-        config.master = Mongo::Connection.new(Config.instance.global['CN'], 27017, pool_size: 50, pool_timeout: 15).db('rcs')
-        config.persist_in_safe_mode = true
-        #config.raise_not_found_error = false
-        #config.logger = ::Logger.new($stdout)
-      end
-
-      #puts Mongoid.config.settings.inspect
+      session = Moped::Session.new(["#{Config.instance.global['CN']}:27017"], {safe: true})
+      session.use 'rcs'
 
       trace :info, "Connected to MongoDB"
 
       # check if we need to authenticate
       begin
-        Mongoid.database.authenticate(@auth_user, @auth_pass)
+        session.login(@auth_user, @auth_pass)
         trace :info, "Authenticated to MongoDB"
         @auth_required = true
       rescue Exception => e
         trace :warn, "AUTH: #{e.message}"
       end
+
+      Mongoid.sessions[:default] = session
 
     rescue Exception => e
       trace :fatal, e
