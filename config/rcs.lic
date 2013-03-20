@@ -1,6 +1,6 @@
 ---
 :serial: 'off'
-:version: '8.2'
+:version: '8.3'
 :type: reusable
 :expiry: '2014-01-01 00:00:00 UTC'
 :maintenance: '2013-01-01 00:00:00 UTC'
@@ -34,7 +34,7 @@
   - true
   - true
 :alerting: true
-:correlation: false
+:correlation: true
 :connectors: true
 :rmi:
 - true
@@ -43,20 +43,23 @@
 - .inf
 - true
 :collectors:
-  :collectors: 10
-  :anonymizers: 20
+  :collectors: .inf
+  :anonymizers: .inf
 :shards: 2
 :exploits: true
 :deletion: true
 :archive: false
 :scout: false
+:ocr: true
+:translation: true
+:modify: true
 :digest: !binary |-
-  YzhkZDNmYmFmODU5ZjU3MWI2MTNiNzg2ZDNkNDJmYjA0NGRiMGVmNQ==
+  NTNjM2Q1MTg2ZTAyMmM5MGY5Yjc2NGMzMTRhODc0NTE0MmRlMDZiYQ==
 :check: LOuWAplu
 :signature: !binary |-
-  NzIwZWJjOWQ4ZjIzM2NkYmY4NGFkN2YzNzViOWI3Y2QwNzdkYjhmYjlhMGNj
-  NGIzMTgzNmUxNTliOWUzODE3ZQ==
+  ZTgzZWQ2M2ZlNmM1NmMzNGRmNDE4MTZkN2I0ODhjMzlhNmExYWNlOWM0MGEx
+  Y2FjN2E5OWJjNTRhODU5YWQzMw==
 :integrity: !binary |-
-  YTczYTAzZmNiOGU0YjRlZTE5MmRiZjlkMTFjZjc0N2U2MzE5ZjZmMGJjMDJm
-  MDVjNGY3MWIwNWIwNzQ5YjBmMjg1N2EwMTkzZWEyMTdkYTIyZDMxZmFlMDJl
-  YjY1NWYy
+  YTM4ODAyY2RkYjA4NmY4YTVmYTEzYWQxNThhMjQyYzNjNmY1NTM4NjhkZjA5
+  MmUyODQ3ZTg1NjM5NWE3MWMyNjhmYTU3OTExY2NlZjE4ZmJjZGQ0MzRhYjIy
+  M2VkY2E3

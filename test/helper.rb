@@ -1,5 +1,5 @@
-require 'simplecov'
-SimpleCov.start if ENV['COVERAGE']
+#require 'simplecov'
+#SimpleCov.start if ENV['COVERAGE']
 
 require 'json'
 require 'bundler'
@@ -12,14 +12,17 @@ rescue Bundler::BundlerError => e
 end
 
 require 'test/unit'
-require 'minitest/mock'
+#require 'minitest/mock'
+
+puts Dir.pwd
 
 def require_db(file)
   relative_path_to_db = 'lib/rcs-db/'
-  require_relative File.join(Dir.pwd, relative_path_to_db, file)
-end
+  relative_path_file = File.join(Dir.pwd, relative_path_to_db, file)
 
-def require_worker(file)
-  relative_path_to_worker = 'lib/rcs-worker/'
-  require_relative File.join(Dir.pwd, relative_path_to_worker, file)
+  if File.exist?(relative_path_file) or File.exist?(relative_path_file + ".rb")
+    require_relative relative_path_file
+  else
+    raise "Could not load #{file}"
+  end
 end

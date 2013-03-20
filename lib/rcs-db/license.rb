@@ -36,7 +36,7 @@ class LicenseManager
   include RCS::Tracer
   include RCS::Crypt
 
-  LICENSE_VERSION = '8.2'
+  LICENSE_VERSION = '8.3'
 
   LICENSE_FILE = 'rcs.lic'
 
@@ -73,8 +73,11 @@ class LicenseManager
                :shards => 1,
                :exploits => false,
                :deletion => false,
+               :modify => false,
                :archive => false,
                :scout => true,
+               :ocr => true,
+               :translation => false,
                :collectors => {:collectors => 1, :anonymizers => 0}}
   end
 
@@ -193,8 +196,8 @@ class LicenseManager
     @limits[:type] = limit[:type]
     @limits[:serial] = limit[:serial]
 
-    @limits[:expiry] = Time.parse(limit[:expiry]).getutc unless limit[:expiry].nil?
-    @limits[:maintenance] = Time.parse(limit[:maintenance]).getutc unless limit[:maintenance].nil?
+    @limits[:expiry] = limit[:expiry].nil? ? nil : Time.parse(limit[:expiry]).getutc
+    @limits[:maintenance] = limit[:maintenance].nil? ? nil : Time.parse(limit[:maintenance]).getutc
 
     @limits[:users] = limit[:users]
 
@@ -214,22 +217,28 @@ class LicenseManager
     @limits[:collectors][:collectors] = limit[:collectors][:collectors] unless limit[:collectors][:collectors].nil?
     @limits[:collectors][:anonymizers] = limit[:collectors][:anonymizers] unless limit[:collectors][:anonymizers].nil?
 
-    @limits[:nia] = limit[:nia] unless limit[:nia].nil?
+    @limits[:nia] = limit[:nia]
+    @limits[:rmi] = limit[:rmi]
 
-    @limits[:alerting] = limit[:alerting] unless limit[:alerting].nil?
-    @limits[:correlation] = limit[:correlation] unless limit[:correlation].nil?
-    @limits[:connectors] = limit[:connectors] unless limit[:connectors].nil?
-    @limits[:rmi] = limit[:rmi] unless limit[:rmi].nil?
+    @limits[:alerting] = limit[:alerting]
+    @limits[:connectors] = limit[:connectors]
 
-    @limits[:shards] = limit[:shards] unless limit[:shards].nil?
-    @limits[:exploits] = limit[:exploits] unless limit[:exploits].nil?
+    @limits[:shards] = limit[:shards]
+    @limits[:exploits] = limit[:exploits]
 
-    @limits[:deletion] = limit[:deletion] unless limit[:deletion].nil?
-    @limits[:archive] = limit[:archive] unless limit[:archive].nil?
+    @limits[:deletion] = limit[:deletion]
+    @limits[:modify] = limit[:modify]
 
-    @limits[:scout] = limit[:scout] unless limit[:scout].nil?
+    @limits[:archive] = limit[:archive]
+
+    @limits[:scout] = limit[:scout]
 
     @limits[:encbits] = limit[:digest_enc]
+
+    @limits[:ocr] = limit[:ocr]
+    @limits[:translation] = limit[:translation]
+    @limits[:correlation] = limit[:correlation]
+
   end
 
   
@@ -335,11 +344,20 @@ class LicenseManager
       when :deletion
         return @limits[:deletion]
 
+      when :modify
+        return @limits[:modify]
+
       when :archive
         return @limits[:archive]
 
       when :scout
         return @limits[:scout]
+
+      when :translation
+        return @limits[:translation]
+
+      when :correlation
+        return @limits[:correlation]
 
       when :shards
         if Shard.count() < @limits[:shards]
@@ -351,135 +369,127 @@ class LicenseManager
     return false
   end
 
+  def store_in_db
+    db = DB.instance.new_connection("rcs")
+    db['license'].update({}, @limits, {:upsert  => true})
+  end
+
+  def load_from_db
+    db = DB.instance.new_connection("rcs")
+    db['license'].find({}).first
+  end
 
   def periodic_check
-    Thread.new do
-      begin
+    begin
 
-        # periodically check for license file
-        load_license(true)
+      # periodically check for license file
+      load_license(true)
 
-        # check the consistency of the database (if someone tries to tamper it)
-        if ::User.count(conditions: {enabled: true}) > @limits[:users]
-          trace :fatal, "LICENCE EXCEEDED: Number of users is greater than license file. Fixing..."
-          # fix by disabling the last updated user
-          offending = ::User.first(conditions: {enabled: true}, sort: [[ :updated_at, :desc ]])
-          offending[:enabled] = false
-          trace :warn, "Disabling user '#{offending[:name]}'"
-          offending.save
-        end
+      # add it to the database so it is accessible to all the components (other than db)
+      store_in_db
 
-        if ::Collector.count(conditions: {type: 'local'}) > @limits[:collectors][:collectors]
-          trace :fatal, "LICENCE EXCEEDED: Number of collector is greater than license file. Fixing..."
-          # fix by deleting the collector
-          offending = ::Collector.first(conditions: {type: 'local'}, sort: [[ :updated_at, :desc ]])
-          trace :warn, "Deleting collector '#{offending[:name]}' #{offending[:address]}"
-          # clear the chain of (possible) anonymizers
-          next_id = offending['next'][0]
-          begin
-            break if next_id.nil?
-            curr = ::Collector.find(next_id)
-            trace :warn, "Fixing the anonymizer chain: #{curr['name']}"
-            next_id = curr['next'][0]
-            curr.prev = [nil]
-            curr.next = [nil]
-            curr.save
-          end until next_id.nil?
-          offending.destroy
-        end
-        if ::Collector.count(conditions: {type: 'remote'}) > @limits[:collectors][:anonymizers]
-          trace :fatal, "LICENCE EXCEEDED: Number of anonymizers is greater than license file. Fixing..."
-          # fix by deleting the collector
-          offending = ::Collector.first(conditions: {type: 'remote'}, sort: [[ :updated_at, :desc ]])
-          trace :warn, "Deleting anonymizer '#{offending[:name]}' #{offending[:address]}"
-          # clear the chain of (possible) anonymizers
-          next_id = offending['next'][0]
-          begin
-            break if next_id.nil?
-            curr = ::Collector.find(next_id)
-            trace :warn, "Fixing the anonymizer chain: #{curr['name']}"
-            next_id = curr['next'][0]
-            curr.prev = [nil]
-            curr.next = [nil]
-            curr.save
-          end until next_id.nil?
-          offending.destroy
-        end
-
-        # consistency check of the chain
-        ::Collector.all.each do |coll|
-          # remove a link if the pointed item is not present or
-          # the pointed item does not link back to it
-          next_hop = ::Collector.first(conditions: {_id: coll.next[0]})
-          if not coll.next[0].nil? and (next_hop.nil? or next_hop.prev[0] != coll[:_id].to_s)
-            trace :warn, "Fixing the anonymizer chain: #{coll['name']} [next]"
-            coll.next = [nil]
-            coll.save
-          end
-
-          prev_hop = ::Collector.first(conditions: {_id: coll.prev[0]})
-          if not coll.prev[0].nil? and (prev_hop.nil? or prev_hop.next[0] != coll[:_id].to_s)
-            trace :warn, "Fixing the anonymizer chain: #{coll['name']} [prev]"
-            coll.prev = [nil]
-            coll.save
-          end
-        end
-
-        if ::Injector.count > @limits[:nia][0]
-          trace :fatal, "LICENCE EXCEEDED: Number of injectors is greater than license file. Fixing..."
-          # fix by deleting the injector
-          offending = ::Injector.first(sort: [[ :updated_at, :desc ]])
-          trace :warn, "Deleting injector '#{offending[:name]}' #{offending[:address]}"
-          offending.destroy
-        end
-
-        if ::Item.count(conditions: {_kind: 'agent', type: 'desktop', status: 'open', demo: false, deleted: false}) > @limits[:agents][:desktop]
-          trace :fatal, "LICENCE EXCEEDED: Number of agents(desktop) is greater than license file. Fixing..."
-          # fix by queuing the last updated agent
-          offending = ::Item.first(conditions: {_kind: 'agent', type: 'desktop', status: 'open', demo: false}, sort: [[ :updated_at, :desc ]])
-          offending[:status] = 'queued'
-          trace :warn, "Queuing agent '#{offending[:name]}' #{offending[:desc]}"
-          offending.save
-        end
-
-        if ::Item.count(conditions: {_kind: 'agent', type: 'mobile', status: 'open', demo: false, deleted: false}) > @limits[:agents][:mobile]
-          trace :fatal, "LICENCE EXCEEDED: Number of agents(mobile) is greater than license file. Fixing..."
-          # fix by queuing the last updated agent
-          offending = ::Item.first(conditions: {_kind: 'agent', type: 'mobile', status: 'open', demo: false}, sort: [[ :updated_at, :desc ]])
-          offending[:status] = 'queued'
-          trace :warn, "Queuing agent '#{offending[:name]}' #{offending[:desc]}"
-          offending.save
-        end
-
-        if ::Item.count(conditions: {_kind: 'agent', status: 'open', demo: false, deleted: false}) > @limits[:agents][:total]
-          trace :fatal, "LICENCE EXCEEDED: Number of agent(total) is greater than license file. Fixing..."
-          # fix by queuing the last updated agent
-          offending = ::Item.first(conditions: {_kind: 'agent', status: 'open', demo: false}, sort: [[ :updated_at, :desc ]])
-          offending[:status] = 'queued'
-          trace :warn, "Queuing agent '#{offending[:name]}' #{offending[:desc]}"
-          offending.save
-        end
-
-        if @limits[:alerting] == false
-          if Alert.count() > 0
-            trace :fatal, "LICENCE EXCEEDED: Alerting is not enabled in the license file. Fixing..."
-            ::Alert.update_all(enabled: false)
-          end
-        end
-
-        # check if someone modifies manually the items
-        ::Item.all.each do |item|
-          next if item[:_kind] == 'global'
-          if item.cs != item.calculate_checksum
-            trace :fatal, "TAMPERED ITEM: [#{item._id}] #{item.name}"
-            exit!
-          end
-        end
-
-      rescue Exception => e
-        trace :fatal, "Cannot perform license check: #{e.message}"
-        exit!
+      # check the consistency of the database (if someone tries to tamper it)
+      if ::User.count(conditions: {enabled: true}) > @limits[:users]
+        trace :fatal, "LICENCE EXCEEDED: Number of users is greater than license file. Fixing..."
+        # fix by disabling the last updated user
+        offending = ::User.first(conditions: {enabled: true}, sort: [[ :updated_at, :desc ]])
+        offending[:enabled] = false
+        trace :warn, "Disabling user '#{offending[:name]}'"
+        offending.save
       end
+
+      if ::Collector.count(conditions: {type: 'local'}) > @limits[:collectors][:collectors]
+        trace :fatal, "LICENCE EXCEEDED: Number of collector is greater than license file. Fixing..."
+        # fix by deleting the collector
+        offending = ::Collector.first(conditions: {type: 'local'}, sort: [[ :updated_at, :desc ]])
+        trace :warn, "Deleting collector '#{offending[:name]}' #{offending[:address]}"
+        # clear the chain of (possible) anonymizers
+        next_id = offending['next'][0]
+        begin
+          break if next_id.nil?
+          curr = ::Collector.find(next_id)
+          trace :warn, "Fixing the anonymizer chain: #{curr['name']}"
+          next_id = curr['next'][0]
+          curr.prev = [nil]
+          curr.next = [nil]
+          curr.save
+        end until next_id.nil?
+        offending.destroy
+      end
+      if ::Collector.count(conditions: {type: 'remote'}) > @limits[:collectors][:anonymizers]
+        trace :fatal, "LICENCE EXCEEDED: Number of anonymizers is greater than license file. Fixing..."
+        # fix by deleting the collector
+        offending = ::Collector.first(conditions: {type: 'remote'}, sort: [[ :updated_at, :desc ]])
+        trace :warn, "Deleting anonymizer '#{offending[:name]}' #{offending[:address]}"
+        # clear the chain of (possible) anonymizers
+        next_id = offending['next'][0]
+        begin
+          break if next_id.nil?
+          curr = ::Collector.find(next_id)
+          trace :warn, "Fixing the anonymizer chain: #{curr['name']}"
+          next_id = curr['next'][0]
+          curr.prev = [nil]
+          curr.next = [nil]
+          curr.save
+        end until next_id.nil?
+        offending.destroy
+      end
+
+      if ::Injector.count > @limits[:nia][0]
+        trace :fatal, "LICENCE EXCEEDED: Number of injectors is greater than license file. Fixing..."
+        # fix by deleting the injector
+        offending = ::Injector.first(sort: [[ :updated_at, :desc ]])
+        trace :warn, "Deleting injector '#{offending[:name]}' #{offending[:address]}"
+        offending.destroy
+      end
+
+      if ::Item.count(conditions: {_kind: 'agent', type: 'desktop', status: 'open', demo: false, deleted: false}) > @limits[:agents][:desktop]
+        trace :fatal, "LICENCE EXCEEDED: Number of agents(desktop) is greater than license file. Fixing..."
+        # fix by queuing the last updated agent
+        offending = ::Item.first(conditions: {_kind: 'agent', type: 'desktop', status: 'open', demo: false}, sort: [[ :updated_at, :desc ]])
+        offending[:status] = 'queued'
+        trace :warn, "Queuing agent '#{offending[:name]}' #{offending[:desc]}"
+        offending.save
+      end
+
+      if ::Item.count(conditions: {_kind: 'agent', type: 'mobile', status: 'open', demo: false, deleted: false}) > @limits[:agents][:mobile]
+        trace :fatal, "LICENCE EXCEEDED: Number of agents(mobile) is greater than license file. Fixing..."
+        # fix by queuing the last updated agent
+        offending = ::Item.first(conditions: {_kind: 'agent', type: 'mobile', status: 'open', demo: false}, sort: [[ :updated_at, :desc ]])
+        offending[:status] = 'queued'
+        trace :warn, "Queuing agent '#{offending[:name]}' #{offending[:desc]}"
+        offending.save
+      end
+
+      if ::Item.count(conditions: {_kind: 'agent', status: 'open', demo: false, deleted: false}) > @limits[:agents][:total]
+        trace :fatal, "LICENCE EXCEEDED: Number of agent(total) is greater than license file. Fixing..."
+        # fix by queuing the last updated agent
+        offending = ::Item.first(conditions: {_kind: 'agent', status: 'open', demo: false}, sort: [[ :updated_at, :desc ]])
+        offending[:status] = 'queued'
+        trace :warn, "Queuing agent '#{offending[:name]}' #{offending[:desc]}"
+        offending.save
+      end
+
+      if @limits[:alerting] == false
+        if Alert.count() > 0
+          trace :fatal, "LICENCE EXCEEDED: Alerting is not enabled in the license file. Fixing..."
+          ::Alert.update_all(enabled: false)
+        end
+      end
+
+      # check if someone modifies manually the items
+      ::Item.all.each do |item|
+        next if item[:_kind] == 'global'
+        if item.cs != item.calculate_checksum
+          trace :fatal, "TAMPERED ITEM: [#{item._id}] #{item.name}"
+          exit!
+        end
+      end
+
+    rescue Exception => e
+      trace :fatal, "Cannot perform license check: #{e.message}"
+      #trace :fatal, "Cannot perform license check: #{e.backtrace}"
+      exit!
     end
   end
 

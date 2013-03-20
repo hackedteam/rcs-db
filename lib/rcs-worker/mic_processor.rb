@@ -99,7 +99,7 @@ module Worker
       @mic.feed(evidence) do |sample_rate, left_pcm, right_pcm|
         encode_mp3(sample_rate, left_pcm, right_pcm) do |mp3_bytes|
           #File.open("#{@mic.file_name}.mp3", 'ab') {|f| f.write(mp3_bytes) }
-          write_to_grid(@mic, mp3_bytes, target)
+          write_to_grid(@mic, mp3_bytes, target, agent)
         end
       end
 
@@ -116,7 +116,7 @@ module Worker
       end
     end
 
-    def write_to_grid(mic, mp3_bytes, target)
+    def write_to_grid(mic, mp3_bytes, target, agent)
       db = Mongoid.database
       fs = Mongo::GridFileSystem.new(db, "grid.#{target[:_id]}")
 
@@ -124,6 +124,8 @@ module Worker
         f.write mp3_bytes
         mic.update_attributes({data: {_grid: f.files_id, _grid_size: f.file_length, duration: mic.duration}})
       end
+      agent.stat.size += mp3_bytes.size
+      agent.save
     end
   end
 

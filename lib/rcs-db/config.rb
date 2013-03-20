@@ -31,6 +31,7 @@ class Config
                     'CERT_PASSWORD' => 'password',
                     'LISTENING_PORT' => 443,
                     'HB_INTERVAL' => 15,
+                    'INT_INTERVAL' => 15,
                     'BACKUP_DIR' => 'backup',
                     'POSITION' => true,
                     'PERF' => false,
@@ -44,22 +45,22 @@ class Config
   end
 
   def check_certs
-    if not @global['DB_CERT'].nil?
-      if not File.exist?(Config.instance.cert('DB_CERT'))
+    unless @global['DB_CERT'].nil?
+      unless File.exist?(Config.instance.cert('DB_CERT'))
         trace :fatal, "Cannot open certificate file [#{@global['DB_CERT']}]"
         return false
       end
     end
 
-    if not @global['DB_KEY'].nil?
-      if not File.exist?(Config.instance.cert('DB_KEY'))
+    unless @global['DB_KEY'].nil?
+      unless File.exist?(Config.instance.cert('DB_KEY'))
         trace :fatal, "Cannot open private key file [#{@global['DB_KEY']}]"
         return false
       end
     end
 
-    if not @global['CA_PEM'].nil?
-      if not File.exist?(Config.instance.cert('CA_PEM'))
+    unless @global['CA_PEM'].nil?
+      unless File.exist?(Config.instance.cert('CA_PEM'))
         trace :fatal, "Cannot open PEM file [#{@global['CA_PEM']}]"
         return false
       end
@@ -83,7 +84,7 @@ class Config
     end
 
     # to avoid problems with checks too frequent
-    if (@global['HB_INTERVAL'] and @global['HB_INTERVAL'] < 10)
+    if @global['HB_INTERVAL'] and @global['HB_INTERVAL'] < 10
       trace :fatal, "Interval too short, please increase it"
       return false
     end
@@ -95,6 +96,9 @@ class Config
 
     # default password if not configured in the config file
     Config.instance.global['CERT_PASSWORD'] ||= 'password'
+
+    # default interval for intelligence
+    Config.instance.global['INT_INTERVAL'] ||= 15
 
     return true
   end
@@ -176,8 +180,6 @@ class Config
     @global['SMTP_PASS'] = options[:smtp_pass] unless options[:smtp_pass].nil?
     @global['SMTP_AUTH'] = options[:smtp_auth] unless options[:smtp_auth].nil?
 
-    migrate_mongos22 if options[:mongos22]
-
     # changing the CN is a risky business :)
     if options[:newcn]
       # change the command line of the RCS Master Router service accordingly to the new CN
@@ -235,11 +237,11 @@ class Config
     # login
     account = {:user => options[:user], :pass => options[:pass] }
     resp = http.request_post('/auth/login', account.to_json, nil)
-    unless resp['Set-Cookie'].nil?
-      cookie = resp['Set-Cookie']
-    else
+    if resp['Set-Cookie'].nil?
       trace :fatal, "Invalid authentication"
       return
+    else
+      cookie = resp['Set-Cookie']
     end
 
     # send the request
@@ -271,7 +273,7 @@ class Config
       if options[:gen_ca] or !File.exist?('rcs-ca.crt')
         trace :info, "Generating a new CA authority..."
         # default one
-        subj = "/CN=\"RCS Certification Authority\"/O=\"HT srl\""
+        subj = "/CN=\"System Certification Authority\"/O=\"Organization ltd\""
         # if specified...
         subj = "/CN=\"#{options[:ca_name]}\"" if options[:ca_name]
         out = `openssl req -subj #{subj} -batch -days 3650 -nodes -new -x509 -keyout rcs-ca.key -out rcs-ca.crt -config openssl.cnf 2>&1`
@@ -341,14 +343,15 @@ class Config
       File.open('serial.txt', 'wb+') { |f| f.write '01' }
 
       trace :info, "Generating a new Anon CA authority..."
-      subj = "/CN=\"default\""
+      subj = "/CN=\"#{SecureRandom.base64(20)[0..10]}\""
       out = `openssl req -subj #{subj} -batch -days 3650 -nodes -new -x509 -keyout rcs-anon-ca.key -out rcs-anon-ca.crt -config openssl.cnf 2>&1`
       trace :info, out if $log
 
       return unless File.exist? 'rcs-anon-ca.crt'
 
       trace :info, "Generating anonymizer certificate..."
-      out = `openssl req -subj /CN=server -batch -days 3650 -nodes -new -keyout rcs-anon.key -out rcs-anon.csr -config openssl.cnf 2>&1`
+      subj = "/CN=\"#{SecureRandom.base64(20)[0..10]}\""
+      out = `openssl req -subj #{subj} -batch -days 3650 -nodes -new -keyout rcs-anon.key -out rcs-anon.csr -config openssl.cnf 2>&1`
       trace :info, out if $log
 
       return unless File.exist? 'rcs-anon.key'
@@ -363,7 +366,7 @@ class Config
       File.open('rcs-network.pem', 'wb+') do |f|
         f.write File.read('rcs-anon.crt')
         f.write File.read('rcs-anon.key')
-        f.write File.read('rcs-ca.crt')
+        f.write File.read('rcs-anon-ca.crt')
       end
 
       trace :info, "Removing temporary files..."
@@ -423,23 +426,6 @@ class Config
     ['pfx.pem', 'pfx.p12'].each do |f|
       File.delete f
     end
-  end
-
-  def migrate_mongos22
-    # TODO: remove in 8.3
-    return unless RbConfig::CONFIG['host_os'] =~ /mingw/
-    trace :info, "Changing the startup option of the Router Master"
-    mongos_command = "\"C:\\RCS\\DB\\mongodb\\win\\mongos.exe\" "
-    Win32::Registry::HKEY_LOCAL_MACHINE.open('SYSTEM\CurrentControlSet\services\RCSMasterRouter\Parameters', Win32::Registry::Constants::KEY_ALL_ACCESS) do |reg|
-      mongos_command += reg['AppParameters']
-    end
-    mongos_command += " --service"
-    Win32::Registry::HKEY_LOCAL_MACHINE.open('SYSTEM\CurrentControlSet\services\RCSMasterRouter', Win32::Registry::Constants::KEY_ALL_ACCESS) do |reg|
-      reg['ImagePath'] = mongos_command
-    end
-    Win32::Registry::HKEY_LOCAL_MACHINE.delete_key('SYSTEM\CurrentControlSet\services\RCSMasterRouter\Parameters', true)
-  rescue Exception => e
-    trace :fatal, "ERROR: Cannot write registry: #{e.message}"
   end
 
   def change_router_service_parameter
@@ -511,9 +497,6 @@ class Config
       end
       opts.on( '-N', '--new-CN', 'Use this option to update the CN in the db and registry' ) do
         options[:newcn] = true
-      end
-      opts.on('--migrate-mongos22', 'Migrate the mongos service to the new version' ) do
-        options[:mongos22] = true
       end
 
       opts.separator ""

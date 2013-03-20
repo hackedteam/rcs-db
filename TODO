@@ -1,51 +1,33 @@
 
-TODO 8.2.0:
+TODO 9.0.0
 
-    why ruby-p194 is so slow? (mongo ruby driver?) (only on win2003?)
-    trying ruby-p286
+    remove mark_bad from installer
 
-    failed backup (mongodump 2.2 error look for fix from mongo)
+    drop support for windows 2003
+    upgrade to ruby 1.9.3-p365
+    upgrade to mongoid 3.0.x
+    gridfs append + moped?
 
-TODO 8.3.0
+    db = Mongoid.database  cannot be use anymore
 
-    license for upload & execute
+    rework to speed up the most_contacted resolv
+    rework to speed up the accessible mechanism
 
-    factory to the operation level
-      - new instances create new targets
+    aggregates for places (positioner algorithm)
 
-    policies
-      - ADMIN
-        - manage users & groups
-        - create operations
-        - create targets
-        - access audit
-        - change license
-        - edit profiles
-      - SYS
-        - manage frontend
-        - manage backend
-        - manage backups
-        - manage network injectors
-        - manage connectors
-      - TECH
-        - create factories
-        - build vectors
-        - change configuration
-        - execute commands
-        - upload files
-        - import evidence
-        - manage network injectors rules
-      - VIEW
-        - manage alerts
-        - schedule filesystem
-        - edit evidence
-        - delete evidence (disabled by default)
-        - export evidence
-        - edit profiles
+    create entity form most_contacted
+    associate entity from most_contacted
 
+    identity relation if two entities have the same handles
 
-    target profiles
+    entities:
+      - manual (confirmed)
+      - automatic (confirmed / unconfirmed)
+      - ghost (not shown)
 
+    flows:
+      - message
+      - call
 
 TODO FUTURE:
 
@@ -56,16 +38,11 @@ TODO FUTURE:
         - sftp
 
     correlation:
-        chat peer not as string but array
-        target records (schedario)
         global target position (http://www.zeit.de/datenschutz/malte-spitz-data-retention)
-        inter-target query
 
 ======================================
 
     mongo authentication
-
-    upgrade to mongoid 3.0.x
 
     Refactoring on rest methods:
       - agent (too much logic here)

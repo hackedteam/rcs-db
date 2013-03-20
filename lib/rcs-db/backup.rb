@@ -77,7 +77,7 @@ class BackupManager
       case backup.what
         when 'metadata'
           # don't backup evidence collections
-          params[:coll].delete_if {|x| x['evidence.'] || x['grid.'] || x['cores'] || x['ocr_queue']}
+          params[:coll].delete_if {|x| x['evidence.'] || x['aggregate.'] || x['grid.'] || x['cores'] || x['ocr_queue']}
         when 'full'
           # we backup everything... woah !!
         else
@@ -93,7 +93,7 @@ class BackupManager
         incremental_ids = {}
 
         params[:coll].each do |coll|
-          next unless (coll['evidence.'] || coll['grid.'])
+          next unless (coll['evidence.'] || coll['aggregate.'] || coll['grid.'])
           # get the last bson object id
           ev = db.collection(coll).find().sort({_id: -1}).limit(1).first
           incremental_ids[coll.to_s.gsub(".", "_")] = ev['_id'].to_s unless ev.nil?
@@ -199,6 +199,7 @@ class BackupManager
       case item[:_kind]
         when 'target'
           params[:coll] << "evidence.#{item._id}"
+          params[:coll] << "aggregate.#{item._id}"
           params[:coll] << "grid.#{item._id}.files"
           params[:coll] << "grid.#{item._id}.chunks"
 
@@ -271,13 +272,26 @@ class BackupManager
 
   def self.restore_backup(params)
 
+    trace :info, "Restoring backup: #{params['_id']}"
+
     command = Config.mongo_exec_path('mongorestore')
     command += " --drop" if params['drop']
     command += " #{Config.instance.global['BACKUP_DIR']}/#{params['_id']}"
 
     trace :debug, "Restoring backup: #{command}"
 
-    system command
+    ret = system command
+
+    # mark the flag as restored
+    # (the flag was running since when the backup is performed the status in the db is running)
+    ::Backup.where({status: 'RUNNING'}).each do |b|
+      b.status = 'RESTORED'
+      b.save
+    end
+
+    trace :info, "Backup restore completed: #{params['_id']} | #{ret}"
+
+    return ret
   end
 
 

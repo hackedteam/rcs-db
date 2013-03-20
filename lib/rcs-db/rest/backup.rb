@@ -10,6 +10,7 @@ class BackupjobController < RESTController
 
   def index
     require_auth_level :sys
+    require_auth_level :sys_backup
 
     mongoid_query do
 
@@ -21,10 +22,11 @@ class BackupjobController < RESTController
 
   def create
     require_auth_level :sys
+    require_auth_level :sys_backup
 
     mongoid_query do
       b = ::Backup.new
-      b.enabled = @params['enabled'] == true ? true : false
+      b.enabled = @params['enabled'] ? true : false
       b.what = @params['what']
       b.when = @params['when']
       b.name = @params['name']
@@ -41,6 +43,8 @@ class BackupjobController < RESTController
 
   def run
     require_auth_level :sys
+    require_auth_level :sys_backup
+
     mongoid_query do
       backup = ::Backup.find(@params['_id'])
 
@@ -59,6 +63,7 @@ class BackupjobController < RESTController
 
   def update
     require_auth_level :sys
+    require_auth_level :sys_backup
 
     mongoid_query do
       backup = ::Backup.find(@params['_id'])
@@ -85,7 +90,8 @@ class BackupjobController < RESTController
 
   def destroy
     require_auth_level :sys
-    
+    require_auth_level :sys_backup
+
     mongoid_query do
       backup = ::Backup.find(@params['_id'])
       Audit.log :actor => @session[:user][:name], :action => 'backupjob.destroy', :desc => "Deleted the backup job [#{backup[:name]}]"
@@ -101,6 +107,7 @@ class BackuparchiveController < RESTController
 
   def index
     require_auth_level :sys
+    require_auth_level :sys_backup
 
     index = BackupManager.backup_index
 
@@ -109,6 +116,7 @@ class BackuparchiveController < RESTController
 
   def destroy
     require_auth_level :sys
+    require_auth_level :sys_backup
 
     real = File.realdirpath Config.instance.global['BACKUP_DIR'] + "/" + @params['_id']
 
@@ -127,6 +135,7 @@ class BackuparchiveController < RESTController
 
   def restore
     require_auth_level :sys
+    require_auth_level :sys_backup
 
     ret = BackupManager.restore_backup(@params)
 

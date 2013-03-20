@@ -22,13 +22,13 @@ class SessionManager
     @sessions = {}
   end
 
-  def create(user, level, address, accessible = [])
+  def create(user, level, address, accessible = [], console_version = nil)
     
     # create a new random cookie
     #cookie = SecureRandom.random_bytes(8).unpack('H*').first
     cookie = UUIDTools::UUID.random_create.to_s
     
-    ::Session.create({:user => []}) do |s|
+    ::Session.create!({:user => []}) do |s|
       if level.include? :server
         s[:user] = [ user ]
       else
@@ -39,6 +39,7 @@ class SessionManager
       s[:address] = address
       s[:time] = Time.now.getutc.to_i
       s[:accessible] = accessible
+      s[:console_version] = console_version
     end
 
     get(cookie)
@@ -86,6 +87,7 @@ class SessionManager
     session[:cookie] = sess[:cookie]
     session[:time] = sess[:time]
     session[:accessible] = sess[:accessible]
+    session[:console_version] = sess[:console_version]
 
     return session
   end
@@ -171,18 +173,24 @@ class SessionManager
       ::Item.any_in({path: [operation]}).each do |item|
         accessible << item[:_id]
       end
+      ::Entity.any_in({path: [operation]}).each do |item|
+        accessible << item[:_id]
+      end
     end
+
+    trace :debug, "Accessible list for #{user.name} has #{accessible.size} elements"
+    #trace :warn, "Accessible list for #{user.name} has #{accessible.size} elements" if accessible.size >= 100
 
     return accessible.to_a
   end
 
-  def add_accessible_agent(factory, agent)
+  def add_accessible_item(previous, item)
     # add to all the active session the new agent
-    # if the factory of the agent is in the accessible list, we are sure that even
-    # the agent will be in the list
+    # if the previous item is in the accessible list, we are sure that even
+    # the new item will be in the list
     ::Session.all.each do |sess|
-      if sess[:accessible].include? factory[:_id]
-        sess[:accessible] = sess[:accessible] + [ agent[:_id] ]
+      if sess[:accessible].include? previous[:_id]
+        sess[:accessible] = sess[:accessible] + [ item[:_id] ]
         sess.save
       end
     end

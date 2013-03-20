@@ -37,7 +37,8 @@ class TargetController < RESTController
   
   def create
     require_auth_level :admin
-    
+    require_auth_level :admin_targets
+
     # to create a target, we need to owning operation
     return bad_request('INVALID_OPERATION') unless @params.has_key? 'operation'
     
@@ -58,6 +59,9 @@ class TargetController < RESTController
         doc[:desc] = @params['desc']
       end
 
+      # make item accessible to the current user (immediately)
+      SessionManager.instance.add_accessible(@session, item._id)
+
       # make item accessible to the users
       SessionManager.instance.rebuild_all_accessible
 
@@ -73,7 +77,8 @@ class TargetController < RESTController
 
   def update
     require_auth_level :admin
-    
+    require_auth_level :admin_targets
+
     updatable_fields = ['name', 'desc', 'status']
 
     mongoid_query do
@@ -98,6 +103,7 @@ class TargetController < RESTController
 
   def destroy
     require_auth_level :admin
+    require_auth_level :admin_targets
 
     mongoid_query do
       item = Item.targets.any_in(_id: @session[:accessible]).find(@params['_id'])
@@ -116,6 +122,7 @@ class TargetController < RESTController
 
   def move
     require_auth_level :admin
+    require_auth_level :admin_targets
 
     mongoid_query do
       operation = ::Item.operations.find(@params['operation'])
@@ -137,6 +144,12 @@ class TargetController < RESTController
         # update the path in alerts and connectors
         ::Alert.all.each {|a| a.update_path(agent._id, agent.path + [agent._id])}
         ::Connector.all.each {|a| a.update_path(agent._id, agent.path + [agent._id])}
+      end
+
+      # also move the linked entity
+      Entity.any_in({type: :target}).also_in({path: [ target._id ]}).each do |entity|
+        entity.path = target.path + [target._id]
+        entity.save
       end
 
       Audit.log :actor => @session[:user][:name],

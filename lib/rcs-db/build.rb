@@ -22,6 +22,7 @@ class Build
 
   attr_reader :outputs
   attr_reader :scrambled
+  attr_reader :funcnames
   attr_reader :platform
   attr_reader :tmpdir
   attr_reader :factory
@@ -63,6 +64,7 @@ class Build
       @factory = ::Item.where({_kind: 'factory', _id: params['_id']}).first
       raise "Factory #{params['ident']} not found" if @factory.nil?
       trace :debug, "Build: loaded factory: #{@factory.name}"
+      raise "Factory too old cannot be created" unless @factory.good
     end
   end
 
@@ -256,7 +258,7 @@ class Build
   end
 
   def create(params)
-    trace :info, "Building Agent: #{params}"
+    trace :debug, "Building Agent: #{params}"
 
     # if we are in archive mode, no build is allowed
     raise "Cannot build on this system" if LicenseManager.instance.check :archive

@@ -203,7 +203,7 @@ class RESTController
   def map_method_to_action(method, no_params)
     case method
       when 'GET'
-        return (no_params == true ? :index : :show)
+        return (no_params ? :index : :show)
       when 'POST'
         return :create
       when 'PUT'
@@ -215,8 +215,6 @@ class RESTController
   
   # macro for auth level check
   def require_auth_level(*levels)
-    # TODO: checking auth level should be done by SessionManager, refactor
-
     if (levels & @session[:level]).empty?
       trace :warn, "Trying to access #{@request[:uri]} with #{@session[:level]}"
       raise NotAuthorized.new(@session[:level], levels)
@@ -283,6 +281,9 @@ class RESTController
     rescue BSON::InvalidObjectId => e
       trace :error, "Bad request #{e.class} => #{e.message}"
       return bad_request(e.message)
+    rescue BlacklistError => e
+      trace :error, "Blacklist: #{e.message}"
+      return conflict(e.message)
     rescue Exception => e
       trace :error, e.message
       trace :fatal, "EXCEPTION(#{e.class}): " + e.backtrace.join("\n")

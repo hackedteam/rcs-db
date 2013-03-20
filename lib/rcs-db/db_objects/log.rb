@@ -11,7 +11,7 @@ class CappedLog
 
   def self.collection_class(id)
 
-    classDefinition = <<-END
+    class_definition = <<-END
       class CappedLog_#{id}
         include Mongoid::Document
 
@@ -28,7 +28,7 @@ class CappedLog
     if self.const_defined? classname.to_sym
       klass = eval classname
     else
-      eval classDefinition
+      eval class_definition
       klass = eval classname
     end
     

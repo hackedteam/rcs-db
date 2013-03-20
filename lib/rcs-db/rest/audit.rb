@@ -15,7 +15,8 @@ class AuditController < RESTController
 
   def index
     require_auth_level :admin
-    
+    require_auth_level :admin_audit
+
     mongoid_query do
 
       filter, filter_hash = ::Audit.common_filter @params
@@ -43,6 +44,7 @@ class AuditController < RESTController
 
   def count
     require_auth_level :admin
+    require_auth_level :admin_audit
 
     mongoid_query do
 
@@ -64,7 +66,8 @@ class AuditController < RESTController
   
   def filters
     require_auth_level :admin
-    
+    require_auth_level :admin_audit
+
     search = ::AuditFilters.first
     return ok(search)
   end

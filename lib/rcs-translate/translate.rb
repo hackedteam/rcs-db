@@ -5,12 +5,18 @@
 # from RCS::DB
 if File.directory?(Dir.pwd + '/lib/rcs-ocr-release')
   require 'rcs-db-release/config'
+  require 'rcs-db-release/license'
   require 'rcs-db-release/db_layer'
   require 'rcs-db-release/grid'
+  require 'rcs-db-release/alert'
+  require 'rcs-db-release/sessions'
 else
   require 'rcs-db/config'
+  require 'rcs-db/license'
   require 'rcs-db/db_layer'
   require 'rcs-db/grid'
+  require 'rcs-db/alert'
+  require 'rcs-db/sessions'
 end
 
 # from RCS::Common
@@ -58,7 +64,7 @@ class Application
     begin
       build = File.read(Dir.pwd + '/config/VERSION_BUILD')
       $version = File.read(Dir.pwd + '/config/VERSION')
-      trace :fatal, "Starting the OCR Processor #{$version} (#{build})..."
+      trace :fatal, "Starting the TRANSLATE Processor #{$version} (#{build})..."
 
       # config file parsing
       return 1 unless RCS::DB::Config.instance.load_from_file
@@ -69,14 +75,26 @@ class Application
         sleep 5
       end
 
+      # load the license from the db (saved by db)
+      $license = RCS::DB::LicenseManager.instance.load_from_db
+
+      unless $license['translation']
+        Mongoid.database.drop_collection 'trans_queue'
+
+        # do nothing...
+        trace :info, "TRANSLATE license is disabled, going to sleep..."
+        while true do
+          sleep 60
+        end
+      end
+
       # the infinite processing loop
       Processor.run
 
       # never reached...
 
     rescue Interrupt
-      trace :info, "System shutdown. Bye bye!"
-      Audit.log :actor => '<system>', :action => 'shutdown', :desc => "System shutdown"
+      trace :info, "User asked to exit. Bye bye!"
       return 0
     rescue Exception => e
       trace :fatal, "FAILURE: " << e.message

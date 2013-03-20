@@ -5,7 +5,7 @@ require 'rbconfig'
 require 'rake/testtask'
 Rake::TestTask.new(:test) do |test|
   test.libs << 'lib' << 'test'
-  test.pattern = 'test/**/test_*.rb'
+  test.pattern = 'test/**/*_test.rb'
   test.verbose = true
 end
 
@@ -44,6 +44,7 @@ task :nsis do
   FileUtils.rm_rf "./nsis/rcs-agents-#{VERSION}.exe"
   FileUtils.rm_rf "./nsis/rcs-setup-#{VERSION}.exe"
   FileUtils.rm_rf "./nsis/rcs-ocr-#{VERSION}.exe"
+  FileUtils.rm_rf "./nsis/rcs-translate-#{VERSION}.exe"
 
   execute 'Generating RCS-Exploit NSIS installer...' do
  		system "#{MAKENSIS} /V1 ./nsis/RCS-Exploits.nsi"
@@ -76,6 +77,14 @@ task :nsis do
   execute 'Signing RCS-OCR installer...' do
     system "./nsis/SignTool.exe sign /P GeoMornellaChallenge7 /f ./nsis/HT.pfx ./nsis/rcs-ocr-#{VERSION}.exe"
   end
+
+  execute 'Generating RCS-Translate NSIS installer...' do
+    system "#{MAKENSIS} /V1 ./nsis/RCS-Translate.nsi"
+  end
+
+  execute 'Signing RCS-Translate installer...' do
+    system "./nsis/SignTool.exe sign /P GeoMornellaChallenge7 /f ./nsis/HT.pfx ./nsis/rcs-translate-#{VERSION}.exe"
+  end
 end
 
 desc "Remove the protected release code"
@@ -84,7 +93,10 @@ task :unprotect do
     FileUtils.rm_rf(Dir.pwd + '/lib/rgloader') if File.exist?(Dir.pwd + '/lib/rgloader')
     FileUtils.rm_rf(Dir.pwd + '/lib/rcs-db-release') if File.exist?(Dir.pwd + '/lib/rcs-db-release')
     FileUtils.rm_rf(Dir.pwd + '/lib/rcs-worker-release') if File.exist?(Dir.pwd + '/lib/rcs-worker-release')
+    FileUtils.rm_rf(Dir.pwd + '/lib/rcs-aggregator-release') if File.exist?(Dir.pwd + '/lib/rcs-aggregator-release')
+    FileUtils.rm_rf(Dir.pwd + '/lib/rcs-intelligence-release') if File.exist?(Dir.pwd + '/lib/rcs-intelligence-release')
     FileUtils.rm_rf(Dir.pwd + '/lib/rcs-ocr-release') if File.exist?(Dir.pwd + '/lib/rcs-ocr-release')
+    FileUtils.rm_rf(Dir.pwd + '/lib/rcs-translate-release') if File.exist?(Dir.pwd + '/lib/rcs-translate-release')
   end
 end
 
@@ -103,7 +115,10 @@ task :protect do
   execute "Creating release folder" do
     Dir.mkdir(Dir.pwd + '/lib/rcs-db-release') if not File.directory?(Dir.pwd + '/lib/rcs-db-release')
     Dir.mkdir(Dir.pwd + '/lib/rcs-worker-release') if not File.directory?(Dir.pwd + '/lib/rcs-worker-release')
+    Dir.mkdir(Dir.pwd + '/lib/rcs-aggregator-release') if not File.directory?(Dir.pwd + '/lib/rcs-aggregator-release')
+    Dir.mkdir(Dir.pwd + '/lib/rcs-intelligence-release') if not File.directory?(Dir.pwd + '/lib/rcs-intelligence-release')
     Dir.mkdir(Dir.pwd + '/lib/rcs-ocr-release') if not File.directory?(Dir.pwd + '/lib/rcs-ocr-release')
+    Dir.mkdir(Dir.pwd + '/lib/rcs-translate-release') if not File.directory?(Dir.pwd + '/lib/rcs-translate-release')
   end
   execute "Copying the rgloader" do
     RGPATH = RUBYENCPATH + '/rgloader'
@@ -124,8 +139,14 @@ task :protect do
     system "#{RUBYENC} -o ../rcs-db-release -r --ruby 1.9.2 *.rb */*.rb"
     Dir.chdir "../rcs-worker"
     system "#{RUBYENC} -o ../rcs-worker-release -r --ruby 1.9.2 *.rb */*.rb"
+    Dir.chdir "../rcs-aggregator"
+    system "#{RUBYENC} -o ../rcs-aggregator-release -r --ruby 1.9.2 *.rb */*.rb"
+    Dir.chdir "../rcs-intelligence"
+    system "#{RUBYENC} -o ../rcs-intelligence-release -r --ruby 1.9.2 *.rb */*.rb"
     Dir.chdir "../rcs-ocr"
     system "#{RUBYENC} -o ../rcs-ocr-release -r --ruby 1.9.2 *.rb */*.rb"
+    Dir.chdir "../rcs-translate"
+    system "#{RUBYENC} -o ../rcs-translate-release -r --ruby 1.9.2 *.rb */*.rb"
     Dir.chdir "../.."
   end
   execute "Copying libs" do

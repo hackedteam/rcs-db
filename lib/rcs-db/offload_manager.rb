@@ -21,16 +21,20 @@ class OffloadManager
   end
 
   def recover
-    trace :debug, "OffloadManager: recovering tasks..."
+    # perform the recovery in a separate thread so the startup of the system
+    # is not delayed by this task
+    Thread.new do
+      trace :debug, "OffloadManager: recovering tasks..."
 
-    # read the journal from filesystem
-    journal_read
+      # read the journal from filesystem
+      journal_read
 
-    # restart all the pending tasks
-    @journal.each do |task|
-      trace :info, "Recovering offload task #{task[:name]} [#{task[:id]}]"
-      task[:recover] = true
-      run task
+      # restart all the pending tasks
+      @journal.each do |task|
+        trace :info, "Recovering offload task #{task[:name]} [#{task[:id]}]"
+        task[:recover] = true
+        run task
+      end
     end
   end
 
@@ -65,8 +69,7 @@ class OffloadManager
 
     # if we are recovering just perform the task waiting for it to finish
     # this is more safe than executing all the task in parallel
-    # but will increase the starting time of the db. it will not be ready
-    # until all the task are recovered
+    # but will increase the recovery time of the db
     job.call if task.has_key? :recover
 
     # every task is a separate thread during normal activity

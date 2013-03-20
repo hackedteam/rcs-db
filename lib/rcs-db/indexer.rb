@@ -119,7 +119,7 @@ class Indexer
     end
     unless data['wifi'].nil? or not data['wifi'].is_a? Array
       data['wifi'].each do |wifi|
-        kw += [wifi['mac'].keywords, wifi['bssid'].keywords ].flatten
+        kw += [wifi['mac'].keywords, wifi['ssid'].keywords ].flatten
       end
     end
 

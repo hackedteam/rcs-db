@@ -88,7 +88,7 @@ module Speex
 
     wav_ary = []
     stream = StringIO.new data
-    while not stream.eof? do
+    until stream.eof? do
       # read one chunk
       len = stream.read(4).unpack("L").shift
       chunk = stream.read(len)

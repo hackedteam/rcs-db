@@ -13,7 +13,7 @@ class FactoryController < RESTController
 
     mongoid_query do
       db = Mongoid.database
-      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident"])
+      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "good"])
       ok(j)
     end
   end
@@ -25,7 +25,7 @@ class FactoryController < RESTController
 
     mongoid_query do
       db = Mongoid.database
-      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "path", "ident", "counter", "logkey", "confkey", "configs"])
+      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "path", "ident", "counter", "logkey", "confkey", "configs", "good"])
       ok(j.first)
     end
   end

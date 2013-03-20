@@ -6,6 +6,7 @@
 !include nsDialogs.nsh
 !include Sections.nsh
 !include LogicLib.nsh
+!include WinVer.nsh
 ;--------------------------------
 ;General
   
@@ -108,16 +109,16 @@ Section "Install Section" SecInstall
   ReadRegDWORD $R0 HKLM "Software\HT\RCS" "ocr"
   IntCmp $R0 1 alreadyinstalled
 
-    DetailPrint "Creating service RCS OCR..."
-    nsExec::Exec "$INSTDIR\DB\bin\nssm.exe install RCSOCR $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-ocr"
-    SimpleSC::SetServiceFailure "RCSOCR" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-    WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSOCR" "DisplayName" "RCS OCR"
-    WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSOCR" "Description" "Remote Control System OCR processor"
-    DetailPrint "done"
+  DetailPrint "Creating service RCS OCR..."
+  nsExec::Exec "$INSTDIR\DB\bin\nssm.exe install RCSOCR $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-ocr"
+  SimpleSC::SetServiceFailure "RCSOCR" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+  WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSOCR" "DisplayName" "RCS OCR"
+  WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSOCR" "Description" "Remote Control System OCR processor"
+  DetailPrint "done"
 
-    WriteRegDWORD HKLM "Software\HT\RCS" "ocr" 0x00000001
+  WriteRegDWORD HKLM "Software\HT\RCS" "ocr" 0x00000001
 
-    nsExec::Exec "reg import $INSTDIR\DB\ocr\ocr-key.reg"
+  nsExec::Exec "reg import $INSTDIR\DB\ocr\ocr-key.reg"
 
   alreadyinstalled:
 
@@ -179,6 +180,22 @@ Function .onInit
   ${IfNot} ${RunningX64}
     MessageBox MB_OK "RCS can be installed only on 64 bit systems"
     Quit
+  ${EndIf}
+
+  ${If} ${IsWin2008R2}
+  ${AndIfNot} ${AtLeastServicePack} 1
+    MessageBox MB_OK "Please install Windows Server 2008 R2 SP1 before installing RCS"
+  ${EndIf}
+
+  ${If} ${IsWin2003}
+  	MessageBox MB_OK "This is the last version allowed to be installed on Windows Server 2003"
+  ${EndIf}
+
+  ${IfNot} ${AtLeastWin2008R2}
+	  ${IfNot} ${AtLeastWin7}
+  	  MessageBox MB_OK "RCS can be installed only on Windows Server 2008 R2 or above"
+    	;Quit
+  	${EndIf}
   ${EndIf}
 
   ReadRegDWORD $R0 HKLM "Software\HT\RCS" "installed"

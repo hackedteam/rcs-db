@@ -15,12 +15,11 @@ class User
             'ADMIN_TARGETS',
             'ADMIN_AUDIT',
             'ADMIN_LICENSE',
-            'ADMIN_PROFILES',
            'SYS',
             'SYS_FRONTEND',
             'SYS_BACKEND',
             'SYS_BACKUP',
-            'SYS_INJECTOR',
+            'SYS_INJECTORS',
             'SYS_CONNECTORS',
            'TECH',
             'TECH_FACTORIES',
@@ -44,6 +43,8 @@ class User
   field :desc, type: String
   field :contact, type: String
   field :privs, type: Array
+  # TODO: remove in 8.4
+  field :ext_privs, type: Boolean
   field :enabled, type: Boolean
   field :locale, type: String
   field :timezone, type: Integer

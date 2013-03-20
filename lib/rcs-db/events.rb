@@ -9,6 +9,7 @@ require_relative 'rest'
 require_relative 'sessions'
 require_relative 'backup'
 require_relative 'alert'
+require_relative 'parser'
 require_relative 'websocket'
 require_relative 'push'
 
@@ -72,7 +73,7 @@ class HTTPHandler < EM::HttpServer::Server
   end
 
   def ssl_verify_peer(cert)
-    #TODO: check if the client cert is valid
+    #check if the client cert is valid
   end
 
   def unbind

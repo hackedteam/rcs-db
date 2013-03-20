@@ -36,6 +36,7 @@ class LicenseController < RESTController
 
   def create
     require_auth_level :admin
+    require_auth_level :admin_license
 
     # ensure the temp dir is present
     Dir::mkdir(Config.instance.temp) if not File.directory?(Config.instance.temp)

@@ -19,6 +19,9 @@ class Collector
   field :configured, type: Boolean, default: false
   field :upgradable, type: Boolean, default: false
 
+  # used in case of crisis
+  field :good, type: Boolean, default: true
+
   field :next, type: Array
   field :prev, type: Array
 

@@ -76,8 +76,15 @@ class QueueManager
           # remember the last processed id
           @last_id = ev['_id']
         end
+      rescue Mongo::ConnectionFailure
+        trace :error, "Connection with mongodb lost, exiting..."
+        exit!
       rescue Exception => e
-        trace :error, "Cannot process pending evidences: #{e.message}"
+        trace :error, "Cannot process pending evidences: [#{e.class}] #{e.message}"
+        if e.message.match(/forcibly closed/)
+          trace :error, "Connection with mongodb lost, exiting..."
+          exit!
+        end
       end
     end
   end

@@ -94,5 +94,5 @@ class HeartBeat
 
 end
 
-end #Collector::
+end #DB::
 end #RCS::

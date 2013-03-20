@@ -10,6 +10,7 @@ class ConnectorController < RESTController
 
   def index
     require_auth_level :sys
+    require_auth_level :sys_connectors
 
     mongoid_query do
       return ok(::Connector.all)
@@ -18,12 +19,13 @@ class ConnectorController < RESTController
 
   def create
     require_auth_level :sys
+    require_auth_level :sys_connectors
 
     return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.limits[:connectors]
 
     mongoid_query do
       f = ::Connector.new
-      f.enabled = @params['enabled'] == true ? true : false
+      f.enabled = @params['enabled'] ? true : false
       f.name = @params['name']
       f.type = @params['type'] || 'JSON'
       f.raw = @params['raw']
@@ -40,6 +42,7 @@ class ConnectorController < RESTController
 
   def update
     require_auth_level :sys
+    require_auth_level :sys_connectors
 
     mongoid_query do
       connector = ::Connector.find(@params['_id'])
@@ -62,6 +65,7 @@ class ConnectorController < RESTController
 
   def destroy
     require_auth_level :sys
+    require_auth_level :sys_connectors
 
     mongoid_query do
       connector = ::Connector.find(@params['_id'])

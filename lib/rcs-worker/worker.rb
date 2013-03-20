@@ -4,7 +4,6 @@
 
 # relatives
 require_relative 'call_processor'
-require_relative 'evidence/call'
 require_relative 'heartbeat'
 require_relative 'backlog'
 require_relative 'statistics'
@@ -12,9 +11,11 @@ require_relative 'statistics'
 # from RCS::DB
 if File.directory?(Dir.pwd + '/lib/rcs-worker-release')
   require 'rcs-db-release/config'
+  require 'rcs-db-release/license'
   require 'rcs-db-release/db_layer'
 else
   require 'rcs-db/config'
+  require 'rcs-db/license'
   require 'rcs-db/db_layer'
 end
 
@@ -58,19 +59,6 @@ class Worker
       trace :info, "Worker '#{RCS::DB::Config.instance.global['SHARD']}' ready!"
     end
     
-  end
-
-  def self.close_recording_calls
-    begin
-      trace :info, "Checking for pending calls..."
-      # close recording calls for all targets
-      targets = Item.targets
-      targets.each do |target|
-        ::Evidence.collection_class(target[:_id].to_s).where({"type" => :call, "data.status" => :recording}).update_all("data.status" => :completed)
-      end
-    rescue Exception => e
-      trace :error, "Cannot process pending calls: #{e.message}"
-    end
   end
 
 end
@@ -117,8 +105,8 @@ class Application
         sleep 5
       end
 
-      # close any pending call
-      #Worker.close_recording_calls  # (too slow)
+      # load the license from the db (saved by db)
+      $license = RCS::DB::LicenseManager.instance.load_from_db
 
       # do the dirty job!
       Worker.new.run

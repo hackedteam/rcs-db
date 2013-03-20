@@ -8,4 +8,12 @@ module RCS
       :call
     end
   end # CalllistProcessing
+
+  module CalllistoldProcessing
+    extend SingleEvidence
+
+    def type
+      :call
+    end
+  end # CalllistProcessing
 end # DB

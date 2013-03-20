@@ -1,0 +1,7 @@
+#!/usr/bin/env ruby
+$LOAD_PATH.unshift File.join(File.dirname(__FILE__), '..', 'lib')
+
+require 'bundler/setup'
+require_relative '../lib/rcs-intelligence'
+
+exit RCS::Intelligence::Application.run!(*ARGV)

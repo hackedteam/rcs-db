@@ -6,6 +6,7 @@
 !include nsDialogs.nsh
 !include Sections.nsh
 !include LogicLib.nsh
+!include WinVer.nsh
 
 ;--------------------------------
 ;General
@@ -165,6 +166,10 @@ Section "Update Section" SecUpdate
    Sleep 3000
    SimpleSC::StopService "RCSWorker" 1
    Sleep 3000
+   SimpleSC::StopService "RCSAggregator" 1
+   Sleep 3000
+   SimpleSC::StopService "RCSIntelligence" 1
+   Sleep 3000
    SimpleSC::StopService "RCSMasterRouter" 1
    Sleep 3000
    SimpleSC::StopService "RCSMasterConfig" 1
@@ -176,6 +181,12 @@ Section "Update Section" SecUpdate
      Sleep 3000
      SimpleSC::StopService "RCSOCR" 1
    noocr:
+
+   ReadRegDWORD $R0 HKLM "Software\HT\RCS" "translate"
+   IntCmp $R0 1 0 notrans notrans
+     Sleep 3000
+     SimpleSC::StopService "RCSTranslate" 1
+   notrans:
 
    Sleep 5000
    
@@ -191,6 +202,8 @@ Section "Update Section" SecUpdate
    !endif
    RMDir /r "$INSTDIR\DB\lib\rcs-db-release"
    RMDir /r "$INSTDIR\DB\lib\rcs-worker-release"
+   RMDir /r "$INSTDIR\DB\lib\rcs-aggregator-release"
+   RMDir /r "$INSTDIR\DB\lib\rcs-intelligence-release"
    RMDir /r "$INSTDIR\DB\lib\rgloader"
    RMDir /r "$INSTDIR\DB\bin"
    RMDir /r "$INSTDIR\Collector\bin"
@@ -251,6 +264,8 @@ Section "Install Section" SecInstall
     SetOutPath "$INSTDIR\DB\lib"
     File "lib\rcs-db.rb"
     File "lib\rcs-worker.rb"
+    File "lib\rcs-aggregator.rb"
+    File "lib\rcs-intelligence.rb"
     File /r "lib\rgloader"
  
     SetOutPath "$INSTDIR\DB\log"
@@ -271,14 +286,24 @@ Section "Install Section" SecInstall
     SetOutPath "$INSTDIR\DB\lib\rcs-worker-release"
     File /r "lib\rcs-worker-release\*.*"
 
+    SetOutPath "$INSTDIR\DB\lib\rcs-aggregator-release"
+    File /r "lib\rcs-aggregator-release\*.*"
+
+    SetOutPath "$INSTDIR\DB\lib\rcs-intelligence-release"
+    File /r "lib\rcs-intelligence-release\*.*"
+
     SetOutPath "$INSTDIR\DB\config"
     File "config\mongodb.key"
     File "config\trace.yaml"
     File "config\export.zip"
     File "config\logo.png"
     File "config\blacklist"
+    File "config\blacklist_analysis"
     File "config\VERSION_BUILD"
     File "config\VERSION"
+
+    ; TODO: remove this after 8.3!!!
+    File "config\mark_bad"
 
     SetOutPath "$INSTDIR\DB\config\certs"
     File "config\certs\openssl.cnf"
@@ -403,15 +428,46 @@ Section "Install Section" SecInstall
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSWorker" "Description" "Remote Control System Worker for data decoding"
       DetailPrint "done"
 
+      DetailPrint "Creating service RCS Aggregator..."
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSAggregator $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-aggregator"
+      SimpleSC::SetServiceFailure "RCSAggregator" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSAggregator" "DisplayName" "RCS Aggregator"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSAggregator" "Description" "Remote Control System Aggregator for data intelligence"
+      DetailPrint "done"
+
+      DetailPrint "Creating service RCS Intelligence..."
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSIntelligence $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-intelligence"
+      SimpleSC::SetServiceFailure "RCSIntelligence" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "DisplayName" "RCS Intelligence"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "Description" "Remote Control System Intelligence data correlator"
+      DetailPrint "done"
+
       ; write the admin pass into the file that will be loaded on the first start
       FileOpen $4 "$INSTDIR\DB\config\admin_pass" w
       FileWrite $4 "$adminpass"
       FileClose $4
     ${Else}
-      nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --migrate-mongos22 --log"
-      nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --sign-pass password"
+      ; TODO remove for 8.4
+      DetailPrint "Creating service RCS Aggregator..."
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSAggregator $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-aggregator"
+      SimpleSC::SetServiceFailure "RCSAggregator" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSAggregator" "DisplayName" "RCS Aggregator"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSAggregator" "Description" "Remote Control System Aggregator for data intelligence"
+      DetailPrint "done"
+
+      DetailPrint "Creating service RCS Intelligence..."
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSIntelligence $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-intelligence"
+      SimpleSC::SetServiceFailure "RCSIntelligence" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "DisplayName" "RCS Intelligence"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "Description" "Remote Control System Intelligence data correlator"
+      DetailPrint "done"
     ${EndIf}
-    
+
+    ; generate the SSL cert for anon on every install
+    DetailPrint "Generating anonymizer certs..."
+    nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-certs-anon --log"
+    DetailPrint "done"
+
     SetDetailsPrint "both"
 
     Delete $INSTDIR\DB\data\config\mongod.lock
@@ -435,7 +491,15 @@ Section "Install Section" SecInstall
     DetailPrint "Starting RCS Worker..."
     SimpleSC::StartService "RCSWorker" "" 30
     Sleep 5000
-      
+
+    DetailPrint "Starting RCS Aggregator..."
+    SimpleSC::StartService "RCSAggregator" "" 30
+    Sleep 5000
+
+    DetailPrint "Starting RCS Intelligence..."
+    SimpleSC::StartService "RCSIntelligence" "" 30
+    Sleep 5000
+
     DetailPrint "Adding firewall rule for port 443/tcp and 444/tcp..."
     #nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=443'
     #nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=444'
@@ -468,26 +532,42 @@ Section "Install Section" SecInstall
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSWorker" "DisplayName" "RCS Worker"
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSWorker" "Description" "Remote Control System Worker for data decoding"
       DetailPrint "done"
-      
+
+      DetailPrint "Creating service RCS Aggregator..."
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSAggregator $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-aggregator"
+      SimpleSC::SetServiceFailure "RCSAggregator" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSAggregator" "DisplayName" "RCS Aggregator"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSAggregator" "Description" "Remote Control System Aggregator for data intelligence"
+      DetailPrint "done"
+
       DetailPrint "Starting RCS Shard..."
       SimpleSC::StartService "RCSShard" "" 30
       Sleep 3000
-      DetailPrint "Starting RCS Worker..."
-      SimpleSC::StartService "RCSWorker" "" 30
-    
+
       DetailPrint "Writing the configuration..."
       SetDetailsPrint "textonly"
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --defaults --CN $masterAddress"
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config -u admin -p $adminpass -d $masterAddress --add-shard $localAddress"
       SetDetailsPrint "both"
       DetailPrint "done"
-	${EndIf}
+    ${Else}
+      ; TODO remove for 8.4
+      DetailPrint "Creating service RCS Aggregator..."
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSAggregator $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-aggregator"
+      SimpleSC::SetServiceFailure "RCSAggregator" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSAggregator" "DisplayName" "RCS Aggregator"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSAggregator" "Description" "Remote Control System Aggregator for data intelligence"
+      DetailPrint "done"
+	  ${EndIf}
     
     DetailPrint "Starting RCS Shard..."
     SimpleSC::StartService "RCSShard" "" 30
     Sleep 3000
     DetailPrint "Starting RCS Worker..."
     SimpleSC::StartService "RCSWorker" "" 30
+
+    DetailPrint "Starting RCS Aggregator..."
+    SimpleSC::StartService "RCSAggregator" "" 30
 
     !cd '..'
     WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
@@ -511,6 +591,12 @@ Section "Install Section" SecInstall
 
     ; make sure the cache is clean after upgrade
     Delete "$INSTDIR\Collector\config\cache.db"
+
+    ; make sure the certificate is removed on new install
+    Delete "$INSTDIR\Collector\config\rcs-network.pem"
+
+    ; remove public entries
+    RMDir /r "$INSTDIR\Collector\public"
 
     SetOutPath "$INSTDIR\Collector\config"
     File "config\decoy.rb"
@@ -588,6 +674,11 @@ Section "Install Section" SecInstall
     SimpleSC::StartService "RCSOCR" ""
   noocr:
 
+  ReadRegDWORD $R0 HKLM "Software\HT\RCS" "translate"
+  IntCmp $R0 1 0 notrans notrans
+    SimpleSC::StartService "RCSTranslate" ""
+  notrans:
+
   !cd "DB\nsis"
   
   DetailPrint "Writing uninstall informations..."
@@ -609,6 +700,8 @@ Section Uninstall
   DetailPrint "Stopping RCS Services..."
   SimpleSC::StopService "RCSCollector" 1
   SimpleSC::StopService "RCSWorker" 1
+  SimpleSC::StopService "RCSAggregator" 1
+  SimpleSC::StopService "RCSIntelligence" 1
   SimpleSC::StopService "RCSDB" 1
   SimpleSC::StopService "RCSMasterRouter" 1
   SimpleSC::StopService "RCSMasterConfig" 1
@@ -618,6 +711,8 @@ Section Uninstall
   DetailPrint "Removing RCS Services..."
   SimpleSC::RemoveService "RCSCollector"
   SimpleSC::RemoveService "RCSWorker"
+  SimpleSC::RemoveService "RCSAggregator"
+  SimpleSC::RemoveService "RCSIntelligence"
   SimpleSC::RemoveService "RCSDB"
   SimpleSC::RemoveService "RCSMasterRouter"
   SimpleSC::RemoveService "RCSMasterConfig"
@@ -666,6 +761,22 @@ Function .onInit
   ${IfNot} ${RunningX64}
     MessageBox MB_OK "RCS can be installed only on 64 bit systems"
     Quit
+  ${EndIf}
+
+  ${If} ${IsWin2008R2}
+  ${AndIfNot} ${AtLeastServicePack} 1
+    MessageBox MB_OK "Please install Windows Server 2008 R2 SP1 before installing RCS"
+  ${EndIf}
+
+  ${If} ${IsWin2003}
+  	MessageBox MB_OK "This is the last version allowed to be installed on Windows Server 2003"
+  ${EndIf}
+
+  ${IfNot} ${AtLeastWin2008R2}
+	  ${IfNot} ${AtLeastWin7}
+  	  MessageBox MB_OK "RCS can be installed only on Windows Server 2008 R2 or above"
+    	;Quit
+  	${EndIf}
   ${EndIf}
 
 FunctionEnd

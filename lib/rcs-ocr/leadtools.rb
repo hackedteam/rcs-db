@@ -46,7 +46,7 @@ class LeadTools
     def transform(input_file, output_file)
 
       # cannot run on macos
-      return  if RbConfig::CONFIG['host_os'] =~ /darwin/
+      return if RbConfig::CONFIG['host_os'] =~ /darwin/
 
       # null terminate the strings for the DLL
       input_null = input_file.gsub("/", "\\") + "\x00"

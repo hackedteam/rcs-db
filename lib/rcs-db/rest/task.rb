@@ -23,6 +23,12 @@ class TaskController < RESTController
   
   def create
     require_auth_level :admin, :sys, :tech, :view
+    require_auth_level :admin_audit if @params['type'] == 'audit'
+    require_auth_level :sys_backend if @params['type'] == 'compact'
+    require_auth_level :sys_frontend if @params['type'] == 'topology'
+    require_auth_level :tech_build if @params['type'] == 'build'
+    require_auth_level :tech_ni_rules if @params['type'] == 'injector'
+    require_auth_level :view_export if @params['type'] == 'evidence'
 
     task = TaskManager.instance.create @session[:user], @params['type'], @params['file_name'], @params['params']
     

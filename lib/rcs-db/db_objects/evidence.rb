@@ -18,7 +18,7 @@ class Evidence
 
   def self.collection_class(target)
 
-    classDefinition = <<-END
+    class_definition = <<-END
       class Evidence_#{target}
         include Mongoid::Document
 
@@ -81,7 +81,7 @@ class Evidence
     if self.const_defined? classname.to_sym
       klass = eval classname
     else
-      eval classDefinition
+      eval class_definition
       klass = eval classname
     end
     
@@ -240,6 +240,10 @@ class Evidence
     target = ::Item.find(params[:target_id])
     agent = ::Item.find(params[:agent_id])
 
+    # moving an agent implies that all the evidence are moved to another target
+    # we have to remove all the aggregates created from those evidence on the old target
+    Aggregate.collection_class(old_target[:_id]).destroy_all(conditions: { aid: agent[:_id].to_s })
+
     evidences = Evidence.collection_class(old_target[:_id]).where(:aid => agent[:_id])
 
     total = evidences.count
@@ -270,6 +274,11 @@ class Evidence
 
         # save the new one
         new_ev.save
+
+        # add to the aggregator queue the evidence (we need to recalculate them in the new target)
+        if RCS::DB::LicenseManager.instance.check :correlation
+          AggregatorQueue.add(target[:_id], new_ev._id, new_ev.type)
+        end
 
         # delete the old one. NOTE CAREFULLY:
         # we use delete + explicit grid, since the callback in the destroy will fail

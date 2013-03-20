@@ -7,6 +7,8 @@ module DB
 
 class VersionController < RESTController
 
+  bypass_auth [:index, :show]
+
   def index
     db_version = File.read(Dir.pwd + '/config/VERSION')
     console_version = "-1"

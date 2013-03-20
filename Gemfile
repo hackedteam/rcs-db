@@ -1,7 +1,7 @@
 source "http://rubygems.org"
 # Add dependencies required to use your gem here.
 
-gem "rcs-common", ">= 8.2.0", :path => "../rcs-common"
+gem "rcs-common", ">= 8.3.0", :path => "../rcs-common"
 
 gem 'em-http-request'
 gem 'em-websocket'
@@ -23,11 +23,13 @@ gem 'rest-client'
 gem 'xml-simple'
 
 # databases
-gem 'mongo', "= 1.7.0", :git => "git://github.com/danielemilan/mongo-ruby-driver.git", :branch => "1.7.0-append"
-gem 'bson', "= 1.7.0"
-gem 'bson_ext', "= 1.7.0"
+gem 'mongo', "= 1.8.3", :git => "git://github.com/alor/mongo-ruby-driver.git", :branch => "1.8.3_append"
+gem 'bson', "= 1.8.3"
+gem 'bson_ext', "= 1.8.3"
 
 gem 'mongoid', "< 3.0.0"
+gem 'mongoid_spacial'
+gem 'rvincenty'
 
 platforms :jruby do
   gem 'json'
@@ -40,5 +42,6 @@ group :development do
   gem "bundler", "> 1.0.0"
   gem 'rake'
   gem 'test-unit'
+  gem 'simplecov'
 end
 

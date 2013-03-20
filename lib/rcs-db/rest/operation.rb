@@ -5,7 +5,14 @@ class OperationController < RESTController
   
   def index
     require_auth_level :admin, :tech, :view
-      
+
+    # TODO: remove in 9.0.0
+    # do not allow login for older console (versions prior to 8.3 don't have this parameter)
+    if @session[:console_version].nil?
+      trace :warn, "Console version for #{@session[:user].name} is too old, denying access..."
+      return bad_request("Console version too old, cannot login")
+    end
+
     filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
     filter ||= {}
 
@@ -36,7 +43,8 @@ class OperationController < RESTController
   
   def create
     require_auth_level :admin
-    
+    require_auth_level :admin_operations
+
     mongoid_query do
       item = Item.create(name: @params['name']) do |doc|
         doc[:_kind] = :operation
@@ -58,6 +66,9 @@ class OperationController < RESTController
         end
       end
 
+      # make item accessible to the current user (immediately)
+      SessionManager.instance.add_accessible(@session, item._id)
+
       # make item accessible to the users
       SessionManager.instance.rebuild_all_accessible
 
@@ -72,7 +83,8 @@ class OperationController < RESTController
   
   def update
     require_auth_level :admin
-    
+    require_auth_level :admin_operations
+
     updatable_fields = ['name', 'desc', 'status', 'contact']
 
     mongoid_query do
@@ -106,6 +118,7 @@ class OperationController < RESTController
   
   def destroy
     require_auth_level :admin
+    require_auth_level :admin_operations
 
     mongoid_query do
       item = Item.operations.any_in(_id: @session[:accessible]).find(@params['_id'])

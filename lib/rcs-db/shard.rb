@@ -17,7 +17,6 @@ class Shard
   end
 
   def self.all
-    t = Time.now
     db = DB.instance.new_connection("admin")
     db.command({ listshards: 1 })
   end

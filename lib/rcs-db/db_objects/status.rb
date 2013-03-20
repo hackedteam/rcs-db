@@ -29,7 +29,11 @@ class Status
   field :disk, type: Integer
   field :type, type: String
   field :version, type: String
-  
+
+  index :name
+  index :address
+  index :status
+
   store_in :statuses
 
   class << self
@@ -50,12 +54,12 @@ class Status
       monitor[:version] = version
 
       # check the low resource conditions
-      if (status == 'OK' and (monitor[:disk] <= 15 or monitor[:cpu] >= 85 or monitor[:pcpu] >= 85))
+      if status == 'OK' and (monitor[:disk] <= 15 or monitor[:cpu] >= 85 or monitor[:pcpu] >= 85)
         status = 'WARN'
       end
 
       # notify all that the monitor has changed only if the status has changed
-      RCS::DB::PushManager.instance.notify('monitor') if monitor[:status] != STATUS_CODE[status]
+      Thread.new { RCS::DB::PushManager.instance.notify('monitor') } if monitor[:status] != STATUS_CODE[status]
 
       case(status)
         when 'OK'
@@ -101,7 +105,7 @@ class Status
         end
 
         # check worker version
-        if ['worker', 'collector', 'nc'].include? m[:type] and m[:version] != $version
+        if ['worker', 'collector', 'nc', 'intelligence'].include? m[:type] and m[:version] != $version
           m[:status] = ERROR
           trace :warn, "Component #{m[:name]} has version #{m[:version]}, should be #{$version}"
           m[:info] = "Component version is #{m[:version]}, should be #{$version}"

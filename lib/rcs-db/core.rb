@@ -26,7 +26,7 @@ class Core
 
         make_unique(core_file)
 
-        trace :debug, "Load core: #{name} #{version}"
+        trace :info, "Load core: #{name} #{version}"
 
         # search if already present
         core = ::Core.where({name: name}).first

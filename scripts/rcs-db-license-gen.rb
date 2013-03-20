@@ -13,7 +13,7 @@ require 'time'
 class LicenseGenerator
   include Singleton
 
-  LICENSE_VERSION = '8.2'
+  LICENSE_VERSION = '8.3'
 
   def initialize
     # default values.
@@ -44,7 +44,10 @@ class LicenseGenerator
                :shards => 1,
                :exploits => false,
                :deletion => false,
+               :modify => false,
                :scout => true,
+               :ocr => true,
+               :translation => false,
                :collectors => {:collectors => 1, :anonymizers => 0},
                :check => SecureRandom.urlsafe_base64(8).slice(0..7)
     }
@@ -88,12 +91,6 @@ class LicenseGenerator
 
   def check_integrity(values)
     puts "Checking integrity..."
-
-    # the license is not for this version
-    if values[:version] != LICENSE_VERSION
-      puts "Invalid License File: version is not #{LICENSE_VERSION}, fixing it..."
-      values[:version] = LICENSE_VERSION
-    end
 
     # wrong date
     if not values[:expiry].nil? and Time.parse(values[:expiry]).getutc < Time.now.getutc
@@ -140,6 +137,9 @@ class LicenseGenerator
     # add the watermark if not already present
     @limits[:check] = SecureRandom.urlsafe_base64(8).slice(0..7) unless @limits[:check]
 
+    # override the version
+    @limits[:version] = options[:version] if options[:version]
+
     # check if the input file is valid
     check_integrity @limits
 
@@ -176,6 +176,10 @@ class LicenseGenerator
 
       opts.on( '-o', '--output FILE', String, 'Output license file' ) do |file|
         options[:output] = file
+      end
+
+      opts.on( '-V', '--version VERSION', String, 'Version of the license' ) do |ver|
+        options[:version] = ver
       end
 
       opts.on( '-v', '--verbose', 'Verbose mode' ) do

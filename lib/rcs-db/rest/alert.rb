@@ -10,6 +10,7 @@ class AlertController < RESTController
 
   def index
     require_auth_level :view
+    require_auth_level :view_alerts
 
     mongoid_query do
       # use reload to avoid cache
@@ -23,6 +24,7 @@ class AlertController < RESTController
 
   def show
     require_auth_level :view
+    require_auth_level :view_alerts
 
     mongoid_query do
       # use reload to avoid cache
@@ -36,6 +38,7 @@ class AlertController < RESTController
 
   def create
     require_auth_level :view
+    require_auth_level :view_alerts
 
     return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :alerting
 
@@ -62,6 +65,7 @@ class AlertController < RESTController
 
   def update
     require_auth_level :view
+    require_auth_level :view_alerts
 
     return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :alerting
 
@@ -87,7 +91,8 @@ class AlertController < RESTController
 
   def destroy
     require_auth_level :view
-    
+    require_auth_level :view_alerts
+
     mongoid_query do
       user = @session[:user].reload
       alert = user.alerts.find(@params['_id'])
@@ -105,6 +110,7 @@ class AlertController < RESTController
   # returns the counters grouped by status
   def counters
     require_auth_level :view
+    require_auth_level :view_alerts
 
     counter = 0
 
@@ -122,6 +128,7 @@ class AlertController < RESTController
 
   def destroy_log
     require_auth_level :view
+    require_auth_level :view_alerts
 
     mongoid_query do
       user = @session[:user].reload
@@ -136,6 +143,7 @@ class AlertController < RESTController
 
   def destroy_all_logs
     require_auth_level :view
+    require_auth_level :view_alerts
 
     mongoid_query do
       user = @session[:user].reload

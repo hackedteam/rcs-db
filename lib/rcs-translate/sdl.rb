@@ -15,25 +15,41 @@ class SDL
 
   class << self
 
-    SDL_SERVER = "1.1.1.1"
-    SDL_URL = "http://#{SDL_SERVER}/v1/lang-pairs/_/sync-translations"
-
     def translate(input_file, output_file)
 
-      RestClient.log = Logger.new(STDOUT)
+      # take the address from the conf file
+      sdl_server = RCS::DB::Config.instance.global['SDL_SERVER']
+      sdl_url = "http://#{sdl_server}/lwserver-rest-5.3/v1/lang-pairs/_/sync-translations"
+
+      trace :debug, "Connecting to #{sdl_url}"
+      #trace :debug, "REQUEST: #{File.read(input_file)}"
 
       # send the request to the SDL server
-      response = RestClient.post SDL_URL, {:target_lang_id => 'eng',
+      response = RestClient.post sdl_url, {:target_lang_id => 'eng',
                                            :source_document => File.new(input_file, 'rb'),
                                            :multipart => true}
-
-      trace :debug, response.inspect
-
+      # something went wrong
       return false if response.code != 200
 
+      #trace :debug, "RESPONSE: #{response.body}"
+
+      # fix the HTML tags
+      fix_html_entities(response.body)
+
+      # write the result to the output file
       File.open(output_file, 'w') {|f| f.write response.body}
 
       return true
+    rescue Exception => e
+      trace :error, "Error with SDL server: #{e.message} | #{e.backtrace.first}"
+      return false
+    end
+
+    def fix_html_entities(content)
+      # for some reason SDL output changes <html> to < html >
+      # so we have to fix it by removing the spaces
+      content.gsub!("< ", "<")
+      content.gsub!(" >", ">")
     end
 
   end

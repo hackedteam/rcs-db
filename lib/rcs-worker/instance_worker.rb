@@ -173,17 +173,7 @@ class InstanceWorker
                 ev_type = ev[:type]
 
                 evidence_id, index = processor.feed(ev, @agent, @target) do |evidence|
-                  # check if there are matching alerts for this evidence
-                  RCS::DB::Alerting.new_evidence(evidence) unless evidence.nil?
-
-                  # forward the evidence to connectors (if any)
-                  RCS::DB::Connectors.new_evidence(evidence) unless evidence.nil?
-
-                  # add to the ocr processor queue
-                  OCRQueue.add(@target._id, evidence._id) if evidence and evidence.type == 'screenshot'
-
-                  # add to the translation quueue
-                  #TransQueue.add(@target._id, evidence._id) if evidence and ['keylog', 'chat', 'mail', 'file'].include? evidence.type
+                  save_evidence(evidence) unless evidence.nil?
                 end
 
               rescue InvalidAgentTarget => e
@@ -227,6 +217,40 @@ class InstanceWorker
     end
 
     EM.defer @process
+  end
+
+  def save_evidence(evidence)
+    # check if there are matching alerts for this evidence
+    RCS::DB::Alerting.new_evidence(evidence)
+
+    # forward the evidence to connectors (if any)
+    RCS::DB::Connectors.new_evidence(evidence)
+
+    # add to the ocr processor queue
+    if $license['ocr']
+      if evidence.type == 'screenshot' or (evidence.type == 'file' and evidence.data[:type] == :capture)
+        OCRQueue.add(@target._id, evidence._id)
+      end
+    end
+
+    # add to the translation queue
+    if $license['translation'] and ['keylog', 'chat', 'clipboard', 'message'].include? evidence.type
+      TransQueue.add(@target._id, evidence._id)
+      evidence.data[:tr] = "TRANS_QUEUED"
+      evidence.save
+    end
+
+    # add to the aggregator queue
+    if $license['correlation']
+      AggregatorQueue.add(@target._id, evidence._id, evidence.type)
+    end
+
+    # pass the info to the intelligence module to extract handles (no license for this kind of evidence)
+    IntelligenceQueue.add(@target._id, evidence._id, evidence.type) if ['addressbook', 'password'].include? evidence.type
+
+    if $license['correlation']
+      IntelligenceQueue.add(@target._id, evidence._id, evidence.type) if ['position', 'camera'].include? evidence.type
+    end
   end
 
   def resume

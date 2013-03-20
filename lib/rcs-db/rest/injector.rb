@@ -30,6 +30,7 @@ class InjectorController < RESTController
 
   def create
     require_auth_level :sys
+    require_auth_level :sys_injectors
 
     return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :injectors
 
@@ -48,6 +49,7 @@ class InjectorController < RESTController
 
   def update
     require_auth_level :sys
+    require_auth_level :sys_injectors
 
     mongoid_query do
       injector = Injector.find(@params['_id'])
@@ -67,6 +69,7 @@ class InjectorController < RESTController
 
   def destroy
     require_auth_level :sys
+    require_auth_level :sys_injectors
 
     mongoid_query do
       injector = Injector.find(@params['_id'])
@@ -152,6 +155,7 @@ class InjectorController < RESTController
   # rule creation and modification
   def add_rule
     require_auth_level :tech
+    require_auth_level :tech_ni_rules
 
     mongoid_query do
       injector = ::Injector.find(@params['_id'])
@@ -194,6 +198,7 @@ class InjectorController < RESTController
 
   def del_rule
     require_auth_level :tech
+    require_auth_level :tech_ni_rules
 
     mongoid_query do
       injector = ::Injector.find(@params['_id'])
@@ -249,6 +254,40 @@ class InjectorController < RESTController
                 :desc => "Modified a rule on the injector '#{injector.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
 
       return ok(rule)
+    end
+  end
+
+  def upgrade
+    require_auth_level :server, :sys
+
+    mongoid_query do
+      injector = ::Injector.find(@params['_id'])
+
+      case @request[:method]
+        when 'GET'
+          return not_found unless injector.upgradable
+
+          trace :info, "Upgrading #{injector.name}"
+
+          build = Build.factory(:injector)
+          build.load(nil)
+          build.unpack
+
+          injector.upgradable = false
+          injector.save
+
+          return stream_file(build.path('injector.deb'), proc { build.clean })
+
+        when 'POST'
+          Audit.log :actor => @session[:user][:name], :action => 'injector.upgrade', :desc => "Upgraded the Network Injector '#{injector[:name]}'"
+
+          injector.upgradable = true
+          injector.save
+
+          return server_error("Cannot push to #{injector.name}") unless Frontend.nc_push(injector.address)
+
+          return ok
+      end
     end
   end
 

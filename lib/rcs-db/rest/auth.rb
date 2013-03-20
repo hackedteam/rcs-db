@@ -27,6 +27,7 @@ class AuthController < RESTController
         
         user = @params['user']
         pass = @params['pass']
+        console_version = @params['version']
 
         begin
           # if the user is a Collector, it will authenticate with a unique username
@@ -45,7 +46,7 @@ class AuthController < RESTController
           trace :error, "#{e.backtrace}"
           return conflict('LICENSE_LIMIT_REACHED')
         end
-        
+
         # normal user login
         if auth_user(user, pass)
           # we have to check if it was already logged in
@@ -64,7 +65,7 @@ class AuthController < RESTController
           # get the list of accessible Items
           accessible = SessionManager.instance.get_accessible @user
           # create the new auth sessions
-          sess = SessionManager.instance.create(@user, @auth_level, @request[:peer], accessible)
+          sess = SessionManager.instance.create(@user, @auth_level, @request[:peer], accessible, console_version)
           # append the cookie to the other that may have been present in the request
           expiry = (Time.now() + 7*86400).strftime('%A, %d-%b-%y %H:%M:%S %Z')
           trace :debug, "[#{@request[:peer]}] Issued cookie with expiry time: #{expiry}"

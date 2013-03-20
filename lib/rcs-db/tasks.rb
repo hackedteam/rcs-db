@@ -152,6 +152,9 @@ module BuildTaskType
   include FileTask
   
   def initialize(type, file_name, params)
+
+    trace :debug, "Building Task: #{params}"
+
     base_init(type, params)
     file_init(file_name)
     @builder = Build.factory(params['platform'].to_sym)
@@ -165,12 +168,12 @@ module BuildTaskType
           break if finished?
           step
         end
-        unless @file_name.nil?
+        if @file_name.nil?
+          finished if @file_name.nil?
+        else
           FileUtils.cp(@builder.path(@builder.outputs.first), Config.instance.temp(@_id))
           @resource[:size] = File.size(Config.instance.temp(@_id))
           download_available unless @file_name.nil?
-        else
-          finished if @file_name.nil?
         end
         trace :info, "Task #{@_id} completed."
       rescue Exception => e

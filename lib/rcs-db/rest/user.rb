@@ -11,6 +11,7 @@ class UserController < RESTController
 
   def index
     require_auth_level :admin
+    require_auth_level :admin_users
 
     users = User.all
     return ok(users)
@@ -30,7 +31,8 @@ class UserController < RESTController
   
   def create
     require_auth_level :admin
-    
+    require_auth_level :admin_users
+
     result = User.create(name: @params['name']) do |doc|
 
       doc[:pass] = ''
@@ -41,6 +43,7 @@ class UserController < RESTController
       doc[:desc] = @params['desc']
       doc[:contact] = @params['contact']
       doc[:privs] = @params['privs']
+      doc[:ext_privs] = true
       doc[:enabled] = @params['enabled']
       doc[:locale] = @params['locale']
       doc[:timezone] = @params['timezone']
@@ -130,7 +133,8 @@ class UserController < RESTController
 
   def destroy
     require_auth_level :admin
-    
+    require_auth_level :admin_users
+
     mongoid_query do
       user = User.find(@params['_id'])
       
@@ -144,13 +148,14 @@ class UserController < RESTController
 
   def message
     require_auth_level :admin
+    require_auth_level :admin_users
 
     mongoid_query do
-      unless @params['_id'].nil?
+      if @params['_id'].nil?
+        PushManager.instance.notify('message', {from: @session[:user][:name], text: @params['text']})
+      else
         user = User.find(@params['_id'])
         PushManager.instance.notify('message', {from: @session[:user][:name], rcpt: user[:_id], text: @params['text']})
-      else
-        PushManager.instance.notify('message', {from: @session[:user][:name], text: @params['text']})
       end
 
       return ok
