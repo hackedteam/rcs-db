@@ -18,7 +18,7 @@ class CompactTask
     Shard.all['shards'].each do |shard|
       host, port = shard['host'].split(':')
 
-      db = DB.instance.new_connection("rcs", host, port.to_i)
+      db = DB.instance.new_mongo_connection("rcs", host, port.to_i)
 
       db.collection_names.sort.keep_if {|c| c['logs.'].nil? and c['system.'].nil?  and c['_queue'].nil?}.each do |coll|
         yield @description = "Compacting #{coll}"

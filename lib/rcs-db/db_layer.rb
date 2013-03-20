@@ -29,33 +29,28 @@ class DB
   def initialize
     @available = false
     @auth_required = false
-    @auth_user = 'root'
-    @auth_pass = File.binread(Config.instance.file('mongodb.key')) if File.exist?(Config.instance.file('mongodb.key'))
   end
 
   def connect
     begin
-      # this is required for mongoid >= 2.4.2
+      # we are standalone
       ENV['MONGOID_ENV'] = 'yes'
+
+      # set the parameters for the mongoid.yaml
+      ENV['MONGOID_DATABASE'] = 'rcs'
+      ENV['MONGOID_HOST'] = "#{Config.instance.global['CN']}:27017"
 
       Mongoid.logger = ::Logger.new($stdout)
       Moped.logger = ::Logger.new($stdout)
 
-      session = Moped::Session.new(["#{Config.instance.global['CN']}:27017"], {safe: true})
-      session.use 'rcs'
+      Mongoid.load!(Config.instance.file('mongoid.yaml'), :production)
+
+      # to do it programmatically:
+      #session = Moped::Session.new(["#{Config.instance.global['CN']}:27017"], {safe: true})
+      #session.use 'rcs'
+      #Mongoid.sessions[:default] = session
 
       trace :info, "Connected to MongoDB"
-
-      # check if we need to authenticate
-      begin
-        session.login(@auth_user, @auth_pass)
-        trace :info, "Authenticated to MongoDB"
-        @auth_required = true
-      rescue Exception => e
-        trace :warn, "AUTH: #{e.message}"
-      end
-
-      Mongoid.sessions[:default] = session
 
     rescue Exception => e
       trace :fatal, e
@@ -64,47 +59,28 @@ class DB
     return true
   end
 
-  def new_connection(db, host = Config.instance.global['CN'], port = 27017)
+  def new_mongo_connection(db, host = Config.instance.global['CN'], port = 27017)
     time = Time.now
     db = Mongo::Connection.new(host, port).db(db)
-    begin
-      db.authenticate(@auth_user, @auth_pass) if @auth_required
-    rescue Exception => e
-      trace :warn, "AUTH: #{e.message}"
-    end
     delta = Time.now - time
-    trace :warn, "Opening new connection is too slow (%f)" % delta if delta > 0.5 and Config.instance.global['PERF']
+    trace :warn, "Opening new mongo connection is too slow (%f)" % delta if delta > 0.5 and Config.instance.global['PERF']
     return db
-  rescue Mongo::AuthenticationError => e
-    trace :fatal, "AUTH: #{e.message}"
   end
 
-  def ensure_mongo_auth
-    # don't create the users if already there
-    #return if @auth_required
-
-    # ensure the users are created on master
-    ['rcs', 'admin', 'config'].each do |name|
-      trace :debug, "Setting up auth for: #{name}"
-      db = new_connection(name)
-      db.eval("db.addUser('#{@auth_user}', '#{@auth_pass}')")
-    end
-
-    # ensure the users are created on each shard
-    shards = Shard.all
-    shards['shards'].each do |shard|
-      trace :debug, "Setting up auth for: #{shard['host']}"
-      host, port = shard['host'].split(':')
-      db = new_connection('rcs', host, port.to_i)
-      db.eval("db.addUser('#{@auth_user}', '#{@auth_pass}')")
-    end
+  def new_moped_connection(db, host = Config.instance.global['CN'], port = 27017)
+    time = Time.now
+    session = Moped::Session.new(["#{host}:#{port}"], {safe: true})
+    session.use db
+    delta = Time.now - time
+    trace :warn, "Opening new moped connection is too slow (%f)" % delta if delta > 0.5 and Config.instance.global['PERF']
+    return db
   end
 
   # insert here the class to be indexed
   @@classes_to_be_indexed = [::Audit, ::User, ::Group, ::Alert, ::Status, ::Core, ::Collector, ::Injector, ::Item, ::PublicDocument, ::EvidenceFilter, ::Entity]
 
   def create_indexes
-    db = DB.instance.new_connection("rcs")
+    db = DB.instance.new_mongo_connection("rcs")
 
     trace :info, "Database size is: " + db.stats['dataSize'].to_s_bytes
 
@@ -162,7 +138,7 @@ class DB
 
   def shard_audit
     # enable shard on audit log, it will increase its size forever and ever
-    db = DB.instance.new_connection("rcs")
+    db = DB.instance.new_mongo_connection("rcs")
     audit = db.collection('audit')
     Shard.set_key(audit, {time: 1, actor: 1}) unless audit.stats['sharded']
   end
@@ -277,7 +253,7 @@ class DB
     collections = Mongoid::Config.master.collection_names
     collections.keep_if {|x| x['logs.']}
 
-    db = DB.instance.new_connection("rcs")
+    db = DB.instance.new_mongo_connection("rcs")
 
     collections.each do |coll_name|
       trace :debug, "Dropping: #{coll_name}"

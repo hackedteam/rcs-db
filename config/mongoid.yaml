@@ -1,0 +1,8 @@
+production:
+  sessions:
+    default:
+      database: <%= ENV['MONGOID_DATABASE'] %>
+      hosts:
+        - <%= ENV['MONGOID_HOST'] %>
+      options:
+        safe: true

@@ -370,12 +370,12 @@ class LicenseManager
   end
 
   def store_in_db
-    db = DB.instance.new_connection("rcs")
+    db = DB.instance.new_mongo_connection("rcs")
     db['license'].update({}, @limits, {:upsert  => true})
   end
 
   def load_from_db
-    db = DB.instance.new_connection("rcs")
+    db = DB.instance.new_mongo_connection("rcs")
     db['license'].find({}).first
   end
 

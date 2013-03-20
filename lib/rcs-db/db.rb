@@ -91,9 +91,6 @@ class Application
       # ensure the sharding is enabled
       DB.instance.enable_sharding
 
-      # ensure mongo users for authentication
-      DB.instance.ensure_mongo_auth
-
       # ensure all indexes are in place
       DB.instance.create_indexes
 
