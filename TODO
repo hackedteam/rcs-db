@@ -9,6 +9,8 @@ TODO 9.0.0
 
     new spacial mongoid
 
+    with safe on saving evidences in the db
+
     capped collection must be created by hand (log, queues)
 
     db = Mongoid.database  cannot be used anymore

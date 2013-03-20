@@ -5,4 +5,4 @@ production:
       hosts:
         - <%= ENV['MONGOID_HOST'] %>
       options:
-        safe: true
+        safe: false
