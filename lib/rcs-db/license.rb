@@ -481,7 +481,6 @@ class LicenseManager
       ::Item.all.each do |item|
         next if item[:_kind] == 'global'
         if item.cs != item.calculate_checksum
-          trace :error, "#{item.cs} #{item.calculate_checksum}"
           trace :fatal, "TAMPERED ITEM: [#{item._id}] #{item.name}"
           exit!
         end

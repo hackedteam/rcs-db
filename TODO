@@ -18,6 +18,7 @@ TODO 9.0.0
 
     db = Mongoid.database  cannot be used anymore
 
+    BSON::ObjectId('4f86902b2afb6512a7000097') is now returned as '4f86902b2afb6512a7000097'
 
     new spacial mongoid
 
@@ -26,6 +27,8 @@ TODO 9.0.0
     capped collection must be created by hand (log, queues)
 
 --
+
+    recalculate all the checksums !!!
 
     rework to speed up the most_contacted resolv
     rework to speed up the accessible mechanism

@@ -93,7 +93,7 @@ class IntelligenceQueue
 
     # mark the entity as dirty so the module can analyze it to search for new handles
     if ['addressbook', 'password'].include? type
-      entity = ::Entity.targets.also_in(path: [target_id]).first
+      entity = ::Entity.targets.in(path: [target_id]).first
       # recreate the hash to trigger the mongoid save
       entity[:analyzed] = {'handles' => false, 'handles_last' => entity[:analyzed]['handles_last']}
       entity.save

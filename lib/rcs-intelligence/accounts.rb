@@ -36,7 +36,7 @@ class Accounts
       ::Item.targets.each do |target|
 
         # retrieve the entity of this target
-        entity = ::Entity.targets.also_in(path: [target[:_id]]).first
+        entity = ::Entity.targets.in(path: [target[:_id]]).first
 
         # skip if there's nothing new to analyze
         next if entity[:analyzed]['handles']

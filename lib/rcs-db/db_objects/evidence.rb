@@ -324,7 +324,7 @@ class Evidence
     trace :info, "Deleting evidence for target #{target.name} done."
 
     # recalculate the stats for each agent of this target
-    agents = Item.where(_kind: 'agent').also_in(path: [target._id])
+    agents = Item.where(_kind: 'agent').in(path: [target._id])
     agents.each do |a|
       ::Evidence::TYPES.each do |type|
         count = Evidence.collection_class(target[:_id]).where({aid: a._id.to_s, type: type}).count

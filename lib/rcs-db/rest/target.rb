@@ -137,7 +137,7 @@ class TargetController < RESTController
       ::Connector.all.each {|a| a.update_path(target._id, target.path + [target._id])}
 
       # move every agent and factory belonging to this target
-      Item.any_in({_kind: ['agent', 'factory']}).also_in({path: [ target._id ]}).each do |agent|
+      Item.any_in({_kind: ['agent', 'factory']}).in({path: [ target._id ]}).each do |agent|
         agent.path = target.path + [target._id]
         agent.save
 
@@ -147,7 +147,7 @@ class TargetController < RESTController
       end
 
       # also move the linked entity
-      Entity.any_in({type: :target}).also_in({path: [ target._id ]}).each do |entity|
+      Entity.any_in({type: :target}).in({path: [ target._id ]}).each do |entity|
         entity.path = target.path + [target._id]
         entity.save
       end
