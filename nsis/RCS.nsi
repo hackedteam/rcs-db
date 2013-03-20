@@ -306,7 +306,6 @@ Section "Install Section" SecInstall
     File "config\mark_bad"
 
     SetOutPath "$INSTDIR\DB\config\certs"
-    File "config\certs\openssl.cnf"
     File "config\certs\windows.pfx"
     File /r "config\certs\*.cer"
 
@@ -323,6 +322,9 @@ Section "Install Section" SecInstall
   
     SetOutPath "$INSTDIR\DB\console"
     File /r "console\*.*"
+
+    SetOutPath "$INSTDIR\DB\config\certs"
+    File "config\certs\openssl.cnf"
 
     SetDetailsPrint "both"
     DetailPrint "done"
