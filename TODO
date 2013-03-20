@@ -2,7 +2,7 @@
 TODO 9.0.0
 
     upgrade to ruby 1.9.3-p365
-    upgrade to mongodb 2.4
+    upgrade to mongodb 2.4 (write the upgrade procedure during NSIS installer)
 
     upgrade to mongoid 3.x
     gridfs append + moped?
