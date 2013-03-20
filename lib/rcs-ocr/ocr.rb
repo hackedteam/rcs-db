@@ -84,7 +84,7 @@ class Application
       $license = RCS::DB::LicenseManager.instance.load_from_db
 
       unless $license['ocr']
-        Mongoid.database.drop_collection 'ocr_queue'
+        RCS::DB::DB.instance.new_mongo_connection.drop_collection 'ocr_queue'
 
         # do nothing...
         trace :info, "OCR license is disabled, going to sleep..."

@@ -14,7 +14,7 @@ class TargetController < RESTController
     filter.merge!({_id: {"$in" => @session[:accessible]}}) unless (admin? and @params['all'] == "true")
 
     mongoid_query do
-      db = Mongoid.database
+      db = DB.instance.new_mongo_connection
       j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "stat.last_sync", "stat.size", "stat.grid_size", "stat.last_child"])
       ok(j)
     end
@@ -26,7 +26,7 @@ class TargetController < RESTController
     return not_found() unless @session[:accessible].include? BSON::ObjectId.from_string(@params['_id'])
 
     mongoid_query do
-      db = Mongoid.database
+      db = DB.instance.new_mongo_connection
       j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "path", "stat"])
 
       target = j.first

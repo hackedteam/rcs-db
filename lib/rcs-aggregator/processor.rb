@@ -16,7 +16,8 @@ class Processor
   extend RCS::Tracer
 
   def self.run
-    db = Mongoid.database
+    # TODO: use the findandmodify of mongoid
+    db = RCS::DB::DB.instance.new_mongo_connection
     coll = db.collection('aggregator_queue')
 
     # infinite processing loop

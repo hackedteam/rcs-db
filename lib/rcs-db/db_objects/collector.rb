@@ -39,7 +39,7 @@ class Collector
   protected
 
   def drop_log_collection
-    Mongoid.database.drop_collection CappedLog.collection_name(self._id.to_s)
+    RCS::DB::DB.instance.new_mongo_connection.drop_collection CappedLog.collection_name(self._id.to_s)
   end
 
   public

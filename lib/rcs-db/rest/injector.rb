@@ -146,7 +146,7 @@ class InjectorController < RESTController
       injector = Injector.find(@params['_id'])
 
       # we cannot call delete_all on a capped collection, must drop it
-      Mongoid.database.collection(CappedLog.collection_name(injector[:_id])).drop
+      DB.instance.new_mongo_connection.collection(CappedLog.collection_name(injector[:_id])).drop
 
       return ok
     end

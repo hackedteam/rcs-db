@@ -22,7 +22,7 @@ class AgentController < RESTController
     filter.merge!({_id: {"$in" => @session[:accessible]}, _kind: { "$in" => ['agent', 'factory']}, deleted: {"$in" => [false, nil]} })
 
     mongoid_query do
-      db = Mongoid.database
+      db = DB.instance.new_mongo_connection
       j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "upgradable", "demo", "scout", "good", "stat.last_sync", "stat.last_sync_status", "stat.user", "stat.device", "stat.source", "stat.size", "stat.grid_size"])
       ok(j)
     end
@@ -34,7 +34,7 @@ class AgentController < RESTController
     return not_found() unless @session[:accessible].include? BSON::ObjectId.from_string(@params['_id'])
 
     mongoid_query do
-      db = Mongoid.database
+      db = DB.instance.new_mongo_connection
       j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "deleted", "uninstalled", "demo", "scout", "good", "version", "counter", "configs"])
 
       agent = j.first

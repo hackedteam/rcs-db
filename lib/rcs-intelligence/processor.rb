@@ -16,7 +16,7 @@ class Processor
   extend RCS::Tracer
 
   def self.run
-    db = Mongoid.database
+    db = RCS::DB::DB.instance.new_mongo_connection
     coll = db.collection('intelligence_queue')
 
     # infinite processing loop

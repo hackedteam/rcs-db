@@ -18,7 +18,7 @@ class EntityController < RESTController
     filter.merge!({_id: {"$in" => @session[:accessible]}})
 
     mongoid_query do
-      db = Mongoid.database
+      db = DB.instance.new_mongo_connection
       j = db.collection('entities').find(filter, :fields => ["type", "level", "name", "path", "photos"])
       ok(j)
     end

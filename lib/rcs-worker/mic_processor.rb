@@ -117,7 +117,7 @@ module Worker
     end
 
     def write_to_grid(mic, mp3_bytes, target, agent)
-      db = Mongoid.database
+      db = RCS::DB::DB.instance.new_mongo_connection
       fs = Mongo::GridFileSystem.new(db, "grid.#{target[:_id]}")
 
       fs.open(mic.file_name, 'a') do |f|

@@ -39,7 +39,7 @@ class Aggregate
 
         def create_callback
           # enable sharding only if not enabled
-          db = Mongoid.database
+          db = RCS::DB::DB.instance.new_mongo_connection
           coll = db.collection(Aggregate.collection_name('#{target}'))
           unless coll.stats['sharded']
             Aggregate.collection_class('#{target}').create_indexes
@@ -73,7 +73,7 @@ class Aggregate
 
     most_contacted_types = ['call', 'chat', 'mail', 'sms', 'mms', 'facebook', 'gmail', 'skype', 'bbm', 'whatsapp', 'msn', 'adium']
 
-    db = Mongoid.database
+    db = DB.instance.new_mongo_connection
     collection = db.collection(Aggregate.collection_name(target))
 
     #

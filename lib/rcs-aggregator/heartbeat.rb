@@ -38,7 +38,7 @@ class HeartBeat
       ip = 'unknown'
     end
 
-    count = Mongoid.database.collection('aggregator_queue').find({flag: AggregatorQueue::QUEUED}).count()
+    count = AggregatorQueue.where(flag: AggregatorQueue::QUEUED).count
     msg = count > 0 ? "Aggregating #{count} evidence in queue" : 'Idle...'
     message = SystemStatus.my_error_msg || msg
 

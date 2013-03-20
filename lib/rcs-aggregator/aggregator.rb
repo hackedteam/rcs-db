@@ -112,7 +112,7 @@ class Application
       $license = RCS::DB::LicenseManager.instance.load_from_db
 
       unless $license['correlation']
-        Mongoid.database.drop_collection 'aggregator_queue'
+        DB.instance.new_mongo_connection.drop_collection 'aggregator_queue'
 
         # do nothing...
         trace :info, "Correlation license is disabled, going to sleep..."

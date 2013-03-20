@@ -16,8 +16,6 @@ TODO 9.0.0
     upgrade to mongoid 3.x
     gridfs append + moped?
 
-    db = Mongoid.database  cannot be used anymore
-
     BSON::ObjectId('4f86902b2afb6512a7000097') is now returned as '4f86902b2afb6512a7000097'
 
     new spacial mongoid
@@ -29,6 +27,8 @@ TODO 9.0.0
 --
 
     recalculate all the checksums !!!
+
+    agent, factory, target, operation, entity, search shoud use mongoid for index and show
 
     rework to speed up the most_contacted resolv
     rework to speed up the accessible mechanism

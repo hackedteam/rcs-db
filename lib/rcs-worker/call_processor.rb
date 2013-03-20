@@ -454,7 +454,7 @@ class CallProcessor
   end
   
   def write_to_grid(call, mp3_bytes)
-    db = Mongoid.database
+    db = RCS::DB::DB.instance.new_mongo_connection
     fs = Mongo::GridFileSystem.new(db, "grid.#{@target[:_id]}")
 
     fs.open(call.file_name, 'a') do |f|

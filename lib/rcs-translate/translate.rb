@@ -79,7 +79,7 @@ class Application
       $license = RCS::DB::LicenseManager.instance.load_from_db
 
       unless $license['translation']
-        Mongoid.database.drop_collection 'trans_queue'
+        RCS::DB::DB.instance.new_mongo_connection.drop_collection 'trans_queue'
 
         # do nothing...
         trace :info, "TRANSLATE license is disabled, going to sleep..."

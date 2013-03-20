@@ -88,7 +88,7 @@ class DB
   @@classes_to_be_indexed = [::Audit, ::User, ::Group, ::Alert, ::Status, ::Core, ::Collector, ::Injector, ::Item, ::PublicDocument, ::EvidenceFilter, ::Entity]
 
   def create_indexes
-    db = DB.instance.new_mongo_connection("rcs")
+    db = DB.instance.new_mongo_connection
 
     trace :info, "Database size is: " + db.stats['dataSize'].to_s_bytes
 
@@ -146,7 +146,7 @@ class DB
 
   def shard_audit
     # enable shard on audit log, it will increase its size forever and ever
-    db = DB.instance.new_mongo_connection("rcs")
+    db = DB.instance.new_mongo_connection
     audit = db.collection('audit')
     Shard.set_key(audit, {time: 1, actor: 1}) unless audit.stats['sharded']
   end
@@ -259,7 +259,7 @@ class DB
   end
 
   def clean_capped_logs
-    db = DB.instance.new_mongo_connection("rcs")
+    db = DB.instance.new_mongo_connection
 
     # drop all the temporary capped logs collections
     collections = db.collection_names

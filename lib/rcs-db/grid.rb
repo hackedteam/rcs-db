@@ -26,7 +26,7 @@ class GridFS
       begin
         raise "Cannot put into the grid: content is empty" if content.nil?
 
-        db = Mongoid.database
+        db = DB.instance.new_mongo_connection
         grid = Mongo::Grid.new db, collection_name(collection)
         grid_id = grid.put(content, opts)
 
@@ -44,7 +44,7 @@ class GridFS
     def get(id, collection = nil)
       #raise "Id must be a BSON::ObjectId" unless id.is_a? BSON::ObjectId
       begin
-        db = Mongoid.database
+        db = DB.instance.new_mongo_connection
         grid = Mongo::Grid.new db, collection_name(collection)
         return grid.get id
       rescue Exception => e
@@ -54,9 +54,8 @@ class GridFS
     end
     
     def delete(id, collection = nil)
-      #raise "Id must be a BSON::ObjectId" unless id.is_a? BSON::ObjectId
       begin
-        db = Mongoid.database
+        db = DB.instance.new_mongo_connection
         grid = Mongo::Grid.new db, collection_name(collection)
         return grid.delete id
       rescue Exception => e
@@ -66,7 +65,6 @@ class GridFS
     end
 
     def to_tmp(id, collection = nil)
-      #raise "Id must be a BSON::ObjectId" unless id.is_a? BSON::ObjectId
       begin
         file = self.get id, collection
         raise "Grid content is nil" if file.nil?
@@ -88,13 +86,14 @@ class GridFS
     end
 
     def drop_collection(name)
-      Mongoid.database.drop_collection DEFAULT_GRID_NAME + '.' + name + '.files'
-      Mongoid.database.drop_collection DEFAULT_GRID_NAME + '.' + name + '.chunks'
+      db = DB.instance.new_mongo_connection
+      db.drop_collection DEFAULT_GRID_NAME + '.' + name + '.files'
+      db.drop_collection DEFAULT_GRID_NAME + '.' + name + '.chunks'
     end
 
     def get_by_filename(filename, collection = nil)
       begin
-        files = Mongoid.database.collection( collection_name(collection) + ".files")
+        files = DB.instance.new_mongo_connection.collection( collection_name(collection) + ".files")
         return files.find({"filename" => filename}, :fields => ["_id", "length"])
       rescue Exception => e
         trace :error, "Cannot get content from the Grid: #{collection_name(collection)}"
@@ -104,7 +103,7 @@ class GridFS
 
     def delete_by_filename(filename, collection = nil)
       begin
-        files = Mongoid.database.collection( collection_name(collection) + ".files")
+        files = DB.instance.new_mongo_connection.collection( collection_name(collection) + ".files")
         files.find({"filename" => filename}, :fields => ["_id", "length"]).each  do |e|
           delete(e["_id"], collection)
         end
@@ -116,7 +115,7 @@ class GridFS
 
     def get_distinct_filenames(collection = nil)
       begin
-        files = Mongoid.database.collection( collection_name(collection) + ".files")
+        files = DB.instance.new_mongo_connection.collection( collection_name(collection) + ".files")
         return files.distinct("filename")
       rescue Exception => e
         trace :error, "Cannot get content from the Grid: #{collection_name(collection)}"
