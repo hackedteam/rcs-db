@@ -238,7 +238,7 @@ class BackupManager
 
   def self.ensure_backup
     trace :info, "Ensuring the metadata backup is present..."
-    return if ::Backup.exists?(conditions: {enabled: true, what: 'metadata'})
+    return if ::Backup.where(enabled: true, what: 'metadata').exists?
 
     b = ::Backup.new
     b.enabled = true

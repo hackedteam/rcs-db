@@ -44,7 +44,7 @@ class DB
       #Moped.logger.level = Logger::DEBUG
 
       Mongoid.logger = ::Logger.new($stdout)
-      Moped.logger = ::Logger.new($stdout)
+      #Moped.logger = ::Logger.new($stdout)
 
       Mongoid.load!(Config.instance.file('mongoid.yaml'), :production)
 
@@ -62,21 +62,26 @@ class DB
     return true
   end
 
-  def new_mongo_connection(db, host = Config.instance.global['CN'], port = 27017)
+  def new_mongo_connection(db = 'rcs', host = Config.instance.global['CN'], port = 27017)
     time = Time.now
-    db = Mongo::Connection.new(host, port).db(db)
+    # instantiate a pool of connections that are thread-safe
+    # this handle will be returned to every thread requesting for a new connection
+    # also the pool is lazy (connect only on request)
+    @mongo_db ||= Mongo::MongoClient.new(host, port, pool_size: 20, pool_timeout: 15, connect: false)
     delta = Time.now - time
     trace :warn, "Opening new mongo connection is too slow (%f)" % delta if delta > 0.5 and Config.instance.global['PERF']
-    return db
+    return @mongo_db.db(db)
   end
 
-  def new_moped_connection(db, host = Config.instance.global['CN'], port = 27017)
+  def new_moped_connection(db = 'rcs', host = Config.instance.global['CN'], port = 27017)
     time = Time.now
+    # moped is not thread-safe.
+    # we need to instantiate a new connection for every thread that is using it
     session = Moped::Session.new(["#{host}:#{port}"], {safe: true})
     session.use db
     delta = Time.now - time
     trace :warn, "Opening new moped connection is too slow (%f)" % delta if delta > 0.5 and Config.instance.global['PERF']
-    return db
+    return session
   end
 
   # insert here the class to be indexed
@@ -108,7 +113,7 @@ class DB
     end
 
     # ensure indexes on every evidence collection
-    collections = Mongoid::Config.master.collection_names
+    collections = db.collection_names
     collections.keep_if {|x| x['evidence.']}
     collections.delete_if {|x| x['grid.'] or x['files'] or x['chunks']}
 
@@ -149,7 +154,7 @@ class DB
   def ensure_admin
     # check that at least one admin is present and enabled
     # if it does not exists, create it
-    if User.count(conditions: {enabled: true, privs: 'ADMIN'}) == 0
+    if User.where(enabled: true, privs: 'ADMIN').count == 0
       trace :warn, "No ADMIN found, creating a default admin user..."
       User.where(name: 'admin').delete_all
       user = User.create(name: 'admin') do |u|
@@ -229,21 +234,23 @@ class DB
   end
 
   def logrotate
-
     # perform the log rotation only at midnight
     time = Time.now
     return unless time.hour == 0 and time.min == 0
 
     trace :info, "Log Rotation"
 
-    db = Mongo::Connection.new(Config.instance.global['CN'], 27017).db('admin')
+    db = Mongo::MongoClient.new(Config.instance.global['CN'], 27017).db('admin')
     db.command({ logRotate: 1 })
+    db.close
 
-    db = Mongo::Connection.new(Config.instance.global['CN'], 27018).db('admin')
+    db = Mongo::MongoClient.new(Config.instance.global['CN'], 27018).db('admin')
     db.command({ logRotate: 1 })
+    db.close
 
-    db = Mongo::Connection.new(Config.instance.global['CN'], 27019).db('admin')
+    db = Mongo::MongoClient.new(Config.instance.global['CN'], 27019).db('admin')
     db.command({ logRotate: 1 })
+    db.close
   end
 
   def create_evidence_filters
@@ -252,11 +259,11 @@ class DB
   end
 
   def clean_capped_logs
-    # drop all the temporary capped logs collections
-    collections = Mongoid::Config.master.collection_names
-    collections.keep_if {|x| x['logs.']}
-
     db = DB.instance.new_mongo_connection("rcs")
+
+    # drop all the temporary capped logs collections
+    collections = db.collection_names
+    collections.keep_if {|x| x['logs.']}
 
     collections.each do |coll_name|
       trace :debug, "Dropping: #{coll_name}"

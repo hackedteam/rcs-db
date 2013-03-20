@@ -253,8 +253,8 @@ class LicenseManager
     if @limits[:type] == 'reusable'
       # reusable licenses don't consume any license slot but we have to check
       # the number of already active agents in the db
-      desktop = Item.count(conditions: {_kind: 'agent', type: 'desktop', status: 'open', demo: false, deleted: false})
-      mobile = Item.count(conditions: {_kind: 'agent', type: 'mobile', status: 'open', demo: false, deleted: false})
+      desktop = Item.where(_kind: 'agent', type: 'desktop', status: 'open', demo: false, deleted: false).count
+      mobile = Item.where(_kind: 'agent', type: 'mobile', status: 'open', demo: false, deleted: false).count
 
       if desktop + mobile >= @limits[:agents][:total]
         trace :warn, "You don't have enough total license to received data. Queuing..."
@@ -310,22 +310,22 @@ class LicenseManager
     # thus the comparison is strictly < and not <=
     case (field)
       when :users
-        if ::User.count(conditions: {enabled: true}) < @limits[:users]
+        if ::User.where(enabled: true).count < @limits[:users]
           return true
         end
 
       when :collectors
-        if Collector.count(conditions: {type: 'local'}) < @limits[:collectors][:collectors]
+        if Collector.where(type: 'local').count < @limits[:collectors][:collectors]
           return true
         end
 
       when :anonymizers
-        if Collector.count(conditions: {type: 'remote'}) < @limits[:collectors][:anonymizers]
+        if Collector.where(type: 'remote').count < @limits[:collectors][:anonymizers]
           return true
         end
 
       when :injectors
-        if Injector.count() < @limits[:nia][0]
+        if Injector.count < @limits[:nia][0]
           return true
         end
 
@@ -360,7 +360,7 @@ class LicenseManager
         return @limits[:correlation]
 
       when :shards
-        if Shard.count() < @limits[:shards]
+        if Shard.count < @limits[:shards]
           return true
         end
     end
@@ -389,7 +389,7 @@ class LicenseManager
       store_in_db
 
       # check the consistency of the database (if someone tries to tamper it)
-      if ::User.count(conditions: {enabled: true}) > @limits[:users]
+      if ::User.where(enabled: true).count > @limits[:users]
         trace :fatal, "LICENCE EXCEEDED: Number of users is greater than license file. Fixing..."
         # fix by disabling the last updated user
         offending = ::User.first(conditions: {enabled: true}, sort: [[ :updated_at, :desc ]])
@@ -398,7 +398,7 @@ class LicenseManager
         offending.save
       end
 
-      if ::Collector.count(conditions: {type: 'local'}) > @limits[:collectors][:collectors]
+      if ::Collector.local.count > @limits[:collectors][:collectors]
         trace :fatal, "LICENCE EXCEEDED: Number of collector is greater than license file. Fixing..."
         # fix by deleting the collector
         offending = ::Collector.first(conditions: {type: 'local'}, sort: [[ :updated_at, :desc ]])
@@ -416,7 +416,7 @@ class LicenseManager
         end until next_id.nil?
         offending.destroy
       end
-      if ::Collector.count(conditions: {type: 'remote'}) > @limits[:collectors][:anonymizers]
+      if ::Collector.remote.count > @limits[:collectors][:anonymizers]
         trace :fatal, "LICENCE EXCEEDED: Number of anonymizers is greater than license file. Fixing..."
         # fix by deleting the collector
         offending = ::Collector.first(conditions: {type: 'remote'}, sort: [[ :updated_at, :desc ]])
@@ -443,7 +443,7 @@ class LicenseManager
         offending.destroy
       end
 
-      if ::Item.count(conditions: {_kind: 'agent', type: 'desktop', status: 'open', demo: false, deleted: false}) > @limits[:agents][:desktop]
+      if ::Item.agents.where(type: 'desktop', status: 'open', demo: false, deleted: false).count > @limits[:agents][:desktop]
         trace :fatal, "LICENCE EXCEEDED: Number of agents(desktop) is greater than license file. Fixing..."
         # fix by queuing the last updated agent
         offending = ::Item.first(conditions: {_kind: 'agent', type: 'desktop', status: 'open', demo: false}, sort: [[ :updated_at, :desc ]])
@@ -452,7 +452,7 @@ class LicenseManager
         offending.save
       end
 
-      if ::Item.count(conditions: {_kind: 'agent', type: 'mobile', status: 'open', demo: false, deleted: false}) > @limits[:agents][:mobile]
+      if ::Item.agents.where(type: 'mobile', status: 'open', demo: false, deleted: false).count > @limits[:agents][:mobile]
         trace :fatal, "LICENCE EXCEEDED: Number of agents(mobile) is greater than license file. Fixing..."
         # fix by queuing the last updated agent
         offending = ::Item.first(conditions: {_kind: 'agent', type: 'mobile', status: 'open', demo: false}, sort: [[ :updated_at, :desc ]])
@@ -461,7 +461,7 @@ class LicenseManager
         offending.save
       end
 
-      if ::Item.count(conditions: {_kind: 'agent', status: 'open', demo: false, deleted: false}) > @limits[:agents][:total]
+      if ::Item.agents.where(status: 'open', demo: false, deleted: false).count > @limits[:agents][:total]
         trace :fatal, "LICENCE EXCEEDED: Number of agent(total) is greater than license file. Fixing..."
         # fix by queuing the last updated agent
         offending = ::Item.first(conditions: {_kind: 'agent', status: 'open', demo: false}, sort: [[ :updated_at, :desc ]])
@@ -471,7 +471,7 @@ class LicenseManager
       end
 
       if @limits[:alerting] == false
-        if Alert.count() > 0
+        if Alert.count > 0
           trace :fatal, "LICENCE EXCEEDED: Alerting is not enabled in the license file. Fixing..."
           ::Alert.update_all(enabled: false)
         end
@@ -481,6 +481,7 @@ class LicenseManager
       ::Item.all.each do |item|
         next if item[:_kind] == 'global'
         if item.cs != item.calculate_checksum
+          trace :error, "#{item.cs} #{item.calculate_checksum}"
           trace :fatal, "TAMPERED ITEM: [#{item._id}] #{item.name}"
           exit!
         end
@@ -513,12 +514,12 @@ class LicenseManager
 
 
   def counters
-    counters = {:users => User.count(conditions: {enabled: true}),
-                :agents => {:total => Item.count(conditions: {_kind: 'agent', status: 'open', demo: false, deleted: false}),
-                               :desktop => Item.count(conditions: {_kind: 'agent', type: 'desktop', status: 'open', demo: false, deleted: false}),
-                               :mobile => Item.count(conditions: {_kind: 'agent', type: 'mobile', status: 'open', demo: false, deleted: false})},
-                :collectors => {:collectors => Collector.count(conditions: {type: 'local'}),
-                                :anonymizers => Collector.count(conditions: {type: 'remote'})},
+    counters = {:users => User.where(enabled: true).count,
+                :agents => {:total => Item.agents.where(status: 'open', demo: false, deleted: false).count,
+                               :desktop => Item.agents.where(type: 'desktop', status: 'open', demo: false, deleted: false).count,
+                               :mobile => Item.agents.where(type: 'mobile', status: 'open', demo: false, deleted: false).count},
+                :collectors => {:collectors => Collector.local.count,
+                                :anonymizers => Collector.remote.count},
                 :nia => Injector.count,
                 :shards => Shard.count}
 

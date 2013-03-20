@@ -29,6 +29,9 @@ class Collector
   index({address: 1}, {background: true})
   index({internal_address: 1}, {background: true})
 
+  scope :remote, where(type: 'remote')
+  scope :local, where(type: 'local')
+
   store_in collection: 'collectors'
 
   after_destroy :drop_log_collection

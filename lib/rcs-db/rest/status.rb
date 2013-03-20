@@ -56,9 +56,9 @@ class StatusController < RESTController
     counters = {:ok => 0, :warn => 0, :error => 0}
 
     mongoid_query do
-      counters[:ok] = ::Status.count(conditions: {status: '0'})
-      counters[:warn] = ::Status.count(conditions: {status: '1'})
-      counters[:error] = ::Status.count(conditions: {status: '2'})
+      counters[:ok] = ::Status.where(status: '0').count
+      counters[:warn] = ::Status.where(status: '1').count
+      counters[:error] = ::Status.where(status: '2').count
 
       return ok(counters)
     end

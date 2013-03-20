@@ -3,19 +3,29 @@ TODO 9.0.0
 
     upgrade to ruby 1.9.3-p365
     upgrade to mongodb 2.4 (write the upgrade procedure during NSIS installer)
+      - running 2.2
+      - issue sh.stopBalancer()
+      - kill mongos
+      - execute mongos24 --upgrade
+      - issue sh.startBalancer()
+      - kill all
+      - copy 24 over 22
+      - restart all
 
+--
     upgrade to mongoid 3.x
     gridfs append + moped?
 
-    reduce the number of new_mongo_connection to the bare minumum
+    db = Mongoid.database  cannot be used anymore
+
 
     new spacial mongoid
 
-    with safe on saving evidences in the db
+    .with(:safe) on saving evidences in the db
 
     capped collection must be created by hand (log, queues)
 
-    db = Mongoid.database  cannot be used anymore
+--
 
     rework to speed up the most_contacted resolv
     rework to speed up the accessible mechanism

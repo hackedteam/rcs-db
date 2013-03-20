@@ -576,6 +576,8 @@ class Item
       hash << [self.instance, self.type, self.platform, self.deleted, self.uninstalled, self.demo, self.upgradable, self.scout, self.good]
     end
 
+    puts hash.inspect
+
     aes_encrypt(Digest::SHA1.digest(hash.inspect), Digest::SHA1.digest("∫∑x=1 ∆t")).unpack('H*').first
   end
 
