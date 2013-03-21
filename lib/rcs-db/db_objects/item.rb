@@ -162,6 +162,31 @@ class Item
     end
   end
 
+  def move_target(operation)
+    self.path = [operation._id]
+    self.save
+
+    # update the path in alerts and connectors
+    ::Alert.all.each {|a| a.update_path(self._id, self.path + [self._id])}
+    ::Connector.all.each {|a| a.update_path(self._id, self.path + [self._id])}
+
+    # move every agent and factory belonging to this target
+    Item.any_in({_kind: ['agent', 'factory']}).in({path: [ self._id ]}).each do |agent|
+      agent.path = self.path + [self._id]
+      agent.save
+
+      # update the path in alerts and connectors
+      ::Alert.all.each {|a| a.update_path(agent._id, agent.path + [agent._id])}
+      ::Connector.all.each {|a| a.update_path(agent._id, agent.path + [agent._id])}
+    end
+
+    # also move the linked entity
+    Entity.any_in({type: :target}).in({path: [ self._id ]}).each do |entity|
+      entity.path = self.path + [self._id]
+      entity.save
+    end
+  end
+
   def get_parent
     ::Item.find(self.path.last)
   end

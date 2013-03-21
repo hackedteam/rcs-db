@@ -15,6 +15,8 @@ TODO 9.0.0
     recalculate all the checksums !!!
 
 --
+    refactor the relation between objects
+
     rework to speed up the accessible mechanism
 
 --
@@ -47,9 +49,6 @@ TODO FUTURE:
 
 ======================================
 
-    mongo authentication
-
     Refactoring on rest methods:
       - agent (too much logic here)
       - evidence (too much logic here)
-      - target (move has too much logic)

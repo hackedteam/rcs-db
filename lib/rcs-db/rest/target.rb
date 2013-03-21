@@ -124,28 +124,8 @@ class TargetController < RESTController
       return bad_request('INVALID_OPERATION') if operation.nil?
 
       target = Item.targets.any_in(_id: @session[:accessible]).find(@params['_id'])
-      target.path = [operation._id]
-      target.save
 
-      # update the path in alerts and connectors
-      ::Alert.all.each {|a| a.update_path(target._id, target.path + [target._id])}
-      ::Connector.all.each {|a| a.update_path(target._id, target.path + [target._id])}
-
-      # move every agent and factory belonging to this target
-      Item.any_in({_kind: ['agent', 'factory']}).in({path: [ target._id ]}).each do |agent|
-        agent.path = target.path + [target._id]
-        agent.save
-
-        # update the path in alerts and connectors
-        ::Alert.all.each {|a| a.update_path(agent._id, agent.path + [agent._id])}
-        ::Connector.all.each {|a| a.update_path(agent._id, agent.path + [agent._id])}
-      end
-
-      # also move the linked entity
-      Entity.any_in({type: :target}).in({path: [ target._id ]}).each do |entity|
-        entity.path = target.path + [target._id]
-        entity.save
-      end
+      target.move_target(operation)
 
       Audit.log :actor => @session[:user][:name],
                 :action => "#{target._kind}.move",
