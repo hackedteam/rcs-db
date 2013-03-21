@@ -15,34 +15,23 @@ class AgentController < RESTController
   
   def index
     require_auth_level :tech, :view
-    
-    filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
-    filter ||= {}
-
-    filter.merge!({_id: {"$in" => @session[:accessible]}, _kind: { "$in" => ['agent', 'factory']}, deleted: {"$in" => [false, nil]} })
 
     mongoid_query do
-      db = DB.instance.new_mongo_connection
-      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "upgradable", "demo", "scout", "good", "stat.last_sync", "stat.last_sync_status", "stat.user", "stat.device", "stat.source", "stat.size", "stat.grid_size"])
-      ok(j)
+      fields = ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "upgradable", "demo", "scout", "good", "stat.last_sync", "stat.last_sync_status", "stat.user", "stat.device", "stat.source", "stat.size", "stat.grid_size"]
+      agents = ::Item.in(_kind: ['agent', 'factory']).in(deleted: [false, nil]).in(_id: @session[:accessible]).only(fields)
+      ok(agents)
     end
   end
   
   def show
     require_auth_level :tech, :view
     
-    return not_found() unless @session[:accessible].include? BSON::ObjectId.from_string(@params['_id'])
+    return not_found() unless @session[:accessible].include? Moped::BSON::ObjectId.from_string(@params['_id'])
 
     mongoid_query do
-      db = DB.instance.new_mongo_connection
-      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "deleted", "uninstalled", "demo", "scout", "good", "version", "counter", "configs"])
-
-      agent = j.first
-
-      # the console MUST not see deleted items
+      ag = ::Item.where(_id: @params['_id'], deleted: false).only("name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "deleted", "uninstalled", "demo", "scout", "good", "version", "counter", "configs")
+      agent = ag.first
       return not_found if agent.nil?
-      return not_found if agent.has_key?('deleted') and agent['deleted']
-
       ok(agent)
     end
   end

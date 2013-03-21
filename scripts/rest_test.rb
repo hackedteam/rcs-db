@@ -26,7 +26,8 @@ http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 # login
 account = {
   :user => 'alor',
-  :pass => 'demorcss'
+  :pass => 'demorcss',
+  :version => '9999123101'
   }
 resp = http.request_post('/auth/login', account.to_json, nil)
 puts "auth.login"
@@ -647,12 +648,19 @@ if false
 end
 
 # operations
-if false
+if true
   puts "operation.index" 
   res = http.request_get('/operation', {'Cookie' => cookie})
   #puts res.body
   operations = JSON.parse(res.body)
-  puts operations
+  puts operations.size
+  puts
+  
+  puts "operation.index.all" 
+  res = http.request_get('/operation?all=true', {'Cookie' => cookie})
+  #puts res.body
+  operations = JSON.parse(res.body)
+  puts operations.size
   puts
   
   puts "operation.show"
@@ -771,7 +779,8 @@ if false
   
   res = http.request_get('/target', {'Cookie' => cookie})
   targets = JSON.parse(res.body)
-  
+=end
+
   puts "agent.index"
   res = http.request_get('/agent', {'Cookie' => cookie})
   agents = JSON.parse(res.body)
@@ -779,23 +788,13 @@ if false
   #agents.each {|agent| puts "#{agent['_kind']}\t#{agent['name']}"}
   puts "You got #{agents.size} agents."
   puts
-=end
+
   
   puts "agent.show"
-  res = http.request_get("/agent/4F60909EAEF1DE0E480000D4", {'Cookie' => cookie})
+  res = http.request_get("/agent/#{agents.first['_id']}", {'Cookie' => cookie})
   #agent = JSON.parse(res.body)
   agent = JSON.parse(res.body)
-
-  puts "agent.activate_ghost"
-  agent_post = {
-      _id: agent['_id'],
-      sync: ["10.0.0.1", "10.0.0.2"]
-  }
-  res = http.request_post("/agent/activate_ghost", agent_post.to_json, {'Cookie' => cookie})
-  puts res.body
-  agent = JSON.parse(res.body)
-  puts agent
-  puts
+  puts agent.inspect
 
   #puts "agent.filesystem POST"
   #filesystem_post = {
@@ -1428,7 +1427,7 @@ if false
 end
 
 # entities
-if true
+if false
   #puts "entity.index"
   #res = http.request_get("/entity", {'Cookie' => cookie})
   #puts res.body

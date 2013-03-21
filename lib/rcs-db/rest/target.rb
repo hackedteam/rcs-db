@@ -1,3 +1,6 @@
+#
+# Controller for the Target objects
+#
 
 module RCS
 module DB
@@ -6,30 +9,22 @@ class TargetController < RESTController
   
   def index
     require_auth_level :admin, :tech, :view
-    
-    filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
-    filter ||= {}
-    
-    filter.merge!({_kind: "target"})
-    filter.merge!({_id: {"$in" => @session[:accessible]}}) unless (admin? and @params['all'] == "true")
 
     mongoid_query do
-      db = DB.instance.new_mongo_connection
-      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "stat.last_sync", "stat.size", "stat.grid_size", "stat.last_child"])
-      ok(j)
+      fields = ["name", "desc", "status", "_kind", "path", "stat.last_sync", "stat.size", "stat.grid_size", "stat.last_child"]
+      targets = ::Item.targets.in(_id: @session[:accessible]).only(fields)
+      ok(targets)
     end
   end
   
   def show
     require_auth_level :admin, :tech, :view
 
-    return not_found() unless @session[:accessible].include? BSON::ObjectId.from_string(@params['_id'])
+    return not_found() unless @session[:accessible].include? Moped::BSON::ObjectId.from_string(@params['_id'])
 
     mongoid_query do
-      db = DB.instance.new_mongo_connection
-      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "path", "stat"])
-
-      target = j.first
+      tar = ::Item.operations.where(_id: @params['_id']).only("name", "desc", "status", "_kind", "path", "stat")
+      target = tar.first
       return not_found if target.nil?
       ok(target)
     end

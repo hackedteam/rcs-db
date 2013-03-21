@@ -1,3 +1,7 @@
+#
+# Controller for the Operation objects
+#
+
 module RCS
 module DB
 
@@ -6,36 +10,27 @@ class OperationController < RESTController
   def index
     require_auth_level :admin, :tech, :view
 
-    # TODO: remove in 9.0.0
-    # do not allow login for older console (versions prior to 8.3 don't have this parameter)
-    if @session[:console_version].nil?
-      trace :warn, "Console version for #{@session[:user].name} is too old, denying access..."
-      return bad_request("Console version too old, cannot login")
-    end
-
-    filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
-    filter ||= {}
-
-    filter.merge!({ _kind: 'operation'})
-    filter.merge!({_id: {"$in" => @session[:accessible]}}) unless (admin? and @params['all'] == "true")
-
     mongoid_query do
-      db = DB.instance.new_mongo_connection
-      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "group_ids", "stat.last_sync", "stat.size", "stat.grid_size", "stat.last_child"])
-      ok(j)
+      fields = ["name", "desc", "status", "_kind", "path", "group_ids", "stat.last_sync", "stat.size", "stat.grid_size", "stat.last_child"]
+
+      if admin? and @params['all'] == "true"
+        operations = ::Item.operations.only(fields)
+      else
+        operations = ::Item.operations.in(_id: @session[:accessible]).only(fields)
+      end
+
+      ok(operations)
     end
   end
   
   def show
     require_auth_level :admin, :tech, :view
-    
-    return not_found() unless @session[:accessible].include? BSON::ObjectId.from_string(@params['_id'])
+
+    return not_found() unless @session[:accessible].include? Moped::BSON::ObjectId.from_string(@params['_id'])
 
     mongoid_query do
-      db = DB.instance.new_mongo_connection
-      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "path", "stat", "group_ids"])
-
-      operation = j.first
+      op = ::Item.operations.where(_id: @params['_id']).only("name", "desc", "status", "_kind", "path", "stat", "group_ids")
+      operation = op.first
       return not_found if operation.nil?
       ok(operation)
     end
