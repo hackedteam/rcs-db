@@ -77,7 +77,7 @@ module SingleEvidence
         # keyword full search
         ev.kw = self[:kw]
 
-        ev.safely.save!
+        ev.with(safe: true).save!
         ev
       end
       evidence

@@ -347,7 +347,7 @@ class Call
       ev.kw += program.keywords
       ev.kw.uniq!
 
-      ev.safely.save!
+      ev.with(safe: true).save!
       ev
     end
   end
