@@ -33,17 +33,17 @@ class DB
 
   def connect
     begin
-      # we are standalone
+      # we are standalone (no rails or rack)
       ENV['MONGOID_ENV'] = 'yes'
 
       # set the parameters for the mongoid.yaml
       ENV['MONGOID_DATABASE'] = 'rcs'
       ENV['MONGOID_HOST'] = "#{Config.instance.global['CN']}:27017"
 
-      #Mongoid.logger.level = Logger::DEBUG
-      #Moped.logger.level = Logger::DEBUG
+      #Mongoid.logger.level = ::Logger::DEBUG
+      #Moped.logger.level = ::Logger::DEBUG
 
-      Mongoid.logger = ::Logger.new($stdout)
+      #Mongoid.logger = ::Logger.new($stdout)
       #Moped.logger = ::Logger.new($stdout)
 
       Mongoid.load!(Config.instance.file('mongoid.yaml'), :production)

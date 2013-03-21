@@ -159,7 +159,7 @@ class GroupController < RESTController
       # reset all groups to false and set the unique group to true
       groups.each do |g|
         g[:alert] = false
-        if not @params['_id'].nil? and g[:_id] == BSON::ObjectId(@params['_id'])
+        if not @params['_id'].nil? and g[:_id] == Moped::BSON::ObjectId(@params['_id'])
           g[:alert] = true
           Audit.log :actor => @session[:user][:name], :action => 'group.alert', :group_name => @params['name'], :desc => "Monitor alert group set to '#{g[:name]}'"
         end

@@ -104,7 +104,7 @@ class Alerting
         # put the matching alert in the queue the suppression will be done there
         # and the mail will be sent accordingly to the 'type' of alert
         # complete the path of the evidence (operation + target + agent)
-        path = agent.path + [BSON::ObjectId.from_string(evidence.aid)]
+        path = agent.path + [Moped::BSON::ObjectId.from_string(evidence.aid)]
 
         # insert in the list of alert processing
         alert_fast_queue(alert: alert, evidence: evidence, path: path,

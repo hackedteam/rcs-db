@@ -74,7 +74,7 @@ class EntityController < RESTController
 
       @params.each_pair do |key, value|
         if key == 'path'
-          value.collect! {|x| BSON::ObjectId(x)} 
+          value.collect! {|x| Moped::BSON::ObjectId(x)}
         end
         if entity[key.to_s] != value and not key['_ids']
           Audit.log :actor => @session[:user][:name], :action => 'entity.update', :desc => "Updated '#{key}' to '#{value}' for entity #{entity.name}"

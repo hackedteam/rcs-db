@@ -65,7 +65,7 @@ module AMR
       wav_ary.concat short_samples.unpack('s*').pack('f*').unpack('f*')
 
       #wav = Wave.new 1, 8000
-      #wav.write "#{BSON::ObjectId.new.to_s}.wav", wav_ary
+      #wav.write "#{Moped::BSON::ObjectId.new.to_s}.wav", wav_ary
       #SRC::short_to_float output_short, output_float, AMR_FRAME_SIZE
       #wav_ary.concat output_float.read_array_of_float(AMR_FRAME_SIZE)
 

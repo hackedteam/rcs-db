@@ -89,7 +89,7 @@ class UserController < RESTController
       else
         @params.each_pair do |key, value|
           if key == 'dashboard_ids'
-            value.collect! {|x| BSON::ObjectId(x)}
+            value.collect! {|x| Moped::BSON::ObjectId(x)}
           end
           if user[key.to_s] != value and not key['_ids']
             Audit.log :actor => @session[:user][:name], :action => 'user.update', :user_name => user['name'], :desc => "Updated '#{key}' to '#{value}' for user '#{user['name']}'"
@@ -109,7 +109,7 @@ class UserController < RESTController
     mongoid_query do
       user = User.find(@params['_id'])
       
-      user.recent_ids.insert(0, BSON::ObjectId(@params['item_id']))
+      user.recent_ids.insert(0, Moped::BSON::ObjectId(@params['item_id']))
       user.recent_ids.uniq!
       user.recent_ids = user.recent_ids[0..4]
       user.save

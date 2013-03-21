@@ -16,8 +16,6 @@ TODO 9.0.0
     upgrade to mongoid 3.x
     gridfs append + moped?
 
-    BSON::ObjectId('4f86902b2afb6512a7000097') should be migrated to Moped::BSON....
-
     new spacial mongoid
 
     .with(:safe) on saving evidences in the db

@@ -42,7 +42,6 @@ class GridFS
     end
 
     def get(id, collection = nil)
-      #raise "Id must be a BSON::ObjectId" unless id.is_a? BSON::ObjectId
       begin
         db = DB.instance.new_mongo_connection
         grid = Mongo::Grid.new db, collection_name(collection)

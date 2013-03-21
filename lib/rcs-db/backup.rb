@@ -178,7 +178,7 @@ class BackupManager
   def self.partial_backup(params)
 
     # extract the id from the string
-    id = BSON::ObjectId.from_string(params[:what][-24..-1])
+    id = Moped::BSON::ObjectId.from_string(params[:what][-24..-1])
 
     # take the item and subitems contained in it
     items = ::Item.any_of({_id: id}, {path: id})

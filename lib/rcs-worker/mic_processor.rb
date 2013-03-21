@@ -19,7 +19,7 @@ module Worker
     attr_accessor :timecode, :duration, :sample_rate, :bid, :raw_counter
 
     def initialize(evidence, agent, target)
-      @bid = BSON::ObjectId.new
+      @bid = Moped::BSON::ObjectId.new
       @target = target
       @mic_id = evidence[:data][:mic_id]
       @sample_rate = evidence[:data][:sample_rate]

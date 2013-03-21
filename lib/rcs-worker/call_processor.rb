@@ -30,7 +30,7 @@ class Channel
   attr_reader :name, :sample_rate, :start_time, :written_samples, :wav_data, :status
   
   def initialize(evidence)
-    @id = BSON::ObjectId.new
+    @id = Moped::BSON::ObjectId.new
     @name = evidence[:data][:channel].to_s
     @sample_rate = evidence[:data][:sample_rate]
     @start_time = evidence[:data][:start_time]
@@ -138,7 +138,7 @@ class Call
   attr_reader :bid, :id, :peer, :duration, :sample_rate, :raw_ids, :evidence, :raw_counter
 
   def initialize(peer, program, incoming, start_time, agent, target)
-    @bid = BSON::ObjectId.new
+    @bid = Moped::BSON::ObjectId.new
     @id = "#{agent[:ident]}_#{agent[:instance]}_#{@bid}"
     @peer = peer
     @start_time = start_time

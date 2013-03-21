@@ -17,12 +17,6 @@ require 'em-http-request'
 require 'time'
 require 'json'
 
-class BSON::ObjectId
-  def encode_amf(ser)
-    ser.serialize 3, self.to_s
-  end
-end
-
 module RCS
 module DB
 

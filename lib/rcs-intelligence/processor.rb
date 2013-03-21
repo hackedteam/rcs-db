@@ -37,7 +37,7 @@ class Processor
 
   def self.process(entry)
     ev = Evidence.collection_class(entry['target_id']).find(entry['evidence_id'])
-    entity = Entity.any_in({path: [BSON::ObjectId.from_string(entry['target_id'])]}).first
+    entity = Entity.any_in({path: [Moped::BSON::ObjectId.from_string(entry['target_id'])]}).first
 
     trace :info, "Processing #{ev.type} for entity #{entity.name}"
 
