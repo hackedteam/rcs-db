@@ -12,15 +12,10 @@ class EntityController < RESTController
     require_auth_level :view
     require_auth_level :view_profiles
 
-    filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
-    filter ||= {}
-
-    filter.merge!({_id: {"$in" => @session[:accessible]}})
-
     mongoid_query do
-      db = DB.instance.new_mongo_connection
-      j = db.collection('entities').find(filter, :fields => ["type", "level", "name", "path", "photos"])
-      ok(j)
+      fields = ["type", "level", "name", "path", "photos"]
+      entities = ::Entity.in(_id: @session[:accessible]).only(fields)
+      ok(entities)
     end
   end
 
@@ -28,11 +23,13 @@ class EntityController < RESTController
     require_auth_level :view
     require_auth_level :view_profiles
 
-    return not_found() unless @session[:accessible].include? BSON::ObjectId.from_string(@params['_id'])
+    return not_found() unless @session[:accessible].include? Moped::BSON::ObjectId.from_string(@params['_id'])
 
     mongoid_query do
       ent = ::Entity.find(@params['_id'])
-      return ok(ent)
+      entity = ent.first
+      return not_found if entity.nil?
+      ok(entity)
     end
   end
 

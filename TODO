@@ -27,8 +27,6 @@ TODO 9.0.0
 
     recalculate all the checksums !!!
 
-    agent, factory, target, operation, entity, search shoud use mongoid for index and show
-
     rework to speed up the most_contacted resolv
     rework to speed up the accessible mechanism
 

@@ -1,3 +1,7 @@
+#
+# Controller for the Factory objects
+#
+
 module RCS
 module DB
 
@@ -5,28 +9,24 @@ class FactoryController < RESTController
   
   def index
     require_auth_level :tech, :view
-    
-    filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
-    filter ||= {}
-
-    filter.merge!({_id: {"$in" => @session[:accessible]}, _kind: 'factory'})
 
     mongoid_query do
-      db = DB.instance.new_mongo_connection
-      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "good"])
-      ok(j)
+      fields = ["name", "desc", "status", "_kind", "path", "type", "ident", "good"]
+      factories = ::Item.factories.in(deleted: [false, nil]).in(_id: @session[:accessible]).only(fields)
+      ok(factories)
     end
   end
   
   def show
     require_auth_level :tech, :view
 
-    return not_found() unless @session[:accessible].include? BSON::ObjectId.from_string(@params['_id'])
+    return not_found() unless @session[:accessible].include? Moped::BSON::ObjectId.from_string(@params['_id'])
 
     mongoid_query do
-      db = DB.instance.new_mongo_connection
-      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "path", "ident", "counter", "logkey", "confkey", "configs", "good"])
-      ok(j.first)
+      fa = ::Item.where(_id: @params['_id'], deleted: false).only("name", "desc", "status", "_kind", "path", "ident", "counter", "logkey", "confkey", "configs", "good")
+      factory = fa.first
+      return not_found if factory.nil?
+      ok(factory)
     end
   end
 
