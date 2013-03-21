@@ -21,7 +21,12 @@ class GridFS
     def collection_name(coll)
       coll.nil? ? DEFAULT_GRID_NAME : DEFAULT_GRID_NAME + '.' + coll
     end
-    
+
+    #
+    # Make sure that every internal Mongo::BSON object is returned as Moped::BSON
+    # and that every external parameter is converted from Moped:: to Mongo::
+    #
+
     def put(content, opts = {}, collection = nil)
       begin
         raise "Cannot put into the grid: content is empty" if content.nil?
@@ -34,7 +39,7 @@ class GridFS
         chunks = db.collection(collection_name(collection) + '.chunks')
         Shard.set_key(chunks, {files_id: 1}) unless chunks.stats['sharded']
 
-        return grid_id
+        return Moped::BSON::ObjectId.from_string(grid_id.to_s)
       rescue Exception => e
         trace :error, "Cannot put content into the Grid: #{collection_name(collection)} #{opts.inspect} #{e.message}"
         raise
@@ -43,6 +48,8 @@ class GridFS
 
     def get(id, collection = nil)
       begin
+        id = id.first if id.class.eql? Array
+        id = BSON::ObjectId.from_string(id.to_s)
         db = DB.instance.new_mongo_connection
         grid = Mongo::Grid.new db, collection_name(collection)
         return grid.get id
@@ -54,6 +61,8 @@ class GridFS
     
     def delete(id, collection = nil)
       begin
+        id = id.first if id.class.eql? Array
+        id = BSON::ObjectId.from_string(id.to_s)
         db = DB.instance.new_mongo_connection
         grid = Mongo::Grid.new db, collection_name(collection)
         return grid.delete id
@@ -65,6 +74,8 @@ class GridFS
 
     def to_tmp(id, collection = nil)
       begin
+        id = id.first if id.class.eql? Array
+        id = BSON::ObjectId.from_string(id.to_s)
         file = self.get id, collection
         raise "Grid content is nil" if file.nil?
         temp = File.open(Config.instance.temp("#{id}-%f" % Time.now), 'wb+')

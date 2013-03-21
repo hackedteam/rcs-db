@@ -9,7 +9,7 @@ class Core
 
   field :name, type: String
   field :version, type: Integer
-  field :_grid, type: Array
+  field :_grid, type: Moped::BSON::ObjectId
   field :_grid_size, type: Integer
 
   index({name: 1}, {background: true})
@@ -20,7 +20,7 @@ class Core
 
   def destroy_callback
     # remove the content from the grid
-    RCS::DB::GridFS.delete self[:_grid].first unless self[:_grid].nil?
+    RCS::DB::GridFS.delete self[:_grid] unless self[:_grid].nil?
   end
 end
 

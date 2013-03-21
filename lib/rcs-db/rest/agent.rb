@@ -514,7 +514,7 @@ class AgentController < RESTController
       case @request[:method]
         when 'GET'
           upl = agent.upload_requests.where({ _id: @params['upload']}).first
-          content = GridFS.get upl[:_grid].first
+          content = GridFS.get upl[:_grid]
           trace :info, "[#{@request[:peer]}] Requested the UPLOAD #{@params['upload']} -- #{content.file_length.to_s_bytes}"
           return ok(content.read, {content_type: content.content_type})
         when 'POST'
@@ -524,7 +524,7 @@ class AgentController < RESTController
 
           upl = @params['upload']
           file = @params['upload'].delete 'file'
-          upl['_grid'] = [ GridFS.put(File.open(Config.instance.temp(file), 'rb+') {|f| f.read}, {filename: upl['filename']}) ]
+          upl['_grid'] = GridFS.put(File.open(Config.instance.temp(file), 'rb+') {|f| f.read}, {filename: upl['filename']})
           upl['_grid_size'] = File.size Config.instance.temp(file)
           File.delete Config.instance.temp(file)
           agent.upload_requests.create(upl)
@@ -572,7 +572,7 @@ class AgentController < RESTController
       case @request[:method]
         when 'GET'
           upl = agent.upgrade_requests.where({ _id: @params['upgrade']}).first
-          content = GridFS.get upl[:_grid].first
+          content = GridFS.get upl[:_grid]
           trace :debug, "[#{@request[:peer]}] Requested the UPGRADE #{@params['upgrade']} -- #{content.file_length.to_s_bytes}"
           return ok(content.read, {content_type: content.content_type})
         when 'POST'

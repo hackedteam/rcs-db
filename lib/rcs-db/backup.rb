@@ -205,10 +205,10 @@ class BackupManager
 
         when 'agent'
           item.upload_requests.each do |up|
-            params[:gfilter] += "ObjectId(\"#{up[:_grid].first}\"),"
+            params[:gfilter] += "ObjectId(\"#{up[:_grid]}\"),"
           end
           item.upgrade_requests.each do |up|
-            params[:gfilter] += "ObjectId(\"#{up[:_grid].first}\"),"
+            params[:gfilter] += "ObjectId(\"#{up[:_grid]}\"),"
           end
       end
     end

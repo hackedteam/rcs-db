@@ -302,7 +302,7 @@ class Item
     content = File.open(file, 'rb+') {|f| f.read}
     raise "Cannot read from file #{file}" if content.nil?
 
-    self.upgrade_requests.create!({filename: name, _grid: [RCS::DB::GridFS.put(content, {filename: name, content_type: 'application/octet-stream'})] })
+    self.upgrade_requests.create!({filename: name, _grid: RCS::DB::GridFS.put(content, {filename: name, content_type: 'application/octet-stream'}) })
   end
 
   def upgrade!
@@ -606,7 +606,7 @@ class UpgradeRequest
   include Mongoid::Document
   
   field :filename, type: String
-  field :_grid, type: Array
+  field :_grid, type: Moped::BSON::ObjectId
 
   validates_uniqueness_of :filename
 
@@ -616,7 +616,7 @@ class UpgradeRequest
 
   def destroy_upgrade_callback
     # remove the content from the grid
-    RCS::DB::GridFS.delete self[:_grid].first unless self[:_grid].nil?
+    RCS::DB::GridFS.delete self[:_grid] unless self[:_grid].nil?
   end
 
 end
@@ -626,7 +626,7 @@ class UploadRequest
   
   field :filename, type: String
   field :sent, type: Integer, :default => 0
-  field :_grid, type: Array
+  field :_grid, type: Moped::BSON::ObjectId
   field :_grid_size, type: Integer
 
   embedded_in :item
@@ -635,7 +635,7 @@ class UploadRequest
 
   def destroy_upload_callback
     # remove the content from the grid
-    RCS::DB::GridFS.delete self[:_grid].first unless self[:_grid].nil?
+    RCS::DB::GridFS.delete self[:_grid] unless self[:_grid].nil?
   end
 end
 

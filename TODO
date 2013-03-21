@@ -15,9 +15,6 @@ TODO 9.0.0
     recalculate all the checksums !!!
 
 --
-    Gridfs and BSON vs Moped::BSON
-
---
     rework to speed up the accessible mechanism
 
 --

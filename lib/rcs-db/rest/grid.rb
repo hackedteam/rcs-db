@@ -9,7 +9,7 @@ class GridController < RESTController
     require_auth_level :tech, :view
 
     mongoid_query do
-      stream_grid(BSON::ObjectId.from_string(@params['_id']), @params['target_id'])
+      stream_grid(Moped::BSON::ObjectId.from_string(@params['_id']), @params['target_id'])
     end
   end
 

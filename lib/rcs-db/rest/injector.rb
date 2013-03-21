@@ -102,13 +102,13 @@ class InjectorController < RESTController
     mongoid_query do
       injector = ::Injector.find(@params['_id'])
 
-      return not_found if injector[:_grid].nil? or injector[:_grid].empty? or injector[:_grid].first.nil?
+      return not_found if injector[:_grid].nil?
 
       # reset the flag for the "configuration needed"
       injector.configured = true
       injector.save
 
-      return stream_grid(injector[:_grid].first)
+      return stream_grid(injector[:_grid])
     end
   end
 
@@ -180,7 +180,7 @@ class InjectorController < RESTController
       if rule.action == 'REPLACE' and not @params['rule']['action_param'].nil?
         path = Config.instance.temp(@params['rule']['action_param'])
         if File.exist?(path) and File.file?(path)
-          rule[:_grid] = [GridFS.put(File.open(path, 'rb+') {|f| f.read}, {filename: @params['rule']['action_param']})]
+          rule[:_grid] = GridFS.put(File.open(path, 'rb+') {|f| f.read}, {filename: @params['rule']['action_param']})
           File.unlink(path)
         end
       end
@@ -232,7 +232,7 @@ class InjectorController < RESTController
 
       # remove any grid pointer if we are changing the type of action
       if rule.action != 'REPLACE'
-        GridFS.delete rule[:_grid].first unless rule[:_grid].nil?
+        GridFS.delete rule[:_grid] unless rule[:_grid].nil?
         rule[:_grid] = nil
       end
       
@@ -241,8 +241,8 @@ class InjectorController < RESTController
         path = Config.instance.temp(@params['rule']['action_param'])
         if File.exist?(path) and File.file?(path)
           # delete any previous file in the grid
-          GridFS.delete rule[:_grid].first unless rule[:_grid].nil?
-          rule[:_grid] = [GridFS.put(File.open(path, 'rb+') {|f| f.read}, {filename: @params['rule']['action_param']})]
+          GridFS.delete rule[:_grid] unless rule[:_grid].nil?
+          rule[:_grid] = GridFS.put(File.open(path, 'rb+') {|f| f.read}, {filename: @params['rule']['action_param']})
           File.unlink(path)
         end
       end

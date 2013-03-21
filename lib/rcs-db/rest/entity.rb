@@ -127,7 +127,7 @@ class EntityController < RESTController
     mongoid_query do
 
       e = Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
-      file = GridFS.get(BSON::ObjectId.from_string(@params['_grid']), @params['target_id'])
+      file = GridFS.get(Moped::BSON::ObjectId.from_string(@params['_grid']), @params['target_id'])
       id = e.add_photo(file.read)
 
       Audit.log :actor => @session[:user][:name], :action => 'entity.add_photo', :desc => "Added a new photo to #{e.name}"

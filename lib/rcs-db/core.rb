@@ -37,7 +37,7 @@ class Core
         core.name = name
         core.version = version
 
-        core[:_grid] = [ GridFS.put(File.open(core_file, 'rb+') {|f| f.read}, {filename: name}) ]
+        core[:_grid] = GridFS.put(File.open(core_file, 'rb+') {|f| f.read}, {filename: name})
         core[:_grid_size] = File.size(core_file)
         core.save
 
