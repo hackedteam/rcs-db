@@ -36,15 +36,20 @@ class Injector
   embeds_many :rules, class_name: "InjectorRule"
 
   before_destroy :destroy_callback
+  after_create :create_log_collection
 
   protected
   def destroy_callback
     # destroy all the rules to cleanup the saved files in the grid
     self.rules.destroy_all
     # remove the log collection
-    RCS::DB::DB.instance.new_mongo_connection.drop_collection CappedLog.collection_name(self._id.to_s)
+    CappedLog.collection_class(self._id.to_s).collection.drop
     # make sure to delete the binary config in the grid
     RCS::DB::GridFS.delete self[:_grid].first unless self[:_grid].nil?
+  end
+
+  def create_log_collection
+    CappedLog.collection_class(self._id.to_s).create_capped_collection
   end
 
   public

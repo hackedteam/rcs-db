@@ -35,11 +35,16 @@ class Collector
   store_in collection: 'collectors'
 
   after_destroy :drop_log_collection
+  after_create :create_log_collection
 
   protected
 
   def drop_log_collection
-    RCS::DB::DB.instance.new_mongo_connection.drop_collection CappedLog.collection_name(self._id.to_s)
+    CappedLog.collection_class(self._id.to_s).collection.drop
+  end
+
+  def create_log_collection
+    CappedLog.collection_class(self._id.to_s).create_capped_collection
   end
 
   public

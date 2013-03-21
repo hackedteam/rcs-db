@@ -2,8 +2,9 @@
 # Layer for accessing the real DB
 #
 
-require_relative 'audit.rb'
+require_relative 'audit'
 require_relative 'config'
+require_relative 'db_objects/log'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -53,7 +54,7 @@ class DB
       #session.use 'rcs'
       #Mongoid.sessions[:default] = session
 
-      trace :info, "Connected to MongoDB"
+      trace :info, "Connected to MongoDB at #{ENV['MONGOID_HOST']}"
 
     rescue Exception => e
       trace :fatal, e
@@ -256,19 +257,6 @@ class DB
   def create_evidence_filters
     trace :debug, "Creating default evidence filters"
     ::EvidenceFilter.create_default
-  end
-
-  def clean_capped_logs
-    db = DB.instance.new_mongo_connection
-
-    # drop all the temporary capped logs collections
-    collections = db.collection_names
-    collections.keep_if {|x| x['logs.']}
-
-    collections.each do |coll_name|
-      trace :debug, "Dropping: #{coll_name}"
-      db.collection(coll_name).drop
-    end
   end
 
   def mark_bad_items

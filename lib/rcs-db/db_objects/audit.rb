@@ -24,7 +24,9 @@ class Audit
   index({operation_name: 1}, {background: true})
   index({target_name: 1}, {background: true})
   index({agent_name: 1}, {background: true})
-  
+
+  shard_key :time, :actor
+
   store_in collection: 'audit'
 
   def self.filter(params)

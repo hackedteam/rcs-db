@@ -17,8 +17,6 @@ TODO 9.0.0
     gridfs append + moped?
 
     new spacial mongoid
-
-    capped collection must be created by hand (log, queues)
 --
 
     recalculate all the checksums !!!

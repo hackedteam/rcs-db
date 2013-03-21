@@ -120,8 +120,7 @@ class InjectorController < RESTController
         when 'GET'
           require_auth_level :sys, :tech
           
-          klass = CappedLog.collection_class injector[:_id]
-          logs = klass.all.order_by([[:_id, :asc]])
+          logs = CappedLog.collection_class(injector[:_id]).all.order_by([[:_id, :asc]])
           return ok(logs)
 
         when 'POST'
@@ -146,7 +145,7 @@ class InjectorController < RESTController
       injector = Injector.find(@params['_id'])
 
       # we cannot call delete_all on a capped collection, must drop it
-      DB.instance.new_mongo_connection.collection(CappedLog.collection_name(injector[:_id])).drop
+      CappedLog.collection_class(injector[:_id]).collection.drop
 
       return ok
     end
