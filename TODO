@@ -12,13 +12,6 @@ TODO 9.0.0
       - copy 24 over 22
       - restart all
 
---
-    upgrade to mongoid 3.x
-    gridfs append + moped?
-
-    new spacial mongoid
---
-
     recalculate all the checksums !!!
 
     rework to speed up the most_contacted resolv
