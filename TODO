@@ -14,9 +14,13 @@ TODO 9.0.0
 
     recalculate all the checksums !!!
 
-    rework to speed up the most_contacted resolv
+--
+    Gridfs and BSON vs Moped::BSON
+
+--
     rework to speed up the accessible mechanism
 
+--
     aggregates for places (positioner algorithm)
 
     create entity form most_contacted
@@ -51,7 +55,4 @@ TODO FUTURE:
     Refactoring on rest methods:
       - agent (too much logic here)
       - evidence (too much logic here)
-      - factory (direct mongo query)
-      - operation (direct mongo query)
-      - search (direct mongo query)
-      - target (direct mongo query, move has too much logic)
+      - target (move has too much logic)
