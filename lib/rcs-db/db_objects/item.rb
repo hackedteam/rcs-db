@@ -56,6 +56,8 @@ class Item
   scope :agents, where(_kind: 'agent')
   scope :factories, where(_kind: 'factory')
 
+  # for the access control
+  has_and_belongs_to_many :users, :dependent => :nullify, :autosave => true, inverse_of: nil
   has_and_belongs_to_many :groups, :dependent => :nullify, :autosave => true
 
   embeds_many :filesystem_requests, class_name: "FilesystemRequest"

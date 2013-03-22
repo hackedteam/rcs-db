@@ -6,18 +6,94 @@ require 'mongoid'
 class Group
   include Mongoid::Document
   include Mongoid::Timestamps
+  extend RCS::Tracer
+  include RCS::Tracer
 
   field :name, type: String
   field :alert, type: Boolean
   
   validates_uniqueness_of :name, :message => "GROUP_ALREADY_EXISTS"
 
-  has_and_belongs_to_many :users, :dependent => :nullify, :autosave => true
-  has_and_belongs_to_many :items, :dependent => :nullify, :autosave => true
+  has_and_belongs_to_many :users, dependent: :nullify, autosave: true, after_add: :add_user_callback, after_remove: :remove_user_callback
+  has_and_belongs_to_many :items, dependent: :nullify, autosave: true, after_add: :add_item_callback, after_remove: :remove_item_callback
 
   index({name: 1}, {background: true})
   
   store_in collection: 'groups'
+
+  def add_user_callback(user)
+    # user added to a group, we have to put in every item and entity of this group
+    self.items.each do |operation|
+      operation.users << user
+      ::Item.any_in({path: [operation._id]}).each do |item|
+        item.users << user
+      end
+      ::Entity.any_in({path: [operation._id]}).each do |ent|
+        ent.users << user
+      end
+    end
+  end
+
+  def remove_user_callback(user)
+    # user removed from a group, we have to delete in every item and entity of this group
+    self.items.each do |operation|
+      operation.users.delete(user)
+      ::Item.any_in({path: [operation._id]}).each do |item|
+        item.users.delete(user)
+      end
+      ::Entity.any_in({path: [operation._id]}).each do |ent|
+        ent.users.delete(user)
+      end
+    end
+  end
+
+  def add_item_callback(operation)
+    # operation added to a group, we have to put the users in all items and entities
+    operation.users += self.users
+    ::Item.any_in({path: [operation._id]}).each do |item|
+      item.users += self.users
+    end
+    ::Entity.any_in({path: [operation._id]}).each do |ent|
+      ent.users += self.users
+    end
+  end
+
+  def remove_item_callback(operation)
+    # operation removed from a group, we have to remove the users in all items and entities
+    self.users.each do |user|
+      operation.users.delete(user)
+    end
+    ::Item.any_in({path: [operation._id]}).each do |item|
+      self.users.each do |user|
+        item.users.delete(user)
+      end
+    end
+    ::Entity.any_in({path: [operation._id]}).each do |ent|
+      self.users.each do |user|
+        ent.users.delete(user)
+      end
+    end
+  end
+
+  def self.rebuild_access_control
+    start = Time.now
+    trace :info, "Rebuilding access control..."
+    # for each operation in each group, search the items of that operation and add
+    # the users of this group
+    Group.each do |group|
+      group.items.each do |operation|
+        operation.users = group.users
+        ::Item.any_in({path: [operation._id]}).each do |item|
+          item.users = group.users
+        end
+        ::Entity.any_in({path: [operation._id]}).each do |ent|
+          ent.users = group.users
+        end
+      end
+    end
+    trace :debug, "Access control rebuilt in #{Time.now - start} secs"
+  end
+
 end
 
 #end # ::DB

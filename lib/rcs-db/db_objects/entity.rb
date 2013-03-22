@@ -35,6 +35,9 @@ class Entity
   # links to other entities
   field :links, type: Array, default: []
 
+  # for the access control
+  has_and_belongs_to_many :users, :dependent => :nullify, :autosave => true, inverse_of: nil
+
   embeds_many :handles, class_name: "EntityHandle"
 
   index({name: 1}, {background: true})

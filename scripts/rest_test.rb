@@ -35,7 +35,7 @@ puts resp
 cookie = resp['Set-Cookie'] unless resp['Set-Cookie'].nil?
 puts "cookie " + cookie
 puts
-puts resp.body.inspect
+#puts resp.body.inspect
 
 # session
 if false

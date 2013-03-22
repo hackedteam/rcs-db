@@ -123,6 +123,9 @@ class Application
       # creates all the necessary queues
       NotificationQueue.create_queues
 
+      # rebuild the access control schema
+      Group.rebuild_access_control
+
       # enter the main loop (hopefully will never exit from it)
       Events.new.setup Config.instance.global['LISTENING_PORT']
       
