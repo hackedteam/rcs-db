@@ -35,6 +35,7 @@ puts resp
 cookie = resp['Set-Cookie'] unless resp['Set-Cookie'].nil?
 puts "cookie " + cookie
 puts
+puts resp.body.inspect
 
 # session
 if false
@@ -648,7 +649,7 @@ if false
 end
 
 # operations
-if true
+if false
   puts "operation.index" 
   res = http.request_get('/operation', {'Cookie' => cookie})
   #puts res.body

@@ -241,17 +241,17 @@ class DB
 
     trace :info, "Log Rotation"
 
-    db = Mongo::MongoClient.new(Config.instance.global['CN'], 27017).db('admin')
-    db.command({ logRotate: 1 })
-    db.close
+    conn = Mongo::MongoClient.new(Config.instance.global['CN'], 27017)
+    conn.db('admin').command({ logRotate: 1 })
+    conn.close
 
-    db = Mongo::MongoClient.new(Config.instance.global['CN'], 27018).db('admin')
-    db.command({ logRotate: 1 })
-    db.close
+    conn = Mongo::MongoClient.new(Config.instance.global['CN'], 27018)
+    conn.db('admin').command({ logRotate: 1 })
+    conn.close
 
-    db = Mongo::MongoClient.new(Config.instance.global['CN'], 27019).db('admin')
-    db.command({ logRotate: 1 })
-    db.close
+    conn = Mongo::MongoClient.new(Config.instance.global['CN'], 27019)
+    conn.db('admin').command({ logRotate: 1 })
+    conn.close
   end
 
   def create_evidence_filters

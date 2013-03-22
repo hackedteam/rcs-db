@@ -15,10 +15,7 @@ TODO 9.0.0
     recalculate all the checksums !!!
 
 --
-    refactor the relation between objects
-
     rework to speed up the accessible mechanism
-
 --
     aggregates for places (positioner algorithm)
 
