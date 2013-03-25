@@ -63,15 +63,25 @@ class DB
     return true
   end
 
-  def new_mongo_connection(db = 'rcs', host = Config.instance.global['CN'], port = 27017)
+  # pooled connection
+  def mongo_connection(db = 'rcs', host = Config.instance.global['CN'], port = 27017)
     time = Time.now
     # instantiate a pool of connections that are thread-safe
     # this handle will be returned to every thread requesting for a new connection
     # also the pool is lazy (connect only on request)
     @mongo_db ||= Mongo::MongoClient.new(host, port, pool_size: 20, pool_timeout: 15, connect: false)
     delta = Time.now - time
-    trace :warn, "Opening new mongo connection is too slow (%f)" % delta if delta > 0.5 and Config.instance.global['PERF']
+    trace :warn, "Opening mongo pool connection is too slow (%f)" % delta if delta > 0.5 and Config.instance.global['PERF']
     return @mongo_db.db(db)
+  end
+
+  # single connection
+  def new_mongo_connection(host = Config.instance.global['CN'], port = 27017)
+    time = Time.now
+    conn = Mongo::MongoClient.new(host, port)
+    delta = Time.now - time
+    trace :warn, "Opening new mongo connection is too slow (%f)" % delta if delta > 0.5 and Config.instance.global['PERF']
+    return conn
   end
 
   def new_moped_connection(db = 'rcs', host = Config.instance.global['CN'], port = 27017)
@@ -89,7 +99,7 @@ class DB
   @@classes_to_be_indexed = [::Audit, ::User, ::Group, ::Alert, ::Status, ::Core, ::Collector, ::Injector, ::Item, ::PublicDocument, ::EvidenceFilter, ::Entity]
 
   def create_indexes
-    db = DB.instance.new_mongo_connection
+    db = DB.instance.mongo_connection
 
     trace :info, "Database size is: " + db.stats['dataSize'].to_s_bytes
 
@@ -147,7 +157,7 @@ class DB
 
   def shard_audit
     # enable shard on audit log, it will increase its size forever and ever
-    db = DB.instance.new_mongo_connection
+    db = DB.instance.mongo_connection
     audit = db.collection('audit')
     Shard.set_key(audit, {time: 1, actor: 1}) unless audit.stats['sharded']
   end
@@ -241,15 +251,15 @@ class DB
 
     trace :info, "Log Rotation"
 
-    conn = Mongo::MongoClient.new(Config.instance.global['CN'], 27017)
+    conn = new_mongo_connection(Config.instance.global['CN'], 27017)
     conn.db('admin').command({ logRotate: 1 })
     conn.close
 
-    conn = Mongo::MongoClient.new(Config.instance.global['CN'], 27018)
+    conn = new_mongo_connection(Config.instance.global['CN'], 27018)
     conn.db('admin').command({ logRotate: 1 })
     conn.close
 
-    conn = Mongo::MongoClient.new(Config.instance.global['CN'], 27019)
+    conn = new_mongo_connection(Config.instance.global['CN'], 27019)
     conn.db('admin').command({ logRotate: 1 })
     conn.close
   end

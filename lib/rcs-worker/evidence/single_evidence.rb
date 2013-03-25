@@ -25,7 +25,7 @@ module SingleEvidence
       return false unless self.respond_to? :duplicate_criteria
       return false if agent.nil? or target.nil?
 
-      db = RCS::DB::DB.instance.new_mongo_connection
+      db = RCS::DB::DB.instance.mongo_connection
       criteria = self.duplicate_criteria
       criteria.merge! "aid" => agent['_id'].to_s
       evs = db["evidence.#{target['_id'].to_s}"].find criteria

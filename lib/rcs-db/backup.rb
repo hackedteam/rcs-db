@@ -62,7 +62,7 @@ class BackupManager
 
       # retrieve the list of collection and iterate on it to create a backup
       # the 'what' property of a backup decides which collections have to be backed up
-      collections = Mongoid::Config.master.collection_names
+      collections = DB.instance.mongo_connection.collection_names
 
       # don't backup the "volatile" collections
       collections.delete('statuses')
@@ -88,7 +88,7 @@ class BackupManager
       # save the last backed up objects to be used in the next run
       # do this here, so we are sure that the mongodump below will include these ids
       if backup.incremental
-        db = Mongoid::Config.master
+        db = DB.instance.mongo_connection
 
         incremental_ids = {}
 

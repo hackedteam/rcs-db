@@ -15,6 +15,7 @@ TODO 9.0.0
     recalculate all the checksums !!!
 
 --
+    mongo pool connection is forever, use different connection if want to change port
 
     FindAndModify for alerting
 

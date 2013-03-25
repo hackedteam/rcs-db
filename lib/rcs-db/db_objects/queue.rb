@@ -23,7 +23,7 @@ class NotificationQueue
   end
 
   def self.create_queues
-    db = RCS::DB::DB.instance.new_mongo_connection
+    db = RCS::DB::DB.instance.mongo_connection
     collections = db.collections.map {|c| c.name}
     # damned mongoid!! it does not support capped collection creation
     @@queues.each do |k|

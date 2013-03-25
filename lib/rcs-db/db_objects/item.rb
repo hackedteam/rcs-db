@@ -139,7 +139,7 @@ class Item
             self.stat.last_sync = a.stat.last_sync
           end
         end
-        db = RCS::DB::DB.instance.new_mongo_connection
+        db = RCS::DB::DB.instance.mongo_connection
         # evidence size
         collection = db.collection('evidence.' + self._id.to_s)
         self.stat.size = collection.stats['size'].to_i
@@ -514,7 +514,7 @@ class Item
     return if self._kind != 'target'
 
     # create the collection for the target's evidence and shard it
-    db = RCS::DB::DB.instance.new_mongo_connection
+    db = RCS::DB::DB.instance.mongo_connection
     collection = db.collection(Evidence.collection_name(self._id))
     # ensure indexes
     Evidence.collection_class(self._id).create_indexes

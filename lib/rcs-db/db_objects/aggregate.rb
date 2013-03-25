@@ -40,8 +40,8 @@ class Aggregate
 
         def create_callback
           # enable sharding only if not enabled
-          db = RCS::DB::DB.instance.new_mongo_connection
-          coll = db.collection(Aggregate.collection_name('#{target}'))
+          conn = RCS::DB::DB.instance.mongo_connection
+          coll = conn.db('rcs').collection(Aggregate.collection_name('#{target}'))
           unless coll.stats['sharded']
             Aggregate.collection_class('#{target}').create_indexes
             RCS::DB::Shard.set_key(coll, {type: 1, day: 1})

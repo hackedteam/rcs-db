@@ -80,7 +80,7 @@ class SessionManager
     WebSocketManager.instance.destroy(cookie)
 
     # delete the cookie session
-    session.destroy
+    session.destroy unless session.nil?
   end
 
   def delete_user(user)
