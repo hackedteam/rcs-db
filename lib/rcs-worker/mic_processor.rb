@@ -122,7 +122,7 @@ module Worker
 
       fs.open(mic.file_name, 'a') do |f|
         f.write mp3_bytes
-        mic.update_attributes({data: {_grid: f.files_id, _grid_size: f.file_length, duration: mic.duration}})
+        mic.update_attributes({data: {_grid: Moped::BSON::ObjectId.from_string(f.files_id.to_s), _grid_size: f.file_length, duration: mic.duration}})
       end
       agent.stat.size += mp3_bytes.size
       agent.save

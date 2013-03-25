@@ -1,6 +1,5 @@
 require 'ffi'
 require 'stringio'
-require 'bson'
 require 'rbconfig'
 
 require 'rcs-common/trace'

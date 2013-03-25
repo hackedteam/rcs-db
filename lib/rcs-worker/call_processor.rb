@@ -459,7 +459,7 @@ class CallProcessor
 
     fs.open(call.file_name, 'a') do |f|
       f.write mp3_bytes
-      call.update_data({_grid: f.files_id, _grid_size: f.file_length, duration: call.duration})
+      call.update_data({_grid: Moped::BSON::ObjectId.from_string(f.files_id.to_s), _grid_size: f.file_length, duration: call.duration})
     end
     @agent.stat.size += mp3_bytes.size
     @agent.save
