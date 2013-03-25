@@ -24,7 +24,7 @@ class EntityController < RESTController
     require_auth_level :view_profiles
 
     mongoid_query do
-      ent = ::Entity.in(user_ids: [@session.user[:_id]]).find(@params['_id'])
+      ent = ::Entity.where(_id: @params['_id']).in(user_ids: [@session.user[:_id]])
       entity = ent.first
       return not_found if entity.nil?
       ok(entity)

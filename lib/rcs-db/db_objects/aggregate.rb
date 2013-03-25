@@ -74,9 +74,6 @@ class Aggregate
 
     most_contacted_types = ['call', 'chat', 'mail', 'sms', 'mms', 'facebook', 'gmail', 'skype', 'bbm', 'whatsapp', 'msn', 'adium']
 
-    db = DB.instance.new_mongo_connection
-    collection = db.collection(Aggregate.collection_name(target))
-
     #
     # Map Reduce has some downsides
     # let's try if the Mongo::Aggregation framework is better...
@@ -114,7 +111,7 @@ class Aggregate
 =end
 
     #
-    # Mongo:Aggregation is better...
+    # Aggregation Framework is better...
     #
     pipeline = [{ "$match" => {:day => {'$gte' => params['from'], '$lte' => params['to']}, :type => {'$in' => most_contacted_types} }},
                 { "$group" =>
@@ -126,7 +123,7 @@ class Aggregate
 
     time = Time.now
     # extract the results
-    contacted = collection.aggregate(pipeline)
+    contacted = Aggregate.collection_class(target).collection.aggregate(pipeline)
 
     trace :debug, "Most contacted: Aggregation time #{Time.now - time}" if RCS::DB::Config.instance.global['PERF']
 

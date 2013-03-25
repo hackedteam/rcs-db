@@ -1,6 +1,8 @@
 require 'mongoid'
 require 'mongoid_geospatial'
 
+require 'lrucache'
+
 #module RCS
 #module DB
 

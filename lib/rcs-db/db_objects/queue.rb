@@ -106,6 +106,9 @@ class IntelligenceQueue < NotificationQueue
       super(target_id, evidence_id)
     end
   end
+
+
+
 end
 
 #end # ::DB
