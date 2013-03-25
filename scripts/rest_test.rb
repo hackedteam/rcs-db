@@ -588,7 +588,7 @@ if false
 end
 
 # alerts
-if true
+if false
   # alert.index
   puts "alert.index" 
   res = http.request_get('/alert', {'Cookie' => cookie})
