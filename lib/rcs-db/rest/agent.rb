@@ -191,7 +191,7 @@ class AgentController < RESTController
     require_auth_level :tech_config
 
     mongoid_query do
-      agent = Item.any_in(_id: @session[:accessible]).find(@params['_id'])
+      agent = Item.any_in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
 
       @params['desc'] ||= ''
       

@@ -60,7 +60,7 @@ class Entity
   after_update :notify_callback
 
   def create_callback
-    # make item accessible to the users
+    # make item accessible to the users of the parent operation
     parent = ::Item.find(self.path.last)
     self.users = parent.users
 
