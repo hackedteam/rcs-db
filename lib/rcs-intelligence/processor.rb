@@ -16,15 +16,12 @@ class Processor
   extend RCS::Tracer
 
   def self.run
-    db = RCS::DB::DB.instance.new_mongo_connection
-    coll = db.collection('intelligence_queue')
-
     # infinite processing loop
     loop do
       # get the first entry from the queue and mark it as processed to avoid
       # conflicts with multiple processors
-      if (entry = coll.find_and_modify({query: {flag: IntelligenceQueue::QUEUED}, update: {"$set" => {flag: IntelligenceQueue::PROCESSED}}}))
-        count = coll.find({flag: IntelligenceQueue::QUEUED}).count()
+      if (entry = IntelligenceQueue.where(flag: NotificationQueue::QUEUED).find_and_modify({"$set" => {flag: NotificationQueue::PROCESSED}}, new: false))
+        count = IntelligenceQueue.where({flag: NotificationQueue::QUEUED}).count()
         trace :info, "#{count} evidence to be processed in queue"
         process entry
       else

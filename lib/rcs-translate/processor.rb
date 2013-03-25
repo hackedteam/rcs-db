@@ -18,17 +18,14 @@ class Processor
   extend RCS::Tracer
 
   def self.run
-    db = RCS::DB::DB.instance.new_mongo_connection
-    coll = db.collection('trans_queue')
-
     trace :info, "TRANSLATE ready to go..."
 
     # infinite processing loop
     loop do
       # get the first entry from the queue and mark it as processed to avoid
       # conflicts with multiple processors
-      if (entry = coll.find_and_modify({query: {flag: TransQueue::QUEUED}, update: {"$set" => {flag: TransQueue::PROCESSED}}}))
-        count = coll.find({flag: OCRQueue::QUEUED}).count()
+      if (entry = TransQueue.where(flag: NotificationQueue::QUEUED).find_and_modify({"$set" => {flag: NotificationQueue::PROCESSED}}, new: false))
+        count = TransQueue.where({flag: NotificationQueue::QUEUED}).count()
         trace :info, "#{count} evidence to be processed in queue"
         process entry
         sleep 1
