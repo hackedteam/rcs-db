@@ -12,7 +12,7 @@ class TargetController < RESTController
 
     mongoid_query do
       fields = ["name", "desc", "status", "_kind", "path", "stat.last_sync", "stat.size", "stat.grid_size", "stat.last_child"]
-      targets = ::Item.targets.in(_id: @session[:accessible]).only(fields)
+      targets = ::Item.targets.in(user_ids: [@session[:user][:_id]]).only(fields)
       ok(targets)
     end
   end
@@ -20,10 +20,8 @@ class TargetController < RESTController
   def show
     require_auth_level :admin, :tech, :view
 
-    return not_found() unless @session[:accessible].include? Moped::BSON::ObjectId.from_string(@params['_id'])
-
     mongoid_query do
-      tar = ::Item.operations.where(_id: @params['_id']).only("name", "desc", "status", "_kind", "path", "stat")
+      tar = ::Item.operations.where(_id: @params['_id']).in(user_ids: [@session[:user][:_id]]).only("name", "desc", "status", "_kind", "path", "stat")
       target = tar.first
       return not_found if target.nil?
       ok(target)
@@ -45,6 +43,7 @@ class TargetController < RESTController
       item = Item.create(name: @params['name']) do |doc|
         doc[:_kind] = :target
         doc[:path] = [operation._id]
+        doc.users = operation.users
         doc.stat = ::Stat.new
         doc.stat.evidence = {}
         doc.stat.size = 0
@@ -53,12 +52,6 @@ class TargetController < RESTController
         doc[:status] = :open
         doc[:desc] = @params['desc']
       end
-
-      # make item accessible to the current user (immediately)
-      SessionManager.instance.add_accessible(@session, item._id)
-
-      # make item accessible to the users
-      SessionManager.instance.rebuild_all_accessible
 
       Audit.log :actor => @session[:user][:name],
                 :action => "target.create",
@@ -77,7 +70,7 @@ class TargetController < RESTController
     updatable_fields = ['name', 'desc', 'status']
 
     mongoid_query do
-      item = Item.targets.any_in(_id: @session[:accessible]).find(@params['_id'])
+      item = Item.targets.any_in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
       
       @params.delete_if {|k, v| not updatable_fields.include? k }
       
@@ -101,7 +94,7 @@ class TargetController < RESTController
     require_auth_level :admin_targets
 
     mongoid_query do
-      item = Item.targets.any_in(_id: @session[:accessible]).find(@params['_id'])
+      item = Item.targets.any_in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
       name = item.name
 
       Audit.log :actor => @session[:user][:name],
@@ -123,7 +116,7 @@ class TargetController < RESTController
       operation = ::Item.operations.find(@params['operation'])
       return bad_request('INVALID_OPERATION') if operation.nil?
 
-      target = Item.targets.any_in(_id: @session[:accessible]).find(@params['_id'])
+      target = Item.targets.any_in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
 
       target.move_target(operation)
 

@@ -26,9 +26,11 @@ class Group
     self.items.each do |operation|
       operation.users << user
       ::Item.any_in({path: [operation._id]}).each do |item|
+        trace :debug, "Adding user #{user.name} to item #{item.name}"
         item.users << user
       end
       ::Entity.any_in({path: [operation._id]}).each do |ent|
+        trace :debug, "Adding user #{user.name} to entity #{ent.name}"
         ent.users << user
       end
     end
@@ -39,9 +41,11 @@ class Group
     self.items.each do |operation|
       operation.users.delete(user)
       ::Item.any_in({path: [operation._id]}).each do |item|
+        trace :debug, "Removing user #{user.name} from item #{item.name}"
         item.users.delete(user)
       end
       ::Entity.any_in({path: [operation._id]}).each do |ent|
+        trace :debug, "Removing user #{user.name} from entity #{ent.name}"
         ent.users.delete(user)
       end
     end
@@ -51,9 +55,11 @@ class Group
     # operation added to a group, we have to put the users in all items and entities
     operation.users += self.users
     ::Item.any_in({path: [operation._id]}).each do |item|
+      trace :debug, "Adding these users to item #{item.name}: #{self.users.collect {|u| u.name}.inspect}"
       item.users += self.users
     end
     ::Entity.any_in({path: [operation._id]}).each do |ent|
+      trace :debug, "Adding these users to entity #{ent.name}: #{self.users.collect {|u| u.name}.inspect}"
       ent.users += self.users
     end
   end
@@ -65,11 +71,13 @@ class Group
     end
     ::Item.any_in({path: [operation._id]}).each do |item|
       self.users.each do |user|
+        trace :debug, "Removing user #{user.name} from item #{item.name}"
         item.users.delete(user)
       end
     end
     ::Entity.any_in({path: [operation._id]}).each do |ent|
       self.users.each do |user|
+        trace :debug, "Removing user #{user.name} from item #{ent.name}"
         ent.users.delete(user)
       end
     end

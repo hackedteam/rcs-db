@@ -14,7 +14,7 @@ class EntityController < RESTController
 
     mongoid_query do
       fields = ["type", "level", "name", "path", "photos"]
-      entities = ::Entity.in(_id: @session[:accessible]).only(fields)
+      entities = ::Entity.in(user_ids: [@session[:user][:_id]]).only(fields)
       ok(entities)
     end
   end
@@ -23,10 +23,8 @@ class EntityController < RESTController
     require_auth_level :view
     require_auth_level :view_profiles
 
-    return not_found() unless @session[:accessible].include? Moped::BSON::ObjectId.from_string(@params['_id'])
-
     mongoid_query do
-      ent = ::Entity.find(@params['_id'])
+      ent = ::Entity.in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
       entity = ent.first
       return not_found if entity.nil?
       ok(entity)
@@ -69,7 +67,7 @@ class EntityController < RESTController
     require_auth_level :view_profiles
 
     mongoid_query do
-      entity = ::Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
+      entity = ::Entity.any_in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
       @params.delete('_id')
 
       @params.each_pair do |key, value|
@@ -93,7 +91,7 @@ class EntityController < RESTController
 
     mongoid_query do
 
-      e = Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
+      e = Entity.any_in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
 
       # entity created by target cannot be deleted manually, they will disappear with their target
       return conflict('CANNOT_DELETE_TARGET_ENTITY') if e.type == :target
@@ -111,7 +109,7 @@ class EntityController < RESTController
 
     mongoid_query do
 
-      e = Entity.any_in(_id: @session[:accessible]).find(@request[:content]['_id'])
+      e = Entity.any_in(user_ids: [@session[:user][:_id]]).find(@request[:content]['_id'])
       id = e.add_photo(@request[:content]['content'])
 
       Audit.log :actor => @session[:user][:name], :action => 'entity.add_photo', :desc => "Added a new photo to #{e.name}"
@@ -126,7 +124,7 @@ class EntityController < RESTController
 
     mongoid_query do
 
-      e = Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
+      e = Entity.any_in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
       file = GridFS.get(Moped::BSON::ObjectId.from_string(@params['_grid']), @params['target_id'])
       id = e.add_photo(file.read)
 
@@ -142,7 +140,7 @@ class EntityController < RESTController
 
     mongoid_query do
 
-      e = Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
+      e = Entity.any_in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
       return not_found() unless e.del_photo(@params['photo_id'])
 
       Audit.log :actor => @session[:user][:name], :action => 'entity.del_photo', :desc => "Deleted a photo from #{e.name}"
@@ -157,7 +155,7 @@ class EntityController < RESTController
 
     mongoid_query do
 
-      e = Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
+      e = Entity.any_in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
       e.handles.create!(level: :manual, type: @params['type'], name: @params['name'], handle: @params['handle'])
 
       Audit.log :actor => @session[:user][:name], :action => 'entity.add_handle', :desc => "Added a new handle to #{e.name}"
@@ -172,7 +170,7 @@ class EntityController < RESTController
 
     mongoid_query do
 
-      e = Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
+      e = Entity.any_in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
       e.handles.destroy_all(conditions: { _id: @params['handle_id'] })
 
       Audit.log :actor => @session[:user][:name], :action => 'entity.del_handle', :desc => "Deleted an handle from #{e.name}"
@@ -188,7 +186,7 @@ class EntityController < RESTController
     return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :correlation
 
     mongoid_query do
-      entity = Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
+      entity = Entity.any_in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
       return conflict('NO_AGGREGATES_FOR_ENTITY') unless entity.type.eql? :target
 
       # extract the most contacted peers for this entity
@@ -204,7 +202,7 @@ class EntityController < RESTController
 
     mongoid_query do
 
-      e = Entity.any_in(_id: @session[:accessible]).find(@params['_id'])
+      e = Entity.any_in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
       return conflict('NOT_A_TARGET') unless e.type.eql? :target
 
       e.add_place(name: @params['name'], latitude: @params['latitude'], longitude: @params['longitude'], accuracy: @params['accuracy'])

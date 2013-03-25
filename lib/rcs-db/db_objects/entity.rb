@@ -62,7 +62,7 @@ class Entity
   def create_callback
     # make item accessible to the users
     parent = ::Item.find(self.path.last)
-    RCS::DB::SessionManager.instance.add_accessible_item(parent, self)
+    self.users = parent.users
 
     RCS::DB::PushManager.instance.notify('entity', {id: self._id, action: 'create'})
   end

@@ -12,7 +12,7 @@ class FactoryController < RESTController
 
     mongoid_query do
       fields = ["name", "desc", "status", "_kind", "path", "type", "ident", "good"]
-      factories = ::Item.factories.in(deleted: [false, nil]).in(_id: @session[:accessible]).only(fields)
+      factories = ::Item.factories.in(deleted: [false, nil]).in(user_ids: [@session[:user][:_id]]).only(fields)
       ok(factories)
     end
   end
@@ -20,10 +20,8 @@ class FactoryController < RESTController
   def show
     require_auth_level :tech, :view
 
-    return not_found() unless @session[:accessible].include? Moped::BSON::ObjectId.from_string(@params['_id'])
-
     mongoid_query do
-      fa = ::Item.where(_id: @params['_id'], deleted: false).only("name", "desc", "status", "_kind", "path", "ident", "counter", "logkey", "confkey", "configs", "good")
+      fa = ::Item.where(_id: @params['_id'], deleted: false).in(user_ids: [@session[:user][:_id]]).only("name", "desc", "status", "_kind", "path", "ident", "counter", "logkey", "confkey", "configs", "good")
       factory = fa.first
       return not_found if factory.nil?
       ok(factory)
@@ -36,7 +34,7 @@ class FactoryController < RESTController
     updatable_fields = ['name', 'desc', 'status']
 
     mongoid_query do
-      item = Item.factories.any_in(_id: @session[:accessible]).find(@params['_id'])
+      item = Item.factories.any_in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
 
       @params.delete_if {|k, v| not updatable_fields.include? k }
       
@@ -63,7 +61,7 @@ class FactoryController < RESTController
     require_auth_level :tech
     
     mongoid_query do
-      item = Item.factories.any_in(_id: @session[:accessible]).find(@params['_id'])
+      item = Item.factories.any_in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
       item.deleted = true
       item.status = 'closed'
       item.save

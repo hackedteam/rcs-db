@@ -18,18 +18,16 @@ class AgentController < RESTController
 
     mongoid_query do
       fields = ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "upgradable", "demo", "scout", "good", "stat.last_sync", "stat.last_sync_status", "stat.user", "stat.device", "stat.source", "stat.size", "stat.grid_size"]
-      agents = ::Item.in(_kind: ['agent', 'factory']).in(deleted: [false, nil]).in(_id: @session[:accessible]).only(fields)
+      agents = ::Item.in(_kind: ['agent', 'factory']).in(deleted: [false, nil]).in(user_ids: [@session[:user][:_id]]).only(fields)
       ok(agents)
     end
   end
   
   def show
     require_auth_level :tech, :view
-    
-    return not_found() unless @session[:accessible].include? Moped::BSON::ObjectId.from_string(@params['_id'])
 
     mongoid_query do
-      ag = ::Item.where(_id: @params['_id'], deleted: false).only("name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "deleted", "uninstalled", "demo", "scout", "good", "version", "counter", "configs")
+      ag = ::Item.where(_id: @params['_id'], deleted: false).in(user_ids: [@session[:user][:_id]]).only("name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "deleted", "uninstalled", "demo", "scout", "good", "version", "counter", "configs")
       agent = ag.first
       return not_found if agent.nil?
       ok(agent)
@@ -42,7 +40,7 @@ class AgentController < RESTController
     updatable_fields = ['name', 'desc', 'status']
     
     mongoid_query do
-      item = Item.any_in(_id: @session[:accessible]).find(@params['_id'])
+      item = Item.any_in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
       
       @params.delete_if {|k, v| not updatable_fields.include? k }
       
@@ -65,7 +63,7 @@ class AgentController < RESTController
     require_auth_level :tech
 
     mongoid_query do
-      item = Item.any_in(_id: @session[:accessible]).find(@params['_id'])
+      item = Item.any_in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
 
       Audit.log :actor => @session[:user][:name],
                 :action => "#{item._kind}.delete",
@@ -130,6 +128,7 @@ class AgentController < RESTController
         doc[:_kind] = :factory
         doc[:path] = [operation._id]
         doc[:path] << target._id unless target.nil?
+        doc[:users] = target.users
         doc[:status] = :open
         doc[:type] = @params['type']
         doc[:ident] = get_new_ident
@@ -144,12 +143,6 @@ class AgentController < RESTController
         doc[:logkey] = calculate_random_key
         doc[:configs] = []
       end
-
-      # make item accessible to the current user (immediately)
-      SessionManager.instance.add_accessible(@session, item._id)
-
-      # make item accessible to all the other users (in a thread)
-      SessionManager.instance.rebuild_all_accessible
 
       Audit.log :actor => @session[:user][:name],
                 :action => "factory.create",
@@ -236,7 +229,7 @@ class AgentController < RESTController
     require_auth_level :tech_config
 
     mongoid_query do
-      agent = Item.any_in(_id: @session[:accessible]).where(_kind: 'agent').find(@params['_id'])
+      agent = Item.any_in(user_ids: [@session[:user][:_id]]).where(_kind: 'agent').find(@params['_id'])
       config = agent.configs.where({:_id => @params['config_id']}).first
 
       config[:desc] = @params['desc']
@@ -251,7 +244,7 @@ class AgentController < RESTController
     require_auth_level :tech_config
 
     mongoid_query do
-      agent = Item.any_in(_id: @session[:accessible]).where(_kind: 'agent').find(@params['_id'])
+      agent = Item.any_in(user_ids: [@session[:user][:_id]]).where(_kind: 'agent').find(@params['_id'])
       agent.configs.find(@params['config_id']).destroy
 
       Audit.log :actor => @session[:user][:name],
@@ -368,13 +361,11 @@ class AgentController < RESTController
       target = Item.create(name: agent.name) do |doc|
         doc[:_kind] = :target
         doc[:path] = factory.path
+        doc.users = parent.users
         doc.stat = ::Stat.new
         doc[:status] = :open
         doc[:desc] = "Created automatically on first sync from: #{agent.name}"
       end
-
-      # make the target accessible to the users
-      SessionManager.instance.add_accessible_item(factory, target)
 
       agent.path = factory.path << target._id
     end
@@ -407,9 +398,6 @@ class AgentController < RESTController
       # add the files needed for the infection module
       agent.add_infection_files if agent.platform == 'windows'
     end
-
-    # add the new agent to all the accessible list of all users
-    SessionManager.instance.add_accessible_item(factory, agent)
 
     # check for alerts on this new instance
     Alerting.new_instance agent

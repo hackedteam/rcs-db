@@ -649,19 +649,20 @@ if false
 end
 
 # operations
-if false
+if true
   puts "operation.index" 
   res = http.request_get('/operation', {'Cookie' => cookie})
   #puts res.body
   operations = JSON.parse(res.body)
   puts operations.size
   puts
+  #puts operations.inspect
   
   puts "operation.index.all" 
   res = http.request_get('/operation?all=true', {'Cookie' => cookie})
   #puts res.body
-  operations = JSON.parse(res.body)
-  puts operations.size
+  operations_all = JSON.parse(res.body)
+  puts operations_all.size
   puts
   
   puts "operation.show"

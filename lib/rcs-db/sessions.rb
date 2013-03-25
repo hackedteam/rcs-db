@@ -22,7 +22,7 @@ class SessionManager
     @sessions = {}
   end
 
-  def create(user, level, address, accessible = [], console_version = nil)
+  def create(user, level, address, console_version = nil)
     
     # create a new random cookie
     #cookie = SecureRandom.random_bytes(8).unpack('H*').first
@@ -38,7 +38,6 @@ class SessionManager
       s[:cookie] = cookie
       s[:address] = address
       s[:time] = Time.now.getutc.to_i
-      s[:accessible] = accessible
       s[:console_version] = console_version
     end
 
@@ -86,7 +85,6 @@ class SessionManager
     session[:address] = sess[:address]
     session[:cookie] = sess[:cookie]
     session[:time] = sess[:time]
-    session[:accessible] = sess[:accessible]
     session[:console_version] = sess[:console_version]
 
     return session
@@ -154,76 +152,6 @@ class SessionManager
 
   def length
     ::Session.all.count
-  end
-
-  def get_accessible(user)
-    
-    # the list of accessible Items
-    accessible = Set.new
-
-    # search all the groups which the user belongs to
-    ::Group.any_in({_id: user.group_ids}).each do |group|
-      # add all the accessible operations
-      accessible += group.item_ids
-    end
-
-    # for each operation search the Items belonging to it
-    accessible.dup.each do |operation|
-      # it is enough to search in the _path to check the membership
-      ::Item.any_in({path: [operation]}).each do |item|
-        accessible << item[:_id]
-      end
-      ::Entity.any_in({path: [operation]}).each do |item|
-        accessible << item[:_id]
-      end
-    end
-
-    trace :debug, "Accessible list for #{user.name} has #{accessible.size} elements"
-    #trace :warn, "Accessible list for #{user.name} has #{accessible.size} elements" if accessible.size >= 100
-
-    return accessible.to_a
-  end
-
-  def add_accessible_item(previous, item)
-    # add to all the active session the new agent
-    # if the previous item is in the accessible list, we are sure that even
-    # the new item will be in the list
-    ::Session.all.each do |sess|
-      if sess[:accessible].include? previous[:_id]
-        sess[:accessible] = sess[:accessible] + [ item[:_id] ]
-        sess.save
-      end
-    end
-  end
-
-  def add_accessible(session, id)
-    # persist it in the db
-    ::Session.where({cookie: session[:cookie]}).each do |sess|
-      sess[:accessible] = sess[:accessible] + [ id ]
-      sess.save
-    end
-  end
-
-  def rebuild_all_accessible
-    # create a new thread to be fast returning from this method
-    Thread.new do
-      begin
-        trace :debug, "Rebuilding accessible list..."
-        ::Session.all.each do |sess|
-          # skip authenticated collector
-          next if sess[:level].include? :server
-
-          user = ::User.find(sess[:user].first)
-          sess[:accessible] = get_accessible(user)
-          sess.save
-          trace :debug, "Accessible for #{user[:name]} rebuilt"
-        end
-      rescue Exception => e
-        trace :error, "Rebuilding accessible list failed: #{e.message}"
-      ensure
-        Thread.exit
-      end
-    end
   end
 
 end #SessionManager

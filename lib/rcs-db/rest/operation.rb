@@ -16,7 +16,7 @@ class OperationController < RESTController
       if admin? and @params['all'] == "true"
         operations = ::Item.operations.only(fields)
       else
-        operations = ::Item.operations.in(_id: @session[:accessible]).only(fields)
+        operations = ::Item.operations.in(user_ids: [@session[:user][:_id]]).only(fields)
       end
 
       ok(operations)
@@ -26,10 +26,8 @@ class OperationController < RESTController
   def show
     require_auth_level :admin, :tech, :view
 
-    return not_found() unless @session[:accessible].include? Moped::BSON::ObjectId.from_string(@params['_id'])
-
     mongoid_query do
-      op = ::Item.operations.where(_id: @params['_id']).only("name", "desc", "status", "_kind", "path", "stat", "group_ids")
+      op = ::Item.operations.where(_id: @params['_id']).in(user_ids: [@session[:user][:_id]]).only("name", "desc", "status", "_kind", "path", "stat", "group_ids")
       operation = op.first
       return not_found if operation.nil?
       ok(operation)
@@ -57,15 +55,9 @@ class OperationController < RESTController
       if @params.has_key? 'group_ids'
         @params['group_ids'].each do |gid|
           group = ::Group.find(gid)
-          item.groups << group
+          group.items << item
         end
       end
-
-      # make item accessible to the current user (immediately)
-      SessionManager.instance.add_accessible(@session, item._id)
-
-      # make item accessible to the users
-      SessionManager.instance.rebuild_all_accessible
 
       Audit.log :actor => @session[:user][:name],
                 :action => "operation.create",
@@ -83,7 +75,7 @@ class OperationController < RESTController
     updatable_fields = ['name', 'desc', 'status', 'contact']
 
     mongoid_query do
-      item = Item.operations.any_in(_id: @session[:accessible]).find(@params['_id'])
+      item = Item.operations.any_in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
 
       # recreate the groups associations
       if @params.has_key? 'group_ids'
@@ -116,7 +108,7 @@ class OperationController < RESTController
     require_auth_level :admin_operations
 
     mongoid_query do
-      item = Item.operations.any_in(_id: @session[:accessible]).find(@params['_id'])
+      item = Item.operations.any_in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
       name = item.name
 
       Audit.log :actor => @session[:user][:name],

@@ -11,7 +11,6 @@ class Session
   field :cookie, type: String
   field :address, type: String
   field :time, type: Integer
-  field :accessible, type: Array
   field :console_version, type: String
 
   validates_uniqueness_of :user

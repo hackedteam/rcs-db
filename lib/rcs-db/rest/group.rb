@@ -82,9 +82,6 @@ class GroupController < RESTController
       
       group.users << user
 
-      # recalculate the accessible list for logged in users
-      SessionManager.instance.rebuild_all_accessible
-
       Audit.log :actor => @session[:user][:name], :action => 'group.add_user', :group_name => @params['name'], :desc => "Added user '#{user.name}' to group '#{group.name}'"
       
       return ok
@@ -100,9 +97,6 @@ class GroupController < RESTController
       user = User.find(@params['user']['_id'])
 
       group.users.delete(user)
-
-      # recalculate the accessible list for logged in users
-      SessionManager.instance.rebuild_all_accessible
 
       Audit.log :actor => @session[:user][:name], :action => 'group.remove_user', :group_name => @params['name'], :desc => "Removed user '#{user.name}' from group '#{group.name}'"
       
@@ -120,9 +114,6 @@ class GroupController < RESTController
 
       group.items << operation
 
-      # recalculate the accessible list for logged in users
-      SessionManager.instance.rebuild_all_accessible
-
       Audit.log :actor => @session[:user][:name], :action => 'group.add_operation', :group_name => @params['name'], :desc => "Added operation '#{operation.name}' to group '#{group.name}'"
 
       return ok
@@ -138,9 +129,6 @@ class GroupController < RESTController
       operation = Item.find(@params['operation']['_id'])
 
       group.items.delete(operation)
-
-      # recalculate the accessible list for logged in users
-      SessionManager.instance.rebuild_all_accessible
 
       Audit.log :actor => @session[:user][:name], :action => 'group.remove_operation', :group_name => @params['name'], :desc => "Removed operation '#{operation.name}' from group '#{group.name}'"
 
