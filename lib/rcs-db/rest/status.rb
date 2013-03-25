@@ -43,7 +43,7 @@ class StatusController < RESTController
       name = monitor[:name]
       monitor.destroy
 
-      Audit.log :actor => @session[:user][:name], :action => 'monitor.delete', :desc => "Component '#{name}' was deleted from db"
+      Audit.log :actor => @session.user[:name], :action => 'monitor.delete', :desc => "Component '#{name}' was deleted from db"
 
       return ok
     end

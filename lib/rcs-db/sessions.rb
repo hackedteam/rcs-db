@@ -25,14 +25,13 @@ class SessionManager
   def create(user, level, address, console_version = nil)
     
     # create a new random cookie
-    #cookie = SecureRandom.random_bytes(8).unpack('H*').first
     cookie = UUIDTools::UUID.random_create.to_s
     
-    ::Session.create!({:user => []}) do |s|
+    ::Session.create! do |s|
       if level.include? :server
-        s[:user] = [ user ]
+        s[:server] = user
       else
-        s[:user] = [ user[:_id] ]
+        s.user = user
       end
       s[:level] = level
       s[:cookie] = cookie
@@ -48,7 +47,7 @@ class SessionManager
     user = ::User.where({name: username}).first
     return nil if user.nil?
 
-    sess = ::Session.where({user: [ user[:_id] ]}).first
+    sess = ::Session.where(user: user).first
     return nil if sess.nil?
 
     get(sess[:cookie])
@@ -71,26 +70,6 @@ class SessionManager
   end
   
   def get(cookie)
-    sess = ::Session.where({cookie: cookie}).first
-    return nil if sess.nil?
-
-    # create a fake object with a real user reference
-    session = {}
-    if sess[:level].include? :server
-      session[:user] = nil
-    else
-      session[:user] = ::User.find(sess[:user]).first
-    end
-    session[:level] = sess[:level]
-    session[:address] = sess[:address]
-    session[:cookie] = sess[:cookie]
-    session[:time] = sess[:time]
-    session[:console_version] = sess[:console_version]
-
-    return session
-  end
-
-  def get_session(cookie)
     ::Session.where({cookie: cookie}).first
   end
 
@@ -105,7 +84,11 @@ class SessionManager
   end
 
   def delete_user(user)
-    ::Session.destroy_all(conditions: {user: [ user ]})
+    ::Session.destroy_all(user: user)
+  end
+
+  def delete_server(user)
+    ::Session.destroy_all(server: user)
   end
 
   # default timeout is 15 minutes
@@ -125,7 +108,7 @@ class SessionManager
           # don't log timeout for the server
           unless session[:level].include? :server
 
-            user = User.where({_id: session[:user].first}).first
+            user = session.user
             # keep the sessions clean of invalid users
             if user.nil?
               session.destroy

@@ -35,7 +35,7 @@ class BackupjobController < RESTController
       b.status = 'QUEUED'
       b.save
       
-      Audit.log :actor => @session[:user][:name], :action => 'backupjob.create', :desc => "#{@params['what']} on #{@params['when']} -> #{@params['name']}"
+      Audit.log :actor => @session.user[:name], :action => 'backupjob.create', :desc => "#{@params['what']} on #{@params['when']} -> #{@params['name']}"
 
       return ok(b)
     end    
@@ -78,7 +78,7 @@ class BackupjobController < RESTController
         end
 
         if backup[key.to_s] != value
-          Audit.log :actor => @session[:user][:name], :action => 'backupjob.update', :desc => "Updated '#{key}' to '#{value}' for backup #{backup[:name]}"
+          Audit.log :actor => @session.user[:name], :action => 'backupjob.update', :desc => "Updated '#{key}' to '#{value}' for backup #{backup[:name]}"
         end
       end
 
@@ -94,7 +94,7 @@ class BackupjobController < RESTController
 
     mongoid_query do
       backup = ::Backup.find(@params['_id'])
-      Audit.log :actor => @session[:user][:name], :action => 'backupjob.destroy', :desc => "Deleted the backup job [#{backup[:name]}]"
+      Audit.log :actor => @session.user[:name], :action => 'backupjob.destroy', :desc => "Deleted the backup job [#{backup[:name]}]"
       backup.destroy
 
       return ok
@@ -128,7 +128,7 @@ class BackuparchiveController < RESTController
     # recursively delete the directory
     FileUtils.rm_rf(real)
 
-    Audit.log :actor => @session[:user][:name], :action => 'backup.destroy', :desc => "Deleted the backup #{@params['_id']} from the archive"
+    Audit.log :actor => @session.user[:name], :action => 'backup.destroy', :desc => "Deleted the backup #{@params['_id']} from the archive"
 
     return ok()
   end
@@ -139,7 +139,7 @@ class BackuparchiveController < RESTController
 
     ret = BackupManager.restore_backup(@params)
 
-    Audit.log :actor => @session[:user][:name], :action => 'backup.restore', :desc => "Restored the backup #{@params['_id']} from the archive"
+    Audit.log :actor => @session.user[:name], :action => 'backup.restore', :desc => "Restored the backup #{@params['_id']} from the archive"
 
     if ret
       return ok()

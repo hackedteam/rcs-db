@@ -588,13 +588,14 @@ if false
 end
 
 # alerts
-if false
+if true
   # alert.index
   puts "alert.index" 
   res = http.request_get('/alert', {'Cookie' => cookie})
-  puts res
+  puts res.body
   puts
   
+=begin  
   # alert.create
   puts "alert.create" 
   alert = {evidence: 'keylog', priority: 5, suppression: 600, type: 'mail', keywords: 'ciao miao bau', path: [1, 2, 3]}
@@ -645,11 +646,11 @@ if false
   res = http.request_get('/alert/counters', {'Cookie' => cookie})
   puts res
   puts
-  
+=end  
 end
 
 # operations
-if true
+if false
   puts "operation.index" 
   res = http.request_get('/operation', {'Cookie' => cookie})
   #puts res.body

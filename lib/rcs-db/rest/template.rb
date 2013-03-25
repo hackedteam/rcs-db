@@ -26,11 +26,11 @@ class TemplateController < RESTController
     mongoid_query do
       t = ::Template.new
       t.desc = @params['desc']
-      t.user = @session[:user][:name]
+      t.user = @session.user[:name]
       t.config = @params['config']
       t.save
       
-      Audit.log :actor => @session[:user][:name], :action => 'template.create', :desc => "Created a new template: #{@params['desc']}"
+      Audit.log :actor => @session.user[:name], :action => 'template.create', :desc => "Created a new template: #{@params['desc']}"
 
       return ok(t)
     end    
@@ -46,7 +46,7 @@ class TemplateController < RESTController
 
       @params.each_pair do |key, value|
         if template[key.to_s] != value
-          Audit.log :actor => @session[:user][:name], :action => 'template.update', :desc => "Updated template: #{template[:desc]}"
+          Audit.log :actor => @session.user[:name], :action => 'template.update', :desc => "Updated template: #{template[:desc]}"
         end
       end
 
@@ -62,7 +62,7 @@ class TemplateController < RESTController
 
     mongoid_query do
       template = ::Template.find(@params['_id'])
-      Audit.log :actor => @session[:user][:name], :action => 'template.destroy', :desc => "Deleted the template: #{template[:desc]}"
+      Audit.log :actor => @session.user[:name], :action => 'template.destroy', :desc => "Deleted the template: #{template[:desc]}"
       template.destroy
       return ok
     end

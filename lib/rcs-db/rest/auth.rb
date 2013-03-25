@@ -35,7 +35,7 @@ class AuthController < RESTController
           # the unique username will be used to create an entry for it in the network schema
           if auth_server(user, pass)
             # delete any previous session from this server
-            SessionManager.instance.delete_user(user)
+            SessionManager.instance.delete_server(user)
             # create the new auth sessions
             sess = SessionManager.instance.create(user, @auth_level, @request[:peer])
             # append the cookie to the other that may have been present in the request
@@ -54,7 +54,7 @@ class AuthController < RESTController
           sess = SessionManager.instance.get_by_user(user)
           unless sess.nil?
             Audit.log :actor => user, :action => 'logout', :user_name => user, :desc => "User '#{user}' forcibly logged out by system"
-            PushManager.instance.notify('logout', {rcpt: sess[:user][:_id], text: "Your account has been used on another machine"})
+            PushManager.instance.notify('logout', {rcpt: sess.user[:_id], text: "Your account has been used on another machine"})
             SessionManager.instance.delete(sess[:cookie])
           end
           
@@ -67,6 +67,9 @@ class AuthController < RESTController
           # append the cookie to the other that may have been present in the request
           expiry = (Time.now() + 7*86400).strftime('%A, %d-%b-%y %H:%M:%S %Z')
           trace :debug, "[#{@request[:peer]}] Issued cookie with expiry time: #{expiry}"
+
+          # retro compatibility with the console
+          sess[:user] = sess.user
 
           return ok(sess, {cookie: 'session=' + sess[:cookie] + "; path=/; expires=#{expiry}" })
         end
@@ -102,7 +105,7 @@ class AuthController < RESTController
   # once the session is over you can explicitly logout
   def logout
     if @session
-      Audit.log :actor => @session[:user][:name], :action => 'logout', :user_name => @session[:user][:name], :desc => "User '#{@session[:user][:name]}' logged out"
+      Audit.log :actor => @session.user[:name], :action => 'logout', :user_name => @session.user[:name], :desc => "User '#{@session.user[:name]}' logged out"
       SessionManager.instance.delete(@request[:cookie])
     end
     

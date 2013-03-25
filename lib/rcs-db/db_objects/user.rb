@@ -54,7 +54,9 @@ class User
   
   has_and_belongs_to_many :groups, :dependent => :nullify, :autosave => true
   has_many :alerts, :dependent => :destroy
-  
+
+  has_one :session, :dependent => :destroy, :autosave => true
+
   index({name: 1}, {background: true})
   index({enabled: 1}, {background: true})
   

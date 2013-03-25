@@ -11,7 +11,7 @@ class FilterController < RESTController
     require_auth_level :view
 
     mongoid_query do
-      filters = ::EvidenceFilter.any_of({user: [@session[:user][:_id]]}, {user: []}).order_by([[:name, :asc]])
+      filters = ::EvidenceFilter.any_of({user: [@session.user[:_id]]}, {user: []}).order_by([[:name, :asc]])
       return ok(filters)
     end
   end
@@ -21,12 +21,12 @@ class FilterController < RESTController
 
     mongoid_query do
       f = ::EvidenceFilter.new
-      f.user = @params['private'] ? [ @session[:user][:_id] ] : []
+      f.user = @params['private'] ? [ @session.user[:_id] ] : []
       f.name = @params['name']
       f.filter = @params['filter']
       f.save
       
-      Audit.log :actor => @session[:user][:name], :action => 'filter.create', :desc => "Created the filter #{@params['name']}"
+      Audit.log :actor => @session.user[:name], :action => 'filter.create', :desc => "Created the filter #{@params['name']}"
 
       return ok(f)
     end    
@@ -37,7 +37,7 @@ class FilterController < RESTController
     
     mongoid_query do
       filter = ::EvidenceFilter.find(@params['_id'])
-      Audit.log :actor => @session[:user][:name], :action => 'filter.destroy', :desc => "Deleted the filter: #{filter[:name]}"
+      Audit.log :actor => @session.user[:name], :action => 'filter.destroy', :desc => "Deleted the filter: #{filter[:name]}"
       filter.destroy
       return ok
     end

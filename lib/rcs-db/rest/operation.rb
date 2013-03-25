@@ -16,7 +16,7 @@ class OperationController < RESTController
       if admin? and @params['all'] == "true"
         operations = ::Item.operations.only(fields)
       else
-        operations = ::Item.operations.in(user_ids: [@session[:user][:_id]]).only(fields)
+        operations = ::Item.operations.in(user_ids: [@session.user[:_id]]).only(fields)
       end
 
       ok(operations)
@@ -27,7 +27,7 @@ class OperationController < RESTController
     require_auth_level :admin, :tech, :view
 
     mongoid_query do
-      op = ::Item.operations.where(_id: @params['_id']).in(user_ids: [@session[:user][:_id]]).only("name", "desc", "status", "_kind", "path", "stat", "group_ids")
+      op = ::Item.operations.where(_id: @params['_id']).in(user_ids: [@session.user[:_id]]).only("name", "desc", "status", "_kind", "path", "stat", "group_ids")
       operation = op.first
       return not_found if operation.nil?
       ok(operation)
@@ -59,7 +59,7 @@ class OperationController < RESTController
         end
       end
 
-      Audit.log :actor => @session[:user][:name],
+      Audit.log :actor => @session.user[:name],
                 :action => "operation.create",
                 :operation_name => item['name'],
                 :desc => "Created operation '#{item['name']}'"
@@ -75,7 +75,7 @@ class OperationController < RESTController
     updatable_fields = ['name', 'desc', 'status', 'contact']
 
     mongoid_query do
-      item = Item.operations.any_in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
+      item = Item.operations.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
 
       # recreate the groups associations
       if @params.has_key? 'group_ids'
@@ -90,7 +90,7 @@ class OperationController < RESTController
 
       @params.each_pair do |key, value|
         if item[key.to_s] != value and not key['_ids']
-          Audit.log :actor => @session[:user][:name],
+          Audit.log :actor => @session.user[:name],
                     :action => "operation.update",
                     :operation_name => item['name'],
                     :desc => "Updated '#{key}' to '#{value}'"
@@ -108,10 +108,10 @@ class OperationController < RESTController
     require_auth_level :admin_operations
 
     mongoid_query do
-      item = Item.operations.any_in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
+      item = Item.operations.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
       name = item.name
 
-      Audit.log :actor => @session[:user][:name],
+      Audit.log :actor => @session.user[:name],
                 :action => "operation.delete",
                 :operation_name => name,
                 :desc => "Deleted operation '#{name}'"

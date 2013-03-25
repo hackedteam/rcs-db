@@ -34,7 +34,7 @@ class ConnectorController < RESTController
       f.path = @params['path'].collect! {|x| Moped::BSON::ObjectId(x)} if @params['path'].class == Array
       f.save
       
-      Audit.log :actor => @session[:user][:name], :action => 'connector.create', :desc => "Connector rule '#{f.name}' was created"
+      Audit.log :actor => @session.user[:name], :action => 'connector.create', :desc => "Connector rule '#{f.name}' was created"
 
       return ok(f)
     end    
@@ -53,7 +53,7 @@ class ConnectorController < RESTController
           value.collect! {|x| Moped::BSON::ObjectId(x)}
         end
         if connector[key.to_s] != value
-          Audit.log :actor => @session[:user][:name], :action => 'connector.update', :desc => "Updated '#{key}' to '#{value}' for connector rule #{connector[:name]}"
+          Audit.log :actor => @session.user[:name], :action => 'connector.update', :desc => "Updated '#{key}' to '#{value}' for connector rule #{connector[:name]}"
         end
       end
 
@@ -69,7 +69,7 @@ class ConnectorController < RESTController
 
     mongoid_query do
       connector = ::Connector.find(@params['_id'])
-      Audit.log :actor => @session[:user][:name], :action => 'connector.destroy', :desc => "Deleted the connector rule [#{connector[:name]}]"
+      Audit.log :actor => @session.user[:name], :action => 'connector.destroy', :desc => "Deleted the connector rule [#{connector[:name]}]"
       connector.destroy
 
       return ok

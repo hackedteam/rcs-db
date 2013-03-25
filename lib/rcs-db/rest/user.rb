@@ -21,7 +21,7 @@ class UserController < RESTController
     require_auth_level :admin, :tech, :view
 
     # we need to leave access to themselves for everyone
-    return not_found('User not found') if !admin? && @params['_id'] != @session[:user][:_id].to_s
+    return not_found('User not found') if !admin? && @params['_id'] != @session.user[:_id].to_s
 
     mongoid_query do
       user = User.find(@params['_id'])
@@ -60,7 +60,7 @@ class UserController < RESTController
     end
 
     username = @params['name']
-    Audit.log :actor => @session[:user][:name], :action => 'user.create', :user_name => username, :desc => "Created the user '#{username}'"
+    Audit.log :actor => @session.user[:name], :action => 'user.create', :user_name => username, :desc => "Created the user '#{username}'"
 
     return ok(result)
   end
@@ -74,7 +74,7 @@ class UserController < RESTController
       
       # if non-admin you can modify only yourself
       unless @session[:level].include? :admin
-        return not_found("User not found") if user._id != @session[:user][:_id]
+        return not_found("User not found") if user._id != @session.user[:_id]
       end
       
       # if enabling a user, check the license
@@ -85,14 +85,14 @@ class UserController < RESTController
       # if pass is modified, treat it separately
       if @params.has_key? 'pass'
         @params['pass'] = user.create_password(@params['pass'])
-        Audit.log :actor => @session[:user][:name], :action => 'user.update', :user_name => user['name'], :desc => "Changed password for user '#{user['name']}'"
+        Audit.log :actor => @session.user[:name], :action => 'user.update', :user_name => user['name'], :desc => "Changed password for user '#{user['name']}'"
       else
         @params.each_pair do |key, value|
           if key == 'dashboard_ids'
             value.collect! {|x| Moped::BSON::ObjectId(x)}
           end
           if user[key.to_s] != value and not key['_ids']
-            Audit.log :actor => @session[:user][:name], :action => 'user.update', :user_name => user['name'], :desc => "Updated '#{key}' to '#{value}' for user '#{user['name']}'"
+            Audit.log :actor => @session.user[:name], :action => 'user.update', :user_name => user['name'], :desc => "Updated '#{key}' to '#{value}' for user '#{user['name']}'"
           end
         end
       end
@@ -117,13 +117,13 @@ class UserController < RESTController
       item = ::Item.find(@params['item_id'])
       case item._kind
         when 'operation'
-          Audit.log :actor => @session[:user][:name], :action => 'operation.view', :operation_name => item['name'], :desc => "Has accessed the operation: #{item.name}"
+          Audit.log :actor => @session.user[:name], :action => 'operation.view', :operation_name => item['name'], :desc => "Has accessed the operation: #{item.name}"
         when 'target'
-          Audit.log :actor => @session[:user][:name], :action => 'target,view', :target_name => item['name'], :desc => "Has accessed the target: #{item.name}"
+          Audit.log :actor => @session.user[:name], :action => 'target,view', :target_name => item['name'], :desc => "Has accessed the target: #{item.name}"
         when 'factory'
-          Audit.log :actor => @session[:user][:name], :action => 'factory.view', :agent_name => item['name'], :desc => "Has accessed the factory: #{item.name}"
+          Audit.log :actor => @session.user[:name], :action => 'factory.view', :agent_name => item['name'], :desc => "Has accessed the factory: #{item.name}"
         when 'agent'
-          Audit.log :actor => @session[:user][:name], :action => 'agent.view', :agent_name => item['name'], :desc => "Has accessed the agent: #{item.name}"
+          Audit.log :actor => @session.user[:name], :action => 'agent.view', :agent_name => item['name'], :desc => "Has accessed the agent: #{item.name}"
       end
 
       return ok(user)
@@ -137,7 +137,7 @@ class UserController < RESTController
     mongoid_query do
       user = User.find(@params['_id'])
       
-      Audit.log :actor => @session[:user][:name], :action => 'user.destroy', :user_name => @params['name'], :desc => "Deleted the user '#{user['name']}'"
+      Audit.log :actor => @session.user[:name], :action => 'user.destroy', :user_name => @params['name'], :desc => "Deleted the user '#{user['name']}'"
       
       user.destroy
       
@@ -151,10 +151,10 @@ class UserController < RESTController
 
     mongoid_query do
       if @params['_id'].nil?
-        PushManager.instance.notify('message', {from: @session[:user][:name], text: @params['text']})
+        PushManager.instance.notify('message', {from: @session.user[:name], text: @params['text']})
       else
         user = User.find(@params['_id'])
-        PushManager.instance.notify('message', {from: @session[:user][:name], rcpt: user[:_id], text: @params['text']})
+        PushManager.instance.notify('message', {from: @session.user[:name], rcpt: user[:_id], text: @params['text']})
       end
 
       return ok

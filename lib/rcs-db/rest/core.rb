@@ -39,7 +39,7 @@ class CoreController < RESTController
         
         return ok(list)
       else
-        Audit.log :actor => @session[:user][:name], :action => 'core.get', :desc => "Downloaded the core #{@params['_id']}"
+        Audit.log :actor => @session.user[:name], :action => 'core.get', :desc => "Downloaded the core #{@params['_id']}"
         return stream_grid(core[:_grid])
       end
     end
@@ -78,7 +78,7 @@ class CoreController < RESTController
 
       core.save
 
-      Audit.log :actor => @session[:user][:name], :action => 'core.replace', :desc => "Replaced the #{@params['_id']} core"
+      Audit.log :actor => @session.user[:name], :action => 'core.replace', :desc => "Replaced the #{@params['_id']} core"
 
       return ok(core)
     end
@@ -116,7 +116,7 @@ class CoreController < RESTController
       core[:_grid_size] = content.bytesize
       core.save
 
-      Audit.log :actor => @session[:user][:name], :action => 'core.add', :desc => "Added [#{new_entry}] to the core #{core.name}"
+      Audit.log :actor => @session.user[:name], :action => 'core.add', :desc => "Added [#{new_entry}] to the core #{core.name}"
 
       return ok()
     end
@@ -149,14 +149,14 @@ class CoreController < RESTController
         core[:_grid_size] = content.bytesize
         core.save
 
-        Audit.log :actor => @session[:user][:name], :action => 'core.remove', :desc => "Removed the file [#{@params['name']}] from the core #{@params['_id']}"
+        Audit.log :actor => @session.user[:name], :action => 'core.remove', :desc => "Removed the file [#{@params['name']}] from the core #{@params['_id']}"
 
         return ok()
       # here we want to delete the entire core file
       else
         core.destroy
 
-        Audit.log :actor => @session[:user][:name], :action => 'core.delete', :desc => "Deleted the core #{@params['_id']}"
+        Audit.log :actor => @session.user[:name], :action => 'core.delete', :desc => "Deleted the core #{@params['_id']}"
 
         return ok()
       end

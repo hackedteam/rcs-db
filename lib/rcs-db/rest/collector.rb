@@ -46,7 +46,7 @@ class CollectorController < RESTController
       coll[:prev] = [nil]
     end
 
-    Audit.log :actor => @session[:user][:name], :action => 'collector.create', :desc => "Created the collector '#{@params['name']}'"
+    Audit.log :actor => @session.user[:name], :action => 'collector.create', :desc => "Created the collector '#{@params['name']}'"
 
     return ok(result)
   end
@@ -61,7 +61,7 @@ class CollectorController < RESTController
 
       @params.each_pair do |key, value|
         if coll[key.to_s] != value and not key['_ids']
-          Audit.log :actor => @session[:user][:name], :action => 'collector.update', :desc => "Updated '#{key}' to '#{value}' for collector '#{coll['name']}'"
+          Audit.log :actor => @session.user[:name], :action => 'collector.update', :desc => "Updated '#{key}' to '#{value}' for collector '#{coll['name']}'"
         end
       end
 
@@ -78,7 +78,7 @@ class CollectorController < RESTController
     mongoid_query do
       collector = Collector.find(@params['_id'])
 
-      Audit.log :actor => @session[:user][:name], :action => 'collector.destroy', :desc => "Deleted the collector '#{collector[:name]}'"
+      Audit.log :actor => @session.user[:name], :action => 'collector.destroy', :desc => "Deleted the collector '#{collector[:name]}'"
 
       collector.destroy
       return ok
@@ -145,7 +145,7 @@ class CollectorController < RESTController
           return stream_file(build.path(build.outputs.first), proc { build.clean })
 
         when 'POST'
-          Audit.log :actor => @session[:user][:name], :action => 'collector.upgrade', :desc => "Upgraded the collector '#{collector[:name]}'"
+          Audit.log :actor => @session.user[:name], :action => 'collector.upgrade', :desc => "Upgraded the collector '#{collector[:name]}'"
 
           collector.upgradable = true
           collector.save

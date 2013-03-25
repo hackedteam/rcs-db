@@ -8,7 +8,6 @@ require_relative 'push'
 require 'rcs-common/trace'
 
 require 'net/smtp'
-require 'lrucache'
 
 module RCS
 module DB
@@ -25,7 +24,7 @@ class Alerting
 
         # we MUST not dispatch alert for element that are not accessible by the user
         user = ::User.find(alert.user_id)
-        next unless is_accessible?(user, agent)
+        next unless agent.users.include? user
 
         unless alert.type == 'NONE'
           alert.logs.create!(time: Time.now.getutc.to_i, path: agent.path + [agent._id])
@@ -54,7 +53,7 @@ class Alerting
 
         # we MUST not dispatch alert for element that are not accessible by the user
         user = ::User.find(alert.user_id)
-        next unless is_accessible?(user, agent)
+        next unless agent.users.include? user
 
         unless alert.type == 'NONE'
           alert.logs.create!(time: Time.now.getutc.to_i, path: agent.path + [agent._id])
@@ -90,7 +89,7 @@ class Alerting
 
         # we MUST not dispatch alert for element that are not accessible by the user
         user = ::User.find(alert.user_id)
-        next unless is_accessible?(user, agent)
+        next unless agent.users.include? user
 
         # save the relevance tag into the evidence
         if evidence.rel < alert.tag
@@ -146,22 +145,6 @@ class Alerting
       # check if the agent path is included in the alert path
       # this way an alert on a target will be triggered by all of its agent
       (agent_path & alert.path == alert.path)
-    end
-
-    def is_accessible?(user, agent)
-
-      # use a cache to store accessible list, they are very slow to compute
-      # we cannot calculate them for each evidence
-      @acc_cache ||= LRUCache.new(:ttl => 1.hour)
-
-      # get from the cache
-      accessible = @acc_cache.fetch(user._id) || SessionManager.instance.get_accessible(user)
-
-      # store in the cache
-      @acc_cache.store(user._id, accessible)
-
-      # check if the agent is accessible
-      accessible.include? agent._id
     end
 
     def alert_fast_queue(params)

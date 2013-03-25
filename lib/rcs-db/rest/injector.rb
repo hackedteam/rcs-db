@@ -42,7 +42,7 @@ class InjectorController < RESTController
                              redirect: 'auto',
                              redirection_tag: 'ww')
 
-    Audit.log :actor => @session[:user][:name], :action => 'injector.create', :desc => "Created the injector '#{@params['name']}'"
+    Audit.log :actor => @session.user[:name], :action => 'injector.create', :desc => "Created the injector '#{@params['name']}'"
 
     return ok(result)
   end
@@ -57,7 +57,7 @@ class InjectorController < RESTController
 
       @params.each_pair do |key, value|
         if injector[key.to_s] != value and not key['_ids']
-          Audit.log :actor => @session[:user][:name], :action => 'injector.update', :desc => "Updated '#{key}' to '#{value}' for injector '#{injector['name']}'"
+          Audit.log :actor => @session.user[:name], :action => 'injector.update', :desc => "Updated '#{key}' to '#{value}' for injector '#{injector['name']}'"
         end
       end
 
@@ -74,7 +74,7 @@ class InjectorController < RESTController
     mongoid_query do
       injector = Injector.find(@params['_id'])
 
-      Audit.log :actor => @session[:user][:name], :action => 'injector.destroy', :desc => "Deleted the injector '#{injector.name}'"
+      Audit.log :actor => @session.user[:name], :action => 'injector.destroy', :desc => "Deleted the injector '#{injector.name}'"
 
       injector.destroy
 
@@ -185,7 +185,7 @@ class InjectorController < RESTController
         end
       end
       
-      Audit.log :actor => @session[:user][:name], :action => 'injector.add_rule',
+      Audit.log :actor => @session.user[:name], :action => 'injector.add_rule',
                 :desc => "Added a rule to the injector '#{injector.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
 
       injector.rules << rule
@@ -204,7 +204,7 @@ class InjectorController < RESTController
       rule = injector.rules.find(@params['rule']['_id'])
       target = ::Item.find(rule.target_id.first)
 
-      Audit.log :actor => @session[:user][:name], :action => 'injector.del_rule', :target_name => target.name,
+      Audit.log :actor => @session.user[:name], :action => 'injector.del_rule', :target_name => target.name,
                 :desc => "Deleted a rule from the injector '#{injector.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
 
       injector.rules.delete_all(conditions: { _id: rule[:_id]})
@@ -249,7 +249,7 @@ class InjectorController < RESTController
 
       rule.save
       
-      Audit.log :actor => @session[:user][:name], :action => 'injector.update_rule',
+      Audit.log :actor => @session.user[:name], :action => 'injector.update_rule',
                 :desc => "Modified a rule on the injector '#{injector.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
 
       return ok(rule)
@@ -278,7 +278,7 @@ class InjectorController < RESTController
           return stream_file(build.path('injector.deb'), proc { build.clean })
 
         when 'POST'
-          Audit.log :actor => @session[:user][:name], :action => 'injector.upgrade', :desc => "Upgraded the Network Injector '#{injector[:name]}'"
+          Audit.log :actor => @session.user[:name], :action => 'injector.upgrade', :desc => "Upgraded the Network Injector '#{injector[:name]}'"
 
           injector.upgradable = true
           injector.save

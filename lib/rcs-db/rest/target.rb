@@ -12,7 +12,7 @@ class TargetController < RESTController
 
     mongoid_query do
       fields = ["name", "desc", "status", "_kind", "path", "stat.last_sync", "stat.size", "stat.grid_size", "stat.last_child"]
-      targets = ::Item.targets.in(user_ids: [@session[:user][:_id]]).only(fields)
+      targets = ::Item.targets.in(user_ids: [@session.user[:_id]]).only(fields)
       ok(targets)
     end
   end
@@ -21,7 +21,7 @@ class TargetController < RESTController
     require_auth_level :admin, :tech, :view
 
     mongoid_query do
-      tar = ::Item.operations.where(_id: @params['_id']).in(user_ids: [@session[:user][:_id]]).only("name", "desc", "status", "_kind", "path", "stat")
+      tar = ::Item.operations.where(_id: @params['_id']).in(user_ids: [@session.user[:_id]]).only("name", "desc", "status", "_kind", "path", "stat")
       target = tar.first
       return not_found if target.nil?
       ok(target)
@@ -53,7 +53,7 @@ class TargetController < RESTController
         doc[:desc] = @params['desc']
       end
 
-      Audit.log :actor => @session[:user][:name],
+      Audit.log :actor => @session.user[:name],
                 :action => "target.create",
                 :operation_name => operation['name'],
                 :target_name => item['name'],
@@ -70,13 +70,13 @@ class TargetController < RESTController
     updatable_fields = ['name', 'desc', 'status']
 
     mongoid_query do
-      item = Item.targets.any_in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
+      item = Item.targets.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
       
       @params.delete_if {|k, v| not updatable_fields.include? k }
       
       @params.each_pair do |key, value|
         if item[key.to_s] != value and not key['_ids']
-          Audit.log :actor => @session[:user][:name],
+          Audit.log :actor => @session.user[:name],
                     :action => "target.update",
                     :target_name => item['name'],
                     :desc => "Updated '#{key}' to '#{value}'"
@@ -94,10 +94,10 @@ class TargetController < RESTController
     require_auth_level :admin_targets
 
     mongoid_query do
-      item = Item.targets.any_in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
+      item = Item.targets.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
       name = item.name
 
-      Audit.log :actor => @session[:user][:name],
+      Audit.log :actor => @session.user[:name],
                 :action => "target.delete",
                 :target_name => name,
                 :desc => "Deleted target '#{name}'"
@@ -116,11 +116,11 @@ class TargetController < RESTController
       operation = ::Item.operations.find(@params['operation'])
       return bad_request('INVALID_OPERATION') if operation.nil?
 
-      target = Item.targets.any_in(user_ids: [@session[:user][:_id]]).find(@params['_id'])
+      target = Item.targets.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
 
       target.move_target(operation)
 
-      Audit.log :actor => @session[:user][:name],
+      Audit.log :actor => @session.user[:name],
                 :action => "#{target._kind}.move",
                 (target._kind + '_name').to_sym => @params['name'],
                 :desc => "Moved #{target._kind} '#{target['name']}' to #{operation['name']}"

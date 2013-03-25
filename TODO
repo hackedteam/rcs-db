@@ -15,9 +15,9 @@ TODO 9.0.0
     recalculate all the checksums !!!
 
 --
-    rework to speed up the accessible mechanism
-    relation between session and user
+
     relation between public and factory
+
 --
     aggregates for places (positioner algorithm)
 
