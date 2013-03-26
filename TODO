@@ -2,7 +2,7 @@
 TODO 9.0.0
 
     upgrade to ruby 1.9.3-p365
-    upgrade to mongodb 2.4 (write the upgrade procedure during NSIS installer)
+    upgrade to mongodb 2.4.x (write the upgrade procedure during NSIS installer)
       - running 2.2
       - issue sh.stopBalancer()
       - kill mongos
@@ -12,10 +12,10 @@ TODO 9.0.0
       - copy 24 over 22
       - restart all
 
+--
+
     recalculate all the checksums !!!
 
---
-    mongo pool connection is forever, use different connection if want to change port
 
     FindAndModify for alerting
 
