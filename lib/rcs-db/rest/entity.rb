@@ -27,6 +27,11 @@ class EntityController < RESTController
       ent = ::Entity.where(_id: @params['_id']).in(user_ids: [@session.user[:_id]])
       entity = ent.first
       return not_found if entity.nil?
+
+      # convert position to hash {:latitude, :longitude}
+      entity = entity.as_document
+      entity['position'] = {longitude: entity['position'][0], latitude: entity['position'][1]}
+
       ok(entity)
     end
   end
@@ -47,13 +52,17 @@ class EntityController < RESTController
         return bad_request('INVALID_TARGET') if target.nil?
       end
 
-      e = ::Entity.create!() do |doc|
+      e = ::Entity.create! do |doc|
         doc[:path] = [operation._id]
         doc[:path] << target._id unless target.nil?
         doc[:name] = @params['name']
         doc[:type] = @params['type'].to_sym
         doc[:desc] = @params['desc']
         doc[:level] = :manual
+        if @params['position']
+          doc.position = [@params['position']['longitude'], @params['position']['latitude']]
+          doc.position_attr[:accuracy] = @params['position']['accuracy']
+        end
       end
 
       Audit.log :actor => @session.user[:name], :action => 'entity.create', :desc => "Created a new entity named #{e.name}"
