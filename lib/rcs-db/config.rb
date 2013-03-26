@@ -6,6 +6,7 @@
 require 'rcs-common/trace'
 
 require_relative 'indexer'
+require_relative 'migration'
 
 # system
 require 'yaml'
@@ -144,6 +145,9 @@ class Config
       reset_admin options
       return 0
     end
+
+    # migration to mongoid3 and new access control
+    return Migration.run [:mongoid3, :access_control] if options[:migrate]
 
     # keyword indexing
     return Indexer.run options[:kw_index] if options[:kw_index]
@@ -561,6 +565,9 @@ class Config
       end
       opts.on( '--index TARGET', String, 'Calculate the full text index for this target' ) do |target|
         options[:kw_index] = target
+      end
+      opts.on( '--migrate', String, 'Migrate data to the new version' ) do
+        options[:migrate] = true
       end
       opts.on( '--log', 'Log all operation to a file' ) do
         $log = true

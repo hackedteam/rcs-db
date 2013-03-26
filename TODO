@@ -1,7 +1,8 @@
 
 TODO 9.0.0
 
-    upgrade to ruby 1.9.3-p365
+    upgrade to ruby 1.9.3-p392 on windows
+
     upgrade to mongodb 2.4.x (write the upgrade procedure during NSIS installer)
       - running 2.2
       - issue sh.stopBalancer()
@@ -12,14 +13,6 @@ TODO 9.0.0
       - copy 24 over 22
       - restart all
 
---
-
-    recalculate all the checksums !!!
-
-
-    FindAndModify for alerting
-
---
     aggregates for places (positioner algorithm)
 
     create entity form most_contacted

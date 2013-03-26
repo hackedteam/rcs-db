@@ -92,8 +92,6 @@ class Group
   end
 
   def self.rebuild_access_control
-    start = Time.now
-    trace :info, "Rebuilding access control..."
     # for each operation in each group, search the items of that operation and add
     # the users of this group
     Group.each do |group|
@@ -107,7 +105,6 @@ class Group
         end
       end
     end
-    trace :debug, "Access control rebuilt in #{Time.now - start} secs"
   end
 
 end

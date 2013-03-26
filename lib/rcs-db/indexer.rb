@@ -1,5 +1,3 @@
-#!/usr/bin/env ruby
-
 #
 # Full text search keyword indexer
 #
@@ -10,28 +8,30 @@ require 'set'
 require 'rcs-common/trace'
 
 require_relative 'db_objects/evidence'
+require_relative 'config'
 
 class Indexer
 
   def self.run(target)
     puts "Full text search keyword indexer running..."
 
-    # this is required for mongoid >= 2.4.2
+    # we are standalone (no rails or rack)
     ENV['MONGOID_ENV'] = 'yes'
 
-    Mongoid.configure do |config|
-      config.master = Mongo::Connection.new('127.0.0.1', 27017, pool_size: 50, pool_timeout: 15).db('rcs')
-      config.persist_in_safe_mode = true
-    end
+    # set the parameters for the mongoid.yaml
+    ENV['MONGOID_DATABASE'] = 'rcs'
+    ENV['MONGOID_HOST'] = "127.0.0.1:27017"
 
-    puts "Connected to MongoDB..."
+    Mongoid.load!(RCS::DB::Config.instance.file('mongoid.yaml'), :production)
+
+    puts "Connected to MongoDB at #{ENV['MONGOID_HOST']}"
 
     targets = []
 
     if target.downcase == 'all'
-      targets = ::Item.where({:_kind => 'target'})
+      targets = ::Item.targets
     else
-      targets = ::Item.where({:_kind => 'target', :name => Regexp.new(target, true)})
+      targets = ::Item.targets.where(name: Regexp.new(target, true))
     end
 
     puts "Found #{targets.count} collection to be indexed..."
