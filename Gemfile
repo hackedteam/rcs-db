@@ -1,7 +1,7 @@
 source "http://rubygems.org"
 # Add dependencies required to use your gem here.
 
-gem "rcs-common", ">= 8.3.0", :path => "../rcs-common"
+gem "rcs-common", ">= 8.3.1", :path => "../rcs-common"
 
 gem 'em-http-request'
 gem 'em-websocket'
@@ -27,7 +27,7 @@ gem 'mongo', "= 1.8.3", :git => "git://github.com/alor/mongo-ruby-driver.git", :
 gem 'bson', "= 1.8.3"
 gem 'bson_ext', "= 1.8.3"
 
-gem 'mongoid'
+gem 'mongoid', ">= 3.0.0"
 gem 'mongoid_geospatial'
 gem 'rvincenty'
 
