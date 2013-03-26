@@ -39,6 +39,7 @@ class LicenseGenerator
                             :android => [false, false]},
                :alerting => false,
                :correlation => false,
+               :intelligence => false,
                :connectors => false,
                :rmi => [false, false],
                :nia => [0, false],
