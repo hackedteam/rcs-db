@@ -13,6 +13,8 @@ TODO 9.0.0
       - copy 24 over 22
       - restart all
 
+    upgrade RubyEncoder 1.5
+
 ---
 
     investigate missing groups!!!
