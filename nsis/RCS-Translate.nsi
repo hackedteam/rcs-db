@@ -161,10 +161,12 @@ Function .onInit
 	FileOpen $4 "$INSTDIR\DB\config\VERSION" r
 	FileRead $4 $1
 	FileClose $4
-	${StrStr} $0 $1 "8.3"
-	${If} $0 == ""
-  	MessageBox MB_OK "This version can only be installed on 8.3.x systems, you have $1"
-  	Quit
+	${If} $1 != ""
+	   ${StrStr} $0 $1 "8.3"
+	   ${If} $0 == ""
+  	   MessageBox MB_OK "This version can only be installed on 8.3.x systems, you have $1"
+  	   Quit
+	   ${EndIf}
 	${EndIf}
 
   ${IfNot} ${RunningX64}
