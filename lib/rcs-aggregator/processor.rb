@@ -125,6 +125,10 @@ class Processor
       when 'message'
         # multiple rcpts creates multiple entries
         if ev.data['type'] == :mail
+
+          # don't aggregate draft mails
+          return data if ev.data['draft']
+
           if ev.data['incoming'] == 1
             #extract email from string "Ask Me" <ask@me.it>
             from = ev.data['from'].scan(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i).first
