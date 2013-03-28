@@ -7,6 +7,8 @@
 !include Sections.nsh
 !include LogicLib.nsh
 !include WinVer.nsh
+!include StrFunc.nsh
+${StrStr}
 
 ;--------------------------------
 ;General
