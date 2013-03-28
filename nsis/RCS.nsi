@@ -761,6 +761,23 @@ SectionEnd
 
 Function .onInit
 
+	; check that 8.3.x is already installed
+	IfFileExists "$INSTDIR\DB\config\VERSION" isDB isCollector
+  isDB:
+	  FileOpen $4 "$INSTDIR\DB\config\VERSION" r
+	  Goto check
+  isCollector:
+  	FileOpen $4 "$INSTDIR\Collector\config\VERSION" r
+  check:
+
+	FileRead $4 $1
+	FileClose $4
+	${StrStr} $0 $1 "8.3"
+	${If} $0 == ""
+  	MessageBox MB_OK "This version can only be installed on 8.3.x systems, you have $1"
+  	Quit
+	${EndIf}
+
   ${IfNot} ${RunningX64}
     MessageBox MB_OK "RCS can be installed only on 64 bit systems"
     Quit
