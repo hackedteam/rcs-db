@@ -38,7 +38,7 @@ puts
 #puts resp.body.inspect
 
 # session
-if false
+if true
   # session.index
   res = http.request_get('/session', {'Cookie' => cookie})
   puts "session.index"
@@ -46,6 +46,8 @@ if false
   puts
   
   sess = JSON.parse(res.body)[0]
+  
+  puts sess.inspect
   
   # session.destroy
   res = http.delete("/session/#{sess['cookie']}", {'Cookie' => cookie})
@@ -1430,7 +1432,7 @@ if false
 end
 
 # entities
-if true
+if false
   #puts "entity.index"
   #res = http.request_get("/entity", {'Cookie' => cookie})
   #puts res.body

@@ -28,11 +28,7 @@ class SessionManager
     cookie = UUIDTools::UUID.random_create.to_s
     
     ::Session.create! do |s|
-      if level.include? :server
-        s[:server] = user
-      else
-        s.user = user
-      end
+      (level.include? :server) ? s[:server] = user : s.user = user
       s[:level] = level
       s[:cookie] = cookie
       s[:address] = address
@@ -47,10 +43,7 @@ class SessionManager
     user = ::User.where({name: username}).first
     return nil if user.nil?
 
-    sess = ::Session.where(user: user).first
-    return nil if sess.nil?
-
-    get(sess[:cookie])
+    ::Session.where(user: user).first
   end
 
   def all
@@ -93,10 +86,6 @@ class SessionManager
 
     # delete the cookie session
     session.destroy unless session.nil?
-  end
-
-  def delete_user(user)
-    ::Session.destroy_all(user: user)
   end
 
   def delete_server(user)

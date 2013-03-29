@@ -58,6 +58,5 @@ TODO FUTURE:
 ======================================
 
     Refactoring on rest methods:
-      - auth (too much logic here, refactor to a authmanager)
       - agent (too much logic here)
       - evidence (too much logic here)
