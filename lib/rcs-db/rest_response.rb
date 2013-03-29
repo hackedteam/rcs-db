@@ -53,7 +53,7 @@ class RESTResponse
     begin
       start = Time.now
       final_content = (@content_type == 'application/json') ? @content.to_json : @content
-      trace :warn, "SLOW JSON [#{@request[:peer]}] #{@request[:method]} #{@request[:uri]} (#{Time.now - start}) " if Config.instance.is_slow?(Time.now - start)
+      @request[:time][:json] = Time.now - start
 
       if @opts[:gzip]
         compressed = StringIO.open("", 'w')
@@ -96,26 +96,26 @@ class RESTResponse
   end
 
   def size
-    fail "response still not prepare" if @response.nil?
+    fail "response still not prepared" if @response.nil?
     return 0 if @response.content.nil?
     @response.content.bytesize
   end
 
   def content
-    fail "response still not prepare" if @response.nil?
+    fail "response still not prepared" if @response.nil?
     @response.content
   end
 
   def headers
-    fail "response still not prepare" if @response.nil?
+    fail "response still not prepared" if @response.nil?
     @response.headers
   end
 
   def send_response
-    fail "response still not prepare" if @response.nil?
+    fail "response still not prepared" if @response.nil?
     @response.send_response
     @callback unless @callback.nil?
-    trace :debug, "[#{@request[:peer]}] REP: [#{@request[:method]}] #{@request[:uri]} #{@request[:query]} (#{Time.now - @request[:time]})" if @request and Config.instance.global['PERF']
+    trace :debug, "[#{@request[:peer]}] REP: [#{@request[:method]}] #{@request[:uri]} #{@request[:query]} (#{Time.now - @request[:time][:start]})" if @request and Config.instance.global['PERF']
   end
 
 end # RESTResponse
@@ -159,27 +159,27 @@ class RESTFileStream
   end
 
   def size
-    fail "response still not prepare" if @response.nil?
+    fail "response still not prepared" if @response.nil?
     @response.headers["Content-length"]
   end
 
   def content
-    fail "response still not prepare" if @response.nil?
+    fail "response still not prepared" if @response.nil?
     @response.content
   end
 
   def headers
-    fail "response still not prepare" if @response.nil?
+    fail "response still not prepared" if @response.nil?
     @response.headers
   end
   
   def send_response
-    fail "response still not prepare" if @response.nil?
+    fail "response still not prepared" if @response.nil?
     @response.send_headers
     streamer = EM::FilesystemStreamer.new(@connection, @filename, :http_chunks => false )
     streamer.callback do
       @callback.call unless @callback.nil?
-      trace :debug, "[#{@request[:peer]}] REP: [#{@request[:method]}] #{@request[:uri]} #{@request[:query]} (#{Time.now - @request[:time]})" if Config.instance.global['PERF']
+      trace :debug, "[#{@request[:peer]}] REP: [#{@request[:method]}] #{@request[:uri]} #{@request[:query]} (#{Time.now - @request[:time][:start]})" if Config.instance.global['PERF']
     end
   end
 end # RESTFileStream
@@ -222,27 +222,27 @@ class RESTGridStream
   end
 
   def size
-    fail "response still not prepare" if @response.nil?
+    fail "response still not prepared" if @response.nil?
     @response.headers["Content-length"]
   end
 
   def content
-    fail "response still not prepare" if @response.nil?
+    fail "response still not prepared" if @response.nil?
     @response.content
   end
 
   def headers
-    fail "response still not prepare" if @response.nil?
+    fail "response still not prepared" if @response.nil?
     @response.headers
   end
   
   def send_response
-    fail "response still not prepare" if @response.nil?
+    fail "response still not prepared" if @response.nil?
     @response.send_headers
     streamer = EM::GridStreamer.new(@connection, @grid_io, :http_chunks => false)
     streamer.callback do
       @callback.call unless @callback.nil?
-      trace :debug, "[#{@request[:peer]}] REP: [#{@request[:method]}] #{@request[:uri]} #{@request[:query]} (#{Time.now - @request[:time]})" if Config.instance.global['PERF']
+      trace :debug, "[#{@request[:peer]}] REP: [#{@request[:method]}] #{@request[:uri]} #{@request[:query]} (#{Time.now - @request[:time][:start]})" if Config.instance.global['PERF']
     end
   end
 end # RESTGridStream

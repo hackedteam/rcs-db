@@ -18,10 +18,7 @@ TODO 9.0.0
 ---
     performance investigation on slow queries
 
-    remove the SLOW traces
-
     investigate missing groups!!!
-
 ---
 
     intelligence on shards?

@@ -133,8 +133,6 @@ class RESTController
   end
   
   def valid_session?
-    start = Time.now
-
     @session = RESTController.sessionmanager.get(@request[:cookie])
 
     # methods without authentication
@@ -148,8 +146,6 @@ class RESTController
 
     # without a valid session you cannot operate
     return false if @session.nil?
-
-    trace :warn, "SLOW VALID [#{@request[:peer]}] #{@request[:method]} #{@request[:uri]} (#{Time.now - start}) " if Config.instance.is_slow?(Time.now - start)
 
     return true
   end
@@ -269,7 +265,7 @@ class RESTController
     begin
       start = Time.now
       ret = yield
-      trace :warn, "SLOW MONGOID [#{@request[:peer]}] #{@request[:uri]} (#{Time.now - start}) " if Config.instance.is_slow?(Time.now - start)
+      @request[:time][:moingoid] = Time.now - start
       return ret
     rescue Mongo::ConnectionFailure =>  e
       trace :error, "Connection to database lost, retrying in 5 seconds..."

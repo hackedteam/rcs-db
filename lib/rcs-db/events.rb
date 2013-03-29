@@ -122,34 +122,39 @@ class HTTPHandler < EM::HttpServer::Server
     # Block which fulfills the request (generate the data)
     operation = proc do
       
-      trace :debug, "[#{@peer}] QUE: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time})" if Config.instance.global['PERF']
-
       generation_time = Time.now
       
       begin
         # parse all the request params
         request = prepare_request @http_request_method, @http_request_uri, @http_query_string, @http_content, @http, @peer
-        request[:time] = @request_time
+        request[:time] = {start: @request_time}
+        request[:time][:queue] = generation_time - @request_time
 
         # get the correct controller
         st = Time.now
         controller = HTTPHandler.restcontroller.get request
-        trace :warn, "SLOW CONTROLLER [#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{request[:query]} (#{Time.now - st})" if Config.instance.is_slow?(Time.now - st)
+        request[:time][:controller] = Time.now - st
 
         # do the dirty job :)
         st = Time.now
         responder = controller.act!
-        trace :warn, "SLOW ACT [#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{request[:query]} (#{Time.now - st})" if Config.instance.is_slow?(Time.now - st)
+        request[:time][:act] = Time.now - st
 
         # create the response object to be used in the EM::defer callback
         st = Time.now
         reply = responder.prepare_response(self, request)
-        trace :warn, "SLOW PREPARE [#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{request[:query]} (#{Time.now - st})" if Config.instance.is_slow?(Time.now - st)
+        request[:time][:prepare] = Time.now - st
 
         # keep the size of the reply to be used in the closing method
         @response_size = reply.content ? reply.content.bytesize : 0
-        trace :debug, "[#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{request[:query]} (#{Time.now - generation_time}) #{@response_size.to_s_bytes}" if Config.instance.global['PERF']
-        trace :warn, "SLOW QUERY [#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{request[:query]} (#{Time.now - generation_time}) #{@response_size.to_s_bytes}" if Config.instance.is_slow?(Time.now - generation_time)
+
+        request[:time][:generation] = Time.now - generation_time
+        request[:time][:total] = Time.now - @request_time
+
+        if Config.instance.is_slow?(request[:time][:total])
+          trace :warn, "SLOW QUERY [#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{@response_size.to_s_bytes} time #{request[:time].select {|k, v| k != :start}.inspect}"
+          trace :warn, "Thread pool is: {busy: #{EventMachine.busy_threads} avail: #{EventMachine.avail_threads} queue: #{EventMachine.queued_defers}}"
+        end
 
         reply
       rescue Exception => e
