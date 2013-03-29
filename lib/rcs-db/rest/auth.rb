@@ -27,7 +27,7 @@ class AuthController < RESTController
         
         user = @params['user']
         pass = @params['pass']
-        console_version = @params['version']
+        version = @params['version']
 
         begin
           # if the user is a Collector, it will authenticate with a unique username
@@ -37,7 +37,7 @@ class AuthController < RESTController
             # delete any previous session from this server
             SessionManager.instance.delete_server(user)
             # create the new auth sessions
-            sess = SessionManager.instance.create(user, @auth_level, @request[:peer])
+            sess = SessionManager.instance.create(user, @auth_level, @request[:peer], version)
             # append the cookie to the other that may have been present in the request
             return ok(sess, {cookie: 'session=' + sess[:cookie] + '; path=/;'})
           end
@@ -63,7 +63,7 @@ class AuthController < RESTController
           trace :info, "[#{@request[:peer]}] Auth login: #{user}"
 
           # create the new auth sessions
-          sess = SessionManager.instance.create(@user, @auth_level, @request[:peer], console_version)
+          sess = SessionManager.instance.create(@user, @auth_level, @request[:peer], version)
           # append the cookie to the other that may have been present in the request
           expiry = (Time.now() + 7*86400).strftime('%A, %d-%b-%y %H:%M:%S %Z')
           trace :debug, "[#{@request[:peer]}] Issued cookie with expiry time: #{expiry}"

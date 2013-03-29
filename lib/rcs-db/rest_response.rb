@@ -51,15 +51,20 @@ class RESTResponse
     @response.status_string = ::Net::HTTPResponse::CODE_TO_OBJ["#{@response.status}"].name.gsub(/Net::HTTP/, '')
     
     begin
+      start = Time.now
+      final_content = (@content_type == 'application/json') ? @content.to_json : @content
+      trace :warn, "SLOW JSON [#{@request[:peer]}] #{@request[:method]} #{@request[:uri]} (#{Time.now - start}) " if Config.instance.is_slow?(Time.now - start)
+
       if @opts[:gzip]
         compressed = StringIO.open("", 'w')
         gzip = Zlib::GzipWriter.new(compressed)
-        gzip.write (@content_type == 'application/json') ? @content.to_json : @content
+        gzip.write final_content
         gzip.close
         @response.content = compressed.string
       else
-        @response.content = (@content_type == 'application/json') ? @content.to_json : @content
+        @response.content = final_content
       end
+
     rescue Exception => e
       @response.status = RCS::DB::RESTController::STATUS_SERVER_ERROR
       @response.content = 'JSON_SERIALIZATION_ERROR'
@@ -171,7 +176,7 @@ class RESTFileStream
   def send_response
     fail "response still not prepare" if @response.nil?
     @response.send_headers
-    streamer = EventMachine::FilesystemStreamer.new(@connection, @filename, :http_chunks => false )
+    streamer = EM::FilesystemStreamer.new(@connection, @filename, :http_chunks => false )
     streamer.callback do
       @callback.call unless @callback.nil?
       trace :debug, "[#{@request[:peer]}] REP: [#{@request[:method]}] #{@request[:uri]} #{@request[:query]} (#{Time.now - @request[:time]})" if Config.instance.global['PERF']
@@ -234,7 +239,7 @@ class RESTGridStream
   def send_response
     fail "response still not prepare" if @response.nil?
     @response.send_headers
-    streamer = EventMachine::GridStreamer.new(@connection, @grid_io, :http_chunks => false)
+    streamer = EM::GridStreamer.new(@connection, @grid_io, :http_chunks => false)
     streamer.callback do
       @callback.call unless @callback.nil?
       trace :debug, "[#{@request[:peer]}] REP: [#{@request[:method]}] #{@request[:uri]} #{@request[:query]} (#{Time.now - @request[:time]})" if Config.instance.global['PERF']

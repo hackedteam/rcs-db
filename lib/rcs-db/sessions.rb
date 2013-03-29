@@ -22,7 +22,7 @@ class SessionManager
     @sessions = {}
   end
 
-  def create(user, level, address, console_version = nil)
+  def create(user, level, address, version = nil)
     
     # create a new random cookie
     cookie = UUIDTools::UUID.random_create.to_s
@@ -37,7 +37,7 @@ class SessionManager
       s[:cookie] = cookie
       s[:address] = address
       s[:time] = Time.now.getutc.to_i
-      s[:console_version] = console_version
+      s[:version] = version
     end
 
     get(cookie)
@@ -70,7 +70,17 @@ class SessionManager
   end
   
   def get(cookie)
-    ::Session.where({cookie: cookie}).first
+    # use a cache to be faster
+    @cookie_cache ||= LRUCache.new(:ttl => 5.minutes)
+
+    sess = @cookie_cache.fetch(cookie)
+    return sess if sess
+
+    sess = ::Session.where({cookie: cookie}).first
+
+    @cookie_cache.store(cookie, sess)
+
+    return sess
   end
 
   def delete(cookie)
@@ -78,6 +88,8 @@ class SessionManager
 
     # terminate the websocket connection
     WebSocketManager.instance.destroy(cookie)
+
+    @cookie_cache.delete(cookie)
 
     # delete the cookie session
     session.destroy unless session.nil?
@@ -91,36 +103,36 @@ class SessionManager
     ::Session.destroy_all(server: user)
   end
 
+  def clear_all_servers
+    ::Session.in(level: [:server]).destroy_all
+  end
+
   # default timeout is 15 minutes
-  # this timeout is calculated from the last time the cookie was checked
+  # this timeout is calculated from the last session.update (via websocket ping pong)
   def timeout(delta = 900)
     begin
       count = ::Session.all.count
       trace :debug, "Session Manager searching for timed out entries..." if count > 0
       # save the size of the hash before deletion
       size = count
-      # search for timed out sessions
-      ::Session.all.each do |session|
+      # search for timed out sessions (don't timeout server sessions)
+      ::Session.not_in(level: [:server]).each do |session|
 
         now = Time.now.getutc.to_i
         if now - session[:time] >= delta
 
-          # don't log timeout for the server
-          unless session[:level].include? :server
-
-            user = session.user
-            # keep the sessions clean of invalid users
-            if user.nil?
-              session.destroy
-              next
-            end
-
-            Audit.log :actor => user[:name], :action => 'logout', :user_name => user[:name], :desc => "User '#{user[:name]}' has been logged out for timeout"
-            trace :info, "User '#{user[:name]}' has been logged out for timeout"
-
-            PushManager.instance.notify('logout', {rcpt: user[:_id], text: "You were disconnected for timeout"})
-            WebSocketManager.instance.destroy(session[:cookie])
+          user = session.user
+          # keep the sessions clean of invalid users
+          if user.nil?
+            session.destroy
+            next
           end
+
+          Audit.log :actor => user[:name], :action => 'logout', :user_name => user[:name], :desc => "User '#{user[:name]}' has been logged out for timeout"
+          trace :info, "User '#{user[:name]}' has been logged out for timeout"
+
+          PushManager.instance.notify('logout', {rcpt: user[:_id], text: "You were disconnected for timeout"})
+          WebSocketManager.instance.destroy(session[:cookie])
 
           # delete the entry
           session.destroy

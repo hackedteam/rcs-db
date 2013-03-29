@@ -78,6 +78,7 @@ class WebSocketManager
   end
 
   def onpong(ws, msg)
+    # keep the session valid by updating its last contact time
     session = SessionManager.instance.update(get_cookie_from_ws(ws))
     trace :debug, "[#{ws.object_id}] WS pong: #{session[:address]}"
   end

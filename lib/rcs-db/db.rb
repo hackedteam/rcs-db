@@ -11,6 +11,7 @@ require_relative 'tasks'
 require_relative 'offload_manager'
 require_relative 'statistics'
 require_relative 'backup'
+require_relative 'sessions'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -122,6 +123,9 @@ class Application
 
       # creates all the necessary queues
       NotificationQueue.create_queues
+
+      # housekeeping of old servers sessions
+      SessionManager.instance.clear_all_servers
 
       # enter the main loop (hopefully will never exit from it)
       Events.new.setup Config.instance.global['LISTENING_PORT']
