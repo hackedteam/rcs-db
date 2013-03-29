@@ -111,8 +111,12 @@ class Processor
         else
           # new chat format
           if ev.data['incoming'] == 1
+            # special case when the agent is not able to get the account but only display_name
+            return if ev.data['from'].eql? ''
             data << {:peer => ev.data['from'], :versus => :in, :type => ev.data['program'].downcase, :size => ev.data['content'].length}
           else
+            # special case when the agent is not able to get the account but only display_name
+            return if ev.data['rcpt'].eql? ''
             # multiple rcpts creates multiple entries
             ev.data['rcpt'].split(',').each do |rcpt|
               data << {:peer => rcpt.strip, :versus => :out, :type => ev.data['program'].downcase, :size => ev.data['content'].length}
