@@ -152,8 +152,9 @@ class HTTPHandler < EM::HttpServer::Server
         request[:time][:total] = Time.now - @request_time
 
         if Config.instance.is_slow?(request[:time][:total])
-          trace :warn, "SLOW QUERY [#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{@response_size.to_s_bytes} time #{request[:time].select {|k, v| k != :start}.inspect}"
-          trace :warn, "Thread pool is: {busy: #{EventMachine.busy_threads} avail: #{EventMachine.avail_threads} queue: #{EventMachine.queued_defers}}"
+          trace :warn, "SLOW QUERY [#{@peer}] [#{request[:method]}] #{request[:uri]} #{@response_size.to_s_bytes}" +
+          " time #{request[:time].select {|k, v| k != :start}.inspect}" +
+          " pool {busy: #{EventMachine.busy_threads} avail: #{EventMachine.avail_threads} queue: #{EventMachine.queued_defers}}"
         end
 
         reply
