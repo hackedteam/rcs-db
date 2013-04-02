@@ -193,9 +193,9 @@ class Entity
     other_entity = params[:entity]
 
     if params[:versus]
-      versus = params[:versus]
+      versus = params[:versus].to_sym
       opposite_versus = versus if versus.eql? :both
-      opposite_versus ||= versus.eql? :in ? :out : :in
+      opposite_versus ||= (versus.eql? :in) ? :out : :in
     end
 
     trace :info, "Creating link between '#{self.name}' and '#{other_entity.name}' [#{params[:level]}, #{params[:type]}, #{versus}]"
