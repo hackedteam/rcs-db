@@ -68,7 +68,7 @@ class Entity
 
   def notify_callback
     # we are only interested if the properties changed are:
-    interesting = ['name', 'desc', 'last_position']
+    interesting = ['name', 'desc', 'last_position', 'handles', 'links']
     return if not interesting.collect {|k| changes.include? k}.inject(:|)
 
     RCS::DB::PushManager.instance.notify('entity', {id: self._id, action: 'modify'})
@@ -82,6 +82,7 @@ class Entity
       oe = ::Entity.find(link.le)
       next unless oe
       oe.links.where(le: self._id).destroy_all
+      RCS::DB::PushManager.instance.notify('entity', {id: oe._id, action: 'modify'})
     end
   end
 
