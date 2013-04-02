@@ -19,6 +19,8 @@ TODO 9.0.0
     performance investigation on slow queries
 
     investigate missing groups!!!
+
+    convert "analyzed" to real queue
 ---
 
     intelligence on shards?
