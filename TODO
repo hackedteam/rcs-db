@@ -15,14 +15,6 @@ TODO 9.0.0
 
     upgrade RubyEncoder 1.5
 
----
-    performance investigation on slow queries
-
-    investigate missing groups!!!
-
-    convert the alert_queue
----
-
     aggregates for places (positioner algorithm)
 
     create entity form most_contacted

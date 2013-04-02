@@ -54,19 +54,5 @@ class AlertLog
   embedded_in :alert
 end
 
-class AlertQueue
-  include Mongoid::Document
-
-  field :alert, type: Array
-  field :evidence, type: Array
-  field :path, type: Array
-  field :to, type: String
-  field :subject, type: String
-  field :body, type: String
-
-  store_in collection: 'alertqueue'
-end
-
-
 #end # ::DB
 #end # ::RCS
