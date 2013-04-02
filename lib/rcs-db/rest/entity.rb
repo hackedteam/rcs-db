@@ -24,7 +24,7 @@ class EntityController < RESTController
     require_auth_level :view_profiles
 
     mongoid_query do
-      ent = ::Entity.where(_id: @params['_id']).in(user_ids: [@session.user[:_id]]).only(['type', 'level', 'name', 'desc', 'path', 'photos', 'position', 'position_attr', 'handles'])
+      ent = ::Entity.where(_id: @params['_id']).in(user_ids: [@session.user[:_id]]).only(['type', 'level', 'name', 'desc', 'path', 'photos', 'position', 'position_attr', 'handles', 'links'])
       entity = ent.first
       return not_found if entity.nil?
 
@@ -45,16 +45,8 @@ class EntityController < RESTController
       operation = ::Item.operations.find(@params['operation'])
       return bad_request('INVALID_OPERATION') if operation.nil?
 
-      if @params['target'].nil?
-        target = nil
-      else
-        target = ::Item.targets.find(@params['target'])
-        return bad_request('INVALID_TARGET') if target.nil?
-      end
-
       e = ::Entity.create! do |doc|
         doc[:path] = [operation._id]
-        doc[:path] << target._id unless target.nil?
         doc.users = operation.users
         doc[:name] = @params['name']
         doc[:type] = @params['type'].to_sym
@@ -223,6 +215,44 @@ class EntityController < RESTController
       e.add_place(name: @params['name'], latitude: @params['latitude'], longitude: @params['longitude'], accuracy: @params['accuracy'])
 
       Audit.log :actor => @session.user[:name], :action => 'entity.add_palce', :desc => "Added a new place to #{e.name}"
+
+      return ok
+    end
+  end
+
+  def add_link
+    require_auth_level :view
+    require_auth_level :view_profiles
+
+    mongoid_query do
+
+      e = Entity.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
+      e2 = Entity.any_in(user_ids: [@session.user[:_id]]).find(@params['entity'])
+
+      return not_found() if e.nil? or e2.nil?
+
+      link = e.add_link(entity: e2, level: :manual, type: @params['type'], versus: @params['versus'])
+
+      Audit.log :actor => @session.user[:name], :action => 'entity.add_link', :desc => "Added a new link between #{e.name} and #{e2.name}"
+
+      return ok(link)
+    end
+  end
+
+  def del_link
+    require_auth_level :view
+    require_auth_level :view_profiles
+
+    mongoid_query do
+
+      e = Entity.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
+      e2 = Entity.any_in(user_ids: [@session.user[:_id]]).find(@params['entity'])
+
+      return not_found() if e.nil? or e2.nil?
+
+      e.del_link(entity: e2)
+
+      Audit.log :actor => @session.user[:name], :action => 'entity.del_link', :desc => "Deleted a link between #{e.name} and #{e2.name}"
 
       return ok
     end

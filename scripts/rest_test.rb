@@ -38,7 +38,7 @@ puts
 #puts resp.body.inspect
 
 # session
-if true
+if false
   # session.index
   res = http.request_get('/session', {'Cookie' => cookie})
   puts "session.index"
@@ -1432,7 +1432,7 @@ if false
 end
 
 # entities
-if false
+if true
   #puts "entity.index"
   #res = http.request_get("/entity", {'Cookie' => cookie})
   #puts res.body
@@ -1440,18 +1440,37 @@ if false
   
   entity = '50D19ACF2AFB65246B00000A'
   #entity = '50FD0AD7AEF1DE1658000092'
+  entity2 = '50D19ACF2AFB65246B000038'
   
   puts "entity.show"
   res = http.request_get("/entity/#{entity}", {'Cookie' => cookie})
-  puts res.body
+  ent = JSON.parse(res.body)
+  puts JSON.pretty_generate(ent)
   puts
 
-  puts "entity.most_contacted"
-  filter = URI.escape("_id=#{entity}&from=20130101&to=20130121&num=5")
-  res = http.request_get("/entity/most_contacted?#{filter}", {'Cookie' => cookie})
-  puts res.body
+  puts "entity.show"
+  res = http.request_get("/entity/#{entity2}", {'Cookie' => cookie})
+  ent2 = JSON.parse(res.body)
+  puts JSON.pretty_generate(ent2)
   puts
 
+  #puts "entity.most_contacted"
+  #filter = URI.escape("_id=#{entity}&from=20130101&to=20130121&num=5")
+  #res = http.request_get("/entity/most_contacted?#{filter}", {'Cookie' => cookie})
+  #puts res.body
+  #puts
+
+  puts "entity.add_link"
+  req = {_id: ent['_id'], entity: ent2['_id'], type: :identity, versus: :in}
+  res = http.request_post("/entity/add_link", req.to_json, {'Cookie' => cookie})
+  puts res.body
+  puts
+  
+  #puts "entity.del_link"
+  #req = {_id: ent['_id'], entity: ent2['_id']}
+  #res = http.request_post("/entity/del_link", req.to_json, {'Cookie' => cookie})
+  #puts res.body
+  #puts
   
 end
 

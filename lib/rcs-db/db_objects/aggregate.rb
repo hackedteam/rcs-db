@@ -68,7 +68,7 @@ class Aggregate
     return klass.new
   end
 
-  def self.most_contacted(target, params)
+  def self.most_contacted(target_id, params)
 
     start = Time.now
 
@@ -123,7 +123,7 @@ class Aggregate
 
     time = Time.now
     # extract the results
-    contacted = Aggregate.collection_class(target).collection.aggregate(pipeline)
+    contacted = Aggregate.collection_class(target_id).collection.aggregate(pipeline)
 
     trace :debug, "Most contacted: Aggregation time #{Time.now - time}" if RCS::DB::Config.instance.global['PERF']
 
@@ -152,7 +152,7 @@ class Aggregate
     # resolve the names of the peer from the db of entities
     top.each do |t|
       t.each do |e|
-        e[:peer_name] = Entity.from_handle(e[:type], e[:peer], target)
+        e[:peer_name] = Entity.from_handle(e[:type], e[:peer], target_id)
         e.delete(:peer_name) unless e[:peer_name]
       end
     end

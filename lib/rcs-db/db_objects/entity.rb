@@ -7,6 +7,8 @@ require 'lrucache'
 #module DB
 
 class Entity
+  extend RCS::Tracer
+  include RCS::Tracer
   include Mongoid::Document
   include Mongoid::Timestamps
   include Mongoid::Geospatial
@@ -31,20 +33,18 @@ class Entity
   # position_addr contains {time, accuracy}
   field :position_attr, type: Hash, default: {}
 
-  # links to other entities
-  field :links, type: Array, default: []
+  # accounts for this entity
+  embeds_many :handles, class_name: "EntityHandle"
+  embeds_many :links, class_name: "EntityLink"
 
   # for the access control
   has_and_belongs_to_many :users, :dependent => :nullify, :autosave => true, inverse_of: nil
-
-  embeds_many :handles, class_name: "EntityHandle"
 
   index({name: 1}, {background: true})
   index({type: 1}, {background: true})
   index({path: 1}, {background: true})
   index({"handles.type" => 1}, {background: true})
   index({"handles.handle" => 1}, {background: true})
-  index({"analyzed.handles" => 1}, {background: true})
 
   spatial_index :position
 
@@ -134,7 +134,7 @@ class Entity
       ent.position_attr = {accuracy: params[:accuracy]}
     end
 
-    self.links << place._id
+    self.add_link(entity: place, type: :manual)
     self.save
   end
 
@@ -156,13 +156,21 @@ class Entity
 
     type = 'phone' if ['call', 'sms', 'mms'].include? type
 
+    target = ::Item.find(target_id) if target_id
+
+    # the scope of the search
+    path = target ? target.path : nil
+
     # check if already in cache
-    search_key = "#{type}_#{handle}"
+    search_key = "#{type}_#{handle}_#{path}"
     name = @@acc_cache.fetch(search_key)
     return name if name
 
     # find if there is an entity owning that handle
-    entity = Entity.where({"handles.type" => type, "handles.handle" => handle}).first
+    search_query = {"handles.type" => type, "handles.handle" => handle}
+    search_query['path'] = path if path
+
+    entity = Entity.where(search_query).first
     if entity
       @@acc_cache.store(search_key, entity.name)
       return entity.name
@@ -178,6 +186,46 @@ class Entity
     end
 
     return nil
+  end
+
+  def add_link(params)
+
+    other_entity = params[:entity]
+
+    if params[:versus]
+      versus = params[:versus]
+      opposite_versus = versus if versus.eql? :both
+      opposite_versus ||= versus.eql? :in ? :out : :in
+    end
+
+    trace :info, "Creating link between '#{self.name}' and '#{other_entity.name}' [#{params[:level]}, #{params[:type]}, #{versus}]"
+
+    # create a link in this entity
+    self_link = self.links.find_or_create_by(le: other_entity._id, level: params[:level], type: params[:type])
+    self_link.first_seen = Time.now.getutc.to_i unless self_link.first_seen
+    self_link.last_seen = Time.now.getutc.to_i
+    self_link.versus = versus if versus
+    self_link.add_evidence_type params[:evidence] if params[:evidence]
+    self_link.save
+
+    # and also create the reverse in the other entity
+    other_link = other_entity.links.find_or_create_by(le: self._id, level: params[:level], type: params[:type])
+    other_link.first_seen = Time.now.getutc.to_i unless other_link.first_seen
+    other_link.last_seen = Time.now.getutc.to_i
+    other_link.versus = opposite_versus if opposite_versus
+    other_link.add_evidence_type params[:evidence] if params[:evidence]
+    other_link.save
+
+    return self_link
+  end
+
+  def del_link(params)
+    other_entity = params[:entity]
+    trace :info, "Deleting links between '#{self.name}' and '#{other_entity.name}'"
+
+    self.links.where(le: other_entity._id).destroy_all
+    other_entity.links.where(le: self._id).destroy_all
+
   end
 
 end
@@ -197,6 +245,35 @@ class EntityHandle
   field :handle, type: String
 end
 
+
+class EntityLink
+  include Mongoid::Document
+
+  embedded_in :entity
+
+  # linked entity
+  field :le, type: Moped::BSON::ObjectId
+
+  # the level of trust of the link (manual or automatic)
+  field :level, type: Symbol
+  # kind of link (identity, connection, position)
+  field :type, type: Symbol
+
+  # time of the first and last contact
+  field :first_seen, type: Integer
+  field :last_seen, type: Integer
+
+  # versus of the link (:in, :out, :both)
+  field :versus, type: Symbol
+
+  field :ev_type, type: Array, default: []
+
+  def add_evidence_type(type)
+    return if self.ev_type.include? type
+
+    self.ev_type << type
+  end
+end
 
 
 #end # ::DB

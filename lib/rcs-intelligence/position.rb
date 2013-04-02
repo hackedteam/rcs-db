@@ -8,7 +8,7 @@ require 'rcs-common/trace'
 module RCS
 module Intelligence
 
-class Camera
+class Position
   include Tracer
   extend Tracer
 
