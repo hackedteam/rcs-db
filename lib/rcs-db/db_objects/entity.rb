@@ -76,6 +76,13 @@ class Entity
 
   def destroy_callback
     RCS::DB::PushManager.instance.notify('entity', {id: self._id, action: 'destroy'})
+
+    # remove all the inbound links in other entities
+    self.links.each do |link|
+      oe = ::Entity.find(link.le)
+      next unless oe
+      oe.links.where(le: self._id).destroy_all
+    end
   end
 
   def merge(merging)
