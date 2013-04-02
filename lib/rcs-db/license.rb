@@ -67,6 +67,7 @@ class LicenseManager
                               :android => [false, false]},
                :alerting => false,
                :correlation => false,
+               :intelligence => false,
                :connectors => false,
                :rmi => [false, false],
                :nia => [0, false],
@@ -238,6 +239,7 @@ class LicenseManager
     @limits[:ocr] = limit[:ocr]
     @limits[:translation] = limit[:translation]
     @limits[:correlation] = limit[:correlation]
+    @limits[:intelligence] = limit[:intelligence]
 
   end
 
@@ -332,9 +334,6 @@ class LicenseManager
       when :alerting
         return @limits[:alerting]
 
-      when :correlation
-        return @limits[:correlation]        
-
       when :rmi
         return @limits[:rmi]
 
@@ -358,6 +357,9 @@ class LicenseManager
 
       when :correlation
         return @limits[:correlation]
+
+      when :intelligence
+        return @limits[:intelligence]
 
       when :shards
         if Shard.count < @limits[:shards]

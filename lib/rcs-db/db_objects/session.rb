@@ -11,7 +11,7 @@ class Session
   field :cookie, type: String
   field :address, type: String
   field :time, type: Integer
-  field :console_version, type: String
+  field :version, type: String
 
   # required for retrocompatiblity by the console
   field :user, type: String

@@ -44,6 +44,7 @@ class Accounts
         trace :info, "Analyzing entity #{entity.name} for new handles"
 
         last = entity[:analyzed]['handles_last']
+        last = 0 if last.nil?
 
         # passwords parsing
         # here we extract every account that seems an email address

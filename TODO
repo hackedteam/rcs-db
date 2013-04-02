@@ -16,6 +16,18 @@ TODO 9.0.0
       - copy 24 over 22
       - restart all
 
+    upgrade RubyEncoder 1.5
+
+---
+    performance investigation on slow queries
+
+    investigate missing groups!!!
+
+    convert "analyzed" to real queue
+---
+
+    intelligence on shards?
+
     aggregates for places (positioner algorithm)
 
     create entity form most_contacted
@@ -31,6 +43,8 @@ TODO 9.0.0
     flows:
       - message
       - call
+
+     export entities data
 
 TODO FUTURE:
 

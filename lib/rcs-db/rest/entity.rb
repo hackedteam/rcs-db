@@ -62,7 +62,7 @@ class EntityController < RESTController
         doc[:level] = :manual
         if @params['position']
           doc.position = [@params['position']['longitude'], @params['position']['latitude']]
-          doc.position_attr[:accuracy] = @params['position']['accuracy']
+          doc.position_attr[:accuracy] = @params['position_attr']['accuracy']
         end
       end
 

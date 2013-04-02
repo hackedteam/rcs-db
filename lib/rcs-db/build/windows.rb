@@ -204,7 +204,10 @@ class BuildWindows < Build
 
     # this is the only file we need to output after this point
     @outputs = ['output.zip']
-
+  rescue Exception => e
+    trace :warn, "Cannot pack: #{e.message}"
+    retry if attempt ||= 0 and attempt += 1 and attempt < 5
+    raise
   end
 
   def unique(core)
