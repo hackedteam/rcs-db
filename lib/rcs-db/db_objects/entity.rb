@@ -26,9 +26,6 @@ class Entity
   # list of grid id for the photos
   field :photos, type: Array, default: []
 
-  # used by the intelligence module to know what to analyze
-  field :analyzed, type: Hash, default: {handles: false, handles_last: 0}
-
   # last known position of a target
   field :position, type: Point, spatial: true
   # position_addr contains {time, accuracy}

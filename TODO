@@ -20,10 +20,8 @@ TODO 9.0.0
 
     investigate missing groups!!!
 
-    convert "analyzed" to real queue
+    convert the alert_queue
 ---
-
-    intelligence on shards?
 
     aggregates for places (positioner algorithm)
 

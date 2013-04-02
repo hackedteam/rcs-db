@@ -21,7 +21,6 @@ end
 require 'rcs-common/trace'
 
 require_relative 'heartbeat'
-require_relative 'accounts'
 require_relative 'processor'
 
 require 'eventmachine'
@@ -50,15 +49,8 @@ class Intelligence
       # calculate and save the stats
       #EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }
 
-      # retrieve the account information (this is free even without license)
-      EM.defer(proc{ Accounts.retrieve })
-      # interval is in minutes
-      EM::PeriodicTimer.new(RCS::DB::Config.instance.global['INT_INTERVAL'] * 60) { EM.defer(proc{ Accounts.retrieve }) }
-
-      if $license['correlation']
-        # use a thread for the infinite processor waiting on the queue
-        EM.defer(proc{ Processor.run })
-      end
+      # use a thread for the infinite processor waiting on the queue
+      EM.defer(proc{ Processor.run })
 
       trace :info, "Intelligence Module ready!"
     end

@@ -32,7 +32,6 @@ class Config
                     'CERT_PASSWORD' => 'password',
                     'LISTENING_PORT' => 443,
                     'HB_INTERVAL' => 15,
-                    'INT_INTERVAL' => 15,
                     'BACKUP_DIR' => 'backup',
                     'POSITION' => true,
                     'PERF' => false,
@@ -97,9 +96,6 @@ class Config
 
     # default password if not configured in the config file
     Config.instance.global['CERT_PASSWORD'] ||= 'password'
-
-    # default interval for intelligence
-    Config.instance.global['INT_INTERVAL'] ||= 15
 
     return true
   end

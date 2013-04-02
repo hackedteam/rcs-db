@@ -93,18 +93,7 @@ class IntelligenceQueue < NotificationQueue
     # skip not interesting evidence
     return unless INTELLIGENCE_TYPES.include? type
 
-    # mark the entity as dirty so the module can analyze it to search for new handles
-    if ['addressbook', 'password'].include? type
-      entity = ::Entity.targets.in(path: [target_id]).first
-      # recreate the hash to trigger the mongoid save
-      entity[:analyzed] = {'handles' => false, 'handles_last' => entity[:analyzed]['handles_last']}
-      entity.save
-    end
-
-    # perform correlation on these evidence
-    if ['position', 'camera'].include? type
-      super(target_id, evidence_id)
-    end
+    super(target_id, evidence_id)
   end
 
 

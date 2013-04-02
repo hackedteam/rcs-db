@@ -20,55 +20,6 @@ class Accounts
 
     ADDRESSBOOK_TYPE = [:facebook, :twitter, :gmail, :skype, :bbm, :whatsapp, :phone, :mail, :linkedin]
 
-    def retrieve
-      # avoid two thread at the same time
-      # we are called by the eventmachine reactor
-      if @@running
-        trace :debug, "Account retrieval already running, skipping..."
-        return
-      end
-
-      @@running = true
-
-      count = ::Item.targets.count
-      trace :debug, "Retrieving accounts for #{count} targets"
-
-      ::Item.targets.each do |target|
-
-        # retrieve the entity of this target
-        entity = ::Entity.targets.in(path: [target[:_id]]).first
-
-        # skip if there's nothing new to analyze
-        next if entity[:analyzed]['handles']
-
-        trace :info, "Analyzing entity #{entity.name} for new handles"
-
-        last = entity[:analyzed]['handles_last']
-        last = 0 if last.nil?
-
-        # passwords parsing
-        # here we extract every account that seems an email address
-        Evidence.collection_class(target[:_id]).where({type: 'password', :da.gt => last}).each do |ev|
-          add_handle(entity, ev[:data])
-          last = ev.da if ev.da > last
-        end
-
-        # addressbook
-        # here we extract every account marked as "local" by the addressbook module
-        Evidence.collection_class(target[:_id]).where({type: 'addressbook', 'data.type' => :target, :da.gt => last}).each do |ev|
-          add_handle(entity, ev[:data])
-          last = ev.da if ev.da > last
-        end
-
-        # mark it as analyzed
-        entity[:analyzed] = {'handles' => true, 'handles_last' => last}
-        entity.save
-      end
-
-    ensure
-      @@running = false
-    end
-
     def add_handle(entity, data)
 
       trace :debug, "Parsing handle data: #{data.inspect}"
