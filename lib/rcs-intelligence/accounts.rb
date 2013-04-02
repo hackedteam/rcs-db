@@ -14,8 +14,6 @@ class Accounts
   include Tracer
   extend Tracer
 
-  @@running = false
-
   class << self
 
     ADDRESSBOOK_TYPE = [:facebook, :twitter, :gmail, :skype, :bbm, :whatsapp, :phone, :mail, :linkedin]
