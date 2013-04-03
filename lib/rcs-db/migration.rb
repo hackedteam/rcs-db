@@ -41,7 +41,7 @@ class Migration
       count += 1
       item.cs = item.calculate_checksum
       item.save
-      print "\r%d item migrated" % count
+      print "\r%d items migrated" % count
     end
     puts
     puts "done"
@@ -49,8 +49,14 @@ class Migration
 
   def self.access_control
     start = Time.now
+    count = 0
     puts "Rebuilding access control..."
-    Group.rebuild_access_control
+    ::Item.operations.each do |operation|
+      count += 1
+      Group.rebuild_access_control(operation)
+      print "\r%d operations rebuilt" % count
+    end
+    puts
     puts "Access control rebuilt in #{Time.now - start} secs"
   end
 
