@@ -118,7 +118,7 @@ class BuildSymbian < Build
       FileUtils.mkdir_p(path('melting/working'))
       FileUtils.mv Config.instance.temp(params['input']), path("melting/working/#{@appname_orig}.sisx")
       # get info from the original sisx (host)
-      @melted_uid, @melted_name, @melted_vendor, @melted_major, @melted_minor = get_app_info(path("melting/working/#{@melted_name}.sisx"))
+      @melted_uid, @melted_name, @melted_vendor, @melted_major, @melted_minor = get_app_info(path("melting/working/#{@appname_orig}.sisx"))
     end
 
   end
@@ -295,6 +295,8 @@ class BuildSymbian < Build
         fd.pos = offset
         buf = fd.read(uncompressedDataLength)
       end
+
+      fd.close
     else
       raise "Invalid input sisx"
     end
@@ -351,8 +353,6 @@ class BuildSymbian < Build
     trace :debug, "Symbian melting info: #{uid} #{appname} #{uniquevendorname} #{major}.#{minor}"
 
     return uid, appname, uniquevendorname, major, minor
-  ensure
-    fd.close
   end
 
 end
