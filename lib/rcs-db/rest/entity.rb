@@ -40,6 +40,8 @@ class EntityController < RESTController
     require_auth_level :view
     require_auth_level :view_profiles
 
+    return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :intelligence
+
     mongoid_query do
 
       operation = ::Item.operations.find(@params['operation'])
@@ -203,26 +205,11 @@ class EntityController < RESTController
     end
   end
 
-  def add_place
-    require_auth_level :view
-    require_auth_level :view_profiles
-
-    mongoid_query do
-
-      e = Entity.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
-      return conflict('NOT_A_TARGET') unless e.type.eql? :target
-
-      e.add_place(name: @params['name'], latitude: @params['latitude'], longitude: @params['longitude'], accuracy: @params['accuracy'])
-
-      Audit.log :actor => @session.user[:name], :action => 'entity.add_palce', :desc => "Added a new place to #{e.name}"
-
-      return ok
-    end
-  end
-
   def add_link
     require_auth_level :view
     require_auth_level :view_profiles
+
+    return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :intelligence
 
     mongoid_query do
 
@@ -242,6 +229,8 @@ class EntityController < RESTController
   def del_link
     require_auth_level :view
     require_auth_level :view_profiles
+
+    return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :intelligence
 
     mongoid_query do
 

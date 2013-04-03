@@ -75,7 +75,6 @@ class Entity
   end
 
   def destroy_callback
-    RCS::DB::PushManager.instance.notify('entity', {id: self._id, action: 'destroy'})
 
     # remove all the inbound links in other entities
     self.links.each do |link|
@@ -84,6 +83,8 @@ class Entity
       oe.links.where(le: self._id).destroy_all
       RCS::DB::PushManager.instance.notify('entity', {id: oe._id, action: 'modify'})
     end
+
+    RCS::DB::PushManager.instance.notify('entity', {id: self._id, action: 'destroy'})
   end
 
   def merge(merging)
@@ -129,20 +130,6 @@ class Entity
   def del_photo(id)
     self.photos.delete(id)
     RCS::DB::GridFS.delete(id, self.path.last.to_s)
-    self.save
-  end
-
-  def add_place(params)
-    place = Entity.create(name: params[:name]) do |ent|
-      ent.type = :position
-      ent.level = :manual
-      # same path as the belonging entity
-      ent.path = self.path.dup
-      ent.position = {latitude: params[:latitude], longitude: params[:longitude]}
-      ent.position_attr = {accuracy: params[:accuracy]}
-    end
-
-    self.add_link(entity: place, type: :manual)
     self.save
   end
 
@@ -274,7 +261,11 @@ class EntityLink
   # versus of the link (:in, :out, :both)
   field :versus, type: Symbol
 
+  # evidence type that refers to this link
   field :ev_type, type: Array, default: []
+
+  # relevance (tag)
+  field :rel, type: Integer, default: 0
 
   def add_evidence_type(type)
     return if self.ev_type.include? type

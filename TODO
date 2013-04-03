@@ -17,13 +17,16 @@ TODO 9.0.0
 
 
 
-
     aggregates for places (positioner algorithm)
 
     create entity form most_contacted
     associate entity from most_contacted
 
-    identity relation if two entities have the same handles
+    Realtime:
+      - identity relation if two entities have the same handles (on handle creation)
+      - link between entities already created (on new aggregate)
+
+    Batch:
 
     entities:
       - manual (confirmed)
