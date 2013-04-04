@@ -325,7 +325,7 @@ class Item
 
   def add_upgrade(name, file)
     # make sure to overwrite the new upgrade
-    self.upgrade_requests.destroy_all(conditions: { filename: name })
+    self.upgrade_requests.destroy_all(filename: name)
 
     content = File.open(file, 'rb+') {|f| f.read}
     raise "Cannot read from file #{file}" if content.nil?
@@ -485,14 +485,14 @@ class Item
         # dropping flag is set only by cascading from target
         unless self[:dropping]
           trace :info, "Deleting evidence for agent #{self.name}..."
-          Evidence.collection_class(self.path.last).destroy_all(conditions: { aid: self._id.to_s })
+          Evidence.collection_class(self.path.last).destroy_all(aid: self._id.to_s)
           trace :info, "Deleting aggregates for agent #{self.name}..."
-          Aggregate.collection_class(self.path.last).destroy_all(conditions: { aid: self._id.to_s })
+          Aggregate.collection_class(self.path.last).destroy_all(aid: self._id.to_s)
           trace :info, "Deleting evidence for agent #{self.name} done."
         end
       when 'factory'
         # delete all the pushed documents of this factory
-        ::PublicDocument.destroy_all({conditions: {factory: [self[:_id]]}})
+        ::PublicDocument.destroy_all(factory: [self[:_id]])
     end
 
     RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'destroy'})
@@ -588,7 +588,7 @@ class Item
         end
       when 'factory'
         # delete all the pushed documents of this factory
-        ::PublicDocument.destroy_all({conditions: {factory: [self[:_id]]}})
+        ::PublicDocument.destroy_all(factory: [self[:_id]])
     end
   end
 

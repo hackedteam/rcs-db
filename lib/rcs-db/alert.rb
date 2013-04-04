@@ -151,7 +151,7 @@ class Alerting
       trace :debug, "Cleaning old alerts..."
       # delete the alerts older than a week
       ::Alert.all.each do |alert|
-        alert.logs.destroy_all(conditions: { :time.lt => Time.now.getutc.to_i - 86400*7 })
+        alert.logs.destroy_all(:time.lt => Time.now.getutc.to_i - 86400*7)
       end
     end
 

@@ -533,7 +533,7 @@ class AgentController < RESTController
 
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
-      agent.upload_requests.destroy_all(conditions: { _id: @params['upload']})
+      agent.upload_requests.find(@params['upload']).destroy
       Audit.log :actor => @session.user[:name], :action => "agent.upload", :desc => "Removed an upload request for agent '#{agent['name']}'"
       return ok
     end
@@ -605,7 +605,7 @@ class AgentController < RESTController
           trace :info, "[#{@request[:peer]}] Added download request #{@params['download']}"
           Audit.log :actor => @session.user[:name], :action => "agent.download", :desc => "Added a download request for agent '#{agent['name']}'"
         when 'DELETE'
-          agent.download_requests.destroy_all(conditions: { _id: @params['download']})
+          agent.download_requests.find(@params['download']).destroy
           trace :info, "[#{@request[:peer]}] Deleted the DOWNLOAD #{@params['download']}"
       end
 
@@ -619,7 +619,7 @@ class AgentController < RESTController
 
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
-      agent.download_requests.destroy_all(conditions: { _id: @params['download']})
+      agent.download_requests.find(@params['download']).destroy
       Audit.log :actor => @session.user[:name], :action => "agent.download", :desc => "Removed a download request for agent '#{agent['name']}'"
       return ok
     end
@@ -658,7 +658,7 @@ class AgentController < RESTController
           trace :info, "[#{@request[:peer]}] Added filesystem request #{@params['filesystem']}"
           Audit.log :actor => @session.user[:name], :action => "agent.filesystem", :desc => "Added a filesystem request for agent '#{agent['name']}'"
         when 'DELETE'
-          agent.filesystem_requests.destroy_all(conditions: { _id: @params['filesystem']})
+          agent.filesystem_requests.find(@params['filesystem']).destroy
           trace :info, "[#{@request[:peer]}] Deleted the FILESYSTEM #{@params['filesystem']}"
       end
 
@@ -673,7 +673,7 @@ class AgentController < RESTController
 
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
-      agent.filesystem_requests.destroy_all(conditions: { _id: @params['filesystem']})
+      agent.filesystem_requests.find(@params['filesystem']).destroy
       Audit.log :actor => @session.user[:name], :action => "agent.filesystem", :desc => "Removed a filesystem request for agent '#{agent['name']}'"
       return ok
     end
@@ -733,7 +733,7 @@ class AgentController < RESTController
           trace :info, "[#{@request[:peer]}] Added download request #{@params['exec']}"
           Audit.log :actor => @session.user[:name], :action => "agent.exec", :desc => "Added a command execution request for agent '#{agent['name']}'"
         when 'DELETE'
-          agent.exec_requests.destroy_all(conditions: { _id: @params['exec']})
+          agent.exec_requests.find(@params['exec']).destroy
           trace :info, "[#{@request[:peer]}] Deleted the EXEC #{@params['exec']}"
       end
 
@@ -748,7 +748,7 @@ class AgentController < RESTController
 
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
-      agent.exec_requests.destroy_all(conditions: { _id: @params['exec']})
+      agent.exec_requests.find(@params['exec']).destroy
       Audit.log :actor => @session.user[:name], :action => "agent.exec", :desc => "Removed a command execution request for agent '#{agent['name']}'"
       return ok
     end

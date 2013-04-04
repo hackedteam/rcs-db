@@ -134,7 +134,7 @@ class AlertController < RESTController
       user = @session.user.reload
       alert = user.alerts.find(@params['_id'])
 
-      alert.logs.destroy_all(conditions: {_id: @params['log']['_id']})
+      alert.logs.destroy_all({_id: @params['log']['_id']})
       PushManager.instance.notify('alert', {rcpt: @session.user[:_id]})
 
       return ok

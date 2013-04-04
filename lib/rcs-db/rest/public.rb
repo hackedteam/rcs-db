@@ -34,7 +34,7 @@ class PublicController < RESTController
       public.destroy
 
       # also delete all the other entry with the same name
-      ::PublicDocument.destroy_all({conditions: {name: public[:name]}})
+      ::PublicDocument.destroy_all({name: public[:name]})
 
       return ok
     end
