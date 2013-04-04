@@ -1,7 +1,6 @@
 
 
 df8417633051512c07b5115946f644ed285f374d (backport to 8.3.x) -> exploit name
-34ac00af82a32acf89010198e81d7fd25e328a8a (backport to 8.3.x) -> access control
 
 TODO 9.0.0
 
@@ -19,7 +18,7 @@ TODO 9.0.0
 
     upgrade RubyEncoder 1.5
 
-
+    --
 
     aggregates for places (positioner algorithm)
 
@@ -31,11 +30,6 @@ TODO 9.0.0
       - link between entities already created (on new aggregate)
 
     Batch:
-
-    entities:
-      - manual (confirmed)
-      - automatic (confirmed / unconfirmed)
-      - ghost (not shown)
 
     flows:
       - message

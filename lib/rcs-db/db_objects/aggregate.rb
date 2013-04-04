@@ -152,7 +152,7 @@ class Aggregate
     # resolve the names of the peer from the db of entities
     top.each do |t|
       t.each do |e|
-        e[:peer_name] = Entity.from_handle(e[:type], e[:peer], target_id)
+        e[:peer_name] = Entity.name_from_handle(e[:type], e[:peer], target_id)
         e.delete(:peer_name) unless e[:peer_name]
       end
     end

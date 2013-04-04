@@ -177,10 +177,12 @@ class EntityController < RESTController
     require_auth_level :view
     require_auth_level :view_profiles
 
+    puts @params.inspect
+
     mongoid_query do
 
       e = Entity.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
-      e.handles.destroy_all(conditions: { _id: @params['handle_id'] })
+      e.handles.find(@params['handle_id']).destroy
 
       Audit.log :actor => @session.user[:name], :action => 'entity.del_handle', :desc => "Deleted an handle from #{e.name}"
 

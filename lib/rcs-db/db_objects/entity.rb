@@ -3,6 +3,8 @@ require 'mongoid_geospatial'
 
 require 'lrucache'
 
+require_relative '../../rcs-intelligence/link_manager'
+
 #module RCS
 #module DB
 
@@ -142,7 +144,7 @@ class Entity
     return {lat: self.position[:latitude], lng: self.position[:longitude], time: self.position_attr[:time], accuracy: self.position_attr[:accuracy]}
   end
 
-  def self.from_handle(type, handle, target_id = nil)
+  def self.name_from_handle(type, handle, target_id = nil)
 
     # use a class cache
     @@acc_cache ||= LRUCache.new(:ttl => 24.hour)
@@ -238,6 +240,14 @@ class EntityHandle
   field :type, type: Symbol
   field :name, type: String
   field :handle, type: String
+
+  after_create :create_callback
+
+  def create_callback
+    # check if other entities have the same handle (it could be an identity relation)
+    RCS::Intelligence::LinkManager.instance.check_identity(self._parent, self)
+  end
+
 end
 
 
