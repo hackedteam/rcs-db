@@ -155,8 +155,8 @@ class Entity
 
     target = ::Item.find(target_id) if target_id
 
-    # the scope of the search
-    path = target ? target.path : nil
+    # the scope of the search (within operation)
+    path = target ? target.path.first : nil
 
     # check if already in cache
     search_key = "#{type}_#{handle}_#{path}"
@@ -189,11 +189,16 @@ class Entity
 
     other_entity = params[:entity]
 
+    raise "Cannot create link on itself" unless self != other_entity
+
     if params[:versus]
       versus = params[:versus].to_sym
       opposite_versus = versus if versus.eql? :both
       opposite_versus ||= (versus.eql? :in) ? :out : :in
     end
+
+    # default is automatic
+    params[:level] ||= :automatic
 
     trace :info, "Creating link between '#{self.name}' and '#{other_entity.name}' [#{params[:level]}, #{params[:type]}, #{versus}]"
 
@@ -202,7 +207,7 @@ class Entity
     self_link.first_seen = Time.now.getutc.to_i unless self_link.first_seen
     self_link.last_seen = Time.now.getutc.to_i
     self_link.versus = versus if versus
-    self_link.add_evidence_type params[:evidence] if params[:evidence]
+    self_link.add_info params[:info] if params[:info]
     self_link.save
 
     # and also create the reverse in the other entity
@@ -210,8 +215,12 @@ class Entity
     other_link.first_seen = Time.now.getutc.to_i unless other_link.first_seen
     other_link.last_seen = Time.now.getutc.to_i
     other_link.versus = opposite_versus if opposite_versus
-    other_link.add_evidence_type params[:evidence] if params[:evidence]
+    other_link.add_info params[:info] if params[:info]
     other_link.save
+
+    # notify the links
+    RCS::DB::PushManager.instance.notify('entity', {id: self._id, action: 'modify'})
+    RCS::DB::PushManager.instance.notify('entity', {id: other_entity._id, action: 'modify'})
 
     return self_link
   end
@@ -223,6 +232,9 @@ class Entity
     self.links.where(le: other_entity._id).destroy_all
     other_entity.links.where(le: self._id).destroy_all
 
+    # notify the links
+    RCS::DB::PushManager.instance.notify('entity', {id: self._id, action: 'modify'})
+    RCS::DB::PushManager.instance.notify('entity', {id: other_entity._id, action: 'modify'})
   end
 
 end
@@ -272,15 +284,16 @@ class EntityLink
   field :versus, type: Symbol
 
   # evidence type that refers to this link
-  field :ev_type, type: Array, default: []
+  # or info for identity relation
+  field :info, type: Array, default: []
 
   # relevance (tag)
   field :rel, type: Integer, default: 0
 
-  def add_evidence_type(type)
-    return if self.ev_type.include? type
+  def add_info(info)
+    return if self.info.include? info
 
-    self.ev_type << type
+    self.info << info
   end
 end
 

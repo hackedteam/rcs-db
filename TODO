@@ -26,10 +26,10 @@ TODO 9.0.0
     associate entity from most_contacted
 
     Realtime:
-      - identity relation if two entities have the same handles (on handle creation)
       - link between entities already created (on new aggregate)
 
     Batch:
+      - identity relation if two entities have the same handles
 
     flows:
       - message

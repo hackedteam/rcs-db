@@ -165,7 +165,7 @@ class EntityController < RESTController
     mongoid_query do
 
       e = Entity.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
-      e.handles.create!(level: :manual, type: @params['type'], name: @params['name'], handle: @params['handle'])
+      e.handles.create!(level: :manual, type: @params['type'].downcase, name: @params['name'], handle: @params['handle'])
 
       Audit.log :actor => @session.user[:name], :action => 'entity.add_handle', :desc => "Added a new handle to #{e.name}"
 
@@ -176,8 +176,6 @@ class EntityController < RESTController
   def del_handle
     require_auth_level :view
     require_auth_level :view_profiles
-
-    puts @params.inspect
 
     mongoid_query do
 

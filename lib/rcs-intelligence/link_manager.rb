@@ -15,7 +15,16 @@ class LinkManager
   def check_identity(entity, handle)
     return unless $license['intelligence']
 
-    trace :debug, "checking for identity: #{entity.inspect}, #{handle.inspect}"
+    trace :debug, "Checking for identity: #{handle.type} #{handle.handle}"
+
+    # search for other entities with the same handle
+    ident = Entity.where({:_id.ne => entity._id, "handles.type" => handle.type, "handles.handle" => handle.handle, :path.in => [entity.path.first]}).first
+    return unless ident
+
+    trace :info, "Identity match: '#{entity.name}' and '#{ident.name}' -> #{handle.handle}"
+
+    # create the link
+    entity.add_link({entity: ident, type: :identity, info: handle.handle, versus: :both})
   end
 
 end
