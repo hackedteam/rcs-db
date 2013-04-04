@@ -35,11 +35,11 @@ class LinkManager
     # search for a peer in all the entities of this operation
     ::Entity.where(path: entity.path.first).each do |e|
 
-      trace :debug, "Checking '#{e.name}' for peer links: #{handle.type} #{handle.handle}"
+      trace :debug, "Checking '#{e.name}' for peer links: #{handle.handle} (#{handle.type})"
 
       # if we find a peer, create a link
-      e.search_peer(handle.handle, handle.type).each do |contact|
-        entity.add_link({entity: ident, type: :peer, info: handle.type, versus: contact.versus})
+      e.peer_versus(handle.handle, handle.type).each do |versus|
+        entity.add_link({entity: e, type: :peer, info: handle.type, versus: versus})
       end
     end
   end

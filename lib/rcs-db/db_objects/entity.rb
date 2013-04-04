@@ -237,6 +237,24 @@ class Entity
     RCS::DB::PushManager.instance.notify('entity', {id: other_entity._id, action: 'modify'})
   end
 
+  def peer_versus(handle, type)
+    # only targets have aggregates
+    return [] unless self.type.eql? :target
+
+    versus = []
+
+    # search for communication in one direction
+    vin = Aggregate.collection_class(self.path.last).where(type: type, 'data.peer' => handle, 'data.versus' => :in).exists?
+    vout = Aggregate.collection_class(self.path.last).where(type: type, 'data.peer' => handle, 'data.versus' => :out).exists?
+
+    versus << :in if vin
+    versus << :out if vout
+
+    trace :debug, "Searching for #{handle} (#{type}) on #{self.name} -> #{versus}"
+
+    return versus
+  end
+
 end
 
 

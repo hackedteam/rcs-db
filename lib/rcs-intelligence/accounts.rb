@@ -16,7 +16,7 @@ class Accounts
 
   class << self
 
-    ADDRESSBOOK_TYPE = [:facebook, :twitter, :gmail, :skype, :bbm, :whatsapp, :phone, :mail, :linkedin]
+    ADDRESSBOOK_TYPE = [:facebook, :twitter, :gmail, :skype, :bbm, :whatsapp, :phone, :mail, :linkedin, :viber]
 
     def add_handle(entity, data)
 

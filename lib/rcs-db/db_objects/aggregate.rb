@@ -31,6 +31,7 @@ class Aggregate
         index({day: 1}, {background: true})
         index({"data.peer" => 1}, {background: true})
         index({"data.type" => 1}, {background: true})
+        index({"data.type" => 1, "data.peer" => 1 }, {background: true})
 
         shard_key :type, :day
 
@@ -44,7 +45,7 @@ class Aggregate
           coll = db.collection(Aggregate.collection_name('#{target}'))
           unless coll.stats['sharded']
             Aggregate.collection_class('#{target}').create_indexes
-            RCS::DB::Shard.set_key(coll, {type: 1, day: 1})
+            RCS::DB::Shard.set_key(coll, {type: 1, day: 1, aid: 1})
           end
         end
 
@@ -72,7 +73,7 @@ class Aggregate
 
     start = Time.now
 
-    most_contacted_types = ['call', 'chat', 'mail', 'sms', 'mms', 'facebook', 'gmail', 'skype', 'bbm', 'whatsapp', 'msn', 'adium']
+    most_contacted_types = ['call', 'chat', 'mail', 'sms', 'mms', 'facebook', 'gmail', 'skype', 'bbm', 'whatsapp', 'msn', 'adium', 'viber']
 
     #
     # Map Reduce has some downsides

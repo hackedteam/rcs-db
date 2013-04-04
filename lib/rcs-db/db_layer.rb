@@ -128,7 +128,7 @@ class DB
     collections.keep_if {|x| x['evidence.']}
     collections.delete_if {|x| x['grid.'] or x['files'] or x['chunks']}
 
-    trace :debug, "Indexing #{collections.size} collections"
+    trace :debug, "Indexing #{collections.size} evidence collections"
 
     collections.each do |coll_name|
       coll = db.collection(coll_name)
@@ -143,6 +143,22 @@ class DB
     # index on shard id for the worker
     coll = db.collection('grid.evidence.files')
     coll.create_index('metadata.shard')
+
+    # ensure indexes on every evidence collection
+    collections = db.collection_names
+    collections.keep_if {|x| x['aggregate.']}
+
+    trace :debug, "Indexing #{collections.size} aggregate collections"
+
+    collections.each do |coll_name|
+      coll = db.collection(coll_name)
+      a = Aggregate.collection_class(coll_name.split('.').last)
+      # number of index + _id + shard_key
+      next if coll.stats['nindexes'] == a.index_options.size + 2
+      trace :info, "Creating indexes for #{coll_name} - " + coll.stats['size'].to_s_bytes
+      a.create_indexes
+      Shard.set_key(coll, {type: 1, day: 1, aid: 1})
+    end
   end
 
   def enable_sharding
