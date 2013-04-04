@@ -206,7 +206,7 @@ class Entity
     self_link = self.links.find_or_create_by(le: other_entity._id, level: params[:level], type: params[:type])
     self_link.first_seen = Time.now.getutc.to_i unless self_link.first_seen
     self_link.last_seen = Time.now.getutc.to_i
-    self_link.versus = versus if versus
+    self_link.add_versus(versus) if versus
     self_link.add_info params[:info] if params[:info]
     self_link.save
 
@@ -214,7 +214,7 @@ class Entity
     other_link = other_entity.links.find_or_create_by(le: self._id, level: params[:level], type: params[:type])
     other_link.first_seen = Time.now.getutc.to_i unless other_link.first_seen
     other_link.last_seen = Time.now.getutc.to_i
-    other_link.versus = opposite_versus if opposite_versus
+    other_link.add_versus(opposite_versus) if opposite_versus
     other_link.add_info params[:info] if params[:info]
     other_link.save
 
@@ -258,6 +258,8 @@ class EntityHandle
   def create_callback
     # check if other entities have the same handle (it could be an identity relation)
     RCS::Intelligence::LinkManager.instance.check_identity(self._parent, self)
+    # link any other entity to this new handle (based on aggregates)
+    RCS::Intelligence::LinkManager.instance.link_handle(self._parent, self)
   end
 
 end
@@ -273,7 +275,7 @@ class EntityLink
 
   # the level of trust of the link (manual or automatic)
   field :level, type: Symbol
-  # kind of link (identity, connection, position)
+  # kind of link (identity, peer, position)
   field :type, type: Symbol
 
   # time of the first and last contact
@@ -292,8 +294,21 @@ class EntityLink
 
   def add_info(info)
     return if self.info.include? info
-
     self.info << info
+  end
+
+  def add_versus(versus)
+    # already set
+    return if self.versus.eql? versus
+
+    # first time, set it as new
+    if self.versus.nil?
+      self.versus = versus
+      return
+    end
+
+    # they are different, so overwrite it to both
+    self.versus = :both
   end
 end
 

@@ -20,16 +20,19 @@ TODO 9.0.0
 
     --
 
-    aggregates for places (positioner algorithm)
-
-    create entity form most_contacted
-    associate entity from most_contacted
+    edit links
 
     Realtime:
       - link between entities already created (on new aggregate)
 
     Batch:
       - identity relation if two entities have the same handles
+
+
+    aggregates for places (positioner algorithm)
+
+    create entity form most_contacted
+    associate entity from most_contacted
 
     flows:
       - message

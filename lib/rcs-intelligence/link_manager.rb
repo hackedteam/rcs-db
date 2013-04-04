@@ -18,13 +18,30 @@ class LinkManager
     trace :debug, "Checking for identity: #{handle.type} #{handle.handle}"
 
     # search for other entities with the same handle
-    ident = Entity.where({:_id.ne => entity._id, "handles.type" => handle.type, "handles.handle" => handle.handle, :path.in => [entity.path.first]}).first
+    ident = Entity.where({:_id.ne => entity._id, "handles.type" => handle.type, "handles.handle" => handle.handle, :path => entity.path.first}).first
     return unless ident
 
+    # if found we consider them identical
     trace :info, "Identity match: '#{entity.name}' and '#{ident.name}' -> #{handle.handle}"
 
     # create the link
     entity.add_link({entity: ident, type: :identity, info: handle.handle, versus: :both})
+  end
+
+  def link_handle(entity, handle)
+    return unless $license['intelligence']
+
+
+    # search for a peer in all the entities of this operation
+    ::Entity.where(path: entity.path.first).each do |e|
+
+      trace :debug, "Checking '#{e.name}' for peer links: #{handle.type} #{handle.handle}"
+
+      # if we find a peer, create a link
+      e.search_peer(handle.handle, handle.type).each do |contact|
+        entity.add_link({entity: ident, type: :peer, info: handle.type, versus: contact.versus})
+      end
+    end
   end
 
 end
