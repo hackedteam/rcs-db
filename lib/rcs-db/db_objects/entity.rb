@@ -194,6 +194,16 @@ class Entity
     return versus
   end
 
+  def promote_ghost
+    return unless self.level.eql? :ghost
+
+    if self.links.size >= 1
+      self.level = :automatic
+      self.links.where(level: :ghost).update_all(level: :automatic)
+      self.save
+    end
+  end
+
 end
 
 

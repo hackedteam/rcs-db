@@ -35,6 +35,10 @@ class EntityController < RESTController
       entity = entity.as_document
       entity['position'] = {longitude: entity['position'][0], latitude: entity['position'][1]} if entity['position'].is_a? Array
 
+      # don't send ghost links
+      # TODO: don't send ghost links
+      #entity['links'].keep_if {|l| l['level'] != :ghost} if entity['links']
+
       ok(entity)
     end
   end

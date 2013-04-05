@@ -53,7 +53,8 @@ class LinkManager
     second_link.save
 
     # check if :ghosts have to be promoted to :automatic
-    # TODO
+    first_entity.promote_ghost
+    second_entity.promote_ghost
 
     # notify the links
     RCS::DB::PushManager.instance.notify('entity', {id: first_entity._id, action: 'modify'})

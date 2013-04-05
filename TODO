@@ -20,8 +20,6 @@ TODO 9.0.0
 
     --
 
-    if 2 links to ghost -> person (automatic)
-
 
     Realtime:
       - link between entities already created (on new aggregate)
