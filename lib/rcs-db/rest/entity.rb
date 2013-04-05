@@ -15,6 +15,8 @@ class EntityController < RESTController
 
     mongoid_query do
       fields = ["type", "level", "name", "desc", "path", "photos"]
+      # TODO: don't send ghost entities
+      #entities = ::Entity.in(user_ids: [@session.user[:_id]]).ne(level: :ghost).only(fields)
       entities = ::Entity.in(user_ids: [@session.user[:_id]]).only(fields)
       ok(entities)
     end

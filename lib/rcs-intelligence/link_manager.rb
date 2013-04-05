@@ -31,9 +31,10 @@ class LinkManager
     trace :info, "Creating link between '#{first_entity.name}' and '#{second_entity.name}' [#{params[:level]}, #{params[:type]}, #{versus}]"
 
     # create a link in this entity
-    first_link = first_entity.links.find_or_create_by(le: second_entity._id, level: params[:level])
+    first_link = first_entity.links.find_or_create_by(le: second_entity._id)
     first_link.first_seen = Time.now.getutc.to_i unless first_link.first_seen
     first_link.last_seen = Time.now.getutc.to_i
+    first_link.set_level(params[:level])
     first_link.set_type(params[:type])
     first_link.set_versus(versus) if versus
     first_link.add_info params[:info] if params[:info]
@@ -41,14 +42,18 @@ class LinkManager
     first_link.save
 
     # and also create the reverse in the other entity
-    second_link = second_entity.links.find_or_create_by(le: first_entity._id, level: params[:level])
+    second_link = second_entity.links.find_or_create_by(le: first_entity._id)
     second_link.first_seen = Time.now.getutc.to_i unless second_link.first_seen
     second_link.last_seen = Time.now.getutc.to_i
+    second_link.set_level(params[:level])
     second_link.set_type(params[:type])
     second_link.set_versus(opposite_versus) if opposite_versus
     second_link.add_info params[:info] if params[:info]
     second_link.rel = params[:rel] if params[:rel]
     second_link.save
+
+    # check if :ghosts have to be promoted to :automatic
+    # TODO
 
     # notify the links
     RCS::DB::PushManager.instance.notify('entity', {id: first_entity._id, action: 'modify'})

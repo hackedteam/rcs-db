@@ -12,6 +12,7 @@ require 'fileutils'
 require_relative 'accounts'
 require_relative 'camera'
 require_relative 'position'
+require_relative 'ghost'
 
 module RCS
 module Intelligence
@@ -53,7 +54,12 @@ class Processor
       when 'camera'
         # save picture of the target
         Camera.save_first_camera(entity, evidence)
-      when 'addressbook', 'password'
+      when 'addressbook'
+        # analyze the accounts
+        Accounts.add_handle(entity, evidence)
+        # create a ghost entity and link it as :know
+        Ghost.create_and_link_entity(entity, Accounts.get_addressbook_handle(evidence)) if $license['intelligence']
+      when 'password'
         # analyze the accounts
         Accounts.add_handle(entity, evidence)
     end

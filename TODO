@@ -20,10 +20,8 @@ TODO 9.0.0
 
     --
 
-    create ghost entities from addessbook
     if 2 links to ghost -> person (automatic)
 
-    name_from_handle refactor with ghost entity
 
     Realtime:
       - link between entities already created (on new aggregate)

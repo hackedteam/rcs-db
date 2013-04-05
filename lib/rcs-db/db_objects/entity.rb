@@ -18,7 +18,7 @@ class Entity
   # this is the type of entity: target, person, position, etc
   field :type, type: Symbol
 
-  # the level of trust of the entity (manual, automatic, suggested, ghost)
+  # the level of trust of the entity (manual, automatic, ghost)
   field :level, type: Symbol
 
   # membership of this entity (inside operation or target)
@@ -78,7 +78,7 @@ class Entity
 
   def destroy_callback
 
-    # remove all the inbound links in other entities
+    # remove all the links in linked entities
     self.links.each do |link|
       oe = ::Entity.find(link.le)
       next unless oe
@@ -163,7 +163,7 @@ class Entity
     name = @@acc_cache.fetch(search_key)
     return name if name
 
-    # find if there is an entity owning that handle
+    # find if there is an entity owning that handle (the ghosts are from addressbook as well)
     search_query = {"handles.type" => type, "handles.handle" => handle}
     search_query['path'] = path if path
 
@@ -171,15 +171,6 @@ class Entity
     if entity
       @@acc_cache.store(search_key, entity.name)
       return entity.name
-    end
-
-    # if no target (scope) is provided, don't search in the addressbook
-    return nil unless target_id
-
-    # use the fulltext (kw) search to be fast
-    Evidence.collection_class(target_id).where({type: 'addressbook', :kw.all => handle.keywords }).each do |e|
-      @@acc_cache.store(search_key, e[:data]['name'])
-      return e[:data]['name']
     end
 
     return nil
@@ -239,7 +230,7 @@ class EntityLink
   # linked entity
   field :le, type: Moped::BSON::ObjectId
 
-  # the level of trust of the link (manual or automatic)
+  # the level of trust of the link (manual, automatic, ghost)
   field :level, type: Symbol
   # kind of link (identity, peer, know, position)
   field :type, type: Symbol
@@ -257,6 +248,8 @@ class EntityLink
 
   # relevance (tag)
   field :rel, type: Integer, default: 0
+
+  after_destroy :destroy_callback
 
   def add_info(info)
     return if self.info.include? info
@@ -284,6 +277,24 @@ class EntityLink
     end
 
     self.type = type unless type.eql? :know
+  end
+
+  def set_level(level)
+    # :ghost is overwritable
+    if self.level.eql? :ghost or not self.level
+      self.level = level
+    end
+
+    self.level = level unless level.eql? :ghost
+  end
+
+  def destroy_callback
+    # if the parent is still ghost and this was the only link
+    # destroy the parent since it was created only with that link
+    if self._parent.level.eql? :ghost and self._parent.links.size == 0
+      trace :debug, "Destroying ghost entity on last link (#{self._parent.name})"
+      self._parent.destroy
+    end
   end
 
 end

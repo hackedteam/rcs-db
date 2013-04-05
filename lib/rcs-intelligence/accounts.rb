@@ -18,12 +18,15 @@ class Accounts
 
     ADDRESSBOOK_TYPE = [:facebook, :twitter, :gmail, :skype, :bbm, :whatsapp, :phone, :mail, :linkedin, :viber]
 
-    def add_handle(entity, data)
+    def add_handle(entity, evidence)
+
+      data = evidence[:data]
 
       trace :debug, "Parsing handle data: #{data.inspect}"
 
       # target account in the contacts (addressbook)
       if ADDRESSBOOK_TYPE.include? data['program']
+        return if data['type'] != :target
         unless data['info'].length == 0
           type = data['program']
           handle = data['info'].downcase
@@ -95,6 +98,21 @@ class Accounts
       end
 
       return :mail
+    end
+
+    def get_addressbook_handle(evidence)
+      data = evidence[:data]
+
+      if ADDRESSBOOK_TYPE.include? data['program']
+        # don't return data from the target
+        return nil if data['type'].eql? :target
+
+        unless data['info'].length == 0
+          handle = data['info'].downcase
+          return [data['name'], data['program'], handle.split(':')[1].chomp.strip] if handle[":"]
+        end
+      end
+      return nil
     end
 
   end
