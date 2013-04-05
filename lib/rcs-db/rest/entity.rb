@@ -2,6 +2,7 @@
 # Controller for Entity
 #
 
+require_relative '../../rcs-intelligence/link_manager'
 
 module RCS
 module DB
@@ -218,7 +219,7 @@ class EntityController < RESTController
 
       return not_found() if e.nil? or e2.nil?
 
-      link = e.add_link(entity: e2, level: :manual, type: @params['type'], versus: @params['versus'])
+      link = RCS::Intelligence::LinkManager.add_link(from: e, to: e2, level: :manual, type: @params['type'], versus: @params['versus'])
 
       Audit.log :actor => @session.user[:name], :action => 'entity.add_link', :desc => "Added a new link between #{e.name} and #{e2.name}"
 
@@ -239,7 +240,7 @@ class EntityController < RESTController
 
       return not_found() if e.nil? or e2.nil?
 
-      e.del_link(entity: e2)
+      RCS::Intelligence::LinkManager.del_link(from: e, to: e2)
 
       Audit.log :actor => @session.user[:name], :action => 'entity.del_link', :desc => "Deleted a link between #{e.name} and #{e2.name}"
 

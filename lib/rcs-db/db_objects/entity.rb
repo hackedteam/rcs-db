@@ -185,58 +185,6 @@ class Entity
     return nil
   end
 
-  def add_link(params)
-
-    other_entity = params[:entity]
-
-    raise "Cannot create link on itself" unless self != other_entity
-
-    if params[:versus]
-      versus = params[:versus].to_sym
-      opposite_versus = versus if versus.eql? :both
-      opposite_versus ||= (versus.eql? :in) ? :out : :in
-    end
-
-    # default is automatic
-    params[:level] ||= :automatic
-
-    trace :info, "Creating link between '#{self.name}' and '#{other_entity.name}' [#{params[:level]}, #{params[:type]}, #{versus}]"
-
-    # create a link in this entity
-    self_link = self.links.find_or_create_by(le: other_entity._id, level: params[:level], type: params[:type])
-    self_link.first_seen = Time.now.getutc.to_i unless self_link.first_seen
-    self_link.last_seen = Time.now.getutc.to_i
-    self_link.add_versus(versus) if versus
-    self_link.add_info params[:info] if params[:info]
-    self_link.save
-
-    # and also create the reverse in the other entity
-    other_link = other_entity.links.find_or_create_by(le: self._id, level: params[:level], type: params[:type])
-    other_link.first_seen = Time.now.getutc.to_i unless other_link.first_seen
-    other_link.last_seen = Time.now.getutc.to_i
-    other_link.add_versus(opposite_versus) if opposite_versus
-    other_link.add_info params[:info] if params[:info]
-    other_link.save
-
-    # notify the links
-    RCS::DB::PushManager.instance.notify('entity', {id: self._id, action: 'modify'})
-    RCS::DB::PushManager.instance.notify('entity', {id: other_entity._id, action: 'modify'})
-
-    return self_link
-  end
-
-  def del_link(params)
-    other_entity = params[:entity]
-    trace :info, "Deleting links between '#{self.name}' and '#{other_entity.name}'"
-
-    self.links.where(le: other_entity._id).destroy_all
-    other_entity.links.where(le: self._id).destroy_all
-
-    # notify the links
-    RCS::DB::PushManager.instance.notify('entity', {id: self._id, action: 'modify'})
-    RCS::DB::PushManager.instance.notify('entity', {id: other_entity._id, action: 'modify'})
-  end
-
   def peer_versus(handle, type)
     # only targets have aggregates
     return [] unless self.type.eql? :target
@@ -293,7 +241,7 @@ class EntityLink
 
   # the level of trust of the link (manual or automatic)
   field :level, type: Symbol
-  # kind of link (identity, peer, position)
+  # kind of link (identity, peer, know, position)
   field :type, type: Symbol
 
   # time of the first and last contact
@@ -315,7 +263,7 @@ class EntityLink
     self.info << info
   end
 
-  def add_versus(versus)
+  def set_versus(versus)
     # already set
     return if self.versus.eql? versus
 
@@ -328,6 +276,16 @@ class EntityLink
     # they are different, so overwrite it to both
     self.versus = :both
   end
+
+  def set_type(type)
+    # :know is overwritable
+    if self.type.eql? :know or not self.type
+      self.type = type
+    end
+
+    self.type = type unless type.eql? :know
+  end
+
 end
 
 

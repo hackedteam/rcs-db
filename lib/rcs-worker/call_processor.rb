@@ -344,7 +344,7 @@ class Call
       # keyword full search
       ev.kw = []
       ev.kw += peer.keywords
-      ev.kw += program.keywords
+      ev.kw += program.to_s.keywords
       ev.kw.uniq!
 
       ev.with(safe: true).save!
