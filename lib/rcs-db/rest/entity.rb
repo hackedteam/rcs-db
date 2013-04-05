@@ -219,7 +219,28 @@ class EntityController < RESTController
 
       return not_found() if e.nil? or e2.nil?
 
-      link = RCS::Intelligence::LinkManager.add_link(from: e, to: e2, level: :manual, type: @params['type'], versus: @params['versus'])
+      link = RCS::Intelligence::LinkManager.add_link(from: e, to: e2, level: :manual, type: @params['type'], versus: @params['versus'], rel: @params[:rel])
+
+      Audit.log :actor => @session.user[:name], :action => 'entity.add_link', :desc => "Added a new link between #{e.name} and #{e2.name}"
+
+      return ok(link)
+    end
+  end
+
+  def edit_link
+    require_auth_level :view
+    require_auth_level :view_profiles
+
+    return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :intelligence
+
+    mongoid_query do
+
+      e = Entity.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
+      e2 = Entity.any_in(user_ids: [@session.user[:_id]]).find(@params['entity'])
+
+      return not_found() if e.nil? or e2.nil?
+
+      link = RCS::Intelligence::LinkManager.edit_link(from: e, to: e2, level: :manual, type: @params['type'], versus: @params['versus'], rel: @params[:rel])
 
       Audit.log :actor => @session.user[:name], :action => 'entity.add_link', :desc => "Added a new link between #{e.name} and #{e2.name}"
 

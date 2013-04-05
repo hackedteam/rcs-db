@@ -37,6 +37,7 @@ class LinkManager
     first_link.set_type(params[:type])
     first_link.set_versus(versus) if versus
     first_link.add_info params[:info] if params[:info]
+    first_link.rel = params[:rel] if params[:rel]
     first_link.save
 
     # and also create the reverse in the other entity
@@ -46,11 +47,40 @@ class LinkManager
     second_link.set_type(params[:type])
     second_link.set_versus(opposite_versus) if opposite_versus
     second_link.add_info params[:info] if params[:info]
+    second_link.rel = params[:rel] if params[:rel]
     second_link.save
 
     # notify the links
     RCS::DB::PushManager.instance.notify('entity', {id: first_entity._id, action: 'modify'})
     RCS::DB::PushManager.instance.notify('entity', {id: second_entity._id, action: 'modify'})
+
+    return first_link
+  end
+
+  def edit_link(params)
+
+    first_entity = params[:from]
+    second_entity = params[:to]
+
+    if params[:versus]
+      versus = params[:versus].to_sym
+      opposite_versus = versus if versus.eql? :both
+      opposite_versus ||= (versus.eql? :in) ? :out : :in
+    end
+
+    first_link = first_entity.links.where(le: second_entity._id)
+    first_link.set_type(params[:type])
+    first_link.set_versus(versus) if versus
+    first_link.add_info params[:info] if params[:info]
+    first_link.rel = params[:rel] if params[:rel]
+    first_link.save
+
+    second_link = second_entity.links.where(le: first_entity._id)
+    second_link.set_type(params[:type])
+    second_link.set_versus(opposite_versus) if opposite_versus
+    second_link.add_info params[:info] if params[:info]
+    second_link.rel = params[:rel] if params[:rel]
+    second_link.save
 
     return first_link
   end
