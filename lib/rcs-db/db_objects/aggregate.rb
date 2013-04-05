@@ -31,7 +31,7 @@ class Aggregate
         index({day: 1}, {background: true})
         index({"data.peer" => 1}, {background: true})
         index({"data.type" => 1}, {background: true})
-        index({"data.type" => 1, "data.peer" => 1 }, {background: true})
+        index({type: 1, "data.peer" => 1 }, {background: true})
 
         shard_key :type, :day
 

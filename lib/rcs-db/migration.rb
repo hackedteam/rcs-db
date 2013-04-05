@@ -60,4 +60,18 @@ class Migration
     puts "Access control rebuilt in #{Time.now - start} secs"
   end
 
+  def self.drop_aggregate_index
+    puts "Dropping indexes on aggregates..."
+    count = 0
+    ::Item.targets.each do |target|
+      begin
+        Aggregate.collection_class(target._id).collection.indexes.drop
+        print "\r%d aggregates reindexed" % count += 1
+      rescue
+      end
+    end
+    puts
+    puts 'done'
+  end
+
 end

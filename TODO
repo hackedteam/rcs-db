@@ -20,8 +20,6 @@ TODO 9.0.0
 
     --
 
-    fix reindex on aggregation
-
     create ghost entities from addessbook
     if 2 links to ghost -> person (automatic)
 
