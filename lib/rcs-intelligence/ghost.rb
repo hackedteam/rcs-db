@@ -19,13 +19,13 @@ class Ghost
 
       name, type, handle = *handle
 
-      trace :debug, "Create ghost entity: #{name} -- #{type} #{handle}"
-
       # search for entity
       ghost = Entity.where({:_id.ne => entity._id, "handles.type" => type, "handles.handle" => handle, :path => entity.path.first}).first
 
       # create a new entity if not found
       unless ghost
+        trace :debug, "Creating ghost entity: #{name} -- #{type} #{handle}"
+
         ghost = Entity.create!(name: name, type: :person, level: :ghost, path: [entity.path.first])
 
         # add the handle
@@ -34,7 +34,7 @@ class Ghost
 
       # link the two entities
       # the level will be reset to :automatic (if it's the case) by the LinkManager
-      LinkManager.instance.add_link(from: entity, to: ghost, level: :ghost, type: :know, info: handle)
+      RCS::DB::LinkManager.instance.add_link(from: entity, to: ghost, level: :ghost, type: :know, info: handle)
     end
 
   end

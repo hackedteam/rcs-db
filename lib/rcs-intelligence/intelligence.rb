@@ -9,12 +9,14 @@ if File.directory?(Dir.pwd + '/lib/rcs-intelligence-release')
   require 'rcs-db-release/license'
   require 'rcs-db-release/db_layer'
   require 'rcs-db-release/grid'
+  require 'rcs-db-release/link_manager'
 else
   require 'rcs-db/db'
   require 'rcs-db/config'
   require 'rcs-db/license'
   require 'rcs-db/db_layer'
   require 'rcs-db/grid'
+  require 'rcs-db/link_manager'
 end
 
 # from RCS::Common

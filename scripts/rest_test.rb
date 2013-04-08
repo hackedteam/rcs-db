@@ -1454,17 +1454,17 @@ if true
   puts JSON.pretty_generate(ent2)
   puts
 
-  #puts "entity.most_contacted"
-  #filter = URI.escape("_id=#{entity}&from=20130101&to=20130121&num=5")
-  #res = http.request_get("/entity/most_contacted?#{filter}", {'Cookie' => cookie})
-  #puts res.body
-  #puts
-
-  puts "entity.add_link"
-  req = {_id: ent['_id'], entity: ent2['_id'], type: :identity, versus: :in}
-  res = http.request_post("/entity/add_link", req.to_json, {'Cookie' => cookie})
+  puts "entity.most_contacted"
+  filter = URI.escape("_id=#{entity2}&from=20130101&to=20131231&num=1")
+  res = http.request_get("/entity/most_contacted?#{filter}", {'Cookie' => cookie})
   puts res.body
   puts
+
+  #puts "entity.add_link"
+  #req = {_id: ent['_id'], entity: ent2['_id'], type: :identity, versus: :in}
+  #res = http.request_post("/entity/add_link", req.to_json, {'Cookie' => cookie})
+  #puts res.body
+  #puts
   
   #puts "entity.del_link"
   #req = {_id: ent['_id'], entity: ent2['_id']}

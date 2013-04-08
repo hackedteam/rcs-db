@@ -3,7 +3,7 @@ require 'mongoid_geospatial'
 
 require 'lrucache'
 
-require_relative '../../rcs-intelligence/link_manager'
+require_relative '../link_manager'
 
 #module RCS
 #module DB
@@ -199,8 +199,13 @@ class Entity
 
     if self.links.size >= 1
       self.level = :automatic
-      self.links.where(level: :ghost).update_all(level: :automatic)
       self.save
+
+      # update all its link to automatic
+      self.links.where(level: :ghost).each do |link|
+        le = Entity.find(link.le)
+        RCS::DB::LinkManager.instance.edit_link(from: self, to: le, level: :automatic)
+      end
     end
   end
 
@@ -224,9 +229,9 @@ class EntityHandle
 
   def create_callback
     # check if other entities have the same handle (it could be an identity relation)
-    RCS::Intelligence::LinkManager.instance.check_identity(self._parent, self)
+    RCS::DB::LinkManager.instance.check_identity(self._parent, self)
     # link any other entity to this new handle (based on aggregates)
-    RCS::Intelligence::LinkManager.instance.link_handle(self._parent, self)
+    RCS::DB::LinkManager.instance.link_handle(self._parent, self)
   end
 
 end

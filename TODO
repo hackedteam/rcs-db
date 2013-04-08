@@ -20,6 +20,7 @@ TODO 9.0.0
 
     --
 
+    alerts on link creation
 
     Realtime:
       - link between entities already created (on new aggregate)

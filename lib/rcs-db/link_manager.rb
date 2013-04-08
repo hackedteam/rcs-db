@@ -6,7 +6,7 @@
 require 'rcs-common/trace'
 
 module RCS
-module Intelligence
+module DB
 
 class LinkManager
   include Singleton
@@ -74,15 +74,17 @@ class LinkManager
       opposite_versus ||= (versus.eql? :in) ? :out : :in
     end
 
-    first_link = first_entity.links.where(le: second_entity._id)
-    first_link.set_type(params[:type])
+    first_link = first_entity.links.where(le: second_entity._id).first
+    first_link.set_level(params[:level]) if params[:level]
+    first_link.set_type(params[:type]) if params[:type]
     first_link.set_versus(versus) if versus
     first_link.add_info params[:info] if params[:info]
     first_link.rel = params[:rel] if params[:rel]
     first_link.save
 
-    second_link = second_entity.links.where(le: first_entity._id)
-    second_link.set_type(params[:type])
+    second_link = second_entity.links.where(le: first_entity._id).first
+    second_link.set_level(params[:level]) if params[:level]
+    second_link.set_type(params[:type]) if params[:type]
     second_link.set_versus(opposite_versus) if opposite_versus
     second_link.add_info params[:info] if params[:info]
     second_link.rel = params[:rel] if params[:rel]
