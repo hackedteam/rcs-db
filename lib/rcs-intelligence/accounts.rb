@@ -27,11 +27,8 @@ class Accounts
       # target account in the contacts (addressbook)
       if ADDRESSBOOK_TYPE.include? data['program']
         return if data['type'] != :target
-        unless data['info'].length == 0
-          type = data['program']
-          handle = data['info'].downcase
-          handle = handle.split(':')[1].chomp.strip if handle[":"]
-          create_entity_handle(entity, :automatic, type, handle, data['name'])
+        if data['handle']
+          create_entity_handle(entity, :automatic, data['program'], data['handle'].downcase, data['name'])
         end
       elsif data['program'] =~ /outlook|mail/i
         # mail accounts from email clients saving account to the device
@@ -106,11 +103,7 @@ class Accounts
       if ADDRESSBOOK_TYPE.include? data['program']
         # don't return data from the target
         return nil if data['type'].eql? :target
-
-        unless data['info'].length == 0
-          handle = data['info'].downcase
-          return [data['name'], data['program'], handle.split(':')[1].chomp.strip] if handle[":"]
-        end
+        return [data['name'], data['program'], data['handle'].downcase] if data['handle']
       end
       return nil
     end

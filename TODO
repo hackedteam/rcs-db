@@ -20,6 +20,8 @@ TODO 9.0.0
 
     --
 
+    add 'handle' field into addressbook
+
     alerts on link creation
 
     Realtime:
