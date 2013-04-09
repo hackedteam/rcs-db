@@ -296,6 +296,7 @@ Section "Install Section" SecInstall
 
     SetOutPath "$INSTDIR\DB\config"
     File "config\mongodb.key"
+    File "config\mongoid.yaml"
     File "config\trace.yaml"
     File "config\export.zip"
     File "config\logo.png"
@@ -564,6 +565,9 @@ Section "Install Section" SecInstall
 
     DetailPrint "Starting RCS Aggregator..."
     SimpleSC::StartService "RCSAggregator" "" 30
+
+    DetailPrint "Starting RCS Intelligence..."
+    SimpleSC::StartService "RCSIntelligence" "" 30
 
     !cd '..'
     WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
