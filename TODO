@@ -20,6 +20,9 @@ TODO 9.0.0
     pushmanager with queue
 
     alerts on link creation
+      - relevance set from alert (on link)
+      - link on specific entity
+      - link between specific entities
 
     Realtime:
       - link between entities already created (on new aggregate)

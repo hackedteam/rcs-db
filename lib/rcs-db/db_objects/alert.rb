@@ -16,6 +16,7 @@ class Alert
   field :action, type: String
   field :evidence, type: String
   field :keywords, type: String
+  field :entities, type: Array, default: []
   field :last, type: Integer
 
   index({enabled: 1}, {background: true})
