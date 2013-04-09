@@ -19,6 +19,7 @@ class Alert
   field :last, type: Integer
 
   index({enabled: 1}, {background: true})
+  index({path: 1}, {background: true})
 
   store_in collection: 'alerts'
 

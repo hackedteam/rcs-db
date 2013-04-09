@@ -116,6 +116,24 @@ class Alerting
       trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
     end
 
+    def new_link(entities)
+
+      trace :debug, "ALERT NEW LINK: #{entities.inspect}"
+
+    rescue Exception => e
+      trace :warn, "Cannot handle alert (new_link): #{e.message}"
+      trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
+    end
+
+    def new_entity(entity)
+
+      trace :debug, "ALERT NEW ENTITY: #{entity.inspect}"
+
+    rescue Exception => e
+      trace :warn, "Cannot handle alert (new_link): #{e.message}"
+      trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
+    end
+
     def failed_component(component)
       get_alert_users.each do |user|
         ::AlertQueue.add(to: user.contact, subject: "RCS Alert [monitor] ERROR", body: "The component '#{component.name}' has failed, please check it.")
