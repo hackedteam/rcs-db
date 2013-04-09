@@ -60,6 +60,8 @@ class LinkManager
     RCS::DB::PushManager.instance.notify('entity', {id: first_entity._id, action: 'modify'})
     RCS::DB::PushManager.instance.notify('entity', {id: second_entity._id, action: 'modify'})
 
+    RCS::DB::Alerting.new_link([first_entity, second_entity])
+
     return first_link
   end
 
