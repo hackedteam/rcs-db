@@ -9,6 +9,10 @@ require 'rcs-common/trace'
 
 require_relative 'db_objects/group'
 require_relative 'config'
+require_relative 'db_layer'
+
+module RCS
+module DB
 
 class Migration
 
@@ -35,8 +39,9 @@ class Migration
   end
 
   def self.mongoid3
-    puts "Recalculating item checksums..."
+    start = Time.now
     count = 0
+    puts "Recalculating item checksums..."
     ::Item.each do |item|
       count += 1
       item.cs = item.calculate_checksum
@@ -44,7 +49,7 @@ class Migration
       print "\r%d items migrated" % count
     end
     puts
-    puts "done"
+    puts "done in #{Time.now - start} secs"
   end
 
   def self.access_control
@@ -57,21 +62,29 @@ class Migration
       print "\r%d operations rebuilt" % count
     end
     puts
-    puts "Access control rebuilt in #{Time.now - start} secs"
+    puts "done in #{Time.now - start} secs"
   end
 
-  def self.drop_aggregate_index
-    puts "Dropping indexes on aggregates..."
+  def self.reindex_aggregates
+    start = Time.now
     count = 0
+    db = DB.instance.mongo_connection
+    puts "Re-indexing aggregates..."
     ::Item.targets.each do |target|
       begin
         Aggregate.collection_class(target._id).collection.indexes.drop
+        Aggregate.collection_class(target._id).create_indexes
+        coll = db.collection('aggregate.' + target._id.to_s)
+        Shard.set_key(coll, {type: 1, day: 1, aid: 1})
         print "\r%d aggregates reindexed" % count += 1
       rescue
       end
     end
     puts
-    puts 'done'
+    puts "done in #{Time.now - start} secs"
   end
 
+end
+
+end
 end

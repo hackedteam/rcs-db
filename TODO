@@ -1,7 +1,4 @@
 
-
-df8417633051512c07b5115946f644ed285f374d (backport to 8.3.x) -> exploit name
-
 TODO 9.0.0
 
     upgrade to ruby 1.9.3-p392 on windows
@@ -19,8 +16,6 @@ TODO 9.0.0
     upgrade RubyEncoder 1.5
 
     --
-
-    add 'handle' field into addressbook
 
     alerts on link creation
 
