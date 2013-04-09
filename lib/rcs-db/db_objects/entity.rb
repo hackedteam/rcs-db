@@ -65,7 +65,11 @@ class Entity
     parent = ::Item.find(self.path.last)
     self.users = parent.users
 
-    RCS::DB::PushManager.instance.notify('entity', {id: self._id, action: 'create'})
+    # notify (only real entities)
+    unless level.eql? :ghost
+      RCS::DB::PushManager.instance.notify('entity', {id: self._id, action: 'create'})
+      RCS::DB::Alerting.new_entity(self)
+    end
   end
 
   def notify_callback
@@ -105,14 +109,6 @@ class Entity
       self.handles << handle
     end
 
-    #merge the positions
-    merging.positions.each do |pos|
-      self.positions << pos
-    end
-
-    # merge the current position only if newer
-    self.current_position = merging.current_position if self.current_position.time < merging.current_position.time
-
     # save the mergee and destroy the merger
     self.save
     merging.destroy
@@ -141,7 +137,7 @@ class Entity
   end
 
   def last_position
-    return {lat: self.position[:latitude], lng: self.position[:longitude], time: self.position_attr[:time], accuracy: self.position_attr[:accuracy]}
+    return {latitude: self.position.to_hsh[:y], longitude: self.position.to_hsh[:x], time: self.position_attr[:time], accuracy: self.position_attr[:accuracy]}
   end
 
   def self.name_from_handle(type, handle, target_id = nil)
@@ -200,6 +196,10 @@ class Entity
     if self.links.size >= 1
       self.level = :automatic
       self.save
+
+      # notify the new entity
+      RCS::DB::PushManager.instance.notify('entity', {id: self._id, action: 'create'})
+      RCS::DB::Alerting.new_entity(self)
 
       # update all its link to automatic
       self.links.where(level: :ghost).each do |link|

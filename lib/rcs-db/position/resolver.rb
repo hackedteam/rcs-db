@@ -66,6 +66,8 @@ class PositionResolver
           # GPS to address
           location.merge! get_google_geocoding(location)
 
+          trace :debug, "Positioning: resolved #{location.inspect}"
+
         else
           raise "Don't know what to search for"
         end
