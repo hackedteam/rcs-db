@@ -6,3 +6,8 @@ Collector:
 DB:
   - MongoDB updated to 2.4.0
   - Windows 2008 R2 SP1 is now the minimum requirement to install RCS
+  - The intelligence service in installed on every shard
+  - New and improved internal access control on items
+  - Performace improvements
+  - Alerting subsystem improved to handle more alerts
+  - Ability to create manual entities in the intelligence module

@@ -241,8 +241,8 @@ class Events
         # perform the backups
         EM::PeriodicTimer.new(60) { EM.defer(proc{ BackupManager.perform }) }
 
-        # process the alert queue
-        EM::PeriodicTimer.new(5) { EM.defer(proc{ Alerting.dispatch }) }
+        # use a thread for the infinite processor waiting on the alert queue
+        EM.defer(proc{ Alerting.dispatch })
 
         # calculate and save the stats
         EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }

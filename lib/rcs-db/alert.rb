@@ -34,7 +34,7 @@ class Alerting
         if alert.type == 'MAIL'
           # put the matching alert in the queue
           user = ::User.find(alert.user_id)
-          alert_fast_queue(to: user.contact, subject: 'RCS Alert [SYNC]', body: "The agent #{agent.name} has synchronized on #{Time.now}")
+          ::AlertQueue.add(to: user.contact, subject: 'RCS Alert [SYNC]', body: "The agent #{agent.name} has synchronized on #{Time.now}")
         end
       end
     rescue Exception => e
@@ -63,7 +63,7 @@ class Alerting
         if alert.type == 'MAIL'
           # put the matching alert in the queue
           user = ::User.find(alert.user_id)
-          alert_fast_queue(to: user.contact, subject: 'RCS Alert [INSTANCE]', body: "A new instance of #{agent.ident} has been created on #{Time.now}.\r\n Its name is: #{agent.name}")
+          ::AlertQueue.add(to: user.contact, subject: 'RCS Alert [INSTANCE]', body: "A new instance of #{agent.ident} has been created on #{Time.now}.\r\n Its name is: #{agent.name}")
         end
       end
     rescue Exception => e
@@ -106,7 +106,7 @@ class Alerting
         path = agent.path + [Moped::BSON::ObjectId.from_string(evidence.aid)]
 
         # insert in the list of alert processing
-        alert_fast_queue(alert: alert, evidence: evidence, path: path,
+        ::AlertQueue.add(alert: alert, evidence: evidence, path: path,
                          to: user.contact,
                          subject: 'RCS Alert [EVIDENCE]',
                          body: "An evidence matching this alert [#{agent.name} #{alert.evidence} #{alert.keywords}] has arrived into the system.")
@@ -118,13 +118,13 @@ class Alerting
 
     def failed_component(component)
       get_alert_users.each do |user|
-        alert_fast_queue(to: user.contact, subject: "RCS Alert [monitor] ERROR", body: "The component '#{component.name}' has failed, please check it.")
+        ::AlertQueue.add(to: user.contact, subject: "RCS Alert [monitor] ERROR", body: "The component '#{component.name}' has failed, please check it.")
       end
     end
 
     def restored_component(component)
       get_alert_users.each do |user|
-        alert_fast_queue(to: user.contact, subject: "RCS Alert [monitor] OK", body: "The component '#{component.name}' is now active")
+        ::AlertQueue.add(to: user.contact, subject: "RCS Alert [monitor] OK", body: "The component '#{component.name}' is now active")
       end
     end
 
@@ -147,28 +147,11 @@ class Alerting
       (agent_path & alert.path == alert.path)
     end
 
-    def alert_fast_queue(params)
-      begin
-        # insert the entry in the queue.
-        # the alert thread will take care of it (suppressing it if needed)
-        ::AlertQueue.create! do |aq|
-          aq.alert = [params[:alert]._id] if params[:alert]
-          aq.evidence = [params[:evidence]._id] if params[:evidence]
-          aq.path = params[:path]
-          aq.to = params[:to]
-          aq.subject = params[:subject]
-          aq.body = params[:body]
-        end
-      rescue Exception => e
-        trace :error, "Cannot queue alert: #{e.message}"
-        trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
-      end
-    end
-
     def clean_old_alerts
+      trace :debug, "Cleaning old alerts..."
       # delete the alerts older than a week
       ::Alert.all.each do |alert|
-        alert.logs.destroy_all(conditions: { :time.lt => Time.now.getutc.to_i - 86400*7 })
+        alert.logs.destroy_all(:time.lt => Time.now.getutc.to_i - 86400*7)
       end
     end
 
@@ -180,53 +163,57 @@ class Alerting
       # no license, no alerts :)
       return unless LicenseManager.instance.check :alerting
 
-      begin
-        alerts = ::AlertQueue.all
+      last = nil
 
-        # remove too old alerts to keep it clean
-        clean_old_alerts
-
-        return unless alerts.count != 0
-
-        trace :info, "Processing alert queue (#{alerts.count})..."
-
-        alerts.each do |aq|
+      # infinite processing loop
+      loop do
+        if (entry = AlertQueue.where(flag: NotificationQueue::QUEUED).find_and_modify({"$set" => {flag: NotificationQueue::PROCESSED}}, new: false))
+          count = AlertQueue.where({flag: NotificationQueue::QUEUED}).count()
+          trace :info, "#{count} alerts to be processed in queue"
           begin
-            if aq.alert and aq.evidence
-              alert = ::Alert.find(aq.alert.first)
+            if entry.alert and entry.evidence
+              alert = ::Alert.find(entry.alert.first)
               user = ::User.find(alert.user_id)
 
               # check if we are in the suppression timeframe
               if alert.last.nil? or Time.now.getutc.to_i - alert.last > alert.suppression
                 # we are out of suppression, create a new entry and mail
                 trace :debug, "Triggering alert: #{alert._id}"
-                alert.logs.create!(time: Time.now.getutc.to_i, path: aq.path, evidence: aq.evidence)
+                alert.logs.create!(time: Time.now.getutc.to_i, path: entry.path, evidence: entry.evidence)
                 alert.last = Time.now.getutc.to_i
                 alert.save
                 # notify the console of the new alert
-                PushManager.instance.notify('alert', {id: aq.path.last, rcpt: user[:_id]})
-                send_mail(aq.to, aq.subject, aq.body) if alert.type == 'MAIL'
+                PushManager.instance.notify('alert', {id: entry.path.last, rcpt: user[:_id]})
+                send_mail(entry.to, entry.subject, entry.body) if alert.type == 'MAIL'
               else
                 trace :debug, "Triggering alert: #{alert._id} (suppressed)"
                 al = alert.logs.last
-                al.evidence += aq.evidence unless al.evidence.include? aq.evidence
+                al.evidence += entry.evidence unless al.evidence.include? entry.evidence
                 al.save
                 # notify even if suppressed so the console will reload the alert log list
-                PushManager.instance.notify('alert', {id: aq.path.last, rcpt: user[:_id]})
+                PushManager.instance.notify('alert', {id: entry.path.last, rcpt: user[:_id]})
               end
             else
               # for queued items without an associated alert, send the mail
-              send_mail(aq.to, aq.subject, aq.body)
+              send_mail(entry.to, entry.subject, entry.body)
             end
           rescue Exception => e
             trace :warn, "Cannot process alert queue: #{e.message}"
-          ensure
-            aq.destroy
+            trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
+          end
+        else
+          # Nothing to do, waiting...
+          sleep 1
+
+          now = Time.now
+          last ||= now
+
+          # remove alerts too old to keep it clean (perform housekeeping every 10 minutes)
+          if now - last > 600
+            last = now
+            clean_old_alerts
           end
         end
-      rescue Exception => e
-        trace :error, "Cannot dispatch alerts: #{e.message}"
-        trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
       end
     end
 

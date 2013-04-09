@@ -15,7 +15,7 @@ class NotificationQueue
     trace :debug, "Adding to #{self.name}: #{target_id} #{evidence_id}"
 
     # insert it in the queue
-    self.create!({target_id: target_id.to_s, evidence_id: evidence_id.to_s, flag: QUEUED})
+    self.create!({target_id: target_id.to_s, evidence_id: evidence_id.to_s})
   end
 
   def self.inherited(klass)
@@ -37,12 +37,41 @@ class NotificationQueue
   end
 end
 
+class AlertQueue < NotificationQueue
+  include Mongoid::Document
+
+  field :alert, type: Array
+  field :evidence, type: Array
+  field :path, type: Array
+  field :to, type: String
+  field :subject, type: String
+  field :body, type: String
+  field :flag, type: Integer, default: QUEUED
+
+  store_in collection: 'alert_queue'
+
+  # override the inherited method
+  def self.add(params)
+    self.create! do |aq|
+      aq.alert = [params[:alert]._id] if params[:alert]
+      aq.evidence = [params[:evidence]._id] if params[:evidence]
+      aq.path = params[:path]
+      aq.to = params[:to]
+      aq.subject = params[:subject]
+      aq.body = params[:body]
+    end
+  rescue Exception => e
+    trace :error, "Cannot queue alert: #{e.message}"
+    trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
+  end
+end
+
 class OCRQueue < NotificationQueue
   include Mongoid::Document
 
   field :target_id, type: String
   field :evidence_id, type: String
-  field :flag, type: Integer
+  field :flag, type: Integer, default: QUEUED
 
   store_in collection: 'ocr_queue'
 end
@@ -53,7 +82,7 @@ class TransQueue < NotificationQueue
 
   field :target_id, type: String
   field :evidence_id, type: String
-  field :flag, type: Integer
+  field :flag, type: Integer, default: QUEUED
 
   store_in collection: 'trans_queue'
 end
@@ -64,7 +93,7 @@ class AggregatorQueue < NotificationQueue
 
   field :target_id, type: String
   field :evidence_id, type: String
-  field :flag, type: Integer
+  field :flag, type: Integer, default: QUEUED
 
   store_in collection: 'aggregator_queue'
 
@@ -83,7 +112,7 @@ class IntelligenceQueue < NotificationQueue
 
   field :target_id, type: String
   field :evidence_id, type: String
-  field :flag, type: Integer
+  field :flag, type: Integer, default: QUEUED
 
   store_in collection: 'intelligence_queue'
 
@@ -93,18 +122,7 @@ class IntelligenceQueue < NotificationQueue
     # skip not interesting evidence
     return unless INTELLIGENCE_TYPES.include? type
 
-    # mark the entity as dirty so the module can analyze it to search for new handles
-    if ['addressbook', 'password'].include? type
-      entity = ::Entity.targets.in(path: [target_id]).first
-      # recreate the hash to trigger the mongoid save
-      entity[:analyzed] = {'handles' => false, 'handles_last' => entity[:analyzed]['handles_last']}
-      entity.save
-    end
-
-    # perform correlation on these evidence
-    if ['position', 'camera'].include? type
-      super(target_id, evidence_id)
-    end
+    super(target_id, evidence_id)
   end
 
 

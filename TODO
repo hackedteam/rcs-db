@@ -18,18 +18,21 @@ TODO 9.0.0
 
     upgrade RubyEncoder 1.5
 
+    --
+
+    alerts on link creation
+
+    Realtime:
+      - link between entities already created (on new aggregate)
+
+    Batch:
+      - identity relation if two entities have the same handles
+
 
     aggregates for places (positioner algorithm)
 
     create entity form most_contacted
     associate entity from most_contacted
-
-    identity relation if two entities have the same handles
-
-    entities:
-      - manual (confirmed)
-      - automatic (confirmed / unconfirmed)
-      - ghost (not shown)
 
     flows:
       - message

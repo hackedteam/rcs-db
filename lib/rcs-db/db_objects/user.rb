@@ -106,7 +106,7 @@ class User
   end
 
   def destroy_callback
-    ::Session.destroy_all(conditions: {user: [ self._id ]})
+    ::Session.destroy_all(user: [ self._id ])
   end
 
 end
