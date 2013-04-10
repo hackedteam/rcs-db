@@ -1,10 +1,4 @@
 
-
-arianna timing out?????
-
-check deleted repos on collector
-
-
 TODO 9.0.0
 
     upgrade to ruby 1.9.3-p392 on windows
@@ -23,12 +17,11 @@ TODO 9.0.0
 
     --
 
+    alerts on link creation
+
+
     pushmanager with queue
 
-    alerts on link creation
-      - relevance set from alert (on link)
-      - link on specific entity
-      - link between specific entities
 
     Realtime:
       - link between entities already created (on new aggregate)
