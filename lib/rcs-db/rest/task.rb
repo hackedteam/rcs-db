@@ -26,7 +26,13 @@ class TaskController < RESTController
     require_auth_level :admin_audit if @params['type'] == 'audit'
     require_auth_level :sys_backend if @params['type'] == 'compact'
     require_auth_level :sys_frontend if @params['type'] == 'topology'
-    require_auth_level :tech_build if @params['type'] == 'build'
+    if @params['type'] == 'build'
+      if @params['params']['platform'] == 'anon'
+        require_auth_level :sys_frontend
+      else
+        require_auth_level :tech_build
+      end
+    end
     require_auth_level :tech_ni_rules if @params['type'] == 'injector'
     require_auth_level :view_export if @params['type'] == 'evidence'
 

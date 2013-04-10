@@ -33,7 +33,6 @@ class Alerting
 
         if alert.type == 'MAIL'
           # put the matching alert in the queue
-          user = ::User.find(alert.user_id)
           ::AlertQueue.add(to: user.contact, subject: 'RCS Alert [SYNC]', body: "The agent #{agent.name} has synchronized on #{Time.now}")
         end
       end
@@ -62,7 +61,6 @@ class Alerting
 
         if alert.type == 'MAIL'
           # put the matching alert in the queue
-          user = ::User.find(alert.user_id)
           ::AlertQueue.add(to: user.contact, subject: 'RCS Alert [INSTANCE]', body: "A new instance of #{agent.ident} has been created on #{Time.now}.\r\n Its name is: #{agent.name}")
         end
       end
@@ -117,8 +115,39 @@ class Alerting
     end
 
     def new_link(entities)
+      ::Alert.where(:enabled => true, :action => 'LINK').each do |alert|
+        # skip non matching entities
+        next unless match_path(alert, entities.first)
+        next unless match_path(alert, entities.last)
 
-      trace :debug, "ALERT NEW LINK: #{entities.inspect}"
+        # we MUST not dispatch alert for element that are not accessible by the user
+        user = ::User.find(alert.user_id)
+        next unless entities.first.users.include? user
+        next unless entities.last.users.include? user
+
+        # if two entities where specified, check that at list one of them is in the alert
+        if not alert.entities.empty?
+          alert_ent = alert.entities
+          case alert_ent.size
+            when 1
+              next if not alert_ent.include? entities.first._id and not alert_ent.include? entities.last._id
+            when 2
+              next unless alert_ent.include? entities.first._id
+              next unless alert_ent.include? entities.last._id
+          end
+        end
+
+        unless alert.type == 'NONE'
+          alert.logs.create!(time: Time.now.getutc.to_i, path: [entities.first._id, entities.last._id])
+          PushManager.instance.notify('alert', {id: entities.first._id, rcpt: user[:_id]})
+          PushManager.instance.notify('alert', {id: entities.last._id, rcpt: user[:_id]})
+        end
+
+        if alert.type == 'MAIL'
+          # put the matching alert in the queue
+          ::AlertQueue.add(to: user.contact, subject: 'RCS Alert [LINK]', body: "A new link between '#{entities.first}' and '#{entities.last}' has been created on #{Time.now}.")
+        end
+      end
 
     rescue Exception => e
       trace :warn, "Cannot handle alert (new_link): #{e.message}"
@@ -126,9 +155,24 @@ class Alerting
     end
 
     def new_entity(entity)
+      ::Alert.where(:enabled => true, :action => 'ENTITY').each do |alert|
+        # skip non matching entities
+        next unless match_path(alert, entity)
 
-      trace :debug, "ALERT NEW ENTITY: #{entity.inspect}"
+        # we MUST not dispatch alert for element that are not accessible by the user
+        user = ::User.find(alert.user_id)
+        next unless entity.users.include? user
 
+        unless alert.type == 'NONE'
+          alert.logs.create!(time: Time.now.getutc.to_i, path: entity.path)
+          PushManager.instance.notify('alert', {id: entity._id, rcpt: user[:_id]})
+        end
+
+        if alert.type == 'MAIL'
+          # put the matching alert in the queue
+          ::AlertQueue.add(to: user.contact, subject: 'RCS Alert [ENTITY]', body: "A new entity #{entity.name} has been created on #{Time.now}.")
+        end
+      end
     rescue Exception => e
       trace :warn, "Cannot handle alert (new_link): #{e.message}"
       trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
