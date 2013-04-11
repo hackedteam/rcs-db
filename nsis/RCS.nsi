@@ -445,10 +445,6 @@ Section "Install Section" SecInstall
       FileOpen $4 "$INSTDIR\DB\config\admin_pass" w
       FileWrite $4 "$adminpass"
       FileClose $4
-    ${Else}
-      DetailPrint "Migrating data from previous version..."
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --migrate --log"
-      DetailPrint "done"
     ${EndIf}
 
     ; make sure the certificate is removed on new install
@@ -472,7 +468,11 @@ Section "Install Section" SecInstall
 
     DetailPrint "Starting RCS Master Router..."
     SimpleSC::StartService "RCSMasterRouter" "" 30
-    Sleep 5000
+    Sleep 15000
+
+    DetailPrint "Migrating data from previous version..."
+    nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --migrate --log"
+    DetailPrint "done"
 
     DetailPrint "Starting RCS DB..."
     SimpleSC::StartService "RCSDB" "" 30
