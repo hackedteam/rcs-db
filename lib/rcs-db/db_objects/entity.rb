@@ -140,7 +140,7 @@ class Entity
     return {latitude: self.position.to_hsh[:y], longitude: self.position.to_hsh[:x], time: self.position_attr[:time], accuracy: self.position_attr[:accuracy]}
   end
 
-  def self.name_from_handle(type, handle, target_id = nil)
+  def self.name_from_handle(type, handle, target_id)
 
     # use a class cache
     @@acc_cache ||= LRUCache.new(:ttl => 24.hour)
@@ -149,7 +149,7 @@ class Entity
 
     type = 'phone' if ['call', 'sms', 'mms'].include? type
 
-    target = ::Item.find(target_id) if target_id
+    target = ::Item.find(target_id)
 
     # the scope of the search (within operation)
     path = target ? target.path.first : nil
@@ -167,6 +167,16 @@ class Entity
     if entity
       @@acc_cache.store(search_key, entity.name)
       return entity.name
+    end
+
+    # if the intelligence is enabled, we have all the ghost entities
+    # so the above search will find them, otherwise we need to scan the addressbook
+    return nil if $license['intelligence']
+
+    # use the fulltext (kw) search to be fast
+    Evidence.collection_class(target_id).where({type: 'addressbook', :kw.all => handle.keywords }).each do |e|
+      @@acc_cache.store(search_key, e[:data]['name'])
+      return e[:data]['name']
     end
 
     return nil

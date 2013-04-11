@@ -2,10 +2,7 @@ TODO 8.3.x
 
 
 
-
-arianna timing out?????
-
-check deleted repos on collector
+config --migrate (not executed???)
 
 
 TODO 9.0.0
@@ -26,12 +23,12 @@ TODO 9.0.0
 
     --
 
+    alerts on link creation
+
+    licensemanager refactor to remove $globals
+
     pushmanager with queue
 
-    alerts on link creation
-      - relevance set from alert (on link)
-      - link on specific entity
-      - link between specific entities
 
     Realtime:
       - link between entities already created (on new aggregate)

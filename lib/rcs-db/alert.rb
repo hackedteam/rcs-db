@@ -143,6 +143,9 @@ class Alerting
           PushManager.instance.notify('alert', {id: entities.last._id, rcpt: user[:_id]})
         end
 
+        # update the relevance of the link
+        LinkManager.instance.edit_link(from: entities.first, to: entities.last, rel: alert.tag)
+
         if alert.type == 'MAIL'
           # put the matching alert in the queue
           ::AlertQueue.add(to: user.contact, subject: 'RCS Alert [LINK]', body: "A new link between '#{entities.first}' and '#{entities.last}' has been created on #{Time.now}.")
