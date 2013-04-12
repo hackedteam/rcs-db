@@ -45,7 +45,6 @@ class HeartBeat
       ip = 'unknown'
     end
 
-    #TODO: report some useful information
     message = SystemStatus.my_error_msg || "#{SessionManager.instance.all.size} connections..."
 
     # report our status

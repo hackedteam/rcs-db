@@ -11,7 +11,7 @@ class Signature
 
   validates_uniqueness_of :scope
 
-  store_in :signatures
+  store_in collection: 'signatures'
 end
 
 

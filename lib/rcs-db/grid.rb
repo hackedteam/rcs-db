@@ -21,12 +21,17 @@ class GridFS
     def collection_name(coll)
       coll.nil? ? DEFAULT_GRID_NAME : DEFAULT_GRID_NAME + '.' + coll
     end
-    
+
+    #
+    # Make sure that every internal Mongo::BSON object is returned as Moped::BSON
+    # and that every external parameter is converted from Moped:: to Mongo::
+    #
+
     def put(content, opts = {}, collection = nil)
       begin
         raise "Cannot put into the grid: content is empty" if content.nil?
 
-        db = Mongoid.database
+        db = DB.instance.mongo_connection
         grid = Mongo::Grid.new db, collection_name(collection)
         grid_id = grid.put(content, opts)
 
@@ -34,7 +39,7 @@ class GridFS
         chunks = db.collection(collection_name(collection) + '.chunks')
         Shard.set_key(chunks, {files_id: 1}) unless chunks.stats['sharded']
 
-        return grid_id
+        return Moped::BSON::ObjectId.from_string(grid_id.to_s)
       rescue Exception => e
         trace :error, "Cannot put content into the Grid: #{collection_name(collection)} #{opts.inspect} #{e.message}"
         raise
@@ -42,9 +47,10 @@ class GridFS
     end
 
     def get(id, collection = nil)
-      #raise "Id must be a BSON::ObjectId" unless id.is_a? BSON::ObjectId
       begin
-        db = Mongoid.database
+        id = id.first if id.class.eql? Array
+        id = BSON::ObjectId.from_string(id.to_s)
+        db = DB.instance.mongo_connection
         grid = Mongo::Grid.new db, collection_name(collection)
         return grid.get id
       rescue Exception => e
@@ -54,9 +60,10 @@ class GridFS
     end
     
     def delete(id, collection = nil)
-      #raise "Id must be a BSON::ObjectId" unless id.is_a? BSON::ObjectId
       begin
-        db = Mongoid.database
+        id = id.first if id.class.eql? Array
+        id = BSON::ObjectId.from_string(id.to_s)
+        db = DB.instance.mongo_connection
         grid = Mongo::Grid.new db, collection_name(collection)
         return grid.delete id
       rescue Exception => e
@@ -66,8 +73,9 @@ class GridFS
     end
 
     def to_tmp(id, collection = nil)
-      #raise "Id must be a BSON::ObjectId" unless id.is_a? BSON::ObjectId
       begin
+        id = id.first if id.class.eql? Array
+        id = BSON::ObjectId.from_string(id.to_s)
         file = self.get id, collection
         raise "Grid content is nil" if file.nil?
         temp = File.open(Config.instance.temp("#{id}-%f" % Time.now), 'wb+')
@@ -88,13 +96,14 @@ class GridFS
     end
 
     def drop_collection(name)
-      Mongoid.database.drop_collection DEFAULT_GRID_NAME + '.' + name + '.files'
-      Mongoid.database.drop_collection DEFAULT_GRID_NAME + '.' + name + '.chunks'
+      db = DB.instance.mongo_connection
+      db.drop_collection DEFAULT_GRID_NAME + '.' + name + '.files'
+      db.drop_collection DEFAULT_GRID_NAME + '.' + name + '.chunks'
     end
 
     def get_by_filename(filename, collection = nil)
       begin
-        files = Mongoid.database.collection( collection_name(collection) + ".files")
+        files = DB.instance.mongo_connection.collection( collection_name(collection) + ".files")
         return files.find({"filename" => filename}, :fields => ["_id", "length"])
       rescue Exception => e
         trace :error, "Cannot get content from the Grid: #{collection_name(collection)}"
@@ -104,7 +113,7 @@ class GridFS
 
     def delete_by_filename(filename, collection = nil)
       begin
-        files = Mongoid.database.collection( collection_name(collection) + ".files")
+        files = DB.instance.mongo_connection.collection( collection_name(collection) + ".files")
         files.find({"filename" => filename}, :fields => ["_id", "length"]).each  do |e|
           delete(e["_id"], collection)
         end
@@ -116,7 +125,7 @@ class GridFS
 
     def get_distinct_filenames(collection = nil)
       begin
-        files = Mongoid.database.collection( collection_name(collection) + ".files")
+        files = DB.instance.mongo_connection.collection( collection_name(collection) + ".files")
         return files.distinct("filename")
       rescue Exception => e
         trace :error, "Cannot get content from the Grid: #{collection_name(collection)}"

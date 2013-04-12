@@ -30,11 +30,11 @@ class Status
   field :type, type: String
   field :version, type: String
 
-  index :name
-  index :address
-  index :status
+  index({name: 1}, {background: true})
+  index({address: 1}, {background: true})
+  index({status: 1}, {background: true})
 
-  store_in :statuses
+  store_in collection: 'statuses'
 
   class << self
 

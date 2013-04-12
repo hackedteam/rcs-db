@@ -19,17 +19,14 @@ class Processor
   extend RCS::Tracer
 
   def self.run
-    db = Mongoid.database
-    coll = db.collection('ocr_queue')
-
     trace :info, "OCR ready to go..."
 
     # infinite processing loop
     loop do
       # get the first entry from the queue and mark it as processed to avoid
       # conflicts with multiple processors
-      if (entry = coll.find_and_modify({query: {flag: OCRQueue::QUEUED}, update: {"$set" => {flag: OCRQueue::PROCESSED}}}))
-        count = coll.find({flag: OCRQueue::QUEUED}).count()
+      if (entry = OCRQueue.where(flag: NotificationQueue::QUEUED).find_and_modify({"$set" => {flag: NotificationQueue::PROCESSED}}, new: false))
+        count = OCRQueue.where({flag: NotificationQueue::QUEUED}).count()
         trace :info, "#{count} evidence to be processed in queue"
         process entry
       else

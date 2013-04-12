@@ -13,34 +13,21 @@ class SearchController < RESTController
   def index
     require_auth_level :admin, :tech, :view, :sys
     
-    filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
-    filter ||= {}
-    
-    filter.merge!({_id: {"$in" => @session[:accessible]}, deleted: {"$in" => [false, nil]}})
-
     mongoid_query do
-      db = Mongoid.database
-      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "platform", "instance", "version", "demo", "scout", "ident"])
-      ok(j)
+      fields = ["name", "desc", "status", "_kind", "path", "type", "platform", "instance", "version", "demo", "scout", "ident"]
+      items = ::Item.in(deleted: [false, nil]).in(user_ids: [@session.user[:_id]]).only(fields)
+      ok(items)
     end
   end
   
   def show
     require_auth_level :admin, :tech, :view
-    
-    return not_found() unless @session[:accessible].include? BSON::ObjectId.from_string(@params['_id'])
 
     mongoid_query do
-      db = Mongoid.database
-      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "path", "stat", "type", "ident", "platform", "instance", "version", "demo", "scout", "deleted"])
-
-      agent = j.first
-
-      # the console MUST not see deleted items
-      return not_found if agent.nil?
-      return not_found if agent.has_key?('deleted') and agent['deleted']
-
-      ok(agent)
+      it = ::Item.where(_id: @params['_id'], deleted: false).in(user_ids: [@session.user[:_id]]).only("name", "desc", "status", "_kind", "path", "stat", "type", "ident", "platform", "instance", "version", "demo", "scout", "deleted")
+      item = it.first
+      return not_found if item.nil?
+      ok(item)
     end
   end
   

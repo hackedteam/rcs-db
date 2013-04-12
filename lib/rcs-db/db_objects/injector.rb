@@ -23,28 +23,33 @@ class Injector
   field :redirection_tag, type: String
 
   # this is the binary config
-  field :_grid, type: Array
+  field :_grid, type: Moped::BSON::ObjectId
   field :_grid_size, type: Integer
 
-  index :name
-  index :address
-  index :poll
-  index :configured
+  index({name: 1}, {background: true})
+  index({address: 1}, {background: true})
+  index({poll: 1}, {background: true})
+  index({configured: 1}, {background: true})
 
-  store_in :injectors
+  store_in collection: 'injectors'
 
   embeds_many :rules, class_name: "InjectorRule"
 
   before_destroy :destroy_callback
+  after_create :create_log_collection
 
   protected
   def destroy_callback
     # destroy all the rules to cleanup the saved files in the grid
     self.rules.destroy_all
     # remove the log collection
-    Mongoid.database.drop_collection CappedLog.collection_name(self._id.to_s)
+    CappedLog.collection_class(self._id.to_s).collection.drop
     # make sure to delete the binary config in the grid
-    RCS::DB::GridFS.delete self[:_grid].first unless self[:_grid].nil?
+    RCS::DB::GridFS.delete self[:_grid] unless self[:_grid].nil?
+  end
+
+  def create_log_collection
+    CappedLog.collection_class(self._id.to_s).create_capped_collection
   end
 
   public
@@ -92,7 +97,7 @@ class InjectorRule
   field :action_param_name, type: String
   field :scout, type: Boolean, default: true
 
-  field :_grid, type: Array
+  field :_grid, type: Moped::BSON::ObjectId
 
   embedded_in :injector
 
@@ -101,7 +106,7 @@ class InjectorRule
   protected
 
   def destroy_callback
-    RCS::DB::GridFS.delete self[:_grid].first unless self[:_grid].nil?
+    RCS::DB::GridFS.delete self[:_grid] unless self[:_grid].nil?
   end
 end
 

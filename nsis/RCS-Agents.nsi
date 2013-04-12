@@ -125,7 +125,7 @@ Function .onInit
 	  ${IfNot} ${AtLeastWin7}
   	  MessageBox MB_OK "RCS can be installed only on Windows Server 2008 R2 or above"
     	;Quit
-  	${EndIf}    	
+  	${EndIf}
   ${EndIf}
 
   ReadRegDWORD $R0 HKLM "Software\HT\RCS" "installed"

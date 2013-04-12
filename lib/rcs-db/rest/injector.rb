@@ -42,7 +42,7 @@ class InjectorController < RESTController
                              redirect: 'auto',
                              redirection_tag: 'ww')
 
-    Audit.log :actor => @session[:user][:name], :action => 'injector.create', :desc => "Created the injector '#{@params['name']}'"
+    Audit.log :actor => @session.user[:name], :action => 'injector.create', :desc => "Created the injector '#{@params['name']}'"
 
     return ok(result)
   end
@@ -57,7 +57,7 @@ class InjectorController < RESTController
 
       @params.each_pair do |key, value|
         if injector[key.to_s] != value and not key['_ids']
-          Audit.log :actor => @session[:user][:name], :action => 'injector.update', :desc => "Updated '#{key}' to '#{value}' for injector '#{injector['name']}'"
+          Audit.log :actor => @session.user[:name], :action => 'injector.update', :desc => "Updated '#{key}' to '#{value}' for injector '#{injector['name']}'"
         end
       end
 
@@ -74,7 +74,7 @@ class InjectorController < RESTController
     mongoid_query do
       injector = Injector.find(@params['_id'])
 
-      Audit.log :actor => @session[:user][:name], :action => 'injector.destroy', :desc => "Deleted the injector '#{injector.name}'"
+      Audit.log :actor => @session.user[:name], :action => 'injector.destroy', :desc => "Deleted the injector '#{injector.name}'"
 
       injector.destroy
 
@@ -102,13 +102,13 @@ class InjectorController < RESTController
     mongoid_query do
       injector = ::Injector.find(@params['_id'])
 
-      return not_found if injector[:_grid].nil? or injector[:_grid].empty? or injector[:_grid].first.nil?
+      return not_found if injector[:_grid].nil?
 
       # reset the flag for the "configuration needed"
       injector.configured = true
       injector.save
 
-      return stream_grid(injector[:_grid].first)
+      return stream_grid(injector[:_grid])
     end
   end
 
@@ -120,8 +120,7 @@ class InjectorController < RESTController
         when 'GET'
           require_auth_level :sys, :tech
           
-          klass = CappedLog.collection_class injector[:_id]
-          logs = klass.all.order_by([[:_id, :asc]])
+          logs = CappedLog.collection_class(injector[:_id]).all.order_by([[:_id, :asc]])
           return ok(logs)
 
         when 'POST'
@@ -146,7 +145,7 @@ class InjectorController < RESTController
       injector = Injector.find(@params['_id'])
 
       # we cannot call delete_all on a capped collection, must drop it
-      Mongoid.database.collection(CappedLog.collection_name(injector[:_id])).drop
+      CappedLog.collection_class(injector[:_id]).collection.drop
 
       return ok
     end
@@ -181,12 +180,12 @@ class InjectorController < RESTController
       if rule.action == 'REPLACE' and not @params['rule']['action_param'].nil?
         path = Config.instance.temp(@params['rule']['action_param'])
         if File.exist?(path) and File.file?(path)
-          rule[:_grid] = [GridFS.put(File.open(path, 'rb+') {|f| f.read}, {filename: @params['rule']['action_param']})]
+          rule[:_grid] = GridFS.put(File.open(path, 'rb+') {|f| f.read}, {filename: @params['rule']['action_param']})
           File.unlink(path)
         end
       end
       
-      Audit.log :actor => @session[:user][:name], :action => 'injector.add_rule',
+      Audit.log :actor => @session.user[:name], :action => 'injector.add_rule',
                 :desc => "Added a rule to the injector '#{injector.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
 
       injector.rules << rule
@@ -205,7 +204,7 @@ class InjectorController < RESTController
       rule = injector.rules.find(@params['rule']['_id'])
       target = ::Item.find(rule.target_id.first)
 
-      Audit.log :actor => @session[:user][:name], :action => 'injector.del_rule', :target_name => target.name,
+      Audit.log :actor => @session.user[:name], :action => 'injector.del_rule', :target_name => target.name,
                 :desc => "Deleted a rule from the injector '#{injector.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
 
       injector.rules.delete_all(conditions: { _id: rule[:_id]})
@@ -233,7 +232,7 @@ class InjectorController < RESTController
 
       # remove any grid pointer if we are changing the type of action
       if rule.action != 'REPLACE'
-        GridFS.delete rule[:_grid].first unless rule[:_grid].nil?
+        GridFS.delete rule[:_grid] unless rule[:_grid].nil?
         rule[:_grid] = nil
       end
       
@@ -242,15 +241,15 @@ class InjectorController < RESTController
         path = Config.instance.temp(@params['rule']['action_param'])
         if File.exist?(path) and File.file?(path)
           # delete any previous file in the grid
-          GridFS.delete rule[:_grid].first unless rule[:_grid].nil?
-          rule[:_grid] = [GridFS.put(File.open(path, 'rb+') {|f| f.read}, {filename: @params['rule']['action_param']})]
+          GridFS.delete rule[:_grid] unless rule[:_grid].nil?
+          rule[:_grid] = GridFS.put(File.open(path, 'rb+') {|f| f.read}, {filename: @params['rule']['action_param']})
           File.unlink(path)
         end
       end
 
       rule.save
       
-      Audit.log :actor => @session[:user][:name], :action => 'injector.update_rule',
+      Audit.log :actor => @session.user[:name], :action => 'injector.update_rule',
                 :desc => "Modified a rule on the injector '#{injector.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
 
       return ok(rule)
@@ -279,7 +278,7 @@ class InjectorController < RESTController
           return stream_file(build.path('injector.deb'), proc { build.clean })
 
         when 'POST'
-          Audit.log :actor => @session[:user][:name], :action => 'injector.upgrade', :desc => "Upgraded the Network Injector '#{injector[:name]}'"
+          Audit.log :actor => @session.user[:name], :action => 'injector.upgrade', :desc => "Upgraded the Network Injector '#{injector[:name]}'"
 
           injector.upgradable = true
           injector.save

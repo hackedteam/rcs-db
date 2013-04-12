@@ -24,13 +24,15 @@ class Aggregate
         field :size, type: Integer, default: 0        # seconds for calls, bytes for the rest
         field :data, type: Hash
 
-        store_in Aggregate.collection_name('#{target}')
+        store_in collection: Aggregate.collection_name('#{target}')
 
-        index :aid, background: true
-        index :type, background: true
-        index :day, background: true
-        index "data.peer", background: true
-        index "data.type", background: true
+        index({aid: 1}, {background: true})
+        index({type: 1}, {background: true})
+        index({day: 1}, {background: true})
+        index({"data.peer" => 1}, {background: true})
+        index({"data.type" => 1}, {background: true})
+        index({type: 1, "data.peer" => 1 }, {background: true})
+
         shard_key :type, :day
 
         after_create :create_callback
@@ -39,11 +41,11 @@ class Aggregate
 
         def create_callback
           # enable sharding only if not enabled
-          db = Mongoid.database
+          db = RCS::DB::DB.instance.mongo_connection
           coll = db.collection(Aggregate.collection_name('#{target}'))
           unless coll.stats['sharded']
             Aggregate.collection_class('#{target}').create_indexes
-            RCS::DB::Shard.set_key(coll, {type: 1, day: 1})
+            RCS::DB::Shard.set_key(coll, {type: 1, day: 1, aid: 1})
           end
         end
 
@@ -67,14 +69,11 @@ class Aggregate
     return klass.new
   end
 
-  def self.most_contacted(target, params)
+  def self.most_contacted(target_id, params)
 
     start = Time.now
 
-    most_contacted_types = ['call', 'chat', 'mail', 'sms', 'mms', 'facebook', 'gmail', 'skype', 'bbm', 'whatsapp', 'msn', 'adium']
-
-    db = Mongoid.database
-    collection = db.collection(Aggregate.collection_name(target))
+    most_contacted_types = ['call', 'chat', 'mail', 'sms', 'mms', 'facebook', 'gmail', 'skype', 'bbm', 'whatsapp', 'msn', 'adium', 'viber']
 
     #
     # Map Reduce has some downsides
@@ -113,7 +112,7 @@ class Aggregate
 =end
 
     #
-    # Mongo:Aggregation is better...
+    # Aggregation Framework is better...
     #
     pipeline = [{ "$match" => {:day => {'$gte' => params['from'], '$lte' => params['to']}, :type => {'$in' => most_contacted_types} }},
                 { "$group" =>
@@ -125,7 +124,7 @@ class Aggregate
 
     time = Time.now
     # extract the results
-    contacted = collection.aggregate(pipeline)
+    contacted = Aggregate.collection_class(target_id).collection.aggregate(pipeline)
 
     trace :debug, "Most contacted: Aggregation time #{Time.now - time}" if RCS::DB::Config.instance.global['PERF']
 
@@ -154,7 +153,7 @@ class Aggregate
     # resolve the names of the peer from the db of entities
     top.each do |t|
       t.each do |e|
-        e[:peer_name] = Entity.from_handle(e[:type], e[:peer], target)
+        e[:peer_name] = Entity.name_from_handle(e[:type], e[:peer], target_id)
         e.delete(:peer_name) unless e[:peer_name]
       end
     end

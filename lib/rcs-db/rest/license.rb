@@ -43,7 +43,7 @@ class LicenseController < RESTController
 
     # write to a temporary file
     t = Time.now
-    name = @session[:user][:_id].to_s + "-" + "%10.9f" % t.to_f
+    name = @session.user[:_id].to_s + "-" + "%10.9f" % t.to_f
     path = Config.instance.temp(name)
 
     File.open(path, "wb+") { |f| f.write @request[:content]['content'] }
@@ -58,7 +58,7 @@ class LicenseController < RESTController
       return bad_request("#{e.message}")
     end
 
-    Audit.log :actor => @session[:user][:name], :action => 'license.create', :desc => "Updated the license file"
+    Audit.log :actor => @session.user[:name], :action => 'license.create', :desc => "Updated the license file"
 
     return ok
   end

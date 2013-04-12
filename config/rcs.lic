@@ -35,6 +35,7 @@
   - true
 :alerting: true
 :correlation: true
+:intelligence: true
 :connectors: true
 :rmi:
 - true
@@ -54,12 +55,12 @@
 :translation: true
 :modify: true
 :digest: !binary |-
-  NTNjM2Q1MTg2ZTAyMmM5MGY5Yjc2NGMzMTRhODc0NTE0MmRlMDZiYQ==
+  ODRkZWNkZWFjMTA2NmMxMTcyN2U1MzFkZDY5NGI1MmM4ZjQ5YmIxYw==
 :check: LOuWAplu
 :signature: !binary |-
-  ZTgzZWQ2M2ZlNmM1NmMzNGRmNDE4MTZkN2I0ODhjMzlhNmExYWNlOWM0MGEx
-  Y2FjN2E5OWJjNTRhODU5YWQzMw==
+  YmE5NTU5ODUxOTlmMzc5N2I5YzZmMzBkMmMzZDM1MWZkOWI2OTU5NThmNzZj
+  OTA5Zjk2YjMxMjIxMWFiOGEyYw==
 :integrity: !binary |-
-  YTM4ODAyY2RkYjA4NmY4YTVmYTEzYWQxNThhMjQyYzNjNmY1NTM4NjhkZjA5
-  MmUyODQ3ZTg1NjM5NWE3MWMyNjhmYTU3OTExY2NlZjE4ZmJjZGQ0MzRhYjIy
-  M2VkY2E3
+  ZTZjOTc4ZmNhYmZmOWQ1ODJkOTNjZmFkODJjMWUzZmNmNzE2MGRiZjFiYjk2
+  MTkxNzUxNTVhZjQ4MjM1ZjI3NGM3MjE1ZGQwM2EzYjk3ZmE0Y2U1NGYxODVh
+  NTkzZDRi

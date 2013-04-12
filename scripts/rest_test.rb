@@ -26,7 +26,8 @@ http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 # login
 account = {
   :user => 'alor',
-  :pass => 'demorcss'
+  :pass => 'demorcss',
+  :version => '9999123101'
   }
 resp = http.request_post('/auth/login', account.to_json, nil)
 puts "auth.login"
@@ -34,6 +35,7 @@ puts resp
 cookie = resp['Set-Cookie'] unless resp['Set-Cookie'].nil?
 puts "cookie " + cookie
 puts
+#puts resp.body.inspect
 
 # session
 if false
@@ -44,6 +46,8 @@ if false
   puts
   
   sess = JSON.parse(res.body)[0]
+  
+  puts sess.inspect
   
   # session.destroy
   res = http.delete("/session/#{sess['cookie']}", {'Cookie' => cookie})
@@ -590,9 +594,10 @@ if false
   # alert.index
   puts "alert.index" 
   res = http.request_get('/alert', {'Cookie' => cookie})
-  puts res
+  puts res.body
   puts
   
+=begin  
   # alert.create
   puts "alert.create" 
   alert = {evidence: 'keylog', priority: 5, suppression: 600, type: 'mail', keywords: 'ciao miao bau', path: [1, 2, 3]}
@@ -643,7 +648,7 @@ if false
   res = http.request_get('/alert/counters', {'Cookie' => cookie})
   puts res
   puts
-  
+=end  
 end
 
 # operations
@@ -652,7 +657,15 @@ if false
   res = http.request_get('/operation', {'Cookie' => cookie})
   #puts res.body
   operations = JSON.parse(res.body)
-  puts operations
+  puts operations.size
+  puts
+  #puts operations.inspect
+  
+  puts "operation.index.all" 
+  res = http.request_get('/operation?all=true', {'Cookie' => cookie})
+  #puts res.body
+  operations_all = JSON.parse(res.body)
+  puts operations_all.size
   puts
   
   puts "operation.show"
@@ -771,7 +784,8 @@ if false
   
   res = http.request_get('/target', {'Cookie' => cookie})
   targets = JSON.parse(res.body)
-  
+=end
+
   puts "agent.index"
   res = http.request_get('/agent', {'Cookie' => cookie})
   agents = JSON.parse(res.body)
@@ -779,23 +793,13 @@ if false
   #agents.each {|agent| puts "#{agent['_kind']}\t#{agent['name']}"}
   puts "You got #{agents.size} agents."
   puts
-=end
+
   
   puts "agent.show"
-  res = http.request_get("/agent/4F60909EAEF1DE0E480000D4", {'Cookie' => cookie})
+  res = http.request_get("/agent/#{agents.first['_id']}", {'Cookie' => cookie})
   #agent = JSON.parse(res.body)
   agent = JSON.parse(res.body)
-
-  puts "agent.activate_ghost"
-  agent_post = {
-      _id: agent['_id'],
-      sync: ["10.0.0.1", "10.0.0.2"]
-  }
-  res = http.request_post("/agent/activate_ghost", agent_post.to_json, {'Cookie' => cookie})
-  puts res.body
-  agent = JSON.parse(res.body)
-  puts agent
-  puts
+  puts agent.inspect
 
   #puts "agent.filesystem POST"
   #filesystem_post = {
@@ -1436,18 +1440,37 @@ if true
   
   entity = '50D19ACF2AFB65246B00000A'
   #entity = '50FD0AD7AEF1DE1658000092'
+  entity2 = '50D19ACF2AFB65246B000038'
   
   puts "entity.show"
   res = http.request_get("/entity/#{entity}", {'Cookie' => cookie})
-  puts res.body
+  ent = JSON.parse(res.body)
+  puts JSON.pretty_generate(ent)
+  puts
+
+  puts "entity.show"
+  res = http.request_get("/entity/#{entity2}", {'Cookie' => cookie})
+  ent2 = JSON.parse(res.body)
+  puts JSON.pretty_generate(ent2)
   puts
 
   puts "entity.most_contacted"
-  filter = URI.escape("_id=#{entity}&from=20130101&to=20130121&num=5")
+  filter = URI.escape("_id=#{entity2}&from=20130101&to=20131231&num=1")
   res = http.request_get("/entity/most_contacted?#{filter}", {'Cookie' => cookie})
   puts res.body
   puts
 
+  #puts "entity.add_link"
+  #req = {_id: ent['_id'], entity: ent2['_id'], type: :identity, versus: :in}
+  #res = http.request_post("/entity/add_link", req.to_json, {'Cookie' => cookie})
+  #puts res.body
+  #puts
+  
+  #puts "entity.del_link"
+  #req = {_id: ent['_id'], entity: ent2['_id']}
+  #res = http.request_post("/entity/del_link", req.to_json, {'Cookie' => cookie})
+  #puts res.body
+  #puts
   
 end
 

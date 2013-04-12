@@ -32,18 +32,18 @@ class Evidence
         field :data, type: Hash
         field :kw, type: Array, default: []           # keywords for full text search
 
-        store_in Evidence.collection_name('#{target}')
+        store_in collection: Evidence.collection_name('#{target}')
 
         after_create :create_callback
         before_destroy :destroy_callback
 
-        index :type, background: true
-        index :da, background: true
-        index :dr, background: true
-        index :aid, background: true
-        index :rel, background: true
-        index :blo, background: true
-        index :kw, background: true
+        index({type: 1}, {background: true})
+        index({da: 1}, {background: true})
+        index({dr: 1}, {background: true})
+        index({aid: 1}, {background: true})
+        index({rel: 1}, {background: true})
+        index({blo: 1}, {background: true})
+        index({kw: 1}, {background: true})
         shard_key :type, :da, :aid
 
         STAT_EXCLUSION = ['filesystem', 'info', 'command', 'ip']
@@ -242,7 +242,7 @@ class Evidence
 
     # moving an agent implies that all the evidence are moved to another target
     # we have to remove all the aggregates created from those evidence on the old target
-    Aggregate.collection_class(old_target[:_id]).destroy_all(conditions: { aid: agent[:_id].to_s })
+    Aggregate.collection_class(old_target[:_id]).destroy_all(aid: agent[:_id].to_s)
 
     evidences = Evidence.collection_class(old_target[:_id]).where(:aid => agent[:_id])
 
@@ -324,7 +324,7 @@ class Evidence
     trace :info, "Deleting evidence for target #{target.name} done."
 
     # recalculate the stats for each agent of this target
-    agents = Item.where(_kind: 'agent').also_in(path: [target._id])
+    agents = Item.where(_kind: 'agent').in(path: [target._id])
     agents.each do |a|
       ::Evidence::TYPES.each do |type|
         count = Evidence.collection_class(target[:_id]).where({aid: a._id.to_s, type: type}).count

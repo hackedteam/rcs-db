@@ -17,12 +17,6 @@ require 'em-http-request'
 require 'time'
 require 'json'
 
-class BSON::ObjectId
-  def encode_amf(ser)
-    ser.serialize 3, self.to_s
-  end
-end
-
 module RCS
 module DB
 
@@ -78,7 +72,7 @@ class EvidenceController < RESTController
 
       @params.each_pair do |key, value|
         if evidence[key.to_s] != value
-          Audit.log :actor => @session[:user][:name], :action => 'evidence.update', :desc => "Updated '#{key}' to '#{value}' for evidence #{evidence[:_id]}"
+          Audit.log :actor => @session.user[:name], :action => 'evidence.update', :desc => "Updated '#{key}' to '#{value}' for evidence #{evidence[:_id]}"
         end
       end
 
@@ -124,7 +118,7 @@ class EvidenceController < RESTController
       agent.stat.grid_size -= evidence.data[:_grid_size] unless evidence.data[:_grid].nil?
       agent.save
 
-      Audit.log :actor => @session[:user][:name], :action => 'evidence.destroy', :desc => "Deleted evidence #{evidence.type} #{evidence[:_id]}"
+      Audit.log :actor => @session.user[:name], :action => 'evidence.destroy', :desc => "Deleted evidence #{evidence.type} #{evidence[:_id]}"
 
       evidence.destroy
 
@@ -137,7 +131,7 @@ class EvidenceController < RESTController
 
     return conflict("Unable to delete") unless LicenseManager.instance.check :deletion
 
-    Audit.log :actor => @session[:user][:name], :action => 'evidence.destroy',
+    Audit.log :actor => @session.user[:name], :action => 'evidence.destroy',
               :desc => "Deleted multi evidence from: #{Time.at(@params['from'])} to: #{Time.at(@params['to'])} relevance: #{@params['rel']} type: #{@params['type']}"
 
     #trace :debug, "Deleting evidence: #{@params}"

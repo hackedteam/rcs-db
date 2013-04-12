@@ -1,33 +1,52 @@
+TODO 8.3.x
+
+
+
+config --migrate (not executed???)
+
 
 TODO 9.0.0
 
-    remove mark_bad from installer
+    upgrade to ruby 1.9.3-p392 on windows
 
-    drop support for windows 2003
-    upgrade to ruby 1.9.3-p365
-    upgrade to mongoid 3.0.x
-    gridfs append + moped?
+    upgrade to mongodb 2.4.x (write the upgrade procedure during NSIS installer)
+      - running 2.2
+      - issue sh.stopBalancer()
+      - kill mongos
+      - execute mongos24 --upgrade
+      - issue sh.startBalancer()
+      - kill all
+      - copy 24 over 22
+      - restart all
 
-    db = Mongoid.database  cannot be use anymore
+    upgrade RubyEncoder 1.5
 
-    rework to speed up the most_contacted resolv
-    rework to speed up the accessible mechanism
+    --
+
+    alerts on link creation
+
+    licensemanager refactor to remove $globals
+
+    pushmanager with queue
+
+
+    Realtime:
+      - link between entities already created (on new aggregate)
+
+    Batch:
+      - identity relation if two entities have the same handles
+
 
     aggregates for places (positioner algorithm)
 
     create entity form most_contacted
     associate entity from most_contacted
 
-    identity relation if two entities have the same handles
-
-    entities:
-      - manual (confirmed)
-      - automatic (confirmed / unconfirmed)
-      - ghost (not shown)
-
     flows:
       - message
       - call
+
+     export entities data
 
 TODO FUTURE:
 
@@ -42,12 +61,6 @@ TODO FUTURE:
 
 ======================================
 
-    mongo authentication
-
     Refactoring on rest methods:
       - agent (too much logic here)
       - evidence (too much logic here)
-      - factory (direct mongo query)
-      - operation (direct mongo query)
-      - search (direct mongo query)
-      - target (direct mongo query, move has too much logic)

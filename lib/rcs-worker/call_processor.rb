@@ -30,7 +30,7 @@ class Channel
   attr_reader :name, :sample_rate, :start_time, :written_samples, :wav_data, :status
   
   def initialize(evidence)
-    @id = BSON::ObjectId.new
+    @id = Moped::BSON::ObjectId.new
     @name = evidence[:data][:channel].to_s
     @sample_rate = evidence[:data][:sample_rate]
     @start_time = evidence[:data][:start_time]
@@ -138,7 +138,7 @@ class Call
   attr_reader :bid, :id, :peer, :duration, :sample_rate, :raw_ids, :evidence, :raw_counter
 
   def initialize(peer, program, incoming, start_time, agent, target)
-    @bid = BSON::ObjectId.new
+    @bid = Moped::BSON::ObjectId.new
     @id = "#{agent[:ident]}_#{agent[:instance]}_#{@bid}"
     @peer = peer
     @start_time = start_time
@@ -344,10 +344,10 @@ class Call
       # keyword full search
       ev.kw = []
       ev.kw += peer.keywords
-      ev.kw += program.keywords
+      ev.kw += program.to_s.keywords
       ev.kw.uniq!
 
-      ev.safely.save!
+      ev.with(safe: true).save!
       ev
     end
   end
@@ -454,12 +454,12 @@ class CallProcessor
   end
   
   def write_to_grid(call, mp3_bytes)
-    db = Mongoid.database
+    db = RCS::DB::DB.instance.mongo_connection
     fs = Mongo::GridFileSystem.new(db, "grid.#{@target[:_id]}")
 
     fs.open(call.file_name, 'a') do |f|
       f.write mp3_bytes
-      call.update_data({_grid: f.files_id, _grid_size: f.file_length, duration: call.duration})
+      call.update_data({_grid: Moped::BSON::ObjectId.from_string(f.files_id.to_s), _grid_size: f.file_length, duration: call.duration})
     end
     @agent.stat.size += mp3_bytes.size
     @agent.save

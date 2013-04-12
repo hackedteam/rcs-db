@@ -11,6 +11,7 @@ require_relative 'tasks'
 require_relative 'offload_manager'
 require_relative 'statistics'
 require_relative 'backup'
+require_relative 'sessions'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -91,9 +92,6 @@ class Application
       # ensure the sharding is enabled
       DB.instance.enable_sharding
 
-      # ensure mongo users for authentication
-      DB.instance.ensure_mongo_auth
-
       # ensure all indexes are in place
       DB.instance.create_indexes
 
@@ -123,13 +121,11 @@ class Application
       # ensure the backup of metadata
       BackupManager.ensure_backup
 
-      # clean the capped logs collections
-      DB.instance.clean_capped_logs
+      # creates all the necessary queues
+      NotificationQueue.create_queues
 
-      # TODO: remove in 8.4
-      # migrate the users to the new privs schema
-      DB.instance.migrate_users_to_ext_privs
-      DB.instance.create_targets_entities
+      # housekeeping of old servers sessions
+      SessionManager.instance.clear_all_servers
 
       # enter the main loop (hopefully will never exit from it)
       Events.new.setup Config.instance.global['LISTENING_PORT']

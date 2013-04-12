@@ -10,8 +10,8 @@ class Collector
   field :name, type: String
   field :desc, type: String
   field :type, type: String
-  field :address, typs: String
-  field :internal_address, typs: String
+  field :address, type: String
+  field :internal_address, type: String
   field :port, type: Integer
   field :instance, type: String
   field :poll, type: Boolean
@@ -25,18 +25,26 @@ class Collector
   field :next, type: Array
   field :prev, type: Array
 
-  index :name
-  index :address
-  index :internal_address
+  index({name: 1}, {background: true})
+  index({address: 1}, {background: true})
+  index({internal_address: 1}, {background: true})
 
-  store_in :collectors
+  scope :remote, where(type: 'remote')
+  scope :local, where(type: 'local')
+
+  store_in collection: 'collectors'
 
   after_destroy :drop_log_collection
+  after_create :create_log_collection
 
   protected
 
   def drop_log_collection
-    Mongoid.database.drop_collection CappedLog.collection_name(self._id.to_s)
+    CappedLog.collection_class(self._id.to_s).collection.drop
+  end
+
+  def create_log_collection
+    CappedLog.collection_class(self._id.to_s).create_capped_collection
   end
 
   public

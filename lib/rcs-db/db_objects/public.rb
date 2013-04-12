@@ -12,10 +12,10 @@ class PublicDocument
   field :factory, type: Array
   field :time, type: Integer
 
-  index :name
-  index :user
+  index({name: 1}, {background: true})
+  index({user: 1}, {background: true})
 
-  store_in :publics
+  store_in collection: 'publics'
 end
 
 

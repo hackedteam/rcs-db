@@ -16,15 +16,12 @@ class Processor
   extend RCS::Tracer
 
   def self.run
-    db = Mongoid.database
-    coll = db.collection('aggregator_queue')
-
     # infinite processing loop
     loop do
       # get the first entry from the queue and mark it as processed to avoid
       # conflicts with multiple processors
-      if (entry = coll.find_and_modify({query: {flag: AggregatorQueue::QUEUED}, update: {"$set" => {flag: AggregatorQueue::PROCESSED}}}))
-        count = coll.find({flag: AggregatorQueue::QUEUED}).count()
+      if (entry = AggregatorQueue.where(flag: NotificationQueue::QUEUED).find_and_modify({"$set" => {flag: NotificationQueue::PROCESSED}}, new: false))
+        count = AggregatorQueue.where({flag: NotificationQueue::QUEUED}).count()
         trace :info, "#{count} evidence to be processed in queue"
         process entry
       else
@@ -114,8 +111,12 @@ class Processor
         else
           # new chat format
           if ev.data['incoming'] == 1
+            # special case when the agent is not able to get the account but only display_name
+            return if ev.data['from'].eql? ''
             data << {:peer => ev.data['from'], :versus => :in, :type => ev.data['program'].downcase, :size => ev.data['content'].length}
           else
+            # special case when the agent is not able to get the account but only display_name
+            return if ev.data['rcpt'].eql? ''
             # multiple rcpts creates multiple entries
             ev.data['rcpt'].split(',').each do |rcpt|
               data << {:peer => rcpt.strip, :versus => :out, :type => ev.data['program'].downcase, :size => ev.data['content'].length}

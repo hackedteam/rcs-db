@@ -1,3 +1,7 @@
+#
+# Controller for the Operation objects
+#
+
 module RCS
 module DB
 
@@ -6,36 +10,25 @@ class OperationController < RESTController
   def index
     require_auth_level :admin, :tech, :view
 
-    # TODO: remove in 9.0.0
-    # do not allow login for older console (versions prior to 8.3 don't have this parameter)
-    if @session[:console_version].nil?
-      trace :warn, "Console version for #{@session[:user].name} is too old, denying access..."
-      return bad_request("Console version too old, cannot login")
-    end
-
-    filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
-    filter ||= {}
-
-    filter.merge!({ _kind: 'operation'})
-    filter.merge!({_id: {"$in" => @session[:accessible]}}) unless (admin? and @params['all'] == "true")
-
     mongoid_query do
-      db = Mongoid.database
-      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "group_ids", "stat.last_sync", "stat.size", "stat.grid_size", "stat.last_child"])
-      ok(j)
+      fields = ["name", "desc", "status", "_kind", "path", "group_ids", "stat.last_sync", "stat.size", "stat.grid_size", "stat.last_child"]
+
+      if admin? and @params['all'] == "true"
+        operations = ::Item.operations.only(fields)
+      else
+        operations = ::Item.operations.in(user_ids: [@session.user[:_id]]).only(fields)
+      end
+
+      ok(operations)
     end
   end
   
   def show
     require_auth_level :admin, :tech, :view
-    
-    return not_found() unless @session[:accessible].include? BSON::ObjectId.from_string(@params['_id'])
 
     mongoid_query do
-      db = Mongoid.database
-      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "path", "stat", "group_ids"])
-
-      operation = j.first
+      op = ::Item.operations.where(_id: @params['_id']).in(user_ids: [@session.user[:_id]]).only("name", "desc", "status", "_kind", "path", "stat", "group_ids")
+      operation = op.first
       return not_found if operation.nil?
       ok(operation)
     end
@@ -62,17 +55,11 @@ class OperationController < RESTController
       if @params.has_key? 'group_ids'
         @params['group_ids'].each do |gid|
           group = ::Group.find(gid)
-          item.groups << group
+          group.items << item
         end
       end
 
-      # make item accessible to the current user (immediately)
-      SessionManager.instance.add_accessible(@session, item._id)
-
-      # make item accessible to the users
-      SessionManager.instance.rebuild_all_accessible
-
-      Audit.log :actor => @session[:user][:name],
+      Audit.log :actor => @session.user[:name],
                 :action => "operation.create",
                 :operation_name => item['name'],
                 :desc => "Created operation '#{item['name']}'"
@@ -88,7 +75,7 @@ class OperationController < RESTController
     updatable_fields = ['name', 'desc', 'status', 'contact']
 
     mongoid_query do
-      item = Item.operations.any_in(_id: @session[:accessible]).find(@params['_id'])
+      item = Item.operations.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
 
       # recreate the groups associations
       if @params.has_key? 'group_ids'
@@ -103,7 +90,7 @@ class OperationController < RESTController
 
       @params.each_pair do |key, value|
         if item[key.to_s] != value and not key['_ids']
-          Audit.log :actor => @session[:user][:name],
+          Audit.log :actor => @session.user[:name],
                     :action => "operation.update",
                     :operation_name => item['name'],
                     :desc => "Updated '#{key}' to '#{value}'"
@@ -121,10 +108,10 @@ class OperationController < RESTController
     require_auth_level :admin_operations
 
     mongoid_query do
-      item = Item.operations.any_in(_id: @session[:accessible]).find(@params['_id'])
+      item = Item.operations.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
       name = item.name
 
-      Audit.log :actor => @session[:user][:name],
+      Audit.log :actor => @session.user[:name],
                 :action => "operation.delete",
                 :operation_name => name,
                 :desc => "Deleted operation '#{name}'"

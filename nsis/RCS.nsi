@@ -296,6 +296,7 @@ Section "Install Section" SecInstall
 
     SetOutPath "$INSTDIR\DB\config"
     File "config\mongodb.key"
+    File "config\mongoid.yaml"
     File "config\trace.yaml"
     File "config\export.zip"
     File "config\logo.png"
@@ -444,30 +445,14 @@ Section "Install Section" SecInstall
       FileOpen $4 "$INSTDIR\DB\config\admin_pass" w
       FileWrite $4 "$adminpass"
       FileClose $4
-    ${Else}
-      ; TODO remove for 8.4
-      DetailPrint "Creating service RCS Aggregator..."
-      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSAggregator $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-aggregator"
-      SimpleSC::SetServiceFailure "RCSAggregator" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSAggregator" "DisplayName" "RCS Aggregator"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSAggregator" "Description" "Remote Control System Aggregator for data intelligence"
-      DetailPrint "done"
-
-      DetailPrint "Creating service RCS Intelligence..."
-      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSIntelligence $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-intelligence"
-      SimpleSC::SetServiceFailure "RCSIntelligence" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "DisplayName" "RCS Intelligence"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "Description" "Remote Control System Intelligence data correlator"
-      DetailPrint "done"
     ${EndIf}
 
     ; make sure the certificate is removed on new install
-    Delete "$INSTDIR\DB\config\certs\rcs-network.pem"
-
+    ;Delete "$INSTDIR\DB\config\certs\rcs-network.pem"
     ; generate the SSL cert for anon on every install
-    DetailPrint "Generating anonymizer certs..."
-    nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-certs-anon --log"
-    DetailPrint "done"
+    ;DetailPrint "Generating anonymizer certs..."
+    ;nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-certs-anon --log"
+    ;DetailPrint "done"
 
     SetDetailsPrint "both"
 
@@ -483,7 +468,11 @@ Section "Install Section" SecInstall
 
     DetailPrint "Starting RCS Master Router..."
     SimpleSC::StartService "RCSMasterRouter" "" 30
-    Sleep 5000
+    Sleep 15000
+
+    DetailPrint "Migrating data from previous version..."
+    nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --migrate --log"
+    DetailPrint "done"
 
     DetailPrint "Starting RCS DB..."
     SimpleSC::StartService "RCSDB" "" 30
@@ -541,6 +530,13 @@ Section "Install Section" SecInstall
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSAggregator" "Description" "Remote Control System Aggregator for data intelligence"
       DetailPrint "done"
 
+      DetailPrint "Creating service RCS Intelligence..."
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSIntelligence $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-intelligence"
+      SimpleSC::SetServiceFailure "RCSIntelligence" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "DisplayName" "RCS Intelligence"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "Description" "Remote Control System Intelligence data correlator"
+      DetailPrint "done"
+
       DetailPrint "Starting RCS Shard..."
       SimpleSC::StartService "RCSShard" "" 30
       Sleep 3000
@@ -552,12 +548,12 @@ Section "Install Section" SecInstall
       SetDetailsPrint "both"
       DetailPrint "done"
     ${Else}
-      ; TODO remove for 8.4
-      DetailPrint "Creating service RCS Aggregator..."
-      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSAggregator $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-aggregator"
-      SimpleSC::SetServiceFailure "RCSAggregator" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSAggregator" "DisplayName" "RCS Aggregator"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSAggregator" "Description" "Remote Control System Aggregator for data intelligence"
+      ; TODO remove after 9.0
+      DetailPrint "Creating service RCS Intelligence..."
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSIntelligence $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-intelligence"
+      SimpleSC::SetServiceFailure "RCSIntelligence" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "DisplayName" "RCS Intelligence"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "Description" "Remote Control System Intelligence data correlator"
       DetailPrint "done"
 	  ${EndIf}
     
@@ -569,6 +565,9 @@ Section "Install Section" SecInstall
 
     DetailPrint "Starting RCS Aggregator..."
     SimpleSC::StartService "RCSAggregator" "" 30
+
+    DetailPrint "Starting RCS Intelligence..."
+    SimpleSC::StartService "RCSIntelligence" "" 30
 
     !cd '..'
     WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001

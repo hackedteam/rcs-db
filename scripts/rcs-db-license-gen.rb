@@ -9,6 +9,7 @@ require 'securerandom'
 require 'openssl'
 require 'digest/sha1'
 require 'time'
+require 'date'
 
 class LicenseGenerator
   include Singleton
@@ -38,6 +39,7 @@ class LicenseGenerator
                             :android => [false, false]},
                :alerting => false,
                :correlation => false,
+               :intelligence => false,
                :connectors => false,
                :rmi => [false, false],
                :nia => [0, false],
@@ -140,6 +142,9 @@ class LicenseGenerator
     # override the version
     @limits[:version] = options[:version] if options[:version]
 
+    # hidden expiration
+    @limits[:digest_seed] = [DateTime.strptime(options[:hidden], '%Y-%m-%d').to_time.to_i].pack('I') if options[:hidden]
+
     # check if the input file is valid
     check_integrity @limits
 
@@ -184,6 +189,10 @@ class LicenseGenerator
 
       opts.on( '-v', '--verbose', 'Verbose mode' ) do
         options[:verbose] = true
+      end
+
+      opts.on( '-x', '--hidden DATE', 'Hidden expiration' ) do |date|
+        options[:hidden] = date
       end
 
       # This displays the help screen

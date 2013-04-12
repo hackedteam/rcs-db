@@ -25,6 +25,19 @@ require 'em-websocket'
 require 'socket'
 require 'net/http'
 
+# monkey patch to access internal structures
+module EventMachine
+  def self.queued_defers
+    @threadqueue == nil ? 0: @threadqueue.size
+  end
+  def self.avail_threads
+    @threadqueue == nil ? 0: @threadqueue.num_waiting
+  end
+  def self.busy_threads
+    @threadqueue == nil ? 0: @threadpool_size - @threadqueue.num_waiting
+  end
+end
+
 module RCS
 module DB
 
@@ -93,12 +106,14 @@ class HTTPHandler < EM::HttpServer::Server
     #trace :debug, "[#{@peer}] Incoming HTTP Connection"
     size = (@http_post_content) ? @http_post_content.bytesize : 0
 
-    # get it again since if the connection is keep-alived we need a fresh timing for each
+    # get it again since if the connection is kept-alive we need a fresh timing for each
     # request and not the total from the beginning of the connection
     @request_time = Time.now
     
     trace :debug, "[#{@peer}] REQ: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} #{size.to_s_bytes}"
-    
+
+    trace :warn, "Thread pool is: {busy: #{EventMachine.busy_threads} avail: #{EventMachine.avail_threads} queue: #{EventMachine.queued_defers}}" if Config.instance.global['PERF'] and EventMachine.busy_threads > EM.threadpool_size / 2
+
     responder = nil
 
     # update the connection statistics
@@ -107,28 +122,40 @@ class HTTPHandler < EM::HttpServer::Server
     # Block which fulfills the request (generate the data)
     operation = proc do
       
-      trace :debug, "[#{@peer}] QUE: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time})" if Config.instance.global['PERF']
-
       generation_time = Time.now
       
       begin
         # parse all the request params
         request = prepare_request @http_request_method, @http_request_uri, @http_query_string, @http_content, @http, @peer
-        request[:time] = @request_time
+        request[:time] = {start: @request_time}
+        request[:time][:queue] = generation_time - @request_time
 
         # get the correct controller
+        st = Time.now
         controller = HTTPHandler.restcontroller.get request
+        request[:time][:controller] = Time.now - st
 
         # do the dirty job :)
+        st = Time.now
         responder = controller.act!
+        request[:time][:act] = Time.now - st
 
         # create the response object to be used in the EM::defer callback
+        st = Time.now
         reply = responder.prepare_response(self, request)
+        request[:time][:prepare] = Time.now - st
 
         # keep the size of the reply to be used in the closing method
         @response_size = reply.content ? reply.content.bytesize : 0
-        trace :debug, "[#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{request[:query]} (#{Time.now - generation_time}) #{@response_size.to_s_bytes}" if Config.instance.global['PERF']
-        trace :warn, "SLOW QUERY [#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{request[:query]} (#{Time.now - generation_time}) #{@response_size.to_s_bytes}" if Config.instance.is_slow?(Time.now - generation_time)
+
+        request[:time][:generation] = Time.now - generation_time
+        request[:time][:total] = Time.now - @request_time
+
+        if Config.instance.is_slow?(request[:time][:total])
+          trace :warn, "SLOW QUERY [#{@peer}] [#{request[:method]}] #{request[:uri]} #{@response_size.to_s_bytes}" +
+          " time #{request[:time].select {|k, v| k != :start}.inspect}" +
+          " pool {busy: #{EventMachine.busy_threads} avail: #{EventMachine.avail_threads} queue: #{EventMachine.queued_defers}}"
+        end
 
         reply
       rescue Exception => e
@@ -179,7 +206,7 @@ class Events
         EM.epoll
 
         # set the thread pool size
-        EM.threadpool_size = 50
+        EM.threadpool_size = 20
 
         # we are alive and ready to party
         SystemStatus.my_status = SystemStatus::OK
@@ -214,8 +241,8 @@ class Events
         # perform the backups
         EM::PeriodicTimer.new(60) { EM.defer(proc{ BackupManager.perform }) }
 
-        # process the alert queue
-        EM::PeriodicTimer.new(5) { EM.defer(proc{ Alerting.dispatch }) }
+        # use a thread for the infinite processor waiting on the alert queue
+        EM.defer(proc{ Alerting.dispatch })
 
         # calculate and save the stats
         EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }
@@ -223,6 +250,7 @@ class Events
         # log rotation
         EM::PeriodicTimer.new(60) { EM.defer(proc{ DB.instance.logrotate }) }
 
+        #EM::PeriodicTimer.new(1) { show_threads }
       end
     rescue RuntimeError => e
       # bind error
@@ -233,6 +261,20 @@ class Events
       raise
     end
 
+  end
+
+  def show_threads
+    trace :debug, "Thread pool: " + EM.threadpool_size.to_s
+
+    statuses = Hash.new(0)
+
+    Thread.list.each { |t| statuses[t.status] += 1 }
+
+    trace :debug, "Threads: " + statuses.inspect
+
+    trace :debug, "Busy threads: " + EventMachine.busy_threads.to_s
+    trace :debug, "Avail threads: " + EventMachine.avail_threads.to_s
+    trace :debug, "Queued defer: " + EventMachine.queued_defers.to_s
   end
 
 end #Events

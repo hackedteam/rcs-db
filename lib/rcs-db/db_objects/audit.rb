@@ -16,16 +16,18 @@ class Audit
   field :agent_name, type: String
   field :desc, type: String
   
-  index :time
-  index :actor
-  index :action
-  index :user_name
-  index :group_name
-  index :operation_name
-  index :target_name
-  index :agent_name
-  
-  store_in :audit
+  index({time: 1}, {background: true})
+  index({actor: 1}, {background: true})
+  index({action: 1}, {background: true})
+  index({user_name: 1}, {background: true})
+  index({group_name: 1}, {background: true})
+  index({operation_name: 1}, {background: true})
+  index({target_name: 1}, {background: true})
+  index({agent_name: 1}, {background: true})
+
+  shard_key :time, :actor
+
+  store_in collection: 'audit'
 
   def self.filter(params)
 
@@ -154,7 +156,7 @@ class AuditFilters
   field :target_name, type: Array
   field :agent_name, type: Array
   
-  store_in :audit_filters
+  store_in collection: 'audit_filters'
 end
 
 #end # ::DB

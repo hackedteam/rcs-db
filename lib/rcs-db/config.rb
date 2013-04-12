@@ -6,6 +6,7 @@
 require 'rcs-common/trace'
 
 require_relative 'indexer'
+require_relative 'migration'
 
 # system
 require 'yaml'
@@ -31,7 +32,6 @@ class Config
                     'CERT_PASSWORD' => 'password',
                     'LISTENING_PORT' => 443,
                     'HB_INTERVAL' => 15,
-                    'INT_INTERVAL' => 15,
                     'BACKUP_DIR' => 'backup',
                     'POSITION' => true,
                     'PERF' => false,
@@ -97,9 +97,6 @@ class Config
     # default password if not configured in the config file
     Config.instance.global['CERT_PASSWORD'] ||= 'password'
 
-    # default interval for intelligence
-    Config.instance.global['INT_INTERVAL'] ||= 15
-
     return true
   end
 
@@ -144,6 +141,9 @@ class Config
       reset_admin options
       return 0
     end
+
+    # migration to mongoid3 and new access control
+    return Migration.run [:mongoid3, :access_control, :reindex_aggregates] if options[:migrate]
 
     # keyword indexing
     return Indexer.run options[:kw_index] if options[:kw_index]
@@ -360,6 +360,8 @@ class Config
       out = `openssl ca -batch -days 3650 -out rcs-anon.crt -in rcs-anon.csr -config openssl.cnf -name CA_network 2>&1`
       trace :info, out if $log
 
+      return unless File.exist? 'rcs-anon.crt'
+
       trace :info, "Creating certificates bundles..."
 
       # create the PEM file for all the collectors
@@ -561,6 +563,9 @@ class Config
       end
       opts.on( '--index TARGET', String, 'Calculate the full text index for this target' ) do |target|
         options[:kw_index] = target
+      end
+      opts.on( '--migrate', String, 'Migrate data to the new version' ) do
+        options[:migrate] = true
       end
       opts.on( '--log', 'Log all operation to a file' ) do
         $log = true

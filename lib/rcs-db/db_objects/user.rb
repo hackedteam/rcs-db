@@ -43,23 +43,24 @@ class User
   field :desc, type: String
   field :contact, type: String
   field :privs, type: Array
-  # TODO: remove in 8.4
-  field :ext_privs, type: Boolean
   field :enabled, type: Boolean
   field :locale, type: String
   field :timezone, type: Integer
+
   field :dashboard_ids, type: Array, default: []
   field :recent_ids, type: Array, default: []
   
   validates_uniqueness_of :name, :message => "USER_ALREADY_EXISTS"
   
-  has_and_belongs_to_many :groups, :dependent => :nullify, :autosave => true#, :class_name => "RCS::DB::Group", :foreign_key => "rcs/db/group_ids"
-  has_many :alerts
+  has_and_belongs_to_many :groups, :dependent => :nullify, :autosave => true
+  has_many :alerts, :dependent => :destroy
+
+  has_one :session, :dependent => :destroy, :autosave => true
+
+  index({name: 1}, {background: true})
+  index({enabled: 1}, {background: true})
   
-  index :name
-  index :enabled
-  
-  store_in :users
+  store_in collection: 'users'
 
   before_destroy :destroy_callback
 
@@ -105,7 +106,7 @@ class User
   end
 
   def destroy_callback
-    ::Session.destroy_all(conditions: {user: [ self._id ]})
+    ::Session.destroy_all(user: [ self._id ])
   end
 
 end

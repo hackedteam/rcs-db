@@ -22,12 +22,14 @@ class PushManager
         ws = WebSocketManager.instance.get_ws_from_cookie session[:cookie]
         # not connected push channel
         next if ws.nil?
-        # we have specified a specific user, skip all the others
-        next if message[:rcpt] != nil and session[:user].first != message[:rcpt]
 
-        # TODO: fix this with correct accessibility
+        # we have specified a specific user, skip all the others
+        next if message[:rcpt] != nil and session.user[:_id] != message[:rcpt]
+
         # check for accessibility, if we pass and id, we only want the ws that can access that id
-        #next if message[:id] != nil and not session[:accessible].include? message[:id]
+        item = ::Item.where(_id: message[:id]).in(user_ids: [session.user[:_id]]).first
+        item = ::Entity.where(_id: message[:id]).in(user_ids: [session.user[:_id]]).first if item.nil?
+        next if message[:id] != nil and item.nil?
 
         # send the message
         WebSocketManager.instance.send(ws, type, message)

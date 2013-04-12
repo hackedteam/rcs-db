@@ -57,7 +57,7 @@ class QueueManager
       #trace :debug, "Checking for new evidence..."
 
       begin
-        db = Mongoid.database
+        db = RCS::DB::DB.instance.mongo_connection
         evidences = db.collection('grid.evidence.files').find({metadata: {shard: RCS::DB::Config.instance.global['SHARD']}}, {sort: ["_id", :asc]})
         evidences.each do |ev|
 

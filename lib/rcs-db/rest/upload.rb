@@ -12,7 +12,7 @@ class UploadController < RESTController
     Dir::mkdir(Config.instance.temp) if not File.directory?(Config.instance.temp)
 
     t = Time.now
-    name = @session[:user][:_id].to_s + "-" + "%10.9f" % t.to_f
+    name = @session.user[:_id].to_s + "-" + "%10.9f" % t.to_f
     path = Config.instance.temp(name)
 
     File.open(path, "wb+") do |f|
@@ -21,7 +21,7 @@ class UploadController < RESTController
       f.write @request[:content]['content']
     end
 
-    Audit.log :actor => @session[:user][:name], :action => 'upload.create', :desc => "Uploaded #{@request[:content]['content'].size.to_s_bytes} bytes"
+    Audit.log :actor => @session.user[:name], :action => 'upload.create', :desc => "Uploaded #{@request[:content]['content'].size.to_s_bytes} bytes"
 
     return ok(name, {:content_type => 'text/plain'})
   end

@@ -62,7 +62,7 @@ class BackupManager
 
       # retrieve the list of collection and iterate on it to create a backup
       # the 'what' property of a backup decides which collections have to be backed up
-      collections = Mongoid::Config.master.collection_names
+      collections = DB.instance.mongo_connection.collection_names
 
       # don't backup the "volatile" collections
       collections.delete('statuses')
@@ -88,7 +88,7 @@ class BackupManager
       # save the last backed up objects to be used in the next run
       # do this here, so we are sure that the mongodump below will include these ids
       if backup.incremental
-        db = Mongoid::Config.master
+        db = DB.instance.mongo_connection
 
         incremental_ids = {}
 
@@ -178,7 +178,7 @@ class BackupManager
   def self.partial_backup(params)
 
     # extract the id from the string
-    id = BSON::ObjectId.from_string(params[:what][-24..-1])
+    id = Moped::BSON::ObjectId.from_string(params[:what][-24..-1])
 
     # take the item and subitems contained in it
     items = ::Item.any_of({_id: id}, {path: id})
@@ -205,10 +205,10 @@ class BackupManager
 
         when 'agent'
           item.upload_requests.each do |up|
-            params[:gfilter] += "ObjectId(\"#{up[:_grid].first}\"),"
+            params[:gfilter] += "ObjectId(\"#{up[:_grid]}\"),"
           end
           item.upgrade_requests.each do |up|
-            params[:gfilter] += "ObjectId(\"#{up[:_grid].first}\"),"
+            params[:gfilter] += "ObjectId(\"#{up[:_grid]}\"),"
           end
       end
     end
@@ -238,7 +238,7 @@ class BackupManager
 
   def self.ensure_backup
     trace :info, "Ensuring the metadata backup is present..."
-    return if ::Backup.exists?(conditions: {enabled: true, what: 'metadata'})
+    return if ::Backup.where(enabled: true, what: 'metadata').exists?
 
     b = ::Backup.new
     b.enabled = true

@@ -15,7 +15,7 @@ class Connector
   field :keep, type: Boolean, default: true
   field :path, type: Array
 
-  store_in :connectors
+  store_in collection: 'connectors'
 
   def delete_if_item(id)
     if self.path.include? id

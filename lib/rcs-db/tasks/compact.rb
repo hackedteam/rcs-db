@@ -8,7 +8,7 @@ class CompactTask
   include RCS::Tracer
 
   def total
-    collections = Mongoid::Config.master.collection_names.keep_if {|c| c['logs.'].nil? and c['system.'].nil?}
+    collections = DB.instance.mongo_connection.collection_names.keep_if {|c| c['logs.'].nil? and c['system.'].nil?}
     collections.size * Shard.count
   end
   
@@ -18,12 +18,17 @@ class CompactTask
     Shard.all['shards'].each do |shard|
       host, port = shard['host'].split(':')
 
-      db = DB.instance.new_connection("rcs", host, port.to_i)
+      trace :info, "Compacting #{host} #{port}"
+
+      conn = DB.instance.new_mongo_connection(host, port.to_i)
+      db = conn.db('rcs')
 
       db.collection_names.sort.keep_if {|c| c['logs.'].nil? and c['system.'].nil?  and c['_queue'].nil?}.each do |coll|
         yield @description = "Compacting #{coll}"
         db.command({compact: coll})
       end
+
+      conn.close
     end
 
     @description = "DB compacted successfully"

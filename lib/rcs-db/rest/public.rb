@@ -13,7 +13,7 @@ class PublicController < RESTController
 
     mongoid_query do
 
-      publics = ::PublicDocument.where({factory: {"$in" => @session[:accessible]}})
+      publics = ::PublicDocument.all
 
       return ok(publics)
     end
@@ -30,11 +30,11 @@ class PublicController < RESTController
       return ok() if public.nil?
 
       Frontend.collector_del(public[:name])
-      Audit.log :actor => @session[:user][:name], :action => 'frontend.delete', :desc => "Deleted the file [#{public[:name]}] from the public folder"
+      Audit.log :actor => @session.user[:name], :action => 'frontend.delete', :desc => "Deleted the file [#{public[:name]}] from the public folder"
       public.destroy
 
       # also delete all the other entry with the same name
-      ::PublicDocument.destroy_all({conditions: {name: public[:name]}})
+      ::PublicDocument.destroy_all({name: public[:name]})
 
       return ok
     end

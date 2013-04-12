@@ -9,19 +9,20 @@ if File.directory?(Dir.pwd + '/lib/rcs-intelligence-release')
   require 'rcs-db-release/license'
   require 'rcs-db-release/db_layer'
   require 'rcs-db-release/grid'
+  require 'rcs-db-release/link_manager'
 else
   require 'rcs-db/db'
   require 'rcs-db/config'
   require 'rcs-db/license'
   require 'rcs-db/db_layer'
   require 'rcs-db/grid'
+  require 'rcs-db/link_manager'
 end
 
 # from RCS::Common
 require 'rcs-common/trace'
 
 require_relative 'heartbeat'
-require_relative 'accounts'
 require_relative 'processor'
 
 require 'eventmachine'
@@ -50,15 +51,8 @@ class Intelligence
       # calculate and save the stats
       #EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }
 
-      # retrieve the account information (this is free even without license)
-      EM.defer(proc{ Accounts.retrieve })
-      # interval is in minutes
-      EM::PeriodicTimer.new(RCS::DB::Config.instance.global['INT_INTERVAL'] * 60) { EM.defer(proc{ Accounts.retrieve }) }
-
-      if $license['correlation']
-        # use a thread for the infinite processor waiting on the queue
-        EM.defer(proc{ Processor.run })
-      end
+      # use a thread for the infinite processor waiting on the queue
+      EM.defer(proc{ Processor.run })
 
       trace :info, "Intelligence Module ready!"
     end

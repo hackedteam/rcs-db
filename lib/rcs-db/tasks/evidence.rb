@@ -265,7 +265,6 @@ module RCS
         # to avoid cursor timeout on server-side
         # we split the query into different small chunks
         # so the cursor should be recreated every query
-        # TODO: in mogoid 3.0.0 we should be able to specify :timeout => false on queries
 
         chunk = 100
         cursor = 0

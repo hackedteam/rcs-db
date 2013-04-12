@@ -63,7 +63,7 @@ class Template
 
   field :config, type: String   #json
 
-  store_in :templates
+  store_in collection: 'templates'
 end
 
 

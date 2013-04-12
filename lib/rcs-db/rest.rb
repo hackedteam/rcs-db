@@ -134,10 +134,6 @@ class RESTController
   
   def valid_session?
     @session = RESTController.sessionmanager.get(@request[:cookie])
-    unless @session.nil?
-      RESTController.sessionmanager.update(@request[:cookie])
-      #trace :debug, "Refreshing session for #{@session[:user][:name]}"
-    end
 
     # methods without authentication
     # class XXXXController < RESTController
@@ -267,7 +263,10 @@ class RESTController
 
   def mongoid_query(&block)
     begin
-      yield
+      start = Time.now
+      ret = yield
+      @request[:time][:moingoid] = Time.now - start
+      return ret
     rescue Mongo::ConnectionFailure =>  e
       trace :error, "Connection to database lost, retrying in 5 seconds..."
       sleep 5

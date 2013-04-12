@@ -2,8 +2,9 @@
 # Layer for accessing the real DB
 #
 
-require_relative 'audit.rb'
+require_relative 'audit'
 require_relative 'config'
+require_relative 'db_objects/log'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -11,6 +12,7 @@ require 'rcs-common/trace'
 # system
 require 'mongo'
 require 'mongoid'
+require 'moped'
 require 'rbconfig'
 
 # require all the DB objects
@@ -28,34 +30,31 @@ class DB
   def initialize
     @available = false
     @auth_required = false
-    @auth_user = 'root'
-    @auth_pass = File.binread(Config.instance.file('mongodb.key')) if File.exist?(Config.instance.file('mongodb.key'))
   end
 
   def connect
     begin
-      # this is required for mongoid >= 2.4.2
+      # we are standalone (no rails or rack)
       ENV['MONGOID_ENV'] = 'yes'
 
-      Mongoid.configure do |config|
-        config.master = Mongo::Connection.new(Config.instance.global['CN'], 27017, pool_size: 50, pool_timeout: 15).db('rcs')
-        config.persist_in_safe_mode = true
-        #config.raise_not_found_error = false
-        #config.logger = ::Logger.new($stdout)
-      end
+      # set the parameters for the mongoid.yaml
+      ENV['MONGOID_DATABASE'] = 'rcs'
+      ENV['MONGOID_HOST'] = "#{Config.instance.global['CN']}:27017"
 
-      #puts Mongoid.config.settings.inspect
+      #Mongoid.logger.level = ::Logger::DEBUG
+      #Moped.logger.level = ::Logger::DEBUG
 
-      trace :info, "Connected to MongoDB"
+      #Mongoid.logger = ::Logger.new($stdout)
+      #Moped.logger = ::Logger.new($stdout)
 
-      # check if we need to authenticate
-      begin
-        Mongoid.database.authenticate(@auth_user, @auth_pass)
-        trace :info, "Authenticated to MongoDB"
-        @auth_required = true
-      rescue Exception => e
-        trace :warn, "AUTH: #{e.message}"
-      end
+      Mongoid.load!(Config.instance.file('mongoid.yaml'), :production)
+
+      # to do it programmatically:
+      #session = Moped::Session.new(["#{Config.instance.global['CN']}:27017"], {safe: true})
+      #session.use 'rcs'
+      #Mongoid.sessions[:default] = session
+
+      trace :info, "Connected to MongoDB at #{ENV['MONGOID_HOST']}"
 
     rescue Exception => e
       trace :fatal, e
@@ -64,47 +63,43 @@ class DB
     return true
   end
 
-  def new_connection(db, host = Config.instance.global['CN'], port = 27017)
+  # pooled connection
+  def mongo_connection(db = 'rcs', host = Config.instance.global['CN'], port = 27017)
     time = Time.now
-    db = Mongo::Connection.new(host, port).db(db)
-    begin
-      db.authenticate(@auth_user, @auth_pass) if @auth_required
-    rescue Exception => e
-      trace :warn, "AUTH: #{e.message}"
-    end
+    # instantiate a pool of connections that are thread-safe
+    # this handle will be returned to every thread requesting for a new connection
+    # also the pool is lazy (connect only on request)
+    @mongo_db ||= Mongo::MongoClient.new(host, port, pool_size: 20, pool_timeout: 15, connect: false)
     delta = Time.now - time
-    trace :warn, "Opening new connection is too slow (%f)" % delta if delta > 0.5 and Config.instance.global['PERF']
-    return db
-  rescue Mongo::AuthenticationError => e
-    trace :fatal, "AUTH: #{e.message}"
+    trace :warn, "Opening mongo pool connection is too slow (%f)" % delta if delta > 0.5 and Config.instance.global['PERF']
+    return @mongo_db.db(db)
   end
 
-  def ensure_mongo_auth
-    # don't create the users if already there
-    #return if @auth_required
+  # single connection
+  def new_mongo_connection(host = Config.instance.global['CN'], port = 27017)
+    time = Time.now
+    conn = Mongo::MongoClient.new(host, port)
+    delta = Time.now - time
+    trace :warn, "Opening new mongo connection is too slow (%f)" % delta if delta > 0.5 and Config.instance.global['PERF']
+    return conn
+  end
 
-    # ensure the users are created on master
-    ['rcs', 'admin', 'config'].each do |name|
-      trace :debug, "Setting up auth for: #{name}"
-      db = new_connection(name)
-      db.eval("db.addUser('#{@auth_user}', '#{@auth_pass}')")
-    end
-
-    # ensure the users are created on each shard
-    shards = Shard.all
-    shards['shards'].each do |shard|
-      trace :debug, "Setting up auth for: #{shard['host']}"
-      host, port = shard['host'].split(':')
-      db = new_connection('rcs', host, port.to_i)
-      db.eval("db.addUser('#{@auth_user}', '#{@auth_pass}')")
-    end
+  def new_moped_connection(db = 'rcs', host = Config.instance.global['CN'], port = 27017)
+    time = Time.now
+    # moped is not thread-safe.
+    # we need to instantiate a new connection for every thread that is using it
+    session = Moped::Session.new(["#{host}:#{port}"], {safe: true})
+    session.use db
+    delta = Time.now - time
+    trace :warn, "Opening new moped connection is too slow (%f)" % delta if delta > 0.5 and Config.instance.global['PERF']
+    return session
   end
 
   # insert here the class to be indexed
   @@classes_to_be_indexed = [::Audit, ::User, ::Group, ::Alert, ::Status, ::Core, ::Collector, ::Injector, ::Item, ::PublicDocument, ::EvidenceFilter, ::Entity]
 
   def create_indexes
-    db = DB.instance.new_connection("rcs")
+    db = DB.instance.mongo_connection
 
     trace :info, "Database size is: " + db.stats['dataSize'].to_s_bytes
 
@@ -129,11 +124,11 @@ class DB
     end
 
     # ensure indexes on every evidence collection
-    collections = Mongoid::Config.master.collection_names
+    collections = db.collection_names
     collections.keep_if {|x| x['evidence.']}
     collections.delete_if {|x| x['grid.'] or x['files'] or x['chunks']}
 
-    trace :debug, "Indexing #{collections.size} collections"
+    trace :debug, "Indexing #{collections.size} evidence collections"
 
     collections.each do |coll_name|
       coll = db.collection(coll_name)
@@ -148,6 +143,22 @@ class DB
     # index on shard id for the worker
     coll = db.collection('grid.evidence.files')
     coll.create_index('metadata.shard')
+
+    # ensure indexes on every evidence collection
+    collections = db.collection_names
+    collections.keep_if {|x| x['aggregate.']}
+
+    trace :debug, "Indexing #{collections.size} aggregate collections"
+
+    collections.each do |coll_name|
+      coll = db.collection(coll_name)
+      a = Aggregate.collection_class(coll_name.split('.').last)
+      # number of index + _id + shard_key
+      next if coll.stats['nindexes'] == a.index_options.size + 2
+      trace :info, "Creating indexes for #{coll_name} - " + coll.stats['size'].to_s_bytes
+      a.create_indexes
+      Shard.set_key(coll, {type: 1, day: 1, aid: 1})
+    end
   end
 
   def enable_sharding
@@ -162,7 +173,7 @@ class DB
 
   def shard_audit
     # enable shard on audit log, it will increase its size forever and ever
-    db = DB.instance.new_connection("rcs")
+    db = DB.instance.mongo_connection
     audit = db.collection('audit')
     Shard.set_key(audit, {time: 1, actor: 1}) unless audit.stats['sharded']
   end
@@ -170,7 +181,7 @@ class DB
   def ensure_admin
     # check that at least one admin is present and enabled
     # if it does not exists, create it
-    if User.count(conditions: {enabled: true, privs: 'ADMIN'}) == 0
+    if User.where(enabled: true, privs: 'ADMIN').count == 0
       trace :warn, "No ADMIN found, creating a default admin user..."
       User.where(name: 'admin').delete_all
       user = User.create(name: 'admin') do |u|
@@ -250,39 +261,28 @@ class DB
   end
 
   def logrotate
-
     # perform the log rotation only at midnight
     time = Time.now
     return unless time.hour == 0 and time.min == 0
 
     trace :info, "Log Rotation"
 
-    db = Mongo::Connection.new(Config.instance.global['CN'], 27017).db('admin')
-    db.command({ logRotate: 1 })
+    conn = new_mongo_connection(Config.instance.global['CN'], 27017)
+    conn.db('admin').command({ logRotate: 1 })
+    conn.close
 
-    db = Mongo::Connection.new(Config.instance.global['CN'], 27018).db('admin')
-    db.command({ logRotate: 1 })
+    conn = new_mongo_connection(Config.instance.global['CN'], 27018)
+    conn.db('admin').command({ logRotate: 1 })
+    conn.close
 
-    db = Mongo::Connection.new(Config.instance.global['CN'], 27019).db('admin')
-    db.command({ logRotate: 1 })
+    conn = new_mongo_connection(Config.instance.global['CN'], 27019)
+    conn.db('admin').command({ logRotate: 1 })
+    conn.close
   end
 
   def create_evidence_filters
     trace :debug, "Creating default evidence filters"
     ::EvidenceFilter.create_default
-  end
-
-  def clean_capped_logs
-    # drop all the temporary capped logs collections
-    collections = Mongoid::Config.master.collection_names
-    collections.keep_if {|x| x['logs.']}
-
-    db = DB.instance.new_connection("rcs")
-
-    collections.each do |coll_name|
-      trace :debug, "Dropping: #{coll_name}"
-      db.collection(coll_name).drop
-    end
   end
 
   def mark_bad_items
@@ -308,37 +308,6 @@ class DB
     ::Collector.update_all(good: value)
 
     FileUtils.rm_rf Config.instance.file('mark_bad')
-  end
-
-  # TODO: remove in 8.4
-  def migrate_users_to_ext_privs
-    ::User.where({:ext_privs.ne => true}).each do |user|
-      trace :info, "Migrating user: #{user.name} to the new privs schema..."
-      privs = user.privs
-      privs += User::PRIVS.select{|p| p['ADMIN_']} if privs.include? 'ADMIN'
-      privs += User::PRIVS.select{|p| p['SYS_']} if privs.include? 'SYS'
-      privs += User::PRIVS.select{|p| p['TECH_']} if privs.include? 'TECH'
-      privs += User::PRIVS.select{|p| p['VIEW_'] and not p['VIEW_DELETE']} if privs.include? 'VIEW'
-      user.privs = privs
-      user.ext_privs = true
-      user.save
-    end
-  end
-
-  # TODO: remove in 8.4
-  def create_targets_entities
-    ::Item.targets.each do |target|
-      if ::Entity.any_in({path: [target._id]}).empty?
-        trace :info, "Creating entity for target: #{target.name}"
-        ::Entity.create! do |entity|
-          entity.type = :target
-          entity.level = :automatic
-          entity.path = target.path + [target._id]
-          entity.name = target.name
-          entity.desc = target.desc
-        end
-      end
-    end
   end
 
 end

@@ -19,7 +19,7 @@ module Worker
     attr_accessor :timecode, :duration, :sample_rate, :bid, :raw_counter
 
     def initialize(evidence, agent, target)
-      @bid = BSON::ObjectId.new
+      @bid = Moped::BSON::ObjectId.new
       @target = target
       @mic_id = evidence[:data][:mic_id]
       @sample_rate = evidence[:data][:sample_rate]
@@ -75,7 +75,7 @@ module Worker
         # TODO: where do we add the size to the stats? (probably in the same place where we will forward to connectors)
         RCS::Worker::StatsManager.instance.add evidence: 1
 
-        ev.safely.save!
+        ev.with(safe: true).save!
         ev
       end
     end
@@ -117,12 +117,12 @@ module Worker
     end
 
     def write_to_grid(mic, mp3_bytes, target, agent)
-      db = Mongoid.database
+      db = RCS::DB::DB.instance.mongo_connection
       fs = Mongo::GridFileSystem.new(db, "grid.#{target[:_id]}")
 
       fs.open(mic.file_name, 'a') do |f|
         f.write mp3_bytes
-        mic.update_attributes({data: {_grid: f.files_id, _grid_size: f.file_length, duration: mic.duration}})
+        mic.update_attributes({data: {_grid: Moped::BSON::ObjectId.from_string(f.files_id.to_s), _grid_size: f.file_length, duration: mic.duration}})
       end
       agent.stat.size += mp3_bytes.size
       agent.save

@@ -11,20 +11,20 @@ class Shard
   extend RCS::Tracer
 
   def self.count
-    db = DB.instance.new_connection("admin")
+    db = DB.instance.mongo_connection("admin")
     list = db.command({ listshards: 1 })
     list['shards'].size
   end
 
   def self.all
-    db = DB.instance.new_connection("admin")
+    db = DB.instance.mongo_connection("admin")
     db.command({ listshards: 1 })
   end
 
   def self.create(host)
     trace :info, "Creating new shard: #{host}"
     begin
-      db = DB.instance.new_connection("admin")
+      db = DB.instance.mongo_connection("admin")
       db.command({ addshard: host + ':27018' })
     rescue Exception => e
       {'errmsg' => e.message, 'ok' => 0}
@@ -34,7 +34,7 @@ class Shard
   def self.destroy(host)
     trace :info, "Destroying shard: #{host}"
     begin
-      db = DB.instance.new_connection("admin")
+      db = DB.instance.mongo_connection("admin")
       db.command({ removeshard: host })
     rescue Exception => e
       {'errmsg' => e.message, 'ok' => 0}
@@ -43,10 +43,11 @@ class Shard
   
   def self.remove(shard)
     begin
-      db = DB.instance.new_connection("config", "127.0.0.1", 27019)
-      coll = db.collection('shards')
+      conn = DB.instance.new_mongo_connection("127.0.0.1", 27019)
+      coll = conn.db('config').collection('shards')
       coll.remove({_id: shard})
-      {'ok' => 1}
+      conn.close
+      return {'ok' => 1}
     rescue Exception => e
       {'errmsg' => e.message, 'ok' => 0}
     end
@@ -54,9 +55,11 @@ class Shard
 
   def self.add(shard, host)
     begin
-      db = DB.instance.new_connection("config", "127.0.0.1", 27019)
-      coll = db.collection('shards')
-      coll.insert({_id: shard, host: host + ':27018'})
+      conn = DB.instance.new_mongo_connection("127.0.0.1", 27019)
+      coll = conn.db('config').collection('shards')
+      ret = coll.insert({_id: shard, host: host + ':27018'})
+      conn.close
+      return ret
     rescue Exception => e
       {'errmsg' => e.message, 'ok' => 0}
     end
@@ -64,10 +67,11 @@ class Shard
 
   def self.update(shard, host)
     begin
-      db = DB.instance.new_connection("config", "127.0.0.1", 27019)
-      coll = db.collection('shards')
+      conn = DB.instance.new_mongo_connection("127.0.0.1", 27019)
+      coll = conn.db('config').collection('shards')
       coll.update({_id: shard}, {'$set' => {'host' => host + ':27018'}})
-      {'ok' => 1}
+      conn.close
+      return {'ok' => 1}
     rescue Exception => e
       {'errmsg' => e.message, 'ok' => 0}
     end
@@ -78,7 +82,7 @@ class Shard
       self.all['shards'].each do |shard|
         if shard['_id'] == id
           host, port = shard['host'].split(':')
-          db = DB.instance.new_connection("rcs", host, port.to_i)
+          db = DB.instance.new_mongo_connection(host, port.to_i).db('rcs')
           return {'errmsg' => "Cannot establish connection to #{host}:#{port}"} if db.nil?
           return db.stats
         end
@@ -91,7 +95,7 @@ class Shard
 
   def self.enable(database)
     begin
-      db = DB.instance.new_connection("admin")
+      db = DB.instance.mongo_connection("admin")
       db.command({ enablesharding: database })
     rescue Exception => e
       error = db.command({ getlasterror: 1})
@@ -106,7 +110,7 @@ class Shard
       collection.create_index(key.to_a)
 
       # switch to 'admin' and create the shard
-      db = DB.instance.new_connection("admin")
+      db = DB.instance.mongo_connection("admin")
       db.command({ shardcollection: collection.stats['ns'], key: key })
 
     rescue Exception => e

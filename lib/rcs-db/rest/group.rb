@@ -33,7 +33,7 @@ class GroupController < RESTController
     result = Group.create(name: @params['name'])
     return conflict(result.errors[:name]) unless result.persisted?
 
-    Audit.log :actor => @session[:user][:name], :action => 'group.create', :group_name => @params['name'], :desc => "Created the group '#{@params['name']}'"
+    Audit.log :actor => @session.user[:name], :action => 'group.create', :group_name => @params['name'], :desc => "Created the group '#{@params['name']}'"
 
     return ok(result)
   end
@@ -48,7 +48,7 @@ class GroupController < RESTController
       
       @params.each_pair do |key, value|
         if group[key.to_s] != value and not key['_ids']
-          Audit.log :actor => @session[:user][:name], :action => 'group.update', :group_name => group['name'], :desc => "Updated '#{key}' to '#{value}' for group '#{group['name']}'"
+          Audit.log :actor => @session.user[:name], :action => 'group.update', :group_name => group['name'], :desc => "Updated '#{key}' to '#{value}' for group '#{group['name']}'"
         end
       end
       
@@ -65,7 +65,7 @@ class GroupController < RESTController
     mongoid_query do
       group = Group.find(@params['_id'])
       
-      Audit.log :actor => @session[:user][:name], :action => 'group.destroy', :group_name => @params['name'], :desc => "Deleted the group '#{group[:name]}'"
+      Audit.log :actor => @session.user[:name], :action => 'group.destroy', :group_name => @params['name'], :desc => "Deleted the group '#{group[:name]}'"
       
       group.destroy
       return ok
@@ -82,10 +82,7 @@ class GroupController < RESTController
       
       group.users << user
 
-      # recalculate the accessible list for logged in users
-      SessionManager.instance.rebuild_all_accessible
-
-      Audit.log :actor => @session[:user][:name], :action => 'group.add_user', :group_name => @params['name'], :desc => "Added user '#{user.name}' to group '#{group.name}'"
+      Audit.log :actor => @session.user[:name], :action => 'group.add_user', :group_name => @params['name'], :desc => "Added user '#{user.name}' to group '#{group.name}'"
       
       return ok
     end
@@ -101,10 +98,7 @@ class GroupController < RESTController
 
       group.users.delete(user)
 
-      # recalculate the accessible list for logged in users
-      SessionManager.instance.rebuild_all_accessible
-
-      Audit.log :actor => @session[:user][:name], :action => 'group.remove_user', :group_name => @params['name'], :desc => "Removed user '#{user.name}' from group '#{group.name}'"
+      Audit.log :actor => @session.user[:name], :action => 'group.remove_user', :group_name => @params['name'], :desc => "Removed user '#{user.name}' from group '#{group.name}'"
       
       return ok
     end
@@ -120,10 +114,7 @@ class GroupController < RESTController
 
       group.items << operation
 
-      # recalculate the accessible list for logged in users
-      SessionManager.instance.rebuild_all_accessible
-
-      Audit.log :actor => @session[:user][:name], :action => 'group.add_operation', :group_name => @params['name'], :desc => "Added operation '#{operation.name}' to group '#{group.name}'"
+      Audit.log :actor => @session.user[:name], :action => 'group.add_operation', :group_name => @params['name'], :desc => "Added operation '#{operation.name}' to group '#{group.name}'"
 
       return ok
     end
@@ -139,10 +130,7 @@ class GroupController < RESTController
 
       group.items.delete(operation)
 
-      # recalculate the accessible list for logged in users
-      SessionManager.instance.rebuild_all_accessible
-
-      Audit.log :actor => @session[:user][:name], :action => 'group.remove_operation', :group_name => @params['name'], :desc => "Removed operation '#{operation.name}' from group '#{group.name}'"
+      Audit.log :actor => @session.user[:name], :action => 'group.remove_operation', :group_name => @params['name'], :desc => "Removed operation '#{operation.name}' from group '#{group.name}'"
 
       return ok
     end
@@ -159,15 +147,15 @@ class GroupController < RESTController
       # reset all groups to false and set the unique group to true
       groups.each do |g|
         g[:alert] = false
-        if not @params['_id'].nil? and g[:_id] == BSON::ObjectId(@params['_id'])
+        if not @params['_id'].nil? and g[:_id] == Moped::BSON::ObjectId(@params['_id'])
           g[:alert] = true
-          Audit.log :actor => @session[:user][:name], :action => 'group.alert', :group_name => @params['name'], :desc => "Monitor alert group set to '#{g[:name]}'"
+          Audit.log :actor => @session.user[:name], :action => 'group.alert', :group_name => @params['name'], :desc => "Monitor alert group set to '#{g[:name]}'"
         end
         g.save
       end
       
       if @params['group'].nil?
-        Audit.log :actor => @session[:user][:name], :action => 'group.alert', :group_name => @params['name'], :desc => "Monitor alert group was removed"
+        Audit.log :actor => @session.user[:name], :action => 'group.alert', :group_name => @params['name'], :desc => "Monitor alert group was removed"
       end
       
       return ok

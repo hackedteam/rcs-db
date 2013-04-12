@@ -25,7 +25,7 @@ module SingleEvidence
       return false unless self.respond_to? :duplicate_criteria
       return false if agent.nil? or target.nil?
 
-      db = Mongoid.database
+      db = RCS::DB::DB.instance.mongo_connection
       criteria = self.duplicate_criteria
       criteria.merge! "aid" => agent['_id'].to_s
       evs = db["evidence.#{target['_id'].to_s}"].find criteria
@@ -77,7 +77,7 @@ module SingleEvidence
         # keyword full search
         ev.kw = self[:kw]
 
-        ev.safely.save!
+        ev.with(safe: true).save!
         ev
       end
       evidence

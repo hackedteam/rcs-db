@@ -86,6 +86,7 @@ class InstanceWorker
       until sleeping_too_much?
         until @evidences.empty?
           resume
+          # this is via mongo and not via mongoid (so don't use Moped:: scope)
           raw_id = BSON::ObjectId(@evidences.shift)
 
           trace :debug, "[#{@agent['ident']}:#{@agent['instance']}] still #{@evidences.size} evidences to go ..."

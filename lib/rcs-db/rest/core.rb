@@ -28,7 +28,7 @@ class CoreController < RESTController
       return not_found("Core #{@params['_id']} not found") if core.nil?
 
       if @params['content']
-        temp = GridFS.to_tmp core[:_grid].first
+        temp = GridFS.to_tmp core[:_grid]
 
         list = []
         Zip::ZipFile.foreach(temp) do |f|
@@ -39,8 +39,8 @@ class CoreController < RESTController
         
         return ok(list)
       else
-        Audit.log :actor => @session[:user][:name], :action => 'core.get', :desc => "Downloaded the core #{@params['_id']}"
-        return stream_grid(core[:_grid].first)
+        Audit.log :actor => @session.user[:name], :action => 'core.get', :desc => "Downloaded the core #{@params['_id']}"
+        return stream_grid(core[:_grid])
       end
     end
   end
@@ -71,14 +71,14 @@ class CoreController < RESTController
 
       content = File.open(temp, 'rb+') {|f| f.read}
 
-      core[:_grid] = [ GridFS.put(content, {filename: @params['_id']}) ]
+      core[:_grid] = GridFS.put(content, {filename: @params['_id']})
       core[:_grid_size] = @request[:content]['content'].bytesize
 
       FileUtils.rm_rf(temp)
 
       core.save
 
-      Audit.log :actor => @session[:user][:name], :action => 'core.replace', :desc => "Replaced the #{@params['_id']} core"
+      Audit.log :actor => @session.user[:name], :action => 'core.replace', :desc => "Replaced the #{@params['_id']} core"
 
       return ok(core)
     end
@@ -93,7 +93,7 @@ class CoreController < RESTController
 
       new_entry = @params['name']
 
-      temp = GridFS.to_tmp core[:_grid].first
+      temp = GridFS.to_tmp core[:_grid]
 
       Zip::ZipFile.open(temp) do |z|
         z.file.open(new_entry, "wb") { |f| f.write @request[:content]['content'] }
@@ -108,15 +108,15 @@ class CoreController < RESTController
       content = File.open(temp, 'rb') {|f| f.read}
 
       # delete the old one
-      GridFS.delete core[:_grid].first
+      GridFS.delete core[:_grid]
       FileUtils.rm_rf temp
 
       # replace with the new zip file
-      core[:_grid] = [ GridFS.put(content, {filename: @params['_id']}) ]
+      core[:_grid] = GridFS.put(content, {filename: @params['_id']})
       core[:_grid_size] = content.bytesize
       core.save
 
-      Audit.log :actor => @session[:user][:name], :action => 'core.add', :desc => "Added [#{new_entry}] to the core #{core.name}"
+      Audit.log :actor => @session.user[:name], :action => 'core.add', :desc => "Added [#{new_entry}] to the core #{core.name}"
 
       return ok()
     end
@@ -134,7 +134,7 @@ class CoreController < RESTController
       if @params['name']
 
         # get the core, save to tmp and edit it
-        temp = GridFS.to_tmp core[:_grid].first
+        temp = GridFS.to_tmp core[:_grid]
 
         Zip::ZipFile.open(temp, Zip::ZipFile::CREATE) do |z|
           return not_found("File #{@params['name']} not found") unless z.file.exist?(@params['name'])
@@ -142,21 +142,21 @@ class CoreController < RESTController
         end
 
         # delete the old one and replace with the new
-        GridFS.delete core[:_grid].first
+        GridFS.delete core[:_grid]
 
         content = File.open(temp, 'rb') {|f| f.read}
-        core[:_grid] = [ GridFS.put(content, {filename: @params['_id']}) ]
+        core[:_grid] = GridFS.put(content, {filename: @params['_id']})
         core[:_grid_size] = content.bytesize
         core.save
 
-        Audit.log :actor => @session[:user][:name], :action => 'core.remove', :desc => "Removed the file [#{@params['name']}] from the core #{@params['_id']}"
+        Audit.log :actor => @session.user[:name], :action => 'core.remove', :desc => "Removed the file [#{@params['name']}] from the core #{@params['_id']}"
 
         return ok()
       # here we want to delete the entire core file
       else
         core.destroy
 
-        Audit.log :actor => @session[:user][:name], :action => 'core.delete', :desc => "Deleted the core #{@params['_id']}"
+        Audit.log :actor => @session.user[:name], :action => 'core.delete', :desc => "Deleted the core #{@params['_id']}"
 
         return ok()
       end
