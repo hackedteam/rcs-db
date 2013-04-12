@@ -360,6 +360,8 @@ class Config
       out = `openssl ca -batch -days 3650 -out rcs-anon.crt -in rcs-anon.csr -config openssl.cnf -name CA_network 2>&1`
       trace :info, out if $log
 
+      return unless File.exist? 'rcs-anon.crt'
+
       trace :info, "Creating certificates bundles..."
 
       # create the PEM file for all the collectors
