@@ -361,6 +361,9 @@ class LicenseManager
       when :intelligence
         return @limits[:intelligence]
 
+      when :ocr
+        return @limits[:ocr]
+
       when :shards
         if Shard.count < @limits[:shards]
           return true
@@ -389,10 +392,6 @@ class LicenseManager
 
       # add it to the database so it is accessible to all the components (other than db)
       store_in_db
-
-      # load it in a global variable since some part of the code used in db but
-      # imported from intelligence needs it (ugly)
-      $license = load_from_db
 
       # check the consistency of the database (if someone tries to tamper it)
       if ::User.where(enabled: true).count > @limits[:users]

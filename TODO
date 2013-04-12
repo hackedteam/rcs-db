@@ -22,8 +22,6 @@ TODO 9.0.0
 
     alerts on link creation
 
-    licensemanager refactor to remove $globals
-
     pushmanager with queue
 
 

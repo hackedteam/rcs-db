@@ -11,17 +11,17 @@ require_relative 'statistics'
 # from RCS::DB
 if File.directory?(Dir.pwd + '/lib/rcs-worker-release')
   require 'rcs-db-release/config'
-  require 'rcs-db-release/license'
   require 'rcs-db-release/db_layer'
 else
   require 'rcs-db/config'
-  require 'rcs-db/license'
   require 'rcs-db/db_layer'
 end
 
 # from RCS::Common
 require 'rcs-common/trace'
 require 'rcs-common/fixnum'
+
+require_relative 'license'
 
 # form System
 require 'digest/md5'
@@ -106,7 +106,7 @@ class Application
       end
 
       # load the license from the db (saved by db)
-      $license = RCS::DB::LicenseManager.instance.load_from_db
+      LicenseManager.instance.load_from_db
 
       # do the dirty job!
       Worker.new.run
