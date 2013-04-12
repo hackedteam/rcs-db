@@ -34,7 +34,7 @@ class Ghost
 
       # link the two entities
       # the level will be reset to :automatic (if it's the case) by the LinkManager
-      RCS::DB::LinkManager.instance.add_link(from: entity, to: ghost, level: :ghost, type: :know, info: handle)
+      RCS::DB::LinkManager.instance.add_link(from: entity, to: ghost, level: :ghost, type: :know, versus: :out, info: handle)
     end
 
   end
