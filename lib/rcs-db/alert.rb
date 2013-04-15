@@ -138,7 +138,7 @@ class Alerting
         end
 
         unless alert.type == 'NONE'
-          alert.logs.create!(time: Time.now.getutc.to_i, path: [entities.first._id, entities.last._id])
+          alert.logs.create!(time: Time.now.getutc.to_i, path: entities.first.path, entities: [entities.first._id, entities.last._id])
           PushManager.instance.notify('alert', {id: entities.first._id, rcpt: user[:_id]})
           PushManager.instance.notify('alert', {id: entities.last._id, rcpt: user[:_id]})
         end
@@ -167,7 +167,7 @@ class Alerting
         next unless entity.users.include? user
 
         unless alert.type == 'NONE'
-          alert.logs.create!(time: Time.now.getutc.to_i, path: entity.path)
+          alert.logs.create!(time: Time.now.getutc.to_i, path: entity.path, entities: [entity._id])
           PushManager.instance.notify('alert', {id: entity._id, rcpt: user[:_id]})
         end
 

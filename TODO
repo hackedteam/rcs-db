@@ -1,6 +1,4 @@
 
-config --migrate (not executed???)
-
 
 TODO 9.0.0
 
@@ -27,6 +25,7 @@ TODO 9.0.0
 
     Realtime:
       - link between entities already created (on new aggregate)
+      - list of peer per entity
 
     Batch:
       - identity relation if two entities have the same handles
