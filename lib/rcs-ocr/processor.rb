@@ -89,7 +89,7 @@ class Processor
     RCS::DB::Alerting.new_evidence(ev)
 
     # add to the translation queue
-    if $license['translation']
+    if LicenseManager.instance.check :translation
       TransQueue.add(entry['target_id'], ev._id)
     end
 

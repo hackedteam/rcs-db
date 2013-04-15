@@ -51,7 +51,8 @@ class AlertLog
 
   field :time, type: Integer
   field :path, type: Array
-  field :evidence, type: Array
+  field :evidence, type: Array, default: []
+  field :entities, type: Array, default: []
 
   embedded_in :alert
 end

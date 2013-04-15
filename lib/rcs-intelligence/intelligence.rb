@@ -6,14 +6,12 @@
 if File.directory?(Dir.pwd + '/lib/rcs-intelligence-release')
   require 'rcs-db-release/db'
   require 'rcs-db-release/config'
-  require 'rcs-db-release/license'
   require 'rcs-db-release/db_layer'
   require 'rcs-db-release/grid'
   require 'rcs-db-release/link_manager'
 else
   require 'rcs-db/db'
   require 'rcs-db/config'
-  require 'rcs-db/license'
   require 'rcs-db/db_layer'
   require 'rcs-db/grid'
   require 'rcs-db/link_manager'
@@ -24,6 +22,7 @@ require 'rcs-common/trace'
 
 require_relative 'heartbeat'
 require_relative 'processor'
+require_relative 'license'
 
 require 'eventmachine'
 
@@ -113,7 +112,7 @@ class Application
       end
 
       # load the license from the db (saved by db)
-      $license = RCS::DB::LicenseManager.instance.load_from_db
+      LicenseManager.instance.load_from_db
 
       # do the dirty job!
       Intelligence.new.run

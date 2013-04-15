@@ -5,7 +5,6 @@
 # from RCS::DB
 if File.directory?(Dir.pwd + '/lib/rcs-ocr-release')
   require 'rcs-db-release/config'
-  require 'rcs-db-release/license'
   require 'rcs-db-release/db_layer'
   require 'rcs-db-release/grid'
   require 'rcs-db-release/exec'
@@ -13,7 +12,6 @@ if File.directory?(Dir.pwd + '/lib/rcs-ocr-release')
   require 'rcs-db-release/sessions'
 else
   require 'rcs-db/config'
-  require 'rcs-db/license'
   require 'rcs-db/db_layer'
   require 'rcs-db/grid'
   require 'rcs-db/exec'
@@ -25,6 +23,7 @@ end
 require 'rcs-common/trace'
 
 require_relative 'processor'
+require_relative 'license'
 
 module RCS
 module OCR
@@ -81,9 +80,9 @@ class Application
       end
 
       # load the license from the db (saved by db)
-      $license = RCS::DB::LicenseManager.instance.load_from_db
+      LicenseManager.instance.load_from_db
 
-      unless $license['ocr']
+      unless LicenseManager.instance.check :ocr
         RCS::DB::DB.instance.mongo_connection.drop_collection 'ocr_queue'
 
         # do nothing...

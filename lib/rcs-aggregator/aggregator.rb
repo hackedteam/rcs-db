@@ -6,13 +6,11 @@
 if File.directory?(Dir.pwd + '/lib/rcs-ocr-release')
   require 'rcs-db-release/db'
   require 'rcs-db-release/config'
-  require 'rcs-db-release/license'
   require 'rcs-db-release/db_layer'
   require 'rcs-db-release/grid'
 else
   require 'rcs-db/db'
   require 'rcs-db/config'
-  require 'rcs-db/license'
   require 'rcs-db/db_layer'
   require 'rcs-db/grid'
 end
@@ -22,6 +20,7 @@ require 'rcs-common/trace'
 
 require_relative 'processor'
 require_relative 'heartbeat'
+require_relative 'license'
 
 module RCS
 module Aggregator
@@ -109,10 +108,10 @@ class Application
       end
 
       # load the license from the db (saved by db)
-      $license = RCS::DB::LicenseManager.instance.load_from_db
+      LicenseManager.instance.load_from_db
 
-      unless $license['correlation']
-        DB.instance.mongo_connection.drop_collection 'aggregator_queue'
+      unless LicenseManager.instance.check :correlation
+        RCS::DB::DB.instance.mongo_connection.drop_collection 'aggregator_queue'
 
         # do nothing...
         trace :info, "Correlation license is disabled, going to sleep..."
