@@ -13,6 +13,10 @@ class NotificationQueue
   SIZE = 50_000_000
   MAX = 100_000
 
+  def self.queues
+    @@queues
+  end
+
   def self.inherited(klass)
     @@queues << klass
   end
@@ -25,6 +29,8 @@ class NotificationQueue
       begin
         next if collections.include? k.collection.name
         k.mongo_session.command(create: k.collection.name, capped: true, size: k::SIZE, max: k::MAX)
+        coll = db.collection(k.collection.name)
+        coll.create_index('flag')
       rescue Exception => e
         trace :error, "Cannot create queue #{k.name}: #{e.message}"
       end

@@ -25,8 +25,9 @@ class Processor
     loop do
       # get the first entry from the queue and mark it as processed to avoid
       # conflicts with multiple processors
-      if (entry = IntelligenceQueue.where(flag: NotificationQueue::QUEUED).find_and_modify({"$set" => {flag: NotificationQueue::PROCESSED}}, new: false))
-        count = IntelligenceQueue.where({flag: NotificationQueue::QUEUED}).count()
+      if (queued = IntelligenceQueue.get_queued)
+        entry = queued.first
+        count = queued.last
         trace :info, "#{count} evidence to be processed in queue"
         process entry
       else

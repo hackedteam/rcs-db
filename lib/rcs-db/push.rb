@@ -23,7 +23,6 @@ class PushManager
   end
 
   def dispatcher
-
     loop do
       if (queued = PushQueue.get_queued)
         begin

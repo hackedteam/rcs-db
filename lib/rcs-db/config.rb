@@ -142,8 +142,10 @@ class Config
       return 0
     end
 
+    $version = File.read(Dir.pwd + '/config/VERSION')
+
     # migration to mongoid3 and new access control
-    return Migration.run [:mongoid3, :access_control, :reindex_aggregates] if options[:migrate]
+    return Migration.up_to $version if options[:migrate]
 
     # keyword indexing
     return Indexer.run options[:kw_index] if options[:kw_index]

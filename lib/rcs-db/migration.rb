@@ -16,6 +16,15 @@ module DB
 
 class Migration
 
+  def self.up_to(version)
+    puts "migrating to #{version}"
+
+    run [:mongoid3, :access_control, :reindex_aggregates] if version >= '8.3.2'
+    run [:reindex_queues] if version >= '8.3.3'
+
+    return 0
+  end
+
   def self.run(params)
     puts "Migration procedure started..."
 
@@ -79,6 +88,19 @@ class Migration
         print "\r%d aggregates reindexed" % count += 1
       rescue
       end
+    end
+    puts
+    puts "done in #{Time.now - start} secs"
+  end
+
+  def self.reindex_queues
+    start = Time.now
+    puts "Re-indexing queues..."
+    # create them
+    NotificationQueue.create_queues
+    # add index (if already created without indexes)
+    NotificationQueue.queues.each do |queue|
+      queue.create_indexes
     end
     puts
     puts "done in #{Time.now - start} secs"

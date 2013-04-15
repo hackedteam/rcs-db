@@ -232,8 +232,9 @@ class Alerting
 
       # infinite processing loop
       loop do
-        if (entry = AlertQueue.where(flag: NotificationQueue::QUEUED).find_and_modify({"$set" => {flag: NotificationQueue::PROCESSED}}, new: false))
-          count = AlertQueue.where({flag: NotificationQueue::QUEUED}).count()
+        if (queued = AlertQueue.get_queued)
+          entry = queued.first
+          count = queued.last
           trace :info, "#{count} alerts to be processed in queue"
           begin
             if entry.alert and entry.evidence
