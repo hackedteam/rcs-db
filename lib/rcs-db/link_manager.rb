@@ -112,7 +112,7 @@ class LinkManager
 
   # check if two entities are the same and create a link between them
   def check_identity(entity, handle)
-    return unless $license['intelligence']
+    return unless LicenseManager.instance.check :intelligence
 
     trace :debug, "Checking for identity: #{handle.type} #{handle.handle}"
 
@@ -129,7 +129,7 @@ class LinkManager
 
   # create a link to an entity that have the 'handle' in its peer
   def link_handle(entity, handle)
-    return unless $license['intelligence']
+    return unless LicenseManager.instance.check :intelligence
 
 
     # search for a peer in all the entities of this operation

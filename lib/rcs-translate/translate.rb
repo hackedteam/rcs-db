@@ -5,14 +5,12 @@
 # from RCS::DB
 if File.directory?(Dir.pwd + '/lib/rcs-ocr-release')
   require 'rcs-db-release/config'
-  require 'rcs-db-release/license'
   require 'rcs-db-release/db_layer'
   require 'rcs-db-release/grid'
   require 'rcs-db-release/alert'
   require 'rcs-db-release/sessions'
 else
   require 'rcs-db/config'
-  require 'rcs-db/license'
   require 'rcs-db/db_layer'
   require 'rcs-db/grid'
   require 'rcs-db/alert'
@@ -23,6 +21,7 @@ end
 require 'rcs-common/trace'
 
 require_relative 'processor'
+require_relative 'license'
 
 module RCS
 module Translate
@@ -76,9 +75,9 @@ class Application
       end
 
       # load the license from the db (saved by db)
-      $license = RCS::DB::LicenseManager.instance.load_from_db
+      LicenseManager.instance.load_from_db
 
-      unless $license['translation']
+      unless LicenseManager.instance.check :translation
         RCS::DB::DB.instance.mongo_connection.drop_collection 'trans_queue'
 
         # do nothing...

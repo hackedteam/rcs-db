@@ -41,7 +41,7 @@ class Processor
     evidence = Evidence.collection_class(entry['target_id']).find(entry['evidence_id'])
 
     # respect the license
-    return if ['position', 'camera'].include? evidence.type and not $license['correlation']
+    return if ['position', 'camera'].include? evidence.type and not LicenseManager.instance.check :correlation
 
     entity = Entity.any_in({path: [Moped::BSON::ObjectId.from_string(entry['target_id'])]}).first
 
@@ -58,7 +58,7 @@ class Processor
         # analyze the accounts
         Accounts.add_handle(entity, evidence)
         # create a ghost entity and link it as :know
-        Ghost.create_and_link_entity(entity, Accounts.get_addressbook_handle(evidence)) if $license['intelligence']
+        Ghost.create_and_link_entity(entity, Accounts.get_addressbook_handle(evidence)) if LicenseManager.instance.check :intelligence
       when 'password'
         # analyze the accounts
         Accounts.add_handle(entity, evidence)

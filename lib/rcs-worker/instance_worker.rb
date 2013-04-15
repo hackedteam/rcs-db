@@ -228,28 +228,28 @@ class InstanceWorker
     RCS::DB::Connectors.new_evidence(evidence)
 
     # add to the ocr processor queue
-    if $license['ocr']
+    if LicenseManager.instance.check :ocr
       if evidence.type == 'screenshot' or (evidence.type == 'file' and evidence.data[:type] == :capture)
         OCRQueue.add(@target._id, evidence._id)
       end
     end
 
     # add to the translation queue
-    if $license['translation'] and ['keylog', 'chat', 'clipboard', 'message'].include? evidence.type
+    if LicenseManager.instance.check :translation and ['keylog', 'chat', 'clipboard', 'message'].include? evidence.type
       TransQueue.add(@target._id, evidence._id)
       evidence.data[:tr] = "TRANS_QUEUED"
       evidence.save
     end
 
     # add to the aggregator queue
-    if $license['correlation']
+    if LicenseManager.instance.check :correlation
       AggregatorQueue.add(@target._id, evidence._id, evidence.type)
     end
 
     # pass the info to the intelligence module to extract handles (no license for this kind of evidence)
     IntelligenceQueue.add(@target._id, evidence._id, evidence.type) if ['addressbook', 'password'].include? evidence.type
 
-    if $license['correlation']
+    if LicenseManager.instance.check :correlation
       IntelligenceQueue.add(@target._id, evidence._id, evidence.type) if ['position', 'camera'].include? evidence.type
     end
   end
