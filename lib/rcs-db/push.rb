@@ -36,12 +36,12 @@ class PushManager
             next if ws.nil?
 
             # we have specified a specific user, skip all the others
-            next if message[:rcpt] != nil and session.user[:_id] != message[:rcpt]
+            next if message['rcpt'] != nil and session.user[:_id] != message['rcpt']
 
             # check for accessibility, if we pass and id, we only want the ws that can access that id
-            item = ::Item.where(_id: message[:id]).in(user_ids: [session.user[:_id]]).first
-            item = ::Entity.where(_id: message[:id]).in(user_ids: [session.user[:_id]]).first if item.nil?
-            next if message[:id] != nil and item.nil?
+            item = ::Item.where(_id: message['id']).in(user_ids: [session.user[:_id]]).first
+            item = ::Entity.where(_id: message['id']).in(user_ids: [session.user[:_id]]).first if item.nil?
+            next if message['id'] != nil and item.nil?
 
             # send the message
             WebSocketManager.instance.send(ws, type, message)

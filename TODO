@@ -26,6 +26,8 @@ TODO 9.0.0
       - identity relation if two entities have the same handles
 
 
+    hash index for sharding
+
     aggregates for places (positioner algorithm)
 
     create entity form most_contacted

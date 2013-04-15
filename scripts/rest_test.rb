@@ -1432,7 +1432,7 @@ if false
 end
 
 # entities
-if true
+if false
   #puts "entity.index"
   #res = http.request_get("/entity", {'Cookie' => cookie})
   #puts res.body
