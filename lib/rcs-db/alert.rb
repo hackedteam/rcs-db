@@ -224,7 +224,7 @@ class Alerting
 
     # this method runs in a proc triggered by the mail event loop every 5 seconds
     # we are inside the thread pool, so we can be slow...
-    def dispatch
+    def dispatcher
       # no license, no alerts :)
       return unless LicenseManager.instance.check :alerting
 
