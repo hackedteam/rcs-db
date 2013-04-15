@@ -162,21 +162,18 @@ class IntelligenceQueue < NotificationQueue
   include Mongoid::Document
 
   field :target_id, type: String
-  field :evidence_id, type: String
+  field :id, type: String
+  field :type, type: Symbol
   field :flag, type: Integer, default: QUEUED
 
   store_in collection: 'intelligence_queue'
   index({flag: 1}, {background: true})
 
-  INTELLIGENCE_TYPES = ['addressbook', 'password', 'position', 'camera']
+  def self.add(target_id, _id, type)
 
-  def self.add(target_id, evidence_id, type)
-    # skip not interesting evidence
-    return unless INTELLIGENCE_TYPES.include? type
+    trace :debug, "Adding to #{self.name}: #{target_id} #{_id} (#{type})"
 
-    trace :debug, "Adding to #{self.name}: #{target_id} #{evidence_id}"
-
-    self.create!({target_id: target_id.to_s, evidence_id: evidence_id.to_s})
+    self.create!({target_id: target_id.to_s, id: _id.to_s, type: type})
   end
 
 end

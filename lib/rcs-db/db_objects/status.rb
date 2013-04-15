@@ -59,7 +59,7 @@ class Status
       end
 
       # notify all that the monitor has changed only if the status has changed
-      Thread.new { RCS::DB::PushManager.instance.notify('monitor') } if monitor[:status] != STATUS_CODE[status]
+      RCS::DB::PushManager.instance.notify('monitor') if monitor[:status] != STATUS_CODE[status]
 
       case(status)
         when 'OK'

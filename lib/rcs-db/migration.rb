@@ -96,13 +96,15 @@ class Migration
   def self.reindex_queues
     start = Time.now
     puts "Re-indexing queues..."
+    NotificationQueue.queues.each do |queue|
+      queue.collection.drop
+    end
     # create them
     NotificationQueue.create_queues
     # add index (if already created without indexes)
     NotificationQueue.queues.each do |queue|
       queue.create_indexes
     end
-    puts
     puts "done in #{Time.now - start} secs"
   end
 

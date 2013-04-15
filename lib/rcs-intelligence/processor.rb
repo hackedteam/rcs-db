@@ -39,15 +39,26 @@ class Processor
 
 
   def self.process(entry)
-    evidence = Evidence.collection_class(entry['target_id']).find(entry['evidence_id'])
-
-    # respect the license
-    return if ['position', 'camera'].include? evidence.type and not LicenseManager.instance.check :correlation
-
     entity = Entity.any_in({path: [Moped::BSON::ObjectId.from_string(entry['target_id'])]}).first
 
-    trace :info, "Processing #{evidence.type} for entity #{entity.name}"
+    case entry['type']
+      when :evidence
+        evidence = Evidence.collection_class(entry['target_id']).find(entry['id'])
+        trace :info, "Processing evidence #{evidence.type} for entity #{entity.name}"
+        process_evidence(entity, evidence)
 
+      when :aggregate
+        aggregate = Aggregate.collection_class(entry['target_id']).find(entry['id'])
+        trace :info, "Processing aggregte for entity #{entity.name}"
+        process_aggregate(entity, aggregate)
+    end
+
+  rescue Exception => e
+    trace :error, "Cannot process intelligence: #{e.message}"
+    trace :fatal, e.backtrace.join("\n")
+  end
+
+  def self.process_evidence(entity, evidence)
     case evidence.type
       when 'position'
         # save the last position of the entity
@@ -64,10 +75,10 @@ class Processor
         # analyze the accounts
         Accounts.add_handle(entity, evidence)
     end
+  end
 
-  rescue Exception => e
-    trace :error, "Cannot process evidence: #{e.message}"
-    trace :fatal, e.backtrace.join("\n")
+  def self.process_aggregate(entity, aggregate)
+    # TODO: process the aggregate and link the entities
   end
 
 end

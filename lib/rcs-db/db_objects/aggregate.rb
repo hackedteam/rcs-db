@@ -21,8 +21,9 @@ class Aggregate
         field :day, type: String                      # day of aggregation
         field :type, type: String
         field :count, type: Integer, default: 0
-        field :size, type: Integer, default: 0        # seconds for calls, bytes for the rest
-        field :data, type: Hash
+        field :size, type: Integer, default: 0        # seconds for calls, bytes for the others
+        field :data, type: Hash, default: {}
+        field :peers, type: Array                     # for summary
 
         store_in collection: Aggregate.collection_name('#{target}')
 
@@ -36,6 +37,11 @@ class Aggregate
         shard_key :type, :day
 
         after_create :create_callback
+
+        def self.add_to_summary(type, peer)
+          summary = self.where(day: '0', type: 'summary').first_or_create!
+          summary.add_to_set(:peers, type.to_s + '_' + peer.to_s)
+        end
 
         protected
 
@@ -144,6 +150,7 @@ class Aggregate
     # sort the most contacted and cut the first N (also calculate the percentage)
     top = group.collect do |set|
       total = set.inject(0) {|sum, e| sum + e[sort_by]}
+      next if total == 0
       set.each {|e| e[:percent] = (e[sort_by] * 100 / total).round(1)}
       set.sort {|x,y| x[sort_by] <=> y[sort_by]}.reverse.slice(0..limit)
     end
