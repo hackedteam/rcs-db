@@ -171,7 +171,7 @@ class Entity
 
     # if the intelligence is enabled, we have all the ghost entities
     # so the above search will find them, otherwise we need to scan the addressbook
-    return nil if LicenseManager.instance.check :intelligence
+    return nil if RCS::DB::LicenseManager.instance.check :intelligence
 
     # use the fulltext (kw) search to be fast
     Evidence.collection_class(target_id).where({type: 'addressbook', :kw.all => handle.keywords }).each do |e|
