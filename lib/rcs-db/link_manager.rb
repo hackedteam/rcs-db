@@ -131,11 +131,14 @@ class LinkManager
   def link_handle(entity, handle)
     return unless LicenseManager.instance.check :intelligence
 
-
-    # search for a peer in all the entities of this operation
-    ::Entity.where(path: entity.path.first).each do |e|
+    # search for a peer in all the target entities of this operation
+    ::Entity.targets.where(path: entity.path.first).each do |e|
 
       trace :debug, "Checking '#{e.name}' for peer links: #{handle.handle} (#{handle.type})"
+
+      next unless Aggregate.collection_class(e.path.last).summary_include?(handle.type, handle.handle)
+
+      trace :debug, "Peer link found, linking... #{handle.handle} (#{handle.type})"
 
       # if we find a peer, create a link
       e.peer_versus(handle.handle, handle.type).each do |versus|

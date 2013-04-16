@@ -162,7 +162,7 @@ class IntelligenceQueue < NotificationQueue
   include Mongoid::Document
 
   field :target_id, type: String
-  field :id, type: String
+  field :ident, type: String
   field :type, type: Symbol
   field :flag, type: Integer, default: QUEUED
 
@@ -173,7 +173,7 @@ class IntelligenceQueue < NotificationQueue
 
     trace :debug, "Adding to #{self.name}: #{target_id} #{_id} (#{type})"
 
-    self.create!({target_id: target_id.to_s, id: _id.to_s, type: type})
+    self.create!({target_id: target_id.to_s, ident: _id.to_s, type: type})
   end
 
 end

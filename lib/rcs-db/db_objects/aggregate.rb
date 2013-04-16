@@ -38,6 +38,15 @@ class Aggregate
 
         after_create :create_callback
 
+        def self.summary_include?(type, peer)
+          summary = self.where(day: '0', type: 'summary').first
+
+puts summary.inspect
+
+          return false unless summary
+          return summary.peers.include? type.to_s + '_' + peer.to_s
+        end
+
         def self.add_to_summary(type, peer)
           summary = self.where(day: '0', type: 'summary').first_or_create!
           summary.add_to_set(:peers, type.to_s + '_' + peer.to_s)

@@ -43,12 +43,12 @@ class Processor
 
     case entry['type']
       when :evidence
-        evidence = Evidence.collection_class(entry['target_id']).find(entry['id'])
+        evidence = Evidence.collection_class(entry['target_id']).find(entry['ident'])
         trace :info, "Processing evidence #{evidence.type} for entity #{entity.name}"
         process_evidence(entity, evidence)
 
       when :aggregate
-        aggregate = Aggregate.collection_class(entry['target_id']).find(entry['id'])
+        aggregate = Aggregate.collection_class(entry['target_id']).find(entry['ident'])
         trace :info, "Processing aggregte for entity #{entity.name}"
         process_aggregate(entity, aggregate)
     end
@@ -78,7 +78,24 @@ class Processor
   end
 
   def self.process_aggregate(entity, aggregate)
-    # TODO: process the aggregate and link the entities
+    # process the aggregate and link the entities
+
+    puts "ENTITY: #{entity.inspect}"
+    puts "AGGREGATE: #{aggregate.inspect}"
+
+    # normalize the type to search for the correct account
+    type = [aggregate.type]
+    type = ['phone'] if ['call', 'sms', 'mms'].include? aggregate.type
+    type = ['mail', 'gmail'] if ['mail', 'gmail'].include? aggregate.type
+
+    # search for existing entity with that account and link it (direct link)
+    if ((peer = Entity.where({:_id.ne => entity._id, "handles.handle" => aggregate.data['peer'], :path => entity.path.first}).in("handles.type" => type).first))
+      RCS::DB::LinkManager.instance.add_link(from: entity, to: peer, level: :automatic, type: :peer, versus: aggregate.data['versus'].to_sym, info: aggregate.data['peer'])
+      return
+    end
+
+    # search if two entities are communicating with a third party and link them (indirect link)
+
   end
 
 end
