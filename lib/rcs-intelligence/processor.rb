@@ -80,9 +80,6 @@ class Processor
   def self.process_aggregate(entity, aggregate)
     # process the aggregate and link the entities
 
-    puts "ENTITY: #{entity.inspect}"
-    puts "AGGREGATE: #{aggregate.inspect}"
-
     # normalize the type to search for the correct account
     type = [aggregate.type]
     type = ['phone'] if ['call', 'sms', 'mms'].include? aggregate.type
@@ -90,11 +87,27 @@ class Processor
 
     # search for existing entity with that account and link it (direct link)
     if ((peer = Entity.where({:_id.ne => entity._id, "handles.handle" => aggregate.data['peer'], :path => entity.path.first}).in("handles.type" => type).first))
-      RCS::DB::LinkManager.instance.add_link(from: entity, to: peer, level: :automatic, type: :peer, versus: aggregate.data['versus'].to_sym, info: aggregate.data['peer'])
+      RCS::DB::LinkManager.instance.add_link(from: entity, to: peer, level: :automatic, type: :peer, versus: aggregate.data['versus'].to_sym, info: type.first)
       return
     end
 
     # search if two entities are communicating with a third party and link them (indirect link)
+    ::Entity.targets.where(:_id.ne => entity._id, path: entity.path.first).each do |e|
+
+      trace :debug, "Checking if '#{entity.name}' and '#{e.name}' have common peer: #{aggregate.data['peer']} #{type}"
+
+      next unless Aggregate.collection_class(e.path.last).summary_include?(type.first, aggregate.data['peer'])
+
+      trace :debug, "Peer found, creating new entity... #{aggregate.data['peer']} #{type}"
+
+      # create the new entity
+      name = Entity.name_from_handle(type.first, aggregate.data['peer'], e.path.last)
+      name ||= aggregate.data['peer']
+      ghost = Entity.create!(name: name, type: :person, level: :automatic, path: [entity.path.first])
+
+      # the entities will be linked on callback
+      ghost.handles.create!(level: :automatic, type: type.first, handle: aggregate.data['peer'])
+    end
 
   end
 

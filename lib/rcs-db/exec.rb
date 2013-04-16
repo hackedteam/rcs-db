@@ -111,6 +111,9 @@ class CrossPlatform
           output = f.read
           process = Process.waitpid2(f.pid)[1]
         end
+
+        trace :debug, "Output(popen): #{output}"
+
         process.success? || raise(ExecFailed.new("failed to execute command", File.basename(original_command) + " #{params}", process.exitstatus, output))
       else
         # setup the pipe to read the output of the child command
@@ -130,6 +133,8 @@ class CrossPlatform
         # read its output from the pipe
         wr.close
         output = rd.read
+
+        trace :debug, "Output(spawn): #{output}"
 
         $?.success? || raise(ExecFailed.new("failed to execute command", File.basename(original_command) + " #{params}", $?.exitstatus, output))
       end

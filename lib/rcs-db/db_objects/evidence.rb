@@ -276,7 +276,7 @@ class Evidence
         new_ev.save
 
         # add to the aggregator queue the evidence (we need to recalculate them in the new target)
-        if RCS::DB::LicenseManager.instance.check :correlation
+        if LicenseManager.instance.check :correlation
           AggregatorQueue.add(target[:_id], new_ev._id, new_ev.type)
         end
 
@@ -295,7 +295,7 @@ class Evidence
     end
 
     # we moved aggregates, have to rebuild the summary
-    if RCS::DB::LicenseManager.instance.check :correlation
+    if LicenseManager.instance.check :correlation
       Aggregate.collection_class(old_target[:_id]).rebuild_summary
     end
 

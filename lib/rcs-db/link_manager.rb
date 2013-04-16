@@ -112,10 +112,6 @@ class LinkManager
 
   # check if two entities are the same and create a link between them
   def check_identity(entity, handle)
-    return unless LicenseManager.instance.check :intelligence
-
-    trace :debug, "Checking for identity: #{handle.type} #{handle.handle}"
-
     # search for other entities with the same handle
     ident = Entity.where({:_id.ne => entity._id, "handles.type" => handle.type, "handles.handle" => handle.handle, :path => entity.path.first}).first
     return unless ident
@@ -129,8 +125,6 @@ class LinkManager
 
   # create a link to an entity that have the 'handle' in its peer
   def link_handle(entity, handle)
-    return unless LicenseManager.instance.check :intelligence
-
     # search for a peer in all the target entities of this operation
     ::Entity.targets.where(path: entity.path.first).each do |e|
 
@@ -142,7 +136,7 @@ class LinkManager
 
       # if we find a peer, create a link
       e.peer_versus(handle.handle, handle.type).each do |versus|
-        add_link({from: entity, to: e, type: :peer, info: handle.type, versus: versus})
+        add_link({from: entity, to: e, type: :peer, level: :automatic, info: handle.type, versus: versus})
       end
     end
   end

@@ -16,9 +16,6 @@ require 'yaml'
 require 'pp'
 require 'optparse'
 
-module RCS
-module DB
-
 class NoLicenseError < StandardError
   attr_reader :msg
 
@@ -85,7 +82,7 @@ class LicenseManager
   def load_license(periodic = false)
 
     # load the license file
-    lic_file = File.join Dir.pwd, Config::CONF_DIR, LICENSE_FILE
+    lic_file = File.join Dir.pwd, RCS::DB::Config::CONF_DIR, LICENSE_FILE
 
     unless File.exist? lic_file
       trace :fatal, "No license file found"
@@ -365,7 +362,7 @@ class LicenseManager
         return @limits[:ocr]
 
       when :shards
-        if Shard.count < @limits[:shards]
+        if RCS::DB::Shard.count < @limits[:shards]
           return true
         end
     end
@@ -375,12 +372,12 @@ class LicenseManager
   end
 
   def store_in_db
-    db = DB.instance.mongo_connection
+    db = RCS::DB::DB.instance.mongo_connection
     db['license'].update({}, @limits, {:upsert  => true})
   end
 
   def load_from_db
-    db = DB.instance.mongo_connection
+    db = RCS::DB::DB.instance.mongo_connection
     db['license'].find({}).first
   end
 
@@ -525,7 +522,7 @@ class LicenseManager
                 :collectors => {:collectors => Collector.local.count,
                                 :anonymizers => Collector.remote.count},
                 :nia => Injector.count,
-                :shards => Shard.count}
+                :shards => RCS::DB::Shard.count}
 
     return counters
   end
@@ -584,5 +581,3 @@ class LicenseManager
 
 end
 
-end #DB::
-end #RCS::

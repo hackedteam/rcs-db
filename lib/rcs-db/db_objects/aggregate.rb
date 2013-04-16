@@ -40,9 +40,6 @@ class Aggregate
 
         def self.summary_include?(type, peer)
           summary = self.where(day: '0', type: 'summary').first
-
-puts summary.inspect
-
           return false unless summary
           return summary.peers.include? type.to_s + '_' + peer.to_s
         end

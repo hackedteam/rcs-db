@@ -7,9 +7,6 @@
 require 'rcs-common/trace'
 require 'rcs-common/crypt'
 
-module RCS
-module Translate
-
 class LicenseManager
   include Singleton
   include RCS::Tracer
@@ -47,6 +44,3 @@ class LicenseManager
   end
 
 end
-
-end #DB::
-end #RCS::
