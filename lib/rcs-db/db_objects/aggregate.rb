@@ -43,6 +43,24 @@ class Aggregate
           summary.add_to_set(:peers, type.to_s + '_' + peer.to_s)
         end
 
+        def self.rebuild_summary
+          return if self.empty?
+
+          # get all the tuple (type, peer)
+          pipeline = [{ "$match" => {:type => {'$nin' => ['summary']} }},
+                      { "$group" =>
+                        { _id: { peer: "$data.peer", type: "$type" }}
+                      }]
+          data = self.collection.aggregate(pipeline)
+
+          # normalize them in a better form
+          data.collect! {|e| e['_id']['type'] + '_' + e['_id']['peer']}
+
+          summary = self.where(day: '0', type: 'summary').first_or_create!
+          summary.peers = data
+          summary.save
+        end
+
         protected
 
         def create_callback

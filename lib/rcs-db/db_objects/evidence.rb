@@ -294,6 +294,11 @@ class Evidence
       trace :info, "Evidence Move: #{total} left to move for agent #{agent.name} to target #{target.name}" unless total < 0
     end
 
+    # we moved aggregates, have to rebuild the summary
+    if RCS::DB::LicenseManager.instance.check :correlation
+      Aggregate.collection_class(old_target[:_id]).rebuild_summary
+    end
+
     trace :info, "Evidence Move: completed for #{agent.name}"
   end
 

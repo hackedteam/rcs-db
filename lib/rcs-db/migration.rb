@@ -20,7 +20,7 @@ class Migration
     puts "migrating to #{version}"
 
     run [:mongoid3, :access_control, :reindex_aggregates] if version >= '8.3.2'
-    run [:reindex_queues] if version >= '8.3.3'
+    run [:reindex_queues, :aggregate_summary] if version >= '8.3.3'
 
     return 0
   end
@@ -81,6 +81,7 @@ class Migration
     puts "Re-indexing aggregates..."
     ::Item.targets.each do |target|
       begin
+        next if Aggregate.collection_class(target._id).empty?
         Aggregate.collection_class(target._id).collection.indexes.drop
         Aggregate.collection_class(target._id).create_indexes
         coll = db.collection('aggregate.' + target._id.to_s)
@@ -105,6 +106,23 @@ class Migration
     NotificationQueue.queues.each do |queue|
       queue.create_indexes
     end
+    puts "done in #{Time.now - start} secs"
+  end
+
+  def self.aggregate_summary
+    start = Time.now
+    count = 0
+    db = DB.instance.mongo_connection
+    puts "Creating aggregates summaries..."
+    ::Item.targets.each do |target|
+      begin
+        next if Aggregate.collection_class(target._id).empty?
+        Aggregate.collection_class(target._id).rebuild_summary
+        print "\r%d summaries" % count += 1
+      rescue
+      end
+    end
+    puts
     puts "done in #{Time.now - start} secs"
   end
 
