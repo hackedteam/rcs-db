@@ -21,8 +21,6 @@ TODO 9.0.0
     accounts from outbound messages
 
     Realtime:
-      - link between entities already created (on new aggregate)
-      - list of peer per entity
 
     Batch:
       - identity relation if two entities have the same handles
@@ -32,14 +30,12 @@ TODO 9.0.0
 
     aggregates for places (positioner algorithm)
 
-    create entity form most_contacted
-    associate entity from most_contacted
-
     flows:
       - message
       - call
 
      export entities data
+     export graph data
 
 TODO FUTURE:
 
