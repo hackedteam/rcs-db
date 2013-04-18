@@ -144,7 +144,7 @@ class Alerting
         end
 
         # update the relevance of the link
-        LinkManager.instance.edit_link(from: entities.first, to: entities.last, rel: alert.tag)
+        LinkManager.instance.edit_link(from: entities.first, to: entities.last, rel: alert.tag) unless alert.tag.eql? 0
 
         if alert.type == 'MAIL'
           # put the matching alert in the queue

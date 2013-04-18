@@ -18,6 +18,8 @@ TODO 9.0.0
 
     --
 
+    fix call forward to connectors
+
     accounts from outbound messages
 
     Realtime:
