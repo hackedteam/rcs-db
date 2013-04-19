@@ -79,7 +79,7 @@ class LinkManager
     first_link = first_entity.links.where(le: second_entity._id).first
     first_link.set_level(params[:level]) if params[:level]
     first_link.set_type(params[:type]) if params[:type]
-    first_link.set_versus(versus) if versus
+    first_link.versus = versus if versus
     first_link.add_info params[:info] if params[:info]
     first_link.rel = params[:rel] if params[:rel]
     first_link.save
@@ -87,7 +87,7 @@ class LinkManager
     second_link = second_entity.links.where(le: first_entity._id).first
     second_link.set_level(params[:level]) if params[:level]
     second_link.set_type(params[:type]) if params[:type]
-    second_link.set_versus(opposite_versus) if opposite_versus
+    second_link.versus = opposite_versus if opposite_versus
     second_link.add_info params[:info] if params[:info]
     second_link.rel = params[:rel] if params[:rel]
     second_link.save
