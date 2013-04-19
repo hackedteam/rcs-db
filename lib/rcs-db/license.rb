@@ -58,6 +58,7 @@ class LicenseManager
                               :osx => [false, false],
                               :linux => [false, false],
                               :winmo => [false, false],
+                              :winphone => [false, false],
                               :ios => [false, false],
                               :blackberry => [false, false],
                               :symbian => [false, false],
@@ -207,6 +208,7 @@ class LicenseManager
     @limits[:agents][:osx] = limit[:agents][:osx]
     @limits[:agents][:linux] = limit[:agents][:linux]
     @limits[:agents][:winmo] = limit[:agents][:winmo]
+    @limits[:agents][:winphone] = limit[:agents][:winphone]
     @limits[:agents][:symbian] = limit[:agents][:symbian]
     @limits[:agents][:ios] = limit[:agents][:ios]
     @limits[:agents][:blackberry] = limit[:agents][:blackberry]

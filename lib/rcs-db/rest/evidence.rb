@@ -463,7 +463,7 @@ class EvidenceController < RESTController
         filter = "^" + Regexp.escape(@params['filter']) + "[^\\\\\\\/]+$"
 
         # special case if they request the root
-        filter = "^[[:alpha:]]:$" if @params['filter'] == "[root]" and ['windows', 'winmo', 'symbian'].include? agent.platform
+        filter = "^[[:alpha:]]:$" if @params['filter'] == "[root]" and ['windows', 'winmo', 'symbian', 'winphone'].include? agent.platform
         filter = "^\/$" if @params['filter'] == "[root]" and ['blackberry', 'android', 'osx', 'ios', 'linux'].include? agent.platform
 
         filtering = filtering.and({"data.path".to_sym => Regexp.new(filter, Regexp::IGNORECASE)})
