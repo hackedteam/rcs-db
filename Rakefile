@@ -21,6 +21,15 @@ def execute(message)
   puts ' ok'
 end
 
+def collector_relative_path
+  unix_path, win_path = '../rcs-collector', '../Collector'
+  Dir.exists?(win_path) && win_path || unix_path
+end
+
+def invoke_collector_task task_name
+  system("cd #{collector_relative_path} && rake #{task_name}x") || raise("Unable to call rake #{task_name} on the collector")
+end
+
 
 desc "Housekeeping for the project"
 task :clean do
@@ -37,8 +46,11 @@ task :nsis do
   Rake::Task[:clean].invoke
   Rake::Task[:protect].invoke
 
-	VERSION = File.read('config/VERSION_BUILD')
-	MAKENSIS = "\"C:\\Program Files (x86)\\NSIS\\makensis.exe\""
+  puts "Protecting collector code..."
+  invoke_collector_task :protect
+
+  VERSION = File.read('config/VERSION_BUILD')
+  MAKENSIS = "\"C:\\Program Files (x86)\\NSIS\\makensis.exe\""
 
   FileUtils.rm_rf "./nsis/rcs-exploits-#{VERSION}.exe"
   FileUtils.rm_rf "./nsis/rcs-agents-#{VERSION}.exe"
