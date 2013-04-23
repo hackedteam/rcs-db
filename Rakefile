@@ -27,7 +27,7 @@ def collector_relative_path
 end
 
 def invoke_collector_task task_name
-  system("cd #{collector_relative_path} && rake #{task_name}x") || raise("Unable to call rake #{task_name} on the collector")
+  system("cd #{collector_relative_path} && rake #{task_name}") || raise("Unable to call rake #{task_name} on the collector")
 end
 
 
