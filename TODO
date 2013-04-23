@@ -18,7 +18,9 @@ TODO 9.0.0
 
     --
 
-    fix call forward to connectors
+    check aggregates on agent delete (not permanet)
+
+    alert not matching??
 
     accounts from outbound messages
 
