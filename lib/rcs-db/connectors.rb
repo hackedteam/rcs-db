@@ -86,7 +86,12 @@ class Connectors
         end
         
         # delete the evidence if the rule specify to not store it in the db
-        evidence.destroy unless f.keep
+        if f.keep
+          return true
+        else
+          evidence.destroy
+          return false
+        end
       end
     end
     
