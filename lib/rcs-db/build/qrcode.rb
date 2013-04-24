@@ -77,6 +77,8 @@ class BuildQrcode < Build
     CrossPlatform.exec path('qrcode'), "-s 5 -l H -o #{path('output.png')} #{params['link']}"
     raise "PNG creation failed" unless File.exist? path('output.png')
 
+    File.open(path('output.txt'), 'wb') {|f| f.write params['link']}
+
   end
 
   def pack(params)
@@ -84,6 +86,7 @@ class BuildQrcode < Build
 
     Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
       z.file.open('url.png', "wb") { |f| f.write File.open(path('output.png'), 'rb') {|f| f.read} }
+      z.file.open('url.txt', "wb") { |f| f.write File.open(path('output.txt'), 'rb') {|f| f.read} }
     end
   end
 
