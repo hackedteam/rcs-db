@@ -155,6 +155,18 @@ ${StrStr}
 !define EnvUnset "!insertmacro _EnvUnset"
 
 ;--------------------------------
+;Execute a command. If the command fail, shows a message box and quit the installation
+!macro ExecOrQuit Cmd MsgBoxText
+  nsExec::Exec "${Cmd}"
+  Pop $0
+
+  ${If} $0 != 0
+    MessageBox MB_ICONSTOP|MB_OK "${MsgBoxText}"
+    Quit
+  ${EndIf}
+!macroend
+
+;--------------------------------
 ;Installer Sections
 
 Section "Update Section" SecUpdate
@@ -384,12 +396,12 @@ Section "Install Section" SecInstall
 
       ; generate the SSL cert
       DetailPrint "Generating CA and certs..."
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-ca --generate-certs --log"
+      !insertmacro ExecOrQuit "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-ca --generate-certs --log" "Unable to generate CA and certs."
       DetailPrint "done"
 
       ; generate the SSL cert for anon
       DetailPrint "Generating anonymizer certs..."
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-certs-anon --log"
+      !insertmacro ExecOrQuit "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-certs-anon --log" "Unable to generate Generating anonymizer certs."
       DetailPrint "done"
 
       ; generate the keystores
