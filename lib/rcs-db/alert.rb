@@ -244,7 +244,7 @@ class Alerting
               user = ::User.find(alert.user_id)
 
               # check if we are in the suppression timeframe
-              if alert.last.nil? or Time.now.getutc.to_i - alert.last > alert.suppression
+              if alert.last.nil? or Time.now.getutc.to_i - alert.last > alert.suppression or alert.logs.empty?
                 # we are out of suppression, create a new entry and mail
                 trace :debug, "Triggering alert: #{alert._id}"
                 alert.logs.create!(time: Time.now.getutc.to_i, path: entry.path, evidence: entry.evidence)
