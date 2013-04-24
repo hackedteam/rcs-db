@@ -4,7 +4,6 @@
 
 require_relative 'audit'
 require_relative 'config'
-require_relative 'db_objects/log'
 
 # from RCS::Common
 require 'rcs-common/trace'
