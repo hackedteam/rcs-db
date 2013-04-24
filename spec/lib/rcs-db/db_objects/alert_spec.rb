@@ -8,7 +8,6 @@ describe Alert do
     end
 
     it 'should belongs to a User' do
-      Alert.any_instance.stub(:user).and_return(1)
       subject.should respond_to :user
     end
   end
