@@ -206,7 +206,7 @@ class Events
         EM.epoll
 
         # set the thread pool size
-        EM.threadpool_size = 25
+        EM.threadpool_size = 30
 
         # we are alive and ready to party
         SystemStatus.my_status = SystemStatus::OK
