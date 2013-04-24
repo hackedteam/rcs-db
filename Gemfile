@@ -43,5 +43,7 @@ group :development do
   gem 'rake'
   gem 'test-unit'
   gem 'simplecov'
+  gem 'rspec'
+  gem 'pry'
 end
 
