@@ -18,10 +18,9 @@ TODO 9.0.0
 
     --
 
-    alert not matching??
-
     accounts from outbound/inbound messages
 
+    if too many bakcups, take only the last entries
 
     Realtime:
 
