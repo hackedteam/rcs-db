@@ -57,9 +57,14 @@ class AlertLog
   embedded_in :alert
 
   after_destroy :reset_alert_last_triggered
+  after_create :update_alert_last_triggered
 
   def reset_alert_last_triggered
     self._parent.last = nil if self._parent.logs.empty?
+  end
+
+  def update_alert_last_triggered
+    self._parent.last = self.time
   end
 end
 
