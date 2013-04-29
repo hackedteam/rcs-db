@@ -20,3 +20,25 @@ def require_db(file)
     raise "Could not load #{file}"
   end
 end
+
+def require_aggregator(file)
+  relative_path_to_db = 'lib/rcs-aggregator/'
+  relative_path_file = File.join(Dir.pwd, relative_path_to_db, file)
+
+  if File.exist?(relative_path_file) or File.exist?(relative_path_file + ".rb")
+    require_relative relative_path_file
+  else
+    raise "Could not load #{file}"
+  end
+end
+
+def require_intelligence(file)
+  relative_path_to_db = 'lib/rcs-intelligence/'
+  relative_path_file = File.join(Dir.pwd, relative_path_to_db, file)
+
+  if File.exist?(relative_path_file) or File.exist?(relative_path_file + ".rb")
+    require_relative relative_path_file
+  else
+    raise "Could not load #{file}"
+  end
+end
