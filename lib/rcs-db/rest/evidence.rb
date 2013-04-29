@@ -345,10 +345,10 @@ class EvidenceController < RESTController
       if @params.has_key? 'startIndex' and @params.has_key? 'numItems'
         start_index = @params['startIndex'].to_i
         num_items = @params['numItems'].to_i
-        query = filtering.where(filter_hash).without(:body, :kw).order_by([[:_id, :asc]]).skip(start_index).limit(num_items)
+        query = filtering.where(filter_hash).without(:body, :kw).order_by([[:da, :asc]]).skip(start_index).limit(num_items)
       else
         # without paging, return everything
-        query = filtering.where(filter_hash).without(:body, :kw).order_by([[:_id, :asc]])
+        query = filtering.where(filter_hash).without(:body, :kw).order_by([[:da, :asc]])
       end
 
       return ok(query, {gzip: true})
@@ -392,7 +392,7 @@ class EvidenceController < RESTController
       end
 
       # without paging, return everything
-      query = filtering.where(filter_hash).order_by([[:_id, :asc]])
+      query = filtering.where(filter_hash).order_by([[:da, :asc]])
 
       return ok(query)
     end
@@ -496,7 +496,7 @@ class EvidenceController < RESTController
       end
 
       # without paging, return everything
-      query = filtering.where(filter_hash).order_by([[:_id, :asc]])
+      query = filtering.where(filter_hash).order_by([[:da, :asc]])
 
       return ok(query)
     end
@@ -518,7 +518,7 @@ class EvidenceController < RESTController
       end
 
       # without paging, return everything
-      query = filtering.where(filter_hash).order_by([[:_id, :asc]])
+      query = filtering.where(filter_hash).order_by([[:da, :asc]])
 
       return ok(query)
     end
