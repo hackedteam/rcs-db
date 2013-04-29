@@ -39,8 +39,6 @@ class Processor
 
     trace :info, "Processing #{ev.type} for target #{target.name}"
 
-    data = []
-
     # extract peer(s) from call, mail, chat, sms
     data = extract_data(ev)
 
@@ -113,14 +111,16 @@ class Processor
       ev.data['peer'].split(',').each do |peer|
         data << {:peer => peer.strip.downcase, :versus => nil, :type => ev.data['program'].downcase, :size => ev.data['content'].length}
       end
+
+      return data
     end
 
     # new chat format
     if ev.data['incoming'] == 1
       # special case when the agent is not able to get the account but only display_name
       return [] if ev.data['from'].eql? ''
-      data << {:peer => ev.data['from'].downcase, :versus => :in, :type => ev.data['program'].downcase, :size => ev.data['content'].length}
-    else
+      data << {:peer => ev.data['from'].strip.downcase, :versus => :in, :type => ev.data['program'].downcase, :size => ev.data['content'].length}
+    elsif ev.data['incoming'] == 0
       # special case when the agent is not able to get the account but only display_name
       return [] if ev.data['rcpt'].eql? ''
       # multiple rcpts creates multiple entries
@@ -137,7 +137,6 @@ class Processor
 
     # TODO: remove old call format (after 9.0.0)
     if ev.data['peer']
-
       # multiple peers creates multiple entries
       ev.data['peer'].split(',').each do |peer|
         data << {:peer => peer.strip.downcase, :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['program'].downcase, :size => ev.data['duration'].to_i}
@@ -148,8 +147,8 @@ class Processor
 
     # new call format
     if ev.data['incoming'] == 1
-      data << {:peer => ev.data['from'].downcase, :versus => :in, :type => ev.data['program'].downcase, :size => ev.data['duration'].to_i}
-    else
+      data << {:peer => ev.data['from'].strip.downcase, :versus => :in, :type => ev.data['program'].downcase, :size => ev.data['duration'].to_i}
+    elsif ev.data['incoming'] == 0
       # multiple rcpts creates multiple entries
       ev.data['rcpt'].split(',').each do |rcpt|
         data << {:peer => rcpt.strip.downcase, :versus => :out, :type => ev.data['program'].downcase, :size => ev.data['duration'].to_i}
@@ -172,7 +171,7 @@ class Processor
         #extract email from string "Ask Me" <ask@me.it>
         from = ev.data['from'].scan(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i).first
         data << {:peer => from.downcase, :versus => :in, :type => :mail, :size => ev.data['body'].length}
-      else
+      elsif ev.data['incoming'] == 0
         ev.data['rcpt'].split(',').each do |rcpt|
           #extract email from string "Ask Me" <ask@me.it>
           to = rcpt.strip.scan(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i).first
@@ -182,8 +181,8 @@ class Processor
     # SMS and MMS
     else
       if ev.data['incoming'] == 1
-        data << {:peer => ev.data['from'].downcase, :versus => :in, :type => ev.data['type'].downcase, :size => ev.data['content'].length}
-      else
+        data << {:peer => ev.data['from'].strip.downcase, :versus => :in, :type => ev.data['type'].downcase, :size => ev.data['content'].length}
+      elsif ev.data['incoming'] == 0
         ev.data['rcpt'].split(',').each do |rcpt|
           data << {:peer => rcpt.strip.downcase, :versus => :out, :type => ev.data['type'].downcase, :size => ev.data['content'].length}
         end

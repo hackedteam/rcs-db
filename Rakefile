@@ -15,7 +15,6 @@ end
 
 RSpec::Core::RakeTask.new(:spec) do |test|
   test.rspec_opts = "-I tests/rspec --color --format doc"
-  #test.libs << 'lib' << 'tests/rspec'
   test.pattern = 'tests/rspec/**/*_spec.rb'
 end
 

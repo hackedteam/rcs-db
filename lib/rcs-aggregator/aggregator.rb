@@ -115,7 +115,7 @@ class Application
 
         # do nothing...
         trace :info, "Correlation license is disabled, going to sleep..."
-        while true do
+        loop do
           sleep 60
         end
       end
