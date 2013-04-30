@@ -67,9 +67,17 @@ class Entity
 
     # notify (only real entities)
     unless level.eql? :ghost
-      RCS::DB::PushManager.instance.notify('entity', {id: self._id, action: 'create'})
-      RCS::DB::Alerting.new_entity(self)
+      push_new_entity
+      alert_new_entity
     end
+  end
+
+  def push_new_entity
+    RCS::DB::PushManager.instance.notify('entity', {id: self._id, action: 'create'})
+  end
+
+  def alert_new_entity
+    RCS::DB::Alerting.new_entity(self)
   end
 
   def notify_callback
@@ -208,8 +216,8 @@ class Entity
       self.save
 
       # notify the new entity
-      RCS::DB::PushManager.instance.notify('entity', {id: self._id, action: 'create'})
-      RCS::DB::Alerting.new_entity(self)
+      push_new_entity
+      alert_new_entity
 
       # update all its link to automatic
       self.links.where(level: :ghost).each do |link|

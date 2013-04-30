@@ -66,7 +66,7 @@ class Processor
       # if it's new: add the entry to the summary and notify the intelligence
       if agg.count == 0
         Aggregate.collection_class(entry['target_id']).add_to_summary(type, datum[:peer])
-        IntelligenceQueue.add(entry['target_id'], agg._id, :aggregate) if LicenseManager.instance.check :intelligence
+        IntelligenceQueue.add(entry['target_id'], agg._id, :aggregate) if check_intelligence_license
       end
 
       # we are sure we have the object persisted in the db
@@ -82,6 +82,10 @@ class Processor
   rescue Exception => e
     trace :error, "Cannot process evidence: #{e.message}"
     trace :fatal, e.backtrace.join("\n")
+  end
+
+  def self.check_intelligence_license
+    LicenseManager.instance.check :intelligence
   end
 
   def self.extract_data(ev)

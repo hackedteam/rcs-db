@@ -277,10 +277,10 @@ describe Processor do
     end
 
     before do
-      # preparing fake classes
-      RCS::DB::Alerting = mock('alerting')
-      RCS::DB::Alerting.stub(:new_entity)
-      ::LicenseManager = create_license_manager true
+      Entity.any_instance.stub(:alert_new_entity).and_return nil
+      Processor.stub(:check_intelligence_license).and_return true
+
+      ENV['no_trace'] = 'true'
 
       # connect and empty the db
       connect_mongo
@@ -296,28 +296,63 @@ describe Processor do
 
     it 'should create aggregate from evidence' do
       Processor.process @entry
-      aggregates = Aggregate.collection_class(@target._id).where(type: 'skype')
 
+      aggregates = Aggregate.collection_class(@target._id).where(type: 'skype')
       aggregates.size.should be 1
+
       entry = aggregates.first
       entry.count.should be 1
+      entry.type.should eq 'skype'
+      entry.size.should eq @evidence.data['content'].size
+      entry.aid.should eq @agent._id.to_s
+      entry.day.should eq Time.now.strftime('%Y%m%d')
+    end
+
+    it 'should aggregate multiple evidence' do
+      iteration = 5
+
+      # process the same entry N times
+      iteration.times do
+        Processor.process @entry
+      end
+
+      aggregates = Aggregate.collection_class(@target._id).where(type: 'skype')
+      aggregates.size.should be 1
+
+      entry = aggregates.first
+      entry.count.should be iteration
+    end
+
+    it 'should create aggregation summary' do
+      Processor.process @entry
+
+      aggregates = Aggregate.collection_class(@target._id).where(type: 'summary')
+      aggregates.size.should be 1
+
+      entry = aggregates.first
+      entry.peers.should include 'skype_sender'
     end
 
     it 'should create intelligence queue' do
-
       Processor.process @entry
 
+      entry, count = IntelligenceQueue.get_queued
+      entry['target_id'].should eq @target._id.to_s
+      entry['type'].should eq :aggregate
+      # count is the number of queued after the entry that we already
+      count.should be 0
     end
 
     context 'if intelligence is disabled' do
       before do
-        ::LicenseManager = create_license_manager false
+        Processor.stub(:check_intelligence_license).and_return false
       end
 
       it 'should not create intelligence queue' do
-
         Processor.process @entry
-
+        entry, count = IntelligenceQueue.get_queued
+        entry.should be_nil
+        count.should be_nil
       end
     end
 
