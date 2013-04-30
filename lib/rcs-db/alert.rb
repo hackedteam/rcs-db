@@ -144,7 +144,7 @@ class Alerting
         end
 
         # update the relevance of the link
-        LinkManager.instance.edit_link(from: entities.first, to: entities.last, rel: alert.tag)
+        LinkManager.instance.edit_link(from: entities.first, to: entities.last, rel: alert.tag) unless alert.tag.eql? 0
 
         if alert.type == 'MAIL'
           # put the matching alert in the queue
@@ -224,7 +224,7 @@ class Alerting
 
     # this method runs in a proc triggered by the mail event loop every 5 seconds
     # we are inside the thread pool, so we can be slow...
-    def dispatch
+    def dispatcher
       # no license, no alerts :)
       return unless LicenseManager.instance.check :alerting
 
@@ -232,16 +232,19 @@ class Alerting
 
       # infinite processing loop
       loop do
-        if (entry = AlertQueue.where(flag: NotificationQueue::QUEUED).find_and_modify({"$set" => {flag: NotificationQueue::PROCESSED}}, new: false))
-          count = AlertQueue.where({flag: NotificationQueue::QUEUED}).count()
-          trace :info, "#{count} alerts to be processed in queue"
-          begin
+        begin
+          if (queued = AlertQueue.get_queued)
+            entry = queued.first
+            count = queued.last
+
+            trace :info, "#{count} alerts to be processed in queue"
+
             if entry.alert and entry.evidence
               alert = ::Alert.find(entry.alert.first)
               user = ::User.find(alert.user_id)
 
               # check if we are in the suppression timeframe
-              if alert.last.nil? or Time.now.getutc.to_i - alert.last > alert.suppression
+              if alert.last.nil? or Time.now.getutc.to_i - alert.last > alert.suppression or alert.logs.empty?
                 # we are out of suppression, create a new entry and mail
                 trace :debug, "Triggering alert: #{alert._id}"
                 alert.logs.create!(time: Time.now.getutc.to_i, path: entry.path, evidence: entry.evidence)
@@ -262,22 +265,22 @@ class Alerting
               # for queued items without an associated alert, send the mail
               send_mail(entry.to, entry.subject, entry.body)
             end
-          rescue Exception => e
-            trace :warn, "Cannot process alert queue: #{e.message}"
-            trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
-          end
-        else
-          # Nothing to do, waiting...
-          sleep 1
+          else
+            # Nothing to do, waiting...
+            sleep 1
 
-          now = Time.now
-          last ||= now
+            now = Time.now
+            last ||= now
 
-          # remove alerts too old to keep it clean (perform housekeeping every 10 minutes)
-          if now - last > 600
-            last = now
-            clean_old_alerts
+            # remove alerts too old to keep it clean (perform housekeeping every 10 minutes)
+            if now - last > 600
+              last = now
+              clean_old_alerts
+            end
           end
+        rescue Exception => e
+          trace :warn, "Cannot process alert queue: #{e.message}"
+          trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
         end
       end
     end

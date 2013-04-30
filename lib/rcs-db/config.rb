@@ -142,8 +142,10 @@ class Config
       return 0
     end
 
+    $version = File.read(Dir.pwd + '/config/VERSION')
+
     # migration to mongoid3 and new access control
-    return Migration.run [:mongoid3, :access_control, :reindex_aggregates] if options[:migrate]
+    return Migration.up_to $version if options[:migrate]
 
     # keyword indexing
     return Indexer.run options[:kw_index] if options[:kw_index]
@@ -280,21 +282,21 @@ class Config
         trace :info, out if $log
       end
 
-      return unless File.exist? 'rcs-ca.crt'
+      raise("Missing file rcs-ca.crt") unless File.exist? 'rcs-ca.crt'
 
       trace :info, "Generating db certificate..."
       # the cert for the db server
       out = `openssl req -subj /CN=#{@global['CN']} -batch -days 3650 -nodes -new -keyout #{@global['DB_KEY']} -out rcs-db.csr -config openssl.cnf 2>&1`
       trace :info, out if $log
 
-      return unless File.exist? @global['DB_KEY']
+      raise("Missing file #{@global['DB_KEY']}") unless File.exist? @global['DB_KEY']
 
       trace :info, "Generating collector certificate..."
       # the cert used by the collectors
       out = `openssl req -subj /CN=collector -batch -days 3650 -nodes -new -keyout rcs-collector.key -out rcs-collector.csr -config openssl.cnf 2>&1`
       trace :info, out if $log
 
-      return unless File.exist? 'rcs-collector.key'
+      raise("Missing file rcs-collector.key") unless File.exist? 'rcs-collector.key'
 
       trace :info, "Signing certificates..."
       # signing process
@@ -304,7 +306,7 @@ class Config
       out = `openssl ca -batch -days 3650 -out rcs-collector.crt -in rcs-collector.csr -config openssl.cnf 2>&1`
       trace :info, out if $log
 
-      return unless File.exist? @global['DB_CERT']
+      raise("Missing file #{@global['DB_CERT']}") unless File.exist? @global['DB_CERT']
 
       trace :info, "Creating certificates bundles..."
       File.open(@global['DB_CERT'], 'ab+') {|f| f.write File.read('rcs-ca.crt')}

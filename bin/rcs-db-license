@@ -4,4 +4,4 @@ $LOAD_PATH.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 require 'bundler/setup'
 require_relative '../lib/rcs-db'
 
-exit RCS::DB::LicenseManager.run!(*ARGV)
+exit LicenseManager.run!(*ARGV)

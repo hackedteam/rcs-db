@@ -128,7 +128,7 @@ class AgentController < RESTController
         doc[:_kind] = :factory
         doc[:path] = [operation._id]
         doc[:path] << target._id unless target.nil?
-        doc.users = target.users
+        doc.users = operation.users
         doc[:status] = :open
         doc[:type] = @params['type']
         doc[:ident] = get_new_ident

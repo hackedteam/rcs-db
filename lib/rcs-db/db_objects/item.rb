@@ -166,6 +166,7 @@ class Item
 
   def move_target(operation)
     self.path = [operation._id]
+    self.users = operation.users
     self.save
 
     # update the path in alerts and connectors
@@ -488,6 +489,7 @@ class Item
           Evidence.collection_class(self.path.last).destroy_all(aid: self._id.to_s)
           trace :info, "Deleting aggregates for agent #{self.name}..."
           Aggregate.collection_class(self.path.last).destroy_all(aid: self._id.to_s)
+          Aggregate.collection_class(self.path.last).rebuild_summary
           trace :info, "Deleting evidence for agent #{self.name} done."
         end
       when 'factory'

@@ -28,6 +28,7 @@ class MoveagentTask
 
     # actually move the target now.
     @agent.path = @target.path + [@target._id]
+    @agent.users = @target.users
     @agent.save
 
     # update the path in alerts and connectors

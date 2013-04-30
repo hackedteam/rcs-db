@@ -56,11 +56,10 @@ class ResolverTest < Test::Unit::TestCase
     request = {'wifiAccessPoints' => wifi}
 
     position = PositionResolver.get(request)
-    expected = {"latitude"=>45.476518299999995, "longitude"=>9.1907749, "accuracy"=>52.0}
 
-    assert_equal expected['latitude'], position['latitude']
-    assert_equal expected['longitude'], position['longitude']
-    assert_equal expected['accuracy'], position['accuracy']
+    assert_true 45.47651 < position['latitude'] and position['latitude'] < 45.47655
+    assert_true  9.19070 < position['longitude'] and position['longitude'] < 9.19078
+    assert_true 20 < position['accuracy'] and position['accuracy'] < 100
     assert_false position['address'].nil?
   end
 
@@ -69,11 +68,11 @@ class ResolverTest < Test::Unit::TestCase
     request = {'cellTowers' => cells, radioType: 'gsm'}
 
     position = PositionResolver.get(request)
-    expected = {"latitude"=>45.4774536, "longitude"=>9.1906932, "accuracy"=>673.0}
+    #expected = {"latitude"=>45.4774536, "longitude"=>9.1906932, "accuracy"=>673.0}
 
-    assert_equal expected['latitude'], position['latitude']
-    assert_equal expected['longitude'], position['longitude']
-    assert_equal expected['accuracy'], position['accuracy']
+    assert_true 45.47745 < position['latitude'] and position['latitude'] < 45.47750
+    assert_true  9.19070 < position['longitude'] and position['longitude'] < 9.19078
+    assert_true 200 < position['accuracy'] and position['accuracy'] < 700
     assert_false position['address'].nil?
   end
 

@@ -9,11 +9,12 @@ TODO 9.0.0
 
     upgrade to mongodb 2.4.x (write the upgrade procedure during NSIS installer)
       - running 2.2
-      - issue sh.stopBalancer()
-      - kill mongos
+      - stop all rcs services
+      - issue sh.stopBalancer() to mongos
+      - kill only mongos
       - execute mongos24 --upgrade
-      - issue sh.startBalancer()
-      - kill all
+      - issue sh.startBalancer() to mongos (24)
+      - kill all (mongo processes)
       - copy 24 over 22
       - restart all
 
@@ -21,29 +22,29 @@ TODO 9.0.0
 
     --
 
-    alerts on link creation
+    TTL index for sessions
+    TTL index for alertlog
 
-    pushmanager with queue
+    accounts from outbound/inbound messages
 
+    if too many bakcups, take only the last entries
 
     Realtime:
-      - link between entities already created (on new aggregate)
-      - list of peer per entity
 
     Batch:
       - identity relation if two entities have the same handles
 
 
-    aggregates for places (positioner algorithm)
+    hash index for sharding
 
-    create entity form most_contacted
-    associate entity from most_contacted
+    aggregates for places (positioner algorithm)
 
     flows:
       - message
       - call
 
      export entities data
+     export graph data
 
 TODO FUTURE:
 

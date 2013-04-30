@@ -61,7 +61,7 @@ class Collector
 
     # the collector does not exist, check the licence and create it
     if coll.nil?
-      raise 'LICENSE_LIMIT_EXCEEDED' unless RCS::DB::LicenseManager.instance.check :collectors
+      raise 'LICENSE_LIMIT_EXCEEDED' unless LicenseManager.instance.check :collectors
 
       coll = Collector.new
       coll.type = 'local'

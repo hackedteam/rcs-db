@@ -238,7 +238,7 @@ class BuildWindows < Build
   end
 
   def scout_name(seed)
-    scout_names = [{name: 'CCC', version: '3.5.0.5', desc: 'Catalys Control Center: Host application',company: 'ATI Technologies Inc.', copyright: '2002-2010'},
+    scout_names = [{name: 'CCC', version: '3.5.0.5', desc: 'Catalyst Control Center: Host application',company: 'ATI Technologies Inc.', copyright: '2002-2010'},
                    {name: 'PDVD9Serv', version: '9.0.3401.1', desc: 'PowerDVD RC Service', company: 'CyberLink Corp.', copyright: 'Copyright (c) CyberLink Corp. 1997-2008'},
                    {name: 'RtDCpl', version: '1.0.0.12', desc: 'HD Audio Control Panel', company: 'Realtek Semiconductor Corp.', copyright: 'Copyright 2010 (c) Realtek Semiconductor Corp.. All rights reserved.'},
                    {name: 'sllauncher', version: '5.1.10411.3', desc: 'Microsoft Silverlight Out-of-Browser Launcher', company: 'Microsoft Silverlight', copyright: 'Copyright (c) Microsoft Corporation.All rights reserved.'},

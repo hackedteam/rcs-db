@@ -2,11 +2,27 @@ require "bundler/gem_tasks"
 require 'rake'
 require 'rbconfig'
 
+# rspec
+require 'rspec/core/rake_task'
+# minitest
 require 'rake/testtask'
-Rake::TestTask.new(:test) do |test|
-  test.libs << 'lib' << 'test'
-  test.pattern = 'test/**/*_test.rb'
+
+Rake::TestTask.new(:minitest) do |test|
+  test.libs << 'lib' << 'tests/minitest'
+  test.pattern = 'tests/minitest/**/*_test.rb'
   test.verbose = true
+end
+
+RSpec::Core::RakeTask.new(:spec) do |test|
+  test.rspec_opts = "-I tests/rspec --color --format doc"
+  test.pattern = 'tests/rspec/**/*_spec.rb'
+end
+
+task :test do
+  puts "\nExecuting minitests...\n"
+  Rake::Task[:minitest].invoke
+  puts "\nExecuting rspec...\n"
+  Rake::Task[:spec].invoke
 end
 
 task :default => :test
@@ -19,6 +35,15 @@ def execute(message)
     yield
   end
   puts ' ok'
+end
+
+def collector_relative_path
+  unix_path, win_path = '../rcs-collector', '../Collector'
+  Dir.exists?(win_path) && win_path || unix_path
+end
+
+def invoke_collector_task task_name
+  system("cd #{collector_relative_path} && rake #{task_name}") || raise("Unable to call rake #{task_name} on the collector")
 end
 
 
@@ -37,8 +62,11 @@ task :nsis do
   Rake::Task[:clean].invoke
   Rake::Task[:protect].invoke
 
-	VERSION = File.read('config/VERSION_BUILD')
-	MAKENSIS = "\"C:\\Program Files (x86)\\NSIS\\makensis.exe\""
+  puts "Protecting collector code..."
+  invoke_collector_task :protect
+
+  VERSION = File.read('config/VERSION_BUILD')
+  MAKENSIS = "\"C:\\Program Files (x86)\\NSIS\\makensis.exe\""
 
   FileUtils.rm_rf "./nsis/rcs-exploits-#{VERSION}.exe"
   FileUtils.rm_rf "./nsis/rcs-agents-#{VERSION}.exe"
