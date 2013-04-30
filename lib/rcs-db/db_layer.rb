@@ -63,7 +63,7 @@ class DB
   end
 
   # pooled connection
-  def mongo_connection(db = 'rcs', host = Config.instance.global['CN'], port = 27017)
+  def mongo_connection(db = ENV['MONGOID_DATABASE'], host = Config.instance.global['CN'], port = 27017)
     time = Time.now
     # instantiate a pool of connections that are thread-safe
     # this handle will be returned to every thread requesting for a new connection
@@ -83,7 +83,7 @@ class DB
     return conn
   end
 
-  def new_moped_connection(db = 'rcs', host = Config.instance.global['CN'], port = 27017)
+  def new_moped_connection(db = ENV['MONGOID_DATABASE'], host = Config.instance.global['CN'], port = 27017)
     time = Time.now
     # moped is not thread-safe.
     # we need to instantiate a new connection for every thread that is using it

@@ -42,3 +42,15 @@ def require_intelligence(file)
     raise "Could not load #{file}"
   end
 end
+
+def connect_mongo
+  ENV['MONGOID_ENV'] = 'yes'
+  ENV['MONGOID_DATABASE'] = 'rcs-test'
+  ENV['MONGOID_HOST'] = "localhost:27017"
+
+  Mongoid.load!('config/mongoid.yaml', :production)
+end
+
+def empty_test_db
+  Mongoid.purge!
+end
