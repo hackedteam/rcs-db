@@ -15,26 +15,30 @@
 
 
 require 'open3'
-require 'fileutils'
 require 'logger'
 require 'mongoid'
+require 'yaml'
 
 MONGO_BINARIES_PATH = "C:\\RCS\\DB\\mongodb\\win"
 MONGO_SERVER_ADDR = "127.0.0.1:27017"
-MONGOS24_BIN_PATH = "C:\\Users\\Administrator\\Desktop\\mongos.exe" # TODO: change
-MONGO_UPGRADE_LOGPATH = "C:\\Windows\\Temp\\mongo_upgrade.log"
+MONGOS24_BIN_PATH = "C:\\RCS\\DB\\temp\\mongos.exe"
+MONGO_UPGRADE_LOGPATH = "C:\\RCS\\DB\\log\\mongo_upgrade.log"
+LOGPATH = "C:\\RCS\\DB\\log\\#{File.basename(__FILE__)}.log"
+RCSDB_CONFIG_FILEPATH = "C:\\RCS\\DB\\config\\config.yaml"
 
-
-
-# Handle logging and errors
+# Handle logging, errors and cfg
 
 def logger
-  @logger ||= Logger.new $stdout #TODO: change
+  @logger ||= Logger.new LOGPATH
 end
 
 def log_and_raise msg
   @logger.error msg
   raise msg
+end
+
+def configured_cn
+  @configured_cn ||= YAML.load_file(RCSDB_CONFIG_FILEPATH)["CN"]
 end
 
 
@@ -74,17 +78,15 @@ def mongo_24?
 end
 
 def mongo_start_balancer
-  # mongo_session.command "$eval" =>  "sh.startBalancer()"
   mongo_session[:settings].find(_id: 'balancer').update stopped: false
 end
 
 def mongo_stop_balancer
-  # mongo_session[:settings].find(_id: 'balancer').update stopped: true
   mongo_session.command "$eval" =>  "sh.stopBalancer()"
 end
 
 def mongo_upgrade
-  command = "#{MONGOS24_BIN_PATH} --configdb rcssrv --upgrade --logpath \"#{MONGO_UPGRADE_LOGPATH}\""
+  command = "#{MONGOS24_BIN_PATH} --configdb \"#{configured_cn}\" --upgrade --logpath \"#{MONGO_UPGRADE_LOGPATH}\""
   stdin, stdout, stderr, thread = Open3.popen3 command
   lines = []
   error = nil
@@ -98,7 +100,7 @@ def mongo_upgrade
       
       if buffer.index("\n")
         line = buffer.slice!(0, (buffer.index("\n")+1)).strip
-        logger.debug line
+        logger.debug "[mongos.exe] #{line}"
         lines << line
         error = line if line =~ /ERROR:/
       end
@@ -135,6 +137,8 @@ end
 
 
 # The whole upgrade procedure to version 2.4
+
+logger.info "Starting upgrade procedure..."
 
 if mongo_24?
   logger.info "Mongo 2.4 is already installed."

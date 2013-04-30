@@ -167,6 +167,21 @@ ${StrStr}
 !macroend
 
 ;--------------------------------
+;Upgrade mongoDB from version 2.2 (or 2.3) to 2.4
+;If the version 2.4 is already installed, the ruby script will exit immediatly
+;Two log files should be created in c:\rcs\db\log
+!macro UpgradeMongoDB
+  SetOutPath "$INSTDIR\DB\temp"
+  File "..\mongodb\win\mongos.exe"
+
+  SetOutPath "$INSTDIR\DB\bin"
+  File "..\scripts\rcs-upgrate-to-mongo24.rb"
+
+  DetailPrint "Launching mongoDB upgrade script..."
+  !insertmacro ExecOrQuit "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-upgrate-to-mongo24.rb" "Upgrade to mongoDB 2.4 has failed. Check out the logfile for details."
+!macroend
+
+;--------------------------------
 ;Installer Sections
 
 Section "Update Section" SecUpdate
@@ -183,6 +198,9 @@ Section "Update Section" SecUpdate
    SimpleSC::StopService "RCSAggregator" 1
    Sleep 3000
    SimpleSC::StopService "RCSIntelligence" 1
+
+   !insertmacro UpgradeMongoDB
+
    Sleep 3000
    SimpleSC::StopService "RCSMasterRouter" 1
    Sleep 3000
