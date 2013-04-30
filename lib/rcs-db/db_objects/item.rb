@@ -166,6 +166,7 @@ class Item
 
   def move_target(operation)
     self.path = [operation._id]
+    self.users = operation.users
     self.save
 
     # update the path in alerts and connectors
