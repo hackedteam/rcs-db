@@ -15,12 +15,15 @@
 
 
 require 'open3'
+require 'fileutils'
 require 'logger'
 require 'mongoid'
 
 MONGO_BINARIES_PATH = "C:\\RCS\\DB\\mongodb\\win"
 MONGO_SERVER_ADDR = "127.0.0.1:27017"
-MONGOS24_BIN_PATH = "C:\\temp\\mongos24.exe" # TODO: change
+MONGOS24_BIN_PATH = "C:\\Users\\Administrator\\Desktop\\mongos.exe" # TODO: change
+MONGO_UPGRADE_LOGPATH = "C:\\Windows\\Temp\\mongo_upgrade.log"
+
 
 
 # Handle logging and errors
@@ -41,11 +44,14 @@ end
 def mongo_session
   @mongo_session ||= begin
     logger.debug "Establishing a new Moped session to #{MONGO_SERVER_ADDR}"
-    Moped::Session.new [MONGO_SERVER_ADDR]
+    session = Moped::Session.new [MONGO_SERVER_ADDR]
+    session.use :config
+    session
   end
 end
 
 def mongo_renew_session
+  @mongo_session.disconnect
   @mongo_session = nil
   mongo_session
 end
@@ -68,40 +74,42 @@ def mongo_24?
 end
 
 def mongo_start_balancer
-  mongo_session.command "$eval" =>  "sh.startBalancer()"
+  # mongo_session.command "$eval" =>  "sh.startBalancer()"
+  mongo_session[:settings].find(_id: 'balancer').update stopped: false
 end
 
 def mongo_stop_balancer
+  # mongo_session[:settings].find(_id: 'balancer').update stopped: true
   mongo_session.command "$eval" =>  "sh.stopBalancer()"
 end
 
-# TODO: do not word this way :(
 def mongo_upgrade
-  command = "#{MONGOS24_BIN_PATH} --configdb localhost --upgrade"
+  command = "#{MONGOS24_BIN_PATH} --configdb rcssrv --upgrade --logpath \"#{MONGO_UPGRADE_LOGPATH}\""
   stdin, stdout, stderr, thread = Open3.popen3 command
-  exit = false
-  error = false
+  lines = []
+  error = nil
+  buffer = ""
 
-  while true
-    stdout_lines = stdout.readlines
-    stderr_lines = stderr.readlines
-    
-    stderr_lines.each do |line| 
-      logger.error line
-      error = line
+  sleep 1
+
+  File.open(MONGO_UPGRADE_LOGPATH, 'rb') do |file|
+    until file.eof?
+      buffer += file.read 32
+      
+      if buffer.index("\n")
+        line = buffer.slice!(0, (buffer.index("\n")+1)).strip
+        logger.debug line
+        lines << line
+        error = line if line =~ /ERROR:/
+      end
     end
-
-    stdout_lines.each do |line| 
-      logger.debug line
-      exit = true if line =~ /balancer id.*started at/
-      error = line if line =~ /ERROR\:/
-    end
-
-    break if exit || !thread.alive?
-    sleep 0.1
   end
-
+  
   log_and_raise "Command \"#{command}\" generates error \"#{error}\"" if error
+end
+
+def mongos_kill
+  windows_execute "taskkill /IM mongos.exe /F"
 end
 
 
@@ -109,14 +117,14 @@ end
 # Windows methods: safe command execution, service ctrl, etc.
 
 def windows_execute command
-  logger.debug "Executing \"#{command}]\""
+  logger.debug "Executing \"#{command}\""
   out, err = Open3.capture3 command
   log_and_raise "Command \"#{command}\" generates error \"#{err}\"" unless err.empty?
   out
 end
 
 def windows_service service_name, action
-  windows_execute "net #{action} #{service_name}"
+  windows_execute "net #{action} \"#{service_name}\""
 end
 
 def windows_diskfree
@@ -137,13 +145,23 @@ if windows_diskfree < mongo_config_db_size*5
   log_and_raise "There is not enough free space for the mongoDB config database."
 end
 
+logger.info "Stopping balancer"
 mongo_stop_balancer
+
+logger.info "Stopping mongo router (2.2)"
 windows_service "RCS Master Router", :stop
+
+logger.info "Starting upgrade of metadata"
 mongo_upgrade
+
 mongo_renew_session
 
-if mongos22?
-  log_and_raise "There should be mongoDB 2.4 running at this point."
+if mongo_22?
+  log_and_raise "There should be mongo 2.4 running at this point."
 end
 
+logger.info "Restarting balancer"
 mongo_start_balancer
+
+logger.info "Killing mongos.exe (2.4)"
+mongos_kill
