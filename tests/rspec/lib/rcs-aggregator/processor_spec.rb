@@ -267,15 +267,6 @@ describe Processor do
   end
 
   context 'processing evidence from the queue' do
-
-    def create_license_manager(val)
-      check = mock('check')
-      check.stub(:check).and_return val
-      license = mock('license')
-      license.stub(:instance).and_return check
-      return license
-    end
-
     before do
       Entity.any_instance.stub(:alert_new_entity).and_return nil
       Processor.stub(:check_intelligence_license).and_return true
