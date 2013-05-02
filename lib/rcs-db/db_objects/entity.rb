@@ -106,6 +106,10 @@ class Entity
       push_modify_entity oe
     end
 
+    self.photos.each do |photo|
+      del_photo photo
+    end
+
     push_destroy_entity self
   end
 
@@ -137,6 +141,9 @@ class Entity
 
     # remove links to the merging entity
     self.links.destroy_all(le: merging._id)
+
+    # merging is always done by the user
+    self.level = :manual
 
     # save the mergee and destroy the merger
     self.save
@@ -171,6 +178,10 @@ class Entity
     return {latitude: self.position.to_hsh[:y], longitude: self.position.to_hsh[:x], time: self.position_attr[:time], accuracy: self.position_attr[:accuracy]}
   end
 
+  def self.check_intelligence_license
+    LicenseManager.instance.check :intelligence
+  end
+
   def self.name_from_handle(type, handle, target_id)
 
     # use a class cache
@@ -202,7 +213,7 @@ class Entity
 
     # if the intelligence is enabled, we have all the ghost entities
     # so the above search will find them, otherwise we need to scan the addressbook
-    return nil if LicenseManager.instance.check :intelligence
+    return nil if check_intelligence_license
 
     # use the fulltext (kw) search to be fast
     Evidence.collection_class(target_id).where({type: 'addressbook', :kw.all => handle.keywords }).each do |e|
@@ -234,7 +245,7 @@ class Entity
   def promote_ghost
     return unless self.level.eql? :ghost
 
-    if self.links.size >= 1
+    if self.links.size >= 2
       self.level = :automatic
       self.save
 

@@ -1,6 +1,8 @@
 # require 'json'
 require 'bundler'
 require 'pry'
+require 'mongo'
+require 'mongoid'
 
 begin
   Bundler.setup(:default, :development)
@@ -63,4 +65,8 @@ end
 def turn_off_tracer
   @fakeLog4rLogger ||= FakeLog4rLogger.new
   Log4r::Logger.stub(:[]).and_return @fakeLog4rLogger
+end
+
+def turn_on_tracer
+  Log4r::Logger.stub(:[]).and_return nil
 end

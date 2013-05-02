@@ -8,6 +8,8 @@ TODO 9.0.0
 
     --
 
+    offload destroy errors on destroyevidence
+
     accounts from outbound/inbound messages
 
     if too many bakcups, take only the last entries

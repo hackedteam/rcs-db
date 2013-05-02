@@ -1,8 +1,16 @@
 require 'spec_helper'
 require_db 'db_layer'
 require_db 'link_manager'
+require_db 'grid'
 
 describe Entity do
+  before do
+    # connect and empty the db
+    connect_mongoid
+    empty_test_db
+    turn_off_tracer
+  end
+
   describe 'relations' do
   	it 'should embeds many Handles' do
       subject.should respond_to :handles
@@ -21,11 +29,6 @@ describe Entity do
   context 'creating a new target' do
     before do
       Entity.any_instance.stub(:alert_new_entity).and_return nil
-
-      # connect and empty the db
-      connect_mongoid
-      empty_test_db
-      turn_off_tracer
     end
 
     it 'should create a new entity' do
@@ -39,13 +42,6 @@ describe Entity do
   end
 
   context 'creating a new entity' do
-    before do
-      # connect and empty the db
-      connect_mongoid
-      empty_test_db
-      turn_off_tracer
-    end
-
     it 'should alert and notify via push' do
       Entity.any_instance.should_receive(:alert_new_entity)
       Entity.any_instance.should_receive(:push_new_entity)
@@ -58,11 +54,6 @@ describe Entity do
   context 'modifying an entity' do
     before do
       Entity.any_instance.stub(:alert_new_entity).and_return nil
-
-      # connect and empty the db
-      connect_mongoid
-      empty_test_db
-      turn_off_tracer
 
       @operation = Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new)
       @entity = Entity.create!(name: 'test-entity', type: :person, path: [@operation._id])
@@ -90,11 +81,19 @@ describe Entity do
     end
 
     it 'should assing and return last position correctly' do
-
       @entity.last_position = {longitude: 45, latitude: 9, accuracy: 500, time: Time.now.to_i}
       @entity.last_position[:longitude].should eq 45.0
       @entity.last_position[:latitude].should eq 9.0
       @entity.last_position[:accuracy].should eq 500
+    end
+
+    it 'should add and remove photos to/from grid' do
+      @entity.add_photo("This_is_a_binary_photo")
+      photo_id = @entity.photos.first
+      photo_id.should be_a String
+
+      @entity.del_photo(photo_id)
+      expect {RCS::DB::GridFS.get(photo_id, @entity.path.last.to_s)}.to raise_error Mongo::GridFileNotFound
     end
 
   end
@@ -105,11 +104,6 @@ describe Entity do
       Entity.any_instance.stub(:push_new_entity).and_return nil
       RCS::DB::LinkManager.any_instance.stub(:alert_new_link).and_return nil
       RCS::DB::LinkManager.any_instance.stub(:push_modify_entity).and_return nil
-
-      # connect and empty the db
-      connect_mongoid
-      empty_test_db
-      turn_off_tracer
 
       @operation = Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new)
       @entity = Entity.create!(name: 'test-entity', type: :person, path: [@operation._id])
@@ -136,12 +130,9 @@ describe Entity do
 
     it 'should remove photos in the grid' do
       @entity.add_photo("This_is_a_binary_photo")
-
       photo_id = @entity.photos.first
-
       @entity.destroy
-
-
+      expect {RCS::DB::GridFS.get(photo_id, @entity.path.last.to_s)}.to raise_error Mongo::GridFileNotFound
     end
   end
 
@@ -153,15 +144,10 @@ describe Entity do
       RCS::DB::LinkManager.any_instance.stub(:push_modify_entity).and_return nil
       EntityHandle.any_instance.stub(:check_intelligence_license).and_return true
 
-      # connect and empty the db
-      connect_mongoid
-      empty_test_db
-      turn_off_tracer
-
       @operation = Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new)
-      @first_entity = Entity.create!(name: 'entity-1', type: :target, path: [@operation._id])
-      @second_entity = Entity.create!(name: 'entity-2', type: :person, path: [@operation._id])
-      @third_entity = Entity.create!(name: 'entity-3', type: :person, path: [@operation._id])
+      @first_entity = Entity.create!(name: 'entity-1', type: :target, path: [@operation._id], level: :automatic)
+      @second_entity = Entity.create!(name: 'entity-2', type: :person, path: [@operation._id], level: :automatic)
+      @third_entity = Entity.create!(name: 'entity-3', type: :person, path: [@operation._id], level: :automatic)
       @position_entity = Entity.create!(name: 'entity-position', type: :position, path: [@operation._id])
     end
 
@@ -179,6 +165,11 @@ describe Entity do
 
       @first_entity.handles.size.should be 2
       @first_entity.handles.last[:handle].should eq 'test.name@gmail.com'
+    end
+
+    it 'should be set to manual' do
+      @first_entity.merge @second_entity
+      @first_entity.level.should be :manual
     end
 
     it 'should merge links' do
@@ -211,6 +202,124 @@ describe Entity do
       @position_entity.links.size.should be 1
       @position_entity.links.first[:le].should eq @first_entity._id
     end
-
   end
+
+  context 'searching for peer' do
+    before do
+      Entity.any_instance.stub(:alert_new_entity).and_return nil
+      Entity.any_instance.stub(:push_new_entity).and_return nil
+      EntityHandle.any_instance.stub(:check_intelligence_license).and_return true
+
+      @target = Item.create!(name: 'test-target', _kind: 'target', path: [], stat: ::Stat.new)
+      @entity = Entity.any_in({path: [@target._id]}).first
+    end
+
+    it 'should find peer versus' do
+      Aggregate.collection_class(@target._id).create!(type: 'sms', day: Time.now.strftime('%Y%m%d'), count: 1, data: {peer: 'test', versus: :in})
+
+      versus = @entity.peer_versus('test', 'sms')
+      versus.should be_a Array
+      versus.should include :in
+
+      Aggregate.collection_class(@target._id).create!(type: 'sms', day: Time.now.strftime('%Y%m%d'), count: 1, data: {peer: 'test', versus: :out})
+
+      versus = @entity.peer_versus('test', 'sms')
+      versus.should be_a Array
+      versus.should include :out
+
+      versus.should eq [:in, :out]
+    end
+
+    context 'with intelligence enabled' do
+      before do
+        Entity.stub(:check_intelligence_license).and_return true
+      end
+
+      it 'should return name from handle (from entities)' do
+        @entity.handles.create!(type: 'phone', handle: 'test')
+
+        name = Entity.name_from_handle('sms', 'test', @target._id.to_s)
+
+        name.should eq @target.name
+      end
+    end
+
+    context 'with intelligence disabled' do
+      before do
+        Entity.stub(:check_intelligence_license).and_return false
+      end
+
+      it 'should return name from handle (from addressbook)' do
+        agent = Item.create(name: 'test-agent', _kind: 'agent', path: [@target._id], stat: ::Stat.new)
+        Evidence.collection_class(@target._id.to_s).create!(da: Time.now.to_i, aid: agent._id, type: 'addressbook', data: {name: 'test-addressbook', handle: 'test-a'}, kw: ['phone', 'test', 'a'])
+
+        name = Entity.name_from_handle('sms', 'test-a', @target._id.to_s)
+
+        name.should eq 'test-addressbook'
+      end
+    end
+  end
+
+  context 'given a ghost entity' do
+    before do
+      Entity.any_instance.stub(:alert_new_entity).and_return nil
+      Entity.any_instance.stub(:push_new_entity).and_return nil
+      RCS::DB::LinkManager.any_instance.stub(:alert_new_link).and_return nil
+      RCS::DB::LinkManager.any_instance.stub(:push_modify_entity).and_return nil
+      EntityHandle.any_instance.stub(:check_intelligence_license).and_return true
+
+      @operation = Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new)
+      @first_entity = Entity.create!(name: 'entity-1', type: :target, path: [@operation._id], level: :automatic)
+      @second_entity = Entity.create!(name: 'entity-2', type: :person, path: [@operation._id], level: :automatic)
+
+      @ghost = Entity.create!(name: 'ghost', level: :ghost, type: :person, path: [@operation._id])
+    end
+
+    it 'should not be promoted to automatic with one link only' do
+      @ghost.level.should be :ghost
+      RCS::DB::LinkManager.instance.add_link(from: @first_entity, to: @ghost, level: :ghost, type: :know, versus: :out)
+      @ghost.level.should be :ghost
+    end
+
+    it 'should be promoted to automatic with at least two link' do
+      RCS::DB::LinkManager.instance.add_link(from: @first_entity, to: @ghost, level: :ghost, type: :know, versus: :out)
+      RCS::DB::LinkManager.instance.add_link(from: @second_entity, to: @ghost, level: :ghost, type: :know, versus: :out)
+
+      @ghost.level.should be :automatic
+
+      @ghost.links.each do |link|
+        link.level.should be :automatic
+      end
+    end
+  end
+
+  context 'creating a new handle' do
+    before do
+      Entity.any_instance.stub(:alert_new_entity).and_return nil
+      Entity.any_instance.stub(:push_new_entity).and_return nil
+      RCS::DB::LinkManager.any_instance.stub(:alert_new_link).and_return nil
+      EntityHandle.any_instance.stub(:check_intelligence_license).and_return true
+
+      @operation = Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new)
+      @entity = Entity.create!(name: 'entity', type: :target, path: [@operation._id], level: :automatic)
+      @identity = Entity.create!(name: 'entity-same', type: :person, path: [@operation._id], level: :automatic)
+    end
+
+    it 'should check for identity with other entities' do
+      @entity.handles.create!(type: 'phone', handle: 'test')
+
+      @entity.links.size.should be 0
+      @identity.links.size.should be 0
+
+      @identity.handles.create!(type: 'phone', handle: 'test')
+      @entity.reload
+      @identity.reload
+
+      @entity.links.size.should be 1
+      @identity.links.size.should be 1
+
+      @entity.links.first[:le].should eq @identity._id
+    end
+  end
+
 end
