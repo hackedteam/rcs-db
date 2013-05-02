@@ -6,6 +6,7 @@ module RCS
 module Aggregator
 
 describe Processor do
+  before { turn_off_tracer }
 
   context 'given an evidence to be parsed' do
     before do
@@ -270,8 +271,6 @@ describe Processor do
     before do
       Entity.any_instance.stub(:alert_new_entity).and_return nil
       Processor.stub(:check_intelligence_license).and_return true
-
-      ENV['no_trace'] = 'true'
 
       # connect and empty the db
       connect_mongo

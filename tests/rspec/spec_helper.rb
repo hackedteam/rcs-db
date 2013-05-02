@@ -54,3 +54,13 @@ end
 def empty_test_db
   Mongoid.purge!
 end
+
+class FakeLog4rLogger
+  def method_missing *args; end
+end
+
+# Check out RCS::Tracer module of rcs-common gem
+def turn_off_tracer
+  @fakeLog4rLogger ||= FakeLog4rLogger.new
+  Log4r::Logger.stub(:[]).and_return @fakeLog4rLogger
+end
