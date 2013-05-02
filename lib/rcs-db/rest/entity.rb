@@ -275,6 +275,27 @@ class EntityController < RESTController
     end
   end
 
+  def merge
+    require_auth_level :view
+    require_auth_level :view_profiles
+
+    return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :intelligence
+
+    mongoid_query do
+
+      e = Entity.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
+      e2 = Entity.any_in(user_ids: [@session.user[:_id]]).find(@params['entity'])
+
+      return not_found() if e.nil? or e2.nil?
+
+      e.merge(e2)
+
+      Audit.log :actor => @session.user[:name], :action => 'entity.merge', :desc => "Merged entity '#{e.name}' and '#{e2.name}'"
+
+      return ok(link)
+    end
+  end
+
 end
 
 end #DB::

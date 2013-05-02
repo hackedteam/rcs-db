@@ -102,8 +102,8 @@ class Entity
   end
 
   def merge(merging)
-    raise "cannot merge different type of entities" unless self.type == merging.type
-    raise "cannot merge entities belonging to different targets" unless self.path == merging.path
+    raise "cannot merge a target over a person" if merging.type == :target
+    raise "cannot merge different type of entities" unless [:person, :target].include? self.type and [:person, :target].include? merging.type
 
     # merge the name and description only if empty
     self.name = merging.name if self.name.nil? or self.name.eql? ""
@@ -115,6 +115,12 @@ class Entity
     # merge the handles
     merging.handles.each do |handle|
       self.handles << handle
+    end
+
+    # merge links
+    merging.links.each do |link|
+      link.move(merging, self)
+      self.links << link
     end
 
     # save the mergee and destroy the merger
@@ -321,6 +327,13 @@ class EntityLink
     end
 
     self.level = level unless level.eql? :ghost
+  end
+
+  def move(old_entity, new_entity)
+    oe = ::Entity.find(self.le)
+    ol = oe.links.where(le: old_entity._id).first
+    ol.le = new_entity._id
+    ol.save
   end
 
   def destroy_callback
