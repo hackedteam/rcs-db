@@ -4,17 +4,6 @@ TODO 9.0.0
 
     upgrade to ruby 1.9.3-p392 on windows
 
-    upgrade to mongodb 2.4.x (write the upgrade procedure during NSIS installer)
-      - running 2.2
-      - stop all rcs services
-      - issue sh.stopBalancer() to mongos
-      - kill only mongos
-      - execute mongos24 --upgrade
-      - issue sh.startBalancer() to mongos (24)
-      - kill all (mongo processes)
-      - copy 24 over 22
-      - restart all
-
     upgrade RubyEncoder 1.5
 
     --

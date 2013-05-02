@@ -67,13 +67,21 @@ class Entity
 
     # notify (only real entities)
     unless level.eql? :ghost
-      push_new_entity
+      push_new_entity self
       alert_new_entity
     end
   end
 
-  def push_new_entity
-    RCS::DB::PushManager.instance.notify('entity', {id: self._id, action: 'create'})
+  def push_new_entity(entity)
+    RCS::DB::PushManager.instance.notify('entity', {id: entity._id, action: 'create'})
+  end
+
+  def push_modify_entity(entity)
+    RCS::DB::PushManager.instance.notify('entity', {id: entity._id, action: 'modify'})
+  end
+
+  def push_destroy_entity(entity)
+    RCS::DB::PushManager.instance.notify('entity', {id: entity._id, action: 'destroy'})
   end
 
   def alert_new_entity
@@ -82,10 +90,10 @@ class Entity
 
   def notify_callback
     # we are only interested if the properties changed are:
-    interesting = ['name', 'desc', 'last_position', 'handles', 'links']
+    interesting = ['name', 'desc', 'position', 'handles', 'links']
     return if not interesting.collect {|k| changes.include? k}.inject(:|)
 
-    RCS::DB::PushManager.instance.notify('entity', {id: self._id, action: 'modify'})
+    push_modify_entity self
   end
 
   def destroy_callback
@@ -95,10 +103,10 @@ class Entity
       oe = ::Entity.find(link.le)
       next unless oe
       oe.links.where(le: self._id).destroy_all
-      RCS::DB::PushManager.instance.notify('entity', {id: oe._id, action: 'modify'})
+      push_modify_entity oe
     end
 
-    RCS::DB::PushManager.instance.notify('entity', {id: self._id, action: 'destroy'})
+    push_destroy_entity self
   end
 
   def merge(merging)
@@ -222,7 +230,7 @@ class Entity
       self.save
 
       # notify the new entity
-      push_new_entity
+      push_new_entity self
       alert_new_entity
 
       # update all its link to automatic

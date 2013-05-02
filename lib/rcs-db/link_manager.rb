@@ -57,12 +57,20 @@ class LinkManager
     second_entity.promote_ghost
 
     # notify the links
-    RCS::DB::PushManager.instance.notify('entity', {id: first_entity._id, action: 'modify'})
-    RCS::DB::PushManager.instance.notify('entity', {id: second_entity._id, action: 'modify'})
+    push_modify_entity first_entity
+    push_modify_entity second_entity
 
-    RCS::DB::Alerting.new_link([first_entity, second_entity])
+    alert_new_link [first_entity, second_entity]
 
     return first_link
+  end
+
+  def alert_new_link(entities)
+    RCS::DB::Alerting.new_link(entities)
+  end
+
+  def push_modify_entity(entity)
+    RCS::DB::PushManager.instance.notify('entity', {id: entity._id, action: 'modify'})
   end
 
   def edit_link(params)
