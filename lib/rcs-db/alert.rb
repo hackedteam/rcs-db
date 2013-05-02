@@ -212,14 +212,6 @@ class Alerting
       (agent_path & alert.path == alert.path)
     end
 
-    def clean_old_alerts
-      trace :debug, "Cleaning old alerts..."
-      # delete the alerts older than a week
-      ::Alert.all.each do |alert|
-        alert.logs.destroy_all(:time.lt => Time.now.getutc.to_i - 86400*7)
-      end
-    end
-
     public
 
     # this method runs in a proc triggered by the mail event loop every 5 seconds
@@ -275,7 +267,7 @@ class Alerting
             # remove alerts too old to keep it clean (perform housekeeping every 10 minutes)
             if now - last > 600
               last = now
-              clean_old_alerts
+              Alert.destroy_old_logs
             end
           end
         rescue Exception => e

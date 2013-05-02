@@ -5,6 +5,7 @@ require 'mongoid'
 
 class Alert
   include RCS::Tracer
+  extend RCS::Tracer
   include Mongoid::Document
   include Mongoid::Timestamps
 
@@ -43,6 +44,14 @@ class Alert
     end
   end
 
+  def self.destroy_old_logs
+    trace :debug, "Cleaning old alerts..."
+
+    # delete the alerts older than a week
+    all.each do |alert|
+      alert.logs.destroy_all(:time.lt => Time.now.getutc.to_i - 86400*7)
+    end
+  end
 end
 
 
