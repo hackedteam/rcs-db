@@ -1,0 +1,31 @@
+#!/usr/bin/env ruby
+
+require 'fssm'
+require 'colorize'
+
+
+$root_path = File.expand_path File.join(File.dirname(__FILE__), '..')
+$spec_path = File.join $root_path, 'tests/rspec'
+
+
+def log msg
+  puts msg.colorize :light_blue
+end
+
+def run_rspec filepath
+  log "The file #{filepath} has changed!"
+  spec_filepath = File.join $spec_path, filepath
+  cmd = "cd \"#{$root_path}\"; rspec -I tests/rspec --color --format doc \"#{spec_filepath}\""
+  system cmd
+end
+
+def start_monitoring
+  log "Start watching changs in folder #{$spec_path}..."
+  FSSM.monitor($spec_path) do
+    update { |filepath, r| run_rspec(r) }
+    create { |filepath, r| run_rspec(r) }
+  end
+end
+
+
+start_monitoring
