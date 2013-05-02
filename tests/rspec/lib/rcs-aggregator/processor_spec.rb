@@ -273,7 +273,7 @@ describe Processor do
       Processor.stub(:check_intelligence_license).and_return true
 
       # connect and empty the db
-      connect_mongo
+      connect_mongoid
       empty_test_db
 
       # create fake object to be used by the test

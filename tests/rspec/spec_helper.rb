@@ -43,7 +43,7 @@ def require_intelligence(file)
   end
 end
 
-def connect_mongo
+def connect_mongoid
   ENV['MONGOID_ENV'] = 'yes'
   ENV['MONGOID_DATABASE'] = 'rcs-test'
   ENV['MONGOID_HOST'] = "localhost:27017"

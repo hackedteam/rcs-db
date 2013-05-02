@@ -141,6 +141,8 @@ class Entity
     # save the mergee and destroy the merger
     self.save
     merging.destroy
+
+    push_modify_entity self
   end
 
   def add_photo(content)

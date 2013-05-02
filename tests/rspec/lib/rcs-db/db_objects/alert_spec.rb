@@ -34,7 +34,7 @@ describe Alert do
 
   context 'given an Alert with two Logs' do
     before do
-      connect_mongo
+      connect_mongoid
       empty_test_db
 
       @last_time = Time.now.to_i

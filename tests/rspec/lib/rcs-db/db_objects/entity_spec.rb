@@ -23,7 +23,7 @@ describe Entity do
       Entity.any_instance.stub(:alert_new_entity).and_return nil
 
       # connect and empty the db
-      connect_mongo
+      connect_mongoid
       empty_test_db
       turn_off_tracer
     end
@@ -41,7 +41,7 @@ describe Entity do
   context 'creating a new entity' do
     before do
       # connect and empty the db
-      connect_mongo
+      connect_mongoid
       empty_test_db
       turn_off_tracer
     end
@@ -60,7 +60,7 @@ describe Entity do
       Entity.any_instance.stub(:alert_new_entity).and_return nil
 
       # connect and empty the db
-      connect_mongo
+      connect_mongoid
       empty_test_db
       turn_off_tracer
 
@@ -99,7 +99,7 @@ describe Entity do
 
   end
 
-  context 'destroying an evidence' do
+  context 'destroying an entity' do
     before do
       Entity.any_instance.stub(:alert_new_entity).and_return nil
       Entity.any_instance.stub(:push_new_entity).and_return nil
@@ -107,7 +107,7 @@ describe Entity do
       RCS::DB::LinkManager.any_instance.stub(:push_modify_entity).and_return nil
 
       # connect and empty the db
-      connect_mongo
+      connect_mongoid
       empty_test_db
       turn_off_tracer
 
@@ -133,6 +133,16 @@ describe Entity do
       entity2.reload
       entity2.links.size.should be 0
     end
+
+    it 'should remove photos in the grid' do
+      @entity.add_photo("This_is_a_binary_photo")
+
+      photo_id = @entity.photos.first
+
+      @entity.destroy
+
+
+    end
   end
 
   context 'merging two entities' do
@@ -144,7 +154,7 @@ describe Entity do
       EntityHandle.any_instance.stub(:check_intelligence_license).and_return true
 
       # connect and empty the db
-      connect_mongo
+      connect_mongoid
       empty_test_db
       turn_off_tracer
 
