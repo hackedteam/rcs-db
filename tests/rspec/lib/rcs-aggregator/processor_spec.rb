@@ -281,8 +281,6 @@ describe Processor do
       Entity.any_instance.stub(:alert_new_entity).and_return nil
       Processor.stub(:check_intelligence_license).and_return true
 
-      ENV['no_trace'] = 'true'
-
       # connect and empty the db
       connect_mongo
       empty_test_db
