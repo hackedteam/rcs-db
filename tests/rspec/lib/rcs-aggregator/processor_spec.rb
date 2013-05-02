@@ -6,6 +6,7 @@ module RCS
 module Aggregator
 
 describe Processor do
+  before { turn_off_tracer }
 
   context 'given an evidence to be parsed' do
     before do
