@@ -127,9 +127,16 @@ class Entity
 
     # merge links
     merging.links.each do |link|
-      link.move(merging, self)
+      # exclude links to the mergee
+      next if link.le.eql? self._id
+      # add the link
       self.links << link
+      # update the backlink
+      link.move(merging, self)
     end
+
+    # remove links to the merging entity
+    self.links.destroy_all(le: merging._id)
 
     # save the mergee and destroy the merger
     self.save
@@ -259,8 +266,12 @@ class EntityHandle
 
   after_create :create_callback
 
+  def check_intelligence_license
+    LicenseManager.instance.check :intelligence
+  end
+
   def create_callback
-    return unless LicenseManager.instance.check :intelligence
+    return unless check_intelligence_license
 
     # check if other entities have the same handle (it could be an identity relation)
     RCS::DB::LinkManager.instance.check_identity(self._parent, self)
@@ -339,9 +350,9 @@ class EntityLink
 
   def move(old_entity, new_entity)
     oe = ::Entity.find(self.le)
-    ol = oe.links.where(le: old_entity._id).first
-    ol.le = new_entity._id
-    ol.save
+    link = oe.links.where(le: old_entity._id).first
+    link.le = new_entity._id
+    link.save
   end
 
   def destroy_callback

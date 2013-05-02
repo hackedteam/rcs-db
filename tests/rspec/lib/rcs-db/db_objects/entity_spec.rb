@@ -135,4 +135,72 @@ describe Entity do
     end
   end
 
+  context 'merging two entities' do
+    before do
+      Entity.any_instance.stub(:alert_new_entity).and_return nil
+      Entity.any_instance.stub(:push_new_entity).and_return nil
+      RCS::DB::LinkManager.any_instance.stub(:alert_new_link).and_return nil
+      RCS::DB::LinkManager.any_instance.stub(:push_modify_entity).and_return nil
+      EntityHandle.any_instance.stub(:check_intelligence_license).and_return true
+
+      # connect and empty the db
+      connect_mongo
+      empty_test_db
+      turn_off_tracer
+
+      @operation = Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new)
+      @first_entity = Entity.create!(name: 'entity-1', type: :target, path: [@operation._id])
+      @second_entity = Entity.create!(name: 'entity-2', type: :person, path: [@operation._id])
+      @third_entity = Entity.create!(name: 'entity-3', type: :person, path: [@operation._id])
+      @position_entity = Entity.create!(name: 'entity-position', type: :position, path: [@operation._id])
+    end
+
+    it 'should not merge incompatible entities' do
+      expect {@first_entity.merge(@position_entity)}.to raise_error
+      expect {@second_entity.merge(@first_entity)}.to raise_error
+      expect {@position_entity.merge(@second_entity)}.to raise_error
+    end
+
+    it 'should merge handles' do
+      @first_entity.handles.create!(level: :manual, type: 'skype', name: 'Test Name', handle: 'test.name')
+      @second_entity.handles.create!(level: :manual, type: 'gmail', name: 'Test Name', handle: 'test.name@gmail.com')
+
+      @first_entity.merge @second_entity
+
+      @first_entity.handles.size.should be 2
+      @first_entity.handles.last[:handle].should eq 'test.name@gmail.com'
+    end
+
+    it 'should merge links' do
+      # lets create this scenario (links as follow):
+      # 1 -> 2 (identity)
+      # 2 -> 3 (peer)
+      # 2 -> 4 (position)
+      # we will merge 1 and 2 and it should result in:
+      # 1 -> 3 (peer)
+      # 1 -> 4 (position)
+      RCS::DB::LinkManager.instance.add_link(from: @first_entity, to: @second_entity, level: :manual, type: :identity)
+      RCS::DB::LinkManager.instance.add_link(from: @second_entity, to: @third_entity, level: :manual, type: :peer)
+      RCS::DB::LinkManager.instance.add_link(from: @second_entity, to: @position_entity, level: :manual, type: :position)
+
+      @first_entity.merge @second_entity
+      @first_entity.reload
+      @third_entity.reload
+      @position_entity.reload
+
+      # total link count
+      @first_entity.links.size.should be 2
+
+      # check if the links point to the right entities
+      @first_entity.links.where(le: @third_entity._id).count.should be 1
+      @first_entity.links.where(le: @position_entity._id).count.should be 1
+
+      # check the backlinks
+      @third_entity.links.size.should be 1
+      @third_entity.links.first[:le].should eq @first_entity._id
+      @position_entity.links.size.should be 1
+      @position_entity.links.first[:le].should eq @first_entity._id
+    end
+
+  end
 end
