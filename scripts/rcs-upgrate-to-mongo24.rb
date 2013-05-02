@@ -19,22 +19,33 @@ require 'logger'
 require 'mongoid'
 require 'yaml'
 
-MONGO_BINARIES_PATH = "C:\\RCS\\DB\\mongodb\\win"
 MONGO_SERVER_ADDR = "127.0.0.1:27017"
 MONGOS24_BIN_PATH = "C:\\RCS\\DB\\temp\\mongos.exe"
 MONGO_UPGRADE_LOGPATH = "C:\\RCS\\DB\\log\\mongo_upgrade.log"
 LOGPATH = "C:\\RCS\\DB\\log\\#{File.basename(__FILE__)}.log"
 RCSDB_CONFIG_FILEPATH = "C:\\RCS\\DB\\config\\config.yaml"
 
+
+
 # Handle logging, errors and cfg
 
 def logger
-  @logger ||= Logger.new LOGPATH
+  @logger ||= begin
+    lgr = Logger.new LOGPATH
+    lgr.level = Logger::DEBUG
+    lgr.formatter = proc { |severity, datetime, progname, msg| "#{severity} | #{datetime} | #{msg}\n" }
+    lgr
+  end
 end
 
-def log_and_raise msg
-  @logger.error msg
-  raise msg
+def log_and_raise msg_or_exception
+  if msg_or_exception.respond_to?(:backtrace)
+    logger.error "#{msg_or_exception.message} | #{msg_or_exception.backtrace.inspect}"
+  else
+    logger.error msg_or_exception
+  end
+
+  raise msg_or_exception
 end
 
 def configured_cn
@@ -138,34 +149,38 @@ end
 
 # The whole upgrade procedure to version 2.4
 
-logger.info "Starting upgrade procedure..."
+begin
+  logger.info "Starting upgrade procedure."
 
-if mongo_24?
-  logger.info "Mongo 2.4 is already installed."
-  return
+  if mongo_24?
+    logger.info "Mongo 2.4 is already installed."
+    return
+  end
+
+  if windows_diskfree < mongo_config_db_size*5
+    log_and_raise "There is not enough free space for the mongoDB config database."
+  end
+
+  logger.info "Stopping balancer"
+  mongo_stop_balancer
+
+  logger.info "Stopping mongo router (2.2)"
+  windows_service "RCS Master Router", :stop
+
+  logger.info "Starting upgrade of metadata."
+  mongo_upgrade
+
+  mongo_renew_session
+
+  if mongo_22?
+    log_and_raise "There should be mongo 2.4 running at this point."
+  end
+
+  logger.info "Restarting balancer."
+  mongo_start_balancer
+
+  logger.info "Killing mongos.exe (2.4)"
+  mongos_kill
+rescue Exception => e
+  log_and_raise e
 end
-
-if windows_diskfree < mongo_config_db_size*5
-  log_and_raise "There is not enough free space for the mongoDB config database."
-end
-
-logger.info "Stopping balancer"
-mongo_stop_balancer
-
-logger.info "Stopping mongo router (2.2)"
-windows_service "RCS Master Router", :stop
-
-logger.info "Starting upgrade of metadata"
-mongo_upgrade
-
-mongo_renew_session
-
-if mongo_22?
-  log_and_raise "There should be mongo 2.4 running at this point."
-end
-
-logger.info "Restarting balancer"
-mongo_start_balancer
-
-logger.info "Killing mongos.exe (2.4)"
-mongos_kill
