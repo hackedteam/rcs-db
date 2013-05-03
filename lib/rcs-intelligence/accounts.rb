@@ -51,21 +51,20 @@ class Accounts
     end
 
     def create_entity_handle(entity, level, type, handle, name)
-      # don't add if already exist
-      return if entity.handles.where({type: type, name: name, handle: handle}).count != 0
+      existing_handle = entity.handles.where(type: type, handle: handle).first
 
-      # update the name if the handle is already present
-      entity.handles.where({type: type, handle: handle}).each do |h|
-        trace :info, "Modifying handle [#{type}, #{handle}, #{name}] on entity: #{entity.name}"
-        h.name = name
-        h.save
-        return
+      if existing_handle
+        if existing_handle.empty_name?
+          trace :info, "Modifying handle [#{type}, #{handle}, #{name}] on entity: #{entity.name}"
+          existing_handle.update_attributes name: name
+        end
+
+        existing_handle
+      else
+        trace :info, "Adding handle [#{type}, #{handle}, #{name}] to entity: #{entity.name}"
+        # add to the list of handles
+        entity.handles.create! level: level, type: type, name: name, handle: handle
       end
-
-      trace :info, "Adding handle [#{type}, #{handle}, #{name}] to entity: #{entity.name}"
-
-      # add to the list of handles
-      entity.handles.create!(level: level, type: type, name: name, handle: handle)
     end
 
     def is_mail?(value)

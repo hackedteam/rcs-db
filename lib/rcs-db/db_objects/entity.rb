@@ -281,6 +281,10 @@ class EntityHandle
 
   after_create :create_callback
 
+  def empty_name?
+    "#{name}".strip.empty?
+  end
+
   def check_intelligence_license
     LicenseManager.instance.check :intelligence
   end
