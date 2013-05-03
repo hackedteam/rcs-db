@@ -58,6 +58,14 @@ def empty_test_db
   Mongoid.purge!
 end
 
+def require_sharded_db
+  conn = Mongo::MongoClient.new(ENV['MONGOID_HOST'], ENV['MONGOID_PORT'])
+  db = conn.db('admin')
+  list = db.command({ listshards: 1 })
+  db.command({addshard: ENV['MONGOID_HOST'] + ':27018'}) if list['shards'].size == 0
+  db.command({ enablesharding: ENV['MONGOID_DATABASE'] }) rescue nil
+end
+
 class FakeLog4rLogger
   def method_missing *args; end
 end

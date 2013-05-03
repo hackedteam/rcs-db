@@ -158,11 +158,11 @@ class DB
 
   def enable_sharding
     if Shard.count == 0
-      output = Shard.create(Config.instance.global['CN'])
+      output = Shard.create(ENV['MONGOID_HOST'])
       trace :info, "Adding the first Shard: #{output}"
       raise "Cannot create shard" unless output['ok'] == 1
     end
-    output = Shard.enable('rcs')
+    output = Shard.enable(ENV['MONGOID_DATABASE'])
     trace :info, "Enable Sharding on 'rcs': #{output}"
   end
 

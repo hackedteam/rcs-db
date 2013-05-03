@@ -13,9 +13,6 @@ module DB
       turn_off_tracer
     end
 
-    it 'should do something' do
-      pending
-    end
   end
 
 end

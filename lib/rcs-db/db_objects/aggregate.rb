@@ -34,7 +34,7 @@ class Aggregate
         index({"data.type" => 1}, {background: true})
         index({type: 1, "data.peer" => 1 }, {background: true})
 
-        shard_key :type, :day
+        shard_key :type, :day, :aid
 
         after_create :create_callback
 
@@ -45,7 +45,7 @@ class Aggregate
         end
 
         def self.add_to_summary(type, peer)
-          summary = self.where(day: '0', type: 'summary').first_or_create!
+          summary = self.where(day: '0', aid: '0', type: 'summary').first_or_create!
           summary.add_to_set(:peers, type.to_s + '_' + peer.to_s)
         end
 
@@ -59,12 +59,15 @@ class Aggregate
                       }]
           data = self.collection.aggregate(pipeline)
 
+          return if data.empty?
+
           # normalize them in a better form
           data.collect! {|e| e['_id']['type'] + '_' + e['_id']['peer']}
 
-          summary = self.where(day: '0', type: 'summary').first_or_create!
+          summary = self.where(day: '0', aid: '0', type: 'summary').first_or_create!
+
           summary.peers = data
-          summary.save
+          summary.save!
         end
 
         protected
