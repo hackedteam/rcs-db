@@ -562,15 +562,11 @@ class Item
   def self.offload_destroy(params)
     item = ::Item.find(params[:id])
     item.destroy
-  rescue Exception => e
-    trace :error, "Offload destroy: #{e.message}"
   end
 
   def self.offload_destroy_callback(params)
     item = ::Item.find(params[:id])
     item.destroy_callback
-  rescue Exception => e
-    trace :error, "Offload destroy: #{e.message}"
   end
 
   def status_change_callback
