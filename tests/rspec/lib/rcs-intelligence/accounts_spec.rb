@@ -73,23 +73,46 @@ module Intelligence
       end
 
       context 'the evidence program is :outlook or :mail (or un unkonw program)' do
-        %w[outlook mail unknown].each do |program_name|
+        %w[outlook mail unk0wn].each do |program_name|
           context "when the program name is \"#{program_name}\"" do
-            let(:evidence) { create_addressbook_evidence 'program' => program_name, 'handle' => 'j.snow', 'user' => 'jshow1', 'service' => 'gmail' }
+            let(:evidence) { create_addressbook_evidence 'program' => program_name, 'user' => 'jshow1', 'service' => 'gmail' }
 
             it 'create or update an EntityHandle' do
+              described_class.should_receive(:create_entity_handle_from_user).once
               described_class.add_handle target_entity, evidence
-
-              created_handle = target_entity.handles.first
-              created_handle.handle.should == 'jshow1@gmail.com'
-              created_handle.type.should == :gmail
-              created_handle.level.should == :automatic
             end
           end
         end
       end
     end
 
+    describe '#create_entity_handle_from_user' do
+      let(:entity_handle) { described_class.create_entity_handle_from_user target_entity, 'jshow1', 'google' }
+
+      it 'create an EntityHandle' do
+        entity_handle.handle.should == 'jshow1@gmail.com'
+        entity_handle.type.should == :gmail
+        entity_handle.level.should == :automatic
+        entity_handle.name.should == ''
+      end
+
+      context 'an EntityHandle with the same handle alredy exists' do
+        before { entity_handle }
+
+        it 'shuld not create another EntityHandle' do
+          entity_handle
+          target_entity.handles.size.should == 1
+        end
+      end
+
+      context 'no valid mail can be extracted from the username and the service' do
+        before { described_class.create_entity_handle_from_user target_entity, 'jshow1', 'yahoo' }
+
+        it 'should not create an EntityHandle' do
+          target_entity.handles.size.should == 0
+        end
+      end
+    end
 
     describe '#create_entity_handle' do
       let!(:existing_entity_handle) { add_handle_to_target_entity(level: :automatic, type: :target, name: 'John Snow', handle: 'j.snow') }

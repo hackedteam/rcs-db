@@ -21,7 +21,6 @@ class Accounts
     end
 
     def add_handle(entity, evidence)
-
       data = evidence[:data]
 
       trace :debug, "Parsing handle data: #{data.inspect}"
@@ -29,27 +28,26 @@ class Accounts
       # target account in the contacts (addressbook)
       if addressbook_types.include? data['program']
         return if data['type'] != :target
+
         if data['handle']
           create_entity_handle(entity, :automatic, data['program'], data['handle'].downcase, data['name'])
         end
-      elsif data['program'] =~ /outlook|mail/i
+      elsif (data['program'] =~ /outlook|mail/i || data['user'])
         # mail accounts from email clients saving account to the device
-        handle = data['user'].downcase
-        add_domain(handle, data['service'])
-        type = get_type(handle, data['service'])
-        create_entity_handle(entity, :automatic, type, handle, '') if is_mail?(handle)
-      end
-
-      # infer on the user to discover email addresses (for passwords)
-      if data['user']
-        handle = data['user'].downcase
-        add_domain(handle, data['service'])
-        type = get_type(handle, data['service'])
-        create_entity_handle(entity, :automatic, type, handle, '') if is_mail?(handle)
+        # OR infer on the user to discover email addresses (for passwords)
+        create_entity_handle_from_user entity, data['user'], data['service']
       end
     rescue Exception => e
       trace :error, "Cannot add handle: " + e.message
       trace :fatal, e.backtrace.join("\n")
+    end
+
+    def create_entity_handle_from_user entity, user, service
+      handle = user.downcase
+      add_domain handle, service
+      type = get_type handle, service
+      return if !is_mail? handle
+      create_entity_handle entity, :automatic, type, handle, ''
     end
 
     def create_entity_handle(entity, level, type, handle, name)
@@ -57,7 +55,7 @@ class Accounts
       return if entity.handles.where({type: type, name: name, handle: handle}).count != 0
 
       # update the name if the handle is already present
-      entity.handles.where({type: type, level: level, handle: handle}).each do |h|
+      entity.handles.where({type: type, handle: handle}).each do |h|
         trace :info, "Modifying handle [#{type}, #{handle}, #{name}] on entity: #{entity.name}"
         h.name = name
         h.save
