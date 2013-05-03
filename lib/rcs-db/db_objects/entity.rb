@@ -223,7 +223,6 @@ class Entity
       return e[:data]['name']
     end
 
-  ensure
     return nil
   end
 
