@@ -257,7 +257,7 @@ module Intelligence
       context 'the username is not a valid email addr' do
         before { described_class.stub(:is_mail?).and_return false }
 
-        %w[gmail hotmail facebook].each do |service_name|
+        %w[gmail facebook].each do |service_name|
           context "the service name contains the word \"#{service_name}\"" do
 
             it 'should adds the domain name to the username' do

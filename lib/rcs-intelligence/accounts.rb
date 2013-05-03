@@ -20,6 +20,13 @@ class Accounts
       [:facebook, :twitter, :gmail, :skype, :bbm, :whatsapp, :phone, :mail, :linkedin, :viber]
     end
 
+    def password_types
+      {
+        gmail:    {domain: '@gmail.com', regexp: /gmail|google/i},
+        facebook: {domain: '@facebook.com', regexp: /facebook/i}
+      }
+    end
+
     def add_handle(entity, evidence)
       data = evidence[:data]
 
@@ -62,24 +69,21 @@ class Accounts
       return false
     end
 
-    def add_domain(user, service)
-      user << '@gmail.com' if service =~ /gmail|google/i and not is_mail?(user)
-      user << '@hotmail.com' if service =~ /hotmail/i and not is_mail?(user)
-      user << '@facebook.com' if service =~ /facebook/i and not is_mail?(user)
+    def add_domain user, service
+      return if is_mail? user
+      password_types.each do |type, opts|
+        user << opts[:domain] if service =~ opts[:regexp]
+      end
+      # TODO: add also non-standard domain (like hotmail or yahoo)
+      user
     end
 
-    def get_type(user, service)
-
+    def get_type user, service
       #if already in email form, check the domain, else check the service
       to_search = is_mail?(user) ? user : service
-
-      case to_search
-        when /gmail/i
-          return :gmail
-        when /facebook/i
-          return :facebook
+      password_types.each do |type, opts|
+        return type if to_search =~ opts[:regexp]
       end
-
       return :mail
     end
 
