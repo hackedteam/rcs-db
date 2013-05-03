@@ -38,7 +38,8 @@ class DB
 
       # set the parameters for the mongoid.yaml
       ENV['MONGOID_DATABASE'] = 'rcs'
-      ENV['MONGOID_HOST'] = "#{Config.instance.global['CN']}:27017"
+      ENV['MONGOID_HOST'] = "#{Config.instance.global['CN']}"
+      ENV['MONGOID_PORT'] = "27017"
 
       #Mongoid.logger.level = ::Logger::DEBUG
       #Moped.logger.level = ::Logger::DEBUG
@@ -48,12 +49,7 @@ class DB
 
       Mongoid.load!(Config.instance.file('mongoid.yaml'), :production)
 
-      # to do it programmatically:
-      #session = Moped::Session.new(["#{Config.instance.global['CN']}:27017"], {safe: true})
-      #session.use 'rcs'
-      #Mongoid.sessions[:default] = session
-
-      trace :info, "Connected to MongoDB at #{ENV['MONGOID_HOST']}"
+      trace :info, "Connected to MongoDB at #{ENV['MONGOID_HOST']}:#{ENV['MONGOID_PORT']}"
 
     rescue Exception => e
       trace :fatal, e
@@ -63,7 +59,7 @@ class DB
   end
 
   # pooled connection
-  def mongo_connection(db = ENV['MONGOID_DATABASE'], host = Config.instance.global['CN'], port = 27017)
+  def mongo_connection(db = ENV['MONGOID_DATABASE'], host = ENV['MONGOID_HOST'], port = ENV['MONGOID_PORT'].to_i)
     time = Time.now
     # instantiate a pool of connections that are thread-safe
     # this handle will be returned to every thread requesting for a new connection
@@ -75,7 +71,7 @@ class DB
   end
 
   # single connection
-  def new_mongo_connection(host = Config.instance.global['CN'], port = 27017)
+  def new_mongo_connection(host = ENV['MONGOID_HOST'], port = ENV['MONGOID_PORT'].to_i)
     time = Time.now
     conn = Mongo::MongoClient.new(host, port)
     delta = Time.now - time
@@ -83,7 +79,7 @@ class DB
     return conn
   end
 
-  def new_moped_connection(db = ENV['MONGOID_DATABASE'], host = Config.instance.global['CN'], port = 27017)
+  def new_moped_connection(db = ENV['MONGOID_DATABASE'], host = ENV['MONGOID_HOST'], port = ENV['MONGOID_PORT'].to_i)
     time = Time.now
     # moped is not thread-safe.
     # we need to instantiate a new connection for every thread that is using it
