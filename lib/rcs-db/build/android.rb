@@ -202,6 +202,7 @@ class BuildAndroid < Build
 
     # unpack the dropper application
     CrossPlatform.exec "java", "-jar #{apktool} d #{path('input')} #{pkgdir}"
+    FileUtils.cp path('AndroidManifest.xml'), rcsdir
 
     # load and mix the manifest and resources
     newmanifest = parse_manifest(rcsdir, pkgdir)
