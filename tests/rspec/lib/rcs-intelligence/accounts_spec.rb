@@ -22,6 +22,17 @@ module Intelligence
     end
 
 
+    describe '#addressbook_types' do
+      it 'should not include "outlook"' do
+        described_class.addressbook_types.should_not include :outlook
+      end
+
+      it 'should not include "mail"' do
+        described_class.addressbook_types.should include :mail
+      end
+    end
+
+
     describe '#is_mail?' do
       context 'when the email is empty' do
         it('returns false') { described_class.is_mail?('').should be_false }

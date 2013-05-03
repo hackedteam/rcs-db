@@ -16,7 +16,9 @@ class Accounts
 
   class << self
 
-    ADDRESSBOOK_TYPE = [:facebook, :twitter, :gmail, :skype, :bbm, :whatsapp, :phone, :mail, :linkedin, :viber]
+    def addressbook_types
+      [:facebook, :twitter, :gmail, :skype, :bbm, :whatsapp, :phone, :mail, :linkedin, :viber]
+    end
 
     def add_handle(entity, evidence)
 
@@ -25,7 +27,7 @@ class Accounts
       trace :debug, "Parsing handle data: #{data.inspect}"
 
       # target account in the contacts (addressbook)
-      if ADDRESSBOOK_TYPE.include? data['program']
+      if addressbook_types.include? data['program']
         return if data['type'] != :target
         if data['handle']
           create_entity_handle(entity, :automatic, data['program'], data['handle'].downcase, data['name'])
@@ -100,7 +102,7 @@ class Accounts
     def get_addressbook_handle(evidence)
       data = evidence[:data]
 
-      if ADDRESSBOOK_TYPE.include? data['program']
+      if addressbook_types.include? data['program']
         # don't return data from the target
         return nil if data['type'].eql? :target
         return [data['name'], data['program'], data['handle'].downcase] if data['handle']
