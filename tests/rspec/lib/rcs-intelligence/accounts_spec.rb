@@ -33,6 +33,71 @@ module Intelligence
     end
 
 
+    describe '#get_type' do
+      context 'the user is a valid email addr' do
+        before { described_class.stub(:is_mail?).and_return true }
+
+        {'john@gmail.com' => :gmail, 'snow@facebook.com' => :facebook, 's.jobs@apple.com' => :mail}.each do |user, expected_type|
+          it "should returns the expectd type (#{expected_type})" do
+            service = "will_be_ignored"
+            described_class.get_type(user, service).should == expected_type
+          end
+        end
+      end
+
+      context 'the user is not a valid email addr' do
+        before { described_class.stub(:is_mail?).and_return false }
+
+        {'gmail' => :gmail, 'facebook' => :facebook, 'apple.com' => :mail}.each do |service, expected_type|
+          it "should returns the expectd type (#{expected_type})" do
+            user = "invalid_email"
+            described_class.get_type(user, service).should == expected_type
+          end
+        end
+      end
+    end
+
+
+    describe '#get_addressbook_handle' do
+      let(:known_program) { described_class.addressbook_types.sample }
+      let(:evidence) do
+        evidence = Evidence.dynamic_new('testtarget')
+        evidence[:data] = {}
+        evidence
+      end
+
+      context 'the evidence "program" is unknown' do
+        it ('returns nil') { described_class.get_addressbook_handle(evidence).should be_nil }
+      end
+
+      context 'the evidence "program" is known' do
+        before { evidence[:data]['program'] = known_program }
+
+        context 'and the type is :target' do
+          before { evidence[:data]['type'] = :target }
+          it ('returns nil') { described_class.get_addressbook_handle(evidence).should be_nil }
+        end
+
+        context 'or there is no handle' do
+          it ('returns nil') { described_class.get_addressbook_handle(evidence).should be_nil }
+        end
+
+        context 'and the type not :target and the is and handle' do
+          before do
+            @expectd_result = ['John Snow', known_program, 'john.snow']
+            evidence[:data]['type'] = :peer
+            evidence[:data]['handle'] = 'JoHn.SnOw'
+            evidence[:data]['name'] = 'John Snow'
+          end
+
+          it 'returns an array with name, program and handle' do
+            described_class.get_addressbook_handle(evidence).should == @expectd_result
+          end
+        end
+      end
+    end
+
+
     describe '#is_mail?' do
       context 'when the email is empty' do
         it('returns false') { described_class.is_mail?('').should be_false }
