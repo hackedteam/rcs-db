@@ -21,11 +21,11 @@ module Intelligence
     let(:target) { Item.create!(name: 'test-target', _kind: 'target', path: [operation._id], stat: ::Stat.new) }
     let(:agent) { Item.create!(name: 'test-agent', _kind: 'agent', path: target.path+[target._id], stat: ::Stat.new) }
     let(:target_entity) { Entity.any_in({path: [target._id]}).first }
+    let(:known_program) { described_class.addressbook_types.sample }
 
-    # TODO
-    # def create_addressbook_evidence data
-    #   Evidence.collection_class(target._id).create!(da: Time.now.to_i, aid: agent._id, type: 'addressbook', data: data)
-    # end
+    def create_addressbook_evidence data
+      Evidence.collection_class(target._id).create!(da: Time.now.to_i, aid: agent._id, type: 'addressbook', data: data)
+    end
 
     def add_handle_to_target_entity attributes
       entity_handle = EntityHandle.new(attributes)
@@ -38,6 +38,56 @@ module Intelligence
     it 'should use the Tracer module' do
       described_class.should respond_to :trace
       subject.should respond_to :trace
+    end
+
+
+    describe '#add_handle' do
+      context 'the evidence belongs to a known program' do
+        let(:evidence) { create_addressbook_evidence 'program' => known_program, 'handle' => 'j.snow' }
+
+        context "and the type is :target" do
+          before { evidence[:data]['type'] = :peer }
+
+          it 'do nothing' do
+            described_class.should_not_receive :create_entity_handle
+            described_class.add_handle target_entity, evidence
+          end
+        end
+
+        context "and the type is not :target" do
+          before { evidence[:data]['type'] = :target }
+
+          it 'creates or update an EntityHandle' do
+            # create
+            described_class.add_handle target_entity, evidence
+            target_entity.handles.size.should == 1
+            target_entity.handles.first.name.should be_nil
+
+            # and update
+            evidence[:data]['name'] = 'John Snow'
+            described_class.add_handle target_entity, evidence
+            target_entity.handles.size.should == 1
+            target_entity.handles.first.name.should == 'John Snow'
+          end
+        end
+      end
+
+      context 'the evidence program is :outlook or :mail (or un unkonw program)' do
+        %w[outlook mail unknown].each do |program_name|
+          context "when the program name is \"#{program_name}\"" do
+            let(:evidence) { create_addressbook_evidence 'program' => program_name, 'handle' => 'j.snow', 'user' => 'jshow1', 'service' => 'gmail' }
+
+            it 'create or update an EntityHandle' do
+              described_class.add_handle target_entity, evidence
+
+              created_handle = target_entity.handles.first
+              created_handle.handle.should == 'jshow1@gmail.com'
+              created_handle.type.should == :gmail
+              created_handle.level.should == :automatic
+            end
+          end
+        end
+      end
     end
 
 
@@ -107,7 +157,6 @@ module Intelligence
 
 
     describe '#get_addressbook_handle' do
-      let(:known_program) { described_class.addressbook_types.sample }
       let(:evidence) do
         evidence = Evidence.dynamic_new('testtarget')
         evidence[:data] = {}
