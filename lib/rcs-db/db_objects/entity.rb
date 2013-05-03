@@ -296,6 +296,7 @@ end
 
 
 class EntityLink
+  include RCS::Tracer
   include Mongoid::Document
 
   embedded_in :entity

@@ -323,3 +323,133 @@ describe Entity do
   end
 
 end
+
+describe EntityLink do
+  context 'setting parameters' do
+    it 'should not duplicate info' do
+      subject.add_info "a"
+      subject.add_info "b"
+      subject.add_info "a"
+      subject.info.size.should be 2
+      subject.info.should eq ['a', 'b']
+    end
+
+    context 'when versus is not set' do
+      it 'should set versus if the first time' do
+        subject.set_versus :in
+        subject.versus.should be :in
+      end
+    end
+
+    context 'when versus is already set' do
+      before do
+        subject.set_versus :in
+      end
+
+      it 'should not change versus' do
+        subject.set_versus :in
+        subject.versus.should be :in
+      end
+
+      it 'should upgrade to :both if different' do
+        subject.set_versus :out
+        subject.versus.should be :both
+      end
+    end
+
+    it 'should upgrade type from :know to :peer' do
+      subject.set_type :know
+      subject.set_type :peer
+      subject.type.should be :peer
+    end
+
+    it 'should not overwrite type with :know' do
+      subject.set_type :peer
+      subject.set_type :know
+      subject.type.should be :peer
+      subject.set_type :identity
+      subject.set_type :know
+      subject.type.should be :identity
+    end
+
+    it 'should upgrade level from :ghost to :automatic' do
+      subject.set_level :ghost
+      subject.set_level :automatic
+      subject.level.should be :automatic
+    end
+
+    it 'should not overwrite level with :ghost' do
+      subject.set_level :automatic
+      subject.set_level :ghost
+      subject.level.should be :automatic
+      subject.set_level :manual
+      subject.set_level :ghost
+      subject.level.should be :manual
+    end
+
+    context 'moving a link to other entity' do
+      before do
+        # connect and empty the db
+        connect_mongoid
+        empty_test_db
+        turn_off_tracer
+
+        Entity.any_instance.stub(:alert_new_entity).and_return nil
+        Entity.any_instance.stub(:push_new_entity).and_return nil
+        RCS::DB::LinkManager.any_instance.stub(:alert_new_link).and_return nil
+        RCS::DB::LinkManager.any_instance.stub(:push_modify_entity).and_return nil
+        EntityHandle.any_instance.stub(:check_intelligence_license).and_return true
+
+        @operation = Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new)
+        @entity1 = Entity.create!(name: 'entity1', type: :target, path: [@operation._id], level: :automatic)
+        @entity2 = Entity.create!(name: 'entity2', type: :target, path: [@operation._id], level: :automatic)
+        @entity3 = Entity.create!(name: 'entity3', type: :target, path: [@operation._id], level: :automatic)
+
+        RCS::DB::LinkManager.instance.add_link(from: @entity1, to: @entity2, level: :manual, type: :identity)
+      end
+
+      it 'should back link correctly' do
+        link = @entity1.links.first
+        @entity3.links << link
+        link.move(@entity1, @entity3)
+        @entity2.reload
+
+        @entity2.links.first.le.should eq @entity3._id
+      end
+    end
+
+    context 'deleting a ghost link' do
+      before do
+        # connect and empty the db
+        connect_mongoid
+        empty_test_db
+        turn_off_tracer
+
+        Entity.any_instance.stub(:alert_new_entity).and_return nil
+        Entity.any_instance.stub(:push_new_entity).and_return nil
+        RCS::DB::LinkManager.any_instance.stub(:alert_new_link).and_return nil
+        RCS::DB::LinkManager.any_instance.stub(:push_modify_entity).and_return nil
+        EntityHandle.any_instance.stub(:check_intelligence_license).and_return true
+
+        @operation = Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new)
+        @entity = Entity.create!(name: 'entity', type: :target, path: [@operation._id], level: :automatic)
+        @ghost = Entity.create!(name: 'ghost', type: :person, path: [@operation._id], level: :ghost)
+
+        RCS::DB::LinkManager.instance.add_link(from: @entity, to: @ghost, level: :ghost, type: :know)
+      end
+
+      it 'should delete the linked ghost entity' do
+        RCS::DB::LinkManager.instance.del_link(from: @entity, to: @ghost)
+        lambda {Entity.find(@ghost._id)}.should raise_error Mongoid::Errors::DocumentNotFound
+      end
+
+      it 'should not delete the entity if not ghost' do
+        @ghost.level = :automatic
+        @ghost.save
+        RCS::DB::LinkManager.instance.del_link(from: @entity, to: @ghost)
+        Entity.find(@ghost._id).should eq @ghost
+      end
+
+    end
+  end
+end
