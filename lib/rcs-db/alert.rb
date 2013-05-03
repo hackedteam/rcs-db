@@ -222,66 +222,78 @@ class Alerting
 
     public
 
-    # this method runs in a proc triggered by the mail event loop every 5 seconds
-    # we are inside the thread pool, so we can be slow...
-    def dispatcher
+    def start_dispatcher
       # no license, no alerts :)
       return unless LicenseManager.instance.check :alerting
 
-      last = nil
+      Thread.new do
 
-      # infinite processing loop
-      loop do
-        begin
-          if (queued = AlertQueue.get_queued)
-            entry = queued.first
-            count = queued.last
+        last = nil
 
-            trace :info, "#{count} alerts to be processed in queue"
+        # infinite processing loop
+        dispatcher = Thread.new do
 
-            if entry.alert and entry.evidence
-              alert = ::Alert.find(entry.alert.first)
-              user = ::User.find(alert.user_id)
+          trace :info, "Alerting dispatcher initiated"
 
-              # check if we are in the suppression timeframe
-              if alert.last.nil? or Time.now.getutc.to_i - alert.last > alert.suppression or alert.logs.empty?
-                # we are out of suppression, create a new entry and mail
-                trace :debug, "Triggering alert: #{alert._id}"
-                alert.logs.create!(time: Time.now.getutc.to_i, path: entry.path, evidence: entry.evidence)
-                alert.last = Time.now.getutc.to_i
-                alert.save
-                # notify the console of the new alert
-                PushManager.instance.notify('alert', {id: entry.path.last, rcpt: user[:_id]})
-                send_mail(entry.to, entry.subject, entry.body) if alert.type == 'MAIL'
+          loop do
+            begin
+              if (queued = AlertQueue.get_queued)
+                entry = queued.first
+                count = queued.last
+
+                trace :info, "#{count} alerts to be processed in queue"
+
+                if entry.alert and entry.evidence
+                  alert = ::Alert.find(entry.alert.first)
+                  user = ::User.find(alert.user_id)
+
+                  # check if we are in the suppression timeframe
+                  if alert.last.nil? or Time.now.getutc.to_i - alert.last > alert.suppression or alert.logs.empty?
+                    # we are out of suppression, create a new entry and mail
+                    trace :debug, "Triggering alert: #{alert._id}"
+                    alert.logs.create!(time: Time.now.getutc.to_i, path: entry.path, evidence: entry.evidence)
+                    alert.last = Time.now.getutc.to_i
+                    alert.save
+                    # notify the console of the new alert
+                    PushManager.instance.notify('alert', {id: entry.path.last, rcpt: user[:_id]})
+                    send_mail(entry.to, entry.subject, entry.body) if alert.type == 'MAIL'
+                  else
+                    trace :debug, "Triggering alert: #{alert._id} (suppressed)"
+                    al = alert.logs.last
+                    al.evidence += entry.evidence unless al.evidence.include? entry.evidence
+                    al.save
+                    # notify even if suppressed so the console will reload the alert log list
+                    PushManager.instance.notify('alert', {id: entry.path.last, rcpt: user[:_id]})
+                  end
+                else
+                  # for queued items without an associated alert, send the mail
+                  send_mail(entry.to, entry.subject, entry.body)
+                end
               else
-                trace :debug, "Triggering alert: #{alert._id} (suppressed)"
-                al = alert.logs.last
-                al.evidence += entry.evidence unless al.evidence.include? entry.evidence
-                al.save
-                # notify even if suppressed so the console will reload the alert log list
-                PushManager.instance.notify('alert', {id: entry.path.last, rcpt: user[:_id]})
+                # Nothing to do, waiting...
+                sleep 1
+
+                now = Time.now
+                last ||= now
+
+                #trace :debug, "Alerting dispatcher: sleeping..." if (now.to_i % 10) == 0
+
+                # remove alerts too old to keep it clean (perform housekeeping every 10 minutes)
+                if now - last > 600
+                  last = now
+                  clean_old_alerts
+                end
               end
-            else
-              # for queued items without an associated alert, send the mail
-              send_mail(entry.to, entry.subject, entry.body)
-            end
-          else
-            # Nothing to do, waiting...
-            sleep 1
-
-            now = Time.now
-            last ||= now
-
-            # remove alerts too old to keep it clean (perform housekeeping every 10 minutes)
-            if now - last > 600
-              last = now
-              clean_old_alerts
+            rescue Exception => e
+              trace :warn, "Cannot process alert queue: #{e.message}"
+              trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
             end
           end
-        rescue Exception => e
-          trace :warn, "Cannot process alert queue: #{e.message}"
-          trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
         end
+
+        dispatcher.join
+
+        trace :fatal, "Alert dispatcher exited!!"
       end
     end
 
