@@ -117,6 +117,8 @@ class Entity
     raise "cannot merge a target over a person" if merging.type == :target
     raise "cannot merge different type of entities" unless [:person, :target].include? self.type and [:person, :target].include? merging.type
 
+    trace :debug, "Merging entities: #{merging.name} -> #{self.name}"
+
     # merge the name and description only if empty
     self.name = merging.name if self.name.nil? or self.name.eql? ""
     self.desc = merging.desc if self.desc.nil? or self.desc.eql? ""

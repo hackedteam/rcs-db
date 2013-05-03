@@ -292,7 +292,7 @@ class EntityController < RESTController
 
       Audit.log :actor => @session.user[:name], :action => 'entity.merge', :desc => "Merged entity '#{e.name}' and '#{e2.name}'"
 
-      return ok(link)
+      return ok(e)
     end
   end
 
