@@ -48,7 +48,8 @@ end
 def connect_mongoid
   ENV['MONGOID_ENV'] = 'yes'
   ENV['MONGOID_DATABASE'] = 'rcs-test'
-  ENV['MONGOID_HOST'] = "localhost:27017"
+  ENV['MONGOID_HOST'] = "localhost"
+  ENV['MONGOID_PORT'] = "27017"
 
   Mongoid.load!('config/mongoid.yaml', :production)
 end
