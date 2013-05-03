@@ -489,7 +489,7 @@ class Item
           Evidence.collection_class(self.path.last).destroy_all(aid: self._id.to_s)
           trace :info, "Deleting aggregates for agent #{self.name}..."
           Aggregate.collection_class(self.path.last).destroy_all(aid: self._id.to_s)
-          Aggregate.collection_class(self.path.last).rebuild_summary
+          #Aggregate.collection_class(self.path.last).rebuild_summary
           trace :info, "Deleting evidence for agent #{self.name} done."
         end
       when 'factory'
