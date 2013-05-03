@@ -212,14 +212,6 @@ class Alerting
       (agent_path & alert.path == alert.path)
     end
 
-    def clean_old_alerts
-      trace :debug, "Cleaning old alerts..."
-      # delete the alerts older than a week
-      ::Alert.all.each do |alert|
-        alert.logs.destroy_all(:time.lt => Time.now.getutc.to_i - 86400*7)
-      end
-    end
-
     public
 
     def start_dispatcher
@@ -276,12 +268,12 @@ class Alerting
                 now = Time.now
                 last ||= now
 
-                trace :debug, "Alerting dispatcher: sleeping..." if (now.to_i % 10) == 0
+                #trace :debug, "Alerting dispatcher: sleeping..." if (now.to_i % 10) == 0
 
                 # remove alerts too old to keep it clean (perform housekeeping every 10 minutes)
                 if now - last > 600
                   last = now
-                  clean_old_alerts
+                  Alert.destroy_old_logs
                 end
               end
             rescue Exception => e
