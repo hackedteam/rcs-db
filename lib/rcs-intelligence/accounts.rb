@@ -30,7 +30,7 @@ class Accounts
         return if data['type'] != :target
 
         if data['handle']
-          create_entity_handle(entity, :automatic, data['program'], data['handle'].downcase, data['name'])
+          create_entity_handle(entity, data['program'], data['handle'].downcase, data['name'])
         end
       elsif (data['program'] =~ /outlook|mail/i || data['user'])
         # mail accounts from email clients saving account to the device
@@ -47,24 +47,11 @@ class Accounts
       add_domain handle, service
       type = get_type handle, service
       return if !is_mail? handle
-      create_entity_handle entity, :automatic, type, handle, ''
+      create_entity_handle entity, type, handle, ''
     end
 
-    def create_entity_handle(entity, level, type, handle, name)
-      existing_handle = entity.handles.where(type: type, handle: handle).first
-
-      if existing_handle
-        if existing_handle.empty_name?
-          trace :info, "Modifying handle [#{type}, #{handle}, #{name}] on entity: #{entity.name}"
-          existing_handle.update_attributes name: name
-        end
-
-        existing_handle
-      else
-        trace :info, "Adding handle [#{type}, #{handle}, #{name}] to entity: #{entity.name}"
-        # add to the list of handles
-        entity.handles.create! level: level, type: type, name: name, handle: handle
-      end
+    def create_entity_handle entity, type, handle, name
+      entity.create_or_update_handle type, handle, name
     end
 
     def is_mail?(value)

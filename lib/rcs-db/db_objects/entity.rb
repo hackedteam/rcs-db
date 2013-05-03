@@ -263,6 +263,22 @@ class Entity
     end
   end
 
+  def create_or_update_handle type, handle, name
+    existing_handle = handles.where(type: type, handle: handle).first
+
+    if existing_handle
+      if existing_handle.empty_name?
+        trace :info, "Modifying handle [#{type}, #{handle}, #{name}] on entity: #{self.name}"
+        existing_handle.update_attributes name: name
+      end
+
+      existing_handle
+    else
+      trace :info, "Adding handle [#{type}, #{handle}, #{name}] to entity: #{self.name}"
+      # add to the list of handles
+      handles.create! level: EntityHandle.default_level, type: type, name: name, handle: handle
+    end
+  end
 end
 
 
@@ -280,6 +296,10 @@ class EntityHandle
   field :handle, type: String
 
   after_create :create_callback
+
+  def self.default_level
+    :automatic
+  end
 
   def empty_name?
     "#{name}".strip.empty?

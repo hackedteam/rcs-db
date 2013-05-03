@@ -120,7 +120,7 @@ module Intelligence
 
       context 'name, handle and type match an existing EntityHandle' do
         it 'do nothing' do
-          described_class.create_entity_handle target_entity, :automatic, :target, 'j.snow', 'John Snow'
+          described_class.create_entity_handle target_entity, :target, 'j.snow', 'John Snow'
           target_entity.handles.size.should == 1
         end
       end
@@ -131,7 +131,7 @@ module Intelligence
 
           it 'should update the name attribute of the existing EntityHandle' do
             new_name = 'Rob Stark'
-            described_class.create_entity_handle(target_entity, :automatic, :target, 'j.snow', new_name)
+            described_class.create_entity_handle(target_entity, :target, 'j.snow', new_name)
             target_entity.handles.size.should == 1
             target_entity.handles.first.name.should == new_name
           end
@@ -140,7 +140,7 @@ module Intelligence
         context 'the existing EntityHandle has a valid name' do
           it 'should keep the name attribute of the existing EntityHandle' do
             new_name = 'Rob Stark'
-            described_class.create_entity_handle(target_entity, :automatic, :target, 'j.snow', new_name)
+            described_class.create_entity_handle(target_entity, :target, 'j.snow', new_name)
             target_entity.handles.size.should == 1
             target_entity.handles.first.name.should == existing_entity_handle.name
           end
@@ -149,7 +149,7 @@ module Intelligence
 
       context 'type and handle are not found in any existing EntityHandle' do
         it 'should create a new EntityHandle' do
-          described_class.create_entity_handle(target_entity, :automatic, :target, 'a.stark', 'Arya Stark')
+          described_class.create_entity_handle(target_entity, :target, 'a.stark', 'Arya Stark')
           target_entity.handles.size.should == 2
         end
       end
