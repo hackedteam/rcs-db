@@ -454,8 +454,7 @@ class BuildWindows < Build
       begin
         offset = content.index("PE\x00\x00")
         raise if offset.nil?
-        # random time is NOW - rand(two year) (3600*24*365*2 -> 63072000)
-        time = Time.now.to_i + rand(-63072000..0)
+        time = Time.now.to_i
         content.binary_patch_at_offset offset + 8, [time].pack('I')
       rescue
         raise "build time offset not found"
