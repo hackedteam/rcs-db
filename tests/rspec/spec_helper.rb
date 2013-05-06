@@ -68,6 +68,8 @@ end
 
 class FakeLog4rLogger
   def method_missing *args; end
+  # Prevent calling Kernel#warn with send
+  def warn *args; end
 end
 
 # Check out RCS::Tracer module of rcs-common gem
