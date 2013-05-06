@@ -10,6 +10,8 @@ describe Processor do
     turn_off_tracer
     connect_mongoid
     empty_test_db
+    Entity.any_instance.stub :alert_new_entity
+    RCS::DB::LinkManager.any_instance.stub :alert_new_link
   end
 
   after { empty_test_db }
@@ -78,9 +80,107 @@ describe Processor do
 
 
   describe '#process_aggregate' do
-    pending
+    let (:aggregate_class) { Aggregate.collection_class('testtarget') }
+    let (:aggregate_name) { Aggregate.collection_name('testtarget') }
+    let (:operation_x) { Item.create!(name: 'test-operation-x', _kind: 'operation', path: [], stat: ::Stat.new) }
+    let (:operation_y) { Item.create!(name: 'test-operation-y', _kind: 'operation', path: [], stat: ::Stat.new) }
+    let (:peer) { 'robert.baratheon' }
+
+    before { EntityHandle.any_instance.stub(:check_intelligence_license).and_return true }
+
+    context 'given a aggregate of type "sms"' do
+      let!(:aggregate) { aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: 'sms', aid: 'agent_id', count: 1, data: {'peer' => peer, 'versus' => :in}) }
+
+      let!(:entity_a) do
+        Item.create!(name: 'test-target-a', _kind: 'target', path: [operation_x._id], stat: ::Stat.new)
+        entity = Entity.where(name: 'test-target-a').first
+        entity.create_or_update_handle :phone, peer, peer.capitalize
+        entity
+      end
+
+      context 'if an entity (same operation) can be linked to it' do
+        let!(:entity_b) do
+          Item.create!(name: 'test-target-b', _kind: 'target', path: [operation_x._id], stat: ::Stat.new)
+          Entity.where(name: 'test-target-b').first
+        end
+
+        it 'should create a link' do
+          RCS::DB::LinkManager.instance.should_receive(:add_link).and_call_original
+
+          described_class.process_aggregate entity_b, aggregate
+
+          entity_a.reload
+          entity_a.links.first.le == entity_b
+        end
+      end
+
+      context 'if an entity (another operation) can be linked to it' do
+        let!(:entity_b) do
+          Item.create!(name: 'test-target-b', _kind: 'target', path: [operation_y._id], stat: ::Stat.new)
+          Entity.where(name: 'test-target-b').first
+        end
+
+        it 'should not create a link' do
+          RCS::DB::LinkManager.instance.should_not_receive :add_link
+          described_class.process_aggregate entity_b, aggregate
+        end
+      end
+    end
   end
 end
 
 end
 end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
