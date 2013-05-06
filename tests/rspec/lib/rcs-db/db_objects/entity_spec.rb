@@ -387,37 +387,6 @@ describe EntityLink do
       subject.level.should be :manual
     end
 
-    context 'moving a link to other entity' do
-      before do
-        # connect and empty the db
-        connect_mongoid
-        empty_test_db
-        turn_off_tracer
-
-        Entity.any_instance.stub(:alert_new_entity).and_return nil
-        Entity.any_instance.stub(:push_new_entity).and_return nil
-        RCS::DB::LinkManager.any_instance.stub(:alert_new_link).and_return nil
-        RCS::DB::LinkManager.any_instance.stub(:push_modify_entity).and_return nil
-        EntityHandle.any_instance.stub(:check_intelligence_license).and_return true
-
-        @operation = Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new)
-        @entity1 = Entity.create!(name: 'entity1', type: :target, path: [@operation._id], level: :automatic)
-        @entity2 = Entity.create!(name: 'entity2', type: :target, path: [@operation._id], level: :automatic)
-        @entity3 = Entity.create!(name: 'entity3', type: :target, path: [@operation._id], level: :automatic)
-
-        RCS::DB::LinkManager.instance.add_link(from: @entity1, to: @entity2, level: :manual, type: :identity)
-      end
-
-      it 'should back link correctly' do
-        link = @entity1.links.first
-        @entity3.links << link
-        link.move(@entity1, @entity3)
-        @entity2.reload
-
-        @entity2.links.first.le.should eq @entity3._id
-      end
-    end
-
     context 'deleting a ghost link' do
       before do
         # connect and empty the db

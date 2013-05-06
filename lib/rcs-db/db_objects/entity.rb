@@ -131,18 +131,8 @@ class Entity
       self.handles << handle
     end
 
-    # merge links
-    merging.links.each do |link|
-      # exclude links to the mergee
-      next if link.le.eql? self._id
-      # add the link
-      self.links << link
-      # update the backlink
-      link.move(merging, self)
-    end
-
-    # remove links to the merging entity
-    self.links.destroy_all(le: merging._id)
+    # move the links of the merging to the mergee
+    RCS::DB::LinkManager.instance.move_link(from: merging, to: self)
 
     # merging is always done by the user
     self.level = :manual
@@ -185,8 +175,6 @@ class Entity
   end
 
   def self.name_from_handle(type, handle, target_id)
-
-    trace :warn, "================ CICCIO ===================="
 
     # use a class cache
     @@acc_cache ||= LRUCache.new(:ttl => 24.hour)
@@ -391,13 +379,6 @@ class EntityLink
     end
 
     self.level = level unless level.eql? :ghost
-  end
-
-  def move(old_entity, new_entity)
-    oe = ::Entity.find(self.le)
-    link = oe.links.where(le: old_entity._id).first
-    link.le = new_entity._id
-    link.save
   end
 
   def destroy_callback

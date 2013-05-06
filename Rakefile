@@ -14,7 +14,7 @@ Rake::TestTask.new(:minitest) do |test|
 end
 
 RSpec::Core::RakeTask.new(:spec) do |test|
-  test.rspec_opts = "-I tests/rspec --color --format doc"
+  test.rspec_opts = "-I tests/rspec --color"
   test.pattern = 'tests/rspec/**/*_spec.rb'
 end
 

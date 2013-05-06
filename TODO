@@ -8,6 +8,8 @@ TODO 9.0.0
 
     --
 
+    check autopurge on collector
+
     offload destroy errors on destroyevidence
 
     accounts from outbound/inbound messages

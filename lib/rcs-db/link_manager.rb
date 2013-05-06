@@ -104,7 +104,6 @@ class LinkManager
   end
 
   def del_link(params)
-
     first_entity = params[:from]
     second_entity = params[:to]
 
@@ -116,6 +115,30 @@ class LinkManager
     # notify the links
     RCS::DB::PushManager.instance.notify('entity', {id: first_entity._id, action: 'modify'})
     RCS::DB::PushManager.instance.notify('entity', {id: second_entity._id, action: 'modify'})
+  end
+
+  def move_link(params)
+    first_entity = params[:from]
+    second_entity = params[:to]
+
+    trace :info, "Moving links from '#{first_entity.name}' to '#{second_entity.name}'"
+
+    # merge links
+    first_entity.links.each do |link|
+      # exclude links to the mergee
+      next if link.le.eql? second_entity._id
+      # add the link
+      second_entity.links << link
+
+      # update the backlink
+      other = ::Entity.find(link.le)
+      backlink = other.links.where(le: first_entity._id).first
+      backlink.le = second_entity._id
+      backlink.save
+    end
+
+    # remove links to the merging entity
+    second_entity.links.destroy_all(le: first_entity._id)
   end
 
   # check if two entities are the same and create a link between them
