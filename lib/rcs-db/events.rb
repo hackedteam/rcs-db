@@ -242,7 +242,8 @@ class Events
         EM::PeriodicTimer.new(60) { EM.defer(proc{ BackupManager.perform }) }
 
         # use a thread for the infinite processor waiting on the alert queue
-        Alerting.start_dispatcher
+        EM::PeriodicTimer.new(5) { EM.defer(proc{ Alerting.dispatcher }) }
+        EM::PeriodicTimer.new(3600) { EM.defer(proc{ Alert.destroy_old_logs }) }
 
         # use a thread for the infinite processor waiting on the push queue
         EM.defer(proc{ PushManager.instance.dispatcher })
