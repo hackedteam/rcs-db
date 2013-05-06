@@ -68,7 +68,7 @@ class BuildLinux < Build
 
     FileUtils.mv path('dropper'), path('output')
 
-    if melting_mode.eql? :melted
+    if @melting_mode.eql? :melted
       FileUtils.mv Config.instance.temp(params['input']), path('melted')
       melted(path('melted'), path('output'))
       FileUtils.mv path('melted'), path('output')
