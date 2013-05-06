@@ -132,7 +132,10 @@ class Entity
     end
 
     # move the links of the merging to the mergee
-    RCS::DB::LinkManager.instance.move_link(from: merging, to: self)
+    RCS::DB::LinkManager.instance.move_links(from: merging, to: self)
+
+    # remove links to the merging entity
+    RCS::DB::LinkManager.instance.del_link(from: merging, to: self)
 
     # merging is always done by the user
     self.level = :manual

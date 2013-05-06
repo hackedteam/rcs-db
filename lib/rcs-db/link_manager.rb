@@ -123,7 +123,7 @@ class LinkManager
     return nil
   end
 
-  def move_link(params)
+  def move_links(params)
     first_entity = params[:from]
     second_entity = params[:to]
 
@@ -143,9 +143,8 @@ class LinkManager
       backlink.save
     end
 
-    # remove moved links
-    second_entity.links.destroy_all(le: second_entity._id)
-    second_entity.links.destroy_all(le: first_entity._id)
+    # delete all the old links
+    first_entity.links.clear
   end
 
   # check if two entities are the same and create a link between them

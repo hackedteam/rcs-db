@@ -162,12 +162,14 @@ module DB
       end
 
       it 'should move a link from one entity to another' do
-        LinkManager.instance.move_link(from: @entity2, to: @entity3)
+        LinkManager.instance.move_links(from: @entity2, to: @entity3)
         @entity1.reload
         @entity2.reload
         @entity3.reload
 
+        @entity1.links.size.should be 1
         @entity2.links.size.should be 0
+        @entity3.links.size.should be 1
 
         link = @entity1.links.first
         linkback = @entity3.links.first
