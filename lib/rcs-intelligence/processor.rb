@@ -81,13 +81,21 @@ class Processor
     LicenseManager.instance.check :intelligence
   end
 
+  def self.compatible_entity_handle_types aggregate
+    if ['call', 'sms', 'mms'].include? aggregate.type
+      ['phone']
+    elsif ['mail', 'gmail'].include? aggregate.type
+      ['mail', 'gmail']
+    else
+      [aggregate.type]
+    end
+  end
+
   def self.process_aggregate(entity, aggregate)
     # process the aggregate and link the entities
 
     # normalize the type to search for the correct account
-    type = [aggregate.type]
-    type = ['phone'] if ['call', 'sms', 'mms'].include? aggregate.type
-    type = ['mail', 'gmail'] if ['mail', 'gmail'].include? aggregate.type
+    type = compatible_entity_handle_types aggregate
 
     # search for existing entity with that account and link it (direct link)
     if ((peer = Entity.where({:_id.ne => entity._id, "handles.handle" => aggregate.data['peer'], :path => entity.path.first}).in("handles.type" => type).first))
