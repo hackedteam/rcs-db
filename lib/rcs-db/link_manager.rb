@@ -100,6 +100,10 @@ class LinkManager
     second_link.rel = params[:rel] if params[:rel]
     second_link.save
 
+    # notify the links
+    push_modify_entity first_entity
+    push_modify_entity second_entity
+
     return first_link
   end
 
@@ -113,8 +117,10 @@ class LinkManager
     second_entity.links.where(le: first_entity._id).destroy_all
 
     # notify the links
-    RCS::DB::PushManager.instance.notify('entity', {id: first_entity._id, action: 'modify'})
-    RCS::DB::PushManager.instance.notify('entity', {id: second_entity._id, action: 'modify'})
+    push_modify_entity first_entity
+    push_modify_entity second_entity
+
+    return nil
   end
 
   def move_link(params)
@@ -137,7 +143,8 @@ class LinkManager
       backlink.save
     end
 
-    # remove links to the merging entity
+    # remove moved links
+    second_entity.links.destroy_all(le: second_entity._id)
     second_entity.links.destroy_all(le: first_entity._id)
   end
 
