@@ -84,12 +84,23 @@ describe Aggregate do
       params = {'from' => Time.now.strftime('%Y%m%d'), 'to' => Time.now.strftime('%Y%m%d'), 'num' => 5}
       most_contacted = Aggregate.most_contacted('testtarget', params)
 
-      #puts most_contacted.inspect
-
       most_contacted.size.should be 3
 
-      most_contacted.should include([{peer: "test.ardissimo", type: "call", count: 3, size: 0, percent: 100.0}])
+      call = most_contacted[0]
+      sms = most_contacted[1]
+      skype = most_contacted[2]
 
+      call.size.should be 1
+      call.should include({peer: "test.ardissimo", type: "call", count: 3, size: 0, percent: 100.0})
+
+      sms.size.should be 3
+      sms.should include({:peer=>"test3", :type=>"sms", :count=>3, :size=>0, :percent=>50.0})
+      sms.should include({:peer=>"test2", :type=>"sms", :count=>2, :size=>0, :percent=>33.0})
+      sms.should include({:peer=>"test1", :type=>"sms", :count=>1, :size=>0, :percent=>16.0})
+
+      skype.size.should be 2
+      skype.should include({:peer=>"test.one", :type=>"skype", :count=>2, :size=>0, :percent=>66.0})
+      skype.should include({:peer=>"test.ardo", :type=>"skype", :count=>1, :size=>0, :percent=>33.0})
     end
 
   end

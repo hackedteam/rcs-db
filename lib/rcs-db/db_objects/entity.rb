@@ -186,6 +186,8 @@ class Entity
 
   def self.name_from_handle(type, handle, target_id)
 
+    trace :warn, "================ CICCIO ===================="
+
     # use a class cache
     @@acc_cache ||= LRUCache.new(:ttl => 24.hour)
 
@@ -223,6 +225,9 @@ class Entity
       return e[:data]['name']
     end
 
+    return nil
+  rescue Exception => e
+    trace :warn, "Cannot resolve entity name: #{e.message}"
     return nil
   end
 

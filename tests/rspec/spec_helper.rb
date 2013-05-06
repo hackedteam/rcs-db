@@ -63,7 +63,7 @@ def require_sharded_db
   db = conn.db('admin')
   list = db.command({ listshards: 1 })
   db.command({addshard: ENV['MONGOID_HOST'] + ':27018'}) if list['shards'].size == 0
-  db.command({ enablesharding: ENV['MONGOID_DATABASE'] }) rescue nil
+  db.command({enablesharding: ENV['MONGOID_DATABASE']}) rescue nil
 end
 
 class FakeLog4rLogger
