@@ -107,7 +107,6 @@ class BuildWindows < Build
     end
 
     # patching the build time
-    patch_build_time('scout')
     patch_build_time('core')
     patch_build_time('core64')
     patch_build_time('codec')
