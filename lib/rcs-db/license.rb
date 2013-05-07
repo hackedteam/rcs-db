@@ -111,7 +111,7 @@ class LicenseManager
       if @limits[:serial] == 'off'
         time = Time.now.getutc
       else
-        time = Dongle.time
+        time = RCS::DB::Dongle.time
       end
 
       if not lic[:expiry].nil? and Time.parse(lic[:expiry]).getutc < time
@@ -133,10 +133,10 @@ class LicenseManager
       if @limits[:serial] != 'off'
         trace :info, "Checking for hardware dongle..."
         # get the version from the dongle (can rise exception)
-        info = Dongle.info
+        info = RCS::DB::Dongle.info
         trace :info, "Dongle info: " + info.inspect
         raise 'Invalid License File: incorrect serial number' if @limits[:serial] != info[:serial]
-        raise 'Cannot read storage from token' if @limits[:type] == 'oneshot' && (info[:error_code] == Dongle::ERROR_LOGIN || info[:error_code] == Dongle::ERROR_STORAGE)
+        raise 'Cannot read storage from token' if @limits[:type] == 'oneshot' && (info[:error_code] == RCS::DB::Dongle::ERROR_LOGIN || info[:error_code] == RCS::DB::Dongle::ERROR_STORAGE)
       else
         trace :info, "Hardware dongle not required..." unless periodic
       end
@@ -170,10 +170,10 @@ class LicenseManager
     if lic[:serial] != 'off'
       trace :info, "Checking for hardware dongle..."
       # get the version from the dongle (can rise exception)
-      info = Dongle.info
+      info = RCS::DB::Dongle.info
       trace :info, "Dongle info: " + info.inspect
       raise 'Invalid License File: incorrect serial number' if lic[:serial] != info[:serial]
-      raise 'Cannot read storage from token' if lic[:type] == 'oneshot' && (info[:error_code] == Dongle::ERROR_LOGIN || info[:error_code] == Dongle::ERROR_STORAGE)
+      raise 'Cannot read storage from token' if lic[:type] == 'oneshot' && (info[:error_code] == RCS::DB::Dongle::ERROR_LOGIN || info[:error_code] == RCS::DB::Dongle::ERROR_STORAGE)
     else
       trace :info, "Hardware dongle not required..."
     end
@@ -278,9 +278,9 @@ class LicenseManager
     if @limits[:type] == 'oneshot'
 
       # do we have available license on the dongle?
-      if Dongle.info[:count] > 0
+      if RCS::DB::Dongle.info[:count] > 0
         trace :info, "Using a oneshot license: #{type.to_s} #{platform.to_s}"
-        Dongle.decrement
+        RCS::DB::Dongle.decrement
         return true
       else
         trace :warn, "You don't have enough license to received data. Queuing..."
@@ -539,7 +539,7 @@ class LicenseManager
     load_license
 
     # print the current license
-    pp Dongle.info if @limits[:serial] != 'off'
+    pp RCS::DB::Dongle.info if @limits[:serial] != 'off'
     pp @limits
 
     return 0
