@@ -14,10 +14,20 @@ class EntityController < RESTController
     require_auth_level :view_profiles
 
     mongoid_query do
-      fields = ["type", "level", "name", "desc", "path", "photos", 'position', 'position_attr']
+      fields = ["type", "level", "name", "desc", "path", "photos", 'position', 'position_attr', 'links']
+      entities = []
+
       # TODO: don't send ghost entities
-      #entities = ::Entity.in(user_ids: [@session.user[:_id]]).ne(level: :ghost).only(fields)
-      entities = ::Entity.in(user_ids: [@session.user[:_id]]).only(fields)
+      # ::Entity.in(user_ids: [@session.user[:_id]]).ne(level: :ghost).only(fields)
+      ::Entity.in(user_ids: [@session.user[:_id]]).only(fields).each do |ent|
+        ent = ent.as_document
+        link_size = ent['links'] ? ent['links'].size : 0
+        ent.delete('links')
+        ent['num_links'] = link_size
+        ent['position'] = {longitude: ent['position'][0], latitude: ent['position'][1]} if ent['position'].is_a? Array
+        entities << ent
+      end
+
       ok(entities)
     end
   end

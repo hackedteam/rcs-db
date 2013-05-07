@@ -8,8 +8,6 @@ TODO 9.0.0
 
     --
 
-    check autopurge on collector
-
     check threads waiting on queued collection (alert, push)
 
     accounts from outbound/inbound messages
