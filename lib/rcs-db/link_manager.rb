@@ -79,7 +79,7 @@ class LinkManager
     first_link = first_entity.links.where(le: second_entity._id).first
     first_link.set_level(params[:level]) if params[:level]
     first_link.set_type(params[:type]) if params[:type]
-    first_link.set_versus(versus) if versus
+    first_link.versus = versus if versus
     first_link.add_info params[:info] if params[:info]
     first_link.rel = params[:rel] if params[:rel]
     first_link.save
@@ -87,7 +87,7 @@ class LinkManager
     second_link = second_entity.links.where(le: first_entity._id).first
     second_link.set_level(params[:level]) if params[:level]
     second_link.set_type(params[:type]) if params[:type]
-    second_link.set_versus(opposite_versus) if opposite_versus
+    second_link.versus = opposite_versus if opposite_versus
     second_link.add_info params[:info] if params[:info]
     second_link.rel = params[:rel] if params[:rel]
     second_link.save
@@ -112,10 +112,6 @@ class LinkManager
 
   # check if two entities are the same and create a link between them
   def check_identity(entity, handle)
-    return unless LicenseManager.instance.check :intelligence
-
-    trace :debug, "Checking for identity: #{handle.type} #{handle.handle}"
-
     # search for other entities with the same handle
     ident = Entity.where({:_id.ne => entity._id, "handles.type" => handle.type, "handles.handle" => handle.handle, :path => entity.path.first}).first
     return unless ident
@@ -129,17 +125,18 @@ class LinkManager
 
   # create a link to an entity that have the 'handle' in its peer
   def link_handle(entity, handle)
-    return unless LicenseManager.instance.check :intelligence
-
-
-    # search for a peer in all the entities of this operation
-    ::Entity.where(path: entity.path.first).each do |e|
+    # search for a peer in all the target entities of this operation
+    ::Entity.targets.where(path: entity.path.first).each do |e|
 
       trace :debug, "Checking '#{e.name}' for peer links: #{handle.handle} (#{handle.type})"
 
+      next unless Aggregate.collection_class(e.path.last).summary_include?(handle.type, handle.handle)
+
+      trace :debug, "Peer link found, linking... #{handle.handle} (#{handle.type})"
+
       # if we find a peer, create a link
       e.peer_versus(handle.handle, handle.type).each do |versus|
-        add_link({from: entity, to: e, type: :peer, info: handle.type, versus: versus})
+        add_link({from: entity, to: e, type: :peer, level: :automatic, info: handle.type, versus: versus})
       end
     end
   end

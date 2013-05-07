@@ -238,6 +238,8 @@ class EntityHandle
   after_create :create_callback
 
   def create_callback
+    return unless LicenseManager.instance.check :intelligence
+
     # check if other entities have the same handle (it could be an identity relation)
     RCS::DB::LinkManager.instance.check_identity(self._parent, self)
     # link any other entity to this new handle (based on aggregates)

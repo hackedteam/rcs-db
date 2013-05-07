@@ -33,6 +33,9 @@
   :winmo:
   - true
   - true
+  :winphone:
+  - true
+  - true
 :alerting: true
 :correlation: true
 :intelligence: true
@@ -55,12 +58,12 @@
 :translation: true
 :modify: true
 :digest: !binary |-
-  ODRkZWNkZWFjMTA2NmMxMTcyN2U1MzFkZDY5NGI1MmM4ZjQ5YmIxYw==
+  YmZhYmVjMWVkZGEyMTcwMDRkY2MzYjRmMzY3NDM3NTkzYzc2ZDc1YQ==
 :check: LOuWAplu
 :signature: !binary |-
-  YmE5NTU5ODUxOTlmMzc5N2I5YzZmMzBkMmMzZDM1MWZkOWI2OTU5NThmNzZj
-  OTA5Zjk2YjMxMjIxMWFiOGEyYw==
+  MWQ4YTdjZTU5YTEzMWJiMTliYTdiZjcwYjY4ODRiOWJmMTZhOWVhYmNiYzNh
+  YjY3MzRkNzQ2NDE0NmI1YTZhOA==
 :integrity: !binary |-
-  ZTZjOTc4ZmNhYmZmOWQ1ODJkOTNjZmFkODJjMWUzZmNmNzE2MGRiZjFiYjk2
-  MTkxNzUxNTVhZjQ4MjM1ZjI3NGM3MjE1ZGQwM2EzYjk3ZmE0Y2U1NGYxODVh
-  NTkzZDRi
+  YzZmN2ZjNjRmNmY0MjY3YTk2ZmY5YmZjMjZhZTZlMDFhODJiMWNkZmFiNmNl
+  NDI5NGY2NDljODdlYWM5OWVhODU3M2Y5YTVjMzI4MDFjMmUyYTAyOTBkMDY2
+  ZmIyNDEz

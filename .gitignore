@@ -42,11 +42,17 @@ Gemfile.lock
 log/*
 
 # certs
-rcs-db.crt
-rcs-db.key
-rcs.pem
+config/certs/rcs-db.crt
+config/certs/rcs-db.key
+config/certs/rcs.pem
 config/certs/symbian.key
 config/certs/symbian.cer
+config/certs/rcs-network.pem
+config/certs/rcs-network.sig
+config/certs/rcs-ca.crt
+config/certs/rcs-ca.key
+config/certs/android.keystore
+config/certs/applet.keystore
 
 
 # config

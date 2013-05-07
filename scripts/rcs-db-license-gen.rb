@@ -33,6 +33,7 @@ class LicenseGenerator
                             :osx => [false, false],
                             :linux => [false, false],
                             :winmo => [false, false],
+                            :winphone => [false, false],
                             :ios => [false, false],
                             :blackberry => [false, false],
                             :symbian => [false, false],
