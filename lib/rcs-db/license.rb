@@ -240,6 +240,7 @@ class LicenseManager
     @limits[:correlation] = limit[:correlation]
     @limits[:intelligence] = limit[:intelligence]
 
+    @limits[:hostname_sync] = limit[:hostname_sync]
   end
 
   

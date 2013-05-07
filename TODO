@@ -29,12 +29,6 @@ TODO 9.0.0
 
     if too many bakcups, take only the last entries
 
-    Realtime:
-
-    Batch:
-      - identity relation if two entities have the same handles
-
-
     hash index for sharding
 
     aggregates for places (positioner algorithm)
