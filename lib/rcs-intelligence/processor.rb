@@ -39,16 +39,16 @@ class Processor
 
 
   def self.process(entry)
-    entity = Entity.any_in({path: [Moped::BSON::ObjectId.from_string(entry['target_id'])]}).first
+    entity = entry.related_entity
 
-    case entry['type']
+    case entry.type
       when :evidence
-        evidence = Evidence.collection_class(entry['target_id']).find(entry['ident'])
+        evidence = entry.related_item
         trace :info, "Processing evidence #{evidence.type} for entity #{entity.name}"
         process_evidence(entity, evidence)
 
       when :aggregate
-        aggregate = Aggregate.collection_class(entry['target_id']).find(entry['ident'])
+        aggregate = entry.related_item
         trace :info, "Processing aggregte for entity #{entity.name}"
         process_aggregate(entity, aggregate)
     end

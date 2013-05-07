@@ -169,13 +169,25 @@ class IntelligenceQueue < NotificationQueue
   store_in collection: 'intelligence_queue'
   index({flag: 1}, {background: true})
 
-  def self.add(target_id, _id, type)
-
-    trace :debug, "Adding to #{self.name}: #{target_id} #{_id} (#{type})"
-
-    self.create!({target_id: target_id.to_s, ident: _id.to_s, type: type})
+  def related_entity
+    bson_target_id = Moped::BSON::ObjectId.from_string target_id
+    Entity.any_in(path: [bson_target_id]).first
   end
 
+  # Find an evidence or an aggregate related to this queue entry
+  def related_item
+    related_item_class.collection_class(target_id).find ident
+  end
+
+  # Could be Aggregate or Evidence
+  def related_item_class
+    Object.const_get "#{type}".capitalize
+  end
+
+  def self.add(target_id, _id, type)
+    trace :debug, "Adding to #{self.name}: #{target_id} #{_id} (#{type})"
+    self.create!({target_id: target_id.to_s, ident: _id.to_s, type: type})
+  end
 end
 
 #end # ::DB

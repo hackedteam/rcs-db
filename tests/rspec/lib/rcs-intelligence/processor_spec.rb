@@ -32,7 +32,7 @@ describe Processor do
       before do
         aggregate_class = Aggregate.collection_class target.id
         @aggregate = aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: 'sms', aid: 'agent_id', count: 1, data: {'peer' => 'harrenhal', 'versus' => :in})
-        @queued_item = AggregatorQueue.create! target_id: target.id, type: :aggregate, ident: @aggregate.id
+        @queued_item = IntelligenceQueue.create! target_id: target.id, type: :aggregate, ident: @aggregate.id
       end
 
 
@@ -44,16 +44,15 @@ describe Processor do
 
     context 'the item is an evidence' do
       before do
-        # agent = Item.create! name: 'test-agent', _kind: 'agent', path: target.path+[target.id], stat: ::Stat.new
-        # @evidence = Evidence.collection_class(target.id).create! aid: agent.id, type: 'info'
-        # @queued_item = AggregatorQueue.create! target_id: target.id, type: :evidence, ident: @evidence.id
+        agent = Item.create! name: 'test-agent', _kind: 'agent', path: target.path+[target.id], stat: ::Stat.new
+        @evidence = Evidence.collection_class(target._id).create!(da: Time.now.to_i, aid: agent._id, type: 'camera', data: {})
+        @queued_item = IntelligenceQueue.create! target_id: target.id, type: :evidence, ident: @evidence.id
       end
 
 
       it 'call #process_evidence' do
-        pending
-        # described_class.should_receive(:process_evidence).with(entity, @evidence)
-        # described_class.process @queued_item
+        described_class.should_receive(:process_evidence)
+        described_class.process @queued_item
       end
     end
   end
@@ -117,11 +116,11 @@ describe Processor do
 
 
   describe '#process_aggregate' do
-    let (:aggregate_class) { Aggregate.collection_class('testtarget') }
-    let (:aggregate_name) { Aggregate.collection_name('testtarget') }
-    let (:operation_x) { Item.create!(name: 'test-operation-x', _kind: 'operation', path: [], stat: ::Stat.new) }
-    let (:operation_y) { Item.create!(name: 'test-operation-y', _kind: 'operation', path: [], stat: ::Stat.new) }
-    let (:peer) { 'robert.baratheon' }
+    let! (:aggregate_class) { Aggregate.collection_class('testtarget') }
+    let! (:aggregate_name) { Aggregate.collection_name('testtarget') }
+    let! (:operation_x) { Item.create!(name: 'test-operation-x', _kind: 'operation', path: [], stat: ::Stat.new) }
+    let! (:operation_y) { Item.create!(name: 'test-operation-y', _kind: 'operation', path: [], stat: ::Stat.new) }
+    let! (:peer) { 'robert.baratheon' }
 
     before { EntityHandle.any_instance.stub(:check_intelligence_license).and_return true }
 
