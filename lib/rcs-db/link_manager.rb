@@ -31,7 +31,7 @@ class LinkManager
     trace :info, "Creating link between '#{first_entity.name}' and '#{second_entity.name}' [#{params[:level]}, #{params[:type]}, #{versus}]"
 
     # create a link in this entity
-    first_link = first_entity.links.find_or_create_by(le: second_entity._id)
+    first_link = first_entity.links.find_or_initialize_by(le: second_entity._id)
     first_link.first_seen = Time.now.getutc.to_i unless first_link.first_seen
     first_link.last_seen = Time.now.getutc.to_i
     first_link.set_level(params[:level])
@@ -42,7 +42,7 @@ class LinkManager
     first_link.save
 
     # and also create the reverse in the other entity
-    second_link = second_entity.links.find_or_create_by(le: first_entity._id)
+    second_link = second_entity.links.find_or_initialize_by(le: first_entity._id)
     second_link.first_seen = Time.now.getutc.to_i unless second_link.first_seen
     second_link.last_seen = Time.now.getutc.to_i
     second_link.set_level(params[:level])
@@ -144,7 +144,7 @@ class LinkManager
     end
 
     # delete all the old links
-    first_entity.links.clear
+    first_entity.links.destroy_all
   end
 
   # check if two entities are the same and create a link between them
