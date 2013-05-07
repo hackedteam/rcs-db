@@ -20,7 +20,7 @@ class Ghost
       name, type, handle = *handle
 
       # search for entity
-      ghost = Entity.where({:_id.ne => entity._id, "handles.type" => type, "handles.handle" => handle, :path => entity.path.first}).first
+      ghost = Entity.same_path_of(entity).where("handles.type" => type, "handles.handle" => handle).first
 
       # create a new entity if not found
       unless ghost

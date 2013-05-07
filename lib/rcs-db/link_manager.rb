@@ -153,7 +153,7 @@ class LinkManager
   # check if two entities are the same and create a link between them
   def check_identity(entity, handle)
     # search for other entities with the same handle
-    ident = Entity.where({:_id.ne => entity._id, "handles.type" => handle.type, "handles.handle" => handle.handle, :path => entity.path.first}).first
+    ident = Entity.same_path_of(entity).where("handles.type" => handle.type, "handles.handle" => handle.handle).first
     return unless ident
 
     # if found we consider them identical
