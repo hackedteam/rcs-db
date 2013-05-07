@@ -1,0 +1,1209 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<xs:schema targetNamespace="http://www.scansoft.com/omnipage/xml/ssdoc-schema3.xsd" elementFormDefault="qualified"
+	xmlns="http://www.scansoft.com/omnipage/xml/ssdoc-schema3.xsd" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+	<!--										-->
+	<!--										-->
+	<!--										-->
+	<!--										-->
+	<!--										-->
+	<!--										-->
+	<!-- The common basic types:				-->
+	<!--										-->
+	<!-- This describe any color. It can be 3 byte in hexadecimal what means the RGB values or it is the default background or default foreground-->
+  <!-- The background color of a node is the color around of letters in the node; the foreground color of the node is the color of the letter in the node. -->
+  <!--   When a node contains "backColor" or "foreColor" attribute these value is the background color or foreground color of it. -->
+  <!--   When a node doesn't contains "backColor" or "foreColor" attribute than the background color or foreground color of it is the same as the the background color or foreground color of it's parent node. -->
+  <!--   When a node doesn't contains "backColor" or "foreColor" attribute and there isn't parent of it, than background color of it is white and foreground color of it is black. -->
+
+    <xs:simpleType name="colorType">
+		<xs:restriction base="xs:string">
+			<xs:pattern value="[a-zA-Z0-9]{6}" /> <!-- Black: 000000 White: ffffff Red: 0000ff Green: 00ff00 Blue: ff0000 -->
+      <xs:pattern value="defaultBackground" /> <!-- The background of the parent object or white -->
+			<xs:pattern value="defaultForeground" /> <!-- The foreground color of the parent or black -->
+		</xs:restriction>
+	</xs:simpleType>
+	<!-- The distance between two point in twips -->
+	<xs:simpleType name="distanceType">
+		<xs:restriction base="xs:integer"></xs:restriction>
+	</xs:simpleType>
+	<!-- This type represents one character -->
+	<xs:simpleType name="characterType">
+		<xs:restriction base="xs:string">
+			<xs:length value="1" />
+		</xs:restriction>
+	</xs:simpleType>
+	<!-- Standard page sizes -->
+	<xs:simpleType name="pageSizeType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="A0" />
+			<xs:enumeration value="A1" />
+			<xs:enumeration value="A2" />
+			<xs:enumeration value="A3" />
+			<xs:enumeration value="A4" />
+			<xs:enumeration value="A5" />
+			<xs:enumeration value="A6" />
+			<xs:enumeration value="A7" />
+			<xs:enumeration value="A8" />
+			<xs:enumeration value="B0" />
+			<xs:enumeration value="B1" />
+			<xs:enumeration value="B2" />
+			<xs:enumeration value="B3" />
+			<xs:enumeration value="B4" />
+			<xs:enumeration value="B5" />
+			<xs:enumeration value="B6" />
+			<xs:enumeration value="B7" />
+			<xs:enumeration value="B8" />
+			<xs:enumeration value="C0" />
+			<xs:enumeration value="C1" />
+			<xs:enumeration value="C2" />
+			<xs:enumeration value="C3" />
+			<xs:enumeration value="C4" />
+			<xs:enumeration value="C5" />
+			<xs:enumeration value="C6" />
+			<xs:enumeration value="C7" />
+			<xs:enumeration value="C8" />
+			<xs:enumeration value="B0 (JIS)" />
+			<xs:enumeration value="B1 (JIS)" />
+			<xs:enumeration value="B2 (JIS)" />
+			<xs:enumeration value="B3 (JIS)" />
+			<xs:enumeration value="B4 (JIS)" />
+			<xs:enumeration value="B5 (JIS)" />
+			<xs:enumeration value="B6 (JIS)" />
+			<xs:enumeration value="B7 (JIS)" />
+			<xs:enumeration value="B8 (JIS)" />
+			<xs:enumeration value="Letter" />
+			<xs:enumeration value="Letter Extra" />
+			<xs:enumeration value="9x11" />
+			<xs:enumeration value="10x11" />
+			<xs:enumeration value="10x14" />
+			<xs:enumeration value="11x17" />
+			<xs:enumeration value="12x11" />
+			<xs:enumeration value="15x11" />
+			<xs:enumeration value="A3 Extra" />
+			<xs:enumeration value="A4 Extra" />
+			<xs:enumeration value="A4 Plus" />
+			<xs:enumeration value="A5 Extra" />
+			<xs:enumeration value="B5 (ISO) Extra" />
+			<xs:enumeration value="C size sheet" />
+			<xs:enumeration value="D size sheet" />
+			<xs:enumeration value="E size sheet" />
+			<xs:enumeration value="Envelope #9" />
+			<xs:enumeration value="Envelope #10" />
+			<xs:enumeration value="Envelope #11" />
+			<xs:enumeration value="Envelope #12" />
+			<xs:enumeration value="Envelope #14" />
+			<xs:enumeration value="Envelope B4" />
+			<xs:enumeration value="Envelope B5" />
+			<xs:enumeration value="Envelope B6" />
+			<xs:enumeration value="Envelope C3" />
+			<xs:enumeration value="Envelope C4" />
+			<xs:enumeration value="Envelope C5" />
+			<xs:enumeration value="Envelope C6" />
+			<xs:enumeration value="Envelope C65" />
+			<xs:enumeration value="Envelope DL" />
+			<xs:enumeration value="Envelope Invite" />
+			<xs:enumeration value="Envelope Monarch" />
+			<xs:enumeration value="Envelope Personal" />
+			<xs:enumeration value="Executive" />
+			<xs:enumeration value="Folio" />
+			<xs:enumeration value="German Std Fanfold" />
+			<xs:enumeration value="German Legal Fanfold" />
+			<xs:enumeration value="Japanese Postcard" />
+			<xs:enumeration value="Japanese Double Postcard" />
+			<xs:enumeration value="Japanese Envelope Kaku #2" />
+			<xs:enumeration value="Japanese Envelope Kaku #3" />
+			<xs:enumeration value="Japanese Envelope Chou #3" />
+			<xs:enumeration value="Japanese Envelope Chou #4" />
+			<xs:enumeration value="Japanese Envelope You #4" />
+			<xs:enumeration value="Japanese Envelope You #4 Rotated" />
+			<xs:enumeration value="Ledger" />
+			<xs:enumeration value="Legal" />
+			<xs:enumeration value="Legal Extra" />
+			<xs:enumeration value="Letter Plus" />
+			<xs:enumeration value="Note" />
+			<xs:enumeration value="PRC 16K" />
+			<xs:enumeration value="PRC 32K" />
+			<xs:enumeration value="PRC Envelope #1" />
+			<xs:enumeration value="PRC Envelope #2" />
+			<xs:enumeration value="PRC Envelope #3" />
+			<xs:enumeration value="PRC Envelope #4" />
+			<xs:enumeration value="PRC Envelope #5" />
+			<xs:enumeration value="PRC Envelope #6" />
+			<xs:enumeration value="PRC Envelope #7" />
+			<xs:enumeration value="PRC Envelope #8" />
+			<xs:enumeration value="PRC Envelope #9" />
+			<xs:enumeration value="PRC Envelope #10" />
+			<xs:enumeration value="PRC 16K Rotated" />
+			<xs:enumeration value="PRC 32K Rotated" />
+			<xs:enumeration value="Quarto" />
+			<xs:enumeration value="Statement" />
+			<xs:enumeration value="SuperA" />
+			<xs:enumeration value="SuperB" />
+			<xs:enumeration value="Tabloid" />
+			<xs:enumeration value="Tabloid" />
+			<xs:enumeration value="US Std Fanfold" />
+			<xs:enumeration value="Custom" />
+		</xs:restriction>
+	</xs:simpleType>
+	<!-- "anchorToType" describe that the object have to move with the anchor object (toPara) or not (toPage) -->
+  <!-- <dd> and <rulerLine> can be anchored to <para> <picture> and <table> the position may be relative to paragraph, picture, table or may be relative to page.-->
+  <xs:simpleType name="anchorToType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="toPage" /> <!-- It means that the object (<dd> or <rulerLine>) doesn't move with the anchorTo object (<para>, <picture>, <table>) -->
+      <xs:enumeration value="toPara" /> <!-- It means that the object (<dd> or <rulerLine>) have to move with the anchorTo object (<para>, <picture>, <table>) -->
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- The style of line. This line can be Ruler, table grid or piece of border-->
+  <!-- line as something straight and narrow and NOT as a line of text -->
+  <xs:simpleType name="lineStyle">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="none" /> <!-- The line isn't visible -->
+      <xs:enumeration value="single" /> <!-- The line is a single continous line -->
+      <xs:enumeration value="dotted" /> <!-- The line consist of many dot -->
+      <xs:enumeration value="thick" /> <!-- A thick continous line -->
+      <xs:enumeration value="dash" /> <!-- The line consist of many dash -->
+      <xs:enumeration value="double" /> <!-- Two single continous line -->
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- Orientation of the original image of the page. You need to use it when you want to connect the position to the image -->
+  <xs:simpleType name="orientationType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="0" /> <!-- Original image wasn't rotated -->
+      <xs:enumeration value="90" />
+      <xs:enumeration value="180" />
+      <xs:enumeration value="270" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- The paragraph, picture, table and cell have alignment attribute -->
+  <xs:simpleType name="alignmentType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="left" /><!-- Left alignment: the position of the lefts side of lines are the same -->
+      <xs:enumeration value="right" /> <!-- Right alignment: the position of the right side of lines are the same -->
+      <xs:enumeration value="centered" /> <!-- Centered alignment: the position of the middle of lines are the same -->
+      <xs:enumeration value="justified" /> <!-- Don't used in case of tab -->
+      <xs:enumeration value="decimal" /> <!-- It can be use only in case of cell -->
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- The vertical alignment of cell -->
+  <xs:simpleType name="verticalAlignmentType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="top" />
+      <xs:enumeration value="middle" />
+      <xs:enumeration value="bottom" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- We can handle to different bullet type. The ordered contains numbers or alphabet. The bulleted contains a bullet character. -->
+  <xs:simpleType name="bulletTypeType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="ordered" /> <!-- Each line start a number -->
+      <xs:enumeration value="bulleted" /> <!-- Each line start a special marker as square, triangular, dash, diamond, circle, ... -->
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- This describe the bullet character in case of bulleted bulletType -->
+  <xs:simpleType name="bulletValueType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="smallCircle" />
+      <xs:enumeration value="whiteCircle" />
+      <xs:enumeration value="smallSquare" />
+      <xs:enumeration value="whiteSquare" />
+      <xs:enumeration value="squareRoot" />
+      <xs:enumeration value="triangular" />
+      <xs:enumeration value="dash" />
+      <xs:enumeration value="diamond" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- The line spacing can be single, double, one and half, exactly or atLeast -->
+  <!-- In case of exactly and atLeast we have to specify the value too -->
+  <xs:simpleType name="lspValueType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="single" />
+      <xs:enumeration value="oneAndHalf" />
+      <xs:enumeration value="double" />
+      <xs:enumeration value="exactly" />
+      <xs:enumeration value="atLeast" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- The name of font. e.g. "Arial", "Times New Roman", "Garamond", ... -->
+  <xs:simpleType name="fontFaceType">
+    <xs:restriction base="xs:string"></xs:restriction>
+  </xs:simpleType>
+  <!-- languages now only include the ones we can spell -->
+  <xs:simpleType name="languageType">
+    <xs:restriction base="xs:language"></xs:restriction>
+  </xs:simpleType>
+  <!-- The direction of writing -->
+  <xs:simpleType name="textDirectionType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="left2right" /> <!-- e.g. The latin writing mode -->
+      <xs:enumeration value="top2down" />
+      <xs:enumeration value="down2top" />
+      <xs:enumeration value="top2downNeon" />
+      <xs:enumeration value="right2left" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- Specifies whether text is underlined and the underline style. The none means no underlining. -->
+  <xs:simpleType name="underlinedType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="none" />
+      <xs:enumeration value="single" />
+      <xs:enumeration value="double" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- Superscript raises the text above the baseline and changes the text to a smaller font size.
+         Subscript lowers the text below the baseline and changes the text to a smaller font size.
+         none means the normal baseline and normal font size. -->
+  <xs:simpleType name="subsuperscriptType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="none" />
+      <xs:enumeration value="subscript" />
+      <xs:enumeration value="superscript" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- This describe the family of the font. You need it if you want to substitute the font. -->
+  <xs:simpleType name="fontFamilyType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="roman" />
+      <xs:enumeration value="swiss" />
+      <xs:enumeration value="modern" />
+      <xs:enumeration value="script" />
+      <xs:enumeration value="decorative" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- This describe the font. You need it if you want to substitute the font. -->
+  <xs:simpleType name="fontPitchType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="fixed" /> <!-- The widths of all character are the same  -->
+      <xs:enumeration value="variable" /> <!-- The widhts of characters differ -->
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- We can handle two different field code. The pageNumber and the numberOfPages. -->
+  <xs:simpleType name="fieldCodeTypeType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="pageNumber" /> <!-- This is the number of the actual page -->
+      <xs:enumeration value="numberOfPages" /> <!-- This is the number of all pages -->
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- This identify a corner of a rectangle -->
+  <xs:simpleType name="cornerId">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="none" />
+      <xs:enumeration value="topLeft" />
+      <xs:enumeration value="topRight" />
+      <xs:enumeration value="bottomLeft" />
+      <xs:enumeration value="bottomRight" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- The pattern of the background -->
+  <xs:simpleType name="patternType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="none" />
+      <xs:enumeration value="vertical" />
+      <xs:enumeration value="horizontal" />
+      <xs:enumeration value="fdiagonal" />
+      <xs:enumeration value="bdiagonal" />
+      <xs:enumeration value="cross" />
+      <xs:enumeration value="diagcross" />
+      <xs:enumeration value="5" />
+      <xs:enumeration value="10" />
+      <xs:enumeration value="20" />
+      <xs:enumeration value="25" />
+      <xs:enumeration value="30" />
+      <xs:enumeration value="40" />
+      <xs:enumeration value="50" />
+      <xs:enumeration value="60" />
+      <xs:enumeration value="70" />
+      <xs:enumeration value="75" />
+      <xs:enumeration value="80" />
+      <xs:enumeration value="90" />
+      <xs:enumeration value="gradhorizontal" />
+      <xs:enumeration value="gradvertical" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- We can mark two different complex input form field. -->
+  <xs:simpleType name="formGroupTypeType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="none" />
+      <xs:enumeration value="comb" /> <!-- This is a comb, more small rectangle and the user can put only one character to each rectangle. -->
+      <xs:enumeration value="multiLine" /> <!-- More line together -->
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- This describe that an object is a continuation of the previos object, that this object continue on the next object or both. -->
+  <xs:simpleType name="continuityType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="contToNext" />
+      <xs:enumeration value="contFromPrev" />
+      <xs:enumeration value="contFromPrevToNext" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- The filling method of the zone see KernelApi.h FILLINGMETHOD -->
+  <xs:simpleType name="fillingMethodType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="default" />
+      <xs:enumeration value="omnifont" />
+      <xs:enumeration value="draftdot9" />
+      <xs:enumeration value="barcode" />
+      <xs:enumeration value="omr" />
+      <xs:enumeration value="handprint" />
+      <xs:enumeration value="braille" />
+      <xs:enumeration value="draftdot24" />
+      <xs:enumeration value="ocrA" />
+      <xs:enumeration value="ocrB" />
+      <xs:enumeration value="micr" />
+      <xs:enumeration value="barcode2d" />
+      <xs:enumeration value="dotdigit" />
+      <xs:enumeration value="dashdigit" />
+      <xs:enumeration value="asian" />
+      <xs:enumeration value="reserved1" />
+      <xs:enumeration value="noOcr" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!-- The Recognition modules of the zone see KernelApi.h RECOGNITIONMODULE -->
+  <xs:simpleType name="recognitionModuleType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="auto" />
+      <xs:enumeration value="omnifontMtx" />
+      <xs:enumeration value="omnifontMor" />
+      <xs:enumeration value="dot" />
+      <xs:enumeration value="bar" />
+      <xs:enumeration value="omr" />
+      <xs:enumeration value="hnr" />
+      <xs:enumeration value="rer" />
+      <xs:enumeration value="bra" />
+      <xs:enumeration value="mat" />
+      <xs:enumeration value="barAmp" />
+      <xs:enumeration value="omnifontPlus2w" />
+      <xs:enumeration value="omnifontFrx" />
+      <xs:enumeration value="omnifontPlus3w" />
+      <xs:enumeration value="asian" />
+      <xs:enumeration value="reservedM" />
+    </xs:restriction>
+  </xs:simpleType>
+  <!--										-->
+  <!-- The common attribute groups:			-->
+  <!--										-->
+  <!-- The appearance of a line. It can be a pieace of border, a grid of table or a ruler -->
+  <xs:attributeGroup name="lineDesc">
+    <xs:attribute name="type" type="lineStyle" default="none" />
+    <xs:attribute name="width" type="distanceType" default="1" /> <!-- The width of the line in twips -->
+    <xs:attribute name="color" type="colorType" default="defaultForeground" /> <!-- The color of the line -->
+  </xs:attributeGroup>
+  <!-- rectangle description	-->
+  <xs:attributeGroup name="rcDesc">
+    <xs:attribute name="l" type="distanceType" use="required" /> <!-- Left of rectangle in twis. This is a distance between left side of rectangle and the left edge of the page -->
+    <xs:attribute name="t" type="distanceType" use="required" /> <!-- Right of rectangle in twis. This is a distance between top side of rectangle and the top edge of the page -->
+    <xs:attribute name="r" type="distanceType" use="required" /> <!-- Right of rectangle in twis. This is a distance between right side of rectangle and the left edge of the page -->
+    <xs:attribute name="b" type="distanceType" use="required" /> <!-- Bottom of rectangle in twis. This is a distance between bottom side of rectangle and the left top of the page -->
+  </xs:attributeGroup>
+  <!-- The four distance to the four direction what means the distance the object and the text around it -->
+  <xs:attributeGroup name="distanceFromTextDesc">
+    <xs:attribute name="leftDistance" type="distanceType" use="optional" /> <!-- Distance between the left side of the object and the text near it in twips -->
+    <xs:attribute name="topDistance" type="distanceType" use="optional" /> <!-- Distance between the top side of the object and the text near it in twips -->
+    <xs:attribute name="rightDistance" type="distanceType" use="optional" /> <!-- Distance between the right side of the object and the text near it in twips -->
+    <xs:attribute name="bottomDistance" type="distanceType" use="optional" /> <!-- Distance between the bottom side of the object and the text near it in twips -->
+  </xs:attributeGroup>
+  <!-- The four distance between the cell border and the text inside the cell in twips -->
+  <xs:attributeGroup name="innerMarginDesc">
+    <xs:attribute name="marginLeft" type="distanceType" use="optional" />
+    <xs:attribute name="marginTop" type="distanceType" use="optional" />
+    <xs:attribute name="marginRight" type="distanceType" use="optional" />
+    <xs:attribute name="marginBottom" type="distanceType" use="optional" />
+  </xs:attributeGroup>
+  <!-- common attributes of the paragraph like object as pic, table and paragraph -->
+  <xs:attributeGroup name="paralikeDesc">
+    <xs:attribute name="backColor" type="colorType" /> <!-- The background color of the paragraph, table.-->
+    <xs:attribute name="alignment" type="alignmentType" /> <!-- alignment of the paragraph, picture or table -->
+    <xs:attribute name="li" type="distanceType" /> <!-- Left indent of the paragraph, picture or table in twips. This is a distance between left side of paragraph, picture or table and the left edge of the container (column, cell, dd, frame) -->
+    <xs:attribute name="ri" type="distanceType" /> <!-- Right indent of the paragraph, picture or table in twips. This is a distance between right side of paragraph, picture or table and the right edge of the container (column, cell, dd, frame) -->
+    <xs:attribute name="spaceBefore" type="distanceType" /> <!-- Space before of the paragraph, picture or table in twips. This is a distance between top side of paragraph, picture or table and the top edge of the containter or the bottom of the previous paragraph in the container -->
+    <xs:attribute name="spaceAfter" type="distanceType" /> <!-- Space after of the paragraph, picture or table in twips. This is a distance between bottom side of paragraph, picture or table and the bottom edge of the containter or the top of the previous paragraph in the container -->
+  </xs:attributeGroup>
+  <!-- paragraph description -->
+  <xs:attributeGroup name="paraDesc">
+    <xs:attributeGroup ref="paralikeDesc" />
+    <xs:attribute name="fli" type="distanceType" /> <!-- First line indent in twips. -->
+    <xs:attribute name="lsp" type="lspValueType" /> <!-- The category of the line spacing. -->
+    <xs:attribute name="lspExact" type="distanceType" /> <!-- The exact value of the line spacing in twips. This is a distance between baselines of two sequential text line -->
+    <xs:attribute name="language" type="languageType" default="en" /> <!-- The main language of the text in the paragraph -->
+    <xs:attributeGroup ref="fontDesc" />
+  </xs:attributeGroup>
+  <!-- font description -->
+  <xs:attributeGroup name="fontDesc">
+    <xs:attribute name="bold" type="xs:boolean" default="false" />
+    <xs:attribute name="italic" type="xs:boolean" default="false" />
+    <xs:attribute name="underlined" type="underlinedType" />
+    <xs:attribute name="strikethrough" type="xs:boolean" default="false" />
+    <xs:attribute name="subsuperscript" type="subsuperscriptType" />
+    <xs:attribute name="fontSize" type="xs:unsignedInt" default="10" /> <!-- The size of the font. 1000 means 10 point -->
+    <xs:attribute name="fontFace" type="fontFaceType" />
+    <xs:attribute name="fontFamily" type="fontFamilyType" />
+    <xs:attribute name="fontPitch" type="fontPitchType" />
+    <xs:attribute name="spacing" type="distanceType" /> <!-- Character spacing in twips. Extra distance between characts. It may be negative. -->
+    <xs:attribute name="scale" type="xs:int" /> <!-- Scale of the text. 1000 maens 100% The factor of the with and height. -->
+    <xs:attribute name="foreColor" type="colorType" /> <!-- Color of the text -->
+  </xs:attributeGroup>
+  <!-- This describe that a non flowing object position fix or relative to a paragraph. -->
+  <xs:attributeGroup name="anchorDesc">
+    <xs:attribute name="anchorTo" type="anchorToType" />
+    <xs:attribute name="refTo" type="xs:IDREF" /> <!-- This have to equal para/@id or table/@id or pic/@id -->
+  </xs:attributeGroup>
+  <!-- Describe the shadow of the object -->
+  <xs:attributeGroup name="shadowDesc">
+    <xs:attribute name="shadowWidth" type="distanceType" />
+    <xs:attribute name="shadowWhere" type="cornerId" />
+  </xs:attributeGroup>
+  <!-- Describe the Background pattern -->
+  <xs:attributeGroup name="patternDesc">
+    <xs:attribute name="patternType" type="patternType" />
+    <xs:attribute name="patternColor" type="cornerId" />
+  </xs:attributeGroup>
+  <!-- Describe the border corner -->
+  <xs:attributeGroup name="roundCornerDesc">
+    <xs:attribute name="topLeftCornerRadius" type="distanceType" default="0" /> <!-- The radius of the top left corner in twips. It must be non negative. 0 means no rounded corner -->
+    <xs:attribute name="topRightCornerRadius" type="distanceType" default="0" /> <!-- The radius of the top right corner in twips. It must be non negative. 0 means no rounded corner -->
+    <xs:attribute name="bottomLeftCornerRadius" type="distanceType" default="0" /> <!-- The radius of the bottom left corner in twips. It must be non negative. 0 means no rounded corner -->
+    <xs:attribute name="bottomRightCornerRadius" type="distanceType" default="0" /> <!-- The radius of the bottom right corner in twips. It must be non negative. 0 means no rounded corner -->
+  </xs:attributeGroup>
+  <!-- Describe the appearance of the object. Background and border -->
+  <xs:attributeGroup name="backgroundAppearanceDesc">
+    <xs:attributeGroup ref="shadowDesc" />
+    <xs:attributeGroup ref="patternDesc" />
+    <xs:attributeGroup ref="roundCornerDesc" />
+    <xs:attribute name="backColor" type="colorType" /> <!-- Background color of object -->
+  </xs:attributeGroup>
+  <!-- Describe the input form field. It contains the name of field. This need for database connection.
+	       and describe the tab order. -->
+  <xs:attributeGroup name="inputFormFieldDesc">
+    <xs:attribute name="inputDataName" type="xs:string" />
+    <xs:attribute name="formId" type="xs:ID" />
+    <xs:attribute name="nextTab" type="xs:IDREF" />
+    <xs:attribute name="prevTab" type="xs:IDREF" />
+  </xs:attributeGroup>
+  <!-- zone description -->
+  <xs:attributeGroup name="zoneDesc">
+    <xs:attribute name="language" type="languageType" default="en" />
+    <xs:attribute name="textDirection" type="textDirectionType" default="left2right" />
+    <xs:attribute name="userData" type="xs:long" />
+    <xs:attribute name="fillingMethod" type="fillingMethodType" />
+    <xs:attribute name="recognitionModule" type="recognitionModuleType" />
+    <xs:attribute name="chrFilter" type="xs:string" /> <!-- Combination of the chr filter. E.g. "digit | uppercase" See KernelApi.h CHR_FILTER -->
+    <xs:attribute name="userZoneId" type="xs:int" />
+    <xs:attribute name="fieldName" type="xs:string" />
+  </xs:attributeGroup>
+  <!-- Describe the border of object -->
+  <xs:group name="borderGroup">
+    <xs:sequence>
+      <xs:element name="leftBorder" type="lineType" minOccurs="0" />
+      <xs:element name="topBorder" type="lineType" minOccurs="0" />
+      <xs:element name="rightBorder" type="lineType" minOccurs="0" />
+      <xs:element name="bottomBorder" type="lineType" minOccurs="0" />
+    </xs:sequence>
+  </xs:group>
+  <!-- The nodes for describe the attributes of paragraph. Tab positons bullets and dropcap -->
+  <xs:group name="paraAttribGroup">
+    <xs:sequence>
+      <xs:group ref="borderGroup" /> <!-- Border of the paragraph -->
+      <xs:element name="dropCap" type="dropCapType" minOccurs="0" maxOccurs="1" />
+      <xs:element name="bullet" type="bulletType" minOccurs="0" maxOccurs="1" />
+      <xs:element name="tabs" type="tabType" minOccurs="0" maxOccurs="unbounded" /> <!-- One <tabs> node for each tab pozition -->
+    </xs:sequence>
+  </xs:group>
+  <!--										-->
+  <!--				Complex Types           -->
+  <!--										-->
+  <!-- This type can describe the attributes of a single line. It can be a piece of border or a ruleLine  -->
+  <xs:complexType name="lineType">
+    <xs:attributeGroup ref="lineDesc" />
+  </xs:complexType>
+  <!-- rectangle the positions are in twips -->
+  <xs:complexType name="rcType">
+    <xs:attributeGroup ref="rcDesc" />
+  </xs:complexType>
+  <!-- The shape of the irregular object. The position are in twips. -->
+  <!--   It describe a pizzabox. It means there are any rectangle each bottom of rectangle 
+	       have to equal with the top of the next rectangle and each rectangle 
+	       have to overlap the next rectangle horizontaly -->
+  <xs:complexType name="shapeType">
+    <xs:sequence>
+      <xs:element name="rect" type="rcType" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+  <!-- This describe the dorpCap properth of a paragraph. 
+	       It doesn't contains any text but say the number of character in the dropCap, 
+	       the size of dropCap in line and where is the DropCap. -->
+  <xs:complexType name="dropCapType">
+    <xs:attribute name="type">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="inMargin" /> <!-- The DropCap is out of text -->
+          <xs:enumeration value="dropped" /> <!-- The DropCap drop out texts -->
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
+    <xs:attribute name="numChars" type="xs:int" default="1" /> <!-- Number of characters in DropCap -->
+    <xs:attribute name="numLines" type="xs:int" /> <!-- Size of DropCap in lines. The size of DropCap equal with height of numLines lines -->
+  </xs:complexType>
+  <!-- This describe the bullet and numbering properties of a paragraph. 
+	       It doesn'n contain any text but contains the number of character in the bullet. -->
+  <xs:complexType name="bulletType" mixed="true">
+    <xs:attribute name="type" type="bulletTypeType" /> <!-- "bulleted" or "ordered" bullet -->
+    <xs:attribute name="value" type="bulletValueType" /> <!-- It describe the bullet symbol it it is a "bulleted" bulet -->
+    <xs:attribute name="numChars" type="xs:positiveInteger" /> <!-- Number of character in bullet -->
+  </xs:complexType>
+  <!-- This describe a tab appearance. It contains position alignement and leaderChar -->
+  <!--   A paragraph contains some tab pozition (Described by "tabType".) and some tab character. This type specifies the position of the character after the tab character -->
+  <xs:complexType name="tabType">
+    <xs:attribute name="alignment" type="alignmentType" />
+    <xs:attribute name="position" type="distanceType" />
+    <xs:attribute name="leaderChar" type="characterType" /> <!-- The filling character between the caracter before tab character and character after tab character -->
+  </xs:complexType>
+  <!-- This describe the layout of a table -->
+  <!--  A table consist of a gridTable and cells. 
+	        The gridTable describe the number of row, the number of column and the sizes of these.
+	      A cell can cover more than one row and/or column 
+       The vertical position of the first column grid equal with the left side of the container (column, dd, frame) plus the left indent of the table.
+         The vertical position of the next column grid equal with the first column grid position plus the first value in the <gridCol>
+       The horizontal positon of the first row grid equal with the top side of the container plus the space before of the table. 
+         The horizontal position of the next row grid equal with the first row grid position plus the first value in the <gridRow>-->
+  <xs:complexType name="gridTableType">
+    <xs:sequence>
+      <xs:element name="gridCol" type="xs:int" minOccurs="1" maxOccurs="unbounded" /> <!-- The widths of columns in twips. Each value is a distance between two grid. -->
+      <xs:element name="gridRow" type="xs:int" minOccurs="1" maxOccurs="unbounded" /> <!-- The widths of rows in twips. Each value is a distance between two grid. -->
+    </xs:sequence>
+  </xs:complexType>
+  <!--										-->
+  <!--										-->
+  <!-- Here are the page description objects: -->
+  <!--									    -->
+  <!-- <source> describe the image what was recognized. 
+	       These need for the connection between the position of the object and the original image. -->
+  <xs:complexType name="sourceType">
+    <xs:attribute name="file" type="xs:string" /> <!-- The path of the original image -->
+    <xs:attribute name="dpix" type="xs:int" /> <!-- The horizontal dpi of the original image -->
+    <xs:attribute name="dpiy" type="xs:int" /> <!-- The vertical dpi of the original image -->
+    <xs:attribute name="sizex" type="distanceType" /> <!-- The original width of the image in twips -->
+    <xs:attribute name="sizey" type="distanceType" /> <!-- The original height of the image in twips-->
+    <xs:attribute name="orientation" type="orientationType" default="0" /> <!-- The rotation of the original imaga. -->
+    <xs:attribute name="skew" type="xs:int" default="0" /> <!-- The slant of the original image.  -->
+  </xs:complexType>
+  <!-- <theoreticalPage> describes the ideal page.				-->
+  <!-- With the offsets you can write the     -->
+  <!-- difference between the real and the	-->
+  <!-- theoratical one.						-->
+  <xs:complexType name="theoreticalPageType">
+    <xs:attribute name="size" type="pageSizeType" use="required" /> <!-- The name of the page size -->
+    <xs:attribute name="marginLeft" type="distanceType" use="required" /> <!-- The left margin in twips. The distance between flow text end the left edge of page -->
+    <xs:attribute name="marginTop" type="distanceType" use="required" /> <!-- The top margin in twips. The distance between flow text end the top edge of page -->
+    <xs:attribute name="marginRight" type="distanceType" use="required" /> <!-- The right margin in twips. The distance between flow text end the right edge of page -->
+    <xs:attribute name="marginBottom" type="distanceType" use="required" /> <!-- The bottom margin in twips. The distance between flow text end the bottom edge of page -->
+    <xs:attribute name="offsetX" type="distanceType" use="optional" /> <!-- The horizontal displacement in twips to get the ideal place of the body on the page -->
+    <xs:attribute name="offsetY" type="distanceType" use="optional" /> <!-- The vertical displacement in twips to get the ideal place of the body on the page -->
+    <xs:attribute name="width" type="distanceType" use="optional" /> <!-- Width of the ideal page in twips -->
+    <xs:attribute name="height" type="distanceType" use="optional" /> <!-- Height of the ideal page in twips -->
+  </xs:complexType>
+  <!-- <summary> contains some informational data. Title, author, ... -->
+  <xs:complexType name="summaryType">
+    <xs:sequence>
+      <xs:element name="comment" type="xs:string" minOccurs="0" maxOccurs="1" />
+    </xs:sequence>
+    <xs:attribute name="title" type="xs:string" use="optional" />
+    <xs:attribute name="subject" type="xs:string" use="optional" />
+    <xs:attribute name="author" type="xs:string" use="optional" />
+    <xs:attribute name="company" type="xs:string" use="optional" />
+  </xs:complexType>
+  <!-- <description> describes the page attribute and the original image of page -->
+  <xs:complexType name="pageDescType">
+    <xs:sequence>
+      <xs:element name="source" type="sourceType" />
+      <xs:element name="theoreticalPage" type="theoreticalPageType" minOccurs="0" />
+      <xs:element name="language" type="languageType" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attribute name="backColor" type="colorType" default="defaultForeground" /> <!-- The background color of the page -->
+    <xs:attribute name="textDirection" type="textDirectionType" default="left2right" /> <!-- The main directions of text lines on the page -->
+  </xs:complexType>
+  <!-- <styleTable> contains styles what can contain paragraph and font attributes -->
+  <xs:complexType name="styleTableType">
+    <xs:sequence>
+      <xs:element name="style" type="styleType" minOccurs="1" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+  <!-- This describe a style. It contains paragaph and font attributes -->
+  <xs:complexType name="styleType">
+    <xs:group ref="paraAttribGroup" />
+    <xs:attribute name="styleID" type="xs:ID" use="required" /> <!-- This is a unique identifier for the style. It is used by the paragraph or other to refer a style -->
+    <xs:attributeGroup ref="paraDesc" />
+  </xs:complexType>
+  <!--										-->
+  <!--										-->
+  <!-- Here is the main tree of the objects:	-->
+  <!--										-->
+  <!-- <rulerline> is a line with attribute and anchor -->
+  <xs:complexType name="rulerType">
+    <xs:attributeGroup ref="rcDesc" /> <!-- Bounding Rectangle of the line -->
+    <xs:attributeGroup ref="lineDesc" /> <!-- The appearance of the line -->
+    <xs:attributeGroup ref="anchorDesc" /> <!-- It specifies connecting object (<para>, <picture>, <table>)-->
+  </xs:complexType>
+  <!-- <ch> charactertype -->
+  <!-- mixed as it contains char data -->
+  <!-- rcDesc is mandatory, but is ignored within <alt> as the chars inside -->
+  <!-- inherit their (common) boundingbox info from <alt>. -->
+  <!-- NOTE: a charType _can_ contain more than one letter. it should be thought of -->
+  <!-- as a unit with a bounding box -->
+  <!-- The xml doesn't contains <ch> always. You have to switch to write it. -->
+  <xs:complexType name="charType" mixed="true">
+    <xs:attribute name="optionalHyphen" type="xs:boolean" default="0" />
+    <xs:attribute name="conf" type="xs:int" default="0" /> <!-- The confidence of the character, see kernelApi.h LETTER::err field -->
+    <xs:attributeGroup ref="rcDesc" />
+  </xs:complexType>
+  <!-- <alt> a sequence of alternative characters -->
+  <!--   The xml doesn't contains <alt> always, it appears when the <ch> visible. You have to switch to write it. -->
+  <!--   It connected to the previous <ch> -->
+  <xs:complexType name="altType">
+    <xs:sequence>
+      <xs:element name="ch" type="charType" minOccurs="1" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attributeGroup ref="rcDesc" />
+  </xs:complexType>
+  <!-- <nl> can be mark the new line. We don't use it after ln. -->
+  <xs:complexType name="nlType">
+    <xs:attribute name="orig" type="xs:boolean" default="true" /> <!-- This is an original end of line (end of line in the image). Not inserted by the editor. -->
+    <xs:attribute name="force" type="xs:boolean" default="true" /> <!-- The next character have to be in the next line. -->
+  </xs:complexType>
+  <!-- We put <tab> in place of tabulator -->
+  <xs:complexType name="tabPositionType">
+    <xs:attribute name="position" type="distanceType" /> <!-- The original position of this tabulator -->
+    <xs:attribute name="leader" type="xs:int" /> <!-- The filling character -->
+  </xs:complexType>
+  <!-- We put <space> in place of space. We use it usually between <wd> -->
+  <xs:complexType name="spaceType">
+    <xs:attribute name="width" type="distanceType" />
+  </xs:complexType>
+  <!-- <run> a sequence of characters sharing font, formatting, language or other(?) attributes -->
+  <!--   The text inside it have the same formatting attribute. -->
+  <xs:complexType name="runType" mixed="true">
+    <xs:sequence>
+      <xs:group ref="borderGroup" />
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="ch" type="charType" />
+        <xs:element name="alt" type="altType" />
+        <xs:element name="run" type="runType" />
+        <xs:element name="wd" type="wordType" />
+        <xs:element name="nl" type="nlType" />
+        <xs:element name="tab" type="tabPositionType" /> <!-- It represents tabulator in the text -->
+        <xs:element name="space" type="spaceType" /> <!-- It represents the space between words. -->
+        <xs:element name="link" type="linkType" />
+        <xs:element name="fieldCode" type="fieldCodeType" />
+        <xs:element name="formGroup" type="formGroupType" />
+        <xs:element name="inputLine" type="inputLineType" />
+        <xs:element name="checkBox" type="checkBoxType" />
+        <xs:element name="circleText" type="circleTextType" />
+        <xs:element name="fillGraphics" type="fillGraphicsType" />
+      </xs:choice>
+    </xs:sequence>
+    <xs:attributeGroup ref="fontDesc" />
+    <xs:attribute name="language" type="languageType" default="en" />
+    <xs:attributeGroup ref="backgroundAppearanceDesc" />
+  </xs:complexType>
+  <!-- <word> could mark the words. We mark all word or don't mark any word in a page . -->
+  <xs:complexType name="wordType" mixed="true">
+    <xs:sequence>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="ch" type="charType" />
+        <xs:element name="alt" type="altType" />
+        <xs:element name="run" type="runType" />
+        <xs:element name="link" type="linkType" />
+        <xs:element name="fieldCode" type="fieldCodeType" />
+        <xs:element name="formGroup" type="formGroupType" />
+        <xs:element name="inputLine" type="inputLineType" />
+        <xs:element name="checkBox" type="checkBoxType" />
+        <xs:element name="circleText" type="circleTextType" />
+        <xs:element name="nl" type="nlType" />
+        <xs:element name="tab" type="tabPositionType" />
+        <xs:element name="space" type="spaceType" />
+      </xs:choice>
+    </xs:sequence>
+    <xs:attributeGroup ref="rcDesc" />
+    <xs:attributeGroup ref="fontDesc" />
+    <xs:attribute name="continuityType" />
+  </xs:complexType>
+  <!-- <link> mark the links. It represents an URL -->
+  <xs:complexType name="linkType" mixed="true">
+    <xs:sequence>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="ch" type="charType" />
+        <xs:element name="alt" type="altType" />
+        <xs:element name="run" type="runType" />
+        <xs:element name="wd" type="wordType" />
+        <xs:element name="nl" type="nlType" />
+        <xs:element name="tab" type="tabPositionType" />
+        <xs:element name="space" type="spaceType" />
+      </xs:choice>
+    </xs:sequence>
+    <xs:attribute name="href" type="xs:anyURI" use="required" />
+  </xs:complexType>
+  <!-- <fieldCode> mark the fieldCode. We can handle two different field code only. (pageNumber, numberOfPages)-->
+  <xs:complexType name="fieldCodeType" mixed="true">
+    <xs:sequence>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="ch" type="charType" />
+        <xs:element name="alt" type="altType" />
+        <xs:element name="run" type="runType" />
+        <xs:element name="wd" type="wordType" />
+        <xs:element name="nl" type="nlType" />
+        <xs:element name="tab" type="tabPositionType" />
+        <xs:element name="space" type="spaceType" />
+      </xs:choice>
+    </xs:sequence>
+    <xs:attribute name="type" type="fieldCodeTypeType" use="required" />
+  </xs:complexType>
+  <!-- <formGroup> mark the complex input form field. -->
+  <xs:complexType name="formGroupType" mixed="true">
+    <xs:sequence>
+      <xs:group ref="borderGroup" />
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="ch" type="charType" />
+        <xs:element name="alt" type="altType" />
+        <xs:element name="run" type="runType" />
+        <xs:element name="wd" type="wordType" />
+        <xs:element name="nl" type="nlType" />
+        <xs:element name="tab" type="tabPositionType" />
+        <xs:element name="space" type="spaceType" />
+        <xs:element name="ln" type="lnType" />
+        <xs:element name="formGroup" type="formGroupType" />
+        <xs:element name="inputLine" type="inputLineType" />
+        <xs:element name="checkBox" type="checkBoxType" />
+        <xs:element name="circleText" type="circleTextType" />
+        <xs:element name="fillGraphics" type="fillGraphicsType" />
+        <xs:element name="rulerline" type="rulerType" />
+      </xs:choice>
+    </xs:sequence>
+    <xs:attributeGroup ref="rcDesc" />
+    <xs:attribute name="type" type="formGroupTypeType" />
+    <xs:attributeGroup ref="backgroundAppearanceDesc" />
+    <xs:attributeGroup ref="inputFormFieldDesc" />
+  </xs:complexType>
+  <!-- <inputLine> mark the input line form field. The user can fill it with a string. -->
+  <xs:complexType name="inputLineType" mixed="true">
+    <xs:sequence>
+      <xs:group ref="borderGroup" />
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="run" type="runType" />
+      </xs:choice>
+    </xs:sequence>
+    <xs:attributeGroup ref="rcDesc" />
+    <xs:attributeGroup ref="fontDesc" />
+    <xs:attributeGroup ref="backgroundAppearanceDesc" />
+    <xs:attributeGroup ref="inputFormFieldDesc" />
+    <xs:attribute name="nextForm" type="xs:IDREF" />
+  </xs:complexType>
+  <!-- <checkBox> is a checkBox input form field. -->
+  <xs:complexType name="checkBoxType" mixed="true">
+    <xs:sequence>
+      <xs:group ref="borderGroup" />
+    </xs:sequence>
+    <xs:attributeGroup ref="rcDesc" />
+    <xs:attributeGroup ref="fontDesc" />
+    <xs:attributeGroup ref="backgroundAppearanceDesc" />
+    <xs:attributeGroup ref="inputFormFieldDesc" />
+    <xs:attribute name="nextForm" type="xs:IDREF" />
+  </xs:complexType>
+  <!-- <circleText> is a text what can the user mark with a circle -->
+  <xs:complexType name="circleTextType" mixed="true">
+    <xs:sequence>
+      <xs:group ref="borderGroup" />
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="ch" type="charType" />
+        <xs:element name="alt" type="altType" />
+        <xs:element name="run" type="runType" />
+        <xs:element name="wd" type="wordType" />
+        <xs:element name="nl" type="nlType" />
+        <xs:element name="tab" type="tabPositionType" />
+        <xs:element name="space" type="spaceType" />
+      </xs:choice>
+    </xs:sequence>
+    <xs:attributeGroup ref="rcDesc" />
+    <xs:attributeGroup ref="fontDesc" />
+    <xs:attributeGroup ref="backgroundAppearanceDesc" />
+    <xs:attributeGroup ref="inputFormFieldDesc" />
+    <xs:attribute name="nextForm" type="xs:IDREF" />
+  </xs:complexType>
+  <!-- <fillGraphics> is a area where the user have to draw or write something -->
+  <xs:complexType name="fillGraphicsType" mixed="true">
+    <xs:sequence>
+      <xs:group ref="borderGroup" />
+    </xs:sequence>
+    <xs:attributeGroup ref="rcDesc" />
+    <xs:attributeGroup ref="backgroundAppearanceDesc" />
+    <xs:attributeGroup ref="inputFormFieldDesc" />
+  </xs:complexType>
+  <!-- <ln> is a physical text line may contain charTypes, runTypes and altTypes plus the text of the line itself -->
+  <xs:complexType name="lnType" mixed="true">
+    <xs:sequence>
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="ch" type="charType" />
+        <xs:element name="alt" type="altType" />
+        <xs:element name="run" type="runType" />
+        <xs:element name="wd" type="wordType" />
+        <xs:element name="nl" type="nlType" />
+        <xs:element name="tab" type="tabPositionType" />
+        <xs:element name="space" type="spaceType" />
+        <xs:element name="link" type="linkType" />
+        <xs:element name="fieldCode" type="fieldCodeType" />
+        <xs:element name="formGroup" type="formGroupType" />
+        <xs:element name="inputLine" type="inputLineType" />
+        <xs:element name="checkBox" type="checkBoxType" />
+        <xs:element name="circleText" type="circleTextType" />
+        <xs:element name="fillGraphics" type="fillGraphicsType" />
+      </xs:choice>
+    </xs:sequence>
+    <xs:attributeGroup ref="rcDesc" /> <!-- Bounding Rect of the line -->
+    <xs:attribute name="baseLine" type="xs:int" /> <!-- The horizontal position of the baseline in twips. Distance between baseline and the top edge of the page. Baseline is an imaginary line where the characters are sitting. -->
+    <xs:attributeGroup ref="fontDesc" />
+    <xs:attributeGroup ref="backgroundAppearanceDesc" />
+    <xs:attribute name="continuityType" />
+    <xs:attribute name="forcedEOF" type="xs:boolean" default="false" />
+  </xs:complexType>
+  <!-- <para> mark the paragraph -->
+  <xs:complexType name="paraType" mixed="true">
+    <xs:sequence>
+      <xs:group ref="paraAttribGroup" />
+      <xs:choice minOccurs="0" maxOccurs="unbounded">
+        <xs:element name="ln" type="lnType" />
+        <xs:element name="ch" type="charType" />
+        <xs:element name="alt" type="altType" />
+        <xs:element name="run" type="runType" />
+        <xs:element name="wd" type="wordType" />
+        <xs:element name="nl" type="nlType" />
+        <xs:element name="tab" type="tabPositionType" />
+        <xs:element name="space" type="spaceType" />
+        <xs:element name="link" type="linkType" />
+        <xs:element name="fieldCode" type="fieldCodeType" />
+        <xs:element name="formGroup" type="formGroupType" />
+        <xs:element name="inputLine" type="inputLineType" />
+        <xs:element name="checkBox" type="checkBoxType" />
+        <xs:element name="circleText" type="circleTextType" />
+        <xs:element name="fillGraphics" type="fillGraphicsType" />
+      </xs:choice>
+    </xs:sequence>
+    <xs:attributeGroup ref="paraDesc" />
+    <xs:attribute name="id" type="xs:ID" /> <!-- Unique Id of the paragraph. It is used by the anchor/@refTo. -->
+    <xs:attribute name="styleRef" type="xs:IDREF" /> <!-- It identifies a style. This have to equal style/@styleID -->
+    <xs:attribute name="linkTo" type="xs:IDREF" /> <!-- It identifies a paragraph. Paragraphs what are link together is one paragraph but technically we have to separate it. (e.g. These are on different column or page). This have to equal para/@id -->
+    <xs:attributeGroup ref="rcDesc" /> <!-- Bounding rect of the paragraph -->
+  </xs:complexType>
+  <!-- <picture> is a picture. -->
+	<xs:complexType name="picType">
+		<!-- In rectangular case we only use the attributes (l, t, r, b) without child shapes, 
+			while in irregular cases we use the shapes child elements to describe the shape, and 
+			using the attributes (l, t, r, b) to describe the bounding box. -->
+		<xs:sequence>
+			<xs:element name="shape" type="shapeType" minOccurs="0" maxOccurs="1" />
+		</xs:sequence>
+		<xs:attributeGroup ref="rcDesc" />
+		<xs:attribute name="id" type="xs:ID" />
+		<xs:attributeGroup ref="paralikeDesc" />
+		<xs:attribute name="file" type="xs:string" /> <!-- The path of the saved picture. -->
+	</xs:complexType>
+	<!-- <cell> is a cell in the table. It can be cover more than one grid. -->
+	<xs:complexType name="cellType">
+		<xs:sequence>
+			<xs:group ref="borderGroup" /> <!-- Border of the cell. -->
+			<xs:choice maxOccurs="unbounded">
+				<xs:element name="para" type="paraType" minOccurs="0" />
+				<xs:element name="picture" type="picType" minOccurs="0" />
+			</xs:choice>
+		</xs:sequence>
+		<xs:attribute name="gridColFrom" type="xs:int" use="required" /> <!-- The horizontal index of the column grid, where starts the cell. -->
+		<xs:attribute name="gridColTill" type="xs:int" use="required" /> <!-- The horizontal index of the column grid, where ends the cell. -->
+    <xs:attribute name="gridRowFrom" type="xs:int" use="required" /> <!-- The vertical index of the row grid, where starts the cell. -->
+    <xs:attribute name="gridRowTill" type="xs:int" use="required" /> <!-- The vertical index of the row grid, where ends the cell. -->
+		<xs:attributeGroup ref="backgroundAppearanceDesc" />
+		<xs:attribute name="alignment" type="alignmentType" /> <!-- Horizontal alignment of the containment in the cell -->
+		<xs:attribute name="verticalAlignment" type="verticalAlignmentType" /> <!-- Vertical alignment of the containment in the cell -->
+		<xs:attributeGroup ref="innerMarginDesc" /> <!-- The distance between cell border and text in cell.  -->
+	</xs:complexType>
+	<!-- <table> describe a table object. -->
+  <!--   A table consist of a gridTable and cells. 
+	         The gridTable describe the number of row, the number of column and the sizes of these.
+	       A cell can cover more than one row and/or column 
+           The vertical position of the first column grid equal with the left side of the container (column, dd, frame) plus the left indent of the table.
+           The vertical position of the next column grid equal with the first column grid position plus the first value in the <gridCol>
+           The horizontal positon of the first row grid equal with the top side of the container plus the space before of the table. 
+           The horizontal position of the next row grid equal with the first row grid position plus the first value in the <gridRow>-->
+  <xs:complexType name="tableType">
+		<xs:sequence>
+			<xs:group ref="borderGroup" /> <!-- Outside border of the table -->
+			<xs:element name="gridTable" type="gridTableType" minOccurs="1" maxOccurs="1" />
+			<xs:element name="cell" type="cellType" minOccurs="0" maxOccurs="unbounded" />
+		</xs:sequence>
+		<xs:attributeGroup ref="rcDesc" /> <!-- Bounding rect of the table -->
+		<xs:attribute name="id" type="xs:ID" />
+		<xs:attributeGroup ref="paralikeDesc" />
+	</xs:complexType>
+	<!-- <frame> hold togheter one or more paragraphlike (paragraph, picture, table) when these have the same border or background. -->
+	<xs:complexType name="frameType">
+		<xs:sequence>
+			<xs:group ref="borderGroup" />
+			<xs:choice maxOccurs="unbounded">
+				<xs:element name="para" type="paraType" minOccurs="0" />
+				<xs:element name="picture" type="picType" minOccurs="0" />
+				<xs:element name="table" type="tableType" minOccurs="0" />
+				<xs:element name="rulerline" type="rulerType" minOccurs="0" />
+			</xs:choice>
+		</xs:sequence>
+		<xs:attributeGroup ref="rcDesc" />
+		<xs:attributeGroup ref="backgroundAppearanceDesc" />
+		<xs:attribute name="language" type="languageType" default="en" />
+		<xs:attribute name="textDirection" type="textDirectionType" default="left2right" />
+	</xs:complexType>
+	<!-- <column> is a column of flowing text. -->
+	<xs:complexType name="columnType">
+		<xs:sequence>
+			<xs:group ref="borderGroup" />
+			<xs:element name="rightRulerLine" type="rulerType" minOccurs="0" maxOccurs="1" />
+			<xs:choice maxOccurs="unbounded">
+				<xs:element name="para" type="paraType" minOccurs="0" />
+				<xs:element name="picture" type="picType" minOccurs="0" />
+				<xs:element name="table" type="tableType" minOccurs="0" />
+				<xs:element name="frame" type="frameType" minOccurs="0" />
+				<xs:element name="rulerline" type="rulerType" minOccurs="0" />
+				<xs:element name="dd" type="ddType" minOccurs="0" />
+			</xs:choice>
+		</xs:sequence>
+		<xs:attributeGroup ref="rcDesc" />
+		<xs:attributeGroup ref="backgroundAppearanceDesc" />
+		<xs:attribute name="hasBreak" type="xs:boolean" default="false" /> <!-- The text in the next column have to be in a new column -->
+	</xs:complexType>
+	<!-- <section> is a part of document what contains flowing text (one or more columns) The text in the section haven't exact position, it depends on the text before -->
+	<xs:complexType name="sectionType">
+		<xs:sequence>
+			<xs:group ref="borderGroup" /> <!-- Border of the flowing text -->
+			<xs:element name="column" type="columnType" minOccurs="1" maxOccurs="unbounded" />
+		</xs:sequence>
+		<xs:attributeGroup ref="rcDesc" />
+		<xs:attribute name="language" type="languageType" default="en" />
+		<xs:attribute name="textDirection" type="textDirectionType" default="left2right" />
+	</xs:complexType>
+	<!-- <dd> is a fix object what can press out the flowing text. The position of it doesn't altering depending on the surroundings. -->
+	<xs:complexType name="ddType">
+		<xs:sequence>
+			<!-- In rectangular case we only use the attributes (l, t, r, b) without child shapes, 
+			    while in irregular cases we use the shapes child elements to describe the shape, and 
+			    using the attributes (l, t, r, b) to describe the bounding box. -->
+			<xs:element name="shape" type="shapeType" minOccurs="0" maxOccurs="1" />
+			<xs:group ref="borderGroup" />
+			<xs:choice maxOccurs="unbounded">
+				<xs:element name="para" type="paraType" minOccurs="0" />
+				<xs:element name="picture" type="picType" minOccurs="0" />
+				<xs:element name="table" type="tableType" minOccurs="0" />
+				<xs:element name="frame" type="frameType" minOccurs="0" />
+				<xs:element name="rulerline" type="rulerType" minOccurs="0" />
+				<xs:element name="dd" type="ddType" minOccurs="0" />
+				<xs:element name="section" type="sectionType" minOccurs="0" />
+			</xs:choice>
+		</xs:sequence>
+		<xs:attributeGroup ref="rcDesc" />
+		<xs:attributeGroup ref="backgroundAppearanceDesc" />
+		<xs:attributeGroup ref="anchorDesc" />
+		<xs:attributeGroup ref="distanceFromTextDesc" />
+		<xs:attribute name="language" type="languageType" default="en" />
+		<xs:attribute name="textDirection" type="textDirectionType" default="left2right" />
+	</xs:complexType>
+	<!-- <formZone> contains the form zone informatioin -->
+	<xs:complexType name="formZoneType">
+		<!-- In rectangular case we only use the attributes (l, t, r, b) without child shapes, 
+			while in irregular cases we use the shapes child elements to describe the shape, and 
+			using the attributes (l, t, r, b) to describe the bounding box. -->
+		<xs:sequence>
+			<xs:element name="shape" type="shapeType" minOccurs="0" maxOccurs="1" />
+			<xs:group ref="borderGroup" />
+			<xs:choice minOccurs="1" maxOccurs="unbounded">
+				<xs:element name="textZone" type="textZoneType" />
+				<xs:element name="pictureZone" type="pictureZoneType" />
+				<xs:element name="tableZone" type="tableZoneType" />
+				<xs:element name="formZone" type="formZoneType" />
+				<xs:element name="zone" type="zoneType" />
+				<xs:element name="rulerline" type="rulerType" minOccurs="0" />
+				<xs:element name="ln" type="lnType" />
+				<xs:element name="ch" type="charType" />
+				<xs:element name="alt" type="altType" />
+				<xs:element name="run" type="runType" />
+				<xs:element name="wd" type="wordType" />
+				<xs:element name="nl" type="nlType" />
+				<xs:element name="tab" type="tabPositionType" />
+				<xs:element name="space" type="spaceType" />
+				<xs:element name="link" type="linkType" />
+				<xs:element name="fieldCode" type="fieldCodeType" />
+				<xs:element name="formGroup" type="formGroupType" />
+				<xs:element name="inputLine" type="inputLineType" />
+				<xs:element name="checkBox" type="checkBoxType" />
+				<xs:element name="circleText" type="circleTextType" />
+				<xs:element name="fillGraphics" type="fillGraphicsType" />
+			</xs:choice>
+		</xs:sequence>
+		<xs:attributeGroup ref="rcDesc" />
+		<xs:attributeGroup ref="zoneDesc" />
+		<xs:attributeGroup ref="backgroundAppearanceDesc" />
+	</xs:complexType>
+	<!-- <cellZone> contains the cell informatioin -->
+	<xs:complexType name="cellZoneType">
+		<xs:sequence>
+			<xs:group ref="borderGroup" />
+			<xs:choice minOccurs="0" maxOccurs="unbounded">
+				<xs:element name="textZone" type="textZoneType" />
+				<xs:element name="pictureZone" type="pictureZoneType" />
+				<xs:element name="zone" type="zoneType" />
+				<xs:element name="rulerline" type="rulerType" minOccurs="0" />
+				<xs:element name="ln" type="lnType" />
+				<xs:element name="ch" type="charType" />
+				<xs:element name="alt" type="altType" />
+				<xs:element name="run" type="runType" />
+				<xs:element name="wd" type="wordType" />
+				<xs:element name="nl" type="nlType" />
+				<xs:element name="tab" type="tabPositionType" />
+				<xs:element name="space" type="spaceType" />
+				<xs:element name="link" type="linkType" />
+				<xs:element name="fieldCode" type="fieldCodeType" />
+				<xs:element name="formGroup" type="formGroupType" />
+				<xs:element name="inputLine" type="inputLineType" />
+				<xs:element name="checkBox" type="checkBoxType" />
+				<xs:element name="circleText" type="circleTextType" />
+				<xs:element name="fillGraphics" type="fillGraphicsType" />
+			</xs:choice>
+		</xs:sequence>
+		<xs:attribute name="gridColFrom" type="xs:int" use="required" />
+		<xs:attribute name="gridColTill" type="xs:int" use="required" />
+		<xs:attribute name="gridRowFrom" type="xs:int" use="required" />
+		<xs:attribute name="gridRowTill" type="xs:int" use="required" />
+		<xs:attributeGroup ref="rcDesc" />
+		<xs:attributeGroup ref="zoneDesc" />
+		<xs:attributeGroup ref="backgroundAppearanceDesc" />
+	</xs:complexType>
+	<!-- <tableZone> contains the table zone informatioin -->
+	<xs:complexType name="tableZoneType">
+		<xs:sequence>
+			<xs:group ref="borderGroup" />
+			<xs:element name="gridTable" type="gridTableType" minOccurs="1" maxOccurs="1" />
+			<xs:choice minOccurs="1" maxOccurs="unbounded">
+				<xs:element name="cellZone" type="cellZoneType" />
+			</xs:choice>
+		</xs:sequence>
+		<xs:attributeGroup ref="rcDesc" />
+		<xs:attributeGroup ref="zoneDesc" />
+		<xs:attributeGroup ref="backgroundAppearanceDesc" />
+	</xs:complexType>
+	<!-- <pictureZone> contains the picture zone informatioin -->
+	<xs:complexType name="pictureZoneType">
+		<!-- In rectangular case we only use the attributes (l, t, r, b) without child shapes, 
+			while in irregular cases we use the shapes child elements to describe the shape, and 
+			using the attributes (l, t, r, b) to describe the bounding box. -->
+		<xs:sequence>
+			<xs:element name="shape" type="shapeType" minOccurs="0" maxOccurs="1" />
+		</xs:sequence>
+		<xs:attributeGroup ref="rcDesc" />
+	</xs:complexType>
+	<!-- <textZone> contains the text zone informatioin -->
+	<xs:complexType name="textZoneType">
+		<!-- In rectangular case we only use the attributes (l, t, r, b) without child shapes, 
+			while in irregular cases we use the shapes child elements to describe the shape, and 
+			using the attributes (l, t, r, b) to describe the bounding box. -->
+		<xs:sequence>
+			<xs:element name="shape" type="shapeType" minOccurs="0" maxOccurs="1" />
+			<xs:group ref="borderGroup" />
+			<xs:choice minOccurs="1" maxOccurs="unbounded">
+				<xs:element name="ln" type="lnType" />
+				<xs:element name="ch" type="charType" />
+				<xs:element name="alt" type="altType" />
+				<xs:element name="run" type="runType" />
+				<xs:element name="wd" type="wordType" />
+				<xs:element name="nl" type="nlType" />
+				<xs:element name="tab" type="tabPositionType" />
+				<xs:element name="space" type="spaceType" />
+				<xs:element name="link" type="linkType" />
+				<xs:element name="fieldCode" type="fieldCodeType" />
+				<xs:element name="formGroup" type="formGroupType" />
+				<xs:element name="inputLine" type="inputLineType" />
+				<xs:element name="checkBox" type="checkBoxType" />
+				<xs:element name="circleText" type="circleTextType" />
+				<xs:element name="fillGraphics" type="fillGraphicsType" />
+			</xs:choice>
+		</xs:sequence>
+		<xs:attributeGroup ref="rcDesc" />
+		<xs:attributeGroup ref="zoneDesc" />
+		<xs:attributeGroup ref="backgroundAppearanceDesc" />
+	</xs:complexType>
+	<!-- <zone> contains the zone informatioin -->
+	<xs:complexType name="zoneType">
+		<xs:sequence>
+			<xs:group ref="borderGroup" />
+			<xs:choice minOccurs="0" maxOccurs="unbounded">
+				<xs:element name="textZone" type="textZoneType" />
+				<xs:element name="pictureZone" type="pictureZoneType" />
+				<xs:element name="tableZone" type="tableZoneType" />
+				<xs:element name="formZone" type="formZoneType" />
+				<xs:element name="zone" type="zoneType" />
+				<xs:element name="rulerline" type="rulerType" minOccurs="0" />
+			</xs:choice>
+		</xs:sequence>
+		<xs:attributeGroup ref="rcDesc" />
+		<xs:attributeGroup ref="zoneDesc" />
+		<xs:attributeGroup ref="backgroundAppearanceDesc" />
+	</xs:complexType>
+	<!-- <zones> contains the zone list -->
+	<xs:complexType name="zonesType">
+		<xs:sequence>
+			<xs:choice minOccurs="0" maxOccurs="unbounded">
+				<xs:element name="zone" type="zoneType" />
+				<xs:element name="textZone" type="textZoneType" />
+				<xs:element name="pictureZone" type="pictureZoneType" />
+				<xs:element name="tableZone" type="tableZoneType" />
+				<xs:element name="rulerline" type="rulerType" minOccurs="0" />
+			</xs:choice>
+		</xs:sequence>
+	</xs:complexType>
+	<!-- <header> contains the footer or header -->
+	<xs:complexType name="header_footerType">
+		<xs:sequence>
+			<xs:choice maxOccurs="unbounded">
+				<xs:element name="section" type="sectionType" />
+				<xs:element name="dd" type="ddType" minOccurs="0" maxOccurs="unbounded" />
+			</xs:choice>
+		</xs:sequence>
+	</xs:complexType>
+	<!-- <body> is the main part of page -->
+	<xs:complexType name="bodyType">
+		<xs:sequence>
+			<xs:group ref="borderGroup" /> <!-- Border of the page except header and footer -->
+			<xs:choice minOccurs="0" maxOccurs="unbounded">
+				<xs:element name="dd" type="ddType" />
+				<xs:element name="section" type="sectionType" />
+        <xs:element name="rulerline" type="rulerType" />
+			</xs:choice>
+		</xs:sequence>
+		<xs:attributeGroup ref="backgroundAppearanceDesc" />
+	</xs:complexType>
+	<!-- The <page> tag describe the page -->
+	<xs:complexType name="pageType">
+		<xs:sequence>
+			<xs:element name="description" type="pageDescType" minOccurs="1" />
+			<xs:element name="styleTable" type="styleTableType" minOccurs="0" maxOccurs="1" />
+			<xs:element name="header" type="header_footerType" minOccurs="0" maxOccurs="1" />
+			<xs:element name="body" type="bodyType" minOccurs="0" maxOccurs="1" />
+			<xs:element name="footer" type="header_footerType" minOccurs="0" maxOccurs="1" />
+			<!-- Used in case of DirectTXT -->
+			<xs:element name="zones" type="zonesType" minOccurs="0" maxOccurs="1" />
+		</xs:sequence>
+		<xs:attribute name="ocr-vers" type="xs:string" /> <!-- The name and version of the ocr packgage, what recognize this page -->
+		<xs:attribute name="app-vers" type="xs:string" /> <!-- The name and version of the application, what create this page -->
+	</xs:complexType>
+	<!--										-->
+	<!-- The <document> tag is the root object. It represents one or more page -->
+	<!--										-->
+	<xs:element name="document">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="summary" type="summaryType" minOccurs="0" maxOccurs="1" />
+				<xs:element name="page" type="pageType" minOccurs="1" maxOccurs="unbounded" />
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

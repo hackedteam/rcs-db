@@ -1,0 +1,441 @@
+set 3: Windows Esperant                        Non Standard Windows 3.1
+
+        162: [j^]
+        163: [S^]
+        164: [c^]
+        165: [J^]
+        167: [h^]
+        170: [uv]
+        176: [H^]
+        186: [Uv]
+        195: [C^]
+        207: [G^]
+        217: [s^]
+        223: [g^]
+
+set 1: Code Page 850                           Multilingual
+
+        155: [o/]
+
+        157: [O/]
+
+        169: [(R]       ; (R)
+
+        181: [A']
+        182: [A^]
+        183: [A`]
+        184: [(C]       ; (C)
+
+        189: S1 155
+        190: S1 157
+
+        198: [a~]
+        199: [A~]
+
+        208: [d/]
+        209: [D/]
+        210: [E^]
+        211: [E:]
+        212: [E`]
+
+        214: [I']
+        215: [I^]
+        216: [I:]
+
+        222: [I`]
+
+        224: [O']
+
+        226: [O^]
+        227: [O`]
+        228: [o~]
+        229: [O~]
+
+        231: [t)]
+        232: [T)]
+        233: [U']
+        234: [U^]
+        235: [U`]
+        236: [y']
+        237: [Y']
+
+        245: S1 21
+
+        249: -
+        250: S1 249
+
+
+set 1: Code Page 852                           Eastern Europe
+
+        133: [uo]
+        134: [c']
+        136: [l/]
+        138: [O"]
+        139: [o"]
+        141: [Z']
+        143: [C']
+        145: [L']
+        146: [l']
+        149: [Lv]
+        150: [lv]
+        151: [S']
+        152: [s']
+        155: [Tv]
+        156: [tv]
+        157: [L/]
+        158: -
+        159: [cv]
+        164: [A,]
+        165: [a,]
+        166: [Zv]
+        167: [zv]
+        168: [E,]
+        169: [e,]
+        170: -
+        171: [z']
+        172: [Cv]
+        173: [s,]
+        181: [A']
+        182: [A^]
+        183: [Ev]
+        184: [S,]
+        189: [Z*]
+        190: [z*]
+        198: [Av]
+        199: [av]
+        207: -
+        208: [d/]
+        209: [D/]
+        210: [Dv]
+        211: [E:]
+        212: [dv]
+        213: [Nv]
+        214: [I']
+        215: [I^]
+        216: [ev]
+        221: [T,]
+        222: [Uo]
+        224: [O']
+        226: [O^]
+        227: [N']
+        228: [n']
+        229: [nv]
+        230: [Sv]
+        231: [sv]
+        232: [R']
+        233: [U']
+        234: [r']
+        235: [U"]
+        236: [y']
+        237: [Y']
+        238: [t,]
+        239: -
+        240: -
+        241: -
+        242: -
+        243: -
+        244: -
+        245: S1 21              ; 
+        247: -
+        249: -
+        250: -
+        251: [u"]
+        252: [Rv]
+        253: [rv]
+
+
+set 1: Code Page 860                           Portugal
+
+        132: [a~]
+        134: [A']
+        137: [E^]
+        139: [I']
+        140: [O^]
+        142: [A~]
+        143: [A^]
+        145: [A`]
+        146: [E`]
+        148: [o~]
+        150: [U']
+        152: [I`]
+        153: [O~]
+        157: [U`]
+        159: [O']
+        169: [O`]
+
+
+set 1: Code Page 863                           Canadian-French
+
+        132: [A^]
+        134: -
+        141: -
+        142: [A`]
+        143: S1 21
+        145: [E`]
+        146: [E^]
+        148: [E:]
+        149: [I:]
+        152: -
+        153: [O^]
+        157: [U`]
+        158: [U^]
+        160: -
+        161: -
+        164: -
+        165: -
+        166: -
+        167: -
+        168: [I^]
+        173: -
+
+
+set 1: Code Page 865                           Nordic
+
+        155: [o/]
+        157: [O/]
+        175: -
+
+
+set 1: CWI Magyar                              Hungary
+
+        143 : [A']
+        141 : [I']
+        149 : [O']
+        167 : [O"]
+        151 : [U']
+        152 : [U"]
+        147 : [o"]
+        150 : [u"]
+
+
+set 1: Magyar Ventura                          Hungary
+
+        199: [A']
+        205: [I']
+        209: [O']
+        214: [U']
+        219: [o"]
+        220: [u"]
+        221: [O"]
+        222: [U"]
+
+
+set 1: IVKAM C-S                               Czech & Slovak
+
+        143: [A']
+
+        128: [Cv]
+        135: [cv]
+        133: [Dv]
+        131: [dv]
+        137: [Ev]
+        136: [ev]
+        141: [I']
+
+        138: [L']
+        139: [l']
+        156: [Lv]
+        140: [lv]
+        165: [Nv]
+        164: [nv]
+        149: [O']
+
+        167: [O^]
+
+        171: [R']
+        170: [r']
+        158: [Rv]
+        169: [rv]
+        155: [Sv]
+        168: [sv]
+        134: [Tv]
+        159: [tv]
+        151: [U']
+
+        166: [Uo]
+        150: [uo]
+        157: [Y']
+        152: [y']
+        146: [Zv]
+        145: [zv]
+
+        255: s1 21
+
+
+set 1: Mazowia Polish                          Poland
+
+        134: [a,]
+        143: [A,]
+        141: [c']
+        149: [C']
+        145: [e,]
+        144: [E,]
+        146: [l/]
+        156: [L/]
+        164: [n']
+        165: [N']
+        162: [o']
+        163: [O']
+        158: [s']
+        152: [S']
+        166: [z']
+        160: [Z']
+        167: [z*]
+        161: [Z*]
+
+set 1: Sloven & Croat                          7 bit
+
+        91:  [Sv]
+        123: [sv]
+        94:  [Cv]
+        126: [cv]
+        64:  [Zv]
+        96:  [zv]
+        92:  [D/]
+        124: [d/]
+        93:  [C']
+        125: [c']
+
+set 1: Turkish                                 Turkey
+
+        135: [c,]
+        128: [C,]
+        167: [gv]
+        166: [Gv]
+        141: [i ]
+        152: [I*]
+        148: [o:]
+        153: [O:]
+        159: [s,]
+        158: [S,]
+        129: [u:]
+        154: [U:]
+
+set 1: Icelandic                               Iceland
+
+        139: [D/]
+        140: [d/]
+        141: [T)]
+
+        144: [E']
+        145: [ae]
+        146: [Ae]
+
+        149: [t)]
+
+        151: [Y']
+        152: [y']
+
+        155: [o/]
+
+        157: [O/]
+
+        164: [A']
+        165: [I']
+        166: [O']
+        167: [U']
+
+
+set 1: Maltese                                 Malta 7 bit
+
+        91:  [g*]            ; [
+        92:  [c*]            ; \
+        93:  [h/]            ; ]
+
+        96:  [z*]            ; `
+
+        123: [G*]            ; {
+        124: [C*]            ; |
+        125: [H/]            ; }
+        126: [Z*]            ; ~
+
+set 1: Code Page 866                           Cyrillic
+        128: U0410           ; Cyrillic Capital Letter A
+        129: U0411           ; Cyrillic Capital Letter Be
+        130: U0412           ; Cyrillic Capital Letter Ve
+        131: U0413           ; Cyrillic Capital Letter Ghe
+        132: U0414           ; Cyrillic Capital Letter De
+        133: U0415           ; Cyrillic Capital Letter Ie
+        134: U0416           ; Cyrillic Capital Letter Zhe
+        135: U0417           ; Cyrillic Capital Letter Ze
+        136: U0418           ; Cyrillic Capital Letter I
+        137: U0419           ; Cyrillic Capital Letter Short I
+        138: U041a           ; Cyrillic Capital Letter Ka
+        139: U041b           ; Cyrillic Capital Letter El
+        140: U041c           ; Cyrillic Capital Letter Em
+        141: U041d           ; Cyrillic Capital Letter En
+        142: U041e           ; Cyrillic Capital Letter O
+        143: U041f           ; Cyrillic Capital Letter Pe
+        144: U0420           ; Cyrillic Capital Letter Er
+        145: U0421           ; Cyrillic Capital Letter Es
+        146: U0422           ; Cyrillic Capital Letter Te
+        147: U0423           ; Cyrillic Capital Letter U
+        148: U0424           ; Cyrillic Capital Letter Ef
+        149: U0425           ; Cyrillic Capital Letter Ha
+        150: U0426           ; Cyrillic Capital Letter Tse
+        151: U0427           ; Cyrillic Capital Letter Che
+        152: U0428           ; Cyrillic Capital Letter Sha
+        153: U0429           ; Cyrillic Capital Letter Shcha
+        154: U042a           ; Cyrillic Capital Letter Hard Sign
+        155: U042b           ; Cyrillic Capital Letter Yeru
+        156: U042c           ; Cyrillic Capital Letter Soft Sign
+        157: U042d           ; Cyrillic Capital Letter E
+        158: U042e           ; Cyrillic Capital Letter Yu
+        159: U042f           ; Cyrillic Capital Letter Ya
+        160: U0430           ; Cyrillic Small Letter A
+        161: U0431           ; Cyrillic Small Letter Be
+        162: U0432           ; Cyrillic Small Letter Ve
+        163: U0433           ; Cyrillic Small Letter Ghe
+        164: U0434           ; Cyrillic Small Letter De
+        165: U0435           ; Cyrillic Small Letter Ie
+        166: U0436           ; Cyrillic Small Letter Zhe
+        167: U0437           ; Cyrillic Small Letter Ze
+        168: U0438           ; Cyrillic Small Letter I
+        169: U0439           ; Cyrillic Small Letter Short I
+        170: U043a           ; Cyrillic Small Letter Ka
+        171: U043b           ; Cyrillic Small Letter El
+        172: U043c           ; Cyrillic Small Letter Em
+        173: U043d           ; Cyrillic Small Letter En
+        174: U043e           ; Cyrillic Small Letter O
+        175: U043f           ; Cyrillic Small Letter Pe
+
+        224: U0440           ; Cyrillic Small Letter Er
+        225: U0441           ; Cyrillic Small Letter Es
+        226: U0442           ; Cyrillic Small Letter Te
+        227: U0443           ; Cyrillic Small Letter U
+        228: U0444           ; Cyrillic Small Letter Ef
+        229: U0445           ; Cyrillic Small Letter Ha
+        230: U0446           ; Cyrillic Small Letter Tse
+        231: U0447           ; Cyrillic Small Letter Che
+        232: U0448           ; Cyrillic Small Letter Sha
+        233: U0449           ; Cyrillic Small Letter Shcha
+        234: U044a           ; Cyrillic Small Letter Hard Sign
+        235: U044b           ; Cyrillic Small Letter Yeru
+        236: U044c           ; Cyrillic Small Letter Soft Sign
+        237: U044d           ; Cyrillic Small Letter E
+        238: U044e           ; Cyrillic Small Letter Yu
+        239: U044f           ; Cyrillic Small Letter Ya
+        240: U0401           ; Cyrillic Capital Letter Io
+        241: U0451           ; Cyrillic Small Letter Io
+        242: U0404           ; Cyrillic Capital Letter Ukrainian Ie
+        243: U0454           ; Cyrillic Small Letter Ukrainian Ie
+        244: U0407           ; Cyrillic Capital Letter Yi
+        245: U0457           ; Cyrillic Small Letter Yi
+        246: U040e           ; Cyrillic Capital Letter Short U
+        247: U045e           ; Cyrillic Small Letter Short U
+
+set 1: OCR                                     Special CodePage
+                             ; Do not forget to add these characters
+                             ; to 'FilterPlus' or 'LanguagesPlus'
+        192: U2441           ; OCR Chair                OCR-A Symbol, [#)]
+        193: U2440           ; OCR Hook                 OCR-A Symbol, [$)]
+        194: U2445           ; OCR Bow Tie              OCR-A Symbol, [&)]
+        195: U2444           ; OCR Belt Buckle          OCR-A Symbol, [*)]
+        196: U2448           ; OCR Dash                 MICR Symbol,  [-)]
+        197: U2447           ; OCR Amount of Check      MICR Symbol,  [/)]
+        198: U2446           ; OCR Branch Bank          MICR Symbol,  [@)]
+        199: U2443           ; OCR Inverted Fork        OCR-A Symbol, [[)]
+        200: U244A           ; OCR Double Backslash     MICR Symbol,  [\)]
+        201: U2442           ; OCR Fork                 OCR-A Symbol, [])]
+        202: U2449           ; OCR Customer Acc. Num.   MICR Symbol,  [~)]
+

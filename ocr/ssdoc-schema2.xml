@@ -1,0 +1,187 @@
+<Schema xmlns="urn:schemas-microsoft-com:xml-data" xmlns:dt="urn:schemas-microsoft-com:datatypes">
+	<!-- Schema for representing OCR results in an extensible way.  Copyright 2001-2002 ScanSoft, Inc. -->
+	<!-- Attributes for a document -->
+	<AttributeType name="ssdoc-vers" dt:type="string"/>
+	<AttributeType name="ocr-vers" dt:type="string"/>
+	<!-- Top-level element, the document -->
+	<ElementType name="document" content="eltOnly">
+		<attribute type="ssdoc-vers" required="yes"/>
+		<attribute type="ocr-vers" required="yes"/>
+		<element type="page" minOccurs="0" maxOccurs="*"/>
+	</ElementType>
+	<!-- Attributes for a rectangle -->
+	<AttributeType name="l" dt:type="int"/>
+	<AttributeType name="t" dt:type="int"/>
+	<AttributeType name="r" dt:type="int"/>
+	<AttributeType name="b" dt:type="int"/>
+	<!-- Rectangle element used by many other elements -->
+	<ElementType name="rc" content="empty">
+		<attribute type="l" required="yes"/>
+		<attribute type="t" required="yes"/>
+		<attribute type="r" required="yes"/>
+		<attribute type="b" required="yes"/>
+	</ElementType>
+	<!-- Attributes for a page -->
+	<AttributeType name="width" dt:type="int"/>
+	<AttributeType name="height" dt:type="int"/>
+	<AttributeType name="x-res" dt:type="int"/>
+	<AttributeType name="y-res" dt:type="int"/>
+	<AttributeType name="bpp" dt:type="int"/>
+	<AttributeType name="orientation" dt:type="enumeration" dt:values="0 90 180 270"/>
+	<AttributeType name="skew" dt:type="int"/>
+	<AttributeType name="filename" dt:type="string"/>
+	<AttributeType name="code-page" dt:type="int"/>
+	<AttributeType name="language" dt:type="int"/>
+	<!-- The page -->
+	<ElementType name="page" content="eltOnly">
+		<attribute type="width" required="yes"/>
+		<attribute type="height" required="yes"/>
+		<attribute type="x-res" required="yes"/>
+		<attribute type="y-res" required="yes"/>
+		<attribute type="bpp" required="yes"/>
+		<attribute type="orientation" required="yes"/>
+		<attribute type="skew" required="yes"/>
+		<attribute type="filename"/>
+		<attribute type="code-page"/>
+		<attribute type="language"/>
+		<element type="zone" minOccurs="0" maxOccurs="*"/>
+		<element type="region" minOccurs="0" maxOccurs="*"/>
+	</ElementType>
+	<!-- Attributes for a zone -->
+	<AttributeType name="zone-type" dt:type="enumeration" dt:values="title column columns header footer ruling"/>
+	<AttributeType name="columns" dt:type="int"/>
+	<AttributeType name="col-width" dt:type="int"/>
+	<AttributeType name="col-space" dt:type="int"/>	
+	<!-- Zone element -->
+	<ElementType name="zone" content="eltOnly">
+		<attribute type="zone-type"/>
+		<attribute type="columns"/>
+		<attribute type="col-width"/>
+		<attribute type="col-space"/>
+		<element type="rc"/>
+		<element type="region" minOccurs="0" maxOccurs="*"/>
+	</ElementType>
+	<!-- Attributes for a region -->
+	<AttributeType name="reg-type" dt:type="enumeration" dt:values="horizontal vertical auto table graphic"/>
+	<AttributeType name="cols" dt:type="int"/>
+	<AttributeType name="rows" dt:type="int"/>
+	<!-- Region element -->
+	<ElementType name="region" content="eltOnly">
+		<attribute type="reg-type" required="yes"/>
+		<attribute type="rows"/>
+		<attribute type="cols"/>
+		<element type="rc"/>
+		<element type="column" minOccurs="0" maxOccurs="*"/>
+		<element type="row" minOccurs="0" maxOccurs="*"/>
+		<element type="paragraph" minOccurs="0" maxOccurs="*"/>
+	</ElementType>
+	<!-- Attributes for a column -->
+	<AttributeType name="col-left" dt:type="int"/>
+	<AttributeType name="col-right" dt:type="int"/>
+	<!-- Column element -->
+	<ElementType name="column" content="empty">
+		<attribute type="col-left"/>
+		<attribute type="col-right"/>
+	</ElementType>
+	<!-- Attributes for a row -->
+	<AttributeType name="row-top" dt:type="int"/>
+	<AttributeType name="row-bottom" dt:type="int"/>
+	<!-- Row element -->
+	<ElementType name="row" content="eltOnly">
+		<attribute type="row-top"/>
+		<attribute type="row-bottom"/>
+		<element type="cell" maxOccurs="*"/>
+	</ElementType>
+	<!-- Attributes for a cell -->
+	<AttributeType name="row-span" dt:type="int"/>
+	<AttributeType name="col-span" dt:type="int"/>
+	<AttributeType name="border-left" dt:type="int"/>
+	<AttributeType name="border-top" dt:type="int"/>
+	<AttributeType name="border-right" dt:type="int"/>
+	<AttributeType name="border-bottom" dt:type="int"/>
+	<!-- Cell element -->
+	<ElementType name="cell" content="eltOnly">
+		<attribute type="row-span"/>
+		<attribute type="col-span"/>
+		<attribute type="border-left"/>
+		<attribute type="border-top"/>
+		<attribute type="border-right"/>
+		<attribute type="border-bottom"/>
+		<element type="rc" minOccurs="0"/>
+		<element type="paragraph" minOccurs="0" maxOccurs="*"/>
+	</ElementType>
+	<!-- Attributes for a paragraph -->
+	<AttributeType name="para-type" dt:type="enumeration" dt:values="subtitle caption text text-cont cont-text cont-text-cont"/>
+	<AttributeType name="align" dt:type="enumeration" dt:values="left right centered justified"/>
+	<AttributeType name="right-indent" dt:type="int"/>
+	<AttributeType name="left-indent" dt:type="int"/>
+	<AttributeType name="start-indent" dt:type="int"/>
+	<AttributeType name="line-spacing" dt:type="int"/>
+	<AttributeType name="space-before" dt:type="int"/>
+	<AttributeType name="space-after" dt:type="int"/>
+	<!-- Paragraph element -->
+	<ElementType name="paragraph" content="eltOnly">
+		<attribute type="para-type"/>
+		<attribute type="align"/>
+		<attribute type="right-indent"/>
+		<attribute type="left-indent"/>
+		<attribute type="start-indent"/>
+		<attribute type="line-spacing"/>
+		<attribute type="space-before"/>
+		<attribute type="space-after"/>
+		<element type="ln" minOccurs="0" maxOccurs="*"/>
+	</ElementType>
+	<!-- Attributes for character -->
+	<AttributeType name="conf" dt:type="int"/>
+	<AttributeType name="questionable" dt:type="boolean"/>
+	<!-- font face -->
+	<AttributeType name="ff" dt:type="string"/>
+	<!-- font size -->
+	<AttributeType name="fs" dt:type="int"/>
+	<!-- bold italic underline dropcap superscript subscript rotate-inv horiz-inv -->
+	<AttributeType name="char-attr" dt:type="string"/>
+	<!-- Attributes for a line -->
+	<AttributeType name="baseline" dt:type="int"/>
+	<AttributeType name="line-size" dt:type="int"/>
+	<AttributeType name="char-height" dt:type="int"/>
+	<AttributeType name="char-width" dt:type="int"/>
+	<AttributeType name="last-line" dt:type="boolean"/>
+	<!-- Line element -->
+	<ElementType name="ln" content="eltOnly">
+		<attribute type="baseline"/>
+		<attribute type="line-size"/>
+		<attribute type="char-height"/>
+		<attribute type="char-width"/>
+		<attribute type="last-line"/>
+		<attribute type="ff"/>
+		<attribute type="fs"/>
+		<attribute type="char-attr"/>
+		<element type="wd" maxOccurs="*"/>
+		<!-- The line must contain words! -->
+	</ElementType>
+	<!-- Word element -->
+	<ElementType name="wd" content="mixed">
+		<attribute type="l" required="yes"/>
+		<attribute type="t" required="yes"/>
+		<attribute type="r" required="yes"/>
+		<attribute type="b" required="yes"/>
+		<attribute type="ff"/>
+		<attribute type="fs"/>
+		<attribute type="char-attr"/>
+		<attribute type="conf"/>
+		<attribute type="questionable"/>
+		<element type="ch" minOccurs="0" maxOccurs="*"/>
+	</ElementType>
+	<!-- Character element -->
+	<ElementType name="ch" content="mixed">
+		<attribute type="l" required="yes"/>
+		<attribute type="t" required="yes"/>
+		<attribute type="r" required="yes"/>
+		<attribute type="b" required="yes"/>
+		<attribute type="ff"/>
+		<attribute type="fs"/>
+		<attribute type="char-attr"/>
+		<attribute type="conf"/>
+		<attribute type="questionable"/>
+	</ElementType>
+</Schema>

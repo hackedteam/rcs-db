@@ -1,0 +1,284 @@
+Converters.Text.Audio.DllName = AudioConv.dlc
+Converters.Text.Audio.IdInDll = -1
+Converters.Text.Audio.DefaultOutputExtension = .wav
+Converters.Text.Audio.Title = Wav Audio
+
+Converters.Text.Html32.DllName = HTMLCnv.dlc
+Converters.Text.Html32.IdInDll = -2
+Converters.Text.Html32.DefaultOutputExtension = .htm
+Converters.Text.Html32.Title = HTML 3.2
+
+Converters.Text.Html40.DllName = HTMLCnv.dlc
+Converters.Text.Html40.IdInDll = -1
+Converters.Text.Html40.DefaultOutputExtension = .htm
+Converters.Text.Html40.Title = HTML 4.0
+
+Converters.Text.Excel2000.DllName = ExcelCnv.dlc
+Converters.Text.Excel2000.IdInDll = -1
+Converters.Text.Excel2000.DefaultOutputExtension = .xls
+Converters.Text.Excel2000.Title = Microsoft Excel 2003, XP
+Converters.Text.Excel2000.OutputMode = RFP
+
+Converters.Text.Excel97.DllName = ExcelCnv.dlc
+Converters.Text.Excel97.IdInDll = -1
+Converters.Text.Excel97.DefaultOutputExtension = .xls
+Converters.Text.Excel97.Title = Microsoft Excel 97
+Converters.Text.Excel97.OutputMode = RFP
+
+Converters.Text.Word2000.DllName = rtfconv.dlc
+Converters.Text.Word2000.IdInDll = -1
+Converters.Text.Word2000.Word2000OrHigher = TRUE
+Converters.Text.Word2000.DefaultOutputExtension = .doc
+Converters.Text.Word2000.Title = Microsoft Word 2000, XP
+
+Converters.Text.Kindle.DllName = rtfconv.dlc
+Converters.Text.Kindle.IdInDll = -1
+Converters.Text.Kindle.DefaultOutputExtension = .doc
+Converters.Text.Kindle.Title = Kindle Document
+Converters.Text.Kindle.Pictures = DPI72
+Converters.Text.Kindle.Picturecolor = Grayscale
+Converters.Text.Kindle.OutputMode = RFP
+
+Converters.Text.Word97.DllName = rtfconv.dlc
+Converters.Text.Word97.IdInDll = -1
+Converters.Text.Word97.DefaultOutputExtension = .doc
+Converters.Text.Word97.Title = Microsoft Word 97
+
+Converters.Text.RTF2000.DllName = rtfconv.dlc
+Converters.Text.RTF2000.IdInDll = -1
+Converters.Text.RTF2000.Word2000OrHigher = TRUE
+Converters.Text.RTF2000.DefaultOutputExtension = .rtf
+Converters.Text.RTF2000.Title = RTF Word 2000
+
+Converters.Text.RTF97.DllName = rtfconv.dlc
+Converters.Text.RTF97.IdInDll = -1
+Converters.Text.RTF97.DefaultOutputExtension = .rtf
+Converters.Text.RTF97.Title = RTF Word 97
+
+Converters.Text.RTF6.DllName = rtfconv.dlc
+Converters.Text.RTF6.IdInDll = -1
+Converters.Text.RTF6.Capabilities.IrregularPictures = FALSE
+Converters.Text.RTF6.DiffBoxBorders = FALSE
+Converters.Text.RTF6.NoTextbox = TRUE
+Converters.Text.RTF6.NoUncompressedPicture = FALSE
+Converters.Text.RTF6.DefaultOutputExtension = .rtf
+Converters.Text.RTF6.Title = RTF Word 6.0/95
+
+Converters.Text.PowerPoint97.DllName = rtfconv.dlc
+Converters.Text.PowerPoint97.IdInDll = -2
+Converters.Text.PowerPoint97.DefaultOutputExtension = .rtf
+Converters.Text.PowerPoint97.Title = Microsoft PowerPoint 97
+Converters.Text.PowerPoint97.Pictures = 0
+Converters.Text.PowerPoint97.PageSize = 0
+Converters.Text.PowerPoint97.PageMargins = 0
+Converters.Text.PowerPoint97.HeadersFooters = TabulatedForm
+Converters.Text.PowerPoint97.OutputMode = RFP
+
+Converters.Text.WordPad.DllName = rtfconv.dlc
+Converters.Text.WordPad.IdInDll = -2
+Converters.Text.WordPad.DefaultOutputExtension = .rtf
+Converters.Text.WordPad.Title = WordPad
+Converters.Text.WordPad.PageSize = 0
+Converters.Text.WordPad.PageMargins = 0
+Converters.Text.WordPad.HeadersFooters = TabulatedForm
+Converters.Text.WordPad.OutputMode = RFP
+
+Converters.Text.Publisher98.DllName = rtfconv.dlc
+Converters.Text.Publisher98.IdInDll = -3
+Converters.Text.Publisher98.DefaultOutputExtension = .rtf
+Converters.Text.Publisher98.Title = Microsoft Publisher 98
+Converters.Text.Publisher98.Pictures = 0
+Converters.Text.Publisher98.PageSize = 0
+Converters.Text.Publisher98.PageMargins = 0
+Converters.Text.Publisher98.HeadersFooters = TabulatedForm
+Converters.Text.Publisher98.OutputMode = RFP
+
+Converters.Text.WordPerfect10.DllName = wpcnv.dlc
+Converters.Text.WordPerfect10.IdInDll = -2
+Converters.Text.WordPerfect10.DefaultOutputExtension = .wpd
+Converters.Text.WordPerfect10.Title = WordPerfect 9, 10
+Converters.Text.WordPerfect10.OutputMode = TruePage
+
+Converters.Text.InfoPath.DllName = InfoPathConv.dlc
+Converters.Text.InfoPath.IdInDll = -1
+Converters.Text.InfoPath.DefaultOutputExtension = .xsn
+Converters.Text.InfoPath.Title = Microsoft InfoPath
+Converters.Text.InfoPath.OutputMode = TruePage
+
+Converters.Text.WordML.DllName = WordMLConv.dlc
+Converters.Text.WordML.IdInDll = -1
+Converters.Text.WordML.DefaultOutputExtension = .xml
+Converters.Text.WordML.Title = Microsoft Word WordML
+
+Converters.Text.Text.DllName = TxtConv.dlc
+Converters.Text.Text.IdInDll = -1
+Converters.Text.Text.DefaultOutputExtension = .txt
+Converters.Text.Text.Title = Text
+Converters.Text.Text.OutputMode = IgnoreAll
+Converters.Text.Text.CodePage = 5999
+Converters.Text.Text.UseStandardUnicodeFileHeader = 0
+
+Converters.Text.Csv.DllName = TxtConv.dlc
+Converters.Text.Csv.IdInDll = -2
+Converters.Text.Csv.DefaultOutputExtension = .csv
+Converters.Text.Csv.OutputMode = IgnoreAll
+Converters.Text.Csv.Title = Comma Separated Text
+Converters.Text.Csv.CodePage = 5999
+Converters.Text.Csv.UseStandardUnicodeFileHeader = 0
+
+Converters.Text.FormattedTxt.DllName = TxtConv.dlc
+Converters.Text.FormattedTxt.IdInDll = -3
+Converters.Text.FormattedTxt.DefaultOutputExtension = .txt
+Converters.Text.FormattedTxt.Title = Formatted Text
+Converters.Text.FormattedTxt.OutputMode = TruePage
+Converters.Text.FormattedTxt.NoPreRendering = 1
+Converters.Text.FormattedTxt.CodePage = 5999
+Converters.Text.FormattedTxt.UseStandardUnicodeFileHeader = 0
+Converters.Text.FormattedTxt.DetectTabs = 0
+
+Converters.Text.TextWithLinebreaks.DllName = TxtConv.dlc
+Converters.Text.TextWithLinebreaks.IdInDll = -1
+Converters.Text.TextWithLinebreaks.DefaultOutputExtension = .txt
+Converters.Text.TextWithLinebreaks.Title = Text with linebreaks
+Converters.Text.TextWithLinebreaks.OutputMode = IgnoreAll
+Converters.Text.TextWithLinebreaks.CodePage = 5999
+Converters.Text.TextWithLinebreaks.UseStandardUnicodeFileHeader = 0
+Converters.Text.TextWithLinebreaks.LineBreaks = 1
+
+Converters.Text.UText.DllName = TxtConv.dlc
+Converters.Text.UText.IdInDll = -1
+Converters.Text.UText.DefaultOutputExtension = .txt
+Converters.Text.UText.Title = Unicode Text
+Converters.Text.UText.OutputMode = IgnoreAll
+Converters.Text.UText.CodePage = 1
+Converters.Text.UText.UseStandardUnicodeFileHeader = 1
+
+Converters.Text.UCsv.DllName = TxtConv.dlc
+Converters.Text.UCsv.IdInDll = -2
+Converters.Text.UCsv.DefaultOutputExtension = .csv
+Converters.Text.UCsv.OutputMode = IgnoreAll
+Converters.Text.UCsv.Title = Unicode Comma Separated Text
+Converters.Text.UCsv.CodePage = 1
+Converters.Text.UCsv.UseStandardUnicodeFileHeader = 1
+
+Converters.Text.UFormattedTxt.DllName = TxtConv.dlc
+Converters.Text.UFormattedTxt.IdInDll = -3
+Converters.Text.UFormattedTxt.DefaultOutputExtension = .txt
+Converters.Text.UFormattedTxt.Title = Unicode Formatted Text
+Converters.Text.UFormattedTxt.OutputMode = TruePage
+Converters.Text.UFormattedTxt.NoPreRendering = 1
+Converters.Text.UFormattedTxt.CodePage = 1
+Converters.Text.UFormattedTxt.UseStandardUnicodeFileHeader = 1
+Converters.Text.UFormattedTxt.DetectTabs = 0
+
+Converters.Text.UTextWithLinebreaks.DllName = TxtConv.dlc
+Converters.Text.UTextWithLinebreaks.IdInDll = -1
+Converters.Text.UTextWithLinebreaks.DefaultOutputExtension = .txt
+Converters.Text.UTextWithLinebreaks.Title = Unicode Text with linebreaks
+Converters.Text.UTextWithLinebreaks.OutputMode = IgnoreAll
+Converters.Text.UTextWithLinebreaks.CodePage = 1
+Converters.Text.UTextWithLinebreaks.UseStandardUnicodeFileHeader = 1
+Converters.Text.UTextWithLinebreaks.LineBreaks = 1
+
+Converters.Text.eBook.DllName = eBookConv.dlc
+Converters.Text.eBook.IdInDll = -1
+Converters.Text.eBook.DefaultOutputExtension = .opf
+Converters.Text.eBook.Title = eBook
+Converters.Text.eBook.OutputMode = RFP
+Converters.Text.eBook.NeedCodePage = 1
+Converters.Text.eBook.CodePage = 1252
+Converters.Text.eBook.Styles = 0
+
+Converters.Text.MicrosoftReader.DllName = eBookConv.dlc
+Converters.Text.MicrosoftReader.IdInDll = -2
+Converters.Text.MicrosoftReader.DefaultOutputExtension = .lit
+Converters.Text.MicrosoftReader.Title = Microsoft Reader
+Converters.Text.MicrosoftReader.OutputMode = RFP
+Converters.Text.MicrosoftReader.Pictures = DPI72
+Converters.Text.MicrosoftReader.HeadersFooters = ConvertToOrdinaryText
+
+Converters.Text.XML.DllName = XMLConv.dlc
+Converters.Text.XML.IdInDll = -1
+Converters.Text.XML.DefaultOutputExtension = .xml
+Converters.Text.XML.Title = XML
+Converters.Text.XML.OutputMode = TruePage
+
+Converters.Text.RTF2000SWord.DllName = rtfconv.dlc
+Converters.Text.RTF2000SWord.IdInDll = -1
+Converters.Text.RTF2000SWord.Word2000OrHigher = TRUE
+Converters.Text.RTF2000SWord.DefaultOutputExtension = .rtf
+Converters.Text.RTF2000SWord.Title = RTF 2000 SuperWord
+Converters.Text.RTF2000SWord.Bookmarkineveryparagraph = 1
+
+Converters.Text.PDFImageOnText.DllName = PDFCnv.dlc
+Converters.Text.PDFImageOnText.IdInDll = -1
+Converters.Text.PDFImageOnText.DefaultOutputExtension = .pdf
+Converters.Text.PDFImageOnText.Title = PDF with image on text
+converters.text.PDFImageOnText.crossrefs = false
+converters.text.PDFImageOnText.AdditionalFonts = false
+converters.text.PDFImageOnText.ProcessingMode.PDFForms = false
+converters.text.PDFImageOnText.ProcessingMode.ShowBackgroundImage = true
+converters.text.PDFImageOnText.URLProps.URLHighlight = false
+converters.text.PDFImageOnText.ShowSubstitutes = false
+Converters.text.PDFImageOnText.Pictures = Original
+Converters.Text.PDFImageOnText.NeedILSetTaggedInfo = false
+Converters.Text.PDFImageOnText.NeedTaggedInfo = false
+
+Converters.Text.PDF.DllName = PDFCnv.dlc
+Converters.Text.PDF.IdInDll = -1
+Converters.Text.PDF.DefaultOutputExtension = .pdf
+Converters.Text.PDF.Title = PDF
+
+Converters.Text.PDFImageSubst.DllName = PDFCnv.dlc
+Converters.Text.PDFImageSubst.IdInDll = -1
+Converters.Text.PDFImageSubst.DefaultOutputExtension = .pdf
+Converters.Text.PDFImageSubst.Title = PDF with image substitutes
+Converters.Text.PDFImageSubst.ShowSubstitutes = true
+
+Converters.Text.PDFEdited.DllName = PDFCnv.dlc
+Converters.Text.PDFEdited.IdInDll = -2
+Converters.Text.PDFEdited.DefaultOutputExtension = .pdf
+Converters.Text.PDFEdited.Title = PDF - Edited
+
+Converters.Text.XPS.DllName = XPSConv.dlc
+Converters.Text.XPS.IdInDll = -1
+Converters.Text.XPS.DefaultOutputExtension = .xps
+Converters.Text.XPS.Title = XML Paper Specification
+
+Converters.Text.XPSsearchable.DllName = XPSConv.dlc
+Converters.Text.XPSsearchable.IdInDll = -2
+Converters.Text.XPSsearchable.DefaultOutputExtension = .xps
+Converters.Text.XPSsearchable.Title = XPSsearchable
+
+Converters.Text.DocX.DllName = DocXConv.dlc
+Converters.Text.DocX.IdInDll = -1
+Converters.Text.DocX.DefaultOutputExtension = .docx
+Converters.Text.DocX.Title = Microsoft Office Open XML Format Document
+Converters.Text.DocX.Word2000OrHigher = TRUE
+
+Converters.Text.XlsX.DllName = ExcelXCnv.dlc
+Converters.Text.XlsX.IdInDll = -1
+Converters.Text.XlsX.DefaultOutputExtension = .xlsx
+Converters.Text.XlsX.Title = Microsoft Excel 2007
+Converters.Text.XlsX.OutputMode = RFP
+
+Converters.Text.PptX.DllName = PptXConv.dlc
+Converters.Text.PptX.IdInDll = -1
+Converters.Text.PptX.DefaultOutputExtension = .pptx
+Converters.Text.PptX.Title = Microsoft PowerPoint 2007
+
+
+Converters.Clipboard.WordPerfect8.DllName = wpcnv.dlc
+Converters.Clipboard.WordPerfect8.IdInDll = -1
+Converters.Clipboard.WordPerfect8.DefaultOutputExtension = .wp8
+Converters.Clipboard.WordPerfect8.Title = WordPerfect 8
+Converters.Clipboard.WordPerfect8.OutputMode = TruePage
+Converters.Clipboard.WordPerfect8.Clipboard = true
+
+Converters.Clipboard.WordPerfect10.DllName = wpcnv.dlc
+Converters.Clipboard.WordPerfect10.IdInDll = -2
+Converters.Clipboard.WordPerfect10.DefaultOutputExtension = .wp9
+Converters.Clipboard.WordPerfect10.Title = WordPerfect 9, 10
+Converters.Clipboard.WordPerfect10.OutputMode = TruePage
+Converters.Clipboard.WordPerfect10.Clipboard = true
+
