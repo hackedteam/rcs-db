@@ -177,6 +177,29 @@ module DB
         link.le.should eq @entity3._id
         linkback.le.should eq @entity1._id
       end
+
+      context 'when the is already a links from the two entities' do
+        before do
+          LinkManager.instance.add_link(from: @entity2, to: @entity3, level: :manual, type: :peer, versus: :in, info: 'test2')
+        end
+
+        it 'should not leave orphan links' do
+          LinkManager.instance.move_links(from: @entity2, to: @entity3)
+          @entity1.reload
+          @entity2.reload
+          @entity3.reload
+
+          @entity3.links.size.should be 1
+          @entity2.links.size.should be 0
+          @entity1.links.size.should be 1
+
+          link = @entity1.links.first
+          linkback = @entity3.links.first
+
+          link.le.should eq @entity3._id
+          linkback.le.should eq @entity1._id
+        end
+      end
     end
 
     context 'given an entity with a handle' do

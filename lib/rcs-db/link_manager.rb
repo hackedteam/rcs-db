@@ -129,6 +129,9 @@ class LinkManager
 
     trace :info, "Moving links from '#{first_entity.name}' to '#{second_entity.name}'"
 
+    # delete the links between the 2 entities
+    del_link params
+
     # merge links
     first_entity.links.each do |link|
       # exclude links to the mergee
