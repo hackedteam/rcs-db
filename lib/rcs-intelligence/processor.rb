@@ -81,13 +81,13 @@ class Processor
     LicenseManager.instance.check :intelligence
   end
 
-  def self.compatible_entity_handle_types aggregate
-    if ['call', 'sms', 'mms'].include? aggregate.type
+  def self.compatible_entity_handle_types aggregate_type
+    if ['call', 'sms', 'mms'].include? aggregate_type
       ['phone']
-    elsif ['mail', 'gmail'].include? aggregate.type
+    elsif ['mail', 'gmail'].include? aggregate_type
       ['mail', 'gmail']
     else
-      [aggregate.type]
+      [aggregate_type]
     end
   end
 
@@ -95,7 +95,8 @@ class Processor
     # process the aggregate and link the entities
 
     # normalize the type to search for the correct account
-    type = compatible_entity_handle_types aggregate
+    aggregate_type = aggregate.type
+    type = compatible_entity_handle_types aggregate_type
 
     # search for existing entity with that account and link it (direct link)
     if (peer = Entity.same_path_of(entity).where("handles.handle" => aggregate.data['peer']).in("handles.type" => type).first)
@@ -108,17 +109,17 @@ class Processor
 
       trace :debug, "Checking if '#{entity.name}' and '#{e.name}' have common peer: #{aggregate.data['peer']} #{type}"
 
-      next unless Aggregate.collection_class(e.path.last).summary_include?(type.first, aggregate.data['peer'])
+      next unless Aggregate.collection_class(e.path.last).summary_include?(aggregate_type, aggregate.data['peer'])
 
       trace :debug, "Peer found, creating new entity... #{aggregate.data['peer']} #{type}"
 
       # create the new entity
-      name = Entity.name_from_handle(type.first, aggregate.data['peer'], e.path.last)
+      name = Entity.name_from_handle(aggregate_type, aggregate.data['peer'], e.path.last)
       name ||= aggregate.data['peer']
       ghost = Entity.create!(name: name, type: :person, level: :automatic, path: [entity.path.first])
 
       # the entities will be linked on callback
-      ghost.handles.create!(level: :automatic, type: type.first, handle: aggregate.data['peer'])
+      ghost.handles.create!(level: :automatic, type: aggregate_type, handle: aggregate.data['peer'])
     end
 
   end
