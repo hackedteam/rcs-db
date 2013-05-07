@@ -1,273 +1,281 @@
-require_relative '../helper'
+require 'spec_helper'
 require_db 'position/point'
 
 module RCS
 module DB
 
-class PointTest < Test::Unit::TestCase
+describe Point do
 
-  def test_init
+  it 'should have accessors' do
     point = Point.new
-    assert_equal point.time, point.start
-    assert_equal point.end, point.start
-    assert_equal 0.0, point.lat
-    assert_equal 0.0, point.lon
-    assert_equal Point::MIN_RADIUS, point.r
+    point.should respond_to :lat
+    point.should respond_to :lon
+    point.should respond_to :r
+    point.should respond_to :time
+    point.should respond_to :start
+    point.should respond_to :end
   end
 
-  def test_to_s
+  it 'should initialize to default values' do
+    point = Point.new
+    point.time.should eq point.start
+    point.end.should eq point.start
+    point.lat.should eq 0.0
+    point.lon.should eq 0.0
+    point.r.should be Point::MIN_RADIUS
+  end
+
+  it '#to_s should print with it' do
     time = Time.now
     a = Point.new({lat: 123, lon: 456, r: 10, time: time, start: time, end: time})
 
     output = a.to_s
     expected = "#{a.lat} #{a.lon} #{a.r} - #{a.time} (#{a.start} #{a.end})"
 
-    assert_equal expected, output
+    output.should eq expected
   end
 
-  def test_min_radius
+  it 'should have a minimum radius' do
     point = Point.new({r: 0})
-    assert_equal Point::MIN_RADIUS, point.r
+    point.r.should eq Point::MIN_RADIUS
 
     point = Point.new({r: -10})
-    assert_equal Point::MIN_RADIUS, point.r
+    point.r.should eq Point::MIN_RADIUS
   end
 
-  def test_init_values
+  it 'should initialize correctly' do
     now = Time.now
     expected = {lat: 45.12345, lon: 9.12345, r: 100, time: now}
     point = Point.new(expected)
-    assert_equal expected[:lat], point.lat
-    assert_equal expected[:lon], point.lon
-    assert_equal expected[:r], point.r
-    assert_equal expected[:time], point.time
+    point.lat.should eq expected[:lat]
+    point.lon.should eq expected[:lon]
+    point.r.should eq expected[:r]
+    point.time.should eq expected[:time]
   end
 
-  def test_same_point
+  it 'should detect identical points' do
     a = Point.new({lat: 123, lon: 456, r: 10, time: Time.now})
     b = Point.new({lat: 123, lon: 456, r: 10, time: Time.now})
     c = Point.new({lat: 123, lon: 789, r: 10, time: Time.now})
-    assert_true a.same_point? b
-    assert_true b.same_point? a
+    a.same_point?(b).should be true
+    b.same_point?(a).should be true
 
-    assert_false a.same_point? c
-    assert_false b.same_point? c
+    a.same_point?(c).should be false
+    b.same_point?(c).should be false
   end
 
-  def test_intersect_same
+  it 'should intersect the same point' do
     a = Point.new({lat: 0, lon: 0, r: 10})
     b = Point.new({lat: 0, lon: 0, r: 10})
-    assert_true a.intersect? b
+    a.intersect?(b).should be true
   end
 
-  def test_intersect_bigger
+  it 'should intersect bigger point' do
     a = Point.new({lat: 0, lon: 0, r: 10})
     b = Point.new({lat: 0, lon: 0, r: 50})
-    assert_true a.intersect? b
+    a.intersect?(b).should be true
   end
 
-  def test_intersect_true
+  it 'should intersect points that are intersecting' do
     a = Point.new({lat: 45.4765921521739, lon: 9.19198076086957, r: 35})
     b = Point.new({lat: 45.4768005, lon: 9.1917216, r: 5})
-    assert_true a.intersect? b
+    a.intersect?(b).should be true
 
     a = Point.new({lat: -45.4765921521739, lon: -9.19198076086957, r: 35})
     b = Point.new({lat: -45.4768005, lon: -9.1917216, r: 5})
-    assert_true a.intersect? b
+    a.intersect?(b).should be true
 
     a = Point.new({lat: 0, lon: 0, r: 1000})
     b = Point.new({lat: 0, lon: 0.01, r: 1000})
-    assert_true a.intersect? b
+    a.intersect?(b).should be true
   end
 
-  def test_intersect_near
+  it 'should intersect near points' do
     a = Point.new({lat: 45.5353563, lon: 9.5939346, r: 30})
     b = Point.new({lat: 45.5351362, lon: 9.5945033, r: 40})
     c = Point.new({lat: 45.5353538, lon: 9.5936141, r: 45})
-    assert_true a.intersect? b
-    assert_true b.intersect? c
-    assert_true c.intersect? a
+    a.intersect?(b).should be true
+    b.intersect?(c).should be true
+    c.intersect?(a).should be true
   end
 
-  def test_intersect_false
+  it 'should not intersect distant points' do
     a = Point.new({lat: 45.4765921521739, lon: 9.19198076086957, r: 35})
     b = Point.new({lat: 45.5354705, lon: 9.5936281, r: 40})
-    assert_false a.intersect? b
+    a.intersect?(b).should be false
 
     a = Point.new({lat: 0, lon: 0, r: 100})
     b = Point.new({lat: 1, lon: 1, r: 100})
-    assert_false a.intersect? b
-
+    a.intersect?(b).should be false
   end
 
-  def test_intersect_tangent
+  it 'should intersect tanget point' do
     # distance between two meridians
     meridians = (Point::EARTH_EQUATOR / 360 * 1000).to_i
 
     # the two circles are tangent each other
     a = Point.new({lat: 0, lon: 0, r: 10})
     b = Point.new({lat: 0, lon: 1, r: meridians - a.r})
-    assert_true a.intersect? b
+    a.intersect?(b).should be true
 
     # the two circles are tangent each other (111 meters of distance)
     a = Point.new({lat: 0, lon: 0, r: 10})
     b = Point.new({lat: 0, lon: 0.001, r: meridians/1000 - a.r})
-    assert_true a.intersect? b
+    a.intersect?(b).should be true
   end
 
-  def test_intersect_not_intersecting_but_close_enough
+  it 'should intersect not intersecting points but close enough' do
     # distance between two meridians
     meridians = (Point::EARTH_EQUATOR / 360 * 1000).to_i
 
     # the two circles does not intersect but we use approximation (INTERSECT_DELTA)
     a = Point.new({lat: 0, lon: 0, r: 10})
     b = Point.new({lat: 0, lon: 1, r: meridians - a.r - 10})
-    assert_true a.intersect? b
+    a.intersect?(b).should be true
 
     # the two circles does not intersect for 11 meters (111 meters of distance)  10%
     a = Point.new({lat: 0, lon: 0, r: 50})
     b = Point.new({lat: 0, lon: 0.001, r: 50})
-    assert_true a.intersect? b
+    a.intersect?(b).should be true
 
     # the two circles does not intersect for 21 meters (111 meters of distance)  19%
     a = Point.new({lat: 0, lon: 0, r: 50})
     b = Point.new({lat: 0, lon: 0.001, r: 40})
-    assert_true a.intersect? b
+    a.intersect?(b).should be true
 
     # the two circles does not intersect for 31 meters (111 meters of distance)  27%
     a = Point.new({lat: 0, lon: 0, r: 40})
     b = Point.new({lat: 0, lon: 0.001, r: 40})
-    assert_false a.intersect? b
+    a.intersect?(b).should be false
   end
 
-  def test_overlapped_same
+  it 'should check overlapped the same point' do
     a = Point.new({lat: 0, lon: 0, r: 10})
     b = Point.new({lat: 0, lon: 0, r: 10})
-    assert_true Point.overlapped? a, b
+    Point.overlapped?(a, b).should be true
   end
 
-  def test_overlapped_bigger
+  it 'should check overlapped bigger point' do
     a = Point.new({lat: 0, lon: 0, r: 10})
     b = Point.new({lat: 0, lon: 0, r: 100})
-    assert_true Point.overlapped? a, b
+    Point.overlapped?(a, b).should be true
   end
 
-  def test_overlapped
+  it 'should check overlapped point' do
     a = Point.new({lat: 0, lon: 0, r: 1500})
     b = Point.new({lat: 0, lon: 0.01, r: 10})
-    assert_true Point.overlapped? a, b
+    Point.overlapped?(a, b).should be true
   end
 
-  def test_overlap_same
+  it 'should overlap the same point' do
     a = Point.new({lat: 0, lon: 0, r: 10})
     b = Point.new({lat: 0, lon: 0, r: 10})
-    assert_true a.overlap? b
-    assert_true b.overlap? a
+    a.overlap?(b).should be true
+    b.overlap?(a).should be true
   end
 
-  def test_overlap_bigger
+  it 'should overlap larger point' do
     a = Point.new({lat: 0, lon: 0, r: 10})
     b = Point.new({lat: 0, lon: 0, r: 100})
-    assert_true b.overlap? a
-    assert_false a.overlap? b
+    b.overlap?(a).should be true
+    a.overlap?(b).should be false
   end
 
-  def test_overlap
+  it 'should overlap other point' do
     a = Point.new({lat: 0, lon: 0, r: 1500})
     b = Point.new({lat: 0, lon: 0.01, r: 10})
-    assert_true a.overlap? b
-    assert_false b.overlap? a
+    a.overlap?(b).should be true
+    b.overlap?(a).should be false
   end
 
-  def test_distance_meridians
+  it 'should calculate distance at the north pole' do
+    a = Point.new({lat: 90, lon: 0})
+    b = Point.new({lat: 90, lon: 45})
+    a.distance(b).should be 0
+  end
+
+  it 'should calculate distance at the south pole' do
+    a = Point.new({lat: -90, lon: 0})
+    b = Point.new({lat: -90, lon: 45})
+    a.distance(b).should be 0
+  end
+
+  it 'should calculate distance between two meridians' do
     # distance between two meridians
     meridians = (Point::EARTH_EQUATOR / 360 * 1000).to_i
     a = Point.new({lat: 0, lon: 0})
     b = Point.new({lat: 0, lon: 1})
-    assert_equal meridians, a.distance(b)
+    a.distance(b).should eq meridians
   end
 
-  def test_distance_north_pole
-    a = Point.new({lat: 90, lon: 0})
-    b = Point.new({lat: 90, lon: 45})
-    assert_equal 0, a.distance(b)
-  end
-
-  def test_distance_south_pole
-    a = Point.new({lat: -90, lon: 0})
-    b = Point.new({lat: -90, lon: 45})
-    assert_equal 0, a.distance(b)
-  end
-
-  def test_distance_parallels
+  it 'should calculate the distance between two parallels' do
     # distance between two parallels varies between 110.57 and 111.69 km
 
     # at the equator
     parallels = 110574
     a = Point.new({lat: 0, lon: 0})
     b = Point.new({lat: 1, lon: 0})
-    assert_equal parallels, a.distance(b)
+    a.distance(b).should eq parallels
 
     # at the pole
     parallels = 111693
     a = Point.new({lat: 89, lon: 0})
     b = Point.new({lat: 90, lon: 0})
-    assert_equal parallels, a.distance(b)
+    a.distance(b).should eq parallels
   end
 
-
-  def test_similar_overlap
+  it 'should detect similar points (overlapping)' do
     a = Point.new({lat: 0, lon: 0, r: 50})
     b = Point.new({lat: 0, lon: 0, r: 100})
-    assert_true a.similar_to? b
-    assert_true a.similar_to? a
+    a.similar_to?(b).should be true
+    a.similar_to?(a).should be true
   end
 
-  def test_similar_intersect
+  it 'should detect similar points (intersecting)' do
     a = Point.new({lat: 45.5353563, lon: 9.5939346, r: 30})
     b = Point.new({lat: 45.5351362, lon: 9.5945033, r: 40})
     c = Point.new({lat: 45.5353538, lon: 9.5936141, r: 45})
-    assert_true a.similar_to? b
-    assert_true b.similar_to? a
-    assert_true a.similar_to? c
-    assert_true c.similar_to? a
-    assert_true b.similar_to? c
-    assert_true c.similar_to? b
+    a.similar_to?(b).should be true
+    b.similar_to?(a).should be true
+    a.similar_to?(c).should be true
+    c.similar_to?(a).should be true
+    b.similar_to?(c).should be true
+    c.similar_to?(b).should be true
   end
 
-  def test_similar_intersecting_not_near
+  it 'should not detect as similar tanget points' do
     # distance between two meridians
     meridians = (Point::EARTH_EQUATOR / 360 * 1000).to_i
     # the two circles are tangent each other
     a = Point.new({lat: 0, lon: 0, r: meridians / 2})
     b = Point.new({lat: 0, lon: 1, r: meridians / 2})
-    assert_false a.similar_to? b
+    a.similar_to?(b).should be false
   end
 
-  def test_similar_not_intersecting
+  it 'should not detect as similar not intersecting points' do
     a = Point.new({lat: 0, lon: 0, r: 100})
     b = Point.new({lat: 1, lon: 1, r: 100})
-    assert_false a.similar_to? b
+    a.similar_to?(b).should be false
   end
 
-  def test_best_similar_overlap
+  it 'should extract the best similar point' do
     a = Point.new({lat: 0, lon: 0, r: 50})
     b = Point.new({lat: 0, lon: 0, r: 100})
-    assert_equal a, Point.best_similar(a, b)
+    Point.best_similar(a, b).should be a
   end
 
-  def test_best_similar_intersect
+  it 'should extract the best similar from intersecting points' do
     a = Point.new({lat: 45.5353563, lon: 9.5939346, r: 30})
     b = Point.new({lat: 45.5351362, lon: 9.5945033, r: 40})
     c = Point.new({lat: 45.5353538, lon: 9.5936141, r: 45})
-    assert_equal a, Point.best_similar(a, b)
-    assert_equal b, Point.best_similar(b, c)
-    assert_equal a, Point.best_similar(a, c)
+    Point.best_similar(a, b).should be a
+    Point.best_similar(b, c).should be b
+    Point.best_similar(a, c).should be a
 
-    assert_equal a, Point.best_similar(a, b, c)
+    Point.best_similar(a, b, c).should be a
   end
 
-  def test_best_similar_small_radius
+  it 'should extract the best similar from a group (with a very small point)' do
     a = Point.new({lat: 45.4768394, lon: 9.1919074, r: 15})
     b = Point.new({lat: 45.4765921521739, lon: 9.19198076086957, r: 35})
     c = Point.new({lat: 45.4768005, lon: 9.1917216, r: 5})
@@ -280,48 +288,48 @@ class PointTest < Test::Unit::TestCase
     expected = Point.new({lat: 45.4768005, lon: 9.1917216, r: Point::MINIMUM_SIMILAR_RADIUS})
     result = Point.best_similar(a, b, c, d, e, f, g)
 
-    assert_equal expected.lat, result.lat
-    assert_equal expected.lon, result.lon
-    assert_equal expected.r, result.r
+    result.lat.should eq expected.lat
+    result.lon.should eq expected.lon
+    result.r.should eq expected.r
   end
 
-  def test_best_similar_same_radius
+  it 'should extract the best similar (first in time) if they have same radius' do
     a = Point.new({lat: 45.4768394, lon: 9.1919074, r: 20, time: Time.now})
     b = Point.new({lat: 45.4768005, lon: 9.1917216, r: 20, time: Time.now + 1})
 
     # the first one (in time) must win
-    assert_equal a, Point.best_similar(a, b)
+    Point.best_similar(a, b).should be a
 
     # invert the time
     b.time -= 10
 
-    assert_equal b, Point.best_similar(a, b)
+    Point.best_similar(a, b).should be b
   end
 
-  def test_best_similar_not_intersecting
+  it 'should not extract best similar from not intersecting points' do
     a = Point.new({lat: 0, lon: 0, r: 100})
     b = Point.new({lat: 1, lon: 1, r: 100})
     c = Point.new({lat: 0, lon: 0.0001, r: 100})
-    assert_nil Point.best_similar(a, b)
-    assert_nil Point.best_similar(a, b, c)
+    Point.best_similar(a, b).should be_nil
+    Point.best_similar(a, b, c).should be_nil
   end
 
-  def test_near
+  it 'should detect near points' do
     a = Point.new({lat: 45.5353563, lon: 9.5939346, r: 30})
     b = Point.new({lat: 45.5351362, lon: 9.5945033, r: 40})
-    assert_true a.near?(b)
+    a.near?(b).should be true
 
     a = Point.new({lat: 45.4765921521739, lon: 9.19198076086957, r: 35})
     b = Point.new({lat: 45.4768005, lon: 9.1917216, r: 5})
-    assert_true a.near?(b)
+    a.near?(b).should be true
   end
 
-  def test_not_near
+  it 'should detect distant points' do
     meridians = Point::EARTH_EQUATOR / 360 * 1000
     meter = 1.0 / meridians
     a = Point.new({lat: 0, lon: 0, r: Point::NEAR_DISTANCE})
     b = Point.new({lat: 0, lon: meter * (Point::NEAR_DISTANCE + 50), r: Point::NEAR_DISTANCE})
-    assert_false a.near?(b)
+    a.near?(b).should be false
   end
 
 end
