@@ -14,7 +14,7 @@ class EntityController < RESTController
     require_auth_level :view_profiles
 
     mongoid_query do
-      fields = ["type", "level", "name", "desc", "path", "photos"]
+      fields = ["type", "level", "name", "desc", "path", "photos", 'position', 'position_attr']
       # TODO: don't send ghost entities
       #entities = ::Entity.in(user_ids: [@session.user[:_id]]).ne(level: :ghost).only(fields)
       entities = ::Entity.in(user_ids: [@session.user[:_id]]).only(fields)
