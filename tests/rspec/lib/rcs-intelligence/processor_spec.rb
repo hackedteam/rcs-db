@@ -22,6 +22,43 @@ describe Processor do
   end
 
 
+  describe '#process' do
+    target_name = 'atarget'
+    let! (:operation) { Item.create!(name: 'test-operation-x', _kind: 'operation', path: [], stat: ::Stat.new) }
+    let! (:target) { Item.create!(name: target_name, _kind: 'target', path: [operation.id], stat: ::Stat.new) }
+    let! (:entity) { Entity.where(name: target_name).first }
+
+    context 'the item is an aggregate' do
+      before do
+        aggregate_class = Aggregate.collection_class target.id
+        @aggregate = aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: 'sms', aid: 'agent_id', count: 1, data: {'peer' => 'harrenhal', 'versus' => :in})
+        @queued_item = AggregatorQueue.create! target_id: target.id, type: :aggregate, ident: @aggregate.id
+      end
+
+
+      it 'call #process_aggregate' do
+        described_class.should_receive(:process_aggregate).with(entity, @aggregate)
+        described_class.process @queued_item
+      end
+    end
+
+    context 'the item is an evidence' do
+      before do
+        # agent = Item.create! name: 'test-agent', _kind: 'agent', path: target.path+[target.id], stat: ::Stat.new
+        # @evidence = Evidence.collection_class(target.id).create! aid: agent.id, type: 'info'
+        # @queued_item = AggregatorQueue.create! target_id: target.id, type: :evidence, ident: @evidence.id
+      end
+
+
+      it 'call #process_evidence' do
+        pending
+        # described_class.should_receive(:process_evidence).with(entity, @evidence)
+        # described_class.process @queued_item
+      end
+    end
+  end
+
+
   describe '#run' do
     let(:queue_entry) { [:first_item, :second_item] }
 
