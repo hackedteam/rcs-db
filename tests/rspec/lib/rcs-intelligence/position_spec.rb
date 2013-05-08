@@ -59,11 +59,10 @@ module Intelligence
           end
 
           it 'should persist the changes' do
-            # described_class.save_last_position entity, evidence
-            # last_position_value = entity.last_position.dup
-            # entity.reload
-            # entity.last_position.should == last_position_value
-            pending
+            described_class.save_last_position entity, evidence
+            last_position_value = entity.last_position.dup
+            entity.reload
+            entity.last_position.should == last_position_value
           end
 
           it 'should contain the given latitude and longitude' do

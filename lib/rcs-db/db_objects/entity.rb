@@ -172,9 +172,15 @@ class Entity
     self.position_attr = {time: hash[:time], accuracy: hash[:accuracy]}
   end
 
-  def last_position
+  def latitude_and_longitude
     return unless self.position
-    {latitude: self.position.to_hsh[:y], longitude: self.position.to_hsh[:x], time: self.position_attr[:time], accuracy: self.position_attr[:accuracy]}
+    hsh = position.to_hsh
+    {latitude: hsh[:y], longitude: hsh[:x]}
+  end
+
+  def last_position
+    return unless latitude_and_longitude
+    latitude_and_longitude.merge position_attr.symbolize_keys
   end
 
   def self.check_intelligence_license
