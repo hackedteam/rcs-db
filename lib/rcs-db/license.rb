@@ -397,7 +397,7 @@ class LicenseManager
       if ::User.where(enabled: true).count > @limits[:users]
         trace :fatal, "LICENCE EXCEEDED: Number of users is greater than license file. Fixing..."
         # fix by disabling the last updated user
-        offending = ::User.first(conditions: {enabled: true}, sort: [[ :updated_at, :desc ]])
+        offending = ::User.where(enabled: true).order_by([[:updated_at, :desc]]).first
         offending[:enabled] = false
         trace :warn, "Disabling user '#{offending[:name]}'"
         offending.save
@@ -406,7 +406,7 @@ class LicenseManager
       if ::Collector.local.count > @limits[:collectors][:collectors]
         trace :fatal, "LICENCE EXCEEDED: Number of collector is greater than license file. Fixing..."
         # fix by deleting the collector
-        offending = ::Collector.first(conditions: {type: 'local'}, sort: [[ :updated_at, :desc ]])
+        offending = ::Collector.local.order_by([[:updated_at, :desc]]).first
         trace :warn, "Deleting collector '#{offending[:name]}' #{offending[:address]}"
         # clear the chain of (possible) anonymizers
         next_id = offending['next'][0]
@@ -424,7 +424,7 @@ class LicenseManager
       if ::Collector.remote.count > @limits[:collectors][:anonymizers]
         trace :fatal, "LICENCE EXCEEDED: Number of anonymizers is greater than license file. Fixing..."
         # fix by deleting the collector
-        offending = ::Collector.first(conditions: {type: 'remote'}, sort: [[ :updated_at, :desc ]])
+        offending = ::Collector.remte.order_by([[:updated_at, :desc]]).first
         trace :warn, "Deleting anonymizer '#{offending[:name]}' #{offending[:address]}"
         # clear the chain of (possible) anonymizers
         next_id = offending['next'][0]
@@ -443,7 +443,7 @@ class LicenseManager
       if ::Injector.count > @limits[:nia][0]
         trace :fatal, "LICENCE EXCEEDED: Number of injectors is greater than license file. Fixing..."
         # fix by deleting the injector
-        offending = ::Injector.first(sort: [[ :updated_at, :desc ]])
+        offending = ::Injector.order_by([[:updated_at, :desc]]).first
         trace :warn, "Deleting injector '#{offending[:name]}' #{offending[:address]}"
         offending.destroy
       end
@@ -451,7 +451,7 @@ class LicenseManager
       if ::Item.agents.where(type: 'desktop', status: 'open', demo: false, deleted: false).count > @limits[:agents][:desktop]
         trace :fatal, "LICENCE EXCEEDED: Number of agents(desktop) is greater than license file. Fixing..."
         # fix by queuing the last updated agent
-        offending = ::Item.first(conditions: {_kind: 'agent', type: 'desktop', status: 'open', demo: false}, sort: [[ :updated_at, :desc ]])
+        offending = ::Item.where(_kind: 'agent', type: 'desktop', status: 'open', demo: false).order_by([[:updated_at, :desc]]).first
         offending[:status] = 'queued'
         trace :warn, "Queuing agent '#{offending[:name]}' #{offending[:desc]}"
         offending.save
@@ -460,7 +460,7 @@ class LicenseManager
       if ::Item.agents.where(type: 'mobile', status: 'open', demo: false, deleted: false).count > @limits[:agents][:mobile]
         trace :fatal, "LICENCE EXCEEDED: Number of agents(mobile) is greater than license file. Fixing..."
         # fix by queuing the last updated agent
-        offending = ::Item.first(conditions: {_kind: 'agent', type: 'mobile', status: 'open', demo: false}, sort: [[ :updated_at, :desc ]])
+        offending = ::Item.where(_kind: 'agent', type: 'mobile', status: 'open', demo: false).order_by([[:updated_at, :desc]]).first
         offending[:status] = 'queued'
         trace :warn, "Queuing agent '#{offending[:name]}' #{offending[:desc]}"
         offending.save
@@ -469,7 +469,7 @@ class LicenseManager
       if ::Item.agents.where(status: 'open', demo: false, deleted: false).count > @limits[:agents][:total]
         trace :fatal, "LICENCE EXCEEDED: Number of agent(total) is greater than license file. Fixing..."
         # fix by queuing the last updated agent
-        offending = ::Item.first(conditions: {_kind: 'agent', status: 'open', demo: false}, sort: [[ :updated_at, :desc ]])
+        offending = ::Item.where(_kind: 'agent', status: 'open', demo: false).order_by([[:updated_at, :desc]]).first
         offending[:status] = 'queued'
         trace :warn, "Queuing agent '#{offending[:name]}' #{offending[:desc]}"
         offending.save
