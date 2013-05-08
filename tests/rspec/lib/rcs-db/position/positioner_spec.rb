@@ -352,7 +352,7 @@ describe Positioner do
     end
   end
 
-  context 'give an array of points witha big radius' do
+  context 'give an array of points with a big radius' do
     before do
       data =
       "2013-01-15 20:56:30 45.519874 9.590737 3500
@@ -387,6 +387,68 @@ describe Positioner do
       found.end.should eq Time.local(2013, 1, 15, 20, 59, 30)
     end
   end
+
+  context 'given two array of points' do
+    before do
+      # the STAY point is:
+      # 45.514992 9.5873462 10 (2013-01-15 07:37:43 - 2013-01-15 07:40:43)
+      data =
+      "2013-01-15 07:36:43 45.5149089 9.5880504 25
+      2013-01-15 07:36:43 45.515057 9.586814 3500
+      2013-01-15 07:37:43 45.5149920 9.5873462 10
+      2013-01-15 07:37:43 45.515057 9.586814 3500
+      2013-01-15 07:38:43 45.5149920 9.5873462 15"
+
+      @points1 = load_points(data)
+
+      data =
+      "2013-01-15 07:38:43 45.515057 9.586814 3500
+      2013-01-15 07:39:43 45.5148914 9.5873097 10
+      2013-01-15 07:39:43 45.515057 9.586814 3500
+      2013-01-15 07:40:43 45.5148914 9.5873097 10
+      2013-01-15 07:40:43 45.515057 9.586814 3500
+      2013-01-15 07:41:43 45.5147590 9.5821532 25"
+
+      @points2 = load_points(data)
+    end
+
+    it 'should dump the current status' do
+      positioner = Positioner.new
+      @points1.each do |point|
+        positioner.feed(point)
+      end
+
+      dump = positioner.dump
+      dup = Positioner.new_from_dump(dump)
+
+      # check that the value are identical
+      dup.instance_variables.each do |var|
+        dup.instance_variable_get(var).should eq positioner.instance_variable_get(var)
+      end
+    end
+
+    it 'should restart from previous status' do
+      # set it to 3 minutes to emit a point
+      positioner = Positioner.new(time: 3*60)
+      emitted = emit_staying(positioner, @points1)
+
+      dump = positioner.dump
+
+      positioner = Positioner.new_from_dump(dump)
+      emitted += emit_staying(positioner, @points2)
+
+      emitted.should_not be_empty
+      emitted.size.should be 1
+
+      found = emitted.first
+      found.lat.should eq 45.514992
+      found.lon.should eq 9.5873462
+      found.r.should be 10
+      found.start.should eq Time.local(2013, 1, 15, 7, 37, 43)
+      found.end.should eq Time.local(2013, 1, 15, 7, 40, 43)
+    end
+  end
+
 end
 
 end

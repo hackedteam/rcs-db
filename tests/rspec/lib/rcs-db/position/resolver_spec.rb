@@ -30,7 +30,7 @@ describe PositionResolver do
 
   before do
     PositionResolver.stub(:position_enabled?).and_return true
-    # this is a development key (used for test)
+    # this is a development key (used for test: 100 query each day)
     PositionResolver.stub(:google_api_key).and_return 'AIzaSyAmG3O2wuA9Hj2L5an-ofRndUwVSrqElLM'
 
     Frontend.stub(:proxy) do |method, proto, host, url, content, headers|

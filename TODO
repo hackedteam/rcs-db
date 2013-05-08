@@ -1,5 +1,4 @@
 
-
 TODO 9.0.0
 
     upgrade to ruby 1.9.3-p392 on windows
@@ -12,7 +11,7 @@ TODO 9.0.0
 
     accounts from outbound/inbound messages
 
-    if too many bakcups, take only the last entries
+    if too many backups in the archive, take only the last entries
 
     hash index for sharding
 

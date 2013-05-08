@@ -44,6 +44,14 @@ class Positioner
     @start = nil
   end
 
+  def dump
+    Marshal.dump(self)
+  end
+
+  def self.new_from_dump(status)
+    Marshal.load(status)
+  end
+
   def feed(point)
 
     unless @point_buffer.empty?
