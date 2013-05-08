@@ -20,6 +20,18 @@ class PositionResolver
 
   class << self
 
+    def position_enabled?
+      Config.instance.global['POSITION']
+    end
+
+    def google_api_key
+      # The api-key is linked to rcs.devel.map@gmail.com / rcs-devel0
+      api_key = Config.instance.global['GOOGLE_API_KEY']
+      #api_key ||= 'AIzaSyAmG3O2wuA9Hj2L5an-ofRndUwVSrqElLM'  # devel 100 a day
+      api_key ||= 'AIzaSyBcx6gdqEog-p0WSWnlrtdGKzPF98_HVEM'   # paid 125.000 requests
+      return api_key
+    end
+
     def get(params)
 
       trace :debug, "Positioning: resolving #{params.inspect}"
@@ -29,7 +41,7 @@ class PositionResolver
       begin
 
         # skip resolution on request
-        return {'location' => {}, 'address' => {}} unless Config.instance.global['POSITION']
+        return {'location' => {}, 'address' => {}} unless position_enabled?
 
         # check for cached values (to avoid too many external request)
         cached = get_cache params
@@ -85,13 +97,8 @@ class PositionResolver
 
     def get_google_geoposition(request)
       # https://developers.google.com/maps/documentation/business/geolocation/
-      # The api-key is linked to rcs.devel.map@gmail.com / rcs-devel0
-      #
-      api_key = Config.instance.global['GOOGLE_API_KEY']
-      #api_key ||= 'AIzaSyAmG3O2wuA9Hj2L5an-ofRndUwVSrqElLM'  # devel 100 a day
-      api_key ||= 'AIzaSyBcx6gdqEog-p0WSWnlrtdGKzPF98_HVEM'   # paid 125.000 requests
       Timeout::timeout(5) do
-        response = Frontend.proxy('POST', 'https', 'www.googleapis.com', "/geolocation/v1/geolocate?key=#{api_key}", request.to_json, {"Content-Type" => "application/json"})
+        response = Frontend.proxy('POST', 'https', 'www.googleapis.com', "/geolocation/v1/geolocate?key=#{google_api_key}", request.to_json, {"Content-Type" => "application/json"})
         response.kind_of? Net::HTTPSuccess or raise(response.body)
         resp = JSON.parse(response.body)
         raise('invalid response') unless resp['location']
