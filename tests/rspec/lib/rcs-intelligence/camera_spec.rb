@@ -7,14 +7,7 @@ module RCS
 module Intelligence
 
   describe Camera do
-    before do
-      turn_off_tracer
-      connect_mongoid
-      empty_test_db
-      Entity.any_instance.stub(:alert_new_entity).and_return nil
-    end
-
-    after { empty_test_db }
+    use_db
 
     let(:operation) { Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new) }
     let(:target) { Item.create!(name: 'test-target', _kind: 'target', path: [operation._id], stat: ::Stat.new) }

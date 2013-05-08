@@ -4,12 +4,7 @@ require_db 'link_manager'
 require_db 'grid'
 
 describe Entity do
-  before do
-    # connect and empty the db
-    connect_mongoid
-    empty_test_db
-    turn_off_tracer
-  end
+  use_db
 
   describe 'relations' do
   	it 'should embeds many Handles' do

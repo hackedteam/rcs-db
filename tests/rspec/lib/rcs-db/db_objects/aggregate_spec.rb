@@ -2,12 +2,10 @@ require 'spec_helper'
 require_db 'db_layer'
 
 describe Aggregate do
+  use_db
+
   before do
-    # connect and empty the db
-    connect_mongoid
     require_sharded_db
-    empty_test_db
-    turn_off_tracer
   end
 
   let (:aggregate_class) { Aggregate.collection_class('testtarget') }

@@ -33,10 +33,9 @@ describe Alert do
 
 
   context 'given an Alert with two Logs' do
-    before do
-      connect_mongoid
-      empty_test_db
+    use_db
 
+    before do
       @last_time = Time.now.to_i
       @alert = Alert.new last: @last_time
       @alertLogA, @alertLogB = AlertLog.new, AlertLog.new

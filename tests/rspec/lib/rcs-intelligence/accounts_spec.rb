@@ -7,15 +7,11 @@ module RCS
 module Intelligence
 
   describe Accounts do
+    use_db
+
     before do
-      turn_off_tracer
-      connect_mongoid
-      empty_test_db
-      Entity.any_instance.stub(:alert_new_entity).and_return nil
       EntityHandle.any_instance.stub(:check_intelligence_license).and_return true
     end
-
-    after { empty_test_db }
 
     let(:operation) { Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new) }
     let(:target) { Item.create!(name: 'test-target', _kind: 'target', path: [operation._id], stat: ::Stat.new) }
