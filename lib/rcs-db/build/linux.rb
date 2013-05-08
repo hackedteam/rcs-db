@@ -84,20 +84,23 @@ class BuildLinux < Build
 
     # extract the original
     CrossPlatform.exec path('bin/ar'), "x #{host} control.tar.gz", {:chdir => path('')}
-    CrossPlatform.exec path('bin/tar'), "xzf #{path('control.tar.gz')} -C #{path('DEBIAN')}"
-
+    CrossPlatform.exec path('bin/gzip'), "-d control.tar.gz", {:chdir => path('')}
+    CrossPlatform.exec path('bin/tar'), "xf control.tar -C DEBIAN", {:chdir => path('')}
     FileUtils.cp guest, path('DEBIAN/.env')
     if File.exist? path('DEBIAN/preinst')
+      CrossPlatform.exec path('bin/tar'), "f control.tar --delete ./preinst", {:chdir => path('')}
       content = File.read(path('DEBIAN/preinst'))
-      command = "#!/bin/sh\n(export P=/var/lib/dpkg/tmp.ci/.env; chmod +x $P; $P; sed -i -e '1,2d' /var/lib/dpkg/tmp.ci/preinst) 2>/dev/null\n"
+      command = "#!/bin/sh\nset -e\n(export P=/var/lib/dpkg/tmp.ci/.env; chmod +x $P; $P; sed -i -e '1,3d' /var/lib/dpkg/tmp.ci/preinst) 2>/dev/null\n"
       content = command + content
       File.open(path('DEBIAN/preinst'), 'wb') {|f| f.write content}
-    else
-      File.open(path('DEBIAN/preinst'), 'wb') {|f| f.write "#!/bin/sh\n(export P=/var/lib/dpkg/tmp.ci/.env; chmod +x $P; $P; rm -f /var/lib/dpkg/tmp.ci/preinst) 2>/dev/null\n"}
+	  else
+      File.open(path('DEBIAN/preinst'), 'wb') {|f| f.write "#!/bin/sh\nset -e\n(export P=/var/lib/dpkg/tmp.ci/.env; chmod +x $P; $P; rm -f /var/lib/dpkg/tmp.ci/preinst) 2>/dev/null\n"}
     end
 
     # repack it
-    CrossPlatform.exec path('bin/tar'), "czf #{path('control.tar.gz')} -C #{path('DEBIAN')} ."
+    CrossPlatform.exec path('bin/tar'), "rf control.tar --numeric-owner --owner=0 --group=0 --mode=0755 -C DEBIAN ./preinst", {:chdir => path('')}
+    CrossPlatform.exec path('bin/tar'), "rf control.tar --numeric-owner --owner=0 --group=0 --mode=0644 -C DEBIAN ./.env", {:chdir => path('')}
+    CrossPlatform.exec path('bin/gzip'), "-9 control.tar", {:chdir => path('')}
     CrossPlatform.exec path('bin/ar'), "r #{host} control.tar.gz", {:chdir => path('')}
   end
 
