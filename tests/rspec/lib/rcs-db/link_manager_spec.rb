@@ -26,7 +26,7 @@ module DB
       end
 
       it 'should not link an entity on itself' do
-        lambda {LinkManager.instance.add_link(from: @entity1, to: @entity1)}.should raise_error
+        expect { LinkManager.instance.add_link(from: @entity1, to: @entity1) }.to raise_error
       end
 
       it 'should link two entity without parameters' do

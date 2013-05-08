@@ -88,7 +88,7 @@ describe Entity do
       photo_id.should be_a String
 
       @entity.del_photo(photo_id)
-      lambda {RCS::DB::GridFS.get(photo_id, @entity.path.last.to_s)}.should raise_error Mongo::GridFileNotFound
+      expect { RCS::DB::GridFS.get(photo_id, @entity.path.last.to_s) }.to raise_error Mongo::GridFileNotFound
     end
 
   end
@@ -127,7 +127,7 @@ describe Entity do
       @entity.add_photo("This_is_a_binary_photo")
       photo_id = @entity.photos.first
       @entity.destroy
-      lambda {RCS::DB::GridFS.get(photo_id, @entity.path.last.to_s)}.should raise_error Mongo::GridFileNotFound
+      expect { RCS::DB::GridFS.get(photo_id, @entity.path.last.to_s) }.to raise_error Mongo::GridFileNotFound
     end
   end
 
@@ -147,9 +147,9 @@ describe Entity do
     end
 
     it 'should not merge incompatible entities' do
-      lambda {@first_entity.merge(@position_entity)}.should raise_error
-      lambda {@second_entity.merge(@first_entity)}.should raise_error
-      lambda {@position_entity.merge(@second_entity)}.should raise_error
+      expect { @first_entity.merge(@position_entity) }.to raise_error
+      expect { @second_entity.merge(@first_entity) }.to raise_error
+      expect { @position_entity.merge(@second_entity) }.to raise_error
     end
 
     it 'should merge handles' do
@@ -404,7 +404,7 @@ describe EntityLink do
 
       it 'should delete the linked ghost entity' do
         RCS::DB::LinkManager.instance.del_link(from: @entity, to: @ghost)
-        lambda {Entity.find(@ghost._id)}.should raise_error Mongoid::Errors::DocumentNotFound
+        expect { Entity.find(@ghost._id) }.to raise_error Mongoid::Errors::DocumentNotFound
       end
 
       it 'should not delete the entity if not ghost' do
