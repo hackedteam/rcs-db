@@ -84,7 +84,7 @@ class LinkManager
       opposite_versus ||= (versus.eql? :in) ? :out : :in
     end
 
-    first_link = first_entity.links.where(le: second_entity._id).first
+    first_link = first_entity.links.connected_to(second_entity).first
     first_link.set_level(params[:level]) if params[:level]
     first_link.set_type(params[:type]) if params[:type]
     first_link.versus = versus if versus
@@ -92,7 +92,7 @@ class LinkManager
     first_link.rel = params[:rel] if params[:rel]
     first_link.save
 
-    second_link = second_entity.links.where(le: first_entity._id).first
+    second_link = second_entity.links.connected_to(first_entity).first
     second_link.set_level(params[:level]) if params[:level]
     second_link.set_type(params[:type]) if params[:type]
     second_link.versus = opposite_versus if opposite_versus
@@ -113,8 +113,8 @@ class LinkManager
 
     trace :info, "Deleting links between '#{first_entity.name}' and '#{second_entity.name}'"
 
-    first_entity.links.where(le: second_entity._id).destroy_all
-    second_entity.links.where(le: first_entity._id).destroy_all
+    first_entity.links.connected_to(second_entity).destroy_all
+    second_entity.links.connected_to(first_entity).destroy_all
 
     # notify the links
     push_modify_entity first_entity
@@ -140,8 +140,8 @@ class LinkManager
       second_entity.links << link
 
       # update the backlink
-      other = ::Entity.find(link.le)
-      backlink = other.links.where(le: first_entity._id).first
+      other = link.linked_entity
+      backlink = other.links.connected_to(first_entity).first
       backlink.le = second_entity._id
       backlink.save
     end

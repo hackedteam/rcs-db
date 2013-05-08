@@ -3,8 +3,18 @@ require_db 'db_layer'
 require_db 'link_manager'
 require_db 'grid'
 
+def stub_alerting_and_lincence_check
+  Entity.any_instance.stub(:alert_new_entity).and_return nil
+  Entity.any_instance.stub(:push_new_entity).and_return nil
+  RCS::DB::LinkManager.any_instance.stub(:alert_new_link).and_return nil
+  RCS::DB::LinkManager.any_instance.stub(:push_modify_entity).and_return nil
+  EntityHandle.any_instance.stub(:check_intelligence_license).and_return true
+end
+
 describe Entity do
   use_db
+
+  before { stub_alerting_and_lincence_check }
 
   describe 'relations' do
   	it 'should embeds many Handles' do
@@ -22,9 +32,6 @@ describe Entity do
 
 
   context 'creating a new target' do
-    before do
-      Entity.any_instance.stub(:alert_new_entity).and_return nil
-    end
 
     it 'should create a new entity' do
       target = Item.create!(name: 'test-target', _kind: 'target', path: [], stat: ::Stat.new)
@@ -48,8 +55,6 @@ describe Entity do
 
   context 'modifying an entity' do
     before do
-      Entity.any_instance.stub(:alert_new_entity).and_return nil
-
       @operation = Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new)
       @entity = Entity.create!(name: 'test-entity', type: :person, path: [@operation._id])
     end
@@ -95,11 +100,6 @@ describe Entity do
 
   context 'destroying an entity' do
     before do
-      Entity.any_instance.stub(:alert_new_entity).and_return nil
-      Entity.any_instance.stub(:push_new_entity).and_return nil
-      RCS::DB::LinkManager.any_instance.stub(:alert_new_link).and_return nil
-      RCS::DB::LinkManager.any_instance.stub(:push_modify_entity).and_return nil
-
       @operation = Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new)
       @entity = Entity.create!(name: 'test-entity', type: :person, path: [@operation._id])
     end
@@ -133,12 +133,6 @@ describe Entity do
 
   context 'merging two entities' do
     before do
-      Entity.any_instance.stub(:alert_new_entity).and_return nil
-      Entity.any_instance.stub(:push_new_entity).and_return nil
-      RCS::DB::LinkManager.any_instance.stub(:alert_new_link).and_return nil
-      RCS::DB::LinkManager.any_instance.stub(:push_modify_entity).and_return nil
-      EntityHandle.any_instance.stub(:check_intelligence_license).and_return true
-
       @operation = Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new)
       @first_entity = Entity.create!(name: 'entity-1', type: :target, path: [@operation._id], level: :automatic)
       @second_entity = Entity.create!(name: 'entity-2', type: :person, path: [@operation._id], level: :automatic)
@@ -188,8 +182,8 @@ describe Entity do
       @first_entity.links.size.should be 2
 
       # check if the links point to the right entities
-      @first_entity.links.where(le: @third_entity._id).count.should be 1
-      @first_entity.links.where(le: @position_entity._id).count.should be 1
+      @first_entity.links.connected_to(@third_entity).count.should be 1
+      @first_entity.links.connected_to(@position_entity).count.should be 1
 
       # check the backlinks
       @third_entity.links.size.should be 1
@@ -202,10 +196,6 @@ describe Entity do
 
   context 'searching for peer' do
     before do
-      Entity.any_instance.stub(:alert_new_entity).and_return nil
-      Entity.any_instance.stub(:push_new_entity).and_return nil
-      EntityHandle.any_instance.stub(:check_intelligence_license).and_return true
-
       @target = Item.create!(name: 'test-target', _kind: 'target', path: [], stat: ::Stat.new)
       @entity = Entity.any_in({path: [@target._id]}).first
     end
@@ -227,9 +217,6 @@ describe Entity do
     end
 
     context 'with intelligence enabled' do
-      before do
-        Entity.stub(:check_intelligence_license).and_return true
-      end
 
       it 'should return name from handle (from entities)' do
         @entity.handles.create!(type: 'phone', handle: 'test')
@@ -258,12 +245,6 @@ describe Entity do
 
   context 'given a ghost entity' do
     before do
-      Entity.any_instance.stub(:alert_new_entity).and_return nil
-      Entity.any_instance.stub(:push_new_entity).and_return nil
-      RCS::DB::LinkManager.any_instance.stub(:alert_new_link).and_return nil
-      RCS::DB::LinkManager.any_instance.stub(:push_modify_entity).and_return nil
-      EntityHandle.any_instance.stub(:check_intelligence_license).and_return true
-
       @operation = Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new)
       @first_entity = Entity.create!(name: 'entity-1', type: :target, path: [@operation._id], level: :automatic)
       @second_entity = Entity.create!(name: 'entity-2', type: :person, path: [@operation._id], level: :automatic)
@@ -291,11 +272,6 @@ describe Entity do
 
   context 'creating a new handle' do
     before do
-      Entity.any_instance.stub(:alert_new_entity).and_return nil
-      Entity.any_instance.stub(:push_new_entity).and_return nil
-      RCS::DB::LinkManager.any_instance.stub(:alert_new_link).and_return nil
-      EntityHandle.any_instance.stub(:check_intelligence_license).and_return true
-
       @operation = Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new)
       @entity = Entity.create!(name: 'entity', type: :target, path: [@operation._id], level: :automatic)
       @identity = Entity.create!(name: 'entity-same', type: :person, path: [@operation._id], level: :automatic)
@@ -321,6 +297,40 @@ describe Entity do
 end
 
 describe EntityLink do
+
+  use_db
+
+  before { stub_alerting_and_lincence_check }
+
+  describe '#connected_to' do
+
+    let (:operation) { Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new) }
+
+    let (:first_entity) { Entity.create! path: [operation.id] }
+
+    let (:second_entity) { Entity.create! path: [operation.id] }
+
+    it 'is a mongoid scope' do
+      first_entity.links.connected_to(second_entity).kind_of?(Mongoid::Criteria).should be_true
+    end
+
+    context 'when there is a link' do
+
+      before { RCS::DB::LinkManager.instance.add_link from: first_entity, to: second_entity }
+
+      it 'returns the entities connected with the given one' do
+        first_entity.links.connected_to(second_entity).count.should == 1
+      end
+    end
+
+    context 'when there are no links' do
+
+      it 'returns nothing' do
+        first_entity.links.connected_to(second_entity).count.should be_zero
+      end
+    end
+  end
+
   context 'setting parameters' do
     it 'should not duplicate info' do
       subject.add_info "a"
@@ -385,17 +395,6 @@ describe EntityLink do
 
     context 'deleting a ghost link' do
       before do
-        # connect and empty the db
-        connect_mongoid
-        empty_test_db
-        turn_off_tracer
-
-        Entity.any_instance.stub(:alert_new_entity).and_return nil
-        Entity.any_instance.stub(:push_new_entity).and_return nil
-        RCS::DB::LinkManager.any_instance.stub(:alert_new_link).and_return nil
-        RCS::DB::LinkManager.any_instance.stub(:push_modify_entity).and_return nil
-        EntityHandle.any_instance.stub(:check_intelligence_license).and_return true
-
         @operation = Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new)
         @entity = Entity.create!(name: 'entity', type: :target, path: [@operation._id], level: :automatic)
         @ghost = Entity.create!(name: 'ghost', type: :person, path: [@operation._id], level: :ghost)

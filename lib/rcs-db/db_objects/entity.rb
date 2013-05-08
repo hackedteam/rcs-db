@@ -105,7 +105,7 @@ class Entity
     self.links.each do |link|
       oe = link.linked_entity
       next unless oe
-      oe.links.where(le: self._id).destroy_all
+      oe.links.connected_to(self).destroy_all
       push_modify_entity oe
     end
 
@@ -286,8 +286,8 @@ class Entity
   end
 
   def linked_to? another_entity
-    link_to_another_entity = links.where(le: another_entity.id).first
-    link_to_this_entity = another_entity.links.where(le: id).first
+    link_to_another_entity = links.connected_to(another_entity).first
+    link_to_this_entity = another_entity.links.connected_to(self).first
 
     link_to_this_entity and link_to_another_entity
   end
@@ -338,6 +338,8 @@ class EntityLink
   include Mongoid::Document
 
   embedded_in :entity
+
+  scope :connected_to, lambda { |other_entity| where(le: other_entity.id) }
 
   # linked entity
   field :le, type: Moped::BSON::ObjectId
