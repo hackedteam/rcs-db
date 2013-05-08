@@ -173,7 +173,8 @@ class Entity
   end
 
   def last_position
-    return {latitude: self.position.to_hsh[:y], longitude: self.position.to_hsh[:x], time: self.position_attr[:time], accuracy: self.position_attr[:accuracy]}
+    return unless self.position
+    {latitude: self.position.to_hsh[:y], longitude: self.position.to_hsh[:x], time: self.position_attr[:time], accuracy: self.position_attr[:accuracy]}
   end
 
   def self.check_intelligence_license

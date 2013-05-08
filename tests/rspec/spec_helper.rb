@@ -81,3 +81,15 @@ end
 def turn_on_tracer
   Log4r::Logger.stub(:[]).and_return nil
 end
+
+def use_db
+  before(:all) { connect_mongoid}
+
+  before :each do
+    turn_off_tracer
+    empty_test_db
+    Entity.any_instance.stub(:alert_new_entity).and_return nil
+  end
+
+  after(:each) { empty_test_db }
+end
