@@ -39,11 +39,12 @@ module DB
         @entity1.links.size.should be 1
         @entity2.links.size.should be 1
 
+
         link = @entity1.links.first
         linkback = @entity2.links.first
 
-        link.le.should eq @entity2._id
-        linkback.le.should eq @entity1._id
+        link.linked_entity.should == @entity2
+        linkback.linked_entity.should == @entity1
 
         link.level.should be :automatic
         linkback.level.should be :automatic
@@ -171,11 +172,7 @@ module DB
         @entity2.links.size.should be 0
         @entity3.links.size.should be 1
 
-        link = @entity1.links.first
-        linkback = @entity3.links.first
-
-        link.le.should eq @entity3._id
-        linkback.le.should eq @entity1._id
+        @entity1.linked_to?(@entity3).should be_true
       end
 
       context 'when the is already a links from the two entities' do
@@ -193,11 +190,7 @@ module DB
           @entity2.links.size.should be 0
           @entity1.links.size.should be 1
 
-          link = @entity1.links.first
-          linkback = @entity3.links.first
-
-          link.le.should eq @entity3._id
-          linkback.le.should eq @entity1._id
+          @entity1.linked_to?(@entity3).should be_true
         end
       end
     end

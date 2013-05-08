@@ -193,9 +193,10 @@ describe Entity do
 
       # check the backlinks
       @third_entity.links.size.should be 1
-      @third_entity.links.first[:le].should eq @first_entity._id
+      @third_entity.links.first.linked_entity.should == @first_entity
+
       @position_entity.links.size.should be 1
-      @position_entity.links.first[:le].should eq @first_entity._id
+      @position_entity.links.first.linked_entity.should == @first_entity
     end
   end
 

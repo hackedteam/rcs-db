@@ -146,7 +146,7 @@ describe Processor do
           described_class.process_aggregate entity_b, aggregate
 
           entity_a.reload
-          entity_a.links.first.le == entity_b
+          entity_a.links.first.linked_entity == entity_b
         end
       end
 

@@ -103,7 +103,7 @@ class Entity
 
     # remove all the links in linked entities
     self.links.each do |link|
-      oe = ::Entity.find(link.le)
+      oe = link.linked_entity
       next unless oe
       oe.links.where(le: self._id).destroy_all
       push_modify_entity oe
@@ -263,8 +263,7 @@ class Entity
 
       # update all its link to automatic
       self.links.where(level: :ghost).each do |link|
-        le = Entity.find(link.le)
-        RCS::DB::LinkManager.instance.edit_link(from: self, to: le, level: :automatic)
+        RCS::DB::LinkManager.instance.edit_link(from: self, to: link.linked_entity, level: :automatic)
       end
     end
   end
