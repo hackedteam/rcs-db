@@ -36,6 +36,7 @@ class Point
     self.r = 0
     
     if params[:time]
+      raise "invalid time" unless params[:time].is_a? Time
       self.time = params[:time] 
       self.start = params[:time] 
     end
