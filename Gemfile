@@ -41,7 +41,6 @@ end
 group :development do
   gem "bundler", "> 1.0.0"
   gem 'rake'
-  gem 'test-unit'
   gem 'simplecov'
   gem 'rspec'
   gem 'pry'
