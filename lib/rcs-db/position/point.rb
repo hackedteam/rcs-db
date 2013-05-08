@@ -58,6 +58,11 @@ class Point
     self.lat == b.lat and self.lon == b.lon and self.r == b.r
   end
 
+  def ==(other)
+    self.class == other.class and self.lat == other.lat and self.lon == other.lon and self.r == other.r and self.time == other.time
+  end
+  alias_method :eql?, :==
+
 =begin
   # Haversine formula to calculate the distance between two coordinates
   def distance(point)

@@ -24,6 +24,7 @@ describe Point do
     point.lon.should eq 0.0
     point.r.should be Point::MIN_RADIUS
   end
+
   it 'should initialize correctly' do
     now = Time.now
     expected = {lat: 45.12345, lon: 9.12345, r: 100, time: now}
@@ -32,6 +33,14 @@ describe Point do
     point.lon.should eq expected[:lon]
     point.r.should eq expected[:r]
     point.time.should eq expected[:time]
+  end
+
+  it 'should be comparable with other points' do
+    now = Time.now
+    p1 = Point.new(lat: 45.12345, lon: 9.12345, r: 100, time: now)
+    p2 = Point.new(lat: 45.12345, lon: 9.12345, r: 100, time: now)
+
+    p1.should eq p2
   end
 
   it 'should not accept invalid time' do
@@ -56,7 +65,7 @@ describe Point do
     point.r.should eq Point::MIN_RADIUS
   end
 
-  it 'should detect identical points' do
+  it 'should detect identical points (with different time)' do
     a = Point.new({lat: 123, lon: 456, r: 10, time: Time.now})
     b = Point.new({lat: 123, lon: 456, r: 10, time: Time.now})
     c = Point.new({lat: 123, lon: 789, r: 10, time: Time.now})
