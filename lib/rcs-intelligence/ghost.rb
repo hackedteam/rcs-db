@@ -14,10 +14,10 @@ class Ghost
 
   class << self
 
-    def create_and_link_entity(entity, handle)
-      return unless handle.is_a? Array
+    def create_and_link_entity(entity, handle_array)
+      return unless handle_array.is_a? Array
 
-      name, type, handle = *handle
+      name, type, handle = *handle_array
 
       # search for entity
       ghost = Entity.same_path_of(entity).where("handles.type" => type, "handles.handle" => handle).first
