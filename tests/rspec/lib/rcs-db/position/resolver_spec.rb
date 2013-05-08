@@ -40,15 +40,22 @@ describe PositionResolver do
     turn_off_tracer
   end
 
+  it 'should not resove if resolving is not enabled' do
+    PositionResolver.stub(:position_enabled?).and_return false
+    PositionResolver.should_not_receive :get_cache
+    PositionResolver.get({})
+  end
+
   it 'should handle malformed request' do
     request = {}
     position = PositionResolver.get(request)
-    expected = {'location' => {}, 'address' => {}}
+    expected = {}
 
     position.should eq expected
   end
 
   it 'should use the cache to resolve' do
+    PositionResolver.should_not_receive :get_google_geocoding
     request = {'gpsPosition' => {"latitude" => 45.4774536, "longitude" => 9.1906932}}
     response = {'address' => {'text' => "Via Fatebenesorelle, 2-14, 20121 Milan, Italy"}}
     PositionResolver.put_cache(request, response)
@@ -59,15 +66,27 @@ describe PositionResolver do
   end
 
   it 'should not resolve local ip' do
+    PositionResolver.should_not_receive :get_geoip
+
     private_ips = ['192.168.1.1', '10.1.2.3', '172.20.20.1', '169.254.34.75', '127.3.4.5']
 
     private_ips.each do |ip|
       request = {'ipAddress' => {'ipv4' => ip}}
       position = PositionResolver.get(request)
-      expected = {'location' => {}, 'address' => {}}
+      expected = {}
 
       position.should eq expected
     end
+  end
+
+  it 'should not resolve malformed ip' do
+    PositionResolver.should_not_receive :get_geoip
+
+    request = {'ipAddress' => {'ipv4' => 'bogus'}}
+    position = PositionResolver.get(request)
+    expected = {}
+
+    position.should eq expected
   end
 
   it 'should resolve geoip location' do
@@ -76,6 +95,13 @@ describe PositionResolver do
     expected = {"latitude" => 45.4667, "longitude" => 9.2, "accuracy" => 20000, "address" => {"text"=>"Via Anselmo Ronchetti, 2-6, 20122 Milan, Italy"}}
 
     position.should eq expected
+  end
+
+  it 'should cache good results' do
+    PositionResolver.should_receive :put_cache
+
+    request = {'gpsPosition' => {"latitude" => 45.12345, "longitude" => 9.54321}}
+    PositionResolver.get(request)
   end
 
   it 'should use google to resolve gps coords into address (geocoding)' do

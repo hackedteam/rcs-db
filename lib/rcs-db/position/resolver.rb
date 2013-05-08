@@ -39,9 +39,8 @@ class PositionResolver
       request = params.dup
 
       begin
-
         # skip resolution on request
-        return {'location' => {}, 'address' => {}} unless position_enabled?
+        return {} unless position_enabled?
 
         # check for cached values (to avoid too many external request)
         cached = get_cache params
@@ -56,7 +55,7 @@ class PositionResolver
           ip = request['ipAddress']['ipv4']
 
           # check if it's a valid ip address
-          return {'location' => {}, 'address' => {}} if /(?:[0-9]{1,3}\.){3}[0-9]{1,3}/.match(ip).nil? or private_address?(ip)
+          return {} if /(?:[0-9]{1,3}\.){3}[0-9]{1,3}/.match(ip).nil? or private_address?(ip)
 
           # IP to GPS
           location = get_geoip(ip)
@@ -91,7 +90,7 @@ class PositionResolver
       rescue Exception => e
         trace :warn, "Error retrieving location: #{e.message}"
         trace :debug, "#{e.backtrace.join("\n")}"
-        return {'location' => {}, 'address' => {}}
+        return {}
       end
     end
 
