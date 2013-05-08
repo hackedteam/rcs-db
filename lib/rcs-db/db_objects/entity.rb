@@ -285,6 +285,13 @@ class Entity
       handles.create! level: EntityHandle.default_level, type: type, name: name, handle: handle
     end
   end
+
+  def linked_to? another_entity
+    link_to_another_entity = links.where(le: another_entity.id).first
+    link_to_this_entity = another_entity.links.where(le: id).first
+
+    link_to_this_entity and link_to_another_entity
+  end
 end
 
 
@@ -356,6 +363,14 @@ class EntityLink
   field :rel, type: Integer, default: 0
 
   after_destroy :destroy_callback
+
+  def linked_entity
+    Entity.find le
+  end
+
+  def linked_entity= entity
+    self.le = entity.id
+  end
 
   def add_info(info)
     return if self.info.include? info
