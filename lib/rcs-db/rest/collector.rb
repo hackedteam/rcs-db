@@ -147,6 +147,8 @@ class CollectorController < RESTController
         when 'POST'
           Audit.log :actor => @session.user[:name], :action => 'collector.upgrade', :desc => "Upgraded the collector '#{collector[:name]}'"
 
+          raise "This anonymizer is old and cannot be ugraded" unless collector.good
+
           collector.upgradable = true
           collector.save
 
