@@ -194,7 +194,7 @@ class InstanceWorker
             sleep 5
             retry
           rescue Exception => e
-            trace :fatal, "[#{raw_id}:#{@ident}:#{@instance}] Unrecoverable error processing evidence #{raw_id}: #{e.message}"
+            trace :fatal, "[#{raw_id}:#{@ident}:#{@instance}] Unrecoverable error processing evidence #{raw_id}: #{e.class} #{e.message}"
             trace :fatal, "[#{raw_id}:#{@ident}:#{@instance}] EXCEPTION: " + e.backtrace.join("\n")
 
             Dir.mkdir "decoding_failed" unless File.exists? "decoding_failed"
