@@ -179,7 +179,7 @@ class LicenseManager
     end
 
     # save the new license file
-    lic_file = File.join Dir.pwd, Config::CONF_DIR, LICENSE_FILE
+    lic_file = File.join Dir.pwd, RCS::DB::Config::CONF_DIR, LICENSE_FILE
     File.open(lic_file, "wb") {|f| f.write content}
 
     # load the new one
