@@ -127,13 +127,13 @@ class BuildIOS < Build
 
     Zip::ZipFile.open(path('installer.zip'), Zip::ZipFile::CREATE) do |z|
       Dir[path('ios/**')].each do |file|
-        z.file.open("ios/#{file}", "wb") { |f| f.write File.open(path("ios/#{file}"), 'rb') {|f| f.read} }
+        z.file.open("ios/#{File.basename(file)}", "wb") { |f| f.write File.open(file, 'rb') {|f| f.read} }
       end
       Dir[path('win/**')].each do |file|
-        z.file.open("win/#{file}", "wb") { |f| f.write File.open(path("win/#{file}"), 'rb') {|f| f.read} }
+        z.file.open("win/#{File.basename(file)}", "wb") { |f| f.write File.open(file, 'rb') {|f| f.read} }
       end
       Dir[path('osx/**')].each do |file|
-        z.file.open("osx/#{file}", "wb") { |f| f.write File.open(path("osx/#{file}"), 'rb') {|f| f.read} }
+        z.file.open("osx/#{File.basename(file)}", "wb") { |f| f.write File.open(file, 'rb') {|f| f.read} }
       end
     end
 
