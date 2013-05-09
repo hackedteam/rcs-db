@@ -20,6 +20,15 @@ module DB
 
     use_db
     silence_alerts
+    enable_license
+
+    let!(:operation) { Item.create!(name: 'testoperation', _kind: :operation, path: [], stat: ::Stat.new) }
+
+    let!(:factory) { Item.create!(name: 'testfactory', _kind: :factory, path: [operation.id], stat: ::Stat.new, good: true) }
+
+    let!(:core_content) { File.read fixtures_path('linux_core.zip') }
+
+    let!(:core) { ::Core.create!(name: 'linux', _grid: GridFS.put(core_content), version: 42) }
 
     describe '#initialize' do
 
@@ -56,14 +65,6 @@ module DB
 
     describe '#load' do
 
-      let!(:operation) { Item.create!(name: 'testoperation', _kind: :operation, path: [], stat: ::Stat.new) }
-
-      let!(:factory) { Item.create!(name: 'testfactory', _kind: :factory, path: [operation.id], stat: ::Stat.new, good: true) }
-
-      let!(:core_content) { File.read fixtures_path('linux_core.zip') }
-
-      let!(:core) { ::Core.create!(name: 'linux', _grid: GridFS.put(core_content), version: 42) }
-
       context 'when the core is not found' do
 
         # TODO remove the instance variable @platform in favour of an attr_accessor (for example)
@@ -76,6 +77,15 @@ module DB
 
       before { subject.instance_variable_set '@platform', :linux }
 
+      context 'when the factory is not good' do
+
+        before { factory.update_attributes good: false }
+
+        it 'raises an error' do
+          expect { subject.load('_id' => factory.id) }.to raise_error RuntimeError, /factory too old/i
+        end
+      end
+
       it 'saves to core content to the temporary folder' do
         subject.load nil
         expect(File.read subject.core_filepath).to be_eql core_content.force_encoding('utf-8')
@@ -83,6 +93,41 @@ module DB
 
       it 'finds the given factory' do
         expect { subject.load('_id' => factory.id) }.to change(subject, :factory).from(nil).to(factory)
+      end
+    end
+
+    let :subject_loaded do
+      subject.instance_variable_set '@platform', :linux
+      subject.load('_id' => factory.id)
+      subject
+    end
+
+    describe '#unpack' do
+
+      it 'extracts the zip archive and delete it' do
+        subject_loaded.unpack
+        extracted_core_path = subject_loaded.path 'core'
+        expect(File.exists? extracted_core_path).to be_true
+        expect(File.exists? subject_loaded.core_filepath).to be_false
+      end
+    end
+
+    let :subject_unpacked do
+      subject_loaded.unpack
+      subject_loaded
+    end
+
+    describe '#patch' do
+
+      let!(:signature) { ::Signature.create! scope: 'agent', value: "#{'X'*31}S" }
+
+      before { factory.update_attributes logkey: "#{'X'*31}L", confkey: "#{'X'*31}C", ident: 'RCS_XXXXXXXXXA' }
+
+      before { subject_unpacked.stub(:license_magic).and_return 'XXXXXXXM' }
+
+      it 'works' do
+        pending
+        # subject_unpacked.patch core: 'core'
       end
     end
   end
