@@ -23,7 +23,7 @@ class Aggregate
         field :count, type: Integer, default: 0
         field :size, type: Integer, default: 0        # seconds for calls, bytes for the others
         field :data, type: Hash, default: {}
-        field :peers, type: Array                     # for summary
+        field :info, type: Array                      # for summary or timeframe (position
 
         store_in collection: Aggregate.collection_name('#{target}')
 
@@ -41,12 +41,12 @@ class Aggregate
         def self.summary_include?(type, peer)
           summary = self.where(day: '0', type: 'summary').first
           return false unless summary
-          return summary.peers.include? type.to_s + '_' + peer.to_s
+          return summary.info.include? type.to_s + '_' + peer.to_s
         end
 
         def self.add_to_summary(type, peer)
           summary = self.where(day: '0', aid: '0', type: 'summary').first_or_create!
-          summary.add_to_set(:peers, type.to_s + '_' + peer.to_s)
+          summary.add_to_set(:info, type.to_s + '_' + peer.to_s)
         end
 
         def self.rebuild_summary
@@ -66,7 +66,7 @@ class Aggregate
 
           summary = self.where(day: '0', aid: '0', type: 'summary').first_or_create!
 
-          summary.peers = data
+          summary.info = data
           summary.save!
         end
 

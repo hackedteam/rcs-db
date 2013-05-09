@@ -27,7 +27,7 @@ describe Aggregate do
     aggregates = aggregate_class.where(type: 'summary')
     aggregates.size.should be 1
     entry = aggregates.first
-    entry.peers.should include 'test_peer'
+    entry.info.should include 'test_peer'
 
     aggregate_class.summary_include?('test', 'peer').should be true
   end
@@ -62,9 +62,9 @@ describe Aggregate do
       aggregates = aggregate_class.where(type: 'summary')
       aggregates.size.should be 1
       entry = aggregates.first
-      entry.peers.should include 'sms_test1'
-      entry.peers.should include 'sms_test2'
-      entry.peers.should include 'sms_test3'
+      entry.info.should include 'sms_test1'
+      entry.info.should include 'sms_test2'
+      entry.info.should include 'sms_test3'
     end
 
     it 'should report the most (1) contacted' do

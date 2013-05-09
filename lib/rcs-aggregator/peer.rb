@@ -10,6 +10,10 @@ class PeerAggregator
   def self.extract_chat(ev)
     data = []
 
+    # twitter does not have a peer to sent message to :)
+    # skip if for aggregation
+    return [] if ev.data['program'].downcase.eql? 'twitter'
+
     # TODO: remove old chat format (after 9.0.0)
     if ev.data['peer']
       # multiple rcpts creates multiple entries

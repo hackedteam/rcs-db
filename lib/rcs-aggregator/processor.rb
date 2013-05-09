@@ -10,6 +10,7 @@ require 'rcs-common/sanitize'
 require 'fileutils'
 
 require_relative 'peer'
+require_relative 'position'
 
 module RCS
 module Aggregator
@@ -52,22 +53,25 @@ class Processor
       # else
       #   create new one
 
-      type = ev.type
-      type = datum[:type] unless datum[:type].nil?
-
-      # twitter does not have a peer to sent message to :)
-      next if type.eql? 'twitter'
+      type = datum[:type]
 
       # we need to find a document that is in the same day, same type and that have the same peer and versus
       # if not found, create a new entry, otherwise increment the number of occurrences
-      params = {aid: ev.aid, day: Time.at(ev.da).strftime('%Y%m%d'), type: type, data: {peer: datum[:peer], versus: datum[:versus]}}
+      params = {aid: ev.aid, day: Time.at(ev.da).strftime('%Y%m%d'), type: type}
+
+      case type
+        when 'position'
+          params.merge!({data: {point: datum[:point]}})
+        else
+          params.merge!({data: {peer: datum[:peer], versus: datum[:versus]}})
+      end
 
       # find the existing aggregate or create a new one
       agg = Aggregate.collection_class(entry['target_id']).find_or_create_by(params)
 
       # if it's new: add the entry to the summary and notify the intelligence
       if agg.count == 0
-        Aggregate.collection_class(entry['target_id']).add_to_summary(type, datum[:peer])
+        Aggregate.collection_class(entry['target_id']).add_to_summary(type, datum[:peer]) unless type.eql? 'position'
         IntelligenceQueue.add(entry['target_id'], agg._id, :aggregate) if check_intelligence_license
       end
 
@@ -75,8 +79,13 @@ class Processor
       # so we have to perform an atomic operation because we have multiple aggregator working concurrently
       agg.inc(:count, 1)
 
-      # sum up the duration (or size)
-      agg.inc(:size, datum[:size])
+      if type.eql? 'position'
+        # add the timeframe to the aggregate
+        agg.add_to_set(:info, datum[:time])
+      else
+        # sum up the duration (or size)
+        agg.inc(:size, datum[:size])
+      end
 
       trace :info, "Aggregated #{target.name}: #{agg.day} #{agg.type} #{agg.count} #{agg.data.inspect} " + (type.eql?('call') ? "#{agg.size} sec" : "#{agg.size.to_s_bytes}")
     end
@@ -103,6 +112,8 @@ class Processor
       when 'message'
         data += PeerAggregator.extract_message(ev)
 
+      when 'position'
+        data += PositionAggregator.extract(ev)
     end
 
     return data

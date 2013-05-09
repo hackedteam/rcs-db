@@ -16,6 +16,13 @@ describe PeerAggregator do
         @evidence_chat.type = 'chat'
       end
 
+      it 'should return [] if the chat is from twitter' do
+        @evidence_chat.data = {'peer' => '@test', 'program' => 'twitter', 'content' => 'test message'}
+        parsed = PeerAggregator.extract_chat(@evidence_chat)
+        parsed.should be_a Array
+        parsed.should be_empty
+      end
+
       it 'should parse old evidence' do
         @evidence_chat.data = {'peer' => 'Peer_Old', 'program' => 'skype', 'content' => 'test message'}
         parsed = PeerAggregator.extract_chat(@evidence_chat)

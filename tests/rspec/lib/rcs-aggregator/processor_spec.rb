@@ -20,45 +20,6 @@ describe Processor do
       @entry = {'target_id' => @target._id, 'evidence_id' => @evidence._id}
     end
 
-    it 'should create aggregate from evidence' do
-      Processor.process @entry
-
-      aggregates = Aggregate.collection_class(@target._id).where(type: 'skype')
-      aggregates.size.should be 1
-
-      entry = aggregates.first
-      entry.count.should be 1
-      entry.type.should eq 'skype'
-      entry.size.should eq @evidence.data['content'].size
-      entry.aid.should eq @agent._id.to_s
-      entry.day.should eq Time.now.strftime('%Y%m%d')
-    end
-
-    it 'should aggregate multiple evidence' do
-      iteration = 5
-
-      # process the same entry N times
-      iteration.times do
-        Processor.process @entry
-      end
-
-      aggregates = Aggregate.collection_class(@target._id).where(type: 'skype')
-      aggregates.size.should be 1
-
-      entry = aggregates.first
-      entry.count.should be iteration
-    end
-
-    it 'should create aggregation summary' do
-      Processor.process @entry
-
-      aggregates = Aggregate.collection_class(@target._id).where(type: 'summary')
-      aggregates.size.should be 1
-
-      entry = aggregates.first
-      entry.peers.should include 'skype_sender'
-    end
-
     it 'should create intelligence queue' do
       Processor.process @entry
 
@@ -81,6 +42,101 @@ describe Processor do
         count.should be_nil
       end
     end
+
+    context 'given an evidence of type "peer"' do
+      before do
+        data = {'from' => ' sender ', 'rcpt' => 'receiver', 'incoming' => 1, 'program' => 'skype', 'content' => 'test message'}
+        @evidence = Evidence.collection_class(@target._id).create!(da: Time.now.to_i, aid: @agent._id, type: 'chat', data: data)
+        @entry = {'target_id' => @target._id, 'evidence_id' => @evidence._id}
+      end
+
+      it 'should create aggregate from evidence' do
+        Processor.process @entry
+
+        aggregates = Aggregate.collection_class(@target._id).where(type: 'skype')
+        aggregates.size.should be 1
+
+        entry = aggregates.first
+        entry.count.should be 1
+        entry.type.should eq 'skype'
+        entry.size.should eq @evidence.data['content'].size
+        entry.aid.should eq @agent._id.to_s
+        entry.day.should eq Time.now.strftime('%Y%m%d')
+      end
+
+      it 'should aggregate multiple evidence' do
+        iteration = 5
+
+        # process the same entry N times
+        iteration.times do
+          Processor.process @entry
+        end
+
+        aggregates = Aggregate.collection_class(@target._id).where(type: 'skype')
+        aggregates.size.should be 1
+
+        entry = aggregates.first
+        entry.count.should be iteration
+      end
+
+      it 'should create aggregation summary' do
+        Processor.process @entry
+
+        aggregates = Aggregate.collection_class(@target._id).where(type: 'summary')
+        aggregates.size.should be 1
+
+        entry = aggregates.first
+        entry.info.should include 'skype_sender'
+      end
+    end
+
+    context 'given an evidence of type "position"' do
+      before do
+        data = {'latitude' => 45, 'longitude' => 9, 'accuracy' => 50}
+        @evidence = Evidence.collection_class(@target._id).create!(da: Time.now.to_i, aid: @agent._id, type: 'position', data: data)
+        @entry = {'target_id' => @target._id, 'evidence_id' => @evidence._id}
+      end
+
+      it 'should not create aggregation summary' do
+        Processor.process @entry
+
+        aggregates = Aggregate.collection_class(@target._id).where(type: 'summary')
+        aggregates.size.should be 0
+      end
+
+      it 'should create aggregate from evidence' do
+        Processor.process @entry
+
+        aggregates = Aggregate.collection_class(@target._id).where(type: 'position')
+        aggregates.size.should be 1
+
+        entry = aggregates.first
+        entry.count.should be 1
+        entry.type.should eq 'position'
+        entry.aid.should eq @agent._id.to_s
+        entry.day.should eq Time.now.strftime('%Y%m%d')
+        entry.data['point']['latitude'].should_not be_nil
+        entry.data['point']['longitude'].should_not be_nil
+        entry.data['point']['radius'].should_not be_nil
+      end
+
+      it 'should aggregate multiple evidence' do
+         iteration = 5
+
+         # process the same entry N times
+         iteration.times do
+           Processor.process @entry
+         end
+
+         aggregates = Aggregate.collection_class(@target._id).where(type: 'position')
+         aggregates.size.should be 1
+
+         entry = aggregates.first
+         entry.count.should be iteration
+      end
+    end
+
+
   end
 
   context 'given some evidence to be parsed' do
