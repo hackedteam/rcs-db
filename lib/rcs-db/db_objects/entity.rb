@@ -289,6 +289,10 @@ class Entity
     link_to_another_entity = links.connected_to(another_entity).first
     link_to_this_entity = another_entity.links.connected_to(self).first
 
+    # TODO: also check the versus of the link and the backlink
+    # versus_ary = [link_to_another_entity.versus, link_to_another_entity.versus]
+    # return false unless [[:in, :out], [:out, :in], [:both, :both]].include? versus_ary
+
     link_to_this_entity and link_to_another_entity
   end
 end
