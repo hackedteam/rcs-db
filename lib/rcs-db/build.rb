@@ -26,6 +26,7 @@ class Build
   attr_reader :platform
   attr_reader :tmpdir
   attr_reader :factory
+  attr_reader :core_filepath
 
   @builders = {}
 
@@ -57,21 +58,21 @@ class Build
     core = ::Core.where({name: @platform}).first
     raise "Core for #{@platform} not found" if core.nil?
 
-    @core = GridFS.to_tmp core[:_grid]
-    trace :info, "Build: loaded core: #{@platform} #{core.version} #{File.size(@core)} bytes"
+    @core_filepath = GridFS.to_tmp core[:_grid]
+    trace :info, "Build: loaded core: #{@platform} #{core.version} #{File.size(@core_filepath)} bytes"
 
-    if params
-      @factory = ::Item.where({_kind: 'factory', _id: params['_id']}).first
-      raise "Factory #{params['ident']} not found" if @factory.nil?
-      trace :debug, "Build: loaded factory: #{@factory.name}"
-      raise "Factory too old cannot be created" unless @factory.good
-    end
+    return if params.blank?
+
+    @factory = ::Item.where({_kind: 'factory', _id: params['_id']}).first
+    raise "Factory #{params['ident']} not found" if @factory.nil?
+    trace :debug, "Build: loaded factory: #{@factory.name}"
+    raise "Factory too old cannot be created" unless @factory.good
   end
 
   def unpack
-    trace :debug, "Build: unpack: #{@core}"
+    trace :debug, "Build: unpack: #{@core_filepath}"
 
-    Zip::ZipFile.open(@core) do |z|
+    Zip::ZipFile.open(@core_filepath) do |z|
       z.each do |f|
         f_path = path(f.name)
         FileUtils.mkdir_p(File.dirname(f_path))
@@ -85,7 +86,7 @@ class Build
     end
 
     # delete the tmpfile of the core
-    FileUtils.rm_rf @core
+    FileUtils.rm_rf @core_filepath
   end
 
   def patch(params)

@@ -10,12 +10,15 @@ module RCS
 end
 
 require_db 'db_layer'
+require_db 'grid'
 require_db 'build'
 
 module RCS
 module DB
 
   describe Build do
+
+    use_db
 
     describe '#initialize' do
 
@@ -33,7 +36,7 @@ module DB
       end
     end
 
-    context 'when builder\'s classes has been registered' do
+    context "when builders' classes has been registered" do
 
       describe '#factory' do
 
@@ -47,6 +50,36 @@ module DB
 
       it 'is registered as a factory' do
         expect(described_class.factory(:fake)).to be_kind_of BuildFake
+      end
+    end
+
+    describe '#load' do
+
+      let(:operation) { Item.create!(name: 'testoperation', _kind: :operation, path: [], stat: ::Stat.new) }
+
+      let(:factory) { Item.create!(name: 'testfactory', _kind: :target, path: [operation.id], stat: ::Stat.new) }
+
+      let(:core_content) { 'c0r3_c0nt3nt' }
+
+      let(:core_grid_id) { GridFS.put 'c0r3_c0nt3nt' }
+
+      let!(:core) { ::Core.create(name: 'linux', _grid: core_grid_id, version: 42) }
+
+      context 'when the core is not found' do
+
+        # TODO remove the instance variable @platform in favour of an attr_accessor (for example)
+        before { subject.instance_variable_set '@platform', :amiga }
+
+        it 'raises an error' do
+          expect { subject.load(nil) }.to raise_error RuntimeError, /core for amiga not found/i
+        end
+      end
+
+      before { subject.instance_variable_set '@platform', :linux }
+
+      it 'saves to core content to the temporary folder' do
+        subject.load nil
+        expect(File.read subject.core_filepath).to be_eql core_content
       end
     end
   end
