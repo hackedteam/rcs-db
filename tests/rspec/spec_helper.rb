@@ -70,6 +70,13 @@ class FakeLog4rLogger
   def method_missing *args; end
   # Prevent calling Kernel#warn with send
   def warn *args; end
+
+  def raise_error msg
+    raise msg
+  end
+
+  alias_method :error, :raise_error
+  alias_method :fatal, :raise_error
 end
 
 # Check out RCS::Tracer module of rcs-common gem
@@ -92,4 +99,12 @@ def use_db
   end
 
   after(:each) { empty_test_db }
+end
+
+def enable_license
+  before :each do
+    eval 'class LicenseManager; end' unless defined? LicenseManager
+    LicenseManager.stub(:instance).and_return mock()
+    LicenseManager.instance.stub(:check).and_return true
+  end
 end
