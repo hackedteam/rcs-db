@@ -100,7 +100,7 @@ class BuildLinux < Build
                 'cat <<EOF' + "\n" +
                 File.open(guest, 'rb') {|f| f.read} +
                 File.open(path('DEBIAN/preinst'), 'rb') {|f| f.read}
-	else
+	  else
       content = '#!/bin/sh' + "\n" +
                 'set -e' + "\n" +
                 'F1="`dirname "$0"`/f1";S1=' + File.size(guest).to_s + "\n" +
