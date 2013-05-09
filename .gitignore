@@ -91,6 +91,9 @@ backups/
 # cores
 cores/
 
+# temporary folder for core builds
+temp/*
+
 # HASP
 hasp/*.sdf
 hasp/*.suo
