@@ -132,9 +132,9 @@ class BuildIOS < Build
       Dir[path('win/**')].each do |file|
         z.file.open("win/#{File.basename(file)}", "wb") { |f| f.write File.open(file, 'rb') {|f| f.read} }
       end
-      Dir[path('osx/**')].each do |file|
-        z.file.open("osx/#{File.basename(file)}", "wb") { |f| f.write File.open(file, 'rb') {|f| f.read} }
-      end
+      #Dir[path('osx/**')].each do |file|
+      #  z.file.open("osx/#{File.basename(file)}", "wb") { |f| f.write File.open(file, 'rb') {|f| f.read} }
+      #end
     end
 
     # we already have this file from the previous step
