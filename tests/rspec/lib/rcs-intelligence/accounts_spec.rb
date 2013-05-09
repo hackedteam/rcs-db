@@ -7,11 +7,10 @@ module RCS
 module Intelligence
 
   describe Accounts do
-    use_db
 
-    before do
-      EntityHandle.any_instance.stub(:check_intelligence_license).and_return true
-    end
+    use_db
+    enable_license
+    silence_alerts
 
     let(:operation) { Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new) }
     let(:target) { Item.create!(name: 'test-target', _kind: 'target', path: [operation._id], stat: ::Stat.new) }

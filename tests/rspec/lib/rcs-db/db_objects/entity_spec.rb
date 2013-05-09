@@ -3,18 +3,11 @@ require_db 'db_layer'
 require_db 'link_manager'
 require_db 'grid'
 
-def stub_alerting_and_lincence_check
-  Entity.any_instance.stub(:alert_new_entity).and_return nil
-  Entity.any_instance.stub(:push_new_entity).and_return nil
-  RCS::DB::LinkManager.any_instance.stub(:alert_new_link).and_return nil
-  RCS::DB::LinkManager.any_instance.stub(:push_modify_entity).and_return nil
-  EntityHandle.any_instance.stub(:check_intelligence_license).and_return true
-end
-
 describe Entity do
-  use_db
 
-  before { stub_alerting_and_lincence_check }
+  use_db
+  silence_alerts
+  enable_license
 
   describe 'relations' do
   	it 'should embeds many Handles' do
@@ -299,8 +292,8 @@ end
 describe EntityLink do
 
   use_db
-
-  before { stub_alerting_and_lincence_check }
+  silence_alerts
+  enable_license
 
   describe '#connected_to' do
 

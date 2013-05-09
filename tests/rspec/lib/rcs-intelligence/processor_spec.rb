@@ -6,16 +6,10 @@ module RCS
 module Intelligence
 
 describe Processor do
-  before do
-    turn_off_tracer
-    connect_mongoid
-    empty_test_db
-    Entity.any_instance.stub :alert_new_entity
-    RCS::DB::LinkManager.any_instance.stub :alert_new_link
-  end
 
-  after { empty_test_db }
-
+  use_db
+  enable_license
+  silence_alerts
 
   it 'should use the Tracer module' do
     described_class.should respond_to :trace
@@ -104,7 +98,6 @@ describe Processor do
       end
 
       context 'the license is valid' do
-        before { described_class.stub(:check_intelligence_license).and_return true }
 
         it 'should create a link' do
           Ghost.should_receive :create_and_link_entity
@@ -121,8 +114,6 @@ describe Processor do
     let! (:operation_x) { Item.create!(name: 'test-operation-x', _kind: 'operation', path: [], stat: ::Stat.new) }
     let! (:operation_y) { Item.create!(name: 'test-operation-y', _kind: 'operation', path: [], stat: ::Stat.new) }
     let! (:peer) { 'robert.baratheon' }
-
-    before { EntityHandle.any_instance.stub(:check_intelligence_license).and_return true }
 
     context 'given a aggregate of type "sms"' do
       let!(:aggregate) { aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: 'sms', aid: 'agent_id', count: 1, data: {'peer' => peer, 'versus' => :in}) }

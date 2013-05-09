@@ -89,22 +89,34 @@ def turn_on_tracer
   Log4r::Logger.stub(:[]).and_return nil
 end
 
+# Connect to mongoid and destroy all the collection
+# before and after each example
 def use_db
-  before(:all) { connect_mongoid}
+  before (:all) { connect_mongoid }
 
-  before :each do
+  before do
     turn_off_tracer
     empty_test_db
-    Entity.any_instance.stub(:alert_new_entity).and_return nil
   end
 
-  after(:each) { empty_test_db }
+  after { empty_test_db }
 end
 
+# Stub the LicenseManager instance to simulate the presence of a valid license
 def enable_license
-  before :each do
+  before do
     eval 'class LicenseManager; end' unless defined? LicenseManager
     LicenseManager.stub(:instance).and_return mock()
     LicenseManager.instance.stub(:check).and_return true
+  end
+end
+
+# Stub all the methods that send alerts or push notification to the console
+def silence_alerts
+  before do
+    Entity.any_instance.stub(:alert_new_entity).and_return nil
+    RCS::DB::LinkManager.any_instance.stub(:alert_new_link).and_return nil
+    Entity.any_instance.stub(:push_new_entity).and_return nil
+    RCS::DB::LinkManager.any_instance.stub(:push_modify_entity).and_return nil
   end
 end

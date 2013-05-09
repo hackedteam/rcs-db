@@ -10,8 +10,8 @@ describe 'There are two entities in the same operation' do
 
   use_db
   enable_license
+  silence_alerts
 
-  before { RCS::DB::LinkManager.any_instance.stub(:alert_new_link) }
   # There is one operation
 
   let!(:operation) { Item.create!(name: 'testoperation', _kind: :operation, path: [], stat: ::Stat.new) }

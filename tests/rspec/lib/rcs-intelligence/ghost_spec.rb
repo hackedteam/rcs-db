@@ -7,12 +7,10 @@ module RCS
 module Intelligence
 
   describe Ghost do
-    use_db
 
-    before do
-      EntityHandle.any_instance.stub :check_intelligence_license
-      RCS::DB::LinkManager.any_instance.stub :alert_new_link
-    end
+    use_db
+    enable_license
+    silence_alerts
 
     let!(:operation) { Item.create!(name: 'testoperation', _kind: 'operation', path: [], stat: ::Stat.new) }
     let!(:target) { Item.create!(name: 'testtarget', _kind: 'target', path: [operation._id], stat: ::Stat.new) }

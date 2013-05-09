@@ -6,18 +6,13 @@ module RCS
 module Aggregator
 
 describe Processor do
-  before { turn_off_tracer }
+
+  use_db
+  silence_alerts
+  enable_license
 
   context 'processing evidence from the queue' do
     before do
-      Entity.any_instance.stub(:alert_new_entity).and_return nil
-      Processor.stub(:check_intelligence_license).and_return true
-
-      # connect and empty the db
-      connect_mongoid
-      empty_test_db
-
-      # create fake object to be used by the test
       @target = Item.create!(name: 'test-target', _kind: 'target', path: [], stat: ::Stat.new)
       @agent = Item.create(name: 'test-agent', _kind: 'agent', path: [@target._id], stat: ::Stat.new)
       data = {'from' => ' sender ', 'rcpt' => 'receiver', 'incoming' => 1, 'program' => 'skype', 'content' => 'test message'}
@@ -120,13 +115,8 @@ describe Processor do
         parsed.size.should be 1
       end
     end
-
-
   end
-
-
 end
-
 
 end
 end

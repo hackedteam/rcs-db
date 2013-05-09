@@ -6,12 +6,9 @@ module RCS
 module DB
 
   describe LinkManager do
-    before do
-      # connect and empty the db
-      connect_mongoid
-      empty_test_db
-      turn_off_tracer
-    end
+
+    use_db
+    enable_license
 
     context 'given two entities' do
       before do
