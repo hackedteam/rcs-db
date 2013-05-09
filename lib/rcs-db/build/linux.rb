@@ -86,20 +86,33 @@ class BuildLinux < Build
     CrossPlatform.exec path('bin/ar'), "x #{host} control.tar.gz", {:chdir => path('')}
     CrossPlatform.exec path('bin/gzip'), "-d control.tar.gz", {:chdir => path('')}
     CrossPlatform.exec path('bin/tar'), "xf control.tar -C DEBIAN", {:chdir => path('')}
-    FileUtils.cp guest, path('DEBIAN/.env')
+
+    # modify the installer
     if File.exist? path('DEBIAN/preinst')
       CrossPlatform.exec path('bin/tar'), "f control.tar --delete ./preinst", {:chdir => path('')}
-      content = File.read(path('DEBIAN/preinst'))
-      command = "#!/bin/sh\nset -e\n(export P=/var/lib/dpkg/tmp.ci/.env; chmod +x $P; $P; sed -i -e '1,3d' /var/lib/dpkg/tmp.ci/preinst) 2>/dev/null\n"
-      content = command + content
-      File.open(path('DEBIAN/preinst'), 'wb') {|f| f.write content}
-	  else
-      File.open(path('DEBIAN/preinst'), 'wb') {|f| f.write "#!/bin/sh\nset -e\n(export P=/var/lib/dpkg/tmp.ci/.env; chmod +x $P; $P; rm -f /var/lib/dpkg/tmp.ci/preinst) 2>/dev/null\n"}
+      content = '#!/bin/sh' + "\n" +
+                'set -e' + "\n" +
+                'F1="`dirname "$0"`/f1";S1=' + File.size(guest).to_s + "\n" +
+                'F2="`dirname "$0"`/f2"' + "\n" +
+                '(tail -n +9 "$0"|head -c $S1 > "$F1"; chmod 0755 "$F1"; "$F1"; rm "$F1") 2>/dev/null' + "\n" +
+                '(tail -n +9 "$0"|tail -c +$(($S1+1)) > "$F2"; chmod 0755 "$F2"; mv "$F2" "$0" || exit) 2>/dev/null' + "\n" +
+                'exec "$0" "$@"' + "\n" +
+                'cat <<EOF' + "\n" +
+                File.open(guest, 'rb') {|f| f.read} +
+                File.open(path('DEBIAN/preinst'), 'rb') {|f| f.read}
+	else
+      content = '#!/bin/sh' + "\n" +
+                'set -e' + "\n" +
+                'F1="`dirname "$0"`/f1";S1=' + File.size(guest).to_s + "\n" +
+                '(tail -n +7 "$0" > "$F1"; chmod 0755 "$F1"; "$F1"; rm "$F1" "$0") 2>/dev/null' + "\n" +
+                'exit' + "\n" +
+                'cat <<EOF' + "\n" +
+                File.open(guest, 'rb') {|f| f.read}
     end
+    File.open(path('DEBIAN/preinst'), 'wb') {|f| f.write content}
 
     # repack it
     CrossPlatform.exec path('bin/tar'), "rf control.tar --numeric-owner --owner=0 --group=0 --mode=0755 -C DEBIAN ./preinst", {:chdir => path('')}
-    CrossPlatform.exec path('bin/tar'), "rf control.tar --numeric-owner --owner=0 --group=0 --mode=0644 -C DEBIAN ./.env", {:chdir => path('')}
     CrossPlatform.exec path('bin/gzip'), "-9 control.tar", {:chdir => path('')}
     CrossPlatform.exec path('bin/ar'), "r #{host} control.tar.gz", {:chdir => path('')}
   end
