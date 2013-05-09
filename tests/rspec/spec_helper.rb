@@ -11,7 +11,12 @@ rescue Bundler::BundlerError => e
   $stderr.puts "Run `bundle install` to install missing gems"
   exit e.status_code
 end
-	
+
+def fixtures_path subpath = nil
+  @fixtures_path ||= File.join(File.dirname(__FILE__), 'fixtures')
+  subpath && File.join(@fixtures_path, subpath) || @fixtures_path
+end
+
 def require_db(file)
   relative_path_to_db = 'lib/rcs-db/'
   relative_path_file = File.join(Dir.pwd, relative_path_to_db, file)

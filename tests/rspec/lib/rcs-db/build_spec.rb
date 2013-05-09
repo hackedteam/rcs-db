@@ -19,6 +19,7 @@ module DB
   describe Build do
 
     use_db
+    silence_alerts
 
     describe '#initialize' do
 
@@ -55,15 +56,13 @@ module DB
 
     describe '#load' do
 
-      let(:operation) { Item.create!(name: 'testoperation', _kind: :operation, path: [], stat: ::Stat.new) }
+      let!(:operation) { Item.create!(name: 'testoperation', _kind: :operation, path: [], stat: ::Stat.new) }
 
-      let(:factory) { Item.create!(name: 'testfactory', _kind: :target, path: [operation.id], stat: ::Stat.new) }
+      let!(:factory) { Item.create!(name: 'testfactory', _kind: :factory, path: [operation.id], stat: ::Stat.new, good: true) }
 
-      let(:core_content) { 'c0r3_c0nt3nt' }
+      let!(:core_content) { File.read fixtures_path('linux_core.zip') }
 
-      let(:core_grid_id) { GridFS.put 'c0r3_c0nt3nt' }
-
-      let!(:core) { ::Core.create(name: 'linux', _grid: core_grid_id, version: 42) }
+      let!(:core) { ::Core.create!(name: 'linux', _grid: GridFS.put(core_content), version: 42) }
 
       context 'when the core is not found' do
 
@@ -79,7 +78,11 @@ module DB
 
       it 'saves to core content to the temporary folder' do
         subject.load nil
-        expect(File.read subject.core_filepath).to be_eql core_content
+        expect(File.read subject.core_filepath).to be_eql core_content.force_encoding('utf-8')
+      end
+
+      it 'finds the given factory' do
+        expect { subject.load('_id' => factory.id) }.to change(subject, :factory).from(nil).to(factory)
       end
     end
   end
