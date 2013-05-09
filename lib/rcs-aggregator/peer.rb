@@ -14,7 +14,7 @@ class PeerAggregator
     if ev.data['peer']
       # multiple rcpts creates multiple entries
       ev.data['peer'].split(',').each do |peer|
-        data << {:peer => peer.strip.downcase, :versus => nil, :type => ev.data['program'].downcase, :size => ev.data['content'].length}
+        data << {:peer => peer.strip.downcase, :versus => :both, :type => ev.data['program'].downcase, :size => ev.data['content'].length}
       end
 
       return data
