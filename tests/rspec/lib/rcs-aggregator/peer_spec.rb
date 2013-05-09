@@ -24,7 +24,7 @@ describe PeerAggregator do
         aggregated[:peer].should eq 'peer_old'
         aggregated[:size].should eq @evidence_chat.data['content'].size
         aggregated[:type].should eq 'skype'
-        aggregated[:versus].should be_nil
+        aggregated[:versus].should == :both
       end
 
       it 'should parse multiple old evidence' do
@@ -37,7 +37,7 @@ describe PeerAggregator do
         aggregated[:peer].should eq 'peer1'
         aggregated[:size].should eq @evidence_chat.data['content'].size
         aggregated[:type].should eq 'skype'
-        aggregated[:versus].should be_nil
+        aggregated[:versus].should == :both
       end
 
       it 'should parse new evidence (incoming)' do
