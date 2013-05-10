@@ -222,13 +222,38 @@ module DB
 
     describe '#create' do
 
+      before { subject_loaded.stub(:archive_mode?).and_return false }
+
       context 'when the :archive license is not valid' do
 
-        before { subject_loaded.stub(:archive_mode).and_return false }
+        before { subject_loaded.stub(:archive_mode?).and_return true }
 
         it 'raises and error' do
           expect { subject_loaded.create({}) }.to raise_error RuntimeError, /cannot build on this system/i
         end
+      end
+
+      context 'when an error is raised' do
+
+        before { subject_loaded.stub(:load).and_raise "fake_error_in_load_method" }
+
+        # stub the trace method, because it may raise an expection in test mode
+        before { subject_loaded.stub(:trace) }
+
+        it 'calls the #clean method' do
+          subject_loaded.should_receive :clean
+          expect { subject_loaded.create({}) }.to raise_error
+        end
+      end
+    end
+
+    describe '#clean' do
+
+      before { expect(Dir.exists? subject_loaded.tmpdir).to be_true }
+
+      it 'removes the temporary folder' do
+        subject_loaded.clean
+        expect(Dir.exists? subject_loaded.tmpdir).to be_false
       end
     end
   end
