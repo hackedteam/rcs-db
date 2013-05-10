@@ -7,6 +7,10 @@ TODO 9.0.0
 
     --
 
+    check "end of file reaced" from mongoid
+
+    try to implement "retry" on mongoid queries
+
     check threads waiting on queued collection (alert, push)
 
     accounts from outbound/inbound messages
