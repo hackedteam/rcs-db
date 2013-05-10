@@ -163,6 +163,41 @@ module DB
         end
       end
     end
+
+    describe '#scramble' do
+
+      let(:scrambles) { {a_filename: 'disguised_filename'} }
+
+      # fill the "outputs" array and create two empty files
+      # in the temporary folder
+      before do
+        subject_loaded.instance_variable_set '@outputs', ['a_filename', 'another_file']
+
+        FileUtils.touch subject_loaded.path 'a_filename'
+        FileUtils.touch subject_loaded.path 'another_file'
+      end
+
+      context 'when there are no scrambled names loaded' do
+
+        it 'does nothing' do
+          subject_loaded.scramble
+          expect(File.exists? subject_loaded.path('a_filename')).to be_true
+        end
+      end
+
+      context 'when there are scrambled names loaded' do
+
+        # TODO Avoid usage of @scrambled instance variable
+        before { subject_loaded.instance_variable_set '@scrambled', scrambles }
+
+        it 'renames the agents files' do
+          subject_loaded.scramble
+          expect(File.exists? subject_loaded.path('disguised_filename')).to be_true
+          expect(File.exists? subject_loaded.path('a_filename')).to be_false
+          expect(File.exists? subject_loaded.path('another_file')).to be_true
+        end
+      end
+    end
   end
 
 end
