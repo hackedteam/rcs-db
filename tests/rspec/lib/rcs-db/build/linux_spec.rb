@@ -9,6 +9,8 @@ module DB
 
   describe BuildLinux do
 
+    before { turn_off_tracer }
+
     describe '#intialize' do
 
       it 'sets the "platform" to "linux"' do
