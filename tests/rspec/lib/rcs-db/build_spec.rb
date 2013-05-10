@@ -22,6 +22,15 @@ module DB
     silence_alerts
     enable_license
 
+    # change the default temporary folder
+    before do
+      Config.instance.stub(:temp_folder_name).and_return "temp/_spec"
+      FileUtils.mkdir_p Config.instance.temp
+    end
+
+    # and clean it after each example
+    after { FileUtils.rm_r Config.instance.temp }
+
     let!(:operation) { Item.create!(name: 'testoperation', _kind: :operation, path: [], stat: ::Stat.new) }
 
     let!(:factory) { Item.create!(name: 'testfactory', _kind: :factory, path: [operation.id], stat: ::Stat.new, good: true) }
@@ -195,6 +204,26 @@ module DB
           expect(File.exists? subject_loaded.path('disguised_filename')).to be_true
           expect(File.exists? subject_loaded.path('a_filename')).to be_false
           expect(File.exists? subject_loaded.path('another_file')).to be_true
+        end
+      end
+    end
+
+    it 'has some methods that must be implemented by the builders classes' do
+      expect {subject_loaded.melt(nil)}.not_to raise_error
+      expect {subject_loaded.sign(nil)}.not_to raise_error
+      expect {subject_loaded.pack(nil)}.not_to raise_error
+      expect {subject_loaded.deliver(nil)}.not_to raise_error
+      expect {subject_loaded.generate(nil)}.not_to raise_error
+    end
+
+    describe '#create' do
+
+      context 'when the :archive license is not valid' do
+
+        before { subject_loaded.stub(:archive_mode).and_return false }
+
+        it 'raises and error' do
+          expect { subject_loaded.create({}) }.to raise_error RuntimeError, /cannot build on this system/i
         end
       end
     end

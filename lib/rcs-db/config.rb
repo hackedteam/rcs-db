@@ -100,8 +100,12 @@ class Config
     return true
   end
 
+  def temp_folder_name
+    'temp'
+  end
+
   def temp(name=nil)
-    temp = File.join Dir.pwd, 'temp'
+    temp = File.join Dir.pwd, temp_folder_name
     temp = File.join temp, name if name
     return temp
   end
