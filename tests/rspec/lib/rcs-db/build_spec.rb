@@ -1,5 +1,9 @@
 require 'spec_helper'
 
+# Unload the Build class
+# build.rb file may have been required by anohter spec
+$LOADED_FEATURES.reject! { |path| path =~ /\/build.rb\Z/ }
+
 # Define a fake builder class
 # All the real builders (BuildWindows, BuildOSX, etc.) are required an registered
 # as soon as "build.rb" is required
