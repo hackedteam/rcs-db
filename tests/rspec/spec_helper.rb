@@ -4,6 +4,9 @@ require 'pry'
 require 'mongo'
 require 'mongoid'
 
+# require customer rspec matchers
+require File.expand_path 'spec_matchers', File.dirname(__FILE__)
+
 begin
   Bundler.setup(:default, :development)
 rescue Bundler::BundlerError => e
