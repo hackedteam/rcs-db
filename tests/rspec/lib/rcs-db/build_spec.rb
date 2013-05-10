@@ -88,7 +88,7 @@ module DB
 
       it 'saves to core content to the temporary folder' do
         subject.load nil
-        expect(File.read subject.core_filepath).to be_eql core_content.force_encoding('utf-8')
+        expect(File.read subject.core_filepath).to binary_equals core_content
       end
 
       it 'finds the given factory' do
@@ -121,13 +121,24 @@ module DB
 
       let!(:signature) { ::Signature.create! scope: 'agent', value: "#{'X'*31}S" }
 
-      before { factory.update_attributes logkey: "#{'X'*31}L", confkey: "#{'X'*31}C", ident: 'RCS_XXXXXXXXXA' }
+      let(:string_32_bytes_long) { 'w3st'*8 }
 
-      before { subject_unpacked.stub(:license_magic).and_return 'XXXXXXXM' }
+      before do
+        factory.update_attributes logkey: "#{'X'*31}L", confkey: "#{'X'*31}C", ident: 'RCS_XXXXXXXXXA'
 
-      it 'works' do
-        pending
-        # subject_unpacked.patch core: 'core'
+        subject_unpacked.stub(:license_magic).and_return 'XXXXXXXM'
+        subject_unpacked.stub(:hash_and_salt).and_return string_32_bytes_long
+      end
+
+      it 'patches the core file' do
+        subject_unpacked.patch core: 'core'
+        patched_content = File.read subject_unpacked.path('core')
+
+        expect(patched_content).to binary_include "evidence_key=#{string_32_bytes_long}"
+        expect(patched_content).to binary_include "configuration_key=#{string_32_bytes_long}"
+        expect(patched_content).to binary_include "pre_customer_key=#{string_32_bytes_long}"
+        expect(patched_content).to binary_match /agent_id\=.{4}XXXXXXXXXA/
+        expect(patched_content).to binary_match /wmarker=XXXXXXXM.{24}/
       end
     end
   end
