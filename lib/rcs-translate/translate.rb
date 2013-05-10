@@ -3,7 +3,7 @@
 #
 
 # from RCS::DB
-if File.directory?(Dir.pwd + '/lib/rcs-ocr-release')
+if File.directory?(Dir.pwd + '/lib/rcs-translate-release')
   require 'rcs-db-release/config'
   require 'rcs-db-release/db_layer'
   require 'rcs-db-release/grid'
