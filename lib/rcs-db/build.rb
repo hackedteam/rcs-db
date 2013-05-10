@@ -266,11 +266,15 @@ class Build
     end
   end
 
+  def archive_mode?
+    LicenseManager.instance.check :archive
+  end
+
   def create(params)
     trace :debug, "Building Agent: #{params}"
 
     # if we are in archive mode, no build is allowed
-    raise "Cannot build on this system" if LicenseManager.instance.check :archive
+    raise "Cannot build on this system" if archive_mode?
 
     begin
       load params['factory']
@@ -286,11 +290,9 @@ class Build
       trace :error, "Cannot build: #{e.message}"
       trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
       clean
-      raise 
+      raise e
     end
-    
   end
-
 end
 
 # require all the builders
