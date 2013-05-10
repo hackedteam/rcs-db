@@ -132,7 +132,7 @@ Section "Install Section" SecInstall
 
   DetailPrint "Writing uninstall informations..."
   SetDetailsPrint "textonly"
-  WriteUninstaller "$INSTDIR\setup\RCS-ORC-uninstall.exe"
+  WriteUninstaller "$INSTDIR\setup\RCS-OCR-uninstall.exe"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSOCR" "DisplayName" "RCS OCR"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSOCR" "DisplayIcon" "$INSTDIR\setup\RCS.ico"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSOCR" "DisplayVersion" "${PACKAGE_VERSION}"
