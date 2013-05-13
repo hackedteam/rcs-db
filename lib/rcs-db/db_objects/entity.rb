@@ -268,11 +268,11 @@ class Entity
     end
   end
 
-  def create_or_update_handle type, handle, name
+  def create_or_update_handle type, handle, name = nil
     existing_handle = handles.where(type: type, handle: handle).first
 
     if existing_handle
-      if existing_handle.empty_name?
+      if existing_handle.empty_name? && name
         trace :info, "Modifying handle [#{type}, #{handle}, #{name}] on entity: #{self.name}"
         existing_handle.update_attributes name: name
       end
