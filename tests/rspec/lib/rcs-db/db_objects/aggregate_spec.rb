@@ -71,8 +71,8 @@ describe Aggregate do
       most_contacted.size.should be 3
 
       call = most_contacted[0]
-      sms = most_contacted[1]
-      skype = most_contacted[2]
+      skype = most_contacted[1]
+      sms = most_contacted[2]
 
       call.size.should be 1
       call.should include({peer: "test.ardissimo", type: "call", count: 3, size: 0, percent: 100.0})
