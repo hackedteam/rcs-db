@@ -8,6 +8,7 @@ require 'set'
 require 'rcs-common/trace'
 
 require_relative 'db_objects/group'
+require_relative 'db_objects/session'
 require_relative 'config'
 require_relative 'db_layer'
 
@@ -20,7 +21,7 @@ class Migration
     puts "migrating to #{version}"
 
     run [:mongoid3, :access_control, :reindex_aggregates] if version >= '8.3.2'
-    run [:reindex_queues, :aggregate_summary] if version >= '8.3.3'
+    run [:reindex_queues, :aggregate_summary, :drop_sessions] if version >= '8.3.3'
 
     return 0
   end
@@ -33,11 +34,12 @@ class Migration
 
     # set the parameters for the mongoid.yaml
     ENV['MONGOID_DATABASE'] = 'rcs'
-    ENV['MONGOID_HOST'] = "127.0.0.1:27017"
+    ENV['MONGOID_HOST'] = "127.0.0.1"
+    ENV['MONGOID_PORT'] = "27017"
 
     Mongoid.load!(RCS::DB::Config.instance.file('mongoid.yaml'), :production)
 
-    puts "Connected to MongoDB at #{ENV['MONGOID_HOST']}"
+    puts "Connected to MongoDB at #{ENV['MONGOID_HOST']}:#{ENV['MONGOID_PORT']}"
 
     params.each do |step|
       puts "\n+ #{step}"
@@ -126,6 +128,10 @@ class Migration
     puts "done in #{Time.now - start} secs"
   end
 
+  def self.drop_sessions
+    puts "Deleting old sessions..."
+    ::Session.destroy_all
+  end
 end
 
 end
