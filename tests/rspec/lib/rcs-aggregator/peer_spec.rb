@@ -110,6 +110,17 @@ describe PeerAggregator do
         aggregated[:size].should eq @evidence_call.data['duration']
         aggregated[:type].should eq 'skype'
         aggregated[:versus].should be :in
+        aggregated[:sender].should be nil
+      end
+
+      context 'when a "caller" is defined (old evidence format)' do
+
+        before { @evidence_call.data = {'peer' => 'Peer_Old', 'program' => 'skype', 'incoming' => 1, 'duration' => 30, 'caller' => 'Bob'} }
+
+        it 'sets the "sender"' do
+          aggregate_data = PeerAggregator.extract_call(@evidence_call).first
+          expect(aggregate_data[:sender]).to eql 'bob'
+        end
       end
 
       it 'should parse multiple old evidence' do
@@ -134,6 +145,7 @@ describe PeerAggregator do
         aggregated[:size].should eq @evidence_call.data['duration']
         aggregated[:type].should eq 'skype'
         aggregated[:versus].should be :in
+        aggregated[:sender].should == 'receiver'
       end
 
       it 'should parse new evidence (outgoing)' do
@@ -145,6 +157,7 @@ describe PeerAggregator do
         aggregated[:size].should eq @evidence_call.data['duration']
         aggregated[:type].should eq 'skype'
         aggregated[:versus].should be :out
+        aggregated[:sender].should == 'sender'
       end
 
       it 'should parse multiple new evidence' do
@@ -155,6 +168,7 @@ describe PeerAggregator do
         parsed.collect {|x| x[:peer]}.should eq ['receiver1', 'receiver2', 'receiver3']
         aggregated = parsed.first
         aggregated[:versus].should be :out
+        aggregated[:sender].should == 'sender'
       end
     end
 

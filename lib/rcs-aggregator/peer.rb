@@ -43,24 +43,27 @@ class PeerAggregator
 
   def self.extract_call(ev)
     data = []
+    versus = ev.data['incoming'] == 1 ? :in : :out
+    hash = {:versus => versus, :type => ev.data['program'].downcase, :size => ev.data['duration'].to_i}
 
     # TODO: remove old call format (after 9.0.0)
     if ev.data['peer']
       # multiple peers creates multiple entries
       ev.data['peer'].split(',').each do |peer|
-        data << {:peer => peer.strip.downcase, :versus => ev.data['incoming'] == 1 ? :in : :out, :type => ev.data['program'].downcase, :size => ev.data['duration'].to_i}
+        hash.merge!(sender: ev.data['caller'].strip.downcase) if ev.data['caller']
+        data << hash.merge(peer: peer.strip.downcase)
       end
 
       return data
     end
 
     # new call format
-    if ev.data['incoming'] == 1
-      data << {:peer => ev.data['from'].strip.downcase, :versus => :in, :type => ev.data['program'].downcase, :size => ev.data['duration'].to_i}
-    elsif ev.data['incoming'] == 0
+    if versus == :in
+      data << hash.merge(peer: ev.data['from'].strip.downcase, sender: ev.data['rcpt'].strip.downcase)
+    else
       # multiple rcpts creates multiple entries
       ev.data['rcpt'].split(',').each do |rcpt|
-        data << {:peer => rcpt.strip.downcase, :versus => :out, :type => ev.data['program'].downcase, :size => ev.data['duration'].to_i}
+        data << hash.merge(peer: rcpt.strip.downcase, sender: ev.data['from'].strip.downcase)
       end
     end
 
