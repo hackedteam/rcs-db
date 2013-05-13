@@ -2,31 +2,26 @@
 TODO 9.0.0
 
     upgrade to ruby 1.9.3-p392 on windows
-
     upgrade RubyEncoder 1.5
 
     --
 
+  FIX:
     check "end of file reaced" from mongoid
-
     try to implement "retry" on mongoid queries
-
     check threads waiting on queued collection (alert, push)
 
-    accounts from outbound/inbound messages
+  IMPLEMENT:
+    aggregates for places (alor)
+      - search for similar point in aggregates
+    retrieve accounts from outbound/inbound messages (topac)
+    export entities data (topac)
+    api for console to display communication flows (message, call, chat)
+    export graph data
 
-    if too many backups in the archive, take only the last entries
+  TRY:
+    hash index for sharding (topac - on branch 9.0.x)
 
-    hash index for sharding
-
-    aggregates for places (positioner algorithm)
-
-    flows:
-      - message
-      - call
-
-     export entities data
-     export graph data
 
 TODO FUTURE:
 
