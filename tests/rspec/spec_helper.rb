@@ -66,7 +66,7 @@ def empty_test_db
   Mongoid.purge!
 end
 
-def require_sharded_db
+def sharded_db
   conn = Mongo::MongoClient.new(ENV['MONGOID_HOST'], ENV['MONGOID_PORT'])
   db = conn.db('admin')
   list = db.command({ listshards: 1 })
@@ -100,14 +100,17 @@ end
 # Connect to mongoid and destroy all the collection
 # before and after each example
 def use_db
-  before (:all) { connect_mongoid }
+  before (:all) do
+    connect_mongoid
+    sharded_db
+  end
 
   before do
     turn_off_tracer
     empty_test_db
   end
 
-  after { empty_test_db }
+  #after { empty_test_db }
 end
 
 # Stub the LicenseManager instance to simulate the presence of a valid license

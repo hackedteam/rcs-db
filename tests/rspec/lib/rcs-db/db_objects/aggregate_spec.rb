@@ -4,22 +4,8 @@ require_db 'db_layer'
 describe Aggregate do
   use_db
 
-  before do
-    require_sharded_db
-  end
-
   let (:aggregate_class) { Aggregate.collection_class('testtarget') }
   let (:aggregate_name) { Aggregate.collection_name('testtarget') }
-
-  it 'should create a sharded collection' do
-    aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: :test, aid: 'agent_id')
-
-    aggregate_class.all.count.should be 1
-
-    db = RCS::DB::DB.instance.mongo_connection
-    coll = db.collection(aggregate_name)
-    coll.stats['sharded'].should be true
-  end
 
   it 'should create and retrieve summary' do
     aggregate_class.add_to_summary('test', 'peer')

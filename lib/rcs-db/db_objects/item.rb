@@ -427,7 +427,7 @@ class Item
   def create_callback
     case self._kind
       when 'target'
-        self.create_evidence_collections
+        self.create_target_collections
         # also create the relative entity
         Entity.create! do |entity|
           entity.type = :target
@@ -471,6 +471,7 @@ class Item
         # destroy all the agents of this target
         # to speed up the process, set the DROPPING flag.
         # during callbacks the agent will not delete the evidence
+
         Item.any_in({_kind: ['factory', 'agent']}).in({path: [ self._id ]}).each do |agent|
           agent[:dropping] = true
           agent.save
@@ -480,8 +481,8 @@ class Item
         Entity.any_in({path: [ self._id ]}).each { |entity| entity.destroy }
         trace :info, "Dropping evidence for target #{self.name}"
         # drop evidence and aggregates
-        self.drop_evidence_collections
-        Aggregate.collection_class(self._id.to_s).collection.drop
+        self.drop_target_collections
+
       when 'agent'
         # dropping flag is set only by cascading from target
         unless self[:dropping]
@@ -504,24 +505,21 @@ class Item
     raise
   end
 
-  def drop_evidence_collections
+  def drop_target_collections
     return if self._kind != 'target'
 
     # drop the evidence collection of this target
     Evidence.collection_class(self._id.to_s).collection.drop
+    Aggregate.collection_class(self._id.to_s).collection.drop
     RCS::DB::GridFS.drop_collection(self._id.to_s)
   end
 
-  def create_evidence_collections
+  def create_target_collections
     return if self._kind != 'target'
 
-    # create the collection for the target's evidence and shard it
-    db = RCS::DB::DB.instance.mongo_connection
-    collection = db.collection(Evidence.collection_name(self._id))
-    # ensure indexes
-    Evidence.collection_class(self._id).create_indexes
-    # enable sharding only if not enabled
-    RCS::DB::Shard.set_key(collection, {type: 1, da: 1, aid: 1})
+    Evidence.collection_class(self._id).create_collection
+    Aggregate.collection_class(self._id).create_collection
+    RCS::DB::GridFS.create_collection(self._id)
   end
 
   def blacklisted_software?

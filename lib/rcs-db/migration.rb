@@ -85,9 +85,7 @@ class Migration
       begin
         next if Aggregate.collection_class(target._id).empty?
         Aggregate.collection_class(target._id).collection.indexes.drop
-        Aggregate.collection_class(target._id).create_indexes
-        coll = db.collection('aggregate.' + target._id.to_s)
-        Shard.set_key(coll, {type: 1, day: 1, aid: 1})
+        Aggregate.collection_class(target._id).create_collection
         print "\r%d aggregates reindexed" % count += 1
       rescue
       end

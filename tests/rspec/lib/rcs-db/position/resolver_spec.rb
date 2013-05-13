@@ -152,7 +152,7 @@ describe PositionResolver do
     lon.should be_within(0.00005).of(9.1907635)
     accuracy.should be_within(10).of(52)
 
-    position['address'].should eq({"text"=>"Via della Moscova, 17, 20121 Milan, Italy"})
+    position['address']['text'].should include "Via della Moscova"
   end
 
 end

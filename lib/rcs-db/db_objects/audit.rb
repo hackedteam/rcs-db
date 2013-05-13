@@ -29,6 +29,12 @@ class Audit
 
   store_in collection: 'audit'
 
+  def self.shard_collection
+    db = RCS::DB::DB.instance.mongo_connection
+    audit = db.collection('audit')
+    RCS::DB::Shard.set_key(audit, {time: 1, actor: 1}) unless audit.stats['sharded']
+  end
+
   def self.filter(params)
 
     filter, filter_hash = ::Audit.common_filter params

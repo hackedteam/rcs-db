@@ -64,7 +64,7 @@ class DB
     # instantiate a pool of connections that are thread-safe
     # this handle will be returned to every thread requesting for a new connection
     # also the pool is lazy (connect only on request)
-    @mongo_db ||= Mongo::MongoClient.new(host, port, pool_size: 20, pool_timeout: 15, connect: false)
+    @mongo_db ||= Mongo::MongoClient.new(host, port, pool_size: 25, pool_timeout: 30, connect: false)
     delta = Time.now - time
     trace :warn, "Opening mongo pool connection is too slow (%f)" % delta if delta > 0.5 and Config.instance.global['PERF']
     return @mongo_db.db(db)
@@ -131,8 +131,7 @@ class DB
       # number of index + _id + shard_key
       next if coll.stats['nindexes'] == e.index_options.size + 2
       trace :info, "Creating indexes for #{coll_name} - " + coll.stats['size'].to_s_bytes
-      e.create_indexes
-      Shard.set_key(coll, {type: 1, da: 1, aid: 1})
+      Evidence.collection_class(coll_name.split('.').last).create_collection
     end
 
     # index on shard id for the worker
@@ -151,8 +150,7 @@ class DB
       # number of index + _id + shard_key
       next if coll.stats['nindexes'] == a.index_options.size + 2
       trace :info, "Creating indexes for #{coll_name} - " + coll.stats['size'].to_s_bytes
-      a.create_indexes
-      Shard.set_key(coll, {type: 1, day: 1, aid: 1})
+      Aggregate.collection_class(coll_name.split('.').last).create_collection
     end
   end
 
@@ -167,10 +165,7 @@ class DB
   end
 
   def shard_audit
-    # enable shard on audit log, it will increase its size forever and ever
-    db = DB.instance.mongo_connection
-    audit = db.collection('audit')
-    Shard.set_key(audit, {time: 1, actor: 1}) unless audit.stats['sharded']
+    ::Audit.shard_collection
   end
 
   def ensure_admin

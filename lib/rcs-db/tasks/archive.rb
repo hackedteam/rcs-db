@@ -62,8 +62,8 @@ class ArchiveTask
       next if item._kind != 'target'
       trace :info, "Cleaning #{item.name} - #{item._id}"
 
-      item.drop_evidence_collections
-      item.create_evidence_collections
+      item.drop_target_collections
+      item.create_target_collections
     end
     # restat all the subitem statistics
     ::Item.any_of({_id: @item._id}, {path: @item._id}).each do |item|

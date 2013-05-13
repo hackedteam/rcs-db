@@ -44,9 +44,20 @@ class Evidence
         index({rel: 1}, {background: true})
         index({blo: 1}, {background: true})
         index({kw: 1}, {background: true})
+
         shard_key :type, :da, :aid
 
         STAT_EXCLUSION = ['filesystem', 'info', 'command', 'ip']
+
+        def self.create_collection
+          # create the collection for the target's evidence and shard it
+          db = RCS::DB::DB.instance.mongo_connection
+          collection = db.collection(Evidence.collection_name('#{target}'))
+          # ensure indexes
+          self.create_indexes
+          # enable sharding only if not enabled
+          RCS::DB::Shard.set_key(collection, {type: 1, da: 1, aid: 1}) unless collection.stats['sharded']
+        end
 
         protected
 

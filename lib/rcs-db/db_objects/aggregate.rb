@@ -36,8 +36,6 @@ class Aggregate
 
         shard_key :type, :day, :aid
 
-        after_create :create_callback
-
         def self.summary_include?(type, peer)
           summary = self.where(day: '0', type: 'summary').first
           return false unless summary
@@ -70,16 +68,14 @@ class Aggregate
           summary.save!
         end
 
-        protected
-
-        def create_callback
-          # enable sharding only if not enabled
+        def self.create_collection
+          # create the collection for the target's aggregate and shard it
           db = RCS::DB::DB.instance.mongo_connection
-          coll = db.collection(Aggregate.collection_name('#{target}'))
-          unless coll.stats['sharded']
-            Aggregate.collection_class('#{target}').create_indexes
-            RCS::DB::Shard.set_key(coll, {type: 1, day: 1, aid: 1})
-          end
+          collection = db.collection(Aggregate.collection_name('#{target}'))
+          # ensure indexes
+          self.create_indexes
+          # enable sharding only if not enabled
+          RCS::DB::Shard.set_key(collection, {type: 1, day: 1, aid: 1}) unless collection.stats['sharded']
         end
 
       end
