@@ -96,22 +96,29 @@ class Processor
 
     # normalize the type to search for the correct account
     aggregate_type = aggregate.type
-    type = compatible_entity_handle_types aggregate_type
+    types = compatible_entity_handle_types aggregate_type
+
+    # As the version 9.0.0 the aggregate has a "sender" key that contains the handle of the other peer
+    # involved in a communication. The "sender" is an handle of the current entity (the one under surveliance)
+    if aggregate.data['sender']
+      entity.create_or_update_handle types.first, aggregate.data['sender']
+    end
 
     # search for existing entity with that account and link it (direct link)
-    if (peer = Entity.same_path_of(entity).where("handles.handle" => aggregate.data['peer']).in("handles.type" => type).first)
-      RCS::DB::LinkManager.instance.add_link(from: entity, to: peer, level: :automatic, type: :peer, versus: aggregate.data['versus'].to_sym, info: type.first)
+    if (peer = Entity.same_path_of(entity).where("handles.handle" => aggregate.data['peer']).in("handles.type" => types).first)
+      info = [aggregate.data['sender'], aggregate.data['peer']].compact
+      RCS::DB::LinkManager.instance.add_link(from: entity, to: peer, level: :automatic, type: :peer, versus: aggregate.data['versus'].to_sym, info: info)
       return
     end
 
     # search if two entities are communicating with a third party and link them (indirect link)
     ::Entity.targets.same_path_of(entity).each do |e|
 
-      trace :debug, "Checking if '#{entity.name}' and '#{e.name}' have common peer: #{aggregate.data['peer']} #{type}"
+      trace :debug, "Checking if '#{entity.name}' and '#{e.name}' have common peer: #{aggregate.data['peer']} #{types}"
 
       next unless Aggregate.collection_class(e.path.last).summary_include?(aggregate_type, aggregate.data['peer'])
 
-      trace :debug, "Peer found, creating new entity... #{aggregate.data['peer']} #{type}"
+      trace :debug, "Peer found, creating new entity... #{aggregate.data['peer']} #{types}"
 
       # create the new entity
       name = Entity.name_from_handle(aggregate_type, aggregate.data['peer'], e.path.last)

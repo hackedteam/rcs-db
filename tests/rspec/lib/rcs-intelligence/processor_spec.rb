@@ -1,5 +1,6 @@
 require 'spec_helper'
 require_db 'db_layer'
+require_db 'grid'
 require_intelligence 'processor'
 
 module RCS
@@ -118,7 +119,7 @@ describe Processor do
 
     context 'given a aggregate of type "sms"' do
       let!(:sms_aggregate_of_bob) { aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: 'sms', aid: 'agent_id', count: 3,
-        data: {'peer' => numer_of_alice, 'versus' => :in}) }
+        data: {'peer' => numer_of_alice, 'versus' => :in, 'sender' => number_of_bob}) }
 
       # Create Alice (entity) with an handle (her phone number)
       let!(:entity_alice) do
@@ -134,8 +135,6 @@ describe Processor do
           Entity.where(name: 'bob').first
         end
 
-        before { RCS::DB::LinkManager.instance.should_receive(:add_link).and_call_original }
-
         it 'should create a link' do
           described_class.process_aggregate entity_bob, sms_aggregate_of_bob
 
@@ -145,14 +144,28 @@ describe Processor do
 
         context 'the "info" attribute of the created link' do
 
-          let! :created_link do
+          let :created_link do
             described_class.process_aggregate entity_bob, sms_aggregate_of_bob
             entity_alice.reload.links.first
           end
 
           it 'contains the handles of the two linked entities' do
-            # expect(created_link.info).to eql [[peer, peer]]
-            pending
+            created_link
+            expect(created_link.info).to include [number_of_bob, numer_of_alice]
+          end
+
+          # this situation should not be happen in version 9.0.0
+          context 'when the aggregate does not have a "sender" attribute' do
+
+            before do
+              sms_aggregate_of_bob.data['sender'] = nil
+              sms_aggregate_of_bob.save!
+              created_link
+            end
+
+            it 'contains the handle of other entity' do
+              expect(created_link.info).to include [numer_of_alice]
+            end
           end
         end
       end
