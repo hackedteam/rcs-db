@@ -109,47 +109,63 @@ describe Processor do
 
 
   describe '#process_aggregate' do
-    let! (:aggregate_class) { Aggregate.collection_class('testtarget') }
-    let! (:aggregate_name) { Aggregate.collection_name('testtarget') }
-    let! (:operation_x) { Item.create!(name: 'test-operation-x', _kind: 'operation', path: [], stat: ::Stat.new) }
-    let! (:operation_y) { Item.create!(name: 'test-operation-y', _kind: 'operation', path: [], stat: ::Stat.new) }
-    let! (:peer) { 'robert.baratheon' }
+    let!(:aggregate_class) { Aggregate.collection_class('testtarget') }
+    let!(:aggregate_name) { Aggregate.collection_name('testtarget') }
+    let!(:operation_x) { Item.create!(name: 'test-operation-x', _kind: 'operation', path: [], stat: ::Stat.new) }
+    let!(:operation_y) { Item.create!(name: 'test-operation-y', _kind: 'operation', path: [], stat: ::Stat.new) }
+    let!(:numer_of_alice) { '+1 12345' }
+    let!(:number_of_bob) { '+1 45678' }
 
     context 'given a aggregate of type "sms"' do
-      let!(:aggregate) { aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: 'sms', aid: 'agent_id', count: 1, data: {'peer' => peer, 'versus' => :in}) }
+      let!(:sms_aggregate_of_bob) { aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: 'sms', aid: 'agent_id', count: 3,
+        data: {'peer' => numer_of_alice, 'versus' => :in}) }
 
-      let!(:entity_a) do
-        Item.create!(name: 'test-target-a', _kind: 'target', path: [operation_x._id], stat: ::Stat.new)
-        entity = Entity.where(name: 'test-target-a').first
-        entity.create_or_update_handle :phone, peer, peer.capitalize
+      # Create Alice (entity) with an handle (her phone number)
+      let!(:entity_alice) do
+        Item.create! name: 'alice', _kind: 'target', path: [operation_x._id], stat: ::Stat.new
+        entity = Entity.where(name: 'alice').first
+        entity.create_or_update_handle :phone, numer_of_alice, numer_of_alice.capitalize
         entity
       end
 
       context 'if an entity (same operation) can be linked to it' do
-        let!(:entity_b) do
-          Item.create!(name: 'test-target-b', _kind: 'target', path: [operation_x._id], stat: ::Stat.new)
-          Entity.where(name: 'test-target-b').first
+        let!(:entity_bob) do
+          Item.create! name: 'bob', _kind: 'target', path: [operation_x._id], stat: ::Stat.new
+          Entity.where(name: 'bob').first
         end
 
+        before { RCS::DB::LinkManager.instance.should_receive(:add_link).and_call_original }
+
         it 'should create a link' do
-          RCS::DB::LinkManager.instance.should_receive(:add_link).and_call_original
+          described_class.process_aggregate entity_bob, sms_aggregate_of_bob
 
-          described_class.process_aggregate entity_b, aggregate
+          entity_alice.reload
+          expect(entity_alice.linked_to?(entity_bob)).to be_true
+        end
 
-          entity_a.reload
-          entity_a.links.first.linked_entity == entity_b
+        context 'the "info" attribute of the created link' do
+
+          let! :created_link do
+            described_class.process_aggregate entity_bob, sms_aggregate_of_bob
+            entity_alice.reload.links.first
+          end
+
+          it 'contains the handles of the two linked entities' do
+            # expect(created_link.info).to eql [[peer, peer]]
+            pending
+          end
         end
       end
 
       context 'if an entity (another operation) can be linked to it' do
-        let!(:entity_b) do
+        let!(:entity_bob) do
           Item.create!(name: 'test-target-b', _kind: 'target', path: [operation_y._id], stat: ::Stat.new)
           Entity.where(name: 'test-target-b').first
         end
 
         it 'should not create a link' do
           RCS::DB::LinkManager.instance.should_not_receive :add_link
-          described_class.process_aggregate entity_b, aggregate
+          described_class.process_aggregate entity_bob, sms_aggregate_of_bob
         end
       end
     end
