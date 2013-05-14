@@ -1,5 +1,6 @@
 require 'spec_helper'
 require_db 'db_layer'
+require_db 'grid'
 require_db 'link_manager'
 
 module RCS
@@ -193,57 +194,55 @@ module DB
     end
 
     context 'given an entity with a handle' do
-      before do
-        Entity.any_instance.stub(:alert_new_entity).and_return nil
-        Entity.any_instance.stub(:push_new_entity).and_return nil
-        RCS::DB::LinkManager.any_instance.stub(:alert_new_link).and_return nil
-        EntityHandle.any_instance.stub(:check_intelligence_license).and_return true
 
+      silence_alerts
+
+      before do
         @operation = Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new)
         @target = Item.create!(name: 'test-target', _kind: 'target', path: [@operation._id], stat: ::Stat.new)
+
         @entity1 = Entity.where(name: 'test-target').first
         @entity1.handles.create!(name: 'test', handle: 'test.ardo', type: 'test')
-      end
-
-      it 'should find identity relations' do
-        @entity2 = Entity.create!(name: 'entity2', type: :person, path: [@operation._id], level: :automatic)
-        handle = EntityHandle.new(name: 'test', handle: 'test.ardo', type: 'test')
-
-        LinkManager.instance.check_identity(@entity2, handle)
-
-        @entity1.reload
-        @entity2.reload
-
-        @entity1.links.size.should be 1
-        @entity2.links.size.should be 1
-
-        @entity1.links.first.type.should be :identity
-        @entity1.links.first.versus.should be :both
-      end
-
-      it 'should link to entity with that handle' do
-        Aggregate.collection_class(@target._id).create!(day: Time.now.strftime('%Y%m%d'), type: 'test', aid: 'agent_id', count: 1, data: {peer: 'test.ardo', versus: :in})
-        Aggregate.collection_class(@target._id).add_to_summary('test', 'test.ardo')
 
         @entity2 = Entity.create!(name: 'entity2', type: :person, path: [@operation._id], level: :automatic)
-        handle = EntityHandle.new(name: 'test', handle: 'test.ardo', type: 'test')
+        @handle = EntityHandle.new(name: 'test', handle: 'test.ardo', type: 'test')
+      end
 
-        LinkManager.instance.link_handle(@entity2, handle)
+      describe '#check_identity' do
 
-        @entity1.reload
-        @entity2.reload
+        it 'should find identity relations' do
+          LinkManager.instance.check_identity @entity2, @handle
 
-        @entity1.links.size.should be 1
-        @entity2.links.size.should be 1
+          @entity1.reload
+          @entity2.reload
 
-        @entity1.links.first.type.should be :peer
-        @entity1.links.first.versus.should be :out
+          @entity1.links.size.should be 1
+          @entity2.links.size.should be 1
+
+          link = @entity1.links.first
+          expect(link.type).to be :identity
+          expect(link.versus).to be :both
+          expect(@entity1.links.first.info).to include @handle.handle
+        end
+      end
+
+      describe '#link_handle' do
+
+        it 'should link to entity with that handle' do
+          Aggregate.collection_class(@target._id).create!(day: Time.now.strftime('%Y%m%d'), type: 'test', aid: 'agent_id', count: 1, data: {peer: 'test.ardo', versus: :in})
+          Aggregate.collection_class(@target._id).add_to_summary('test', 'test.ardo')
+
+          LinkManager.instance.link_handle(@entity2, @handle)
+
+          @entity1.reload
+          @entity2.reload
+
+          expect(@entity1.linked_to? @entity2).to be_true
+          expect(@entity1.links.first.info).to include @handle.handle
+        end
       end
     end
-
-
   end
 
 end
 end
-

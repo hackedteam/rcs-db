@@ -239,8 +239,14 @@ class Evidence
       end
     else
       # otherwise we use it for full text search with keywords
-      # the search matches if all the keywords are matched inside the evidence
-      filter_hash[:kw.all] = info.keywords
+      if info.include? '|'
+        groups_of_words = info.split('|').map { |part| part.strip.keywords }
+        filter_hash['$or'] = groups_of_words.map { |words| {'kw' => {'$all' => words}} }
+      else
+        # the search matches if all the keywords are matched inside the evidence
+        filter_hash[:kw.all] = info.keywords
+      end
+
     end
   rescue Exception => e
     trace :error, "Invalid filter for data [#{e.message}], ignoring..."

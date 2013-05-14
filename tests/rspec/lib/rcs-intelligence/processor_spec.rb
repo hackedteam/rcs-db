@@ -1,5 +1,6 @@
 require 'spec_helper'
 require_db 'db_layer'
+require_db 'grid'
 require_intelligence 'processor'
 
 module RCS
@@ -113,18 +114,18 @@ describe Processor do
     let!(:aggregate_name) { Aggregate.collection_name('testtarget') }
     let!(:operation_x) { Item.create!(name: 'test-operation-x', _kind: 'operation', path: [], stat: ::Stat.new) }
     let!(:operation_y) { Item.create!(name: 'test-operation-y', _kind: 'operation', path: [], stat: ::Stat.new) }
-    let!(:numer_of_alice) { '+1 12345' }
-    let!(:number_of_bob) { '+1 45678' }
+    let!(:number_of_alice) { '00112345' }
+    let!(:number_of_bob) { '00145678' }
 
     context 'given a aggregate of type "sms"' do
       let!(:sms_aggregate_of_bob) { aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: 'sms', aid: 'agent_id', count: 3,
-        data: {'peer' => numer_of_alice, 'versus' => :in}) }
+        data: {'peer' => number_of_alice, 'versus' => :in, 'sender' => number_of_bob}) }
 
       # Create Alice (entity) with an handle (her phone number)
       let!(:entity_alice) do
         Item.create! name: 'alice', _kind: 'target', path: [operation_x._id], stat: ::Stat.new
         entity = Entity.where(name: 'alice').first
-        entity.create_or_update_handle :phone, numer_of_alice, numer_of_alice.capitalize
+        entity.create_or_update_handle :phone, number_of_alice, number_of_alice.capitalize
         entity
       end
 
@@ -133,8 +134,6 @@ describe Processor do
           Item.create! name: 'bob', _kind: 'target', path: [operation_x._id], stat: ::Stat.new
           Entity.where(name: 'bob').first
         end
-
-        before { RCS::DB::LinkManager.instance.should_receive(:add_link).and_call_original }
 
         it 'should create a link' do
           described_class.process_aggregate entity_bob, sms_aggregate_of_bob
@@ -145,14 +144,28 @@ describe Processor do
 
         context 'the "info" attribute of the created link' do
 
-          let! :created_link do
+          let :created_link do
             described_class.process_aggregate entity_bob, sms_aggregate_of_bob
             entity_alice.reload.links.first
           end
 
           it 'contains the handles of the two linked entities' do
-            # expect(created_link.info).to eql [[peer, peer]]
-            pending
+            created_link
+            expect(created_link.info).to include "#{number_of_bob} #{number_of_alice}"
+          end
+
+          # this situation should not be happen in version 9.0.0
+          context 'when the aggregate does not have a "sender" attribute' do
+
+            before do
+              sms_aggregate_of_bob.data['sender'] = nil
+              sms_aggregate_of_bob.save!
+              created_link
+            end
+
+            it 'contains the handle of other entity' do
+              expect(created_link.info).to include number_of_alice
+            end
           end
         end
       end

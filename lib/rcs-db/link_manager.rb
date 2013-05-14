@@ -176,7 +176,7 @@ class LinkManager
 
       # if we find a peer, create a link
       e.peer_versus(handle.handle, handle.type).each do |versus|
-        add_link({from: entity, to: e, type: :peer, level: :automatic, info: handle.type, versus: versus})
+        add_link({from: entity, to: e, type: :peer, level: :automatic, info: handle.handle, versus: versus})
       end
     end
   end
