@@ -46,7 +46,7 @@ module DB
 
       context 'when all the keywords (info) are founded' do
 
-        let(:filter) { {"from" => "24h", "target" => target.id, "agent" => agent.id, "info" => "bau ciao"} }
+        let(:filter) { {"from" => "24h", "target" => target.id, "agent" => agent.id, "info" => ["bau ciao"]} }
 
 
         it 'return the matching evidences ($all search)' do
@@ -58,7 +58,7 @@ module DB
 
       context 'when not all the keywords (info) are founded' do
 
-        let(:filter) { {"from" => "24h", "target" => target.id, "agent" => agent.id, "info" => "bau ciao muu"} }
+        let(:filter) { {"from" => "24h", "target" => target.id, "agent" => agent.id, "info" => ["bau ciao muu"]} }
 
         it 'returns nothing ($all search)' do
           criteria = index_with_params 'filter' => filter
@@ -69,11 +69,15 @@ module DB
       context "when the keywords are piped" do
 
         it 'returns the matching evidences' do
-          filter = {"from" => "24h", "target" => target.id, "agent" => agent.id, "info" => "asd | bau | xxx"}
+          filter = {"from" => "24h", "target" => target.id, "agent" => agent.id, "info" => ["asd xxx"]}
+          criteria = index_with_params 'filter' => filter
+          expect(criteria.size).to eql 0
+
+          filter = {"from" => "24h", "target" => target.id, "agent" => agent.id, "info" => %w[asd bau xxx]}
           criteria = index_with_params 'filter' => filter
           expect(criteria.size).to eql 2
 
-          filter = {"from" => "24h", "target" => target.id, "agent" => agent.id, "info" => "yyy | ciao bau | xxx"}
+          filter = {"from" => "24h", "target" => target.id, "agent" => agent.id, "info" => ["yyy", "ciao bau", "xxx"]}
           criteria = index_with_params 'filter' => filter
           expect(criteria.size).to eql 1
           expect(criteria.first).to eql first_evidence

@@ -70,7 +70,7 @@ describe Evidence do
 
     describe "the returned filter_hash" do
 
-      let(:filter) { {"from" => "24h", "target" => "a_target_id", "agent" => "an_agent_id", "info" => "asd lol"} }
+      let(:filter) { {"from" => "24h", "target" => "a_target_id", "agent" => "an_agent_id", "info" => ["asd lol"]} }
 
       let :filter_hash do
         params['filter']['target'] = target.id
@@ -89,7 +89,7 @@ describe Evidence do
 
       # note: kw stands for keywords
       it 'contains a filter on the :kw attribute when params contains "info"' do
-        filter_on_kw = filter_hash.select { |key| key.respond_to?(:name) and key.name == :kw }
+        filter_on_kw = filter_hash.select { |key, value| value.inspect.include?('asd') }
         expect(filter_on_kw).not_to be_empty
       end
     end
@@ -97,7 +97,7 @@ describe Evidence do
 
   describe '#parse_info_keywords' do
 
-    let(:info) { 'john dorian skype' }
+    let(:info) { ['john dorian skype'] }
 
     let(:filter) { {'info' => info} }
 
@@ -106,19 +106,17 @@ describe Evidence do
     it 'adds to the filter_hash a selector on the :kw attribute' do
       described_class.parse_info_keywords filter, filter_hash
       selector = filter_hash.keys.first
-      expect(selector.name).to eql :kw
-      expect(selector.operator).to eql '$all'
-      expect(filter_hash[selector]).to eql %w[dorian john skype]
+      expect(selector).to eql '$or'
+      expect(filter_hash[selector]).to eql [{"kw"=>{"$all"=>["dorian", "john", "skype"]}}]
     end
 
-    context 'when "info" contains piped words' do
+    context 'when the "info" contains more than one string' do
 
-      let(:info) { 'john | dorian | skype' }
+      let(:info) { %w[john dorian skype] }
 
       it 'adds to the filter_hash a selector on the :kw attribute' do
         described_class.parse_info_keywords filter, filter_hash
-        selector = filter_hash.keys.first
-        expect(selector).to eql '$or'
+        expect(filter_hash).not_to be_empty
       end
     end
   end
