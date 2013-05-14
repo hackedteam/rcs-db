@@ -94,4 +94,20 @@ describe Evidence do
       end
     end
   end
+
+  describe '#parse_info_keywords' do
+
+    let(:info) { 'john dorian skype' }
+
+    let(:filter) { {'info' => info} }
+
+    let(:filter_hash) { {} }
+
+    it 'adds to the filter_hash a selector on the :kw attribute' do
+      described_class.parse_info_keywords filter, filter_hash
+      selector = filter_hash.keys.first
+      expect(selector.name).to eql :kw
+      expect(selector.operator).to eql '$all'
+    end
+  end
 end
