@@ -77,7 +77,7 @@ describe Evidence do
         described_class.common_filter(params)[1]
       end
 
-      it 'contains the agent id' do
+      it 'contains the agent id (even if the agent is missing in the db)' do
         expect(filter_hash[:aid]).to eql 'an_agent_id'
       end
 
