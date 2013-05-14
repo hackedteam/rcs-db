@@ -108,6 +108,18 @@ describe Evidence do
       selector = filter_hash.keys.first
       expect(selector.name).to eql :kw
       expect(selector.operator).to eql '$all'
+      expect(filter_hash[selector]).to eql %w[dorian john skype]
+    end
+
+    context 'when "info" contains piped words' do
+
+      let(:info) { 'john | dorian | skype' }
+
+      it 'adds to the filter_hash a selector on the :kw attribute' do
+        described_class.parse_info_keywords filter, filter_hash
+        selector = filter_hash.keys.first
+        expect(selector).to eql '$or'
+      end
     end
   end
 end

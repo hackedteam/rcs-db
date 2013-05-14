@@ -20,8 +20,9 @@ module DB
 
     let(:chat_data) { {'from' => 'john', 'rcpt' => 'receiver', 'incoming' => 1, 'program' => 'skype', 'content' => 'all your base are belong to us'} }
 
-    let(:chat_evidence) { Evidence.collection_class(target.id).create!(da: Time.now.to_i-100, aid: agent.id, type: :chat, data: chat_data, kw: %w[ciao miao bau]) }
+    let(:first_evidence) { Evidence.collection_class(target.id).create!(kw: %w[ciao miao bau], da: Time.now.to_i-100, aid: agent.id, type: :chat, data: chat_data) }
 
+    let(:second_evidence) { Evidence.collection_class(target.id).create!(kw: %w[roflmao lol asd], da: Time.now.to_i-100, aid: agent.id, type: :chat, data: chat_data) }
 
     describe '#index' do
 
@@ -37,27 +38,27 @@ module DB
         # stub the #ok method and then #not_found methods
         subject.stub(:ok) { |query, options| query }
         subject.stub(:not_found) { |message| message }
+
+        # create the evidences
+        first_evidence
+        second_evidence
       end
 
       context 'when all the keywords (info) are founded' do
 
         let(:filter) { {"from" => "24h", "target" => target.id, "agent" => agent.id, "info" => "bau ciao"} }
 
-        # create the chat evidence
-        before { chat_evidence }
 
         it 'return the matching evidences ($all search)' do
           criteria = index_with_params 'filter' => filter
-          expect(criteria.first).to eql chat_evidence
+          expect(criteria.size).to eql 1
+          expect(criteria.first).to eql first_evidence
         end
       end
 
       context 'when not all the keywords (info) are founded' do
 
         let(:filter) { {"from" => "24h", "target" => target.id, "agent" => agent.id, "info" => "bau ciao muu"} }
-
-        # create the chat evidence
-        before { chat_evidence }
 
         it 'returns nothing ($all search)' do
           criteria = index_with_params 'filter' => filter
@@ -67,10 +68,15 @@ module DB
 
       context "when the keywords are piped" do
 
-        let(:filter) { {"from" => "24h", "target" => target.id, "agent" => agent.id, "info" => "bau |muu"} }
-
         it 'returns the matching evidences' do
-          pending
+          filter = {"from" => "24h", "target" => target.id, "agent" => agent.id, "info" => "asd | bau | xxx"}
+          criteria = index_with_params 'filter' => filter
+          expect(criteria.size).to eql 2
+
+          filter = {"from" => "24h", "target" => target.id, "agent" => agent.id, "info" => "yyy | ciao bau | xxx"}
+          criteria = index_with_params 'filter' => filter
+          expect(criteria.size).to eql 1
+          expect(criteria.first).to eql first_evidence
         end
       end
     end
