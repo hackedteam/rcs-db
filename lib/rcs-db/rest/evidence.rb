@@ -350,7 +350,6 @@ class EvidenceController < RESTController
         # without paging, return everything
         query = filtering.where(filter_hash).without(:body, :kw).order_by([[:da, :asc]])
       end
-      # TODO: here the query has not been runned yet. it runs in RestResponse upon content.to_json call
       # fix to provide correct stats
       return ok(query, {gzip: true})
     end
