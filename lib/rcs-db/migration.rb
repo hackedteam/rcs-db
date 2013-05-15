@@ -83,9 +83,9 @@ class Migration
     puts "Re-indexing aggregates..."
     ::Item.targets.each do |target|
       begin
-        next if Aggregate.collection_class(target._id).empty?
-        Aggregate.collection_class(target._id).collection.indexes.drop
-        Aggregate.collection_class(target._id).create_collection
+        next if Aggregate.target(target._id).empty?
+        Aggregate.target(target._id).collection.indexes.drop
+        Aggregate.target(target._id).create_collection
         print "\r%d aggregates reindexed" % count += 1
       rescue
       end
@@ -116,8 +116,8 @@ class Migration
     puts "Creating aggregates summaries..."
     ::Item.targets.each do |target|
       begin
-        next if Aggregate.collection_class(target._id).empty?
-        Aggregate.collection_class(target._id).rebuild_summary
+        next if Aggregate.target(target._id).empty?
+        Aggregate.target(target._id).rebuild_summary
         print "\r%d summaries" % count += 1
       rescue
       end

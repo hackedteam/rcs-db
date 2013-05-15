@@ -25,7 +25,7 @@ describe Processor do
 
     context 'the item is an aggregate' do
       before do
-        aggregate_class = Aggregate.collection_class target.id
+        aggregate_class = Aggregate.target target.id
         @aggregate = aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: 'sms', aid: 'agent_id', count: 1, data: {'peer' => 'harrenhal', 'versus' => :in})
         @queued_item = IntelligenceQueue.create! target_id: target.id, type: :aggregate, ident: @aggregate.id
       end
@@ -110,8 +110,8 @@ describe Processor do
 
 
   describe '#process_aggregate' do
-    let!(:aggregate_class) { Aggregate.collection_class('testtarget') }
-    let!(:aggregate_name) { Aggregate.collection_name('testtarget') }
+    let!(:aggregate_class) { Aggregate.target('testtarget') }
+    let!(:aggregate_name) { "aggregate.testtarget" }
     let!(:operation_x) { Item.create!(name: 'test-operation-x', _kind: 'operation', path: [], stat: ::Stat.new) }
     let!(:operation_y) { Item.create!(name: 'test-operation-y', _kind: 'operation', path: [], stat: ::Stat.new) }
     let!(:number_of_alice) { '00112345' }

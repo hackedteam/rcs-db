@@ -146,11 +146,11 @@ class DB
 
     collections.each do |coll_name|
       coll = db.collection(coll_name)
-      a = Aggregate.collection_class(coll_name.split('.').last)
+      a = Aggregate.target(coll_name.split('.').last)
       # number of index + _id + shard_key
       next if coll.stats['nindexes'] == a.index_options.size + 2
       trace :info, "Creating indexes for #{coll_name} - " + coll.stats['size'].to_s_bytes
-      Aggregate.collection_class(coll_name.split('.').last).create_collection
+      Aggregate.target(coll_name.split('.').last).create_collection
     end
   end
 

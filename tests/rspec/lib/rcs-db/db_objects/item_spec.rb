@@ -44,7 +44,7 @@ describe Item do
 
     let!(:operation) { Item.create!(name: 'testoperation', _kind: :operation, path: [], stat: ::Stat.new) }
     let!(:target) { Item.create!(name: 'testtarget', _kind: :target, path: [operation.id], stat: ::Stat.new) }
-    let (:aggregate_name) { Aggregate.collection_name(target.id) }
+    let (:aggregate_name) { "aggregate.#{target.id}" }
     let (:evidence_name) { Evidence.collection_name(target.id) }
     let (:grid_chunks_name) { RCS::DB::GridFS.collection_name(target.id) + '.chunks' }
     let (:grid_files_name) { RCS::DB::GridFS.collection_name(target.id) + '.files' }
@@ -90,7 +90,7 @@ describe Item do
     let!(:target) { Item.create!(name: 'testtarget', _kind: :target, path: [operation.id], stat: ::Stat.new) }
     let!(:agent) { Item.create!(name: 'testagent', _kind: :agent, path: target.path + [target.id], stat: ::Stat.new) }
 
-    let (:aggregate_name) { Aggregate.collection_name(target.id) }
+    let (:aggregate_name) { "aggregate.#{target.id}" }
     let (:evidence_name) { Evidence.collection_name(target.id) }
     let (:grid_chunks_name) { RCS::DB::GridFS.collection_name(target.id) + '.chunks' }
     let (:grid_files_name) { RCS::DB::GridFS.collection_name(target.id) + '.files' }

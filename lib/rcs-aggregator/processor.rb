@@ -67,11 +67,11 @@ class Processor
       end
 
       # find the existing aggregate or create a new one
-      agg = Aggregate.collection_class(entry['target_id']).find_or_create_by(params)
+      agg = Aggregate.target(entry['target_id']).find_or_create_by(params)
 
       # if it's new: add the entry to the summary and notify the intelligence
       if agg.count == 0
-        Aggregate.collection_class(entry['target_id']).add_to_summary(type, datum[:peer]) unless type.eql? 'position'
+        Aggregate.target(entry['target_id']).add_to_summary(type, datum[:peer]) unless type.eql? 'position'
         IntelligenceQueue.add(entry['target_id'], agg._id, :aggregate) if check_intelligence_license
       end
 

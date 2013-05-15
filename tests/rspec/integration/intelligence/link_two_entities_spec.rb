@@ -22,7 +22,7 @@ describe 'There are two entities in the same operation' do
 
   let(:entity) { Entity.any_in({path: [target.id]}).first }
 
-  let(:aggregate_class) { Aggregate.collection_class target.id }
+  let(:aggregate_class) { Aggregate.target target.id }
 
   let(:agent) { Item.create!(name: 'testagent', _kind: :agent, path: target.path+[target.id], stat: ::Stat.new) }
 

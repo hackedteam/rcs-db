@@ -194,12 +194,12 @@ describe Entity do
     end
 
     it 'should find peer versus' do
-      Aggregate.collection_class(@target._id).create!(type: 'sms', day: Time.now.strftime('%Y%m%d'), aid: "agent_id", count: 1, data: {peer: 'test', versus: :in})
+      Aggregate.target(@target._id).create!(type: 'sms', day: Time.now.strftime('%Y%m%d'), aid: "agent_id", count: 1, data: {peer: 'test', versus: :in})
       versus = @entity.peer_versus('test', 'sms')
       versus.should be_a Array
       versus.should include :in
 
-      Aggregate.collection_class(@target._id).create!(type: 'sms', day: Time.now.strftime('%Y%m%d'), aid: "agent_id", count: 1, data: {peer: 'test', versus: :out})
+      Aggregate.target(@target._id).create!(type: 'sms', day: Time.now.strftime('%Y%m%d'), aid: "agent_id", count: 1, data: {peer: 'test', versus: :out})
       versus = @entity.peer_versus('test', 'sms')
       versus.should be_a Array
       versus.should include :out
@@ -209,7 +209,7 @@ describe Entity do
 
     context 'when the handle type is not directly mapped to the aggregate type' do
 
-      before { Aggregate.collection_class(@target._id).create!(type: 'sms', day: Time.now.strftime('%Y%m%d'), aid: "agent_id", count: 1, data: {peer: 'test', versus: :in}) }
+      before { Aggregate.target(@target._id).create!(type: 'sms', day: Time.now.strftime('%Y%m%d'), aid: "agent_id", count: 1, data: {peer: 'test', versus: :in}) }
 
       it 'finds the peer versus' do
         pending

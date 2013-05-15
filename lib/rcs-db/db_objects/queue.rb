@@ -176,7 +176,12 @@ class IntelligenceQueue < NotificationQueue
 
   # Find an evidence or an aggregate related to this queue entry
   def related_item
-    related_item_class.collection_class(target_id).find ident
+    if related_item_class.respond_to? :target
+      related_item_class.target(target_id).find ident
+    else
+      # the #collection_class method has been replaced by #target in Aggregate
+      related_item_class.collection_class(target_id).find ident
+    end
   end
 
   # Could be Aggregate or Evidence
