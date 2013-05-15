@@ -14,11 +14,14 @@ class PeerAggregator
     # skip if for aggregation
     return [] if ev.data['program'].downcase.eql? 'twitter'
 
+    hash = {:type => ev.data['program'].downcase, :size => ev.data['content'].length}
+
     # TODO: remove old chat format (after 9.0.0)
     if ev.data['peer']
+
       # multiple rcpts creates multiple entries
       ev.data['peer'].split(',').each do |peer|
-        data << {:peer => peer.strip.downcase, :versus => :both, :type => ev.data['program'].downcase, :size => ev.data['content'].length}
+        data << hash.merge(:peer => peer.strip.downcase, :versus => :both)
       end
 
       return data
@@ -27,14 +30,14 @@ class PeerAggregator
     # new chat format
     if ev.data['incoming'] == 1
       # special case when the agent is not able to get the account but only display_name
-      return [] if ev.data['from'].eql? ''
-      data << {:peer => ev.data['from'].strip.downcase, :versus => :in, :type => ev.data['program'].downcase, :size => ev.data['content'].length}
+      return [] if ev.data['from'].blank?
+      data << hash.merge(:peer => ev.data['from'].strip.downcase, :versus => :in)
     elsif ev.data['incoming'] == 0
       # special case when the agent is not able to get the account but only display_name
-      return [] if ev.data['rcpt'].eql? ''
+      return [] if ev.data['rcpt'].blank?
       # multiple rcpts creates multiple entries
       ev.data['rcpt'].split(',').each do |rcpt|
-        data << {:peer => rcpt.strip.downcase, :versus => :out, :type => ev.data['program'].downcase, :size => ev.data['content'].length}
+        data << hash.merge(:peer => rcpt.strip.downcase, :versus => :out, sender: ev.data['from'].strip.downcase)
       end
     end
 

@@ -29,6 +29,7 @@ describe PeerAggregator do
         parsed.should be_a Array
         aggregated = parsed.first
         aggregated[:peer].should eq 'peer_old'
+        aggregated.should_not have_key :sender
         aggregated[:size].should eq @evidence_chat.data['content'].size
         aggregated[:type].should eq 'skype'
         aggregated[:versus].should == :both
@@ -42,6 +43,7 @@ describe PeerAggregator do
         parsed.collect {|x| x[:peer]}.should eq ['peer1', 'peer2', 'peer3', 'peer4']
         aggregated = parsed.first
         aggregated[:peer].should eq 'peer1'
+        aggregated.should_not have_key :sender
         aggregated[:size].should eq @evidence_chat.data['content'].size
         aggregated[:type].should eq 'skype'
         aggregated[:versus].should == :both
@@ -53,6 +55,7 @@ describe PeerAggregator do
         parsed.should be_a Array
         aggregated = parsed.first
         aggregated[:peer].should eq 'sender'
+        aggregated.should_not have_key :sender
         aggregated[:size].should eq @evidence_chat.data['content'].size
         aggregated[:type].should eq 'skype'
         aggregated[:versus].should be :in
@@ -64,6 +67,7 @@ describe PeerAggregator do
         parsed.should be_a Array
         aggregated = parsed.first
         aggregated[:peer].should eq 'receiver'
+        aggregated[:sender].should eq 'sender'
         aggregated[:size].should eq @evidence_chat.data['content'].size
         aggregated[:type].should eq 'skype'
         aggregated[:versus].should be :out
@@ -77,6 +81,7 @@ describe PeerAggregator do
         parsed.collect {|x| x[:peer]}.should eq ['receiver1', 'receiver2', 'receiver3']
         aggregated = parsed.first
         aggregated[:versus].should be :out
+        aggregated[:sender].should eql 'sender'
       end
 
       it 'should not fail on malformed evidence (from)' do
