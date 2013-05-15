@@ -18,24 +18,24 @@ TODO 9.0.0
     export entities data (topac)
     api for console to display communication flows (message, call, chat)
     export graph data
+    refactor the connectors to use queue and export from separate process
+      - xml export
+      - sync with "archive" rcs installation
 
   TRY:
     hash index for sharding (topac - on branch 9.0.x)
 
 
-TODO FUTURE:
-
-    differentiate between input/output connectors:
-        - xml format
-        - implement transport layers:
-        - proprietary for read-only db
-        - sftp
-
-    correlation:
-        global target position (http://www.zeit.de/datenschutz/malte-spitz-data-retention)
 
 ======================================
+TODO FUTURE:
 
     Refactoring on rest methods:
       - agent (too much logic here)
       - evidence (too much logic here)
+
+
+======================================
+IDEAS:
+
+    global target position (http://www.zeit.de/datenschutz/malte-spitz-data-retention)
