@@ -92,11 +92,14 @@ class PeerAggregator
       end
     # SMS and MMS
     else
+      hash = {type: ev.data['type'].downcase, size: ev.data['content'].length}
+
       if ev.data['incoming'] == 1
-        data << {:peer => ev.data['from'].strip.downcase, :versus => :in, :type => ev.data['type'].downcase, :size => ev.data['content'].length}
+        hash.merge!(sender: ev.data['rcpt'].strip.downcase) unless ev.data['rcpt'].include?(',')
+        data << hash.merge(peer: ev.data['from'].strip.downcase, versus: :in)
       elsif ev.data['incoming'] == 0
         ev.data['rcpt'].split(',').each do |rcpt|
-          data << {:peer => rcpt.strip.downcase, :versus => :out, :type => ev.data['type'].downcase, :size => ev.data['content'].length}
+          data << hash.merge(peer: rcpt.strip.downcase, versus: :out, sender: ev.data['from'].strip.downcase)
         end
       end
     end

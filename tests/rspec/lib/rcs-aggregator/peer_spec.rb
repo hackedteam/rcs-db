@@ -228,9 +228,25 @@ describe PeerAggregator do
         parsed.should be_a Array
         aggregated = parsed.first
         aggregated[:peer].should eq '+39123456789'
+        aggregated[:sender].should eql 'receiver'
         aggregated[:size].should eq @evidence_sms.data['content'].size
         aggregated[:type].should eq :sms
         aggregated[:versus].should be :in
+      end
+
+      context 'when there are two or more recepients (incoming sms)' do
+
+        it 'cannot discover the real sender (sender is nil)' do
+          @evidence_sms.data.merge!({'from' => ' +39123456789 ', 'rcpt' => 'receiver1, receiver2', 'incoming' => 1, 'content' => 'test message'})
+          parsed = PeerAggregator.extract_message(@evidence_sms)
+          parsed.should be_a Array
+          aggregated = parsed.first
+          aggregated[:peer].should eq '+39123456789'
+          aggregated.should_not have_key :sender
+          aggregated[:size].should eq @evidence_sms.data['content'].size
+          aggregated[:type].should eq :sms
+          aggregated[:versus].should be :in
+        end
       end
 
       it 'should parse evidence (outgoing)' do
@@ -239,6 +255,7 @@ describe PeerAggregator do
         parsed.should be_a Array
         aggregated = parsed.first
         aggregated[:peer].should eq '+39123456789'
+        aggregated[:sender].should eql 'sender'
         aggregated[:size].should eq @evidence_sms.data['content'].size
         aggregated[:type].should eq :sms
         aggregated[:versus].should be :out
