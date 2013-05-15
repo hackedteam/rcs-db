@@ -239,8 +239,8 @@ class Entity
     versus = []
 
     # search for communication in one direction
-    vin = Aggregate.collection_class(self.path.last).where(type: type, 'data.peer' => handle, 'data.versus' => :in).exists?
-    vout = Aggregate.collection_class(self.path.last).where(type: type, 'data.peer' => handle, 'data.versus' => :out).exists?
+    vin = Aggregate.target(self.path.last).where(type: type, 'data.peer' => handle, 'data.versus' => :in).exists?
+    vout = Aggregate.target(self.path.last).where(type: type, 'data.peer' => handle, 'data.versus' => :out).exists?
 
     versus << :in if vin
     versus << :out if vout

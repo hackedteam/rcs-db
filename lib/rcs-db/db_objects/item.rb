@@ -489,8 +489,8 @@ class Item
           trace :info, "Deleting evidence for agent #{self.name}..."
           Evidence.collection_class(self.path.last).destroy_all(aid: self._id.to_s)
           trace :info, "Deleting aggregates for agent #{self.name}..."
-          Aggregate.collection_class(self.path.last).destroy_all(aid: self._id.to_s)
-          Aggregate.collection_class(self.path.last).rebuild_summary
+          Aggregate.target(self.path.last).destroy_all(aid: self._id.to_s)
+          Aggregate.target(self.path.last).rebuild_summary
           trace :info, "Deleting evidence for agent #{self.name} done."
         end
       when 'factory'
@@ -510,7 +510,7 @@ class Item
 
     # drop the evidence collection of this target
     Evidence.collection_class(self._id.to_s).collection.drop
-    Aggregate.collection_class(self._id.to_s).collection.drop
+    Aggregate.target(self._id.to_s).collection.drop
     RCS::DB::GridFS.drop_collection(self._id.to_s)
   end
 
@@ -518,7 +518,7 @@ class Item
     return if self._kind != 'target'
 
     Evidence.collection_class(self._id).create_collection
-    Aggregate.collection_class(self._id).create_collection
+    Aggregate.target(self._id).create_collection
     RCS::DB::GridFS.create_collection(self._id)
   end
 

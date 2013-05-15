@@ -116,7 +116,7 @@ class Processor
 
       trace :debug, "Checking if '#{entity.name}' and '#{e.name}' have common peer: #{aggregate.data['peer']} #{types}"
 
-      next unless Aggregate.collection_class(e.path.last).summary_include?(aggregate_type, aggregate.data['peer'])
+      next unless Aggregate.target(e.path.last).summary_include?(aggregate_type, aggregate.data['peer'])
 
       trace :debug, "Peer found, creating new entity... #{aggregate.data['peer']} #{types}"
 

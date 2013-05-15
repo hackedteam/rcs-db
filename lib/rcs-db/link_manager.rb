@@ -170,7 +170,7 @@ class LinkManager
 
       trace :debug, "Checking '#{e.name}' for peer links: #{handle.handle} (#{handle.type})"
 
-      next unless Aggregate.collection_class(e.path.last).summary_include?(handle.type, handle.handle)
+      next unless Aggregate.target(e.path.last).summary_include?(handle.type, handle.handle)
 
       trace :debug, "Peer link found, linking... #{handle.handle} (#{handle.type})"
 

@@ -6,100 +6,92 @@ require 'set'
 
 class Aggregate
   extend RCS::Tracer
+  include Mongoid::Document
 
-  def self.collection_name(target)
-    "aggregate.#{target}"
+  field :aid, type: String                      # agent BSON_ID
+  field :day, type: String                      # day of aggregation
+  field :type, type: String
+  field :count, type: Integer, default: 0
+  field :size, type: Integer, default: 0        # seconds for calls, bytes for the others
+  field :data, type: Hash, default: {}
+  field :info, type: Array                      # for summary or timeframe (position
+
+  store_in collection: -> { self.collection_name }
+
+  index({aid: 1}, {background: true})
+  index({type: 1}, {background: true})
+  index({day: 1}, {background: true})
+  index({"data.peer" => 1}, {background: true})
+  index({"data.type" => 1}, {background: true})
+  index({type: 1, "data.peer" => 1 }, {background: true})
+
+  shard_key :type, :day, :aid
+
+  def self.summary_include?(type, peer)
+    summary = self.where(day: '0', type: 'summary').first
+    return false unless summary
+    return summary.info.include? type.to_s + '_' + peer.to_s
   end
 
-  def self.collection_class(target)
+  def self.add_to_summary(type, peer)
+    summary = self.where(day: '0', aid: '0', type: 'summary').first_or_create!
+    summary.add_to_set(:info, type.to_s + '_' + peer.to_s)
+  end
 
-    class_definition = <<-END
-      class Aggregate_#{target}
-        include Mongoid::Document
+  def self.rebuild_summary
+    return if self.empty?
 
-        field :aid, type: String                      # agent BSON_ID
-        field :day, type: String                      # day of aggregation
-        field :type, type: String
-        field :count, type: Integer, default: 0
-        field :size, type: Integer, default: 0        # seconds for calls, bytes for the others
-        field :data, type: Hash, default: {}
-        field :info, type: Array                      # for summary or timeframe (position
+    # get all the tuple (type, peer)
+    pipeline = [{ "$match" => {:type => {'$nin' => ['summary']} }},
+                { "$group" =>
+                  { _id: { peer: "$data.peer", type: "$type" }}
+                }]
+    data = self.collection.aggregate(pipeline)
 
-        store_in collection: Aggregate.collection_name('#{target}')
+    return if data.empty?
 
-        index({aid: 1}, {background: true})
-        index({type: 1}, {background: true})
-        index({day: 1}, {background: true})
-        index({"data.peer" => 1}, {background: true})
-        index({"data.type" => 1}, {background: true})
-        index({type: 1, "data.peer" => 1 }, {background: true})
+    # normalize them in a better form
+    data.collect! {|e| e['_id']['type'] + '_' + e['_id']['peer']}
 
-        shard_key :type, :day, :aid
+    summary = self.where(day: '0', aid: '0', type: 'summary').first_or_create!
 
-        def self.summary_include?(type, peer)
-          summary = self.where(day: '0', type: 'summary').first
-          return false unless summary
-          return summary.info.include? type.to_s + '_' + peer.to_s
-        end
+    summary.info = data
+    summary.save!
+  end
 
-        def self.add_to_summary(type, peer)
-          summary = self.where(day: '0', aid: '0', type: 'summary').first_or_create!
-          summary.add_to_set(:info, type.to_s + '_' + peer.to_s)
-        end
+  def self.create_collection
+    # create the collection for the target's aggregate and shard it
+    db = RCS::DB::DB.instance.mongo_connection
+    collection = db.collection self.collection.name
+    # ensure indexes
+    self.create_indexes
+    # enable sharding only if not enabled
+    RCS::DB::Shard.set_key(collection, {type: 1, day: 1, aid: 1}) unless collection.stats['sharded']
+  end
 
-        def self.rebuild_summary
-          return if self.empty?
+  def self.target target
+    target_id = target.respond_to?(:id) ? target.id : target
+    dynamic_classname = "Aggregate#{target_id}"
 
-          # get all the tuple (type, peer)
-          pipeline = [{ "$match" => {:type => {'$nin' => ['summary']} }},
-                      { "$group" =>
-                        { _id: { peer: "$data.peer", type: "$type" }}
-                      }]
-          data = self.collection.aggregate(pipeline)
-
-          return if data.empty?
-
-          # normalize them in a better form
-          data.collect! {|e| e['_id']['type'] + '_' + e['_id']['peer']}
-
-          summary = self.where(day: '0', aid: '0', type: 'summary').first_or_create!
-
-          summary.info = data
-          summary.save!
-        end
-
-        def self.create_collection
-          # create the collection for the target's aggregate and shard it
-          db = RCS::DB::DB.instance.mongo_connection
-          collection = db.collection(Aggregate.collection_name('#{target}'))
-          # ensure indexes
-          self.create_indexes
-          # enable sharding only if not enabled
-          RCS::DB::Shard.set_key(collection, {type: 1, day: 1, aid: 1}) unless collection.stats['sharded']
-        end
-
-      end
-    END
-    
-    classname = "Aggregate_#{target}"
-    
-    if self.const_defined? classname.to_sym
-      klass = eval classname
+    if const_defined? dynamic_classname
+      const_get dynamic_classname
     else
-      eval class_definition
-      klass = eval classname
+      const_set dynamic_classname, Class.new(Aggregate) { @target_id = target_id }
     end
-    
-    return klass
   end
 
-  def self.dynamic_new(target_id)
-    klass = self.collection_class(target_id)
-    return klass.new
+  # Prevent people from calling Aggregate.new instead of Aggregate.target(...).new
+  def initialize *args
+    collection_name
+    super
+  end
+
+  def self.collection_name
+    raise "Missing @target_id" unless @target_id
+    "aggregate.#{@target_id}"
   end
 
   def self.most_contacted(target_id, params)
-
     start = Time.now
 
     most_contacted_types = ['call', 'chat', 'mail', 'sms', 'mms', 'facebook', 'gmail', 'skype', 'bbm', 'whatsapp', 'msn', 'adium', 'viber']
@@ -153,7 +145,7 @@ class Aggregate
 
     time = Time.now
     # extract the results
-    contacted = Aggregate.collection_class(target_id).collection.aggregate(pipeline)
+    contacted = Aggregate.target(target_id).collection.aggregate(pipeline)
 
     trace :debug, "Most contacted: Aggregation time #{Time.now - time}" if RCS::DB::Config.instance.global['PERF']
 

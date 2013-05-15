@@ -4,8 +4,42 @@ require_db 'db_layer'
 describe Aggregate do
   use_db
 
-  let (:aggregate_class) { Aggregate.collection_class('testtarget') }
-  let (:aggregate_name) { Aggregate.collection_name('testtarget') }
+  let (:aggregate_class) { Aggregate.target('testtarget') }
+
+  describe '#target' do
+
+    let(:first_aggregate) { Aggregate.target 'first_aggregate' }
+
+    let(:second_aggregate) { Aggregate.target 'second_aggregate' }
+
+    context 'when two or more classes are generated' do
+
+      before { first_aggregate; second_aggregate }
+
+      it 'refers to different collections' do
+        expect(first_aggregate.collection.name).not_to eql second_aggregate.collection.name
+      end
+    end
+
+    it 'accepts a mongoid document instance (not only a string)' do
+      target = mock(id: 'an_id')
+      expect(Aggregate.target(target).collection.name).to eql 'aggregate.an_id'
+    end
+  end
+
+  describe '#collection_name' do
+
+    it 'raises an error if @target_id is missing' do
+      expect { Aggregate.collection_name }.to raise_error
+    end
+  end
+
+  it 'raises an error when used without #target' do
+    valid_attributes = {day: Time.now.strftime('%Y%m%d'), type: 'sms', aid: 'agent_id', count: 1, data: {peer: 'test1', versus: :in}}
+
+    expect { Aggregate.new }.to raise_error
+    expect { Aggregate.create(valid_attributes) }.to raise_error
+  end
 
   it 'should create and retrieve summary' do
     aggregate_class.add_to_summary('test', 'peer')

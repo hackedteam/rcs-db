@@ -229,8 +229,8 @@ module DB
       describe '#link_handle' do
 
         it 'should link to entity with that handle' do
-          Aggregate.collection_class(@target._id).create!(day: Time.now.strftime('%Y%m%d'), type: 'test', aid: 'agent_id', count: 1, data: {peer: 'test.ardo', versus: :in})
-          Aggregate.collection_class(@target._id).add_to_summary('test', 'test.ardo')
+          Aggregate.target(@target._id).create!(day: Time.now.strftime('%Y%m%d'), type: 'test', aid: 'agent_id', count: 1, data: {peer: 'test.ardo', versus: :in})
+          Aggregate.target(@target._id).add_to_summary('test', 'test.ardo')
 
           LinkManager.instance.link_handle(@entity2, @handle)
 

@@ -256,7 +256,7 @@ class Evidence
 
     # moving an agent implies that all the evidence are moved to another target
     # we have to remove all the aggregates created from those evidence on the old target
-    Aggregate.collection_class(old_target[:_id]).destroy_all(aid: agent[:_id].to_s)
+    Aggregate.target(old_target[:_id]).destroy_all(aid: agent[:_id].to_s)
 
     evidences = Evidence.collection_class(old_target[:_id]).where(:aid => agent[:_id])
 
@@ -310,7 +310,7 @@ class Evidence
 
     # we moved aggregates, have to rebuild the summary
     if LicenseManager.instance.check :correlation
-      Aggregate.collection_class(old_target[:_id]).rebuild_summary
+      Aggregate.target(old_target[:_id]).rebuild_summary
     end
 
     trace :info, "Evidence Move: completed for #{agent.name}"

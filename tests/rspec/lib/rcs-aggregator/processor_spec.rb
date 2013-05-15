@@ -23,7 +23,6 @@ describe Processor do
 
     it 'should create intelligence queue' do
       Processor.process @entry
-
       entry, count = IntelligenceQueue.get_queued
       entry['target_id'].should eq @target._id.to_s
       entry['type'].should eq :aggregate
@@ -54,7 +53,7 @@ describe Processor do
       it 'should create aggregate from evidence' do
         Processor.process @entry
 
-        aggregates = Aggregate.collection_class(@target._id).where(type: 'skype')
+        aggregates = Aggregate.target(@target._id).where(type: 'skype')
         aggregates.size.should be 1
 
         entry = aggregates.first
@@ -73,7 +72,7 @@ describe Processor do
           Processor.process @entry
         end
 
-        aggregates = Aggregate.collection_class(@target._id).where(type: 'skype')
+        aggregates = Aggregate.target(@target._id).where(type: 'skype')
         aggregates.size.should be 1
 
         entry = aggregates.first
@@ -83,7 +82,7 @@ describe Processor do
       it 'should create aggregation summary' do
         Processor.process @entry
 
-        aggregates = Aggregate.collection_class(@target._id).where(type: 'summary')
+        aggregates = Aggregate.target(@target._id).where(type: 'summary')
         aggregates.size.should be 1
 
         entry = aggregates.first
@@ -101,14 +100,14 @@ describe Processor do
       it 'should not create aggregation summary' do
         Processor.process @entry
 
-        aggregates = Aggregate.collection_class(@target._id).where(type: 'summary')
+        aggregates = Aggregate.target(@target._id).where(type: 'summary')
         aggregates.size.should be 0
       end
 
       it 'should create aggregate from evidence' do
         Processor.process @entry
 
-        aggregates = Aggregate.collection_class(@target._id).where(type: 'position')
+        aggregates = Aggregate.target(@target._id).where(type: 'position')
         aggregates.size.should be 1
 
         entry = aggregates.first
@@ -129,7 +128,7 @@ describe Processor do
            Processor.process @entry
          end
 
-         aggregates = Aggregate.collection_class(@target._id).where(type: 'position')
+         aggregates = Aggregate.target(@target._id).where(type: 'position')
          aggregates.size.should be 1
 
          entry = aggregates.first
