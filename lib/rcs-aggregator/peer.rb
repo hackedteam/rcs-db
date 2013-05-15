@@ -70,43 +70,58 @@ class PeerAggregator
     return data
   end
 
-  def self.extract_message(ev)
+  # Extract email from strings like "Ask Me" <ask@me.it>
+  # The first part is the nickname, the real email is enclosed by angular brackets
+  def self.email_address string
+    string.strip.scan(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i).first.downcase
+  end
+
+  def self.extract_email ev
     data = []
+    # don't aggregate draft mails
+    return [] if ev.data['draft']
 
-    # MAIL message
-    if ev.data['type'] == :mail
+    hash = {:type => :mail, :size => ev.data['body'].length}
 
-      # don't aggregate draft mails
-      return [] if ev.data['draft']
+    from = email_address ev.data['from']
 
-      if ev.data['incoming'] == 1
-        #extract email from string "Ask Me" <ask@me.it>
-        from = ev.data['from'].scan(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i).first
-        data << {:peer => from.downcase, :versus => :in, :type => :mail, :size => ev.data['body'].length}
-      elsif ev.data['incoming'] == 0
-        ev.data['rcpt'].split(',').each do |rcpt|
-          #extract email from string "Ask Me" <ask@me.it>
-          to = rcpt.strip.scan(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i).first
-          data << {:peer => to.downcase, :versus => :out, :type => :mail, :size => ev.data['body'].length}
-        end
-      end
-    # SMS and MMS
-    else
-      hash = {type: ev.data['type'].downcase, size: ev.data['content'].length}
-
-      if ev.data['incoming'] == 1
-        hash.merge!(sender: ev.data['rcpt'].strip.downcase) unless ev.data['rcpt'].include?(',')
-        data << hash.merge(peer: ev.data['from'].strip.downcase, versus: :in)
-      elsif ev.data['incoming'] == 0
-        ev.data['rcpt'].split(',').each do |rcpt|
-          data << hash.merge(peer: rcpt.strip.downcase, versus: :out, sender: ev.data['from'].strip.downcase)
-        end
+    if ev.data['incoming'] == 1
+      # there is no :sender in this case
+      data << hash.merge(:peer => from, :versus => :in)
+    elsif ev.data['incoming'] == 0
+      ev.data['rcpt'].split(',').each do |rcpt|
+        data << hash.merge(peer: email_address(rcpt), versus: :out, sender: from)
       end
     end
 
-    return data
+    data
   end
 
+  def self.extract_sms_or_mms ev
+    data = []
+    hash = {type: ev.data['type'].downcase, size: ev.data['content'].length}
+
+    if ev.data['incoming'] == 1
+      unless ev.data['rcpt'].blank? or ev.data['rcpt'].include?(',')
+        hash.merge!(sender: ev.data['rcpt'].strip.downcase)
+      end
+      data << hash.merge(peer: ev.data['from'].strip.downcase, versus: :in)
+    elsif ev.data['incoming'] == 0
+      ev.data['rcpt'].split(',').each do |rcpt|
+        data << hash.merge(peer: rcpt.strip.downcase, versus: :out, sender: ev.data['from'].strip.downcase)
+      end
+    end
+
+    data
+  end
+
+  def self.extract_message ev
+    if ev.data['type'] == :mail
+      extract_email ev
+    else
+      extract_sms_or_mms ev
+    end
+  end
 end
 
 end
