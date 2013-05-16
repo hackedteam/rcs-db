@@ -10,6 +10,21 @@ RSpec::Core::RakeTask.new(:spec) do |test|
   test.pattern = 'tests/rspec/**/*_spec.rb'
 end
 
+RSpec::Core::RakeTask.new("spec:db") do |test|
+  test.rspec_opts = "-I tests/rspec --color"
+  test.pattern = 'tests/rspec/**/rcs-db/**/*_spec.rb'
+end
+
+RSpec::Core::RakeTask.new("spec:aggregator") do |test|
+  test.rspec_opts = "-I tests/rspec --color"
+  test.pattern = '{tests/rspec/**/rcs-aggregator/**/*_spec.rb,tests/rspec/lib/rcs-db/db_objects/aggregate_spec.rb}'
+end
+
+RSpec::Core::RakeTask.new("spec:intelligence") do |test|
+  test.rspec_opts = "-I tests/rspec --color"
+  test.pattern = '{tests/rspec/**/rcs-intelligence/**/*_spec.rb,tests/rspec/lib/rcs-db/db_objects/entity_spec.rb,tests/rspec/lib/rcs-db/link_manager_spec.rb}'
+end
+
 task :test do
   puts "\nExecuting rspec...\n"
   Rake::Task[:spec].invoke
