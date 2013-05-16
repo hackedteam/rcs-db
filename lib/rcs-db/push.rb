@@ -23,41 +23,38 @@ class PushManager
   end
 
   def dispatcher
-    loop do
+    begin
       if (queued = PushQueue.get_queued)
-        begin
-          entry = queued.first
-          type = entry.type
-          message = entry.message
+        entry = queued.first
+        count = queued.last
+        type = entry.type
+        message = entry.message
 
-          SessionManager.instance.all.each do |session|
-            ws = WebSocketManager.instance.get_ws_from_cookie session[:cookie]
-            # not connected push channel
-            next if ws.nil?
+        trace :info, "#{count} push messages to be processed in queue"
 
-            # we have specified a specific user, skip all the others
-            next if message['rcpt'] != nil and session.user[:_id] != message['rcpt']
+        SessionManager.instance.all.each do |session|
+          ws = WebSocketManager.instance.get_ws_from_cookie session[:cookie]
+          # not connected push channel
+          next if ws.nil?
 
-            # check for accessibility, if we pass and id, we only want the ws that can access that id
-            item = ::Item.where(_id: message['id']).in(user_ids: [session.user[:_id]]).first
-            item = ::Entity.where(_id: message['id']).in(user_ids: [session.user[:_id]]).first if item.nil?
-            next if message['id'] != nil and item.nil?
+          # we have specified a specific user, skip all the others
+          next if message['rcpt'] != nil and session.user[:_id] != message['rcpt']
 
-            # send the message
-            WebSocketManager.instance.send(ws, type, message)
+          # check for accessibility, if we pass and id, we only want the ws that can access that id
+          item = ::Item.where(_id: message['id']).in(user_ids: [session.user[:_id]]).first
+          item = ::Entity.where(_id: message['id']).in(user_ids: [session.user[:_id]]).first if item.nil?
+          next if message['id'] != nil and item.nil?
 
-            trace :debug, "PUSH Event (sent): #{type} #{message}"
-          end
+          # send the message
+          WebSocketManager.instance.send(ws, type, message)
 
-        rescue Exception => e
-          trace :error, "PUSH ERROR: Cannot notify clients #{e.message}"
+          trace :debug, "PUSH Event (sent): #{type} #{message}"
         end
-
-      else
-        # Nothing to do, waiting...
-        sleep 1
       end
-    end
+    end while count and count > 0
+  rescue Exception => e
+    trace :error, "PUSH ERROR: Cannot notify clients #{e.message}"
+    trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
   end
 
   def heartbeat

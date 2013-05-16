@@ -246,7 +246,7 @@ class Events
         EM::PeriodicTimer.new(3600) { EM.defer(proc{ Alert.destroy_old_logs }) }
 
         # use a thread for the infinite processor waiting on the push queue
-        EM.defer(proc{ PushManager.instance.dispatcher })
+        EM::PeriodicTimer.new(5) { EM.defer(proc{ PushManager.instance.dispatcher }) }
 
         # calculate and save the stats
         EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }
