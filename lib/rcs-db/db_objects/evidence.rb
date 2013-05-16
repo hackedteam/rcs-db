@@ -205,23 +205,30 @@ class Evidence
     filter_hash[date.lte] = filter.delete('to') if filter.has_key? 'to'
 
     # custom filters for info
-    parse_info_keywords(filter, filter_hash) if filter.has_key? 'info'
+    filter_for_keywords(filter, filter_hash) if filter.has_key?('info')
 
-    #filter on note
-    if filter['note']
-      note = filter.delete('note')
-      filter_hash[:note] = Regexp.new("#{note}", Regexp::IGNORECASE)
-      filter_hash[:kw.all] = note.keywords
+    # filter on note
+    groups_of_words = filter.delete('note')
+    # backward compatibility: a string may arrive (instead of an array)
+    groups_of_words = [groups_of_words].flatten.compact
+    # remove empty string from the array
+    groups_of_words = groups_of_words.select { |string| !string.blank? }
+
+    if !groups_of_words.empty?
+      filter_hash['$or'] ||= []
+      filter_hash['$or'].concat groups_of_words.map { |words| {'kw' => {'$all' => words.keywords}} }
+      regexp = groups_of_words.map { |words| "(#{words})"}.join('|')
+      filter_hash['note'] = /#{regexp}/i
     end
 
     return filter, filter_hash, target
   end
 
-  def self.parse_info_keywords(filter, filter_hash)
+  def self.filter_for_keywords(filter, filter_hash)
     info = filter.delete('info')
 
     # backward compatibility
-    info = [info].flatten
+    info = [info].flatten.compact
 
     # check if it's in the form of specific field name:
     #   field1:value1,field2:value2,etc,etc
@@ -240,10 +247,12 @@ class Evidence
         # add the keyword search to cut the nscanned item
         filter_hash[:kw.all] ||= v.keywords
       end
-    else
+    elsif !info.empty?
       # otherwise we use it for full text search with keywords
       groups_of_words = info.map { |words| words.strip.keywords }
-      filter_hash['$or'] = groups_of_words.map { |words| {'kw' => {'$all' => words}} }
+
+      filter_hash['$or'] ||= []
+      filter_hash['$or'].concat groups_of_words.map { |words| {'kw' => {'$all' => words}} }
     end
   rescue Exception => e
     trace :error, "Invalid filter for data [#{e.message}], ignoring..."

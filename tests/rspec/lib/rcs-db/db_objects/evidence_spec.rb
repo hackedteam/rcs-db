@@ -33,11 +33,16 @@ describe Evidence do
 
     let(:target) { Item.create!(name: 'target1', _kind: :target, path: [operation.id], stat: ::Stat.new) }
 
-    let(:filter) { {"from" => "24h", "target" => "a_target_id", "agent" => "an_agent_id", "date" => "dr"} }
+    let(:filter) { {"from" => "24h", "target" => "a_target_id", "agent" => "an_agent_id"} }
 
     let(:params) { {"filter" => filter} }
 
     let(:params_with_invalid_filter) { {'filter' => 'invalid_json'} }
+
+    let :filter_hash do
+      params['filter']['target'] = target.id
+      described_class.common_filter(params)[1]
+    end
 
     it 'raises an error if the "filter" could not be parsed to JSON' do
       expect{ described_class.common_filter(params_with_invalid_filter) }.to raise_error JSON::ParserError
@@ -68,34 +73,63 @@ describe Evidence do
       end
     end
 
-    describe "the returned filter_hash" do
+    context 'when the filter does not have a "date" attribute' do
 
-      let(:filter) { {"from" => "24h", "target" => "a_target_id", "agent" => "an_agent_id", "info" => ["asd lol"]} }
+      # note: dr stans for date received
+      let(:filter) { {"from" => "24h", "target" => "a_target_id", "agent" => "an_agent_id", "date" => "dr"} }
 
-      let :filter_hash do
-        params['filter']['target'] = target.id
-        described_class.common_filter(params)[1]
-      end
-
-      it 'contains the agent id (even if the agent is missing in the db)' do
-        expect(filter_hash[:aid]).to eql 'an_agent_id'
-      end
-
-      # note: da stans for date aquired
-      it 'uses the "da" attribute if no "date" is given' do
-        filter_on_da = filter_hash.select { |key| key.respond_to?(:name) and key.name == :da }
+      it 'uses the given attribute for a filter' do
+        filter_on_da = filter_hash.select { |key| key.respond_to?(:name) and key.name == :dr }
         expect(filter_on_da).not_to be_empty
       end
+    end
 
-      # note: kw stands for keywords
-      it 'contains a filter on the :kw attribute when params contains "info"' do
+    it 'uses the "da" attribute' do
+      filter_on_da = filter_hash.select { |key| key.respond_to?(:name) and key.name == :da }
+      expect(filter_on_da).not_to be_empty
+    end
+
+    it 'contains the agent id (even if the agent is missing in the db)' do
+      expect(filter_hash[:aid]).to eql 'an_agent_id'
+    end
+
+    context 'when the "info" is a string' do
+
+      let(:filter) { {"from" => "24h", "target" => "a_target_id", "agent" => "an_agent_id", "info" => "asd lol"} }
+
+      it 'return filter for it' do
         filter_on_kw = filter_hash.select { |key, value| value.inspect.include?('asd') }
+        expect(filter_on_kw).to have_key '$or'
         expect(filter_on_kw).not_to be_empty
+      end
+    end
+
+    context 'when the "info" is an array of strings' do
+
+      let(:filter) { {"from" => "24h", "target" => "a_target_id", "agent" => "an_agent_id", "info" => %[asd lol]} }
+
+      it 'return filter for it' do
+        filter_on_kw = filter_hash.select { |key, value| value.inspect.include?('asd') }
+        expect(filter_on_kw).to have_key '$or'
+        expect(filter_on_kw).not_to be_empty
+      end
+    end
+
+    context 'when "note" is present in the filters' do
+
+      let(:filter) { {"from" => "24h", "target" => "a_target_id", "agent" => "an_agent_id", "info" => %[asd], "note" => %w[lol]} }
+
+      # TODO: this is currenty a bug
+      it 'does not overwrites the filters for "info"' do
+        filter_on_kw = filter_hash.select { |key, value| value.inspect.include?('asd') }
+        expect(filter_on_kw).to have_key '$or'
+        expect(filter_on_kw).not_to be_empty
+        expect(filter_on_kw.inspect).to include 'lol'
       end
     end
   end
 
-  describe '#parse_info_keywords' do
+  describe '#filter_for_keywords' do
 
     let(:info) { ['john dorian skype'] }
 
@@ -104,7 +138,7 @@ describe Evidence do
     let(:filter_hash) { {} }
 
     it 'adds to the filter_hash a selector on the :kw attribute' do
-      described_class.parse_info_keywords filter, filter_hash
+      described_class.filter_for_keywords filter, filter_hash
       selector = filter_hash.keys.first
       expect(selector).to eql '$or'
       expect(filter_hash[selector]).to eql [{"kw"=>{"$all"=>["dorian", "john", "skype"]}}]
@@ -115,7 +149,7 @@ describe Evidence do
       let(:info) { %w[john dorian skype] }
 
       it 'adds to the filter_hash a selector on the :kw attribute' do
-        described_class.parse_info_keywords filter, filter_hash
+        described_class.filter_for_keywords filter, filter_hash
         expect(filter_hash).not_to be_empty
       end
     end
