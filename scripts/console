@@ -1,0 +1,81 @@
+#!/usr/bin/env ruby
+
+def verbose?
+  ARGV.include? '--verbose'
+end
+
+def root_path
+  @root_path ||= begin
+    current_path = File.dirname __FILE__
+    root_path = File.expand_path File.join(current_path, '..')
+  end
+end
+
+def _require path
+  script_path = File.join root_path, 'lib/rcs-db', path
+
+  if Dir.exists? script_path
+    Dir[File.join(script_path, "*.rb")].each do |p|
+      puts p if verbose?
+      require p
+    end
+  else
+    puts script_path if verbose?
+    require script_path
+  end
+end
+
+puts 'Loading bundle...'
+
+require 'bundler/setup'
+Bundler.setup
+Bundler.require :development
+
+puts 'Loading application...'
+
+# system
+# require 'benchmark'
+# require 'eventmachine'
+# require 'em-http-server'
+# require 'em-websocket'
+# require 'socket'
+# require 'net/http'
+# require 'mongo'
+# require 'mongoid'
+# require 'moped'
+# require 'rbconfig'
+# require 'pry'
+
+$: << File.expand_path(File.join(root_path, '../rcs-common/lib'))
+
+_require 'heartbeat'
+# _require 'parser'
+# _require 'rest'
+_require 'sessions'
+_require 'backup'
+# _require 'alert'
+# _require 'parser'
+_require 'websocket'
+_require 'push'
+_require 'events'
+_require 'config'
+_require 'core'
+_require 'license'
+_require 'tasks'
+_require 'offload_manager'
+_require 'statistics'
+_require 'backup'
+_require 'sessions'
+_require 'audit'
+
+# require all the DB objects
+_require 'db_layer'
+
+# require 'rcs-common/trace'
+# require 'rcs-common/systemstatus'
+
+RCS::DB::Config.instance.load_from_file
+RCS::DB::DB.instance.connect
+# db = RCS::DB::DB.instance.mongo_connection
+
+binding.pry
