@@ -8,17 +8,16 @@ TODO 9.0.0
   FIX:
     check "end of file reaced" from mongoid
     try to implement "retry" on mongoid queries
-    check threads waiting on queued collection (alert, push)
+    check threads waiting on queued collection: alert, push  (topac)
 
   IMPLEMENT:
     aggregates for places (alor)
       - refactor aggregates to support spatial indexes
       - search for similar point in aggregates
 
-    export entities data (topac)
+    api for console to display communication flows (message, call, chat) (topac)
 
-    api for console to display communication flows (message, call, chat)
-
+    export entities data
     export graph data
 
     refactor the connectors to use queue and export from separate process
