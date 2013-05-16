@@ -2,7 +2,6 @@
 TODO 9.0.0
 
     upgrade to ruby 1.9.3-p392 on windows
-    upgrade RubyEncoder 1.5
 
     --
 
@@ -13,11 +12,15 @@ TODO 9.0.0
 
   IMPLEMENT:
     aggregates for places (alor)
+      - refactor aggregates to support spatial indexes
       - search for similar point in aggregates
-    retrieve accounts from outbound/inbound messages (topac)
+
     export entities data (topac)
+
     api for console to display communication flows (message, call, chat)
+
     export graph data
+
     refactor the connectors to use queue and export from separate process
       - xml export
       - sync with "archive" rcs installation
