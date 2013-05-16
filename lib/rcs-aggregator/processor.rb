@@ -61,10 +61,10 @@ class Processor
 
       case type
         when 'position'
-          params.merge!({data: {point: datum[:point]}})
+          params.merge!({data: {position: datum[:point]}})
           agg = aggregate_position(datum, entry, params)
         else
-          params.merge!({data: {peer: datum[:peer], versus: datum[:versus]}})
+          params.merge!({data: {peer: datum[:peer], versus: datum[:versus], sender: datum[:sender]}})
           agg = aggregate_peer(datum, entry, params, type)
       end
 
@@ -82,12 +82,10 @@ class Processor
 
   def self.aggregate_position(datum, entry, params)
     # find similar point or create a new one
-    params = PositionAggregator.find_similar(params)
-    # find the existing aggregate or create a new one
-    agg = Aggregate.target(entry['target_id']).find_or_create_by(params)
+    agg = PositionAggregator.find_similar_or_create_by(entry['target_id'], params)
 
     # add the timeframe to the aggregate
-    agg.add_to_set(:info, datum[:time])
+    agg.add_to_set(:info, datum[:timeframe])
 
     # we have to alert the intelligence for every new timeframe saved in the aggregate
     IntelligenceQueue.add(entry['target_id'], agg._id, :aggregate) if check_intelligence_license
@@ -130,7 +128,7 @@ class Processor
         data += PeerAggregator.extract_message(ev)
 
       when 'position'
-        data += PositionAggregator.extract(ev)
+        data += PositionAggregator.extract(ev) if check_intelligence_license
     end
 
     return data

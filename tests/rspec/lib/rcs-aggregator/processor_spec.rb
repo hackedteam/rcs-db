@@ -1,6 +1,7 @@
 require 'spec_helper'
 require_db 'db_layer'
 require_db 'grid'
+require_db 'position/point'
 require_aggregator 'processor'
 
 module RCS
@@ -45,7 +46,7 @@ describe Processor do
 
     context 'given an evidence of type "peer"' do
       before do
-        data = {'from' => ' sender ', 'rcpt' => 'receiver', 'incoming' => 1, 'program' => 'skype', 'content' => 'test message'}
+        data = {'from' => ' sender ', 'rcpt' => 'receiver', 'incoming' => 0, 'program' => 'skype', 'content' => 'test message'}
         @evidence = Evidence.collection_class(@target._id).create!(da: Time.now.to_i, aid: @agent._id, type: 'chat', data: data)
         @entry = {'target_id' => @target._id, 'evidence_id' => @evidence._id}
       end
@@ -62,6 +63,8 @@ describe Processor do
         entry.size.should eq @evidence.data['content'].size
         entry.aid.should eq @agent._id.to_s
         entry.day.should eq Time.now.strftime('%Y%m%d')
+        entry.data['peer'].should eq 'receiver'
+        entry.data['sender'].should eq 'sender'
       end
 
       it 'should aggregate multiple evidence' do
@@ -86,7 +89,7 @@ describe Processor do
         aggregates.size.should be 1
 
         entry = aggregates.first
-        entry.info.should include 'skype_sender'
+        entry.info.should include 'skype_receiver'
       end
     end
 
@@ -121,9 +124,7 @@ describe Processor do
         entry.type.should eq 'position'
         entry.aid.should eq @agent._id.to_s
         entry.day.should eq Time.now.strftime('%Y%m%d')
-        entry.data['point']['latitude'].should_not be_nil
-        entry.data['point']['longitude'].should_not be_nil
-        entry.data['point']['radius'].should_not be_nil
+        entry.data['position'].should_not be_nil
       end
 
       it 'should aggregate multiple evidence' do

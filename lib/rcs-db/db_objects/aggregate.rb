@@ -1,4 +1,5 @@
 require 'mongoid'
+require 'mongoid_geospatial'
 require 'set'
 
 #module RCS
@@ -7,14 +8,17 @@ require 'set'
 class Aggregate
   extend RCS::Tracer
   include Mongoid::Document
+  include Mongoid::Geospatial
 
   field :aid, type: String                      # agent BSON_ID
   field :day, type: String                      # day of aggregation
   field :type, type: String
   field :count, type: Integer, default: 0
   field :size, type: Integer, default: 0        # seconds for calls, bytes for the others
-  field :data, type: Hash, default: {}
   field :info, type: Array                      # for summary or timeframe (position
+
+  field :data, type: Hash, default: {}
+  field :position, type: Point, spatial: true   # used only for indexing and finding
 
   store_in collection: -> { self.collection_name }
 
@@ -24,6 +28,8 @@ class Aggregate
   index({"data.peer" => 1}, {background: true})
   index({"data.type" => 1}, {background: true})
   index({type: 1, "data.peer" => 1 }, {background: true})
+
+  spatial_index :position
 
   shard_key :type, :day, :aid
 
