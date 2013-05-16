@@ -1,7 +1,7 @@
 require "bundler/gem_tasks"
 require 'rake'
 require 'rbconfig'
-require 'pry'
+
 # rspec
 require 'rspec/core/rake_task'
 
@@ -146,8 +146,6 @@ task :protect do
     # keep only the interesting files (1.9.3 windows, macos)
     files.delete_if {|v| v.match(/bsd/i) or v.match(/linux/i)}
     files.keep_if {|v| v.match(/193/) or v.match(/loader.rb/) }
-    binding.pry
-
     files.each do |f|
       FileUtils.cp(f, Dir.pwd + '/lib/rgloader')
     end
