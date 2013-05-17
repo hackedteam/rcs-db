@@ -1,8 +1,8 @@
-# require 'json'
 require 'bundler'
-require 'pry'
 require 'mongo'
 require 'mongoid'
+require 'pry'
+require 'pry-nav'
 
 # require customer rspec matchers
 require File.expand_path 'spec_matchers', File.dirname(__FILE__)
