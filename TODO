@@ -12,7 +12,7 @@ TODO 9.0.0
 
   IMPLEMENT:
     aggregates for places (alor)
-      - refactor aggregates to support spatial indexes
+      - get rid of mongoid_spatial gem
       - search for similar point in aggregates
 
     api for console to display communication flows (message, call, chat) (topac)
