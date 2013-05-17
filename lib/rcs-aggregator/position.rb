@@ -19,30 +19,26 @@ class PositionAggregator
   end
 
   def self.find_similar_or_create_by(target_id, params)
-    #TODO: implement this
 
-    lat = params[:data][:position][:latitude]
-    lon = params[:data][:position][:longitude]
+    lat = params[:data][:position][1]
+    lon = params[:data][:position][0]
+    radius = params[:data][:radius]
 
     location = [lon, lat]
 
-    hr = RCS::DB::Point::EARTH_RADIUS * 1000
+    hr = (Point::EARTH_RADIUS * 1000).to_f
+    distance = Point::NEAR_DISTANCE / hr
 
-    existing = Aggregate.target(target_id).geo_near(location).max_distance(50 / hr).distance_multiplier(hr * Math::PI / 180.0).first
+    existing = nil
 
-    if existing
-      old = RCS::DB::Point.new(lat: existing.position[1], lon: existing.position[0], r: existing.data['position']['radius'])
-      new = RCS::DB::Point.new(lat: lat, lon: lon, r: params[:data][:position][:radius])
+    Aggregate.target(target_id).geo_near(location).spherical.max_distance(distance).distance_multiplier(hr).each do |agg|
+      old = agg.to_point
+      new = Point.new(lat: lat, lon: lon, r: radius)
 
-      geo_distance = existing.geo_near_distance
-      my_distance = new.distance(old)
+      return agg if old.similar_to? new
     end
 
-    binding.pry
-
     params[:position] = location
-
-    return existing if existing
 
     # find the existing aggregate or create a new one
     Aggregate.target(target_id).find_or_create_by(params)

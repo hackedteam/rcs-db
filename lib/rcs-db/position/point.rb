@@ -5,10 +5,6 @@
 require 'rcs-common/trace'
 require 'rvincenty'
 
-module RCS
-module DB
-
-
 class Point
   
   attr_accessor :lat, :lon, :r, :time, :start, :end
@@ -120,7 +116,7 @@ class Point
   end
 
   def similar_to?(b)
-    # to circles are considered similar if:
+    # two circles are considered similar if:
     # - they overlap
     # - they intersect but are near each other
     return true if self.class.overlapped?(self, b)
@@ -150,7 +146,3 @@ class Point
   end
 
 end
-
-
-end #DB::
-end #RCS::

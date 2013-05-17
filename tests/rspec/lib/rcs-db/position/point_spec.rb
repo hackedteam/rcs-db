@@ -1,9 +1,6 @@
 require 'spec_helper'
 require_db 'position/point'
 
-module RCS
-module DB
-
 describe Point do
 
   it 'should have accessors' do
@@ -344,7 +341,4 @@ describe Point do
     a.near?(b).should be false
   end
 
-end
-
-end
 end

@@ -1,5 +1,6 @@
 require 'spec_helper'
 require_db 'db_layer'
+require_db 'position/point'
 
 describe Aggregate do
   use_db
@@ -39,6 +40,23 @@ describe Aggregate do
 
     expect { Aggregate.new }.to raise_error
     expect { Aggregate.create(valid_attributes) }.to raise_error
+  end
+
+  describe '#to_point' do
+    let!(:agg) {Aggregate.target('testtarget').create(type: 'position', data: {'position' => [9.1, 45.2], 'radius' => 50}) }
+
+    it 'should not convert if the aggregate is not a position' do
+      agg.type = 'peer'
+      expect { agg.to_point }.to raise_error RuntimeError, /not a position/i
+    end
+
+    it 'should convert the aggregate to a Point' do
+      p = agg.to_point
+      p.should be_a Point
+      p.lat.should eq 45.2
+      p.lon.should eq 9.1
+      p.r.should eq 50
+    end
   end
 
   it 'should create and retrieve summary' do
