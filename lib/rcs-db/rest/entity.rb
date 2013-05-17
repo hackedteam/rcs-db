@@ -32,6 +32,52 @@ class EntityController < RESTController
     end
   end
 
+  def flow
+    require_auth_level :view
+
+    mongoid_query do
+      # find the current operation
+      operation_id = Entity.find(@params[:entities].first).path.first
+
+      # aggregate all the entities by their handles' handle
+      # so if 2 entities share the same handle you'll get {'foo.bar@gmail.com' => ['entity1_id', 'entity2_id']}
+      # TODO: the type should be also considered as a key with "$handles.handle"
+      group = {:_id=>"$handles.handle", :entities=>{"$addToSet"=>"$_id"}}
+      match = {:_id => {'$in' => @params[:entities]}}
+      handles_and_entities = Entity.collection.aggregate [{'$match' => match}, {'$unwind' => '$handles' }, {'$group' => group}]
+      handles_and_entities = handles_and_entities.inject({}) { |hash, h| hash[h["_id"]] = h["entities"]; hash }
+
+      # take all the tagerts of the current operation
+      targets = Item.targets.path_include operation_id
+
+      # take all the aggregates of all the targets
+      # UPDATE: take only the tagets connected to the given entities
+      # TODO: only the aggregates with sender and peer, discard the others (with only the peer information)
+      aggregates = targets.map { |t| Aggregate.target(t).between(day: @params[:from]..@params[:to]).all }.flatten
+
+      # for each day: get all the couple (sender, peer) with the sum of the counter
+      days = {}
+      aggregates.each do |aggregate|
+        data = aggregate.data
+        handles = [data['sender'], data['peer']]
+        handles.reverse! if data['versus'] == :in
+        days[aggregate.day] ||= {}
+
+        # repalce the handles couple with the entities' ids
+        next unless handles_and_entities[handles.first]
+        next unless handles_and_entities[handles.last]
+
+        entities_ids = handles_and_entities[handles.first].product handles_and_entities[handles.last]
+        entities_ids.each do |entity_ids|
+          days[aggregate.day][entity_ids] ||= 0
+          days[aggregate.day][entity_ids] += aggregate.count
+        end
+      end
+
+      return ok(days)
+    end
+  end
+
   def show
     require_auth_level :view
     require_auth_level :view_profiles

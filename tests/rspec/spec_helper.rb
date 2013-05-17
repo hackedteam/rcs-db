@@ -103,6 +103,7 @@ def use_db
   before (:all) do
     connect_mongoid
     sharded_db
+    empty_test_db
   end
 
   before do
