@@ -1,6 +1,4 @@
 require 'mongoid'
-require 'mongoid_geospatial'
-
 require 'lrucache'
 
 require_relative '../link_manager'
@@ -13,7 +11,6 @@ class Entity
   include RCS::Tracer
   include Mongoid::Document
   include Mongoid::Timestamps
-  include Mongoid::Geospatial
 
   # this is the type of entity: target, person, position, etc
   field :type, type: Symbol
@@ -31,7 +28,7 @@ class Entity
   field :photos, type: Array, default: []
 
   # last known position of a target
-  field :position, type: Point, spatial: true
+  field :position, type: Array
   # position_addr contains {time, accuracy}
   field :position_attr, type: Hash, default: {}
 
@@ -47,8 +44,7 @@ class Entity
   index({path: 1}, {background: true})
   index({"handles.type" => 1}, {background: true})
   index({"handles.handle" => 1}, {background: true})
-
-  spatial_index :position
+  index({position: "2dsphere"}, {background: true})
 
   store_in collection: 'entities'
 
@@ -169,14 +165,13 @@ class Entity
   end
 
   def last_position=(hash)
-    self.position = {latitude: hash[:latitude], longitude: hash[:longitude]}
+    self.position = [hash[:longitude], hash[:latitude]]
     self.position_attr = {time: hash[:time], accuracy: hash[:accuracy]}
   end
 
   def latitude_and_longitude
     return unless self.position
-    hsh = position.to_hsh
-    {latitude: hsh[:y], longitude: hsh[:x]}
+    {latitude: position[1], longitude: position[0]}
   end
 
   def last_position

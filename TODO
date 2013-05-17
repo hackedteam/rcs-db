@@ -1,4 +1,8 @@
 
+#####################################################
+ REMOVE 2dsphere before releasing on mongodb 2.2.x
+#####################################################
+
 TODO 9.0.0
 
     upgrade to ruby 1.9.3-p392 on windows
@@ -12,7 +16,6 @@ TODO 9.0.0
 
   IMPLEMENT:
     aggregates for places (alor)
-      - get rid of mongoid_spatial gem
       - search for similar point in aggregates
 
     api for console to display communication flows (message, call, chat) (topac)

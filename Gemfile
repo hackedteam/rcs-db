@@ -28,7 +28,6 @@ gem 'bson', "= 1.8.3"
 gem 'bson_ext', "= 1.8.3"
 
 gem 'mongoid', ">= 3.0.0"
-gem 'mongoid_geospatial'
 gem 'rvincenty'
 
 platforms :jruby do
