@@ -142,50 +142,41 @@ module DB
       context 'benchmark', speed: 'slow' do
 
         before do
-          alice_target = create_target 'alice'
+          # alice_target = create_target 'alice'
+          # bob_target = create_target 'bob'
+          # eve_target = create_target 'eve'
+
+
+          # date = Time.new 2010, 01, 01
+          # end_date = date + 1.year
+
+          # other_peers = ["bob_number", "alice_number"]
+          # 60.times { |i| other_peers << "number_#{i}" }
+
+          # while date < end_date do
+          #   other_peers.each do |peer|
+          #     create_aggregate alice_target, date, 42, {'sender' => 'alice_number', 'peer' => peer, 'versus' => :out}
+          #     create_aggregate bob_target, date, 30, {'sender' => 'bob_number', 'peer' => peer, 'versus' => :out}
+          #     create_aggregate eve_target, date, 123, {'sender' => 'eve_number', 'peer' => peer, 'versus' => :out}
+
+          #     create_aggregate alice_target, date, 77, {'peer' => 'alice_number', 'sender' => peer, 'versus' => :in}
+          #     create_aggregate bob_target, date, 88, {'peer' => 'bob_number', 'sender' => peer, 'versus' => :in}
+          #     create_aggregate eve_target, date, 934, {'peer' => 'eve_number', 'sender' => peer, 'versus' => :in}
+          #   end
+          #   date += 1.day
+          # end
+          mongorestore "rcs-test_dump_for_entity_flow_benchmark.dump"
+
           @alice = create_or_find_entity 'alice', :target, ['alice_number']
-          bob_target = create_target 'bob'
           @bob = create_or_find_entity 'bob', :target, ['bob_number']
-          eve_target = create_target 'eve'
           @eve = create_or_find_entity 'eve', :target, ['eve_number']
-
-          date = Time.new 2010, 01, 01
-          end_date = date + 1.year
-
-          @aggregates_count = 0
-          @days = 0
-
-          other_peers = %w[bob_number alice_number steve_number john_number obama_number]
-          while date < end_date do
-            other_peers.each do |peer|
-              create_aggregate alice_target, date, 42, {'sender' => 'alice_number', 'peer' => peer, 'versus' => :out}
-              create_aggregate bob_target, date, 30, {'sender' => 'bob_number', 'peer' => peer, 'versus' => :out}
-              create_aggregate eve_target, date, 123, {'sender' => 'eve_number', 'peer' => peer, 'versus' => :out}
-
-              create_aggregate alice_target, date, 77, {'peer' => 'alice_number', 'sender' => peer, 'versus' => :in}
-              create_aggregate bob_target, date, 88, {'peer' => 'bob_number', 'sender' => peer, 'versus' => :in}
-              create_aggregate eve_target, date, 934, {'peer' => 'eve_number', 'sender' => peer, 'versus' => :in}
-            end
-
-            @aggregates_count += 6
-            @days += 1
-            date += 1.day
-          end
         end
 
         it 'reports that #flow is fast' do
           start_time = Time.now
-          result = flow_with_params '19000101', '29990101', [@alice.id, @bob.id, @eve.id]
+          result = flow_with_params '20000101', '20990101', [@alice.id, @bob.id, @eve.id]
           execution_time = Time.now - start_time
-
-          puts '-- STATS '+'-'*21
-          puts "aggregates_count = #{@aggregates_count}"
-          puts "targets_count = #{Item.targets.size}"
-          puts "days = #{@days}"
-          puts "execution_time = #{execution_time.to_f}"
-          puts '-'*30
-
-          expect(execution_time).to satisfy { |value| value < 0.3 }
+          expect(execution_time).to satisfy { |value| value < 0.5 }
         end
       end
     end

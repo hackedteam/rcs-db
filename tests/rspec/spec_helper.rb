@@ -132,3 +132,14 @@ def silence_alerts
     RCS::DB::LinkManager.any_instance.stub(:push_modify_entity).and_return nil
   end
 end
+
+# Restore a file created with mongodump
+# Assumes that the dump file is located in the fixture folder (tests/rspec/fixtures)
+def mongorestore path
+  path = File.expand_path File.join(fixtures_path, path)
+  return unless File.exists? path
+  empty_test_db
+  cmd = "mongorestore \"#{path}\""
+  puts cmd
+  `#{cmd}`
+end
