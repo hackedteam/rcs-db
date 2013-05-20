@@ -18,7 +18,7 @@ def rspec_tasks
     all: 'tests/rspec/**/*_spec.rb',
     db: 'tests/rspec/**/rcs-db/**/*_spec.rb',
     rest: 'tests/rspec/**/rcs-db/rest/*_spec.rb',
-    aggregator: '{tests/rspec/**/rcs-aggregator/**/*_spec.rb,tests/rspec/lib/rcs-db/db_objects/aggregate_spec.rb}',
+    aggregator: '{tests/rspec/**/rcs-aggregator/**/*_spec.rb,tests/rspec/lib/rcs-db/db_objects/aggregate_spec.rb,tests/rspec/lib/rcs-db/position/po*_spec.rb}',
     intelligence: '{tests/rspec/**/rcs-intelligence/**/*_spec.rb,tests/rspec/lib/rcs-db/db_objects/entity_spec.rb,tests/rspec/lib/rcs-db/link_manager_spec.rb}'
   }
 end

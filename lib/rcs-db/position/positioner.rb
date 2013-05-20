@@ -3,6 +3,7 @@
 #
 
 require 'rcs-common/trace'
+require 'base64'
 
 require_relative 'point'
 
@@ -45,11 +46,11 @@ class Positioner
   end
 
   def dump
-    Marshal.dump(self)
+    Base64.encode64(Marshal.dump(self))
   end
 
   def self.new_from_dump(status)
-    Marshal.load(status)
+    Marshal.load(Base64.decode64(status))
   end
 
   def feed(point)

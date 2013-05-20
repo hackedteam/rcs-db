@@ -6,25 +6,45 @@ module RCS
 module Aggregator
 
 class PositionAggregator
+  extend RCS::Tracer
 
   def self.extract(target_id, ev)
 
-    positioner_agg = Aggregate.target(target_id).find_or_create_by(type: :positioner)
+    positioner_agg = Aggregate.target(target_id).find_or_create_by(type: :positioner, day: '0', aid: '0')
 
-    if positioner_agg.data[ev.aid]
-      positioner = RCS::DB::Positioner.new_from_dump(positioner_agg.data[ev.aid])
+    # load the positioner from the db, if already saved, otherwise create a new one
+    if positioner_agg.data[ev.aid.to_s]
+      begin
+      positioner = RCS::DB::Positioner.new_from_dump(positioner_agg.data[ev.aid.to_s])
+      rescue Exception => e
+        trace :warn, "Cannot restore positioner status, creating a new one..."
+        positioner = RCS::DB::Positioner.new
+      end
     else
       positioner = RCS::DB::Positioner.new
     end
 
-    data = []
+    # create a point from the evidence
+    point = Point.new(lat: ev.data['latitude'], lon: ev.data['longitude'], r: ev.data['accuracy'], time: Time.at(ev.da))
 
-    # TODO: implement this!!!
-    data << {type: :position,
-             point: {latitude: ev.data['latitude'], longitude: ev.data['longitude'], radius: ev.data['accuracy']},
-             timeframe: {start: 1368090368, end: 1368091368}}
+    result = nil
 
-    return data
+    # feed the positioner with the point and take the result (if any)
+    positioner.feed(point) do |stay|
+      result = stay
+    end
+
+    # save the positioner status into the aggregate
+    positioner_agg.data[ev.aid] = positioner.dump
+    positioner_agg.save
+
+    # empty if not emitted
+    return [] unless result
+
+    # return the stay point
+    return [{type: :position,
+             point: {latitude: result.lat, longitude: result.lon, radius: result.r},
+             timeframe: {start: result.start, end: result.end}}]
   end
 
   def self.find_similar_or_create_by(target_id, params)

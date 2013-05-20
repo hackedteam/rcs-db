@@ -2,6 +2,7 @@ require 'spec_helper'
 require_db 'db_layer'
 require_db 'grid'
 require_db 'position/point'
+require_db 'position/positioner'
 require_aggregator 'processor'
 
 module RCS
@@ -219,7 +220,7 @@ describe Processor do
 
     it 'should parse position evidence' do
       # the STAY point is:
-      # 45.514992 9.5873462 10 (2013-01-15 07:37:43 - 2013-01-15 07:40:43)
+      # 45.514992 9.5873462 10 (2013-01-15 07:37:43 - 2013-01-15 07:48:43)
       data =
       "2013-01-15 07:36:43 45.5149089 9.5880504 25
       2013-01-15 07:36:43 45.515057 9.586814 3500
@@ -227,11 +228,11 @@ describe Processor do
       2013-01-15 07:37:43 45.515057 9.586814 3500
       2013-01-15 07:38:43 45.5149920 9.5873462 15
       2013-01-15 07:38:43 45.515057 9.586814 3500
-      2013-01-15 07:39:43 45.5148914 9.5873097 10
-      2013-01-15 07:39:43 45.515057 9.586814 3500
-      2013-01-15 07:40:43 45.5148914 9.5873097 10
-      2013-01-15 07:40:43 45.515057 9.586814 3500
-      2013-01-15 07:41:43 45.5147590 9.5821532 25"
+      2013-01-15 07:43:43 45.5148914 9.5873097 10
+      2013-01-15 07:43:43 45.515057 9.586814 3500
+      2013-01-15 07:48:43 45.5148914 9.5873097 10
+      2013-01-15 07:48:43 45.515057 9.586814 3500
+      2013-01-15 07:49:43 45.5147590 9.5821532 25"
 
       results = []
 
@@ -245,8 +246,6 @@ describe Processor do
         results << Processor.extract_data(@target.id, new_position(time, {'latitude' => lat, 'longitude' => lon, 'accuracy' => r}))
       end
 
-      pending "implement this"
-
       results[0].should eq []
       results[1].should eq []
       results[2].should eq []
@@ -255,10 +254,13 @@ describe Processor do
       results[5].should eq []
       results[6].should eq []
       results[7].should eq []
-      # this should emit the stay point
-      results[8][:point].should eq({:latitude=>45.514992, :longitude=>9.5873462, :radius=>10})
+      results[8].should eq []
       results[9].should eq []
-      results[10].should eq []
+      # this should emit the stay point
+      results[10].should_not eq []
+
+      results[10].first[:point].should eq({:latitude=>45.514992, :longitude=>9.5873462, :radius=>10})
+      results[10].first[:timeframe].should eq({start: Time.parse('2013-01-15 07:37:43'), end: Time.parse('2013-01-15 07:48:43')})
     end
 
   end
