@@ -91,9 +91,16 @@ class Processor
     end
   end
 
-  def self.process_aggregate(entity, aggregate)
-    # process the aggregate and link the entities
+  # Process the aggregate and (eventually) link the entities
+  def self.process_aggregate entity, aggregate
+    if aggregate.type == :position
+      process_position_aggregate entity, aggregate
+    else
+      process_peer_aggregate entity, aggregate
+    end
+  end
 
+  def self.process_peer_aggregate entity, aggregate
     # normalize the type to search for the correct account
     aggregate_type = aggregate.type
     types = compatible_entity_handle_types aggregate_type
@@ -128,9 +135,11 @@ class Processor
       # the entities will be linked on callback
       ghost.handles.create!(level: :automatic, type: aggregate_type, handle: aggregate.data['peer'])
     end
-
   end
 
+  def self.process_position_aggregate entity, aggregate
+    # TODO
+  end
 end
 
 end #OCR::

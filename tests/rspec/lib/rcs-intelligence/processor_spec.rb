@@ -108,7 +108,6 @@ describe Processor do
     end
   end
 
-
   describe '#process_aggregate' do
     let!(:aggregate_class) { Aggregate.target('testtarget') }
     let!(:aggregate_name) { "aggregate.testtarget" }
@@ -116,6 +115,16 @@ describe Processor do
     let!(:operation_y) { Item.create!(name: 'test-operation-y', _kind: 'operation', path: [], stat: ::Stat.new) }
     let!(:number_of_alice) { '00112345' }
     let!(:number_of_bob) { '00145678' }
+
+    context 'given an aggregate of type "position"' do
+      let(:position_aggregate_of_bob) { aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: :position, aid: 'agent_id') }
+
+      it 'calls #process_position_aggregate' do
+        described_class.should_receive :process_position_aggregate
+        entity = mock()
+        described_class.process_aggregate entity, position_aggregate_of_bob
+      end
+    end
 
     context 'given a aggregate of type "sms"' do
       let!(:sms_aggregate_of_bob) { aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: :sms, aid: 'agent_id', count: 3,
