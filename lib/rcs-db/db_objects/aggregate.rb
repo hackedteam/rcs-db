@@ -193,6 +193,12 @@ class Aggregate
     return top
   end
 
+  def self.positions_within(location, radius)
+    # earth radius in meter
+    hr = (Point::EARTH_RADIUS * 1000).to_f
+    radius = radius / hr
+    self.geo_near(location).spherical.max_distance(radius).distance_multiplier(hr)
+  end
 end
 
 #end # ::DB

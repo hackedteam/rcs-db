@@ -20,6 +20,8 @@ TODO 9.0.0
 
     api for console to display communication flows (message, call, chat) (topac)
 
+    automatic entities from "very" most contacted (statistics)
+
     export entities data
     export graph data
 
