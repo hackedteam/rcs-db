@@ -40,7 +40,7 @@ end
 
 desc 'Alias for "rake spec:all"'
 task :test do
-  Rake::Task[:test].invoke
+  Rake::Task['spec:all'].invoke
 end
 
 desc 'Alias for "rake spec:all"'
