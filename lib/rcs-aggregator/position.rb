@@ -33,18 +33,24 @@ class PositionAggregator
     # the idea here is:
     # search in the db for point near the current one
     # then check for similarity, if one is found, return the old one
-    #TODO: refactor this into aggregate method
     Aggregate.target(target_id).positions_within(location, distance).each do |agg|
       # convert aggregate to point
       old = agg.to_point
       new = Point.new(lat: lat, lon: lon, r: radius)
 
       # if similar, return the old point
-      return agg if old.similar_to? new
+      if old.similar_to? new
+        if agg.day.eql? params[:day]
+          return agg
+        else
+          params[:data] = agg[:data]
+          return Aggregate.target(target_id).create!(params)
+        end
+      end
     end
 
     # find the existing aggregate or create a new one
-    Aggregate.target(target_id).find_or_create_by(params)
+    Aggregate.target(target_id).create!(params)
   end
 
 end

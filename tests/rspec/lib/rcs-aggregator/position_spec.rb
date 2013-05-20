@@ -3,87 +3,65 @@ require_db 'db_layer'
 require_db 'position/point'
 require_aggregator 'position'
 
-class Geotest
-  include Mongoid::Document
-
-  field :name, type: String
-  field :data, type: Hash, default: {}
-  #field :position, type: Array
-
-  index({"data.position" => "2dsphere"})
-end
-
 module RCS
 module Aggregator
 
 describe PositionAggregator do
-  before { turn_off_tracer }
-
   use_db
 
-  def deg_to_rad(deg)
-    rad_per_deg = Math::PI / 180
-    deg * rad_per_deg
-  end
+  describe '#find_similar_or_create_by'do
+    let!(:target_id) {'testtarget'}
+    let!(:aggregate) {Aggregate.target(target_id)}
 
-  def rad_to_deg(rad)
-    rad * 180 / Math::PI
-  end
+    before do
+      aggregate.create_collection
+      @past = aggregate.create!(aid: 'test', day: Time.now.strftime('%Y%m%d'), type: 'position',
+                                data: {:position=>[9.5939346, 45.5353563], :radius=>50})
+    end
 
-  def meter_to_rad(meter)
-    circ = 2 * Math::PI * Point::EARTH_RADIUS * 1000
-    deg = meter * 360 / circ
-    deg_to_rad(deg)
-  end
+    it 'should create a new aggregate if no points is similar' do
+      params = {aid: 'test', day: Time.now.strftime('%Y%m%d'), type: 'position',
+                data: {:position=>[9.60, 45.54], :radius=>50}}
 
-  it 'this is a test for geo_search' do
+      agg = described_class.find_similar_or_create_by(target_id, params)
+      agg.id.should_not eq @past.id
 
-    Geotest.create_indexes
+      aggregate.count.should be 2
+    end
 
-    Geotest.create!(data: {peer: 'spurious'}, name: 'peer')
+    it 'should find similar points already aggregated today' do
+      params = {aid: 'test', day: Time.now.strftime('%Y%m%d'), type: 'position',
+                data: {:position=>[9.5939356, 45.5353573], :radius=>50}}
 
-    g1 = Geotest.create!(data: {position: [9.5939346, 45.5353563]}, name: 'p1')
-    g2 = Geotest.create!(data: {position: [9.5945033, 45.5351362]}, name: 'p2')
-    g3 = Geotest.create!(data: {position: [9.5936141, 45.5353538]}, name: 'p3')
-    g4 = Geotest.create!(data: {position: [9.6036141, 45.5353538]}, name: 'p4')
-    g5 = Geotest.create!(data: {position: [9.5936141, 45.5453538]}, name: 'p5')
+      agg = described_class.find_similar_or_create_by(target_id, params)
+      agg.id.should eq @past.id
 
-    p1 = Point.new(lat: 45.5353563, lon: 9.5939346, r: 100)
-    p2 = Point.new(lat: 45.5351362, lon: 9.5945033, r: 40)
-    p3 = Point.new(lat: 45.5353538, lon: 9.5936141, r: 45)
-    p4 = Point.new(lat: 45.5353538, lon: 9.6036141, r: 45)
-    p5 = Point.new(lat: 45.5453538, lon: 9.5936141, r: 45)
+      aggregate.count.should be 1
+    end
 
-    d12 = p1.distance p2
-    d13 = p1.distance p3
-    d14 = p1.distance p4
-    d15 = p1.distance p5
+    context 'point found in the past with different dates' do
+      it 'should create a new aggregate' do
+        params = {aid: 'test', day: (Time.now + 86400).strftime('%Y%m%d'), type: 'position',
+                  data: {:position=>[9.5939356, 45.5353573], :radius=>50}}
 
-    d23 = p2.distance p3
-    d24 = p2.distance p4
-    d25 = p2.distance p5
+        agg = described_class.find_similar_or_create_by(target_id, params)
+        agg.id.should_not eq @past.id
 
-    d34 = p3.distance p4
-    d35 = p3.distance p5
+        aggregate.count.should be 2
+      end
 
-    d45 = p4.distance p5
+      it 'should create a new aggregate with old coordinates' do
+        params = {aid: 'test', day: (Time.now + 86400).strftime('%Y%m%d'), type: 'position',
+                  data: {:position=>[9.5939356, 45.5353573], :radius=>50}}
 
-    hr = (Point::EARTH_RADIUS * 1000).to_f
+        agg = described_class.find_similar_or_create_by(target_id, params)
+        agg.reload
+        @past.reload
+        agg.id.should_not eq @past.id
+        agg.data['position'].should eq @past.data['position']
+      end
+    end
 
-    dist = 1000 / hr
-
-    f1 = Geotest.geo_near([9.5939346, 45.5353563]).spherical.max_distance(dist).distance_multiplier(hr).to_a
-    f2 = Geotest.geo_near([9.5945033, 45.5351362]).spherical.max_distance(dist).distance_multiplier(hr).to_a
-    f3 = Geotest.geo_near([9.5936141, 45.5353538]).spherical.max_distance(dist).distance_multiplier(hr).to_a
-    f4 = Geotest.geo_near([9.6036141, 45.5353538]).spherical.max_distance(dist).distance_multiplier(hr).to_a
-    f5 = Geotest.geo_near([9.5936141, 45.5453538]).spherical.max_distance(dist).distance_multiplier(hr).to_a
-
-    c1 = Geotest.within_circle(position: [[9.6036141, 45.5353538], 50])
-
-    #len = f4.to_a[3].geo_near_distance
-
-    #binding.pry
-    pending "Implement this"
   end
 
 end

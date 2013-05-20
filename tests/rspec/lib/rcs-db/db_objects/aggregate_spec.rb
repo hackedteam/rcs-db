@@ -59,6 +59,23 @@ describe Aggregate do
     end
   end
 
+  describe '#positions_within' do
+    before do
+      Aggregate.target('testtarget').create_collection
+    end
+
+    it 'should return the points near the given position' do
+      Aggregate.target('testtarget').create(type: 'position', data: {'position' => [9.5939346, 45.5353563], 'radius' => 50}, day: 'test', aid: 'test')
+      Aggregate.target('testtarget').create(type: 'position', data: {'position' => [9.6039346, 45.5453563], 'radius' => 50}, day: 'test', aid: 'test')
+
+      count_100 = Aggregate.target('testtarget').positions_within([9.5945033, 45.5351362], 100).count
+      count_100.should eq 1
+
+      count_1500 = Aggregate.target('testtarget').positions_within([9.5945033, 45.5351362], 1500).count
+      count_1500.should eq 2
+    end
+  end
+
   it 'should create and retrieve summary' do
     aggregate_class.add_to_summary('test', 'peer')
 
