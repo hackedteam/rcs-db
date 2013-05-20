@@ -5,29 +5,47 @@ require 'rbconfig'
 # rspec
 require 'rspec/core/rake_task'
 
-RSpec::Core::RakeTask.new(:spec) do |test|
-  test.rspec_opts = "-I tests/rspec --color"
-  test.pattern = 'tests/rspec/**/*_spec.rb'
+def default_rspec_opts
+  "-I tests/rspec --color --tag ~speed:slow"
 end
 
-RSpec::Core::RakeTask.new("spec:db") do |test|
-  test.rspec_opts = "-I tests/rspec --color"
-  test.pattern = 'tests/rspec/**/rcs-db/**/*_spec.rb'
+def default_rspec_opts_slow
+  "-I tests/rspec --color"
 end
 
-RSpec::Core::RakeTask.new("spec:aggregator") do |test|
-  test.rspec_opts = "-I tests/rspec --color"
-  test.pattern = '{tests/rspec/**/rcs-aggregator/**/*_spec.rb,tests/rspec/lib/rcs-db/db_objects/aggregate_spec.rb}'
+def rspec_tasks
+  {
+    all: 'tests/rspec/**/*_spec.rb',
+    db: 'tests/rspec/**/rcs-db/**/*_spec.rb',
+    rest: 'tests/rspec/**/rcs-db/rest/*_spec.rb',
+    aggregator: '{tests/rspec/**/rcs-aggregator/**/*_spec.rb,tests/rspec/lib/rcs-db/db_objects/aggregate_spec.rb}',
+    intelligence: '{tests/rspec/**/rcs-intelligence/**/*_spec.rb,tests/rspec/lib/rcs-db/db_objects/entity_spec.rb,tests/rspec/lib/rcs-db/link_manager_spec.rb}'
+  }
 end
 
-RSpec::Core::RakeTask.new("spec:intelligence") do |test|
-  test.rspec_opts = "-I tests/rspec --color"
-  test.pattern = '{tests/rspec/**/rcs-intelligence/**/*_spec.rb,tests/rspec/lib/rcs-db/db_objects/entity_spec.rb,tests/rspec/lib/rcs-db/link_manager_spec.rb}'
+rspec_tasks.each do |task_name, pattern|
+
+  desc "Run RSpec test (#{task_name})"
+  RSpec::Core::RakeTask.new("spec:#{task_name}") do |test|
+    test.rspec_opts = default_rspec_opts
+    test.pattern = pattern
+  end
+
+  desc "Run RSpec test (#{task_name}) including slow examples"
+  RSpec::Core::RakeTask.new("spec:#{task_name}:slow") do |test|
+    test.rspec_opts = default_rspec_opts_slow
+    test.pattern = pattern
+  end
 end
 
+desc 'Alias for "rake spec:all"'
 task :test do
-  puts "\nExecuting rspec...\n"
-  Rake::Task[:spec].invoke
+  Rake::Task[:test].invoke
+end
+
+desc 'Alias for "rake spec:all"'
+task :spec do
+  Rake::Task['spec:all'].invoke
 end
 
 task :default => :test
