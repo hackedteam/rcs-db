@@ -7,7 +7,16 @@ module Aggregator
 
 class PositionAggregator
 
-  def self.extract(ev)
+  def self.extract(target_id, ev)
+
+    positioner_agg = Aggregate.target(target_id).find_or_create_by(type: :positioner)
+
+    if positioner_agg.data[ev.aid]
+      positioner = RCS::DB::Positioner.new_from_dump(positioner_agg.data[ev.aid])
+    else
+      positioner = RCS::DB::Positioner.new
+    end
+
     data = []
 
     # TODO: implement this!!!

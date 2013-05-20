@@ -43,7 +43,7 @@ class Processor
     trace :info, "Processing #{ev.type} for target #{target.name}"
 
     # extract peer(s) from call, mail, chat, sms
-    data = extract_data(ev)
+    data = extract_data(entry['target_id'], ev)
 
     trace :debug, ev.data.inspect
 
@@ -116,7 +116,7 @@ class Processor
     return agg
   end
 
-  def self.extract_data(ev)
+  def self.extract_data(target_id, ev)
     data = []
 
     case ev.type
@@ -130,7 +130,7 @@ class Processor
         data += PeerAggregator.extract_message(ev)
 
       when 'position'
-        data += PositionAggregator.extract(ev) if check_intelligence_license
+        data += PositionAggregator.extract(target_id, ev) if check_intelligence_license
     end
 
     return data

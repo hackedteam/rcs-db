@@ -1,5 +1,6 @@
 require 'spec_helper'
 require_db 'db_layer'
+require_db 'grid'
 require_db 'position/point'
 require_aggregator 'position'
 
@@ -8,6 +9,7 @@ module Aggregator
 
 describe PositionAggregator do
   use_db
+  silence_alerts
 
   describe '#find_similar_or_create_by'do
     let!(:target_id) {'testtarget'}
@@ -61,9 +63,104 @@ describe PositionAggregator do
         agg.data['position'].should eq @past.data['position']
       end
     end
-
   end
 
+  describe '#extract' do
+    before do
+      @target = Item.create!(name: 'test-target', _kind: 'target', path: [], stat: ::Stat.new)
+      @agent1 = Item.create(name: 'test-agent', _kind: 'agent', path: [@target._id], stat: ::Stat.new)
+      @agent2 = Item.create(name: 'test-agent', _kind: 'agent', path: [@target._id], stat: ::Stat.new)
+
+      # the STAY point is:
+      # 45.514992 9.5873462 10 (2013-01-15 07:37:43 - 2013-01-15 07:40:43)
+      @data1 =
+      "2013-01-15 07:36:43 45.5149089 9.5880504 25
+      2013-01-15 07:36:43 45.515057 9.586814 3500
+      2013-01-15 07:37:43 45.5149920 9.5873462 10
+      2013-01-15 07:37:43 45.515057 9.586814 3500
+      2013-01-15 07:38:43 45.5149920 9.5873462 15
+      2013-01-15 07:38:43 45.515057 9.586814 3500
+      2013-01-15 07:39:43 45.5148914 9.5873097 10
+      2013-01-15 07:39:43 45.515057 9.586814 3500
+      2013-01-15 07:40:43 45.5148914 9.5873097 10
+      2013-01-15 07:40:43 45.515057 9.586814 3500
+      2013-01-15 07:41:43 45.5147590 9.5821532 25"
+
+      # the STAY point is:
+      # 45.514992 9.5873462 10 (2013-01-15 07:37:43 - 2013-01-15 07:44:43)
+      @data2 =
+      "2013-01-15 07:36:43 45.5149089 9.5880504 25
+      2013-01-15 07:36:43 45.515057 9.586814 3500
+      2013-01-15 07:37:43 45.5149920 9.5873462 10
+      2013-01-15 07:37:43 45.515057 9.586814 3500
+      2013-01-15 07:38:43 45.5149920 9.5873462 15
+      2013-01-15 07:38:43 45.515057 9.586814 3500
+      2013-01-15 07:39:43 45.5148914 9.5873097 10
+      2013-01-15 07:39:43 45.515057 9.586814 3500
+      2013-01-15 07:40:43 45.5148914 9.5873097 10
+      2013-01-15 07:40:43 45.515057 9.586814 3500
+      2013-01-15 07:41:43 45.5148913 9.5873097 50
+      2013-01-15 07:42:43 45.5148914 9.5873098 50
+      2013-01-15 07:43:43 45.5148915 9.5873099 50
+      2013-01-15 07:44:43 45.5148914 9.5873097 50
+      2013-01-15 07:45:43 45.5147590 9.5821532 25"
+    end
+
+    def new_position(device, time, data)
+      Evidence.collection_class(@target.id).new(da: time, aid: device.id, type: :position, data: data)
+    end
+
+    def parse_data(entry)
+      values = entry.split(' ')
+      time = Time.parse("#{values.shift} #{values.shift} +0100")
+      lat = values.shift.to_f
+      lon = values.shift.to_f
+      r = values.shift.to_i
+      return time, lat, lon, r
+    end
+
+    it 'should be able to reload previous status if stopped' do
+      time, lat, lon, r = parse_data(@data1.each_line.first)
+      described_class.extract(new_position(@agent1, time, {'latitude' => lat, 'longitude' => lon, 'accuracy' => r}))
+
+      aggregates = Aggregate.target(@target.id).where(type: :positioner)
+      aggregates.size.should be 1
+    end
+
+    it 'should return only stay positions' do
+      results = []
+
+      @data1.each_line do |e|
+        time, lat, lon, r = parse_data(e)
+        point = described_class.extract(new_position(@agent1, time, {'latitude' => lat, 'longitude' => lon, 'accuracy' => r}))
+        results += point unless point.empty?
+      end
+
+      results.size.should be 1
+      results.first[:point].should eq({latitude: 45.514992, longitude: 9.5873462, radius: 10})
+    end
+
+    it 'should keep track of multiple devices at the same time' do
+      results = []
+
+      @data1.each_line do |e|
+        time, lat, lon, r = parse_data(e)
+        point = described_class.extract(new_position(@agent1, time, {'latitude' => lat, 'longitude' => lon, 'accuracy' => r}))
+        results += point unless point.empty?
+      end
+
+      @data2.each_line do |e|
+        time, lat, lon, r = parse_data(e)
+        point = described_class.extract(new_position(@agent2, time, {'latitude' => lat, 'longitude' => lon, 'accuracy' => r}))
+        results += point unless point.empty?
+      end
+
+      results.size.should be 2
+      results.first[:point].should eq({latitude: 45.514992, longitude: 9.5873462, radius: 10})
+      results.last[:point].should eq({latitude: 45.514992, longitude: 9.5873462, radius: 10})
+    end
+
+  end
 end
 
 

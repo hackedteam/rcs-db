@@ -192,7 +192,7 @@ describe Processor do
 
       it 'should not parse it' do
         @evidence.data = {}
-        parsed = Processor.extract_data(@evidence)
+        parsed = Processor.extract_data(@target.id, @evidence)
         parsed.should be_a Array
         parsed.size.should be 0
       end
@@ -207,7 +207,7 @@ describe Processor do
         @evidence.type = key.to_s
         @evidence.data = value
 
-        parsed = Processor.extract_data(@evidence)
+        parsed = Processor.extract_data(@target.id, @evidence)
         parsed.should be_a Array
         parsed.size.should be 1
       end
@@ -242,7 +242,7 @@ describe Processor do
         lon = values.shift.to_f
         r = values.shift.to_i
 
-        results << Processor.extract_data(new_position(time, {'latitude' => lat, 'longitude' => lon, 'accuracy' => r}))
+        results << Processor.extract_data(@target.id, new_position(time, {'latitude' => lat, 'longitude' => lon, 'accuracy' => r}))
       end
 
       pending "implement this"

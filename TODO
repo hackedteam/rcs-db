@@ -16,6 +16,7 @@ TODO 9.0.0
 
   IMPLEMENT:
     aggregates for places (alor)
+      - make the aggregator for position a single process on different shards
       - search for similar point in aggregates
 
     api for console to display communication flows (message, call, chat) (topac)
