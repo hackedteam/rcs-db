@@ -60,7 +60,7 @@ class Processor
       params = {aid: ev.aid, day: Time.at(ev.da).strftime('%Y%m%d'), type: type}
 
       case type
-        when 'position'
+        when :position
           params.merge!({data: {position: [datum[:point][:longitude], datum[:point][:latitude]], radius: datum[:point][:radius]}})
           agg = aggregate_position(datum, entry, params)
         else
@@ -72,6 +72,8 @@ class Processor
     end
 
   rescue Exception => e
+    puts e.backtrace.join("\n")
+
     trace :error, "Cannot process evidence: #{e.message}"
     trace :fatal, e.backtrace.join("\n")
   end

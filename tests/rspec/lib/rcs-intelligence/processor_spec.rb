@@ -26,7 +26,7 @@ describe Processor do
     context 'the item is an aggregate' do
       before do
         aggregate_class = Aggregate.target target.id
-        @aggregate = aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: 'sms', aid: 'agent_id', count: 1, data: {'peer' => 'harrenhal', 'versus' => :in})
+        @aggregate = aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: :sms, aid: 'agent_id', count: 1, data: {'peer' => 'harrenhal', 'versus' => :in})
         @queued_item = IntelligenceQueue.create! target_id: target.id, type: :aggregate, ident: @aggregate.id
       end
 
@@ -118,7 +118,7 @@ describe Processor do
     let!(:number_of_bob) { '00145678' }
 
     context 'given a aggregate of type "sms"' do
-      let!(:sms_aggregate_of_bob) { aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: 'sms', aid: 'agent_id', count: 3,
+      let!(:sms_aggregate_of_bob) { aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: :sms, aid: 'agent_id', count: 3,
         data: {'peer' => number_of_alice, 'versus' => :in, 'sender' => number_of_bob}) }
 
       # Create Alice (entity) with an handle (her phone number)

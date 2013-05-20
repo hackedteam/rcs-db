@@ -14,7 +14,7 @@ class PeerAggregator
     # skip if for aggregation
     return [] if ev.data['program'].downcase.eql? 'twitter'
 
-    hash = {:type => ev.data['program'].downcase, :size => ev.data['content'].length}
+    hash = {:type => ev.data['program'].downcase.to_sym, :size => ev.data['content'].length}
 
     # TODO: remove old chat format (after 9.0.0)
     if ev.data['peer']
@@ -47,7 +47,7 @@ class PeerAggregator
   def self.extract_call(ev)
     data = []
     versus = ev.data['incoming'] == 1 ? :in : :out
-    hash = {:versus => versus, :type => ev.data['program'].downcase, :size => ev.data['duration'].to_i}
+    hash = {:versus => versus, :type => ev.data['program'].downcase.to_sym, :size => ev.data['duration'].to_i}
 
     # TODO: remove old call format (after 9.0.0)
     if ev.data['peer']
@@ -102,7 +102,7 @@ class PeerAggregator
 
   def self.extract_sms_or_mms ev
     data = []
-    hash = {type: ev.data['type'].downcase, size: ev.data['content'].length}
+    hash = {type: ev.data['type'].downcase.to_sym, size: ev.data['content'].length}
 
     if ev.data['incoming'] == 1
       unless ev.data['rcpt'].blank? or ev.data['rcpt'].include?(',')

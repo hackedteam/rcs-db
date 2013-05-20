@@ -11,7 +11,7 @@ class PositionAggregator
     data = []
 
     # TODO: implement this!!!
-    data << {type: 'position',
+    data << {type: :position,
              point: {latitude: ev.data['latitude'], longitude: ev.data['longitude'], radius: ev.data['accuracy']},
              timeframe: {start: 1368090368, end: 1368091368}}
 
