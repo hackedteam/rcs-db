@@ -8,13 +8,17 @@ if File.directory?(Dir.pwd + '/lib/rcs-aggregator-release')
   require 'rcs-db-release/config'
   require 'rcs-db-release/db_layer'
   require 'rcs-db-release/grid'
-  require 'rcs-db-release/position/*'
+  require 'rcs-db-release/position/point'
+  require 'rcs-db-release/position/positioner'
+  require 'rcs-db-release/position/resolver'
 else
   require 'rcs-db/db'
   require 'rcs-db/config'
   require 'rcs-db/db_layer'
   require 'rcs-db/grid'
-  require 'rcs-db/position/*'
+  require 'rcs-db/position/point'
+  require 'rcs-db/position/positioner'
+  require 'rcs-db/position/resolver'
 end
 
 # from RCS::Common
