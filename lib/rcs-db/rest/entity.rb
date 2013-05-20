@@ -47,11 +47,13 @@ class EntityController < RESTController
       handles_and_entities = Entity.collection.aggregate [{'$match' => match}, {'$unwind' => '$handles' }, {'$group' => group}]
       handles_and_entities = handles_and_entities.inject({}) { |hash, h| hash[h["_id"]] = h["entities"]; hash }
 
-      # take all the tagerts of the current operation
-      targets = Item.targets.path_include operation_id
+      # take all the tagerts of the current operation:
+      # take all the entities of type target and for each of these take the second id in the "path" (the "target" id)
+      or_filter = @params[:entities].map { |id| {id: id} }
+      target_entities = Entity.where(type: :target).any_of(or_filter)
+      targets = target_entities.map { |e| e.path[1] }
 
-      # take all the aggregates of all the targets
-      # UPDATE: take only the tagets connected to the given entities
+      # take all the aggregates of the selected targets
       # TODO: only the aggregates with sender and peer, discard the others (with only the peer information)
       aggregates = targets.map { |t| Aggregate.target(t).between(day: @params[:from]..@params[:to]).all }.flatten
 
