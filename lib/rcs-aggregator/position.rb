@@ -43,13 +43,14 @@ class PositionAggregator
         if agg.day.eql? params[:day]
           return agg
         else
+          # if the day is different, create a new one on current day, but same old position
           params[:data] = agg[:data]
           return Aggregate.target(target_id).create!(params)
         end
       end
     end
 
-    # find the existing aggregate or create a new one
+    # no previous match create a new one
     Aggregate.target(target_id).create!(params)
   end
 
