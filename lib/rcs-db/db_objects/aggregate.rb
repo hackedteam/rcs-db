@@ -10,7 +10,7 @@ class Aggregate
 
   field :aid, type: String                      # agent BSON_ID
   field :day, type: String                      # day of aggregation
-  field :type, type: String
+  field :type, type: Symbol
   field :count, type: Integer, default: 0
   field :size, type: Integer, default: 0        # seconds for calls, bytes for the others
   field :info, type: Array                      # for summary or timeframe (position
@@ -31,18 +31,18 @@ class Aggregate
   shard_key :type, :day, :aid
 
   def to_point
-    raise "not a position" unless type.eql? 'position'
+    raise "not a position" unless type.eql? :position
     Point.new(lat: data['position'][1], lon: data['position'][0], r: data['radius'])
   end
 
   def self.summary_include?(type, peer)
-    summary = self.where(day: '0', type: 'summary').first
+    summary = self.where(day: '0', type: :summary).first
     return false unless summary
     return summary.info.include? type.to_s + '_' + peer.to_s
   end
 
   def self.add_to_summary(type, peer)
-    summary = self.where(day: '0', aid: '0', type: 'summary').first_or_create!
+    summary = self.where(day: '0', aid: '0', type: :summary).first_or_create!
     summary.add_to_set(:info, type.to_s + '_' + peer.to_s)
   end
 
@@ -50,7 +50,7 @@ class Aggregate
     return if self.empty?
 
     # get all the tuple (type, peer)
-    pipeline = [{ "$match" => {:type => {'$nin' => ['summary']} }},
+    pipeline = [{ "$match" => {:type => {'$nin' => [:summary]} }},
                 { "$group" =>
                   { _id: { peer: "$data.peer", type: "$type" }}
                 }]
@@ -59,9 +59,9 @@ class Aggregate
     return if data.empty?
 
     # normalize them in a better form
-    data.collect! {|e| e['_id']['type'] + '_' + e['_id']['peer']}
+    data.collect! {|e| e['_id']['type'].to_s + '_' + e['_id']['peer']}
 
-    summary = self.where(day: '0', aid: '0', type: 'summary').first_or_create!
+    summary = self.where(day: '0', aid: '0', type: :summary).first_or_create!
 
     summary.info = data
     summary.save!
@@ -102,7 +102,7 @@ class Aggregate
   def self.most_contacted(target_id, params)
     start = Time.now
 
-    most_contacted_types = ['call', 'chat', 'mail', 'sms', 'mms', 'facebook', 'gmail', 'skype', 'bbm', 'whatsapp', 'msn', 'adium', 'viber']
+    most_contacted_types = [:call, :chat, :mail, :sms, :mms, :facebook, :gmail, :skype, :bbm, :whatsapp, :msn, :adium, :viber]
 
     #
     # Map Reduce has some downsides

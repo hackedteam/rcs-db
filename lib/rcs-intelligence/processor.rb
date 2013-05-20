@@ -82,12 +82,12 @@ class Processor
   end
 
   def self.compatible_entity_handle_types aggregate_type
-    if ['call', 'sms', 'mms'].include? aggregate_type
+    if [:call, :sms, :mms].include? aggregate_type
       ['phone']
-    elsif ['mail', 'gmail'].include? aggregate_type
+    elsif [:mail, :gmail].include? aggregate_type
       ['mail', 'gmail']
     else
-      [aggregate_type]
+      [aggregate_type.to_s]
     end
   end
 

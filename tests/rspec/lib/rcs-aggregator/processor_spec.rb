@@ -18,7 +18,7 @@ describe Processor do
       @target = Item.create!(name: 'test-target', _kind: 'target', path: [], stat: ::Stat.new)
       @agent = Item.create(name: 'test-agent', _kind: 'agent', path: [@target._id], stat: ::Stat.new)
       data = {'from' => ' sender ', 'rcpt' => 'receiver', 'incoming' => 1, 'program' => 'skype', 'content' => 'test message'}
-      @evidence = Evidence.collection_class(@target._id).create!(da: Time.now.to_i, aid: @agent._id, type: 'chat', data: data)
+      @evidence = Evidence.collection_class(@target._id).create!(da: Time.now.to_i, aid: @agent._id, type: :chat, data: data)
       @entry = {'target_id' => @target._id, 'evidence_id' => @evidence._id}
     end
 
@@ -47,19 +47,19 @@ describe Processor do
     context 'given an evidence of type "peer"' do
       before do
         data = {'from' => ' sender ', 'rcpt' => 'receiver', 'incoming' => 0, 'program' => 'skype', 'content' => 'test message'}
-        @evidence = Evidence.collection_class(@target._id).create!(da: Time.now.to_i, aid: @agent._id, type: 'chat', data: data)
+        @evidence = Evidence.collection_class(@target._id).create!(da: Time.now.to_i, aid: @agent._id, type: :chat, data: data)
         @entry = {'target_id' => @target._id, 'evidence_id' => @evidence._id}
       end
 
       it 'should create aggregate from evidence' do
         Processor.process @entry
 
-        aggregates = Aggregate.target(@target._id).where(type: 'skype')
+        aggregates = Aggregate.target(@target._id).where(type: :skype)
         aggregates.size.should be 1
 
         entry = aggregates.first
         entry.count.should be 1
-        entry.type.should eq 'skype'
+        entry.type.should eq :skype
         entry.size.should eq @evidence.data['content'].size
         entry.aid.should eq @agent._id.to_s
         entry.day.should eq Time.now.strftime('%Y%m%d')
@@ -75,7 +75,7 @@ describe Processor do
           Processor.process @entry
         end
 
-        aggregates = Aggregate.target(@target._id).where(type: 'skype')
+        aggregates = Aggregate.target(@target._id).where(type: :skype)
         aggregates.size.should be 1
 
         entry = aggregates.first
@@ -85,7 +85,7 @@ describe Processor do
       it 'should create aggregation summary' do
         Processor.process @entry
 
-        aggregates = Aggregate.target(@target._id).where(type: 'summary')
+        aggregates = Aggregate.target(@target._id).where(type: :summary)
         aggregates.size.should be 1
 
         entry = aggregates.first
@@ -96,32 +96,32 @@ describe Processor do
     context 'given an evidence of type "position"' do
 
       def new_position(data)
-        evidence = Evidence.collection_class(@target._id).create!(da: Time.now.to_i, aid: @agent._id, type: 'position', data: data)
+        evidence = Evidence.collection_class(@target._id).create!(da: Time.now.to_i, aid: @agent._id, type: :position, data: data)
         {'target_id' => @target._id, 'evidence_id' => evidence._id}
       end
 
       before do
         data = {'latitude' => 45.5353563, 'longitude' => 9.5939346, 'accuracy' => 50}
-        @evidence = Evidence.collection_class(@target._id).create!(da: Time.now.to_i, aid: @agent._id, type: 'position', data: data)
+        @evidence = Evidence.collection_class(@target._id).create!(da: Time.now.to_i, aid: @agent._id, type: :position, data: data)
         @entry = {'target_id' => @target._id, 'evidence_id' => @evidence._id}
       end
 
       it 'should not create aggregation summary' do
         Processor.process @entry
 
-        aggregates = Aggregate.target(@target._id).where(type: 'summary')
+        aggregates = Aggregate.target(@target._id).where(type: :summary)
         aggregates.size.should be 0
       end
 
       it 'should create aggregate from evidence' do
         Processor.process @entry
 
-        aggregates = Aggregate.target(@target._id).where(type: 'position')
+        aggregates = Aggregate.target(@target._id).where(type: :position)
         aggregates.size.should be 1
 
         entry = aggregates.first
         entry.count.should be 1
-        entry.type.should eq 'position'
+        entry.type.should eq :position
         entry.aid.should eq @agent._id.to_s
         entry.day.should eq Time.now.strftime('%Y%m%d')
         entry.data['position'].should_not be_nil
@@ -135,7 +135,7 @@ describe Processor do
            Processor.process @entry
          end
 
-         aggregates = Aggregate.target(@target._id).where(type: 'position')
+         aggregates = Aggregate.target(@target._id).where(type: :position)
          aggregates.size.should be 1
 
          entry = aggregates.first
@@ -158,20 +158,20 @@ describe Processor do
       it 'should aggregate multiple similar positions' do
         Processor.process @entry
 
-        aggregates = Aggregate.target(@target._id).where(type: 'position')
+        aggregates = Aggregate.target(@target._id).where(type: :position)
         aggregates.size.should be 1
 
         # overlapping
         Processor.process new_position({'latitude' => 45.5353563, 'longitude' => 9.5939346, 'accuracy' => 100})
 
-        aggregates = Aggregate.target(@target._id).where(type: 'position')
+        aggregates = Aggregate.target(@target._id).where(type: :position)
         aggregates.size.should be 1
 
         # similar (intersecting)
         Processor.process new_position({'latitude' => 45.5351362, 'longitude' => 9.5945033, 'accuracy' => 40})
         Processor.process new_position({'latitude' => 45.5353538, 'longitude' => 9.5936141, 'accuracy' => 45})
 
-        aggregates = Aggregate.target(@target._id).where(type: 'position')
+        aggregates = Aggregate.target(@target._id).where(type: :position)
         aggregates.size.should be 1
       end
     end
@@ -214,7 +214,7 @@ describe Processor do
     end
 
     def new_position(time, data)
-      Evidence.collection_class(@target._id).create!(da: time, aid: @agent._id, type: 'position', data: data)
+      Evidence.collection_class(@target._id).create!(da: time, aid: @agent._id, type: :position, data: data)
     end
 
     it 'should parse position evidence' do

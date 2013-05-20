@@ -13,7 +13,7 @@ describe PeerAggregator do
     context 'when is a chat evidence' do
       before do
         @evidence_chat = Evidence.dynamic_new('testtarget')
-        @evidence_chat.type = 'chat'
+        @evidence_chat.type = :chat
       end
 
       it 'should return [] if the chat is from twitter' do
@@ -31,7 +31,7 @@ describe PeerAggregator do
         aggregated[:peer].should eq 'peer_old'
         aggregated.should_not have_key :sender
         aggregated[:size].should eq @evidence_chat.data['content'].size
-        aggregated[:type].should eq 'skype'
+        aggregated[:type].should eq :skype
         aggregated[:versus].should == :both
       end
 
@@ -45,7 +45,7 @@ describe PeerAggregator do
         aggregated[:peer].should eq 'peer1'
         aggregated.should_not have_key :sender
         aggregated[:size].should eq @evidence_chat.data['content'].size
-        aggregated[:type].should eq 'skype'
+        aggregated[:type].should eq :skype
         aggregated[:versus].should == :both
       end
 
@@ -57,7 +57,7 @@ describe PeerAggregator do
         aggregated[:peer].should eq 'sender'
         aggregated.should_not have_key :sender
         aggregated[:size].should eq @evidence_chat.data['content'].size
-        aggregated[:type].should eq 'skype'
+        aggregated[:type].should eq :skype
         aggregated[:versus].should be :in
       end
 
@@ -69,7 +69,7 @@ describe PeerAggregator do
         aggregated[:peer].should eq 'receiver'
         aggregated[:sender].should eq 'sender'
         aggregated[:size].should eq @evidence_chat.data['content'].size
-        aggregated[:type].should eq 'skype'
+        aggregated[:type].should eq :skype
         aggregated[:versus].should be :out
       end
 
@@ -113,7 +113,7 @@ describe PeerAggregator do
         aggregated = parsed.first
         aggregated[:peer].should eq 'peer_old'
         aggregated[:size].should eq @evidence_call.data['duration']
-        aggregated[:type].should eq 'skype'
+        aggregated[:type].should eq :skype
         aggregated[:versus].should be :in
         aggregated[:sender].should be nil
       end
@@ -137,7 +137,7 @@ describe PeerAggregator do
         aggregated = parsed.first
         aggregated[:peer].should eq 'peer1'
         aggregated[:size].should eq @evidence_call.data['duration']
-        aggregated[:type].should eq 'skype'
+        aggregated[:type].should eq :skype
         aggregated[:versus].should be :out
       end
 
@@ -148,7 +148,7 @@ describe PeerAggregator do
         aggregated = parsed.first
         aggregated[:peer].should eq 'sender'
         aggregated[:size].should eq @evidence_call.data['duration']
-        aggregated[:type].should eq 'skype'
+        aggregated[:type].should eq :skype
         aggregated[:versus].should be :in
         aggregated[:sender].should == 'receiver'
       end
@@ -160,7 +160,7 @@ describe PeerAggregator do
         aggregated = parsed.first
         aggregated[:peer].should eq 'receiver'
         aggregated[:size].should eq @evidence_call.data['duration']
-        aggregated[:type].should eq 'skype'
+        aggregated[:type].should eq :skype
         aggregated[:versus].should be :out
         aggregated[:sender].should == 'sender'
       end
