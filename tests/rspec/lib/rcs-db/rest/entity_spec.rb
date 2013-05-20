@@ -146,7 +146,6 @@ module DB
           # bob_target = create_target 'bob'
           # eve_target = create_target 'eve'
 
-
           # date = Time.new 2010, 01, 01
           # end_date = date + 1.year
 
@@ -176,7 +175,7 @@ module DB
           start_time = Time.now
           result = flow_with_params '20000101', '20990101', [@alice.id, @bob.id, @eve.id]
           execution_time = Time.now - start_time
-          expect(execution_time).to satisfy { |value| value < 0.5 }
+          expect(execution_time).to satisfy { |value| value < 5 }
         end
       end
     end

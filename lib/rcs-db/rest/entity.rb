@@ -36,62 +36,12 @@ class EntityController < RESTController
     require_auth_level :view
 
     mongoid_query do
-      # find the current operation
-      operation_id = Entity.find(@params[:entities].first).path.first
-
-      # aggregate all the entities by their handles' handle
-      # so if 2 entities share the same handle you'll get {'foo.bar@gmail.com' => ['entity1_id', 'entity2_id']}
-      # TODO: the type should be also considered as a key with "$handles.handle"
-      match = {:_id => {'$in' => @params[:entities]}}
-      group = {:_id=>"$handles.handle", :entities=>{"$addToSet"=>"$_id"}}
-      handles_and_entities = Entity.collection.aggregate [{'$match' => match}, {'$unwind' => '$handles' }, {'$group' => group}]
-      handles_and_entities = handles_and_entities.inject({}) { |hash, h| hash[h["_id"]] = h["entities"]; hash }
-
-      # take all the tagerts of the current operation:
-      # take all the entities of type target and for each of these take the second id in the "path" (the "target" id)
-      # t = Time.now
-      or_filter = @params[:entities].map { |id| {id: id} }
-      target_entities = Entity.where(type: :target).any_of(or_filter)
-      targets = target_entities.map { |e| e.path[1] }
-
-      # puts "step 1: #{Time.now - t }"
-
-      days = {}
-      targets.each do |target_id|
-        # take all the aggregates of the selected targets
-        # only the aggregates within the given time window
-        # only the aggregates with sender and peer, discard the others (with only the peer information)
-        # t = Time.now
-
-        match = {'data.sender' => {'$exists' => true}, 'data.peer' => {'$exists' => true}, 'day' => {"$gte" => @params[:from].to_s, "$lte" => @params[:to].to_s}}
-        group = {_id: {day: '$day', sender: "$data.sender", peer: "$data.peer", versus: "$data.versus"}, count: {'$sum' => "$count"}}
-        aggregates = Aggregate.target(target_id).collection.aggregate [{'$match' => match}, {'$group' => group}]
-
-        # puts "step #{target_id}/1: #{Time.now - t }"
-
-        # t = Time.now
-        aggregates.each do |aggregate|
-          data = aggregate['_id']
-          count = aggregate['count']
-
-          handles = [data['sender'], data['peer']]
-          handles.reverse! if data['versus'] == :in
-          days[data['day']] ||= {}
-
-          # repalce the handles couple with the entities' ids
-          next unless handles_and_entities[handles.first]
-          next unless handles_and_entities[handles.last]
-
-          entities_ids = handles_and_entities[handles.first].product handles_and_entities[handles.last]
-          entities_ids.each do |entity_ids|
-            days[data['day']][entity_ids] ||= 0
-            days[data['day']][entity_ids] += count
-          end
-        end
-        # puts "step #{target_id}/2: #{Time.now - t }"
+      # Check the presence of the required params
+      [:entities, :from, :to].each do |param_name|
+        return bad_request('INVALID_OPERATION') if @params[param_name].blank?
       end
 
-      return ok(days)
+      return ok Entity.flow(@params)
     end
   end
 
