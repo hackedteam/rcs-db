@@ -105,6 +105,11 @@ describe Processor do
         data = {'latitude' => 45.5353563, 'longitude' => 9.5939346, 'accuracy' => 50}
         @evidence = Evidence.collection_class(@target._id).create!(da: Time.now.to_i, aid: @agent._id, type: :position, data: data)
         @entry = {'target_id' => @target._id, 'evidence_id' => @evidence._id}
+        PositionAggregator.stub(:extract) do |target, ev|
+          [{type: :position,
+                     point: {latitude: ev.data['latitude'], longitude: ev.data['longitude'], radius: ev.data['accuracy']},
+                     timeframe: {start: ev.da, end: ev.da + 1000}}]
+        end
       end
 
       it 'should not create aggregation summary' do

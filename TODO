@@ -18,6 +18,10 @@ TODO 9.0.0
     aggregates for places (alor)
       - make the aggregator for position a single process on different shards
       - search for similar point in aggregates
+      - configurable min_time_in_a_place
+      - use similarity
+
+    report agg and int status in heartbeat
 
     api for console to display communication flows (message, call, chat) (topac)
 
