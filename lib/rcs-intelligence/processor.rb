@@ -139,14 +139,22 @@ class Processor
 
   def self.process_position_aggregate entity, aggregate
     position = aggregate.position
+    position_ary = [position[:longitude], position[:latitude]]
     day = Time.parse aggregate.day
     days_around = [day-1.day, day, day+1.day]
 
+    operation_id = entity.path.first
+    # 2 entities have been in the same place at the same time:
+    # create a position entity an link the 2 entities with it
     ::Entity.targets.same_path_of(entity).each do |en|
       Aggregate.target(en.target_id).in(day: days_around).positions_within(position).each do |ag|
         next unless aggregate.timeframe_intersect?(ag)
-        # TODO - add the intersection timeframe to the "info" attribute
-        RCS::DB::LinkManager.instance.add_link from: entity, to: en, level: :automatic, type: :position, versus: :both, info: nil
+
+        name = "Position #{position_ary.join(', ')}"
+        # TODO - update SIMILAR position entities
+        position_entity = Entity.positions.path_include(operation_id).find_or_initialize_by type: :position, path: [operation_id], position: position_ary
+        position_entity.update_attributes! level: :automatic
+        position_entity.update_attributes!(name: name) if position_entity.name.blank?
       end
     end
   end

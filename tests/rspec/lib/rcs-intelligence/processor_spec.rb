@@ -212,20 +212,20 @@ describe Processor do
     let!(:alice) { Entity.where(name: 'alice').first }
     let!(:eve) { Entity.where(name: 'eve').first }
 
+    let(:midday) { Time.new 2013, 01, 01, 12, 00, 00 }
+    let(:london_eye) { [51.503894, 0.119390] }
 
     context 'when a two entities have been in the same place at the same time' do
-
-      let(:midday) { Time.new 2013, 01, 01, 12, 00, 00 }
-      let(:london_eye) { [51.503894, 0.119390] }
 
       let!(:bob_position) { create_position_aggregate_for target_bob, lat: london_eye[0], lon: london_eye[1], rad: 10, start: midday, end: midday + 40.minutes }
       let!(:alice_position) { create_position_aggregate_for target_alice, lat: london_eye[0], lon: london_eye[1], rad: 12, start: midday, end: midday + 42.minutes }
 
       let!(:eve_position) { create_position_aggregate_for target_eve, lat: 10, lon: 10, rad: 1, start: 1, end: 2 }
 
-      it 'creates a link between the two entities' do
+      it 'creates a position entity for that place' do
         described_class.process_position_aggregate bob, bob_position
-        expect(bob.reload.linked_to? alice.reload).to be_true
+        position_entity = Entity.positions.first
+        expect(position_entity).not_to be_nil
       end
     end
   end
