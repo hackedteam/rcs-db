@@ -79,7 +79,7 @@ end
 class PushQueue < NotificationQueue
   include Mongoid::Document
 
-  SIZE = 50_000
+  SIZE = 100_000
   MAX = 1000
 
   field :type, type: String
