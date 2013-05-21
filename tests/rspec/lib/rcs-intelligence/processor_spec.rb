@@ -224,8 +224,15 @@ describe Processor do
 
       it 'creates a position entity for that place' do
         described_class.process_position_aggregate bob, bob_position
+
+        expect(Entity.positions.count).to eql 1
+
         position_entity = Entity.positions.first
-        expect(position_entity).not_to be_nil
+
+        expect(position_entity.type).to eql :position
+        expect(position_entity.level).to eql :automatic
+        expect(position_entity.name).not_to match /Position \d\, \d/
+        expect(position_entity.path).to eql [bob.path.first]
       end
     end
   end
