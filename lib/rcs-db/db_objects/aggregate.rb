@@ -30,6 +30,8 @@ class Aggregate
 
   shard_key :type, :day, :aid
 
+  scope :positions, lambda { where type: :position }
+
   def to_point
     raise "not a position" unless type.eql? :position
     Point.new(lat: data['position'][1], lon: data['position'][0], r: data['radius'])
@@ -202,7 +204,7 @@ class Aggregate
     hr = (Point::EARTH_RADIUS * 1000).to_f
     location = [position[:longitude], position[:latitude]]
     radius = distance / hr
-    self.geo_near(location).spherical.max_distance(radius).distance_multiplier(hr)
+    self.positions.geo_near(location).spherical.max_distance(radius).distance_multiplier(hr)
   end
 
   def position
