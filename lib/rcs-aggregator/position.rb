@@ -54,17 +54,12 @@ class PositionAggregator
   end
 
   def self.find_similar_or_create_by(target_id, params)
-
     position = params[:data][:position]
-
-    # distance to search similar points is the same as the NEAR_DISTANCE used in #similar_to?
-    # this distance has to be calculated in radians
-    distance = Point::NEAR_DISTANCE
 
     # the idea here is:
     # search in the db for point near the current one
     # then check for similarity, if one is found, return the old one
-    Aggregate.target(target_id).positions_within(position, distance).each do |agg|
+    Aggregate.target(target_id).positions_within(position).each do |agg|
       # convert aggregate to point
       old = agg.to_point
       new = Point.new(lat: position[:latitude], lon: position[:longitude], r: position[:radius])
