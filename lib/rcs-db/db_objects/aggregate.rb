@@ -193,7 +193,11 @@ class Aggregate
     return top
   end
 
-  def self.positions_within(position, distance)
+  def self.positions_within(position, distance = nil)
+    # distance to search similar points is the same as the NEAR_DISTANCE used in #similar_to?
+    # this distance has to be calculated in radians
+    distance ||= Point::NEAR_DISTANCE
+
     # earth radius in meter
     hr = (Point::EARTH_RADIUS * 1000).to_f
     location = [position[:longitude], position[:latitude]]
@@ -205,6 +209,25 @@ class Aggregate
     {latitude: self.data['position'][1], longitude: self.data['position'][0], radius: self.data['radius']}
   end
 
+  def timeframe_intersect? aggregate
+    return if type != :position
+    return if aggregate.type != :position
+
+    minimum_delta = 10.minutes
+
+    info.each do |timeframe1|
+      range1 = timeframe1['start'].to_i..timeframe1['end'].to_i
+
+      aggregate.info.each do |timeframe2|
+        range2 = timeframe2['start'].to_i..timeframe2['end'].to_i
+        intersection = range1.to_a & range2.to_a
+        delta = intersection.max - intersection.min
+        return true if delta >= minimum_delta
+      end
+    end
+
+    nil
+  end
 end
 
 #end # ::DB

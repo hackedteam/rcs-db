@@ -72,6 +72,11 @@ class Entity
     end
   end
 
+  def target_id
+    return if type != :target
+    path[1]
+  end
+
   def push_new_entity(entity)
     RCS::DB::PushManager.instance.notify('entity', {id: entity._id, action: 'create'})
   end
@@ -306,7 +311,7 @@ class Entity
     # take all the tagerts of the given entities:
     # take all the entities of type "target" and for each of these take the second id in the "path" (the "target" id)
     or_filter = params[:entities].map { |id| {id: id} }
-    target_entities = Entity.where(type: :target).any_of(or_filter)
+    target_entities = Entity.targets.any_of(or_filter)
     targets = target_entities.map { |e| e.path[1] }
 
     days = {}
