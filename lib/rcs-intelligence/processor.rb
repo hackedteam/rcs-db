@@ -138,7 +138,17 @@ class Processor
   end
 
   def self.process_position_aggregate entity, aggregate
-    # TODO
+    position = aggregate.position
+    day = Time.parse aggregate.day
+    days_around = [day-1.day, day, day+1.day]
+
+    ::Entity.targets.same_path_of(entity).each do |en|
+      Aggregate.target(en.target_id).in(day: days_around).positions_within(position).each do |ag|
+        next unless aggregate.timeframe_intersect?(ag)
+        # TODO - add the intersection timeframe to the "info" attribute
+        RCS::DB::LinkManager.instance.add_link from: entity, to: en, level: :automatic, type: :position, versus: :both, info: nil
+      end
+    end
   end
 end
 

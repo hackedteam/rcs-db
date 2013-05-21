@@ -1,6 +1,7 @@
 require 'spec_helper'
 require_db 'db_layer'
 require_db 'grid'
+require_db 'position/point'
 require_intelligence 'processor'
 
 module RCS
@@ -196,9 +197,9 @@ describe Processor do
   describe '#process_position_aggregate' do
 
     def create_position_aggregate_for target, params
-      data = {point: {latitude: params[:lat], longitude: params[:lon], radius: params[:rad]}}
-      data.merge! timeframe: {start: params[:start], end: params[:end]}
-      Aggregate.target(target).create! type: :position, data: data,  aid: 'agent_id', count: 1, day: Time.new(2013, 01, 01)
+      data = {'position' => [params[:lon], params[:lat]], 'radius' => params[:rad]}
+      info = [{'start' => params[:start], 'end' => params[:end]}]
+      Aggregate.target(target).create! type: :position, info: info, data: data,  aid: 'agent_id', count: 1, day: Time.new(2013, 01, 01)
     end
 
     let!(:operation) { Item.create!(name: 'opx', _kind: 'operation', path: [], stat: ::Stat.new) }
@@ -217,16 +218,14 @@ describe Processor do
       let(:midday) { Time.new 2013, 01, 01, 12, 00, 00 }
       let(:london_eye) { [51.503894, 0.119390] }
 
-      let!(:bob_position) { create_position_aggregate_for target_bob, lat: london_eye[0], lon: london_eye[1], rad: 10, start: midday, end: midday + 45.minutes }
-      let!(:alice_position) { create_position_aggregate_for target_alice, lat: london_eye[0], lon: london_eye[1], rad: 12, start: midday, end: midday + 41.minutes }
+      let!(:bob_position) { create_position_aggregate_for target_bob, lat: london_eye[0], lon: london_eye[1], rad: 10, start: midday, end: midday + 40.minutes }
+      let!(:alice_position) { create_position_aggregate_for target_alice, lat: london_eye[0], lon: london_eye[1], rad: 12, start: midday, end: midday + 42.minutes }
 
       let!(:eve_position) { create_position_aggregate_for target_eve, lat: 10, lon: 10, rad: 1, start: 1, end: 2 }
 
       it 'creates a link between the two entities' do
         described_class.process_position_aggregate bob, bob_position
-        bob.reload
-        alice.reload
-        expect(bob.linked_to? alice).to be_true
+        expect(bob.reload.linked_to? alice.reload).to be_true
       end
     end
   end
