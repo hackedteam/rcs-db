@@ -19,8 +19,6 @@ TODO 9.0.0
       - split at midnight
       - integration test with multi-day data
 
-    report agg and int status in heartbeat
-
     api for console to display communication flows (message, call, chat) (topac)
 
     automatic entities from "very" most contacted (statistics)

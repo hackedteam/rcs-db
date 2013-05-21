@@ -18,8 +18,13 @@ module Aggregator
 class Processor
   extend RCS::Tracer
 
-  def self.run
+  @@status = 'Starting...'
 
+  def self.status
+    @@status
+  end
+
+  def self.run
     # check if we are the last shard and enable the position aggregation
     # we use this technique to avoid conflicts between multiple positioner
     enable_position = RCS::DB::Shard.last == RCS::DB::Config.instance.global['SHARD']
@@ -33,10 +38,12 @@ class Processor
       if (queued = AggregatorQueue.get_queued(types))
         entry = queued.first
         count = queued.last
+        @@status = "Aggregating #{count} evidence in queue"
         trace :info, "#{count} evidence to be processed in queue"
         process entry
       else
         #trace :debug, "Nothing to do, waiting..."
+        @@status = 'Idle...'
         sleep 1
       end
     end

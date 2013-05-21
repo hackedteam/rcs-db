@@ -20,6 +20,12 @@ module Intelligence
 class Processor
   extend RCS::Tracer
 
+  @@status = 'Starting...'
+
+  def self.status
+    @@status
+  end
+
   def self.run
     # infinite processing loop
     loop do
@@ -28,10 +34,12 @@ class Processor
       if (queued = IntelligenceQueue.get_queued)
         entry = queued.first
         count = queued.last
+        @@status = "Correlating #{count} evidence in queue"
         trace :info, "#{count} evidence to be processed in queue"
         process entry
       else
         #trace :debug, "Nothing to do, waiting..."
+        @@status = 'Idle...'
         sleep 1
       end
     end
