@@ -596,6 +596,7 @@ Section "Install Section" SecInstall
     File /r "bin\*.*"
     
     SetOutPath "$INSTDIR\Collector\lib"
+    File /r "lib\rgloader"
     File "lib\rcs-collector.rb"
     
     SetOutPath "$INSTDIR\Collector\lib\rcs-collector-release"
