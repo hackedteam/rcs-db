@@ -449,6 +449,79 @@ describe Positioner do
     end
   end
 
+  context 'given a bounch of positions (multiple days)' do
+
+    it 'should output correctly data from t1' do
+      points = load_points(File.read(File.join(fixtures_path, 'positions.t1.txt')))
+      positioner = Positioner.new
+      emitted = emit_staying(positioner, points)
+
+      correct_emitted = [
+          Point.new(lat: 45.5353563, lon: 9.5939346, r: 30, time: Time.parse('2013-01-14 19:06:11 +0100'), start: Time.parse('2013-01-14 19:06:11 +0100'), end: Time.parse('2013-01-14 19:18:11 +0100')),
+          Point.new(lat: 45.4768394, lon: 9.1919074, r: 15, time: Time.parse('2013-01-15 08:41:43 +0100'), start: Time.parse('2013-01-15 08:41:43 +0100'), end: Time.parse('2013-01-15 09:22:18 +0100')),
+          Point.new(lat: 45.4792009, lon: 9.1891592, r: 30, time: Time.parse('2013-01-15 12:58:18 +0100'), start: Time.parse('2013-01-15 12:58:18 +0100'), end: Time.parse('2013-01-15 13:12:18 +0100')),
+          Point.new(lat: 45.4765921521739, lon: 9.19198076086957, r: 35, time: Time.parse('2013-01-15 14:49:29 +0100'), start: Time.parse('2013-01-15 14:49:29 +0100'), end: Time.parse('2013-01-15 15:22:29 +0100')),
+          Point.new(lat: 45.4768005, lon: 9.1917216, r: 5, time: Time.parse('2013-01-15 17:22:19 +0100'), start: Time.parse('2013-01-15 17:22:19 +0100'), end: Time.parse('2013-01-15 17:41:23 +0100')),
+          Point.new(lat: 45.5351362, lon: 9.5945033, r: 40, time: Time.parse('2013-01-15 18:56:43 +0100'), start: Time.parse('2013-01-15 18:56:43 +0100'), end: Time.parse('2013-01-15 20:48:30 +0100')),
+          Point.new(lat: 45.4765977798742, lon: 9.19193527672956, r: 35, time: Time.parse('2013-01-16 08:42:13 +0100'), start: Time.parse('2013-01-16 08:42:13 +0100'), end: Time.parse('2013-01-16 09:12:19 +0100')),
+          Point.new(lat: 45.4765854782609, lon: 9.19197047826087, r: 66, time: Time.parse('2013-01-16 12:32:06 +0100'), start: Time.parse('2013-01-16 12:32:06 +0100'), end: Time.parse('2013-01-16 12:42:55 +0100')),
+          Point.new(lat: 45.4765925952381, lon: 9.19200482539683, r: 35, time: Time.parse('2013-01-16 13:42:41 +0100'), start: Time.parse('2013-01-16 13:42:41 +0100'), end: Time.parse('2013-01-16 14:35:41 +0100')),
+          Point.new(lat: 45.4765972446043, lon: 9.19200901438849, r: 35, time: Time.parse('2013-01-16 16:43:14 +0100'), start: Time.parse('2013-01-16 16:43:14 +0100'), end: Time.parse('2013-01-16 16:58:14 +0100')),
+          Point.new(lat: 45.5353538, lon: 9.5936141, r: 45, time: Time.parse('2013-01-16 19:34:40 +0100'), start: Time.parse('2013-01-16 19:34:40 +0100'), end: Time.parse('2013-01-16 20:06:40 +0100'))
+      ]
+
+      emitted.should eq correct_emitted
+    end
+
+    it 'should output correctly data from t2' do
+      points = load_points(File.read(File.join(fixtures_path, 'positions.t2.txt')))
+      positioner = Positioner.new
+      emitted = emit_staying(positioner, points)
+
+      correct_emitted = [
+          Point.new(lat: 45.4761132, lon: 9.1911135, r: 64, time: Time.parse('2013-01-14 15:05:37 +0100'), start: Time.parse('2013-01-14 15:05:37 +0100'), end: Time.parse('2013-01-14 18:01:43 +0100')),
+          Point.new(lat: 45.4766844, lon: 9.1916904, r: 48, time: Time.parse('2013-01-15 09:04:12 +0100'), start: Time.parse('2013-01-15 09:04:12 +0100'), end: Time.parse('2013-01-15 10:08:45 +0100')),
+          Point.new(lat: 45.4793905, lon: 9.1896133, r: 12, time: Time.parse('2013-01-15 12:32:44 +0100'), start: Time.parse('2013-01-15 12:32:44 +0100'), end: Time.parse('2013-01-15 13:51:44 +0100')),
+          Point.new(lat: 45.4769144, lon: 9.1884792, r: 32, time: Time.parse('2013-01-15 13:51:54 +0100'), start: Time.parse('2013-01-15 13:51:54 +0100'), end: Time.parse('2013-01-15 17:49:31 +0100')),
+          Point.new(lat: 45.4361061, lon: 9.2376064, r: 48, time: Time.parse('2013-01-15 18:08:31 +0100'), start: Time.parse('2013-01-15 18:08:31 +0100'), end: Time.parse('2013-01-15 18:29:31 +0100')),
+          Point.new(lat: 45.3099474, lon: 9.4970635, r: 24, time: Time.parse('2013-01-15 18:40:30 +0100'), start: Time.parse('2013-01-15 18:40:30 +0100'), end: Time.parse('2013-01-15 18:52:50 +0100')),
+          Point.new(lat: 45.3090868, lon: 9.4974186, r: 32, time: Time.parse('2013-01-15 19:07:50 +0100'), start: Time.parse('2013-01-15 19:07:50 +0100'), end: Time.parse('2013-01-16 07:47:34 +0100')),
+          Point.new(lat: 45.4343889, lon: 9.238571, r: 16, time: Time.parse('2013-01-16 07:59:34 +0100'), start: Time.parse('2013-01-16 07:59:34 +0100'), end: Time.parse('2013-01-16 08:15:34 +0100')),
+          Point.new(lat: 45.4763672, lon: 9.1919374, r: 12, time: Time.parse('2013-01-16 08:37:34 +0100'), start: Time.parse('2013-01-16 08:37:34 +0100'), end: Time.parse('2013-01-16 18:21:38 +0100')),
+          Point.new(lat: 45.4334439, lon: 9.2391028, r: 8, time: Time.parse('2013-01-16 18:49:38 +0100'), start: Time.parse('2013-01-16 18:49:38 +0100'), end: Time.parse('2013-01-16 19:13:38 +0100')),
+          Point.new(lat: 45.3016618, lon: 9.4887711, r: 8, time: Time.parse('2013-01-16 19:36:38 +0100'), start: Time.parse('2013-01-16 19:36:38 +0100'), end: Time.parse('2013-01-16 21:14:08 +0100')),
+          Point.new(lat: 45.3184223, lon: 9.4797608, r: 8, time: Time.parse('2013-01-16 21:56:16 +0100'), start: Time.parse('2013-01-16 21:56:16 +0100'), end: Time.parse('2013-01-17 07:34:37 +0100')),
+          Point.new(lat: 45.3092417, lon: 9.4976305, r: 16, time: Time.parse('2013-01-17 07:42:37 +0100'), start: Time.parse('2013-01-17 07:42:37 +0100'), end: Time.parse('2013-01-17 08:06:37 +0100')),
+          Point.new(lat: 45.4771958, lon: 9.1919785, r: 32, time: Time.parse('2013-01-17 08:58:18 +0100'), start: Time.parse('2013-01-17 08:58:18 +0100'), end: Time.parse('2013-01-17 09:22:02 +0100')),
+          Point.new(lat: 45.4769505, lon: 9.1908637, r: 48, time: Time.parse('2013-01-17 12:20:34 +0100'), start: Time.parse('2013-01-17 12:20:34 +0100'), end: Time.parse('2013-01-17 12:38:33 +0100')),
+          Point.new(lat: 45.4796229, lon: 9.1897122, r: 12, time: Time.parse('2013-01-17 12:44:33 +0100'), start: Time.parse('2013-01-17 12:44:33 +0100'), end: Time.parse('2013-01-17 13:22:58 +0100'))
+      ]
+
+      emitted.should eq correct_emitted
+    end
+
+    it 'should output correctly data from t3' do
+      points = load_points(File.read(File.join(fixtures_path, 'positions.t3.txt')))
+      positioner = Positioner.new
+      emitted = emit_staying(positioner, points)
+
+      correct_emitted = [
+          Point.new(lat: 45.4766150877193, lon: 9.19190163157895, r: 40, time: Time.parse('2013-01-15 16:09:14 +0100'), start: Time.parse('2013-01-15 16:09:14 +0100'), end: Time.parse('2013-01-15 16:49:14 +0100')),
+          Point.new(lat: 45.4765788148148, lon: 9.19161193333333, r: 40, time: Time.parse('2013-01-15 16:52:14 +0100'), start: Time.parse('2013-01-15 16:52:14 +0100'), end: Time.parse('2013-01-15 17:25:14 +0100')),
+          Point.new(lat: 45.4765909926471, lon: 9.19186401470588, r: 40, time: Time.parse('2013-01-16 09:23:24 +0100'), start: Time.parse('2013-01-16 09:23:24 +0100'), end: Time.parse('2013-01-16 09:43:24 +0100')),
+          Point.new(lat: 45.4761685, lon: 9.1912577, r: 10, time: Time.parse('2013-01-16 10:01:24 +0100'), start: Time.parse('2013-01-16 10:01:24 +0100'), end: Time.parse('2013-01-16 10:39:58 +0100')),
+          Point.new(lat: 45.4766129285714, lon: 9.19193665714286, r: 40, time: Time.parse('2013-01-16 11:00:58 +0100'), start: Time.parse('2013-01-16 11:00:58 +0100'), end: Time.parse('2013-01-16 12:41:31 +0100')),
+          Point.new(lat: 45.4766129036145, lon: 9.19182013253012, r: 35, time: Time.parse('2013-01-16 13:38:36 +0100'), start: Time.parse('2013-01-16 13:38:36 +0100'), end: Time.parse('2013-01-16 15:37:50 +0100')),
+          Point.new(lat: 45.4761998, lon: 9.1910893, r: 20, time: Time.parse('2013-01-16 16:05:50 +0100'), start: Time.parse('2013-01-16 16:05:50 +0100'), end: Time.parse('2013-01-16 16:30:50 +0100')),
+          Point.new(lat: 45.4762573, lon: 9.1913362, r: 20, time: Time.parse('2013-01-16 16:37:50 +0100'), start: Time.parse('2013-01-16 16:37:50 +0100'), end: Time.parse('2013-01-16 16:50:48 +0100')),
+          Point.new(lat: 45.476515271028, lon: 9.19227414953271, r: 40, time: Time.parse('2013-01-16 16:55:21 +0100'), start: Time.parse('2013-01-16 16:55:21 +0100'), end: Time.parse('2013-01-16 17:17:21 +0100')),
+          Point.new(lat: 45.4765896808511, lon: 9.19194830851064, r: 35, time: Time.parse('2013-01-18 15:15:55 +0100'), start: Time.parse('2013-01-18 15:15:55 +0100'), end: Time.parse('2013-01-18 16:35:26 +0100'))
+      ]
+
+      emitted.should eq correct_emitted
+    end
+
+  end
 end
 
 end

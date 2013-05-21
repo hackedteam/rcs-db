@@ -30,18 +30,25 @@ class Point
     self.lat = 0.0
     self.lon = 0.0
     self.r = 0
-    
+
+    self.lat = params[:lat] if params[:lat]
+    self.lon = params[:lon] if params[:lon]
+    self.r = params[:r] if params[:r]
+
     if params[:time]
       raise "invalid time" unless params[:time].is_a? Time
       self.time = params[:time] 
       self.start = params[:time] 
     end
-    self.start = params[:start] if params[:start]
-    self.end = params[:end] if params[:end]
-    self.lat = params[:lat] if params[:lat]
-    self.lon = params[:lon] if params[:lon]
-    self.r = params[:r] if params[:r]
-    
+    if params[:start]
+      raise "invalid time" unless params[:start].is_a? Time
+      self.start = params[:start]
+    end
+    if params[:end]
+      raise "invalid time" unless params[:end].is_a? Time
+      self.end = params[:end]
+    end
+
     # set a minimum radius
     self.r = MIN_RADIUS if r <= 0
   end
