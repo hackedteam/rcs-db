@@ -146,8 +146,8 @@ class Processor
     operation_id = entity.path.first
     # 2 entities have been in the same place at the same time:
     # create a position entity an link the 2 entities with it
-    ::Entity.targets.same_path_of(entity).each do |en|
-      Aggregate.target(en.target_id).in(day: days_around).positions_within(position).each do |ag|
+    ::Entity.targets.same_path_of(entity).each do |other_entity|
+      Aggregate.target(other_entity.target_id).in(day: days_around).positions_within(position).each do |ag|
         next unless aggregate.timeframe_intersect?(ag)
 
         name = "Position #{position_ary.join(', ')}"
@@ -155,6 +155,13 @@ class Processor
         position_entity = Entity.positions.path_include(operation_id).find_or_initialize_by type: :position, path: [operation_id], position: position_ary
         position_entity.update_attributes! level: :automatic
         position_entity.update_attributes!(name: name) if position_entity.name.blank?
+
+        # TODO - add the timeframe to the "info" array
+        # TODO - versus :both??
+        # TODO - move this logic in a create_callback of Entity (type position)
+        link_params = {level: :automatic, type: :position, versus: :both, to: position_entity, info: nil}
+        RCS::DB::LinkManager.instance.add_link link_params.merge(from: entity)
+        RCS::DB::LinkManager.instance.add_link link_params.merge(from: other_entity)
       end
     end
   end

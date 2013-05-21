@@ -234,7 +234,16 @@ describe Processor do
         expect(position_entity.name).not_to match /Position \d\, \d/
         expect(position_entity.path).to eql [bob.path.first]
       end
+
+      it 'links the two entities with the position entity' do
+        described_class.process_position_aggregate bob, bob_position
+        position_entity = Entity.positions.first
+
+        expect(position_entity.linked_to? bob.reload).to be_true
+        expect(position_entity.linked_to? alice.reload).to be_true
+      end
     end
+
   end
 end
 
