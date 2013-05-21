@@ -17,9 +17,7 @@ class EntityController < RESTController
       fields = ["type", "level", "name", "desc", "path", "photos", 'position', 'position_attr', 'links']
       entities = []
 
-      # TODO: don't send ghost entities
-      # ::Entity.in(user_ids: [@session.user[:_id]]).ne(level: :ghost).only(fields)
-      ::Entity.in(user_ids: [@session.user[:_id]]).only(fields).each do |ent|
+      ::Entity.in(user_ids: [@session.user[:_id]]).ne(level: :ghost).only(fields).each do |ent|
         ent = ent.as_document
         link_size = ent['links'] ? ent['links'].size : 0
         ent.delete('links')
@@ -59,8 +57,7 @@ class EntityController < RESTController
       entity['position'] = {longitude: entity['position'][0], latitude: entity['position'][1]} if entity['position'].is_a? Array
 
       # don't send ghost links
-      # TODO: don't send ghost links
-      #entity['links'].keep_if {|l| l['level'] != :ghost} if entity['links']
+      entity['links'].keep_if {|l| l['level'] != :ghost} if entity['links']
 
       ok(entity)
     end
