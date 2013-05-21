@@ -213,13 +213,15 @@ describe Processor do
     let!(:eve) { Entity.where(name: 'eve').first }
 
     let(:midday) { Time.new 2013, 01, 01, 12, 00, 00 }
-    let(:london_eye) { [51.503894, 0.119390] }
+    let(:london_eye) { [51.503894, 0.119390] } #lat, lon
+    let(:near_london_eye) { [51.50391, 0.11961] } #lat, lon
 
-    context 'when a two entities have been in the same place at the same time' do
+    before { Entity.create_indexes }
+
+    context 'when two target entities have been in the same place at the same time' do
 
       let!(:bob_position) { create_position_aggregate_for target_bob, lat: london_eye[0], lon: london_eye[1], rad: 10, start: midday, end: midday + 40.minutes }
       let!(:alice_position) { create_position_aggregate_for target_alice, lat: london_eye[0], lon: london_eye[1], rad: 12, start: midday, end: midday + 42.minutes }
-
       let!(:eve_position) { create_position_aggregate_for target_eve, lat: 10, lon: 10, rad: 1, start: 1, end: 2 }
 
       it 'creates a position entity for that place' do
@@ -231,11 +233,11 @@ describe Processor do
 
         expect(position_entity.type).to eql :position
         expect(position_entity.level).to eql :automatic
-        expect(position_entity.name).not_to match /Position \d\, \d/
+        expect(position_entity.name).not_to match /Position 51.50\d\, 0.11\d/
         expect(position_entity.path).to eql [bob.path.first]
       end
 
-      it 'links the two entities with the position entity' do
+      it 'links the two target entities to the position entity' do
         described_class.process_position_aggregate bob, bob_position
         position_entity = Entity.positions.first
 
@@ -244,6 +246,32 @@ describe Processor do
       end
     end
 
+    context 'when a position entity already exists' do
+
+      let!(:bob_position) { create_position_aggregate_for target_bob, lat: london_eye[0], lon: london_eye[1], rad: 10, start: midday, end: midday + 40.minutes }
+      let!(:alice_position) { create_position_aggregate_for target_alice, lat: near_london_eye[0], lon: near_london_eye[1], rad: 12, start: midday, end: midday + 42.minutes }
+      let!(:eve_position) { create_position_aggregate_for target_eve, lat: near_london_eye[0], lon: near_london_eye[1], rad: 15, start: midday, end: midday + 41.minutes }
+
+      let!(:existing_position) do
+        Entity.create! type: :position, path: [operation.id], position: london_eye.reverse, level: :automatic, name: 'London eye'
+      end
+
+      it 'does not create any new position entity' do
+        expect {
+          described_class.process_position_aggregate bob, bob_position
+          described_class.process_position_aggregate alice, alice_position
+        }.not_to change(Entity.positions, :count)
+      end
+
+      it 'links the two target entities to that position' do
+        described_class.process_position_aggregate eve, eve_position
+
+        existing_position.reload
+        expect(existing_position.linked_to? bob.reload).to be_true
+        expect(existing_position.linked_to? alice.reload).to be_true
+        expect(existing_position.linked_to? eve.reload).to be_true
+      end
+    end
   end
 end
 

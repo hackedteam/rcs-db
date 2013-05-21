@@ -144,16 +144,20 @@ class Processor
     days_around = [day-1.day, day, day+1.day]
 
     operation_id = entity.path.first
+
     # 2 entities have been in the same place at the same time:
     # create a position entity an link the 2 entities with it
     ::Entity.targets.same_path_of(entity).each do |other_entity|
       Aggregate.target(other_entity.target_id).in(day: days_around).positions_within(position).each do |ag|
         next unless aggregate.timeframe_intersect?(ag)
 
-        name = "Position #{position_ary.join(', ')}"
-        # TODO - update SIMILAR position entities
-        position_entity = Entity.positions.path_include(operation_id).find_or_initialize_by type: :position, path: [operation_id], position: position_ary
+        # search for similar positions
+        position_entity = ::Entity.path_include(operation_id).positions_within(position).first
+        unless position_entity
+          position_entity = Entity.new type: :position, path: [operation_id], position: position_ary
+        end
         position_entity.update_attributes! level: :automatic
+        name = "Position #{position_ary.reverse.join(', ')}"
         position_entity.update_attributes!(name: name) if position_entity.name.blank?
 
         # TODO - add the timeframe to the "info" array
