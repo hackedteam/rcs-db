@@ -61,7 +61,7 @@ class Processor
 
       case type
         when :position
-          params.merge!({data: {position: [datum[:point][:longitude], datum[:point][:latitude]], radius: datum[:point][:radius]}})
+          params.merge!({data: {position: datum[:point]}})
           agg = aggregate_position(datum, entry, params)
         else
           params.merge!({data: {peer: datum[:peer], versus: datum[:versus], sender: datum[:sender]}})

@@ -24,7 +24,7 @@ describe PositionAggregator do
 
     it 'should create a new aggregate if no points is similar' do
       params = {aid: 'test', day: Time.now.strftime('%Y%m%d'), type: :position,
-                data: {:position=>[9.60, 45.54], :radius=>50}}
+                data: {position: {longitude: 9.60, latitude: 45.54, radius: 50}}}
 
       agg = described_class.find_similar_or_create_by(target_id, params)
       agg.id.should_not eq @past.id
@@ -34,7 +34,7 @@ describe PositionAggregator do
 
     it 'should find similar points already aggregated today' do
       params = {aid: 'test', day: Time.now.strftime('%Y%m%d'), type: :position,
-                data: {:position=>[9.5939356, 45.5353573], :radius=>50}}
+                data: {position: {longitude: 9.5939356, latitude: 45.5353573, radius: 50}}}
 
       agg = described_class.find_similar_or_create_by(target_id, params)
       agg.id.should eq @past.id
@@ -45,7 +45,7 @@ describe PositionAggregator do
     context 'point found in the past with different dates' do
       it 'should create a new aggregate' do
         params = {aid: 'test', day: (Time.now + 86400).strftime('%Y%m%d'), type: :position,
-                  data: {:position=>[9.5939356, 45.5353573], :radius=>50}}
+                  data: {position: {longitude: 9.5939356, latitude: 45.5353573, radius: 50}}}
 
         agg = described_class.find_similar_or_create_by(target_id, params)
         agg.id.should_not eq @past.id
@@ -55,7 +55,7 @@ describe PositionAggregator do
 
       it 'should create a new aggregate with old coordinates' do
         params = {aid: 'test', day: (Time.now + 86400).strftime('%Y%m%d'), type: :position,
-                  data: {:position=>[9.5939356, 45.5353573], :radius=>50}}
+                  data: {position: {longitude: 9.5939356, latitude: 45.5353573, radius: 50}}}
 
         agg = described_class.find_similar_or_create_by(target_id, params)
         agg.reload

@@ -160,26 +160,6 @@ describe Processor do
         # count is the number of queued after the entry that we already
         count.should be 4
       end
-
-      it 'should aggregate multiple similar positions' do
-        Processor.process @entry
-
-        aggregates = Aggregate.target(@target._id).where(type: :position)
-        aggregates.size.should be 1
-
-        # overlapping
-        Processor.process new_position({'latitude' => 45.5353563, 'longitude' => 9.5939346, 'accuracy' => 100})
-
-        aggregates = Aggregate.target(@target._id).where(type: :position)
-        aggregates.size.should be 1
-
-        # similar (intersecting)
-        Processor.process new_position({'latitude' => 45.5351362, 'longitude' => 9.5945033, 'accuracy' => 40})
-        Processor.process new_position({'latitude' => 45.5353538, 'longitude' => 9.5936141, 'accuracy' => 45})
-
-        aggregates = Aggregate.target(@target._id).where(type: :position)
-        aggregates.size.should be 1
-      end
     end
 
   end

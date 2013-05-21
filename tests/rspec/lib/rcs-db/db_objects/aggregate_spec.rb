@@ -68,10 +68,10 @@ describe Aggregate do
       Aggregate.target('testtarget').create(type: :position, data: {'position' => [9.5939346, 45.5353563], 'radius' => 50}, day: 'test', aid: 'test')
       Aggregate.target('testtarget').create(type: :position, data: {'position' => [9.6039346, 45.5453563], 'radius' => 50}, day: 'test', aid: 'test')
 
-      count_100 = Aggregate.target('testtarget').positions_within([9.5945033, 45.5351362], 100).count
+      count_100 = Aggregate.target('testtarget').positions_within({longitude: 9.5945033, latitude: 45.5351362}, 100).count
       count_100.should eq 1
 
-      count_1500 = Aggregate.target('testtarget').positions_within([9.5945033, 45.5351362], 1500).count
+      count_1500 = Aggregate.target('testtarget').positions_within({longitude: 9.5945033, latitude: 45.5351362}, 1500).count
       count_1500.should eq 2
     end
   end
