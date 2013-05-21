@@ -8,9 +8,15 @@ module Aggregator
 class PositionAggregator
   extend RCS::Tracer
 
+  def self.minimum_time_in_a_position
+    RCS::DB::Config.instance.global['POSITION_TIME']
+  end
+
   def self.extract(target_id, ev)
 
     positioner_agg = Aggregate.target(target_id).find_or_create_by(type: :positioner, day: '0', aid: '0')
+
+    min_time = minimum_time_in_a_position
 
     # load the positioner from the db, if already saved, otherwise create a new one
     if positioner_agg.data[ev.aid.to_s]
@@ -18,10 +24,10 @@ class PositionAggregator
       positioner = RCS::DB::Positioner.new_from_dump(positioner_agg.data[ev.aid.to_s])
       rescue Exception => e
         trace :warn, "Cannot restore positioner status, creating a new one..."
-        positioner = RCS::DB::Positioner.new
+        positioner = RCS::DB::Positioner.new(time: min_time)
       end
     else
-      positioner = RCS::DB::Positioner.new
+      positioner = RCS::DB::Positioner.new(time: min_time)
     end
 
     # create a point from the evidence
