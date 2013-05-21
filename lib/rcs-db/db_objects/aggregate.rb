@@ -1,12 +1,15 @@
 require 'mongoid'
 require 'set'
 
+require_relative '../position/proximity'
+
 #module RCS
 #module DB
 
 class Aggregate
   extend RCS::Tracer
   include Mongoid::Document
+  include RCS::DB::Proximity
 
   field :aid, type: String                      # agent BSON_ID
   field :day, type: String                      # day of aggregation
@@ -30,7 +33,7 @@ class Aggregate
 
   shard_key :type, :day, :aid
 
-  scope :positions, lambda { where type: :position }
+  scope :positions, where(type: :position)
 
   def to_point
     raise "not a position" unless type.eql? :position
@@ -193,18 +196,6 @@ class Aggregate
     trace :debug, "Most contacted: Resolv time #{Time.now - time}" if RCS::DB::Config.instance.global['PERF']
 
     return top
-  end
-
-  def self.positions_within(position, distance = nil)
-    # distance to search similar points is the same as the NEAR_DISTANCE used in #similar_to?
-    # this distance has to be calculated in radians
-    distance ||= Point::NEAR_DISTANCE
-
-    # earth radius in meter
-    hr = (Point::EARTH_RADIUS * 1000).to_f
-    location = [position[:longitude], position[:latitude]]
-    radius = distance / hr
-    self.positions.geo_near(location).spherical.max_distance(radius).distance_multiplier(hr)
   end
 
   def position

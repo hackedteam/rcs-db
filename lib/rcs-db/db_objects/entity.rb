@@ -2,6 +2,7 @@ require 'mongoid'
 require 'lrucache'
 
 require_relative '../link_manager'
+require_relative '../position/proximity'
 
 #module RCS
 #module DB
@@ -11,6 +12,7 @@ class Entity
   include RCS::Tracer
   include Mongoid::Document
   include Mongoid::Timestamps
+  include RCS::DB::Proximity
 
   # this is the type of entity: target, person, position, etc
   field :type, type: Symbol
