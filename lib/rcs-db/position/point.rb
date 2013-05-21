@@ -39,6 +39,7 @@ class Point
       raise "invalid time" unless params[:time].is_a? Time
       self.time = params[:time] 
       self.start = params[:time] 
+      self.end = params[:time]
     end
     if params[:start]
       raise "invalid time" unless params[:start].is_a? Time
@@ -62,7 +63,13 @@ class Point
   end
 
   def ==(other)
-    self.class == other.class and self.lat == other.lat and self.lon == other.lon and self.r == other.r and self.time == other.time
+    self.class == other.class and
+    self.lat == other.lat and
+    self.lon == other.lon and
+    self.r == other.r and
+    self.time == other.time and
+    self.start == other.start and
+    self.end == other.end
   end
   alias_method :eql?, :==
 

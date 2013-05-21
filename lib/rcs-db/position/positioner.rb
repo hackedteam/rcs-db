@@ -53,6 +53,15 @@ class Positioner
     Marshal.load(Base64.decode64(status))
   end
 
+  def emit_and_reset
+    # force the start point even if the buffer is not full
+    @start = @point_buffer.first
+    # emit the current position (truncated now)
+    yield emit_current
+    # restart the counters
+    reset
+  end
+
   def feed(point)
 
     unless @point_buffer.empty?
@@ -89,12 +98,7 @@ class Positioner
         # the target is moving (from a previously recorded stay position), emit the 'staying' period
         # filtering on the minimum time in a place
         if @start and minimum_time? and within_max_radius?
-          out = Point.new({time: @start.time,
-                           start: @start.time,
-                           end: @point_buffer.last.time,
-                           lat: @curr_point.lat,
-                           lon: @curr_point.lon,
-                           r: @curr_point.r})
+          out = emit_current
 
           # check for already outputted points in the history
           # if the similar manager is not provided, output all the points
@@ -113,6 +117,15 @@ class Positioner
   end
 
   private
+
+  def emit_current
+    Point.new({time: @start.time,
+               start: @start.time,
+               end: @point_buffer.last.time,
+               lat: @curr_point.lat,
+               lon: @curr_point.lon,
+               r: @curr_point.r})
+  end
 
   def full?
     @point_buffer.size == @window_size
