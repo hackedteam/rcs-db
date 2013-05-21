@@ -21,12 +21,14 @@ class PositionAggregator
     # load the positioner from the db, if already saved, otherwise create a new one
     if positioner_agg.data[ev.aid.to_s]
       begin
-      positioner = RCS::DB::Positioner.new_from_dump(positioner_agg.data[ev.aid.to_s])
+        trace :debug, "Reloading positioner from saved status (#{ev.aid.to_s})"
+        positioner = RCS::DB::Positioner.new_from_dump(positioner_agg.data[ev.aid.to_s])
       rescue Exception => e
         trace :warn, "Cannot restore positioner status, creating a new one..."
         positioner = RCS::DB::Positioner.new(time: min_time)
       end
     else
+      trace :debug, "Creating a new positioner for #{ev.aid.to_s}"
       positioner = RCS::DB::Positioner.new(time: min_time)
     end
 
@@ -38,6 +40,7 @@ class PositionAggregator
     # feed the positioner with the point and take the result (if any)
     positioner.feed(point) do |stay|
       result = stay
+      trace :info, "Positioner has detected a stay point: #{stay.to_s}"
     end
 
     # save the positioner status into the aggregate

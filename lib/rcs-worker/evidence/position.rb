@@ -47,8 +47,6 @@ module RCS
     def keyword_index
       self[:kw] = []
 
-      puts self[:data].inspect
-
       self[:kw] += self[:data]['latitude'].to_s.keywords unless self[:data]['latitude'].nil?
       self[:kw] += self[:data]['longitude'].to_s.keywords unless self[:data]['longitude'].nil?
 

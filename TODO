@@ -16,7 +16,7 @@ TODO 9.0.0
 
   IMPLEMENT:
     aggregates for places (alor)
-      - make the aggregator for position a single process on different shards
+      - split at midnight
       - integration test with multi-day data
 
     report agg and int status in heartbeat

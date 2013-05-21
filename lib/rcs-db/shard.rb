@@ -21,6 +21,12 @@ class Shard
     db.command({ listshards: 1 })
   end
 
+  def self.last
+    shards = all['shards']
+    shards.sort_by {|x| x['_id']}
+    shards.last['_id']
+  end
+
   def self.create(host)
     trace :info, "Creating new shard: #{host}"
     begin

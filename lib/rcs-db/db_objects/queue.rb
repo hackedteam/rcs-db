@@ -141,20 +141,27 @@ class AggregatorQueue < NotificationQueue
 
   field :target_id, type: String
   field :evidence_id, type: String
+  field :type, type: Symbol
   field :flag, type: Integer, default: QUEUED
 
   store_in collection: 'aggregator_queue'
   index({flag: 1}, {background: true})
 
-  AGGREGATOR_TYPES = ['call', 'message', 'chat']
+  AGGREGATOR_TYPES = ['call', 'message', 'chat', 'position']
 
   def self.add(target_id, evidence_id, type)
     # skip not interesting evidence
     return unless AGGREGATOR_TYPES.include? type
 
-    trace :debug, "Adding to #{self.name}: #{target_id} #{evidence_id}"
+    trace :debug, "Adding to #{self.name}: #{target_id} #{evidence_id} (#{type})"
 
-    self.create!({target_id: target_id.to_s, evidence_id: evidence_id.to_s})
+    self.create!({target_id: target_id.to_s, evidence_id: evidence_id.to_s, type: type.to_sym})
+  end
+
+  def self.get_queued(types)
+    entry = self.where({flag: NotificationQueue::QUEUED, :type.in => types}).find_and_modify({"$set" => {flag: NotificationQueue::PROCESSED}}, new: false)
+    count = self.where({flag: NotificationQueue::QUEUED, :type.in => types}).count() if entry
+    return entry ? [entry, count] : nil
   end
 end
 
