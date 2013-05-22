@@ -2,6 +2,7 @@ require 'spec_helper'
 
 require 'spec_helper'
 require_db 'db_layer'
+require_db 'grid'
 require_aggregator 'processor'
 require_intelligence 'processor'
 
@@ -45,7 +46,7 @@ describe 'There are two entities in the same operation' do
     before { AggregatorQueue.add target.id, chat_evidence.id, chat_evidence.type }
 
     it 'links the two entities' do
-      RCS::Aggregator::Processor.process AggregatorQueue.get_queued.first
+      RCS::Aggregator::Processor.process AggregatorQueue.get_queued([:chat]).first
       RCS::Intelligence::Processor.process IntelligenceQueue.get_queued.first
 
       entity.reload
@@ -64,7 +65,7 @@ describe 'There are two entities in the same operation' do
     before { AggregatorQueue.add target.id, chat_evidence.id, chat_evidence.type }
 
     it 'links the two entities' do
-      RCS::Aggregator::Processor.process AggregatorQueue.get_queued.first
+      RCS::Aggregator::Processor.process AggregatorQueue.get_queued([:chat]).first
       RCS::Intelligence::Processor.process IntelligenceQueue.get_queued.first
 
       entity.reload
