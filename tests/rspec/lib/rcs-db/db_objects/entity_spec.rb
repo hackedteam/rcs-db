@@ -126,6 +126,8 @@ describe Entity do
 
   context 'merging two entities' do
     before do
+      Entity.any_instance.stub :link_target_entities_passed_from_here
+
       @operation = Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new)
       @first_entity = Entity.create!(name: 'entity-1', type: :target, path: [@operation._id], level: :automatic)
       @second_entity = Entity.create!(name: 'entity-2', type: :person, path: [@operation._id], level: :automatic)

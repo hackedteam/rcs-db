@@ -72,6 +72,38 @@ class Entity
       push_new_entity self
       alert_new_entity
     end
+
+    link_similar_position
+    link_target_entities_passed_from_here
+  end
+
+  # If the current entity is a position entity (type :position)
+  # and has been created manually, search for other entities (type :position)
+  # that may refer to the same location and link them with a "identity" link
+  def link_similar_position
+    return if type != :position
+    return if level != :manual
+
+    self.class.same_path_of(self).positions_within(position).each do |other_entity|
+      RCS::DB::LinkManager.instance.add_link from: self, to: other_entity, level: :automatic, type: :identity
+    end
+  end
+
+  # If the current entity is a position entity (type :position)
+  # search all the entities (type :target) that have been here
+  def link_target_entities_passed_from_here
+    return if type != :position
+
+    operation_id = path.first
+
+    Entity.targets.path_include(operation_id).each do |target_entity|
+      Aggregate.target(target_entity.target_id).positions_within(position).each do |ag|
+
+        # TODO - add timeframe in "info"
+        link_params = {from: target_entity, to: self, level: :automatic, type: :position, versus: :both, info: nil}
+        RCS::DB::LinkManager.instance.add_link link_params
+      end
+    end
   end
 
   def target_id
