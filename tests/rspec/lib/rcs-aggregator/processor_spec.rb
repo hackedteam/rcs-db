@@ -289,8 +289,7 @@ describe Processor do
       2013-01-01 00:09:00 45.123456 9.987654 10
       2013-01-01 00:12:00 45.123456 9.987654 10
       2013-01-01 00:15:00 45.123456 9.987654 10
-      2013-01-01 00:18:00 45 9 10"
-      #9999-01-01 00:00:00 45.123456 9.987654 10" #fake one to trigger the data hole
+      2013-01-02 01:15:00 45.123456 9.987654 10" #fake one to trigger the data hole
 
       parse_data(points) do |time, lat, lon, r|
         ev = new_position(time, {'latitude' => lat, 'longitude' => lon, 'accuracy' => r})

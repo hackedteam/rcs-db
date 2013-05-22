@@ -55,7 +55,8 @@ class Positioner
 
   def emit_and_reset
     # force the start point even if the buffer is not full
-    @start = @point_buffer.first
+    # take the minimum from the current and the first in the buffer
+    @start = [@point_buffer.first, @curr_point].min {|a,b| a.time <=> b.time}
     # emit the current position (truncated now)
     yield emit_current
     # restart the counters

@@ -494,6 +494,78 @@ describe Positioner do
 
       emitted.should eq [stay_point_before, stay_point_after]
     end
+  end
+
+  context 'given a sequence of points that are near the limit' do
+    before do
+      # the STAY point is:
+      # 45.123456 9.987654 10 (2013-01-01 00:00:00 - 2013-01-01 00:15:00)
+      data_before_midnight =
+      "2012-12-31 23:45:00 45.123456 9.987654 10
+       2012-12-31 23:48:00 45.123456 9.987654 10
+       2012-12-31 23:51:00 45.123456 9.987654 10
+       2012-12-31 23:54:00 45.123456 9.987654 10
+       2012-12-31 23:57:00 45.123456 9.987654 10"
+      data_after_midnight =
+      "2013-01-01 00:00:00 45.123456 9.987654 10
+       2013-01-01 00:03:00 45.123456 9.987654 10
+       2013-01-01 00:06:00 45.123456 9.987654 10
+       2013-01-01 00:09:00 45.123456 9.987654 10
+       2013-01-01 00:12:00 45.123456 9.987654 10
+       2013-01-01 00:15:00 45.123456 9.987654 10"
+      data_moving =
+      "2013-01-01 00:18:00 45 9 10"
+      data_hole =
+      "9999-01-01 01:00:00 45.123456 9.987654 10"
+
+      @points_before = load_points(data_before_midnight)
+      @points = load_points(data_after_midnight)
+      @points_moving = load_points(data_moving)
+      @points_hole = load_points(data_hole)
+    end
+
+    it 'should not emit the stay point without any other point' do
+      positioner = Positioner.new
+      emitted = emit_staying(positioner, @points)
+
+      emitted.size.should be 0
+    end
+
+    it 'should emit the stay point if moving' do
+      positioner = Positioner.new
+      emitted = emit_staying(positioner, @points + @points_moving)
+
+      stay_point = Point.new(lat: 45.123456, lon: 9.987654, r: 10, time: Time.parse('2013-01-01 00:00:00 +0100'), start: Time.parse('2013-01-01 00:00:00 +0100'), end: Time.parse('2013-01-01 00:15:00 +0100'))
+
+      emitted.first.should eq stay_point
+    end
+
+    it 'should emit the stay point on data hole' do
+      positioner = Positioner.new
+      emitted = emit_staying(positioner, @points + @points_hole)
+
+      stay_point = Point.new(lat: 45.123456, lon: 9.987654, r: 10, time: Time.parse('2013-01-01 00:00:00 +0100'), start: Time.parse('2013-01-01 00:00:00 +0100'), end: Time.parse('2013-01-01 00:15:00 +0100'))
+
+      emitted.first.should eq stay_point
+    end
+
+    it 'should emit the stay point on data hole (with reset)' do
+      positioner = Positioner.new
+      emitted = emit_staying(positioner, @points_before)
+      positioner.emit_and_reset do |p|
+        emitted << p
+      end
+      emitted += emit_staying(positioner, @points)
+      positioner.emit_and_reset do |p|
+        emitted << p
+      end
+      emitted += emit_staying(positioner, @points_hole)
+
+      stay_point_before = Point.new(lat: 45.123456, lon: 9.987654, r: 10, time: Time.parse('2012-12-31 23:45:00 +0100'), start: Time.parse('2012-12-31 23:45:00 +0100'), end: Time.parse('2012-12-31 23:57:00 +0100'))
+      stay_point_after = Point.new(lat: 45.123456, lon: 9.987654, r: 10, time: Time.parse('2013-01-01 00:00:00 +0100'), start: Time.parse('2013-01-01 00:00:00 +0100'), end: Time.parse('2013-01-01 00:15:00 +0100'))
+
+      emitted.should eq [stay_point_before, stay_point_after]
+    end
 
   end
 
