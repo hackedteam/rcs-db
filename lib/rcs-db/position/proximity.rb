@@ -16,7 +16,7 @@ module DB
         distance = meter_to_radius(distance || Point::NEAR_DISTANCE)
 
         # the location array is used by the 2dSphere index
-        location_ary = [position[:longitude], position[:latitude]]
+        location_ary = position.kind_of?(Hash) ? [position[:longitude], position[:latitude]] : position
 
         criteria = respond_to?(:positions) && positions || self
 
