@@ -71,7 +71,7 @@ class Processor
 
       # we need to find a document that is in the same day, same type and that have the same peer and versus
       # if not found, create a new entry, otherwise increment the number of occurrences
-      params = {aid: ev.aid, day: Time.at(ev.da).strftime('%Y%m%d'), type: type}
+      params = {aid: ev.aid, day: Time.at(datum[:time]).getutc.strftime('%Y%m%d'), type: type}
 
       case type
         when :position

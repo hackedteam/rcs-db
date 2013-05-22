@@ -18,15 +18,30 @@ class PositionAggregator
 
     min_time = minimum_time_in_a_position
 
+    result = nil
+
     # load the positioner from the db, if already saved, otherwise create a new one
     if positioner_agg.data[ev.aid.to_s]
       begin
         trace :debug, "Reloading positioner from saved status (#{ev.aid.to_s})"
-        positioner = RCS::DB::Positioner.new_from_dump(positioner_agg.data[ev.aid.to_s])
+        positioner = RCS::DB::Positioner.new_from_dump(positioner_agg.data[ev.aid.to_s]['positioner'])
       rescue Exception => e
         trace :warn, "Cannot restore positioner status, creating a new one..."
         positioner = RCS::DB::Positioner.new(time: min_time)
       end
+
+      # check the day of the last position processed
+      last_position_day = Time.at(positioner_agg.data[ev.aid.to_s]['last']).getutc.strftime('%Y%m%d')
+      current_position_day = Time.at(ev.da).getutc.strftime('%Y%m%d')
+
+      # if we detect that the day has changed, force the positioner to emit the point in the previous day
+      if last_position_day != current_position_day
+        positioner.emit_and_reset do |stay|
+          result = stay
+          trace :info, "Positioner has detected a change in the day, forcing output of a stay point: #{stay.to_s}"
+        end
+      end
+
     else
       trace :debug, "Creating a new positioner for #{ev.aid.to_s}"
       positioner = RCS::DB::Positioner.new(time: min_time)
@@ -35,8 +50,6 @@ class PositionAggregator
     # create a point from the evidence
     point = Point.new(lat: ev.data['latitude'], lon: ev.data['longitude'], r: ev.data['accuracy'], time: Time.at(ev.da))
 
-    result = nil
-
     # feed the positioner with the point and take the result (if any)
     positioner.feed(point) do |stay|
       result = stay
@@ -44,7 +57,7 @@ class PositionAggregator
     end
 
     # save the positioner status into the aggregate
-    positioner_agg.data[ev.aid] = positioner.dump
+    positioner_agg.data[ev.aid] = {positioner: positioner.dump, last: ev.da}
     positioner_agg.save
 
     # empty if not emitted
@@ -52,6 +65,7 @@ class PositionAggregator
 
     # return the stay point
     return [{type: :position,
+             time: result.end,
              point: {latitude: result.lat, longitude: result.lon, radius: result.r},
              timeframe: {start: result.start, end: result.end}}]
   end

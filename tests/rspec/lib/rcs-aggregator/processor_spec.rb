@@ -107,8 +107,9 @@ describe Processor do
         @entry = {'target_id' => @target._id, 'evidence_id' => @evidence._id}
         PositionAggregator.stub(:extract) do |target, ev|
           [{type: :position,
-                     point: {latitude: ev.data['latitude'], longitude: ev.data['longitude'], radius: ev.data['accuracy']},
-                     timeframe: {start: ev.da, end: ev.da + 1000}}]
+            time: ev.da,
+            point: {latitude: ev.data['latitude'], longitude: ev.data['longitude'], radius: ev.data['accuracy']},
+            timeframe: {start: ev.da, end: ev.da + 1000}}]
         end
       end
 
@@ -249,6 +250,97 @@ describe Processor do
     end
 
   end
+
+  context 'given a bounch of positions (multiple days)' do
+    before do
+      @target = Item.create!(name: 'test-target', _kind: 'target', path: [], stat: ::Stat.new)
+      @agent = Item.create(name: 'test-agent', _kind: 'agent', path: [@target._id], stat: ::Stat.new)
+      @evidence = Evidence.dynamic_new('testtarget')
+    end
+
+    def parse_data(data)
+      data.each_line do |e|
+        values = e.split(' ')
+        time = Time.parse("#{values.shift} #{values.shift} UTC")
+        lat = values.shift.to_f
+        lon = values.shift.to_f
+        r = values.shift.to_i
+
+        yield time, lat, lon, r if block_given?
+      end
+    end
+
+    def new_position(time, data)
+      Evidence.collection_class(@target._id).create!(da: time, aid: @agent._id, type: :position, data: data)
+    end
+
+    it 'should emit two consecutive points if reset at midnight' do
+      # the STAY point is:
+      # 45.123456 9.987654 10 (2012-12-31 23:45:00 - 2013-01-01 00:15:00)
+      points =
+      "2012-12-31 23:45:00 45.123456 9.987654 10
+      2012-12-31 23:48:00 45.123456 9.987654 10
+      2012-12-31 23:51:00 45.123456 9.987654 10
+      2012-12-31 23:54:00 45.123456 9.987654 10
+      2012-12-31 23:57:00 45.123456 9.987654 10
+      2013-01-01 00:00:00 45.123456 9.987654 10
+      2013-01-01 00:03:00 45.123456 9.987654 10
+      2013-01-01 00:06:00 45.123456 9.987654 10
+      2013-01-01 00:09:00 45.123456 9.987654 10
+      2013-01-01 00:12:00 45.123456 9.987654 10
+      2013-01-01 00:15:00 45.123456 9.987654 10
+      2013-01-01 00:18:00 45 9 10"
+      #9999-01-01 00:00:00 45.123456 9.987654 10" #fake one to trigger the data hole
+
+      parse_data(points) do |time, lat, lon, r|
+        ev = new_position(time, {'latitude' => lat, 'longitude' => lon, 'accuracy' => r})
+        Processor.process('target_id' => @target.id, 'evidence_id' => ev)
+      end
+
+      results = Aggregate.target(@target.id).where(type: :position).order_by([[:day, :asc]])
+
+      results.size.should be 2
+      first = results.first
+      second = results.last
+
+      first.day.should eq '20121231'
+      second.day.should eq '20130101'
+
+      first.data['position'].should eq [9.987654, 45.123456]
+      second.data['position'].should eq [9.987654, 45.123456]
+
+      first.info.size.should be 1
+      first.info.first['start'].should eq Time.parse('2012-12-31 23:45:00 UTC')
+      first.info.first['end'].should eq Time.parse('2012-12-31 23:57:00 UTC')
+
+      second.info.size.should be 1
+      second.info.first['start'].should eq Time.parse('2013-01-01 00:00:00 UTC')
+      second.info.first['end'].should eq Time.parse('2013-01-01 00:15:00 UTC')
+    end
+
+    it 'should output correctly data from t1', speed: 'slow' do
+      points = File.read(File.join(fixtures_path, 'positions.t1.txt'))
+
+      parse_data(points) do |time, lat, lon, r|
+        ev = new_position(time, {'latitude' => lat, 'longitude' => lon, 'accuracy' => r})
+        Processor.process('target_id' => @target.id, 'evidence_id' => ev)
+      end
+
+      results = Aggregate.target(@target.id).where(type: :position).order_by([[:day, :asc]]).to_a
+
+      results.each do |p|
+        puts "#{p[:day]}"
+        puts "#{p[:data]['position'][1]} #{p[:data]['position'][0]} #{p[:data]['radius']}"
+        puts p[:info]
+        puts
+      end
+
+      #binding.pry
+
+    end
+
+  end
+
 end
 
 end
