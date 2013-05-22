@@ -85,7 +85,7 @@ class Entity
     return if level != :manual
 
     self.class.same_path_of(self).positions_within(position).each do |other_entity|
-      RCS::DB::LinkManager.instance.add_link from: self, to: other_entity, level: :automatic, type: :identity
+      RCS::DB::LinkManager.instance.add_link from: self, to: other_entity, level: :automatic, type: :identity, versus: :both
     end
   end
 
