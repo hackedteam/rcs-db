@@ -14,12 +14,13 @@ TODO 9.0.0
     try to implement "retry" on mongoid queries
     check threads waiting on queued collection: alert, push  (topac)
 
+    show only most recent N backup archives
+    check if backuparchive is displayed when moving the backup dir
+
   IMPLEMENT:
     aggregates for places (alor)
       - split at midnight
       - integration test with multi-day data
-
-    api for console to display communication flows (message, call, chat) (topac)
 
     automatic entities from "very" most contacted (statistics)
 
