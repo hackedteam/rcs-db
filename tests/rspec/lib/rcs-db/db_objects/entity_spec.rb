@@ -451,7 +451,60 @@ describe EntityLink do
           let(:another_position_entity) { create_position_entity position: [-74.04448, 40.68945], level: :automatic }
 
           it 'does not creates any link between the two' do
-            expect(another_position_entity.linked_to? position_entity).to be_false
+            expect(another_position_entity.linked_to? position_entity.reload).to be_false
+          end
+        end
+
+        context 'When an user creates a position entity for a place far from the given one' do
+
+          let(:another_position_entity) { create_position_entity position: [-74.05128, 40.72835], level: :manual }
+
+          it 'does not creates any link between the two' do
+            expect(another_position_entity.linked_to? position_entity.reload).to be_false
+          end
+        end
+      end
+
+      context 'Given a target entity' do
+
+        let(:target_entity) do
+          Item.create! name: 'bob', _kind: 'target', path: [operation.id], stat: ::Stat.new
+          Entity.where(name: 'bob').first
+        end
+
+        context 'That have been to the Statue of Liberty' do
+
+          before do
+            data = {'position' => [-74.04448, 40.68945], 'radius' => 2}
+            aggregate_params = {type: :position, info: [], data: data, aid: 'agent_id', count: 1, day: Time.new(2013, 01, 01)}
+            Aggregate.target(target_entity.target_id).create! aggregate_params
+          end
+
+          context 'When a position entity for a place closer to the Statue of Liberty is created by a user' do
+
+            let(:position_entity) { create_position_entity position: [-74.04449, 40.68944], level: :manual }
+
+            it 'creates a "position" link between the two entities' do
+              expect(position_entity.linked_to?(target_entity.reload, type: :position)).to be_true
+            end
+          end
+
+          context 'When a position entity for a place closer to the Statue of Liberty is created by the system' do
+
+            let(:position_entity) { create_position_entity position: [-74.04449, 40.68944], level: :automatic }
+
+            it 'creates a "position" link between the two entities' do
+              expect(position_entity.linked_to?(target_entity.reload, type: :position)).to be_true
+            end
+          end
+
+          context 'When a position entity for a place far from the Statue of Liberty is created' do
+
+            let(:position_entity) { create_position_entity position: [-74.05128, 40.72835] }
+
+            it 'does not creates any link between the two' do
+              expect(position_entity.linked_to? target_entity.reload).to be_false
+            end
           end
         end
       end
