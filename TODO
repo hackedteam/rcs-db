@@ -19,7 +19,6 @@ TODO 9.0.0
 
   IMPLEMENT:
     aggregates for places (alor)
-      - split at midnight
       - integration test with multi-day data
 
     automatic entities from "very" most contacted (statistics)

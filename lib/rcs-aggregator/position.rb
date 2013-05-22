@@ -76,7 +76,14 @@ class PositionAggregator
     # the idea here is:
     # search in the db for point near the current one
     # then check for similarity, if one is found, return the old one
-    Aggregate.target(target_id).positions_within(position).each do |agg|
+    past = Aggregate.target(target_id).positions_within(position).to_a
+
+    # sort the result by day in reverse order, so we get the most recent first
+    past.sort_by {|x| x.day}.reverse!
+
+    # search if we have the same point in the past (starting from today)
+    # return if found
+    past.each do |agg|
       # convert aggregate to point
       old = agg.to_point
       new = Point.new(lat: position[:latitude], lon: position[:longitude], r: position[:radius])
@@ -95,6 +102,9 @@ class PositionAggregator
 
     # no previous match create a new one
     params[:data][:radius] = params[:data][:position][:radius]
+    # don't save points that are too precise, enlarge it to the min similarity radius
+    params[:data][:radius] = Point::MINIMUM_SIMILAR_RADIUS if params[:data][:radius] < Point::MINIMUM_SIMILAR_RADIUS
+
     params[:data][:position] = [params[:data][:position][:longitude], params[:data][:position][:latitude]]
     Aggregate.target(target_id).create!(params)
   end
