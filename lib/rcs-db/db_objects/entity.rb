@@ -467,9 +467,14 @@ class EntityLink
     self.le = entity.id
   end
 
-  def add_info(info)
-    return if self.info.include? info
-    self.info << info
+  def add_info value
+    return if info.include? value
+
+    if value.kind_of? Array
+      info.concat value
+    else
+      info << value
+    end
   end
 
   def set_versus(versus)
