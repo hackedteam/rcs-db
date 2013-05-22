@@ -416,7 +416,46 @@ describe EntityLink do
         RCS::DB::LinkManager.instance.del_link(from: @entity, to: @ghost)
         Entity.find(@ghost._id).should eq @ghost
       end
-
     end
+
+    describe 'Create callbacks' do
+
+      before { Entity.create_indexes }
+
+      let(:operation) { Item.create!(name: 'op', _kind: 'operation', path: [], stat: ::Stat.new) }
+
+      def create_position_entity params
+        params[:level] ||= :automatic
+        entity_params = params.merge name: "Postion #{params[:position]}", path: [operation.id], type: :position
+        Entity.create! entity_params
+      end
+
+      context 'Given a position entity' do
+
+        let(:position_entity) { create_position_entity position: [-74.04449, 40.68944] }
+
+        before { position_entity }
+
+        context 'When an user creates a position entity for a place closer to the given one' do
+
+          let(:another_position_entity) { create_position_entity position: [-74.04448, 40.68945], level: :manual }
+
+          it 'creates an "identity" link between the two' do
+            expect(another_position_entity.linked_to?(position_entity.reload, type: :identity)).to be_true
+          end
+        end
+
+        # @note: This case should never be happen in production
+        context 'When the system creates a position entity for a place closer to the given one' do
+
+          let(:another_position_entity) { create_position_entity position: [-74.04448, 40.68945], level: :automatic }
+
+          it 'does not creates any link between the two' do
+            expect(another_position_entity.linked_to? position_entity).to be_false
+          end
+        end
+      end
+    end
+
   end
 end
