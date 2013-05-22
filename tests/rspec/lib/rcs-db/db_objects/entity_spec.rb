@@ -474,9 +474,11 @@ describe EntityLink do
 
         context 'That have been to the Statue of Liberty' do
 
+          let(:timeframes) { [{'start' => 1, 'end' => 2}, {'start' => 5, 'end' => 10}] }
+
           before do
             data = {'position' => [-74.04448, 40.68945], 'radius' => 2}
-            aggregate_params = {type: :position, info: [], data: data, aid: 'agent_id', count: 1, day: Time.new(2013, 01, 01)}
+            aggregate_params = {type: :position, info: timeframes, data: data, aid: 'agent_id', count: 1, day: Time.new(2013, 01, 01)}
             Aggregate.target(target_entity.target_id).create! aggregate_params
           end
 
@@ -484,8 +486,11 @@ describe EntityLink do
 
             let(:position_entity) { create_position_entity position: [-74.04449, 40.68944], level: :manual }
 
-            it 'creates a "position" link between the two entities' do
+            it 'creates a valid "position" link between the two entities' do
               expect(position_entity.linked_to?(target_entity.reload, type: :position)).to be_true
+
+              link = position_entity.links.connected_to(target_entity).first
+              expect(link.info).to eql timeframes
             end
           end
 

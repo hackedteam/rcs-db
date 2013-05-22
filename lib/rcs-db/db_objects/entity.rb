@@ -98,9 +98,7 @@ class Entity
 
     Entity.targets.path_include(operation_id).each do |target_entity|
       Aggregate.target(target_entity.target_id).positions_within(position).each do |ag|
-
-        # TODO - add timeframe in "info"
-        link_params = {from: target_entity, to: self, level: :automatic, type: :position, versus: :both, info: nil}
+        link_params = {from: target_entity, to: self, level: :automatic, type: :position, versus: :both, info: ag.info}
         RCS::DB::LinkManager.instance.add_link link_params
       end
     end
