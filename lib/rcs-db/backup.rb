@@ -255,15 +255,26 @@ class BackupManager
   def self.backup_index
     index = []
 
-    Dir[Config.instance.global['BACKUP_DIR'] + '/*'].each do |dir|
+    glob = File.join File.expand_path(Config.instance.global['BACKUP_DIR']), '*'
+
+    Dir[glob].each do |dir|
       dirsize = 0
-      # consider only valid backups dir (containing 'rcs' or 'config')
-      next unless File.exist?(dir + '/rcs') or File.exist?(dir + '/config')
-      Find.find(dir + '/rcs') { |f| dirsize += File.stat(f).size } if File.exist?(dir + '/rcs')
-      Find.find(dir + '/config') { |f| dirsize += File.stat(f).size } if File.exist?(dir + '/config')
-      # the name is in the first half of the directory name
+
+      # Backup folder may contain the following subfolder
+      rcs_subfolder = File.join dir, 'rcs'
+      config_subfolder = File.join dir, 'config'
+
+      # Consider only valid backups dir (containing 'rcs' or 'config')
+      next unless File.exist?(rcs_subfolder) or File.exist?(config_subfolder)
+
+      # Calculate folder size
+      Find.find(rcs_subfolder) { |f| dirsize += File.stat(f).size } if File.exist? rcs_subfolder
+      Find.find(config_subfolder) { |f| dirsize += File.stat(f).size } if File.exist? config_subfolder
+
+      # The name is in the first half of the directory name
       name = File.basename(dir).split('-')[0]
       time = File.stat(dir).ctime.getutc
+
       index << {_id: File.basename(dir), name: name, when: time.strftime('%Y-%m-%d %H:%M'), size: dirsize}
     end
 
@@ -271,12 +282,13 @@ class BackupManager
   end
 
   def self.restore_backup(params)
-
     trace :info, "Restoring backup: #{params['_id']}"
 
+    backup_path = File.join File.expand_path(Config.instance.global['BACKUP_DIR']), params['_id']
+
     command = Config.mongo_exec_path('mongorestore')
-    command += " --drop" if params['drop']
-    command += " #{Config.instance.global['BACKUP_DIR']}/#{params['_id']}"
+    command << " --drop" if params['drop']
+    command << " \"#{backup_path}\""
 
     trace :debug, "Restoring backup: #{command}"
 
