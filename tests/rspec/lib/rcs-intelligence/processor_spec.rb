@@ -251,6 +251,7 @@ describe Processor do
       let!(:bob_position) { create_position_aggregate_for target_bob, lat: london_eye[0], lon: london_eye[1], rad: 10, start: midday, end: midday + 40.minutes }
       let!(:alice_position) { create_position_aggregate_for target_alice, lat: near_london_eye[0], lon: near_london_eye[1], rad: 12, start: midday, end: midday + 42.minutes }
       let!(:eve_position) { create_position_aggregate_for target_eve, lat: near_london_eye[0], lon: near_london_eye[1], rad: 15, start: midday, end: midday + 41.minutes }
+      let!(:eve_position2) { create_position_aggregate_for target_eve, lat: 10, lon: 10, rad: 10, start: midday, end: midday + 41.minutes }
 
       let!(:existing_position) do
         Entity.create! type: :position, path: [operation.id], position: london_eye.reverse, level: :automatic, name: 'London eye'
@@ -263,7 +264,8 @@ describe Processor do
         }.not_to change(Entity.positions, :count)
       end
 
-      it 'links the two target entities to that position' do
+      # @note: the magic is in an Entity's callback for the create event
+      it 'links all the target entities that have been there to that position' do
         described_class.process_position_aggregate eve, eve_position
 
         existing_position.reload
