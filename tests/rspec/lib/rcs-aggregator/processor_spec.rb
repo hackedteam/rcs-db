@@ -109,7 +109,7 @@ describe Processor do
           [{type: :position,
             time: ev.da,
             point: {latitude: ev.data['latitude'], longitude: ev.data['longitude'], radius: ev.data['accuracy']},
-            timeframe: {start: ev.da, end: ev.da + 1000}}]
+            timeframe: {start: Time.at(ev.da), end: Time.at(ev.da + 1000)}}]
         end
       end
 

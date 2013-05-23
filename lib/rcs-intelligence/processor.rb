@@ -145,27 +145,37 @@ class Processor
     end
   end
 
-  # If 2 entities (type :target) have been in the same place at the same time
-  # creates a new position entity (if is missing)
   def self.process_position_aggregate entity, aggregate
     position = aggregate.position
     position_ary = [position[:longitude], position[:latitude]]
-    day = Time.parse aggregate.day
-    days_around = [day-1.day, day, day+1.day]
 
     operation_id = entity.path.first
+    point = aggregate.to_point
 
-    ::Entity.targets.same_path_of(entity).each do |other_entity|
-      Aggregate.target(other_entity.target_id).in(day: days_around).positions_within(position).each do |ag|
-        next unless aggregate.timeframe_intersect?(ag)
+    # Search for a position entity that match the current position aggregate
+    # If found link the position entity to the target entity of the matched aggregate
+    Entity.path_include(operation_id).positions_within(position).each do |position_entity|
+      next unless position_entity.to_point.similar_to? point
 
-        position_entity_exists = ::Entity.path_include(operation_id).positions_within(position).any?
+      link_params = {from: entity, to: position_entity, level: :automatic, type: :position, versus: :out, info: aggregate.info}
+      RCS::DB::LinkManager.instance.add_link link_params
 
-        return if position_entity_exists
+      return
+    end
+
+    # If 2 entities (type :target) have been in the same place at the same time
+    # creates a new position entity (if is missing)
+    Entity.targets.same_path_of(entity).each do |other_entity|
+      Aggregate.target(other_entity.target_id).where(day: aggregate.day).positions_within(position).each do |ag|
+
+        next unless point.similar_to? ag.to_point
+
+        next unless point.intersect_timeframes? ag.info
 
         defalut_name = "Position #{position_ary.reverse.join(', ')}"
-        entity_params = {type: :position, path: [operation_id], position: position_ary, level: :automatic, name: defalut_name}
+        entity_params = {type: :position, path: [operation_id], position: position_ary, level: :automatic, name: defalut_name, position_attr: {accuracy: point.r}}
         position_entity = Entity.create! entity_params
+        position_entity.fetch_address
 
         return
       end

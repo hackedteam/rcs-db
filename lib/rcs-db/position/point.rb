@@ -4,6 +4,7 @@
 
 require 'rcs-common/trace'
 require 'rvincenty'
+require 'active_support'
 
 class Point
   
@@ -22,6 +23,8 @@ class Point
   EARTH_RADIUS = 6371
   # Earth equator in kilometers
   EARTH_EQUATOR = 40075.017
+  # minimum intersection time between two timeframes
+  MINIMUM_INTERSECT_TIME = 10.minutes
 
   def initialize(params = {})
     self.time = Time.now
@@ -159,4 +162,19 @@ class Point
     return best
   end
 
+
+  def intersect_timeframes? timeframes
+    timeframes = [timeframes].flatten
+    range1 = self.start.to_i..self.end.to_i
+
+    timeframes.each do |timeframe|
+      range2 = timeframe['start'].to_i..timeframe['end'].to_i
+      intersection = range1.to_a & range2.to_a
+      next if intersection.empty?
+      delta = intersection.max - intersection.min
+      return true if delta >= MINIMUM_INTERSECT_TIME
+    end
+
+    false
+  end
 end

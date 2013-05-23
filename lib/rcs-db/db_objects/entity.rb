@@ -98,7 +98,9 @@ class Entity
 
     Entity.targets.path_include(operation_id).each do |target_entity|
       Aggregate.target(target_entity.target_id).positions_within(position).each do |ag|
-        link_params = {from: target_entity, to: self, level: :automatic, type: :position, versus: :both, info: ag.info}
+        next unless to_point.similar_to? ag.to_point
+
+        link_params = {from: target_entity, to: self, level: :automatic, type: :position, versus: :out, info: ag.info}
         RCS::DB::LinkManager.instance.add_link link_params
       end
     end
@@ -382,6 +384,16 @@ class Entity
     trace :debug, "Entity#flow excecution time: #{Time.now - start_time}" if RCS::DB::Config.instance.global['PERF']
 
     days
+  end
+
+  def to_point
+    Point.new lat: last_position[:latitude], lon: last_position[:longitude], r: last_position[:accuracy]
+  end
+
+  def fetch_address
+    request = {'gpsPosition' => {"latitude" => last_position[:latitude], "longitude" => last_position[:longitude]}}
+    result = RCS::DB::PositionResolver.get request
+    update_attributes(name: result["address"]["text"]) unless result.empty?
   end
 end
 

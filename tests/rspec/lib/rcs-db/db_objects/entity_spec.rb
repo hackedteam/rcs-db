@@ -2,6 +2,7 @@ require 'spec_helper'
 require_db 'db_layer'
 require_db 'link_manager'
 require_db 'grid'
+require_db 'position/resolver'
 
 describe Entity do
 
@@ -420,15 +421,15 @@ describe EntityLink do
 
     describe 'Create callbacks' do
 
-      before { Entity.create_indexes }
-
-      let(:operation) { Item.create!(name: 'op', _kind: 'operation', path: [], stat: ::Stat.new) }
-
       def create_position_entity params
         params[:level] ||= :automatic
         entity_params = params.merge name: "Postion #{params[:position]}", path: [operation.id], type: :position
         Entity.create! entity_params
       end
+
+      before { Entity.create_indexes }
+
+      let(:operation) { Item.create!(name: 'op', _kind: 'operation', path: [], stat: ::Stat.new) }
 
       context 'Given a position entity' do
 
@@ -467,6 +468,8 @@ describe EntityLink do
 
       context 'Given a target entity' do
 
+        let!(:now) { Time.at(Time.now.to_i) }
+
         let(:target_entity) do
           Item.create! name: 'bob', _kind: 'target', path: [operation.id], stat: ::Stat.new
           Entity.where(name: 'bob').first
@@ -474,7 +477,8 @@ describe EntityLink do
 
         context 'That have been to the Statue of Liberty' do
 
-          let(:timeframes) { [{'start' => 1, 'end' => 2}, {'start' => 5, 'end' => 10}] }
+
+          let(:timeframes) { [{'start' => now, 'end' => now}, {'start' => now+1, 'end' => now+1}] }
 
           before do
             data = {'position' => [-74.04448, 40.68945], 'radius' => 2}
@@ -515,5 +519,25 @@ describe EntityLink do
       end
     end
 
+    describe '#fetch_address' do
+
+      let(:operation) { Item.create!(name: 'op', _kind: 'operation', path: [], stat: ::Stat.new) }
+
+      def create_position_entity params
+        params[:level] ||= :automatic
+        entity_params = params.merge name: "Postion #{params[:position]}", path: [operation.id], type: :position
+        Entity.create! entity_params
+      end
+
+      let(:position_entity) { create_position_entity position: [-74.04449, 40.68944] }
+
+      let(:expected_address) { "1 Liberty Island - Ellis Island, Liberty Island, New York, NY 10004, USA" }
+
+      before { RCS::DB::PositionResolver.stub(:get).and_return "address" => {"text" => expected_address} }
+
+      it 'fetch the correct address name from a web service' do
+        expect { position_entity.fetch_address}.to change(position_entity, :name).to(expected_address)
+      end
+    end
   end
 end

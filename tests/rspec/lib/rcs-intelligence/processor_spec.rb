@@ -17,6 +17,7 @@ describe Processor do
     described_class.should respond_to :trace
   end
 
+  before { Entity.any_instance.stub(:fetch_address) }
 
   describe '#process' do
     target_name = 'atarget'
@@ -233,7 +234,6 @@ describe Processor do
 
         expect(position_entity.type).to eql :position
         expect(position_entity.level).to eql :automatic
-        expect(position_entity.name).not_to match /Position 51.50\d\, 0.11\d/
         expect(position_entity.path).to eql [bob.path.first]
       end
 

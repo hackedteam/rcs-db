@@ -341,4 +341,43 @@ describe Point do
     a.near?(b).should be false
   end
 
+  describe '#intersect_timeframes?' do
+
+    let!(:now) { Time.now }
+
+    let(:point_params) { {lat: 0, lon: 0, r: 1} }
+
+    let(:point) { Point.new point_params.merge(start: now, end: now + 1.hour) }
+
+    it 'retuns true when at least a timeframe is the same of the given one' do
+      timeframes = [{'start' => point.start, 'end' => point.end}]
+      expect(point.intersect_timeframes?(timeframes)).to be_true
+    end
+
+    it 'retuns false when no one timeframe intersects the given one' do
+      timeframes = [{'start' => now + 1.hour, 'end' => now + 2.hour}]
+      expect(point.intersect_timeframes?(timeframes)).to be_false
+    end
+
+    it 'retuns true when a timeframe includes the given one' do
+      timeframes = [{'start' => now - 1.hour, 'end' => now + 2.hour}]
+      expect(point.intersect_timeframes?(timeframes)).to be_true
+    end
+
+    it 'retuns true when a timeframe is included into the given one' do
+      timeframes = [{'start' => now + 15.minutes, 'end' => now + 45.minutes}]
+      expect(point.intersect_timeframes?(timeframes)).to be_true
+    end
+
+    it 'retuns false when a timeframe intersect the given one (small intersection)' do
+      timeframes = [{'start' => now + 15.minutes, 'end' => now + 20.minutes}]
+      expect(point.intersect_timeframes?(timeframes)).to be_false
+
+      timeframes = [{'start' => now + 55.minutes, 'end' => now + 1.hour}]
+      expect(point.intersect_timeframes?(timeframes)).to be_false
+
+      timeframes = [{'start' => now, 'end' => now + 9.minutes}]
+      expect(point.intersect_timeframes?(timeframes)).to be_false
+    end
+  end
 end

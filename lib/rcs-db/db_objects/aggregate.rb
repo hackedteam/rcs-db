@@ -37,7 +37,8 @@ class Aggregate
 
   def to_point
     raise "not a position" unless type.eql? :position
-    Point.new(lat: data['position'][1], lon: data['position'][0], r: data['radius'])
+    time_params = (info.last.symbolize_keys rescue nil) || {}
+    Point.new time_params.merge(lat: data['position'][1], lon: data['position'][0], r: data['radius'])
   end
 
   def self.summary_include?(type, peer)
@@ -200,26 +201,6 @@ class Aggregate
 
   def position
     {latitude: self.data['position'][1], longitude: self.data['position'][0], radius: self.data['radius']}
-  end
-
-  def timeframe_intersect? aggregate
-    return if type != :position
-    return if aggregate.type != :position
-
-    minimum_delta = 10.minutes
-
-    info.each do |timeframe1|
-      range1 = timeframe1['start'].to_i..timeframe1['end'].to_i
-
-      aggregate.info.each do |timeframe2|
-        range2 = timeframe2['start'].to_i..timeframe2['end'].to_i
-        intersection = range1.to_a & range2.to_a
-        delta = intersection.max - intersection.min
-        return true if delta >= minimum_delta
-      end
-    end
-
-    nil
   end
 end
 
