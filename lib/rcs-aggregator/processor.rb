@@ -86,6 +86,7 @@ class Processor
     end
 
   rescue Exception => e
+    puts e.backtrace.join("\n")
     trace :error, "Cannot process evidence: #{e.message}"
     trace :fatal, e.backtrace.join("\n")
   end

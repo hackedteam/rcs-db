@@ -496,7 +496,7 @@ describe Positioner do
     end
   end
 
-  context 'given a sequence of points that are near the limit' do
+  context 'given a sequence of points that are near the limits' do
     before do
       # the STAY point is:
       # 45.123456 9.987654 10 (2013-01-01 00:00:00 - 2013-01-01 00:15:00)
@@ -567,6 +567,32 @@ describe Positioner do
       emitted.should eq [stay_point_before, stay_point_after]
     end
 
+    it 'should not emit stay point on reset if the radius is too big' do
+      data =
+      "2013-01-14 22:39:27 45.303882 9.485526 3000
+      2013-01-14 22:40:27 45.303882 9.485526 3000
+      2013-01-14 22:41:27 45.303882 9.485526 3000
+      2013-01-14 22:42:27 45.303882 9.485526 3000
+      2013-01-14 22:43:27 45.303882 9.485526 3000
+      2013-01-14 22:44:27 45.303882 9.485526 3000
+      2013-01-14 22:45:27 45.303882 9.485526 3000
+      2013-01-14 22:46:27 45.303882 9.485526 3000
+      2013-01-14 22:47:27 45.303882 9.485526 3000
+      2013-01-14 22:48:27 45.303882 9.485526 3000
+      2013-01-14 22:49:27 45.303882 9.485526 3000
+      2013-01-14 22:50:27 45.303882 9.485526 3000
+      2013-01-14 22:51:27 45.30386 9.494821 3000"
+      points = load_points(data)
+      positioner = Positioner.new
+
+      emitted = emit_staying(positioner, points)
+
+      positioner.emit_and_reset do |p|
+        emitted << p
+      end
+
+      emitted.should be_empty
+    end
   end
 
   context 'given a bounch of positions (multiple days)' do
