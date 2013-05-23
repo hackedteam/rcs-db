@@ -54,7 +54,6 @@ class Positioner
   end
 
   def emit_and_reset
-    #binding.pry
     if @point_buffer.first and @curr_point
       # force the start point even if the buffer is not full
       # take the minimum from the current and the first in the buffer
