@@ -252,14 +252,21 @@ class BackupManager
     trace :info, "Metadata backup job created"
   end
 
+  def self.folder_size path
+    if RbConfig::CONFIG['host_os'] =~ /mingw/
+      @fso ||= WIN32OLE.new 'Scripting.FileSystemObject'
+      @fso.GetFolder(path).size
+    else
+      Find.find(path).inject(0) { |total, f| total += File.stat(f).size }
+    end
+  end
+
   def self.backup_index
     index = []
 
     glob = File.join File.expand_path(Config.instance.global['BACKUP_DIR']), '*'
 
     Dir[glob].each do |dir|
-      dirsize = 0
-
       # Backup folder may contain the following subfolder
       rcs_subfolder = File.join dir, 'rcs'
       config_subfolder = File.join dir, 'config'
@@ -267,18 +274,14 @@ class BackupManager
       # Consider only valid backups dir (containing 'rcs' or 'config')
       next unless File.exist?(rcs_subfolder) or File.exist?(config_subfolder)
 
-      # Calculate folder size
-      Find.find(rcs_subfolder) { |f| dirsize += File.stat(f).size } if File.exist? rcs_subfolder
-      Find.find(config_subfolder) { |f| dirsize += File.stat(f).size } if File.exist? config_subfolder
-
       # The name is in the first half of the directory name
       name = File.basename(dir).split('-')[0]
       time = File.stat(dir).ctime.getutc
 
-      index << {_id: File.basename(dir), name: name, when: time.strftime('%Y-%m-%d %H:%M'), size: dirsize}
+      index << {_id: File.basename(dir), name: name, when: time.strftime('%Y-%m-%d %H:%M'), size: folder_size(dir)}
     end
 
-    return index
+    index
   end
 
   def self.restore_backup(params)
