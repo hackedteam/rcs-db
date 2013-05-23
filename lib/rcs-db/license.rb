@@ -424,7 +424,7 @@ class LicenseManager
       if ::Collector.remote.count > @limits[:collectors][:anonymizers]
         trace :fatal, "LICENCE EXCEEDED: Number of anonymizers is greater than license file. Fixing..."
         # fix by deleting the collector
-        offending = ::Collector.remte.order_by([[:updated_at, :desc]]).first
+        offending = ::Collector.remote.order_by([[:updated_at, :desc]]).first
         trace :warn, "Deleting anonymizer '#{offending[:name]}' #{offending[:address]}"
         # clear the chain of (possible) anonymizers
         next_id = offending['next'][0]
