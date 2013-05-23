@@ -19,6 +19,7 @@ gem 'uuidtools'
 gem 'ffi'
 gem 'lrucache'
 gem 'mail'
+gem 'activesupport'
 gem 'rest-client'
 gem 'xml-simple'
 
