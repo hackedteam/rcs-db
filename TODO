@@ -16,7 +16,7 @@ TODO 9.0.0
 
   IMPLEMENT:
     aggregates for places (alor)
-      - integration test with multi-day data
+      - automatic detection of home / office (needs timezone for each entity)
 
     automatic entities from "very" most contacted (statistics)
 
