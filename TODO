@@ -15,13 +15,13 @@ TODO 9.0.0
     check threads waiting on queued collection: alert, push  (topac)
 
   IMPLEMENT:
-    aggregates for places (alor)
-      - automatic detection of home / office (needs timezone for each entity)
+    statistic analyzer (alor)
+      automatic detection of home / office (needs timezone for each entity)
+      automatic entities from "very" most contacted
 
-    automatic entities from "very" most contacted (statistics)
-
-    export entities data
-    export graph data
+    export intellingece data (topac)
+      entities data
+      graph data
 
     refactor the connectors to use queue and export from separate process
       - xml export
