@@ -33,7 +33,7 @@ module DB
 
     # aggregate factory
     def create_aggregate target, day, count, data
-      Aggregate.target(target).create! day: Time.parse("#{day}"), type: 'sms', aid: 'agent_id', count: count.to_i, data: data
+      Aggregate.target(target).create! day: day, type: 'sms', aid: 'agent_id', count: count.to_i, data: data
     end
 
     before do
@@ -48,8 +48,6 @@ module DB
     describe '#flow' do
 
       def flow_with_params from, to, entities
-        from = from.kind_of?(Time) ? from : Time.parse(from)
-        to = to.kind_of?(Time) ? to : Time.parse(to)
         subject.instance_variable_set '@params', entities: entities, from: from, to: to
         subject.flow
       end
@@ -71,20 +69,20 @@ module DB
 
         it 'works when the other entity is not passed' do
           result = flow_with_params '20130501', '20131201', [@alice.id]
-          expect(result["2013-05-01 00:00:00 +0200"]).to be_blank
-          expect(result["2013-05-10 00:00:00 +0200"]).to be_blank
+          expect(result['20130501']).to be_blank
+          expect(result['20130510']).to be_blank
         end
 
         it 'works when all the entities are passed' do
           result = flow_with_params '20130501', '20131201', [@alice.id, @bob.id]
-          expect(result["2013-05-01 00:00:00 +0200"]).to eql [@alice.id, @bob.id]=>42, [@bob.id, @alice.id]=>4
-          expect(result["2013-05-10 00:00:00 +0200"]).to eql [@alice.id, @bob.id]=>7
+          expect(result['20130501']).to eql [@alice.id, @bob.id]=>42, [@bob.id, @alice.id]=>4
+          expect(result['20130510']).to eql [@alice.id, @bob.id]=>7
         end
 
         it 'works when the timeframe is restricted' do
           result = flow_with_params '20130509', '20130510', [@alice.id, @bob.id]
-          expect(result["2013-05-01 00:00:00 +0200"]).to be_blank
-          expect(result["2013-05-10 00:00:00 +0200"]).to eql [@alice.id, @bob.id]=>7
+          expect(result['20130501']).to be_blank
+          expect(result['20130510']).to eql [@alice.id, @bob.id]=>7
         end
       end
 
@@ -116,25 +114,25 @@ module DB
 
         it 'works when the other entity is not passed' do
           result = flow_with_params '20130501', '20131201', [@alice.id]
-          expect(result["2013-05-01 00:00:00 +0200"]).to be_blank
-          expect(result["2013-05-10 00:00:00 +0200"]).to be_blank
+          expect(result['20130501']).to be_blank
+          expect(result['20130510']).to be_blank
         end
 
         it 'does a SUM of the counters grouping by entities couple' do
           result = flow_with_params '20130501', '20131201', [@alice.id, @bob.id]
-          expect(result["2013-05-01 00:00:00 +0200"]).to eql [@alice.id, @bob.id]=>42+80, [@bob.id, @alice.id]=>4+30+77
-          expect(result["2013-05-10 00:00:00 +0200"]).to eql [@alice.id, @bob.id]=>99
+          expect(result['20130501']).to eql [@alice.id, @bob.id]=>42+80, [@bob.id, @alice.id]=>4+30+77
+          expect(result['20130510']).to eql [@alice.id, @bob.id]=>99
         end
 
         it 'discards aggregates only the "sender" or only the "peer" handle' do
           result = flow_with_params '20130501', '20131201', [@alice.id, @bob.id]
-          expect(result["2013-05-11 00:00:00 +0200"]).to be_blank
+          expect(result['20130511']).to be_blank
         end
 
         it 'works when the timeframe is restricted' do
           result = flow_with_params '20130509', '20130510', [@alice.id, @bob.id]
-          expect(result["2013-05-01 00:00:00 +0200"]).to be_blank
-          expect(result["2013-05-10 00:00:00 +0200"]).to eql [@alice.id, @bob.id]=>99
+          expect(result['20130501']).to be_blank
+          expect(result['20130510']).to eql [@alice.id, @bob.id]=>99
         end
       end
 
