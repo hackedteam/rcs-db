@@ -27,6 +27,8 @@ TODO 9.0.0
       - xml export
       - sync with "archive" rcs installation
 
+    link_position_entities_spec => test alerts when link or entities are created
+
   TRY:
     hash index for sharding (topac - on branch 9.0.x)
 
