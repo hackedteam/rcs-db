@@ -198,12 +198,12 @@ describe Entity do
 
     it 'should find peer versus' do
       Aggregate.target(@target._id).create!(type: 'sms', day: Time.now.strftime('%Y%m%d'), aid: "agent_id", count: 1, data: {peer: 'test', versus: :in})
-      versus = @entity.peer_versus('test', 'sms')
+      versus = @entity.peer_versus EntityHandle.new(type: 'sms', handle: 'test')
       versus.should be_a Array
       versus.should include :in
 
       Aggregate.target(@target._id).create!(type: 'sms', day: Time.now.strftime('%Y%m%d'), aid: "agent_id", count: 1, data: {peer: 'test', versus: :out})
-      versus = @entity.peer_versus('test', 'sms')
+      versus = @entity.peer_versus EntityHandle.new(type: 'sms', handle: 'test')
       versus.should be_a Array
       versus.should include :out
 
@@ -212,11 +212,15 @@ describe Entity do
 
     context 'when the handle type is not directly mapped to the aggregate type' do
 
-      before { Aggregate.target(@target._id).create!(type: 'sms', day: Time.now.strftime('%Y%m%d'), aid: "agent_id", count: 1, data: {peer: 'test', versus: :in}) }
+      # Creates an aggregate (type is SMS)
+      let!(:sms_aggregate) do
+        aggregate_params = {type: 'sms', data: {peer: '+1555129', versus: :in}, day: Time.now.strftime('%Y%m%d'), aid: "agent_id", count: 1}
+        Aggregate.target(@target._id).create! aggregate_params
+      end
 
       it 'finds the peer versus' do
-        pending
-        # expect(@entity.peer_versus('test', 'phone')).not_to be_empty
+        versus = @entity.peer_versus EntityHandle.new(type: 'phone', handle: '+1555129')
+        expect(versus).not_to be_empty
       end
     end
 

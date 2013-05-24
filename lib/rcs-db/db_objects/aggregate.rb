@@ -41,10 +41,18 @@ class Aggregate
     Point.new time_params.merge(lat: data['position'][1], lon: data['position'][0], r: data['radius'])
   end
 
-  def self.summary_include?(type, peer)
+  def self.summary_include? type, peer
     summary = self.where(day: '0', type: :summary).first
     return false unless summary
-    return summary.info.include? type.to_s + '_' + peer.to_s
+
+    # type can be an array of types
+    type = [type].flatten
+
+    type.each do |t|
+      return true if summary.info.include? "#{t}_#{peer}"
+    end
+
+    false
   end
 
   def self.add_to_summary(type, peer)
@@ -201,6 +209,18 @@ class Aggregate
 
   def position
     {latitude: self.data['position'][1], longitude: self.data['position'][0], radius: self.data['radius']}
+  end
+
+  def entity_handle_type
+    t = self.type.to_sym
+
+    if [:call, :sms, :mms].include? t
+      'phone'
+    elsif [:mail, :gmail].include? t
+      'mail'
+    else
+      "#{t}"
+    end
   end
 end
 

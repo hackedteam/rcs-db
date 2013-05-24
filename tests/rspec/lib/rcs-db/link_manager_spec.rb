@@ -193,54 +193,81 @@ module DB
       end
     end
 
-    context 'given an entity with a handle' do
+    context 'given an entity with a handle (Alice) and another entity with no handles (Bob)' do
 
       silence_alerts
 
-      before do
-        @operation = Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new)
-        @target = Item.create!(name: 'test-target', _kind: 'target', path: [@operation._id], stat: ::Stat.new)
+      let(:operation) { Item.create!(name: 'op', _kind: 'operation', path: [], stat: ::Stat.new) }
 
-        @entity1 = Entity.where(name: 'test-target').first
-        @entity1.handles.create!(name: 'test', handle: 'test.ardo', type: 'test')
+      let(:alice_number) { '+12345' }
 
-        @entity2 = Entity.create!(name: 'entity2', type: :person, path: [@operation._id], level: :automatic)
-        @handle = EntityHandle.new(name: 'test', handle: 'test.ardo', type: 'test')
+      let(:entity_handle_attributes) { {name: 'Sweet alice', handle: alice_number, type: :phone} }
+
+      let(:phone_handle) { EntityHandle.new entity_handle_attributes }
+
+      let!(:alice) do
+        Item.create!(name: 'alice', _kind: 'target', path: [operation.id], stat: ::Stat.new)
+        Entity.where(name: 'alice').first.tap do |e|
+          e.handles.create! entity_handle_attributes
+        end
       end
+
+      let!(:bob) { Entity.create!(name: 'bob', type: :person, path: [operation.id], level: :automatic) }
 
       describe '#check_identity' do
 
-        it 'should find identity relations' do
-          LinkManager.instance.check_identity @entity2, @handle
+        before do
+          LinkManager.instance.check_identity bob, phone_handle
+          [bob, alice].each &:reload
+        end
 
-          @entity1.reload
-          @entity2.reload
+        it 'links Bob to Alice' do
+          expect(bob.linked_to? alice).to be_true
+        end
 
-          @entity1.links.size.should be 1
-          @entity2.links.size.should be 1
+        it 'does not create any handles on Bob' do
+          expect(bob.handles).to be_empty
+        end
 
-          link = @entity1.links.first
+        it 'Creates an "indenty" link with a valid "info" and "versus"' do
+          link = alice.links.first
           expect(link.type).to be :identity
           expect(link.versus).to be :both
-          expect(@entity1.links.first.info).to include @handle.handle
+          expect(alice.links.first.info).to include phone_handle.handle
         end
       end
 
-      describe '#link_handle' do
 
-        it 'should link to entity with that handle' do
-          Aggregate.target(@target._id).create!(day: Time.now.strftime('%Y%m%d'), type: 'test', aid: 'agent_id', count: 1, data: {peer: 'test.ardo', versus: :in})
-          Aggregate.target(@target._id).add_to_summary('test', 'test.ardo')
+      context 'when Alice has received an sms from Bob' do
 
-          LinkManager.instance.link_handle(@entity2, @handle)
+        before do
+          aggregate_type = 'sms'
+          params = {data: {peer: alice_number, versus: :in}, type: aggregate_type, day: Time.now.strftime('%Y%m%d'), aid: 'agent_id', count: 1}
+          Aggregate.target(alice.target_id).create! params
+          Aggregate.target(alice.target_id).add_to_summary aggregate_type, alice_number
+        end
 
-          @entity1.reload
-          @entity2.reload
+        describe '#link_handle' do
 
-          expect(@entity1.linked_to? @entity2).to be_true
-          expect(@entity1.links.first.info).to include @handle.handle
+          before do
+            $STOP = 1
+            LinkManager.instance.link_handle bob, phone_handle
+            [bob, alice].each &:reload
+          end
+
+          it 'links Bob to Alice' do
+            expect(bob.linked_to? alice).to be_true
+          end
+
+          # it 'Creates an "peer" link with a valid "info" and "versus"' do
+          #   link = alice.links.first
+          #   expect(link.info).to include phone_handle.handle
+          #   expect(link.type).to eql :peer
+          #   expect(link.versus).to eql :out
+          # end
         end
       end
+
     end
   end
 

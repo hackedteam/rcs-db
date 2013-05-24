@@ -163,26 +163,22 @@ class LinkManager
     add_link({from: entity, to: ident, type: :identity, info: handle.handle, versus: :both})
   end
 
-  # create a link to an entity that have the 'handle' in its peer
-  def link_handle(entity, handle)
-    # search for a peer in all the target entities of this operation
-    ::Entity.targets.where(path: entity.path.first).each do |e|
+  # Creates a link from "entity" to any other (target) entity of the same operation
+  # that have a matching "handle" in its aggregates.
+  def link_handle entity, handle
+    Entity.targets.where(path: entity.path.first).each do |e|
 
-      trace :debug, "Checking '#{e.name}' for peer links: #{handle.handle} (#{handle.type})"
+      next unless Aggregate.target(e.path.last).summary_include?(handle.aggregate_types, handle.handle)
 
-      next unless Aggregate.target(e.path.last).summary_include?(handle.type, handle.handle)
-
-      trace :debug, "Peer link found, linking... #{handle.handle} (#{handle.type})"
+      trace :debug, "#link_handle: Linking #{entity.name} to #{e.name} via #{handle.handle} (#{handle.type})"
 
       # if we find a peer, create a link
-      e.peer_versus(handle.handle, handle.type).each do |versus|
+      e.peer_versus(handle).each do |versus|
         add_link({from: entity, to: e, type: :peer, level: :automatic, info: handle.handle, versus: versus})
       end
     end
   end
-
 end
 
 end
 end
-

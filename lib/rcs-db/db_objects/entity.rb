@@ -267,20 +267,17 @@ class Entity
     return nil
   end
 
-  def peer_versus(handle, type)
+  def peer_versus entity_handle
     # only targets have aggregates
-    return [] unless self.type.eql? :target
-
-    versus = []
+    return [] unless type.eql? :target
 
     # search for communication in one direction
-    vin = Aggregate.target(self.path.last).where(type: type, 'data.peer' => handle, 'data.versus' => :in).exists?
-    vout = Aggregate.target(self.path.last).where(type: type, 'data.peer' => handle, 'data.versus' => :out).exists?
+    criteria = Aggregate.target(path.last).in(:type => entity_handle.aggregate_types).where('data.peer' => entity_handle.handle)
+    versus = []
+    versus << :in if criteria.where('data.versus' => :in).exists?
+    versus << :out if criteria.where('data.versus' => :out).exists?
 
-    versus << :in if vin
-    versus << :out if vout
-
-    trace :debug, "Searching for #{handle} (#{type}) on #{self.name} -> #{versus}"
+    trace :debug, "Searching for #{entity_handle.handle} (#{entity_handle.type}) on #{self.name} -> #{versus}"
 
     return versus
   end
@@ -415,6 +412,16 @@ class EntityHandle
 
   def self.default_level
     :automatic
+  end
+
+  def aggregate_types
+    if type == :phone
+      [:call, :sms, :mms]
+    elsif type == :mail
+      [:mail, :gmail]
+    else
+      [type.to_sym]
+    end
   end
 
   def empty_name?

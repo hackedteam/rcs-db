@@ -89,16 +89,6 @@ class Processor
     LicenseManager.instance.check :intelligence
   end
 
-  def self.compatible_entity_handle_types aggregate_type
-    if [:call, :sms, :mms].include? aggregate_type
-      ['phone']
-    elsif [:mail, :gmail].include? aggregate_type
-      ['mail', 'gmail']
-    else
-      [aggregate_type.to_s]
-    end
-  end
-
   # Process the aggregate and (eventually) link the entities
   def self.process_aggregate entity, aggregate
     if aggregate.type == :position
@@ -111,16 +101,16 @@ class Processor
   def self.process_peer_aggregate entity, aggregate
     # normalize the type to search for the correct account
     aggregate_type = aggregate.type
-    types = compatible_entity_handle_types aggregate_type
+    handle_type = aggregate.entity_handle_type
 
     # As the version 9.0.0 the aggregate has a "sender" key that contains the handle of the other peer
     # involved in a communication. The "sender" is an handle of the current entity (the one under surveillance)
     if aggregate.data['sender']
-      entity.create_or_update_handle types.first, aggregate.data['sender']
+      entity.create_or_update_handle handle_type, aggregate.data['sender']
     end
 
     # search for existing entity with that account and link it (direct link)
-    if (peer = Entity.same_path_of(entity).where("handles.handle" => aggregate.data['peer']).in("handles.type" => types).first)
+    if (peer = Entity.same_path_of(entity).where("handles.handle" => aggregate.data['peer'], "handles.type" => handle_type).first)
       info = "#{aggregate.data['sender']} #{aggregate.data['peer']}".strip
       RCS::DB::LinkManager.instance.add_link(from: entity, to: peer, level: :automatic, type: :peer, versus: aggregate.data['versus'].to_sym, info: info)
       return
