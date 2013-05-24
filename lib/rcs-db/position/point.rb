@@ -7,7 +7,6 @@ require 'rvincenty'
 require 'active_support'
 
 class Point
-  
   attr_accessor :lat, :lon, :r, :time, :start, :end
 
   # to obtain 2sigma on gps precision = 80%
@@ -27,36 +26,44 @@ class Point
   MINIMUM_INTERSECT_TIME = 10.minutes
 
   def initialize(params = {})
-    self.time = Time.now
-    self.start = self.time
-    self.end = self.start
-    self.lat = 0.0
-    self.lon = 0.0
-    self.r = 0
-
-    self.lat = params[:lat] if params[:lat]
-    self.lon = params[:lon] if params[:lon]
-    self.r = params[:r] if params[:r]
+    set_attributes_default_values
 
     if params[:time]
-      raise "invalid time" unless params[:time].is_a? Time
-      self.time = params[:time] 
-      self.start = params[:time] 
-      self.end = params[:time]
+      [:time, :start, :end].each do |param_name|
+        send :"#{param_name}=", convert_to_time(params[:time])
+      end
     end
-    if params[:start]
-      raise "invalid time" unless params[:start].is_a? Time
-      self.start = params[:start]
+
+    [:start, :end].each do |param_name|
+      value = params[param_name]
+      next unless value
+      send :"#{param_name}=", convert_to_time(value)
     end
-    if params[:end]
-      raise "invalid time" unless params[:end].is_a? Time
-      self.end = params[:end]
+
+    [:lat, :lon, :r].each do |param_name|
+      value = params[param_name]
+      next unless value
+      send :"#{param_name}=", params[param_name]
     end
 
     # set a minimum radius
     self.r = MIN_RADIUS if r <= 0
   end
-  
+
+  def set_attributes_default_values
+    now = Time.now
+    hash = {lat: 0.0, lon: 0.0, r: MIN_RADIUS, time: now, start: now, end: now}
+    hash.each do |attribute_name, default_value|
+      send :"#{attribute_name}=", default_value
+    end
+  end
+
+  def convert_to_time value
+    return Time.at(value) if value.is_a? Fixnum
+    raise "invalid time" unless value.is_a? Time
+    value
+  end
+
   def to_s
     "#{self.lat} #{self.lon} #{self.r} - #{self.time} (#{self.start} #{self.end})"
   end

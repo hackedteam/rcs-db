@@ -40,10 +40,6 @@ describe Point do
     p1.should eq p2
   end
 
-  it 'should not accept invalid time' do
-    lambda {Point.new(time: 34)}.should raise_error
-  end
-
   it '#to_s should print with it' do
     time = Time.now
     a = Point.new({lat: 123, lon: 456, r: 10, time: time, start: time, end: time})
@@ -341,6 +337,34 @@ describe Point do
     a.near?(b).should be false
   end
 
+  describe '#initialize' do
+
+    let(:a_time_value) { Time.at Time.now.to_i }
+
+    let(:a_date_value) { Date.today }
+
+    context 'when the kind of "start" and "end" is Time' do
+
+      let(:point) { Point.new lat: 0, lon: 0, r: 0, start: a_time_value, end: a_time_value}
+
+      it('keeps it correctly') { expect(point.start).to eql a_time_value }
+    end
+
+    context 'when the kind of "start" and "end" not Time and not and Integer' do
+
+      let(:point) { Point.new lat: 0, lon: 0, r: 0, start: a_date_value, end: a_date_value}
+
+      it('raises an error') { expect { point }.to raise_error }
+    end
+
+    context 'when the kind of "start" and "end" is an Integer (representing a valid Time)' do
+
+      let(:point) { Point.new lat: 0, lon: 0, r: 0, start: a_time_value.to_i, end: a_time_value.to_i}
+
+      it('keeps it correctly') { expect(point.start).to eql a_time_value }
+    end
+  end
+
   describe '#intersect_timeframes?' do
 
     let!(:now) { Time.now }
@@ -378,6 +402,11 @@ describe Point do
 
       timeframes = [{'start' => now, 'end' => now + 9.minutes}]
       expect(point.intersect_timeframes?(timeframes)).to be_false
+    end
+
+    it 'works even with "integer" datetimes' do
+      timeframes = [{'start' => point.start.to_i, 'end' => point.end.to_i}]
+      expect(point.intersect_timeframes?(timeframes)).to be_true
     end
   end
 end

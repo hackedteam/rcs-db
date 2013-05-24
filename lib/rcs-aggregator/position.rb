@@ -48,7 +48,7 @@ class PositionAggregator
     end
 
     # create a point from the evidence
-    point = Point.new(lat: ev.data['latitude'], lon: ev.data['longitude'], r: ev.data['accuracy'], time: Time.at(ev.da))
+    point = Point.new(lat: ev.data['latitude'], lon: ev.data['longitude'], r: ev.data['accuracy'], time: ev.da)
 
     # feed the positioner with the point and take the result (if any)
     positioner.feed(point) do |stay|
