@@ -39,11 +39,11 @@ describe Aggregate do
     valid_attributes = {day: Time.now.strftime('%Y%m%d'), type: :sms, aid: 'agent_id', count: 1, data: {peer: 'test1', versus: :in}}
 
     expect { Aggregate.new }.to raise_error
-    expect { Aggregate.create(valid_attributes) }.to raise_error
+    expect { Aggregate.create!(valid_attributes) }.to raise_error
   end
 
   describe '#to_point' do
-    let!(:agg) {Aggregate.target('testtarget').create(type: :position, data: {'position' => [9.1, 45.2], 'radius' => 50}) }
+    let!(:agg) {Aggregate.target('testtarget').create!(type: :position, data: {'position' => [9.1, 45.2], 'radius' => 50}, day: '20130405') }
 
     it 'should not convert if the aggregate is not a position' do
       agg.type = 'peer'
@@ -65,8 +65,8 @@ describe Aggregate do
     end
 
     it 'should return the points near the given position' do
-      Aggregate.target('testtarget').create(type: :position, data: {'position' => [9.5939346, 45.5353563], 'radius' => 50}, day: 'test', aid: 'test')
-      Aggregate.target('testtarget').create(type: :position, data: {'position' => [9.6039346, 45.5453563], 'radius' => 50}, day: 'test', aid: 'test')
+      Aggregate.target('testtarget').create!(type: :position, data: {'position' => [9.5939346, 45.5353563], 'radius' => 50}, day: Time.now.strftime('%Y%m%d'), aid: 'test')
+      Aggregate.target('testtarget').create!(type: :position, data: {'position' => [9.6039346, 45.5453563], 'radius' => 50}, day: Time.now.strftime('%Y%m%d'), aid: 'test')
 
       count_100 = Aggregate.target('testtarget').positions_within({longitude: 9.5945033, latitude: 45.5351362}, 100).count
       count_100.should eq 1
@@ -155,7 +155,32 @@ describe Aggregate do
       skype.should include({:peer=>"test.one", :type=>:skype, :count=>2, :size=>0, :percent=>66.0})
       skype.should include({:peer=>"test.ardo", :type=>:skype, :count=>1, :size=>0, :percent=>33.0})
     end
-
   end
 
+  # Validations
+  context 'when the "day" attribute is not in valid format' do
+
+    let(:invalid_days) { [Time.now, Time.now.to_i, Time.now.to_f, Date.today, '2013/02/03', '2013-02-03'] }
+
+    it 'is not valid' do
+      invalid_days.each do |day|
+        aggregate = described_class.target('target_id').new day: day
+        aggregate.valid?
+        expect(aggregate.errors).to include :day
+      end
+    end
+  end
+
+  # Validations
+  context 'when the "day" attribute valid' do
+
+    let(:valid_days) { ['0', '20130402', '99999999', 20130201] }
+
+    it 'is valid' do
+      valid_days.each do |day|
+        aggregate = described_class.target('target_id').new day: day
+        expect(aggregate).to be_valid
+      end
+    end
+  end
 end

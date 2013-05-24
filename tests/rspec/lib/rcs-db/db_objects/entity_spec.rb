@@ -486,7 +486,7 @@ describe EntityLink do
 
           before do
             data = {'position' => [-74.04448, 40.68945], 'radius' => 2}
-            aggregate_params = {type: :position, info: timeframes, data: data, aid: 'agent_id', count: 1, day: Time.new(2013, 01, 01)}
+            aggregate_params = {type: :position, info: timeframes, data: data, aid: 'agent_id', count: 1, day: '20130301'}
             Aggregate.target(target_entity.target_id).create! aggregate_params
           end
 

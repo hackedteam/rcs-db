@@ -35,6 +35,10 @@ class Aggregate
 
   scope :positions, where(type: :position)
 
+  # The "day" attribute must be a string in the format of YYYYMMDD
+  # or the string "0" (when the type if :postioner or :summary)
+  validates_format_of :day, :with => /\A(\d{8}|0)\z/
+
   def to_point
     raise "not a position" unless type.eql? :position
     time_params = (info.last.symbolize_keys rescue nil) || {}
@@ -109,7 +113,7 @@ class Aggregate
   end
 
   def self.collection_name
-    raise "Missing @target_id" unless @target_id
+    raise "Missing target id. Maybe you're trying to instantiate Aggregate without using Aggregate#target." unless @target_id
     "aggregate.#{@target_id}"
   end
 

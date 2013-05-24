@@ -200,7 +200,7 @@ describe Processor do
     def create_position_aggregate_for target, params
       data = {'position' => [params[:lon], params[:lat]], 'radius' => params[:rad]}
       info = [{'start' => params[:start], 'end' => params[:end]}]
-      Aggregate.target(target).create! type: :position, info: info, data: data,  aid: 'agent_id', count: 1, day: Time.new(2013, 01, 01)
+      Aggregate.target(target).create! type: :position, info: info, data: data,  aid: 'agent_id', count: 1, day: '20130101'
     end
 
     let!(:operation) { Item.create!(name: 'opx', _kind: 'operation', path: [], stat: ::Stat.new) }
