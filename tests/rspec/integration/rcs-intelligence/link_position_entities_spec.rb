@@ -114,7 +114,7 @@ describe 'The intelligence module process some position aggregates' do
 
       it 'fills up the PushQueue' do
         expect(la_chiusa).to be_in_push_queue.with_action(:create).exactly 1.times
-        expect(la_chiusa).to be_in_push_queue.with_action(:modify).exactly 5.times
+        expect(la_chiusa).to be_in_push_queue.with_action(:modify).exactly 3.times
 
         expect(zona_ufficio).to be_in_push_queue.with_action(:create).exactly 1.times
         expect(zona_ufficio).to be_in_push_queue.with_action(:modify).exactly 14.times
