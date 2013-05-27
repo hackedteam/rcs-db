@@ -35,11 +35,15 @@ TODO 9.0.0
       - xml export
       - sync with "archive" rcs installation
 
-    link_position_entities_spec => test alerts when link or entities are created
+    link_position_entities_spec
+      - test alerts when link or entities are created
 
     push
       - remove entity param from methods like #push_new_entity, #push_modify_entity to avoid calling with "self"
       - avoid pushing :ghost entities
+
+    entity#linked_to?
+      - checking the link versus causes some spec to fail
 
   TRY:
     hash index for sharding (topac - on branch 9.0.x)
