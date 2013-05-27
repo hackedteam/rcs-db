@@ -78,4 +78,8 @@ RCS::DB::Config.instance.load_from_file
 RCS::DB::DB.instance.connect
 # db = RCS::DB::DB.instance.mongo_connection
 
+puts 'Using "rcs-test" database.'
+Mongoid.override_database 'rcs-test'
+
+Pry.config.prompt = proc { |obj, nest_level, _pry_| "rcs-console> " }
 binding.pry
