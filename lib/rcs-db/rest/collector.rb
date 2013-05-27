@@ -36,9 +36,9 @@ class CollectorController < RESTController
 
     result = Collector.create!(name: @params['name']) do |coll|
       coll[:type] = 'remote'
-      coll[:address] = @params['address']
+      coll[:address] = @params['address'].strip
       coll[:desc] = @params['desc']
-      coll[:port] = @params['port']
+      coll[:port] = @params['port'].strip
       coll[:poll] = @params['poll']
       coll[:configured] = false
       coll[:upgradable] = false
