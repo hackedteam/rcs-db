@@ -37,7 +37,9 @@ TODO 9.0.0
 
     link_position_entities_spec => test alerts when link or entities are created
 
-    remove entity param from methods like #push_new_entity, #push_modify_entity to avoid calling with "self"
+    push
+      - remove entity param from methods like #push_new_entity, #push_modify_entity to avoid calling with "self"
+      - avoid pushing :ghost entities
 
   TRY:
     hash index for sharding (topac - on branch 9.0.x)
