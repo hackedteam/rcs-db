@@ -59,8 +59,8 @@ class Point
   end
 
   def convert_to_time value
-    return Time.at(value) if value.is_a? Fixnum
-    raise "invalid time" unless value.is_a? Time
+    return Time.at(value) if value.is_a? Integer
+    raise "invalid time [#{value}] (#{value.class})" unless value.is_a? Time
     value
   end
 
