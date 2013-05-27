@@ -1,6 +1,8 @@
 require 'spec_helper'
 require_db 'db_layer'
 require_db 'grid'
+require_db 'alert'
+require_db 'push'
 require_intelligence 'processor'
 
 module RCS
@@ -10,7 +12,6 @@ describe 'The intelligence module process some position aggregates' do
 
   use_db
   enable_license
-  silence_alerts
 
   before do
     Entity.create_indexes
@@ -109,6 +110,14 @@ describe 'The intelligence module process some position aggregates' do
       before do
         process_all_aggregates
         zona_ufficio.reload
+      end
+
+      it 'fills up the PushQueue' do
+        expect(la_chiusa).to be_in_push_queue.with_action(:create).exactly 1.times
+        expect(la_chiusa).to be_in_push_queue.with_action(:modify).exactly 5.times
+
+        expect(zona_ufficio).to be_in_push_queue.with_action(:create).exactly 1.times
+        expect(zona_ufficio).to be_in_push_queue.with_action(:modify).exactly 14.times
       end
 
       it 'creates 2 valid position entities' do
