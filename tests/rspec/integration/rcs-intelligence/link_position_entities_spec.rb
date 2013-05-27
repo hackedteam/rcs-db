@@ -13,10 +13,7 @@ describe 'The intelligence module process some position aggregates' do
   use_db
   enable_license
 
-  before do
-    Entity.create_indexes
-    Entity.any_instance.stub :fetch_address
-  end
+  before { Entity.create_indexes }
 
   context 'given 3 target entities with some position aggregates' do
 
@@ -89,7 +86,13 @@ describe 'The intelligence module process some position aggregates' do
       ]
     end
 
-    let(:operation) { Item.create!(name: 'testoperation', _kind: :operation, path: [], stat: ::Stat.new) }
+    let(:admin) { User.create! name: 'admin', enabled: true }
+
+    let :operation do
+      Item.create!(name: 'testoperation', _kind: :operation, path: [], stat: ::Stat.new).tap do |op|
+        op.users << admin
+      end
+    end
 
     let(:alor) { create_target_entity 'alor' }
 
@@ -103,6 +106,10 @@ describe 'The intelligence module process some position aggregates' do
 
     let(:via_moscova) { Entity.positions.where(position: [9.1912577, 45.4761685]).first }
 
+    # Stub the #fetch_address method used to give a name
+    # to an auto-generated position entity (because it uses the Google Map API)
+    before { Entity.any_instance.stub :fetch_address }
+
     context 'when the user has created a position entity' do
 
       let!(:zona_ufficio) { Entity.create! type: :position, position: [9.191330, 45.476768], position_attr: {accuracy: 100}, path: [operation.id] }
@@ -114,10 +121,14 @@ describe 'The intelligence module process some position aggregates' do
 
       it 'fills up the PushQueue' do
         expect(la_chiusa).to be_in_push_queue.with_action(:create).exactly 1.times
-        expect(la_chiusa).to be_in_push_queue.with_action(:modify).exactly 3.times
+        # expect(la_chiusa).to be_in_push_queue.with_action(:modify).exactly 3.times
 
         expect(zona_ufficio).to be_in_push_queue.with_action(:create).exactly 1.times
         expect(zona_ufficio).to be_in_push_queue.with_action(:modify).exactly 14.times
+      end
+
+      it 'do not fills up the AlertQueue' do
+        expect(AlertQueue.all.count).to eql 0
       end
 
       it 'creates 2 valid position entities' do
@@ -138,12 +149,39 @@ describe 'The intelligence module process some position aggregates' do
         expect(zeno.linked_to?(la_chiusa)).to be_true
         expect(zeno.linked_to?(zona_ufficio)).to be_true
       end
-
     end
 
     context 'when there aren\'t any existing position entities' do
 
-      before { process_all_aggregates }
+      before do
+        Alert.create! enabled: true, action: 'ENTITY', type:  'MAIL', path: [], user: admin
+        Alert.create! enabled: true, action: 'LINK', type:  'MAIL', path: [], user: admin
+        process_all_aggregates
+      end
+
+      it 'fills up the PushQueue' do
+        expect(la_chiusa).to be_in_push_queue.with_action(:create).exactly 1.times
+        expect(la_chiusa).to be_in_push_queue.with_action(:modify).exactly 3.times
+
+        expect(ufficio).to be_in_push_queue.with_action(:create).exactly 1.times
+        expect(ufficio).to be_in_push_queue.with_action(:modify).exactly 13.times
+
+        expect(via_moscova).to be_in_push_queue.with_action(:create).exactly 1.times
+        expect(via_moscova).to be_in_push_queue.with_action(:modify).exactly 8.times
+      end
+
+      it 'fills up the AlertQueue ("entity" alerts)' do
+        expect(AlertQueue.where(subject: /ENTITY/).count).to eql 6
+        expect(AlertQueue.where(subject: /ENTITY/, body: /alor/).count).to eql 1
+        expect(AlertQueue.where(subject: /ENTITY/, body: /zeno/).count).to eql 1
+        expect(AlertQueue.where(subject: /ENTITY/, body: /etnok/).count).to eql 1
+      end
+
+      it 'fills up the AlertQueue ("links" alerts)' do
+        expect(AlertQueue.where(subject: /LINK/, body: /alor/).count).to eql 2
+        expect(AlertQueue.where(subject: /LINK/, body: /zeno/).count).to eql 3
+        expect(AlertQueue.where(subject: /LINK/, body: /etnok/).count).to eql 2
+      end
 
       it 'creates 3 valid position entities' do
         expect(Entity.positions.count).to eql 3
