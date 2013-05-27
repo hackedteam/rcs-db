@@ -39,7 +39,6 @@ class LinkManager
     first_link.set_versus(versus) if versus
     first_link.add_info params[:info] if params[:info]
     first_link.rel = params[:rel] if params[:rel]
-    first_link.save
 
     # and also create the reverse in the other entity
     second_link = second_entity.links.find_or_initialize_by(le: first_entity._id)
@@ -50,17 +49,27 @@ class LinkManager
     second_link.set_versus(opposite_versus) if opposite_versus
     second_link.add_info params[:info] if params[:info]
     second_link.rel = params[:rel] if params[:rel]
+
+    new_links = first_link.new_record? && second_link.new_record?
+
+    first_link.save
     second_link.save
 
-    # check if :ghosts have to be promoted to :automatic
-    first_entity.promote_ghost
-    second_entity.promote_ghost
+    if new_links
+      # check if :ghosts have to be promoted to :automatic
+      first_entity.promote_ghost
+      second_entity.promote_ghost
 
-    # notify the links
-    push_modify_entity first_entity
-    push_modify_entity second_entity
+      alert_new_link [first_entity, second_entity]
+    end
 
-    alert_new_link [first_entity, second_entity]
+    [[first_entity, first_link], [second_entity, second_link]].each do |entity, link|
+      # Do not send any notify if the link hasn't changed
+      next if link.previous_changes.empty?
+
+      # notify the links
+      push_modify_entity entity
+    end
 
     return first_link
   end
