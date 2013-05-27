@@ -52,12 +52,12 @@ class Processor
     case entry.type
       when :evidence
         evidence = entry.related_item
-        trace :info, "Processing evidence #{evidence.type} for entity #{entity.name}"
+        trace :info, "Processing #{evidence.type} evidence for entity #{entity.name}"
         process_evidence(entity, evidence)
 
       when :aggregate
         aggregate = entry.related_item
-        trace :info, "Processing aggregte for entity #{entity.name}"
+        trace :info, "Processing #{aggregate.type} aggregate for entity #{entity.name}"
         process_aggregate(entity, aggregate)
     end
 
@@ -162,8 +162,7 @@ class Processor
 
         next unless point.intersect_timeframes? ag.info
 
-        defalut_name = "Position #{position_ary.reverse.join(', ')}"
-        entity_params = {type: :position, path: [operation_id], position: position_ary, level: :automatic, name: defalut_name, position_attr: {accuracy: point.r}}
+        entity_params = {type: :position, path: [operation_id], position: position_ary, level: :automatic, position_attr: {accuracy: point.r}}
         position_entity = Entity.create! entity_params
         position_entity.fetch_address
 
