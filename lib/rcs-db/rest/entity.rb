@@ -51,6 +51,7 @@ class EntityController < RESTController
       ent = ::Entity.where(_id: @params['_id']).in(user_ids: [@session.user[:_id]]).only(['type', 'level', 'name', 'desc', 'path', 'photos', 'position', 'position_attr', 'handles', 'links'])
       entity = ent.first
       return not_found if entity.nil?
+      return not_found if entity.level == :ghost
 
       # convert position to hash {:latitude, :longitude}
       entity = entity.as_document
