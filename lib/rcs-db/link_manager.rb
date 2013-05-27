@@ -75,10 +75,15 @@ class LinkManager
   end
 
   def alert_new_link(entities)
+    return if entities.first.level == :ghost
+    return if entities.last.level == :ghost
+
     RCS::DB::Alerting.new_link(entities)
   end
 
   def push_modify_entity(entity)
+    return if entity.level == :ghost
+
     RCS::DB::PushManager.instance.notify('entity', {id: entity._id, action: 'modify'})
   end
 
