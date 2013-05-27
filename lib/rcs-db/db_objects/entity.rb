@@ -485,11 +485,11 @@ class EntityLink
   end
 
   def add_info value
-    return if info.include? value
-
     if value.kind_of? Array
       info.concat value
+      info.uniq!
     else
+      return if info.include? value
       info << value
     end
   end

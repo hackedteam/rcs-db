@@ -344,8 +344,9 @@ describe EntityLink do
       subject.add_info "a"
       subject.add_info "b"
       subject.add_info "a"
-      subject.info.size.should be 2
-      subject.info.should eq ['a', 'b']
+      subject.add_info ["a", "b", "x"]
+      subject.info.size.should be 3
+      subject.info.should eq ['a', 'b', 'x']
     end
 
     context 'when versus is not set' do
