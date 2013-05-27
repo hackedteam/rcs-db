@@ -14,8 +14,6 @@ TODO 9.0.0
     try to implement "retry" on mongoid queries
     check threads waiting on queued collection: alert, push  (topac)
 
-    backup does not backup entities!!!
-      also ensure aggregate summaries are backed up
 
   IMPLEMENT:
     statistic analyzer (alor)

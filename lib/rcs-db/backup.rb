@@ -72,12 +72,13 @@ class BackupManager
 
       grid_filter = "{}"
       item_filter = "{}"
-      params = {what: backup.what, coll: collections, ifilter: item_filter, gfilter: grid_filter}
+      entity_filter = "{}"
+      params = {what: backup.what, coll: collections, ifilter: item_filter, efilter: entity_filter, gfilter: grid_filter}
 
       case backup.what
         when 'metadata'
           # don't backup evidence collections
-          params[:coll].delete_if {|x| x['evidence.'] || x['aggregate.'] || x['grid.'] || x['cores'] || x['ocr_queue']}
+          params[:coll].delete_if {|x| x['evidence.'] || x['aggregate.'] || x['grid.'] || x['cores'] || x['queue']}
         when 'full'
           # we backup everything... woah !!
         else
@@ -112,6 +113,8 @@ class BackupManager
         command = mongodump + " -c #{coll}"
 
         command += " -q #{params[:ifilter]}" if coll == 'items'
+
+        command += " -q #{params[:efilter]}" if coll == 'entities'
 
         command += incremental_filter(coll, backup) if backup.incremental
 
@@ -182,14 +185,16 @@ class BackupManager
 
     # take the item and subitems contained in it
     items = ::Item.any_of({_id: id}, {path: id})
+    entities = ::Entity.where({path: id})
 
     raise "cannot perform partial backup: invalid ObjectId" if items.empty?
 
     # remove all the collections except 'items'
-    params[:coll].delete_if {|c| c != 'items'}
+    params[:coll].delete_if {|c| c != 'items' and c != 'entities'}
 
     # prepare the json query to filter the items
     params[:ifilter] = "{\"_id\":{\"$in\": ["
+    params[:efilter] = "{\"_id\":{\"$in\": ["
     params[:gfilter] = "{\"_id\":{\"$in\": ["
 
     items.each do |item|
@@ -212,13 +217,19 @@ class BackupManager
           end
       end
     end
+
+    entities.each do |entity|
+      params[:efilter] += "ObjectId(\"#{entity._id}\"),"
+    end
+
     params[:ifilter] += "0]}}"
+    params[:efilter] += "0]}}"
     params[:gfilter] += "0]}}"
 
     # insert the correct delimiter and escape characters
     shell_escape(params[:ifilter])
+    shell_escape(params[:efilter])
     shell_escape(params[:gfilter])
-
   end
 
   def self.incremental_filter(coll, backup)
