@@ -114,6 +114,15 @@ class Alerting
       trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
     end
 
+    def entity_name entity
+      if entity.name.blank? and !entity.position.blank?
+        name = "#{entity.position.join(', ')}"
+      else
+        name = entity.name
+      end
+      "#{name} (#{entity.type})"
+    end
+
     def new_link(entities)
       ::Alert.where(:enabled => true, :action => 'LINK').each do |alert|
         # skip non matching entities
@@ -148,7 +157,7 @@ class Alerting
 
         if alert.type == 'MAIL'
           # put the matching alert in the queue
-          ::AlertQueue.add(to: user.contact, subject: 'RCS Alert [LINK]', body: "A new link between '#{entities.first}' and '#{entities.last}' has been created on #{Time.now}.")
+          ::AlertQueue.add(to: user.contact, subject: 'RCS Alert [LINK]', body: "A new link between #{entity_name(entities.first)} and #{entity_name(entities.last)} has been created on #{Time.now}.")
         end
       end
 
@@ -173,7 +182,7 @@ class Alerting
 
         if alert.type == 'MAIL'
           # put the matching alert in the queue
-          ::AlertQueue.add(to: user.contact, subject: 'RCS Alert [ENTITY]', body: "A new entity #{entity.name} has been created on #{Time.now}.")
+          ::AlertQueue.add(to: user.contact, subject: 'RCS Alert [ENTITY]', body: "A new entity #{entity_name(entity)} has been created on #{Time.now}.")
         end
       end
     rescue Exception => e
