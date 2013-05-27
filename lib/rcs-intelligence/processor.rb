@@ -119,7 +119,7 @@ class Processor
     # search if two entities are communicating with a third party and link them (indirect link)
     ::Entity.targets.same_path_of(entity).each do |e|
 
-      trace :debug, "Checking if '#{entity.name}' and '#{e.name}' have common peer: #{aggregate.data['peer']} #{types}"
+      trace :debug, "Checking if '#{entity.name}' and '#{e.name}' have common peer: #{aggregate.data['peer']}"
 
       next unless Aggregate.target(e.path.last).summary_include?(aggregate_type, aggregate.data['peer'])
 
