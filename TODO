@@ -23,6 +23,13 @@ TODO 9.0.0
       entities data
       graph data
 
+    aggregation for URL
+      aggregate on domain only (think if the pages have to be saved in the "info" field")
+      manual creation of entities of type "virtual place" (site url)
+      use the handles of "virtual place" to add urls to it
+      link targets to "virtual place" if the target visits that url (complete url with page)
+
+
     refactor the connectors to use queue and export from separate process
       - xml export
       - sync with "archive" rcs installation
