@@ -64,7 +64,7 @@ class Entity
 
   def create_callback
     # make item accessible to the users of the parent operation
-    parent = ::Item.find(self.path.last)
+    parent = ::Item.find(self.path.first)
     self.users = parent.users
 
     # notify (only real entities)
