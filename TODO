@@ -35,9 +35,6 @@ TODO 9.0.0
       - xml export
       - sync with "archive" rcs installation
 
-    link_position_entities_spec
-      - test alerts when link or entities are created
-
     push
       - remove entity param from methods like #push_new_entity, #push_modify_entity to avoid calling with "self"
       - avoid pushing :ghost entities
