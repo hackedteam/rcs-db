@@ -28,9 +28,8 @@ class Core
 
         trace :info, "Load core: #{name} #{version}"
 
-        # search if already present
-        core = ::Core.where({name: name}).first
-        core.destroy unless core.nil?
+        # delete if already present
+        ::Core.where({name: name}).destroy_all
 
         # replace the new one
         core = ::Core.new
