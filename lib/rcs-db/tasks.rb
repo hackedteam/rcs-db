@@ -278,7 +278,7 @@ module MultiFileTaskType
       # temporary file is our task id
       begin
         @total = total
-        tmpfile = Temporary.file('temp', @_id)
+        tmpfile = Temporary.file Config.instance.temp, @_id
         compressor = FileTask.compressor_class.new tmpfile
         next_entry do |type, filename, opts|
 
