@@ -131,23 +131,22 @@ describe 'The intelligence module process some position aggregates' do
         expect(AlertQueue.all.count).to eql 0
       end
 
-      it 'creates 2 valid position entities' do
+      it 'creates 2 position entities' do
         expect(Entity.positions.count).to eql 2
-        expect(la_chiusa).not_to be_nil
-        expect(zona_ufficio).not_to be_nil
       end
 
       it 'links the target entities to the new position entities' do
         expect(alor.links.size).to eql 2
-        expect(alor.linked_to?(la_chiusa)).to be_true
-        expect(alor.linked_to?(zona_ufficio)).to be_true
+        expect(alor).to have_been_in(la_chiusa).exactly 1.times
+        expect(alor).to have_been_in(zona_ufficio).exactly 7.times
 
         expect(etnok.links.size).to eql 1
-        expect(etnok.linked_to?(zona_ufficio)).to be_true
+        expect(etnok).not_to have_been_in(la_chiusa)
+        expect(etnok).to have_been_in(zona_ufficio).exactly 10.times
 
         expect(zeno.links.size).to eql 2
-        expect(zeno.linked_to?(la_chiusa)).to be_true
-        expect(zeno.linked_to?(zona_ufficio)).to be_true
+        expect(zeno).to have_been_in(la_chiusa).exactly 2.times
+        expect(zeno).to have_been_in(zona_ufficio).exactly 5.times
       end
     end
 
@@ -192,17 +191,19 @@ describe 'The intelligence module process some position aggregates' do
 
       it 'links the target entities to the new position entities' do
         expect(alor.links.size).to eql 2
-        expect(alor.linked_to?(ufficio)).to be_true
-        expect(alor.linked_to?(la_chiusa)).to be_true
+        expect(alor).to have_been_in(la_chiusa).exactly 1.times
+        expect(alor).to have_been_in(ufficio).exactly 7.times
+        expect(alor).not_to have_been_in(via_moscova)
 
         expect(etnok.links.size).to eql 2
-        expect(etnok.linked_to?(ufficio)).to be_true
-        expect(etnok.linked_to?(via_moscova)).to be_true
+        expect(etnok).to have_been_in(ufficio).exactly 7.times
+        expect(etnok).to have_been_in(via_moscova).exactly 10.times
+        expect(etnok).not_to have_been_in(la_chiusa)
 
         expect(zeno.links.size).to eql 3
-        expect(zeno.linked_to?(ufficio)).to be_true
-        expect(zeno.linked_to?(la_chiusa)).to be_true
-        expect(zeno.linked_to?(via_moscova)).to be_true
+        expect(zeno).to have_been_in(ufficio).exactly 5.times
+        expect(zeno).to have_been_in(la_chiusa).exactly 2.times
+        expect(zeno).to have_been_in(via_moscova).exactly 3.times
       end
     end
   end

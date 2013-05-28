@@ -36,9 +36,6 @@ RSpec::Matchers.define :be_in_push_queue do
   end
 
   match do |object|
-    # Only mondoid documents can be added to the PushQueue
-    return false unless object.respond_to? :_id
-
     # Optional: Filter for the object type
     filter = {}
     filter['type'] = 'entity' if object.kind_of? Entity
@@ -53,5 +50,35 @@ RSpec::Matchers.define :be_in_push_queue do
     else
       criteria.exists?
     end
+  end
+end
+
+
+# Check target entity have been in place (position entity) at a specific time
+#
+# @examples:
+#   expect(bob).to have_been_in(duomo)
+#   expect(bob).to have_been_in(duomo).exactly 3.times
+# @TODO:
+#   expect(bob).to have_been_in(duomo).at Time.new(2013, 02, 01)
+#   expect(bob).to have_been_in(duomo).at [{"start"=>1358253164, "end"=>1358257904}, {"start"=>1358426673, "end"=>1358428978}]
+RSpec::Matchers.define :have_been_in do |position_entity|
+  chain :exactly do |number|
+    @exactly = number.respond_to?(:max) ? number.max+1 : number
+  end
+
+  match do |entity|
+    # Check if the two entity are linked
+    result = entity.linked_to? position_entity, type: :position
+
+    # Get the link that connect `enetiy` with `position_entity`. The "info" attribute
+    # contains a list of timeframes that represent the moments in which `entity` has
+    # been in `position_entity`
+    if result and @exactly
+      link = entity.links.connected_to(position_entity).first
+      result = link.info.size == @exactly
+    end
+
+    result
   end
 end
