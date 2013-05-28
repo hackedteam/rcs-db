@@ -68,7 +68,7 @@ class Aggregate
     return if self.empty?
 
     # get all the tuple (type, peer)
-    pipeline = [{ "$match" => {:type => {'$nin' => [:summary]} }},
+    pipeline = [{ "$match" => {:type => {'$nin' => [:summary, :positioner]} }},
                 { "$group" =>
                   { _id: { peer: "$data.peer", type: "$type" }}
                 }]
