@@ -156,7 +156,10 @@ class Processor
     # If 2 entities (type :target) have been in the same place at the same time
     # creates a new position entity (if is missing)
     Entity.targets.same_path_of(entity).each do |other_entity|
-      Aggregate.target(other_entity.target_id).where(day: aggregate.day).positions_within(position).each do |ag|
+      aggregate_class = Aggregate.target other_entity.target_id
+      next if aggregate_class.empty?
+
+      aggregate_class.where(day: aggregate.day).positions_within(position).each do |ag|
 
         next unless point.similar_to? ag.to_point
 

@@ -97,7 +97,10 @@ class Entity
     operation_id = path.first
 
     Entity.targets.path_include(operation_id).each do |target_entity|
-      Aggregate.target(target_entity.target_id).positions_within(position).each do |ag|
+      aggregate_class = Aggregate.target target_entity.target_id
+      next if aggregate_class.empty?
+
+      aggregate_class.positions_within(position).each do |ag|
         next unless to_point.similar_to? ag.to_point
 
         link_params = {from: target_entity, to: self, level: :automatic, type: :position, versus: :out, info: ag.info}
