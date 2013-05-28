@@ -35,9 +35,6 @@ TODO 9.0.0
       - xml export
       - sync with "archive" rcs installation
 
-    entity#linked_to?
-      - checking the link versus causes some spec to fail
-
   TRY:
     hash index for sharding (topac - on branch 9.0.x)
 

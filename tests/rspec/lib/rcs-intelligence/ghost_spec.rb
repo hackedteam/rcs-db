@@ -1,5 +1,6 @@
 require 'spec_helper'
 require_db 'db_layer'
+require_db 'grid'
 require_db 'link_manager'
 require_intelligence 'ghost'
 
@@ -47,7 +48,7 @@ module Intelligence
         it 'creates a link from the entity to the new ghost entity' do
           described_class.create_and_link_entity entity, handle_array
           ghost_entity = Entity.where(:id.ne => entity.id, :level => :ghost).first
-          ghost_entity.linked_to?(entity).should be_true
+          ghost_entity.linked_to?(entity.reload).should be_true
         end
       end
 
