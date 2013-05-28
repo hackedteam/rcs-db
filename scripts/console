@@ -12,16 +12,50 @@ def root_path
 end
 
 def _require path
-  script_path = File.join root_path, 'lib/rcs-db', path
+  full_path = File.join root_path, 'lib/rcs-db', path
 
-  if Dir.exists? script_path
-    Dir[File.join(script_path, "*.rb")].each do |p|
-      puts p if verbose?
-      require p
-    end
+  if File.exists? "#{full_path}.rb"
+    puts "#{full_path}.rb" if verbose?
+    load "#{full_path}.rb"
   else
-    puts script_path if verbose?
-    require script_path
+    if Dir.exists? full_path
+      Dir[File.join(full_path, "*.rb")].each { |p| _require(p) }
+    end
+  end
+end
+
+def ignoring_warnings
+  v, $VERBOSE = $VERBOSE, nil
+  yield if block_given?
+ensure
+  $VERBOSE = v
+end
+
+def reload!
+  puts 'Loading application...'
+
+  ignoring_warnings do
+    $: << File.expand_path(File.join(root_path, '../rcs-common/lib'))
+
+    _require 'heartbeat'
+    _require 'parser'
+    _require 'sessions'
+    _require 'backup'
+    _require 'websocket'
+    _require 'push'
+    _require 'events'
+    _require 'config'
+    _require 'core'
+    _require 'license'
+    _require 'tasks'
+    _require 'offload_manager'
+    _require 'statistics'
+    _require 'backup'
+    _require 'sessions'
+    _require 'audit'
+
+    # require all the DB objects
+    _require 'db_layer'
   end
 end
 
@@ -31,55 +65,20 @@ require 'bundler/setup'
 Bundler.setup
 Bundler.require :development
 
-puts 'Loading application...'
+reload!
 
-# system
-# require 'benchmark'
-# require 'eventmachine'
-# require 'em-http-server'
-# require 'em-websocket'
-# require 'socket'
-# require 'net/http'
-# require 'mongo'
-# require 'mongoid'
-# require 'moped'
-# require 'rbconfig'
-# require 'pry'
-
-$: << File.expand_path(File.join(root_path, '../rcs-common/lib'))
-
-_require 'heartbeat'
-# _require 'parser'
-# _require 'rest'
-_require 'sessions'
-_require 'backup'
-# _require 'alert'
-# _require 'parser'
-_require 'websocket'
-_require 'push'
-_require 'events'
-_require 'config'
-_require 'core'
-_require 'license'
-_require 'tasks'
-_require 'offload_manager'
-_require 'statistics'
-_require 'backup'
-_require 'sessions'
-_require 'audit'
-
-# require all the DB objects
-_require 'db_layer'
-
-# require 'rcs-common/trace'
-# require 'rcs-common/systemstatus'
+Pry.config.prompt = proc do |obj, nest_level, _pry_|
+  text = "rcs-console>"
+  "\033[30;42m#{text}\033[0m "
+end
 
 RCS::DB::Config.instance.load_from_file
 RCS::DB::DB.instance.connect
-# db = RCS::DB::DB.instance.mongo_connection
 
 puts 'Using "rcs-test" database.'
+
 Mongoid.override_database 'rcs-test'
 
-Pry.config.prompt = proc { |obj, nest_level, _pry_| "rcs-console> " }
+puts 'Use the #reload! method to reload the application without restaring the console.'
+
 binding.pry
