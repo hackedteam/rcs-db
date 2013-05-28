@@ -126,10 +126,9 @@ end
 # Stub all the methods that send alerts or push notification to the console
 def silence_alerts
   before do
-    Entity.any_instance.stub(:alert_new_entity).and_return nil
-    RCS::DB::LinkManager.any_instance.stub(:alert_new_link).and_return nil
-    Entity.any_instance.stub(:push_new_entity).and_return nil
-    RCS::DB::LinkManager.any_instance.stub(:push_modify_entity).and_return nil
+    Entity.any_instance.stub :alert_new_entity
+    Entity.any_instance.stub :push_notify
+    RCS::DB::LinkManager.any_instance.stub :alert_new_link
   end
 end
 

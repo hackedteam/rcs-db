@@ -69,7 +69,7 @@ class Entity
 
     # notify (only real entities)
     unless level.eql? :ghost
-      push_new_entity self
+      push_new_entity
       alert_new_entity
     end
 
@@ -111,16 +111,24 @@ class Entity
     path[1]
   end
 
-  def push_new_entity(entity)
-    RCS::DB::PushManager.instance.notify('entity', {id: entity._id, action: 'create'})
+  # Add an item of type "entity" to the PushQueue
+  # @note: Do NOT add "ghost" entities because the client console shouldn't show them
+  def self.push_notify entity, action
+    return if entity.type == :ghost
+
+    RCS::DB::PushManager.instance.notify('entity', {id: entity._id, action: "#{action}"})
   end
 
-  def push_modify_entity(entity)
-    RCS::DB::PushManager.instance.notify('entity', {id: entity._id, action: 'modify'})
+  def push_new_entity
+    self.class.push_notify self, :create
   end
 
-  def push_destroy_entity(entity)
-    RCS::DB::PushManager.instance.notify('entity', {id: entity._id, action: 'destroy'})
+  def push_modify_entity
+    self.class.push_notify self, :modify
+  end
+
+  def push_destroy_entity
+    self.class.push_notify self, :destroy
   end
 
   def alert_new_entity
@@ -132,7 +140,7 @@ class Entity
     interesting = ['name', 'desc', 'position', 'handles', 'links']
     return if not interesting.collect {|k| changes.include? k}.inject(:|)
 
-    push_modify_entity self
+    push_modify_entity
   end
 
   def destroy_callback
@@ -142,14 +150,14 @@ class Entity
       oe = link.linked_entity
       next unless oe
       oe.links.connected_to(self).destroy_all
-      push_modify_entity oe
+      oe.push_modify_entity
     end
 
     self.photos.each do |photo|
       del_photo photo
     end
 
-    push_destroy_entity self
+    push_destroy_entity
   end
 
   def merge(merging)
@@ -183,7 +191,7 @@ class Entity
     self.save
     merging.destroy
 
-    push_modify_entity self
+    push_modify_entity
   end
 
   def add_photo(content)
@@ -290,7 +298,7 @@ class Entity
       self.save
 
       # notify the new entity
-      push_new_entity self
+      push_new_entity
       alert_new_entity
 
       # update all its link to automatic

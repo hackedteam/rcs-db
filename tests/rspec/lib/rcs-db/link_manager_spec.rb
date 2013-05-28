@@ -16,7 +16,6 @@ module DB
         Entity.any_instance.stub(:alert_new_entity).and_return nil
         Entity.any_instance.stub(:push_new_entity).and_return nil
         RCS::DB::LinkManager.any_instance.stub(:alert_new_link).and_return nil
-        RCS::DB::LinkManager.any_instance.stub(:push_modify_entity).and_return nil
 
         @operation = Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new)
         @entity1 = Entity.create!(name: 'entity1', type: :target, path: [@operation._id], level: :automatic)
@@ -28,15 +27,14 @@ module DB
       end
 
       it 'should link two entity without parameters' do
-        RCS::DB::LinkManager.any_instance.should_receive(:push_modify_entity).with(@entity1)
-        RCS::DB::LinkManager.any_instance.should_receive(:push_modify_entity).with(@entity2)
+        @entity1.should_receive :push_modify_entity
+        @entity2.should_receive :push_modify_entity
         RCS::DB::LinkManager.any_instance.should_receive(:alert_new_link).with([@entity1, @entity2])
 
         LinkManager.instance.add_link(from: @entity1, to: @entity2)
 
         @entity1.links.size.should be 1
         @entity2.links.size.should be 1
-
 
         link = @entity1.links.first
         linkback = @entity2.links.first
@@ -123,8 +121,8 @@ module DB
       end
 
       it 'should edit the link' do
-        RCS::DB::LinkManager.any_instance.should_receive(:push_modify_entity).with(@entity1)
-        RCS::DB::LinkManager.any_instance.should_receive(:push_modify_entity).with(@entity2)
+        @entity1.should_receive :push_modify_entity
+        @entity2.should_receive :push_modify_entity
 
         LinkManager.instance.edit_link(from: @entity1, to: @entity2, type: :peer, versus: :out, rel: 3)
 
@@ -136,8 +134,8 @@ module DB
       end
 
       it 'should delete the link' do
-        RCS::DB::LinkManager.any_instance.should_receive(:push_modify_entity).with(@entity1)
-        RCS::DB::LinkManager.any_instance.should_receive(:push_modify_entity).with(@entity2)
+        @entity1.should_receive :push_modify_entity
+        @entity2.should_receive :push_modify_entity
 
         LinkManager.instance.del_link(from: @entity1, to: @entity2)
 

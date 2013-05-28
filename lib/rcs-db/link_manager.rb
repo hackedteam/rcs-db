@@ -68,7 +68,7 @@ class LinkManager
       next if link.previous_changes.empty?
 
       # notify the links
-      push_modify_entity entity
+      entity.push_modify_entity
     end
 
     return first_link
@@ -79,12 +79,6 @@ class LinkManager
     return if entities.last.level == :ghost
 
     RCS::DB::Alerting.new_link(entities)
-  end
-
-  def push_modify_entity(entity)
-    return if entity.level == :ghost
-
-    RCS::DB::PushManager.instance.notify('entity', {id: entity._id, action: 'modify'})
   end
 
   def edit_link(params)
@@ -115,8 +109,8 @@ class LinkManager
     second_link.save
 
     # notify the links
-    push_modify_entity first_entity
-    push_modify_entity second_entity
+    first_entity.push_modify_entity
+    second_entity.push_modify_entity
 
     return first_link
   end
@@ -131,8 +125,8 @@ class LinkManager
     second_entity.links.connected_to(first_entity).destroy_all
 
     # notify the links
-    push_modify_entity first_entity
-    push_modify_entity second_entity
+    first_entity.push_modify_entity
+    second_entity.push_modify_entity
 
     return nil
   end
