@@ -25,15 +25,7 @@ module DB
     use_db
     silence_alerts
     enable_license
-
-    # change the default temporary folder
-    before do
-      Config.instance.stub(:temp_folder_name).and_return "temp/_spec"
-      FileUtils.mkdir_p Config.instance.temp
-    end
-
-    # and clean it after each example
-    after { FileUtils.rm_r Config.instance.temp }
+    stub_temp_folder
 
     let!(:operation) { Item.create!(name: 'testoperation', _kind: :operation, path: [], stat: ::Stat.new) }
 

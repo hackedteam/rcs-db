@@ -142,3 +142,14 @@ def mongorestore path
   puts cmd
   `#{cmd}`
 end
+
+# Change the default temporary folder
+# and clean it after each example
+def stub_temp_folder
+  before do
+    RCS::DB::Config.instance.stub(:temp_folder_name).and_return "temp/_spec"
+    FileUtils.mkdir_p RCS::DB::Config.instance.temp
+  end
+
+  after { FileUtils.rm_r RCS::DB::Config.instance.temp }
+end
