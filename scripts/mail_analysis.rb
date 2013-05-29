@@ -8,8 +8,8 @@ $analysis = Hash.new { |hash, key| hash[key] = Hash.new(0) }
 $total = Hash.new(0)
 $peers = Set.new
 
-MIN_FREQ = 0.9
-WINDOW_SIZE = 3
+MIN_FREQ = 0.7
+WINDOW_SIZE = 10
 
 def fill_holes
   # make sure the days are all present
@@ -20,7 +20,7 @@ def fill_holes
 end
 
 def analyze_win(win)
-  puts "win: #{win}"
+  #puts "win: #{win}"
   dmin = win.keys.min
   dmax = win.keys.max
 
@@ -36,16 +36,17 @@ def analyze_win(win)
     total = win.values.collect {|x| x[peer]}.inject(:+)
     density = total * frequency
     if frequency >= MIN_FREQ
-      puts "#{dmin} #{dmax} #{peer} freq: #{frequency} dens: %.2f" % density 
+      #puts "#{dmin} #{dmax} #{peer} freq: #{frequency} dens: %.2f" % density 
       $peers << peer
     end
   end
 end
 
 def analyze
-  return if $analysis.size < WINDOW_SIZE
+  return if $analysis.size < WINDOW_SIZE + 1
   
   begin
+    #puts "BUFF: #{$analysis.inspect}"
     # take the first N elements
     win = Hash[$analysis.sort_by{|k,v| k}.first WINDOW_SIZE]
 
@@ -54,7 +55,7 @@ def analyze
   
     #cut the first one until window size
     $analysis.delete($analysis.keys.min)
-  end until $analysis.size != WINDOW_SIZE
+  end until $analysis.size != WINDOW_SIZE + 1
 end
 
 def frequencer(date, peer)
