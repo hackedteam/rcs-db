@@ -1,12 +1,15 @@
 require 'pp'
 require 'date'
+require 'set'
 
 PEER = 'marchetti'
 
-$analysis = Hash.new(0)
+$analysis = Hash.new { |hash, key| hash[key] = Hash.new(0) }
 $total = Hash.new(0)
+$peers = Set.new
 
-WINDOW_SIZE = 10
+MIN_FREQ = 0.9
+WINDOW_SIZE = 3
 
 def fill_holes
   # make sure the days are all present
@@ -17,16 +20,26 @@ def fill_holes
 end
 
 def analyze_win(win)
-  #puts "win: #{win}"
+  puts "win: #{win}"
   dmin = win.keys.min
   dmax = win.keys.max
 
-  contacts = win.select {|a,b| b > 0 }.size
-  frequency = contacts.to_f / WINDOW_SIZE
+  #exctract the list unique peers
+  peers = win.values.collect {|s| s.keys}.flatten.to_set.to_a
 
-  total = win.each_value.inject(:+)
-  density = total * frequency
-  puts "#{dmin} #{dmax} freq: #{frequency} dens: %.2f" % density
+  peers.each do |peer|
+    # collect the number of occurrence
+    # we only need to know how many days in the window contains a contact with peer
+    contacts = win.select {|a,b| b.has_key? peer }.size
+    frequency = contacts.to_f / WINDOW_SIZE
+
+    total = win.values.collect {|x| x[peer]}.inject(:+)
+    density = total * frequency
+    if frequency >= MIN_FREQ
+      puts "#{dmin} #{dmax} #{peer} freq: #{frequency} dens: %.2f" % density 
+      $peers << peer
+    end
+  end
 end
 
 def analyze
@@ -45,7 +58,7 @@ def analyze
 end
 
 def frequencer(date, peer)
-  $analysis[date] += 1
+  $analysis[date][peer] += 1
   fill_holes
   analyze
 end
@@ -55,10 +68,11 @@ end
 File.readlines('mail.txt').each do |line|
   date, versus, peer, from, to = line.split(' ')
   $total[peer] += 1
-  next unless peer.include? PEER
+  #next unless peer.include? PEER
   frequencer(date, peer)
 end
 
+pp $peers.to_a
 
 #(Date.parse($analysis.keys.min)..Date.parse($analysis.keys.max)).map do |date| 
 #  day = date.strftime('%Y-%m-%d')
