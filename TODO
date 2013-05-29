@@ -15,12 +15,14 @@ TODO 9.0.0
     check threads waiting on queued collection: alert, push  (topac)
     support for "outlook" type / "gmail" and "outlook" goes into "mail" (topac)
 
+
   IMPLEMENT:
     statistic analyzer (alor)
       automatic detection of home / office (needs timezone for each entity)
       automatic entities from "very" most contacted
 
     export intellingece data (topac)
+      entities data
       graph data
 
     aggregation for URL
@@ -36,6 +38,11 @@ TODO 9.0.0
 
   TRY:
     hash index for sharding (topac - on branch 9.0.x)
+
+
+  TEST:
+    migration of mongo 2.4 on real data (copy db from castore to vm and try)
+    flow integration with console
 
 
 ======================================
