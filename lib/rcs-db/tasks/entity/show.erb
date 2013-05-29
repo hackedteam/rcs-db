@@ -11,7 +11,80 @@
 
     <h1><%= entity.name %><h1>
 
-    TODO
+    <table>
+      <tr>
+        <th>Id</th><td><%= entity.id %></td>
+      </tr>
+      <tr>
+        <th>Type</th><td><%= entity.type %></td>
+      </tr>
+      <tr>
+        <th>Last updated at</th><td><%= entity.updated_at %></td>
+      </tr>
+      <tr>
+        <th>Level</th><td><%= entity.level %></td>
+      </tr>
+    </table>
+
+    <h2>Photos</h2>
+
+    <% entity.photos.each do |photo_id| %>
+      <img src="<%= photo_url(photo_id) %>"/>
+    <% end %>
+
+    <h2>Accounts</h2>
+
+    <table>
+      <tr>
+        <th>Type</th>
+        <th>Name</th>
+        <th>Value</th>
+        <th>Level</th>
+        <th>Created at</th>
+      </tr>
+
+      <% entity.handles.each do |handle| %>
+        <tr>
+          <td><%= handle.type %></td>
+          <td><%= handle.name %></td>
+          <td><%= handle.handle %></td>
+          <td><%= handle.level %></td>
+          <td><%= handle.created_at %></td>
+        </tr>
+      <% end %>
+    </table>
+
+    <h2>Last known position</h2>
+
+    <table>
+      <tr>
+        <th>Acquired at</th><td><%= entity.position_attr[:time] %></td>
+      </tr>
+      <tr>
+        <th>Lat, Lon</th><td><%= (entity.position || []).reverse.join(', ') %></td>
+      </tr>
+      <tr>
+        <th>Accuracy</th><td><%= "#{entity.position_attr[:accuracy]} mt" if entity.position_attr[:accuracy] %></td>
+      </tr>
+    </table>
+
+    <%= google_map %>
+
+    <h2>Most contacted</h2>
+
+    <table>
+      <tr>
+        <th>Type</th>
+        <th>Account</th>
+      </tr>
+
+      <% most_contacted.each do |hash| %>
+        <tr>
+          <td><%= hash[:type] %></td>
+          <td><%= hash[:peer] %></td>
+        </tr>
+      <% end %>
+    </table>
 
   </body>
 </html>

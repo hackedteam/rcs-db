@@ -214,6 +214,10 @@ class Entity
     self.save
   end
 
+  def photo_data photo_id
+    RCS::DB::GridFS.get(photo_id, path.last.to_s).read
+  end
+
   def last_position=(hash)
     self.position = [hash[:longitude], hash[:latitude]]
     self.position_attr = {time: hash[:time], accuracy: hash[:accuracy]}

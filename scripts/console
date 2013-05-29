@@ -67,10 +67,10 @@ Bundler.require :development
 
 reload!
 
-Pry.config.prompt = proc do |obj, nest_level, _pry_|
-  text = "rcs-console>"
-  "\033[30;42m#{text}\033[0m "
-end
+# Pry.config.prompt = proc do |obj, nest_level, _pry_|
+#   text = "rcs-console>"
+#   "\033[30;42m#{text}\033[0m "
+# end
 
 RCS::DB::Config.instance.load_from_file
 RCS::DB::DB.instance.connect
