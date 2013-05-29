@@ -103,3 +103,6 @@ hasp/*.opensdf
 backup
 
 exploits
+
+# this folder is compressed into config/export.zip
+config/export.zip.src
