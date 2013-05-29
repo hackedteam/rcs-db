@@ -3,83 +3,100 @@
 
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <link rel="stylesheet" type="text/css" href="style/evidence.css">
-    <link rel="stylesheet" type="text/css" href="../style/evidence.css">
+    <link rel="stylesheet" type="text/css" href="../style/reset.css"/>
+    <link rel="stylesheet" type="text/css" href="../style/entity.css"/>
   </head>
 
-  <body class="entity">
+  <body>
 
-    <h1><%= entity.name %><h1>
+    <h1><%= entity.name %></h1>
 
-    <table>
-      <tr>
-        <th>Type</th><td><%= entity.type %></td>
-      </tr>
-      <tr>
-        <th>Level</th><td><%= entity.level %></td>
-      </tr>
-      <tr>
-        <th>Description</th><td><%= entity.desc %></td>
-      </tr>
-    </table>
 
-    <h2>Photos</h2>
-
-    <% entity.photos.each do |photo_id| %>
-      <img src="<%= photo_url(photo_id) %>"/>
-    <% end %>
-
-    <h2>Accounts</h2>
-
-    <table>
-      <tr>
-        <th>Type</th>
-        <th>Name</th>
-        <th>Value</th>
-        <th>Level</th>
-      </tr>
-
-      <% entity.handles.each do |handle| %>
-        <tr>
-          <td><%= handle.type %></td>
-          <td><%= handle.name %></td>
-          <td><%= handle.handle %></td>
-          <td><%= handle.level %></td>
+    <div class="column left">
+      <h2>Details</h2>
+      <table>
+        <tr class="id">
+          <th>Id</th><td><%= entity.id %></td>
         </tr>
-      <% end %>
-    </table>
-
-    <h2>Last known position</h2>
-
-    <table>
-      <tr>
-        <th>Acquired at</th><td><%= entity.position_attr['time'] %></td>
-      </tr>
-      <tr>
-        <th>Lat, Lon</th><td><%= (entity.position || []).reverse.join(', ') %></td>
-      </tr>
-      <tr>
-        <th>Accuracy</th><td><%= "#{entity.position_attr['accuracy']} mt" if entity.position_attr['accuracy'] %></td>
-      </tr>
-    </table>
-
-    <%= google_map(entity.position) %>
-
-    <h2>Most contacted</h2>
-
-    <table>
-      <tr>
-        <th>Type</th>
-        <th>Account</th>
-      </tr>
-
-      <% most_contacted(entity).each do |hash| %>
         <tr>
-          <td><%= hash[:type] %></td>
-          <td><%= hash[:peer] %></td>
+          <th>Type</th><td><%= entity.type %></td>
         </tr>
+        <tr>
+          <th>Level</th><td><%= entity.level %></td>
+        </tr>
+        <tr>
+          <th>Description</th><td><%= entity.desc %></td>
+        </tr>
+      </table>
+
+      <h2>Photos</h2>
+
+      <table class="photos">
+        <tr>
+      <% entity.photos.each do |photo_id| %>
+        <td><a href="<%= photo_url(photo_id) %>"><img src="<%= photo_url(photo_id) %>"/></a></td>
       <% end %>
-    </table>
+        </tr>
+      </table>
+
+      <h2>Most contacted</h2>
+
+      <table>
+        <tr>
+          <th>Type</th>
+          <th>Account</th>
+        </tr>
+
+        <% most_contacted(entity).each do |hash| %>
+          <tr>
+            <td><%= hash[:type] %></td>
+            <td><%= hash[:peer] %></td>
+          </tr>
+        <% end %>
+      </table>
+
+    </div>
+    <!-- end of left column -->
+
+
+    <div class="column right">
+      <h2>Accounts</h2>
+
+      <table>
+        <tr>
+          <th>Type</th>
+          <th>Name</th>
+          <th>Handle</th>
+          <th>Level</th>
+        </tr>
+
+        <% entity.handles.each do |handle| %>
+          <tr>
+            <td><%= handle.type %></td>
+            <td><%= handle.name %></td>
+            <td><%= handle.handle %></td>
+            <td><%= handle.level %></td>
+          </tr>
+        <% end %>
+      </table>
+
+      <h2>Last known position</h2>
+
+      <table>
+        <tr>
+          <th>Acquired at</th><td><%= entity.position_attr['time'] %></td>
+        </tr>
+        <tr>
+          <th>Lat, Lon</th><td><%= (entity.position || []).reverse.join(', ') %></td>
+        </tr>
+        <tr>
+          <th>Accuracy</th><td><%= "#{entity.position_attr['accuracy']} mt" if entity.position_attr['accuracy'] %></td>
+        </tr>
+      </table>
+
+      <%= google_map(entity.position) %>
+    </div>
+    <!-- end of right column -->
 
   </body>
 </html>

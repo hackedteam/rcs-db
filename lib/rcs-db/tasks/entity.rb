@@ -20,6 +20,8 @@ module DB
     # @see RCS::DB::MultiFileTaskType
     # Is used to size the client progressbar. Should equals the number of "yield" called
     # in the #next_entry method
+    #
+    # TODO: consider the number of files in export.zip
     def total
       number_of_photos = entities.inject(0) { |tot, e| tot += e.photos.size }
       entities.size + number_of_photos + 1
@@ -31,6 +33,11 @@ module DB
     # is yieled a file/stream is written and the @current (step) variable is incremented
     def next_entry
       @description = "Exporting #{entities.size} entities"
+
+      # expand the sytles in the dest dir
+      FileTask.expand_styles do |name, content|
+        yield 'stream', name, {content: content}
+      end
 
       template = EntityTaskTemplate.new erb: :index, entities: entities
       yield 'stream', "index.html", {content: template.render}
@@ -80,7 +87,7 @@ module DB
     def google_map lon_lat
       return if lon_lat.blank?
       lat_lon = lon_lat.reverse.join ','
-      '<div class="google_map"><iframe width="100%" height="400" frameborder="0" scrolling="yes" marginheight="0" marginwidth="0"
+      '<div class="google_map"><iframe width="100%" height="100%" frameborder="0" scrolling="yes" marginheight="0" marginwidth="0"
       src="http://maps.google.it/maps?f=q&amp;source=s_q&amp;hl=en&amp;geocode=&amp;q='+lat_lon+'&amp;aq=&amp;ie=UTF8&amp;
       t=m&amp;z=14&amp;ll='+lat_lon+'&amp;output=embed"></iframe></div>'
     end
