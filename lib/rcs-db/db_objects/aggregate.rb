@@ -161,7 +161,10 @@ class Aggregate
     #
     # Aggregation Framework is better...
     #
-    pipeline = [{ "$match" => {:day => {'$gte' => params['from'], '$lte' => params['to']}, :type => {'$in' => most_contacted_types} }},
+    match = {:type => {'$in' => most_contacted_types}}
+    match[:day] = {'$gte' => params['from'], '$lte' => params['to']} if params['from'] and params['to']
+
+    pipeline = [{ "$match" => match },
                 { "$group" =>
                   { _id: { peer: "$data.peer", type: "$type" },
                     count: { "$sum" => "$count" },
