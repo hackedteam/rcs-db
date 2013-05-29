@@ -1,0 +1,30 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" type="text/css" href="style/evidence.css">
+    <link rel="stylesheet" type="text/css" href="../style/evidence.css">
+  </head>
+
+  <body class="entity">
+
+    <h1>Entities</h1>
+
+    <table>
+      <tr>
+        <th>Name</th>
+        <th>Type</th>
+      </tr>
+
+      <% entities.each do |entity| %>
+        <tr>
+          <td><a href="<%= entity_url(entity) %>"><%= entity.name %></a></td>
+          <td><%= entity.type %></td>
+        </tr>
+      <% end %>
+    </table>
+
+  </body>
+
+</html>

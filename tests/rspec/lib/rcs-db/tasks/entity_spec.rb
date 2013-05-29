@@ -24,8 +24,10 @@ module DB
     let(:bob) do
       target = Item.create! name: "bob", _kind: :target, path: [operation.id], stat: ::Stat.new
       entity = Entity.any_in({path: [target.id]}).first
+
       entity.create_or_update_handle :mail, 'mr_bob@hotmail.com', 'Mr. Bob'
       entity.create_or_update_handle :skype, 'mr.bob', 'Bob!'
+
       aggregate_class = Aggregate.target target
       aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: :sms, aid: 'agent_id', count: 1, data: {peer: 'test1', versus: :in})
       aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: :sms, aid: 'agent_id', count: 2, data: {peer: 'test2', versus: :in})
@@ -33,7 +35,14 @@ module DB
       aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: :skype, aid: 'agent_id', count: 1, data: {peer: 'test.ardo', versus: :in})
       aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: :skype, aid: 'agent_id', count: 2, data: {peer: 'test.one', versus: :in})
       aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: :call, aid: 'agent_id', count: 3, data: {peer: 'test.ardissimo', versus: :in})
+
       entity.add_photo File.read(fixtures_path('image.001.jpg'))
+      entity.add_photo File.read(fixtures_path('image.001.jpg'))
+
+      entity.position = [-73.04449, 41.68944]
+      entity.position_attr = {'time' => Time.now.to_i, 'accuracy' => 10}
+
+      entity.save
       entity
     end
 
@@ -67,7 +76,7 @@ module DB
       let(:task) { subject(id: bob.id) }
 
       it 'reurn the number of the entities + 1 + the number of photos' do
-        expect(task.total).to eql task.entities.size + 1 + 1
+        expect(task.total).to eql task.entities.size + 1 + 2
       end
     end
 

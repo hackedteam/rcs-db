@@ -2,7 +2,6 @@ require_relative '../tasks'
 require 'erb'
 require 'ostruct'
 
-
 module RCS
 module DB
 
@@ -33,12 +32,16 @@ module DB
     def next_entry
       @description = "Exporting #{entities.size} entities"
 
+      template = EntityTaskTemplate.new erb: :index, entities: entities
+      yield 'stream', "index.html", {content: template.render}
+
       entities.each do |entity|
-        template = EntityTaskTemplate.new name: :show, entity: entity
         entity.photos.each do |photo_id|
-          yield 'stream', template.photo_path(photo_id), {content: entity.photo_data(photo_id)}
+          yield 'stream', "#{entity.id}/#{photo_id}.jpg", {content: entity.photo_data(photo_id)}
         end
-        yield 'stream', template.path, {content: template.render}
+
+        template = EntityTaskTemplate.new erb: :show, entity: entity
+        yield 'stream', "#{entity.id}/show.html", {content: template.render}
       end
 
       yield @description = "Ended"
@@ -47,11 +50,9 @@ module DB
 
 
   # To isolate the binding passed to ERB
-  # @params: the template name ("name")
-  #          the entity instance to be passed to ("entity")
   class EntityTaskTemplate < OpenStruct
     def render
-      template_path = File.join self.class.templates_folder, "#{name}.erb"
+      template_path = File.join self.class.templates_folder, "#{erb}.erb"
       template = ERB.new File.new(template_path).read, nil, "%"
       template.result binding
     end
@@ -62,27 +63,23 @@ module DB
 
     # View helpers
 
-    def path
-      "#{entity.type.to_s.pluralize}/#{entity.id}/show.html".downcase
+    def photo_url photo_id
+      "#{photo_id}.jpg"
     end
 
-    def photo_url id
-      "#{id}.jpg".downcase
+    def entity_url entity
+      "#{entity.id}/show.html"
     end
 
-    def photo_path id
-      "#{entity.type.to_s.pluralize}/#{entity.id}/#{id}.jpg".downcase
-    end
-
-    def most_contacted
+    def most_contacted entity
       return [] if entity.type != :target
       result = Aggregate.most_contacted entity.target_id, 'num' => 10
       result.flatten
     end
 
-    def google_map
-      return if entity.position.blank?
-      lat_lon = entity.position.reverse.join ','
+    def google_map lon_lat
+      return if lon_lat.blank?
+      lat_lon = lon_lat.reverse.join ','
       '<div class="google_map"><iframe width="100%" height="400" frameborder="0" scrolling="yes" marginheight="0" marginwidth="0"
       src="http://maps.google.it/maps?f=q&amp;source=s_q&amp;hl=en&amp;geocode=&amp;q='+lat_lon+'&amp;aq=&amp;ie=UTF8&amp;
       t=m&amp;z=14&amp;ll='+lat_lon+'&amp;output=embed"></iframe></div>'
