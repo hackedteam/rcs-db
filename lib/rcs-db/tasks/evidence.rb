@@ -239,18 +239,9 @@ module RCS
         return out
       end
 
-      def expand_styles
-        Zip::ZipFile.open(Config.instance.file('export.zip')) do |z|
-          z.each do |f|
-            yield f.name, z.file.open(f.name, "rb") { |c| c.read }
-          end
-        end
-      end
-
       def export(evidence, opts)
-
         # expand the sytles in the dest dir
-        expand_styles do |name, content|
+        FileTask.expand_styles do |name, content|
           yield 'stream', name, {content: content}
         end
 

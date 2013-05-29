@@ -127,7 +127,11 @@ end
 
 module FileTask
   attr_reader :file_name, :file_size
-  
+
+  def self.included(base)
+    base.extend(ClassMethods)
+  end
+
   def file_init(file_name)
     @file_name = file_name
     return if @file_name.nil?
@@ -144,6 +148,16 @@ module FileTask
   
   def sha1(path)
     Task.digest_class.new.file(path).hexdigest
+  end
+
+  def self.expand_styles
+    Zip::ZipFile.open(Config.instance.file('export.zip')) do |z|
+      z.each do |f|
+        puts '-'*30
+        puts f.name
+        yield f.name, z.file.open(f.name, "rb") { |c| c.read }
+      end
+    end
   end
 end
 
