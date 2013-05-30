@@ -35,6 +35,7 @@ class TaskController < RESTController
     end
     require_auth_level :tech_ni_rules if @params['type'] == 'injector'
     require_auth_level :view_export if @params['type'] == 'evidence'
+    require_auth_level :view_export if @params['type'] == 'entity'
 
     task = TaskManager.instance.create @session.user, @params['type'], @params['file_name'], @params['params']
     

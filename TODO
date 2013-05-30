@@ -13,7 +13,7 @@ TODO 9.0.0
     check "end of file reaced" from mongoid
     try to implement "retry" on mongoid queries
     check threads waiting on queued collection: alert, push  (topac)
-
+    support for "outlook" type / "gmail" and "outlook" goes into "mail" (topac)
 
   IMPLEMENT:
     statistic analyzer (alor)
@@ -21,7 +21,6 @@ TODO 9.0.0
       automatic entities from "very" most contacted
 
     export intellingece data (topac)
-      entities data
       graph data
 
     aggregation for URL
@@ -38,7 +37,6 @@ TODO 9.0.0
   TRY:
     hash index for sharding (topac - on branch 9.0.x)
 
-  support for "outlook" type / "gmail" and "outlook" goes into "mail"
 
 ======================================
 TODO FUTURE:
