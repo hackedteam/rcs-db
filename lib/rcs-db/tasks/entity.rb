@@ -20,8 +20,6 @@ module DB
     # @see RCS::DB::MultiFileTaskType
     # Is used to size the client progressbar. Should equals the number of "yield" called
     # in the #next_entry method
-    #
-    # TODO: consider the number of files in export.zip
     def total
       number_of_photos = entities.inject(0) { |tot, e| tot += e.photos.size }
       entities.size + number_of_photos + 1 + FileTask.style_assets_count
