@@ -4,11 +4,11 @@ require 'set'
 
 PEER = 'marchetti'
 
-$analysis = Hash.new { |hash, key| hash[key] = Hash.new(0) }
+$analysis = Hash.new { |hash, key| hash[key] = Hash.new {|h,k| h[k] = Array.new(2, 0)} }
 $total = Hash.new(0)
 $peers = Set.new
 
-MIN_FREQ = 0.7
+MIN_FREQ = 0.4
 WINDOW_SIZE = 10
 
 def fill_holes
@@ -30,23 +30,30 @@ def analyze_win(win)
   peers.each do |peer|
     # collect the number of occurrence
     # we only need to know how many days in the window contains a contact with peer
-    contacts = win.select {|a,b| b.has_key? peer }.size
+    contacts = win.select {|a,b| b[peer] != [0, 0] }.size
     frequency = contacts.to_f / WINDOW_SIZE
 
-    total = win.values.collect {|x| x[peer]}.inject(:+)
-    density = total * frequency
-    if frequency >= MIN_FREQ
-      #puts "#{dmin} #{dmax} #{peer} freq: #{frequency} dens: %.2f" % density 
+    total_in = win.values.collect {|x| x[peer][0]}.inject(:+)
+    total_out = win.values.collect {|x| x[peer][1]}.inject(:+)
+
+    twfo = total_in > 0 ? total_out.to_f / total_in.to_f : 0
+    twfi = total_out > 0 ? total_in.to_f / total_out.to_f : 0
+    
+    adjusted = frequency * [twfo, twfi].min
+    density = (total_in + total_out) / WINDOW_SIZE
+
+    if adjusted >= MIN_FREQ #and density >= 1
+      puts "#{dmin} #{dmax} #{peer} freq: #{frequency} twfi: %.2f twfo: %.2f adj: %.2f  [#{total_in}, #{total_out}][#{contacts}]" % [twfi, twfo, adjusted] 
       $peers << peer
     end
   end
+  #exit
 end
 
 def analyze
   return if $analysis.size < WINDOW_SIZE + 1
   
   begin
-    #puts "BUFF: #{$analysis.inspect}"
     # take the first N elements
     win = Hash[$analysis.sort_by{|k,v| k}.first WINDOW_SIZE]
 
@@ -58,8 +65,9 @@ def analyze
   end until $analysis.size != WINDOW_SIZE + 1
 end
 
-def frequencer(date, peer)
-  $analysis[date][peer] += 1
+def frequencer(date, peer, versus)
+  i = (versus.eql? :in) ? 0 : 1
+  $analysis[date][peer][i] += 1
   fill_holes
   analyze
 end
@@ -70,15 +78,9 @@ File.readlines('mail.txt').each do |line|
   date, versus, peer, from, to = line.split(' ')
   $total[peer] += 1
   #next unless peer.include? PEER
-  frequencer(date, peer)
+  frequencer(date, peer, versus.to_sym)
 end
 
 pp $peers.to_a
-
-#(Date.parse($analysis.keys.min)..Date.parse($analysis.keys.max)).map do |date| 
-#  day = date.strftime('%Y-%m-%d')
-#  #puts "#{day} #{$analysis[day]}"
-#  $analysis[day] = $analysis[day]
-#end
-
 #pp $total.sort_by {|k,v| v}
+
