@@ -70,7 +70,7 @@ module DB
     before { bob; alice; sagrada_familia }
 
     def subject params
-      described_class.new :entity, 'export name', params
+      described_class.new :entity, 'export name', params.merge(operation: operation.id).stringify_keys
     end
 
     # TODO: the logic in this method can be used to extract the generated .tgz file

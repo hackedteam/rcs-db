@@ -11,8 +11,8 @@ module DB
 
     def entities
       @entities ||= begin
-        filters = {id: @params[:id]} if @params[:id]
-        Entity.where(filters || {}).all
+        filters = {id: @params['id']} if @params['id']
+        Entity.path_include(@params['operation']).where(filters || {}).all
       end
     end
 
