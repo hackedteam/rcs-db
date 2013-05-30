@@ -15,6 +15,7 @@ TODO 9.0.0
     check threads waiting on queued collection: alert, push  (topac)
     support for "outlook" type / "gmail" and "outlook" goes into "mail" (topac)
 
+    rebuild_summary does not work on castore!! (on item destroy)
 
   IMPLEMENT:
     statistic analyzer (alor)
