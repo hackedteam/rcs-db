@@ -55,7 +55,7 @@ class Item
   scope :targets, where(_kind: 'target')
   scope :agents, where(_kind: 'agent')
   scope :factories, where(_kind: 'factory')
-  scope :path_include, lambda { |item| where('path' => {'$in' =>[item.kind_of?(Item) ? item.id : item]}) }
+  scope :path_include, lambda { |item| where('path' => {'$in' =>[item.kind_of?(Item) ? item._id : Moped::BSON::ObjectId.from_string(item)]}) }
 
   # for the access control
   has_and_belongs_to_many :users, :dependent => :nullify, :autosave => true, inverse_of: nil, index: true
