@@ -26,6 +26,8 @@ TODO 9.0.0
       entities data
       graph data
 
+    refactor export evidence with the new erb schema
+
     aggregation for URL
       aggregate on domain only (think if the pages have to be saved in the "info" field")
       manual creation of entities of type "virtual place" (site url)
@@ -44,6 +46,7 @@ TODO 9.0.0
   TEST:
     migration of mongo 2.4 on real data (copy db from castore to vm and try)
     flow integration with console
+    export entity from console
 
 
 ======================================
