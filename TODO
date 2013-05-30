@@ -38,7 +38,7 @@ TODO 9.0.0
   TRY:
     hash index for sharding (topac - on branch 9.0.x)
 
-
+  support for "outlook" type / "gmail" and "outlook" goes into "mail"
 
 ======================================
 TODO FUTURE:
