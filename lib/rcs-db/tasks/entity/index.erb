@@ -9,21 +9,14 @@
 
   <body>
 
-    <h1>Entities</h1>
+    <h1><%= [operation_name, 'Entities'].join(' > ') %></h1>
 
-    <table>
-      <tr>
-        <th>Name</th>
-        <th>Type</th>
-      </tr>
-
-      <% entities.each do |entity| %>
-        <tr>
-          <td><a href="<%= entity_url(entity) %>"><%= entity.name %></a></td>
-          <td><%= entity.type %></td>
-        </tr>
-      <% end %>
-    </table>
+    <% entities.each do |entity| %>
+      <div class="entity-icon">
+        <a href="<%= entity_url(entity) %>"><img src="<%= entity_icon_url(entity) %>" /></a>
+        <p><%= entity.name %></p>
+      </div>
+    <% end %>
 
   </body>
 

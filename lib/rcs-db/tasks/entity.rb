@@ -24,7 +24,7 @@ module DB
     # TODO: consider the number of files in export.zip
     def total
       number_of_photos = entities.inject(0) { |tot, e| tot += e.photos.size }
-      entities.size + number_of_photos + 1
+      entities.size + number_of_photos + 1 + FileTask.style_assets_count
     end
 
     # Must be implemented
@@ -39,7 +39,8 @@ module DB
         yield 'stream', name, {content: content}
       end
 
-      template = EntityTaskTemplate.new erb: :index, entities: entities
+      operation_name = Item.find(entities.first.path.first).name rescue nil
+      template = EntityTaskTemplate.new erb: :index, entities: entities, operation_name: operation_name
       yield 'stream', "index.html", {content: template.render}
 
       entities.each do |entity|
@@ -47,7 +48,8 @@ module DB
           yield 'stream', "#{entity.id}/#{photo_id}.jpg", {content: entity.photo_data(photo_id)}
         end
 
-        template = EntityTaskTemplate.new erb: :show, entity: entity
+        erb_name = entity.type == :position && :show_position || :show_target_and_person
+        template = EntityTaskTemplate.new erb: erb_name, entity: entity, operation_name: operation_name
         yield 'stream', "#{entity.id}/show.html", {content: template.render}
       end
 
@@ -76,6 +78,10 @@ module DB
 
     def entity_url entity
       "#{entity.id}/show.html"
+    end
+
+    def entity_icon_url entity
+      "style/entity_#{entity.type}.png"
     end
 
     def most_contacted entity

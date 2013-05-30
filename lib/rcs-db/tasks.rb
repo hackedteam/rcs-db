@@ -150,11 +150,18 @@ module FileTask
     Task.digest_class.new.file(path).hexdigest
   end
 
+  def self.style_assets_count
+    @count ||= begin
+      Zip::ZipFile.open(Config.instance.file('export.zip')) do |z|
+        return z.size
+      end
+      0
+    end
+  end
+
   def self.expand_styles
     Zip::ZipFile.open(Config.instance.file('export.zip')) do |z|
       z.each do |f|
-        puts '-'*30
-        puts f.name
         yield f.name, z.file.open(f.name, "rb") { |c| c.read }
       end
     end
