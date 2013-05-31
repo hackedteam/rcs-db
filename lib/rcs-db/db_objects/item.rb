@@ -491,6 +491,7 @@ class Item
           Evidence.collection_class(self.path.last).destroy_all(aid: self._id.to_s)
           trace :info, "Deleting aggregates for agent #{self.name}..."
           Aggregate.target(self.path.last).destroy_all(aid: self._id.to_s)
+          trace :info, "Rebuilding summary for target #{self.get_parent.name}..."
           Aggregate.target(self.path.last).rebuild_summary
           trace :info, "Deleting evidence for agent #{self.name} done."
         end

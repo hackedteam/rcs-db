@@ -5,7 +5,9 @@
 
 TODO 9.0.0
 
+  RIGHT BEFORE RELEASE:
     upgrade to ruby 1.9.3-p392 on windows
+    remove the 'return' from rebuild_summary
 
     --
 
@@ -15,12 +17,13 @@ TODO 9.0.0
     check threads waiting on queued collection: alert, push  (topac)
     support for "outlook" type / "gmail" and "outlook" goes into "mail" (topac)
 
-    rebuild_summary does not work on castore!! (on item destroy)
 
   IMPLEMENT:
     statistic analyzer (alor)
       automatic detection of home / office (needs timezone for each entity)
       automatic entities from "very" most contacted
+
+    decode html entities for outlook mails
 
     export intellingece data (topac)
       entities data

@@ -8,7 +8,7 @@ $analysis = Hash.new { |hash, key| hash[key] = Hash.new {|h,k| h[k] = Array.new(
 $total = Hash.new(0)
 $peers = Set.new
 
-MIN_FREQ = 0.4
+MIN_FREQ = 0.35
 WINDOW_SIZE = 10
 
 def fill_holes

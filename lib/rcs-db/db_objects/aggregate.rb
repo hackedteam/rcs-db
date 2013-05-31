@@ -65,6 +65,9 @@ class Aggregate
   end
 
   def self.rebuild_summary
+    #TODO: enable when mongo 2.4 is in place.
+    return
+
     return if self.empty?
 
     # get all the tuple (type, peer)
