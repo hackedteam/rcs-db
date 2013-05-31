@@ -11,6 +11,14 @@ module Accounts
     [:facebook, :twitter, :gmail, :skype, :bbm, :whatsapp, :phone, :mail, :linkedin, :viber, :outlook]
   end
 
+  def service_to_handle_type service
+    if [:mail, :gmail, :outlook].include? service
+      :mail
+    else
+      service
+    end
+  end
+
   # Check if the given evidence if the given addressbook evidence
   # has all the information that #add_handle method needs.
   def valid_addressbook_evidence?(evidence)
@@ -44,10 +52,8 @@ module Accounts
     return unless valid_addressbook_evidence? addressbook_evidence
 
     data = addressbook_evidence[:data]
-
-    # TODO: convert data['program'] to the right format, for example
-    # :gmail => :mail
-    {name: data['name'], type: data['program'], handle: data['handle'].downcase}
+    handle_type = service_to_handle_type data['program']
+    {name: data['name'], type: handle_type, handle: data['handle'].downcase}
   end
 end
 

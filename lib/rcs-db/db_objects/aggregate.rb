@@ -226,7 +226,7 @@ class Aggregate
 
     if [:call, :sms, :mms].include? t
       'phone'
-    elsif [:mail, :gmail].include? t
+    elsif [:mail, :gmail, :outlook].include? t
       'mail'
     else
       "#{t}"

@@ -437,7 +437,7 @@ class EntityHandle
     if type == :phone
       [:call, :sms, :mms]
     elsif type == :mail
-      [:mail, :gmail]
+      [:mail, :gmail, :outlook]
     else
       [type.to_sym]
     end
