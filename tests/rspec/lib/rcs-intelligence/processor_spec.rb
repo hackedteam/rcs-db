@@ -83,7 +83,7 @@ describe Processor do
 
 
   describe '#process_evidence' do
-    let(:evidence) { mock() }
+    let(:evidence) { mock(type: 'addressbook') }
     let(:entity) { mock() }
 
     context 'the type of the evidence is "addressbook"' do
@@ -103,6 +103,7 @@ describe Processor do
       context 'the license is valid' do
 
         it 'should create a link' do
+          Accounts.stub :handle_attributes
           Ghost.should_receive :create_and_link_entity
           described_class.process_evidence entity, evidence
         end

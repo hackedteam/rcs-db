@@ -23,13 +23,13 @@ module Intelligence
     end
 
     describe '#create_and_link_entity' do
-      let(:handle_array) { ['Jamie Lannister', :skype, 'j.lann'] }
+      let(:handle_attrib) { {name: 'Jamie Lannister', type: :skype, handle: 'j.lann'} }
 
-      context 'when the given handle is not an array' do
+      context 'when the given handle is blank' do
 
         it 'does nothing' do
           RCS::DB::LinkManager.any_instance.should_not_receive :add_link
-          described_class.create_and_link_entity entity, 'a_string'
+          described_class.create_and_link_entity entity, nil
         end
       end
 
@@ -38,7 +38,7 @@ module Intelligence
 
         it 'creates a ghost entity with the given handle' do
           RCS::DB::LinkManager.any_instance.stub :add_link
-          described_class.create_and_link_entity entity, handle_array
+          described_class.create_and_link_entity entity, handle_attrib
           ghost_entity = Entity.where(:id.ne => entity.id, :level => :ghost).first
           ghost_entity.name.should == 'Jamie Lannister'
           ghost_entity.handles.first.handle == 'j.lann'
@@ -46,7 +46,7 @@ module Intelligence
         end
 
         it 'creates a link from the entity to the new ghost entity' do
-          described_class.create_and_link_entity entity, handle_array
+          described_class.create_and_link_entity entity, handle_attrib
           ghost_entity = Entity.where(:id.ne => entity.id, :level => :ghost).first
           ghost_entity.linked_to?(entity.reload).should be_true
         end
@@ -56,17 +56,17 @@ module Intelligence
 
         let!(:another_entity) { Entity.create! path: [operation.id] }
 
-        before { another_entity.create_or_update_handle handle_array[1], handle_array[2], 'The King Slayer' }
+        before { another_entity.create_or_update_handle handle_attrib[:type], handle_attrib[:handle], 'The King Slayer' }
 
         it 'does not create any ghost entity' do
           RCS::DB::LinkManager.any_instance.stub :add_link
-          described_class.create_and_link_entity entity, handle_array
+          described_class.create_and_link_entity entity, handle_attrib
           Entity.where(:id.ne => entity.id, :level => :ghost).count.should be_zero
         end
 
 
         it 'creates a link from the entity to the other (the existing one)' do
-          described_class.create_and_link_entity entity, handle_array
+          described_class.create_and_link_entity entity, handle_attrib
           entity.linked_to?(another_entity.reload).should be_true
         end
       end
