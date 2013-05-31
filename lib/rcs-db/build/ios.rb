@@ -97,8 +97,6 @@ class BuildIOS < Build
 
     # create helper directories
     FileUtils.mkdir path('ios')
-    FileUtils.mkdir path('win')
-    FileUtils.mkdir path('osx')
 
     # files for the agent
     @outputs.each do |output|
