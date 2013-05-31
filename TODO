@@ -23,8 +23,6 @@ TODO 9.0.0
       automatic detection of home / office (needs timezone for each entity)
       automatic entities from "very" most contacted
 
-    decode html entities for outlook mails
-
     export intellingece data (topac)
       entities data
       graph data

@@ -107,6 +107,14 @@ class EntityController < RESTController
       entity = ::Entity.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
       @params.delete('_id')
 
+      if @params['position'] and @params['position'].size > 0
+        entity.position = [@params['position']['longitude'].to_f, @params['position']['latitude'].to_f]
+        entity.position_attr[:accuracy] = @params['position_attr']['accuracy'].to_i
+        entity.save
+        @params.delete('position')
+        @params.delete('position_attr')
+      end
+
       @params.each_pair do |key, value|
         if key == 'path'
           value.collect! {|x| Moped::BSON::ObjectId(x)}
