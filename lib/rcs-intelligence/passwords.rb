@@ -23,6 +23,14 @@ module Passwords
     true
   end
 
+  # Creates an EntityHandle using the information of password_evidence and
+  # adds it to the given entity. password_evidence may contain:
+  #   * generic email accounts, for example:
+  #     an evidence with user=john@libero.it and service=libero produces an
+  #     handle with type=:mail, handle=john@libero.it
+  #   * account for known services, for example:
+  #     an evidence with user=john and service=facebook produces an
+  #     handle with type=:mail, handle=john@facebook.com
   def add_handle(entity, password_evidence)
     data = password_evidence[:data]
 
@@ -34,19 +42,19 @@ module Passwords
 
     return unless handle
 
-    entity.create_or_update_handle :mail, handle, data['user']
+    entity.create_or_update_handle :mail, handle.downcase, data['user']
   rescue Exception => e
     trace :error, "Cannot add handle: #{e.message}"
     trace :fatal, e.backtrace.join("\n")
   end
 
+  # Extracts a valid email address from the given user and services.
+  # @example email_address('john', 'google') # => john@gmail.com
+  #          email_address('john', 'msn') # => nil
   def email_address user, service
-    handle = user.downcase
-
-    return handle if valid_email_addr?(handle)
-
+    return user if valid_email_addr? user
     match = known_domains.find { |regexp, domain| service =~ regexp }
-    "#{handle}#{match[1]}" if match
+    "#{user}#{match[1]}" if match
   end
 
   def valid_email_addr?(value)
