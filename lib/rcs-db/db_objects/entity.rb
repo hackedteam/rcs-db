@@ -52,6 +52,7 @@ class Entity
 
   scope :targets, where(type: :target)
   scope :persons, where(type: :person)
+  scope :targets_or_persons, where(:type => {'$in' => [:person, :target]})
   scope :positions, where(type: :position)
   # Find all the entities (that are not "other_entity") in the same path of "other_entity",
   # for example all the entities in the same "operation" of the given one
