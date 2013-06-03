@@ -117,8 +117,9 @@ class BuildIOS < Build
       Dir[path('win/**')].each do |file|
         z.file.open("win/#{File.basename(file)}", "wb") { |f| f.write File.open(file, 'rb') {|f| f.read} }
       end
-      Dir[path('osx/**')].each do |file|
-        z.file.open("osx/#{File.basename(file)}", "wb") { |f| f.write File.open(file, 'rb') {|f| f.read} }
+      Dir[path('osx/**/**')].each do |file|
+        next if File.directory? file
+        z.file.open("#{file.gsub(path(''), '')}", "wb") { |f| f.write File.open(file, 'rb') {|f| f.read} }
       end
     end
 
