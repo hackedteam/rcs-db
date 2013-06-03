@@ -22,39 +22,55 @@ class PushManager
     PushQueue.add(type, message)
   end
 
-  def dispatcher
-    begin
-      if (queued = PushQueue.get_queued)
-        entry = queued.first
-        count = queued.last
-        type = entry.type
-        message = entry.message
-
-        trace :info, "#{count} push messages to be processed in queue"
-
-        SessionManager.instance.all.each do |session|
-          ws = WebSocketManager.instance.get_ws_from_cookie session[:cookie]
-          # not connected push channel
-          next if ws.nil?
-
-          # we have specified a specific user, skip all the others
-          next if message['rcpt'] != nil and session.user[:_id] != message['rcpt']
-
-          # check for accessibility, if we pass and id, we only want the ws that can access that id
-          item = ::Item.where(_id: message['id']).in(user_ids: [session.user[:_id]]).first
-          item = ::Entity.where(_id: message['id']).in(user_ids: [session.user[:_id]]).first if item.nil?
-          next if message['id'] != nil and item.nil?
-
-          # send the message
-          WebSocketManager.instance.send(ws, type, message)
-
-          trace :debug, "PUSH Event (sent): #{type} #{message}"
-        end
+  def dispatcher_start
+    Thread.new do
+      begin
+        dispatcher
+      rescue Exception => e
+        trace :error, "PUSH ERROR: Thread error: #{e.message}"
+        trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
+        retry
       end
-    end while count and count > 0
-  rescue Exception => e
-    trace :error, "PUSH ERROR: Cannot notify clients #{e.message}"
-    trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
+    end
+  end
+
+  def dispatcher
+    loop do
+      if (queued = PushQueue.get_queued)
+        begin
+          entry = queued.first
+          count = queued.last
+          type = entry.type
+          message = entry.message
+
+          trace :info, "#{count} push messages to be processed in queue"
+
+          SessionManager.instance.all.each do |session|
+            ws = WebSocketManager.instance.get_ws_from_cookie session[:cookie]
+            # not connected push channel
+            next if ws.nil?
+
+            # we have specified a specific user, skip all the others
+            next if message['rcpt'] != nil and session.user[:_id] != message['rcpt']
+
+            # check for accessibility, if we pass and id, we only want the ws that can access that id
+            item = ::Item.where(_id: message['id']).in(user_ids: [session.user[:_id]]).first
+            item = ::Entity.where(_id: message['id']).in(user_ids: [session.user[:_id]]).first if item.nil?
+            next if message['id'] != nil and item.nil?
+
+            # send the message
+            WebSocketManager.instance.send(ws, type, message)
+
+            trace :debug, "PUSH Event (sent): #{type} #{message}"
+          end
+        rescue Exception => e
+          trace :error, "PUSH ERROR: Cannot notify clients #{e.message}"
+        end
+      else
+        # Nothing to do, waiting...
+        sleep 1
+      end
+    end
   end
 
   def heartbeat

@@ -223,49 +223,65 @@ class Alerting
 
     public
 
+    def dispatcher_start
+      Thread.new do
+        begin
+          dispatcher
+        rescue Exception => e
+          trace :error, "ALERTING ERROR: Thread error: #{e.message}"
+          trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
+          retry
+        end
+      end
+    end
+
     def dispatcher
       # no license, no alerts :)
       return unless LicenseManager.instance.check :alerting
 
-      begin
+      loop do
         if (queued = AlertQueue.get_queued)
-          entry = queued.first
-          count = queued.last
+          begin
+            entry = queued.first
+            count = queued.last
 
-          trace :info, "#{count} alerts to be processed in queue"
+            trace :info, "#{count} alerts to be processed in queue"
 
-          if entry.alert and entry.evidence
-            alert = ::Alert.find(entry.alert.first)
-            user = ::User.find(alert.user_id)
+            if entry.alert and entry.evidence
+              alert = ::Alert.find(entry.alert.first)
+              user = ::User.find(alert.user_id)
 
-            # check if we are in the suppression timeframe
-            if alert.last.nil? or Time.now.getutc.to_i - alert.last > alert.suppression or alert.logs.empty?
-              # we are out of suppression, create a new entry and mail
-              trace :debug, "Triggering alert: #{alert._id}"
-              alert.logs.create!(time: Time.now.getutc.to_i, path: entry.path, evidence: entry.evidence)
-              alert.last = Time.now.getutc.to_i
-              alert.save
-              # notify the console of the new alert
-              PushManager.instance.notify('alert', {id: entry.path.last, rcpt: user[:_id]})
-              send_mail(entry.to, entry.subject, entry.body) if alert.type == 'MAIL'
+              # check if we are in the suppression timeframe
+              if alert.last.nil? or Time.now.getutc.to_i - alert.last > alert.suppression or alert.logs.empty?
+                # we are out of suppression, create a new entry and mail
+                trace :debug, "Triggering alert: #{alert._id}"
+                alert.logs.create!(time: Time.now.getutc.to_i, path: entry.path, evidence: entry.evidence)
+                alert.last = Time.now.getutc.to_i
+                alert.save
+                # notify the console of the new alert
+                PushManager.instance.notify('alert', {id: entry.path.last, rcpt: user[:_id]})
+                send_mail(entry.to, entry.subject, entry.body) if alert.type == 'MAIL'
+              else
+                trace :debug, "Triggering alert: #{alert._id} (suppressed)"
+                al = alert.logs.last
+                al.evidence += entry.evidence unless al.evidence.include? entry.evidence
+                al.save
+                # notify even if suppressed so the console will reload the alert log list
+                PushManager.instance.notify('alert', {id: entry.path.last, rcpt: user[:_id]})
+              end
             else
-              trace :debug, "Triggering alert: #{alert._id} (suppressed)"
-              al = alert.logs.last
-              al.evidence += entry.evidence unless al.evidence.include? entry.evidence
-              al.save
-              # notify even if suppressed so the console will reload the alert log list
-              PushManager.instance.notify('alert', {id: entry.path.last, rcpt: user[:_id]})
+              # for queued items without an associated alert, send the mail
+              send_mail(entry.to, entry.subject, entry.body)
             end
-          else
-            # for queued items without an associated alert, send the mail
-            send_mail(entry.to, entry.subject, entry.body)
+          rescue Exception => e
+            trace :warn, "Cannot process alert queue: #{e.message}"
+            trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
           end
+        else
+          # Nothing to do, waiting...
+          sleep 1
         end
-      end while count and count > 0
-
-    rescue Exception => e
-      trace :warn, "Cannot process alert queue: #{e.message}"
-      trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
+      end
     end
 
     def send_mail(to, subject, body)

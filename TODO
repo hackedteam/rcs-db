@@ -12,9 +12,8 @@ TODO 9.0.0
     --
 
   FIX:
-    check "end of file reaced" from mongoid
+    better investigation on "end of file reached" errors from mongoid (hoping for version 4.0.0 with connection pool)
     try to implement "retry" on mongoid queries
-    check threads waiting on queued collection: alert, push  (topac)
 
 
   IMPLEMENT:
@@ -24,7 +23,7 @@ TODO 9.0.0
 
     export intellingece data (topac)
       entities data
-      graph data
+      graph data (using graphml: http://graphml.graphdrawing.org/primer/graphml-primer.html)
 
     refactor export evidence with the new erb schema
 
@@ -42,6 +41,10 @@ TODO 9.0.0
   TRY:
     hash index for sharding (topac - on branch 9.0.x)
 
+  MIGRATION:
+    change all the aggregates of [:gmail, :mail] to :mail
+    rebuild all the summaries
+    change all the handles of :gmail to :mail
 
   TEST:
     migration of mongo 2.4 on real data (copy db from castore to vm and try)
