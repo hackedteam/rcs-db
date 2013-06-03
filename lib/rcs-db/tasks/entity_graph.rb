@@ -4,7 +4,7 @@ require_relative '../tasks'
 module RCS
 module DB
 
-  class EntityGraphTask
+  class EntitygraphTask
     include RCS::DB::MultiFileTaskType
     include RCS::Tracer
 
@@ -40,6 +40,7 @@ module DB
       list = entities
       unique_edges = []
 
+      # The helpers used here are: node_attr, edge_attr, node, edge
       xml = GraphML.build do
         node_attr(:entity_name, :string)
         node_attr(:entity_type, :string)

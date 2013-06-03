@@ -8,7 +8,7 @@ require_db 'tasks'
 module RCS
 module DB
 
-  describe EntityGraphTask do
+  describe EntitygraphTask do
 
     use_db
     silence_alerts
