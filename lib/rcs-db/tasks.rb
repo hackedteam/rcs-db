@@ -339,6 +339,25 @@ class TaskManager
     #Task.instance_eval { @generator_class = DummyTask }
   end
   
+  def audit_new_task type, user, params
+    case type
+      when 'build'
+        Audit.log :actor => user_name, :action => "build", :desc => "Created an installer for #{params['platform']}"
+      when 'audit'
+        Audit.log :actor => user_name, :action => "audit.export", :desc => "Exported the audit log: #{params.inspect}"
+      when 'evidence'
+        Audit.log :actor => user_name, :action => "evidence.export", :desc => "Exported some evidence: #{params.inspect}"
+      when 'injector'
+        Audit.log :actor => user_name, :action => "injector.push", :desc => "Pushed the rules to a Network Injector"
+      when 'topology'
+        Audit.log :actor => user_name, :action => "topology", :desc => "Reconfigured the topology of the frontend"
+      when 'entity'
+        Audit.log :actor => user_name, :action => "entity.export", :desc => "Exported some entities: #{params.inspect}"
+      when 'entitygraph'
+        Audit.log :actor => user_name, :action => "entitygraph.export", :desc => "Exported the entities graph: #{params.inspect}"
+    end
+  end
+
   def create(user, type, file_name, params = {})
     @tasks[user[:name]] ||= Hash.new
 
@@ -346,18 +365,7 @@ class TaskManager
     task = eval("#{type.downcase.capitalize}Task").new type, file_name, params
     trace :info, "Creating task #{task._id} of type #{type} for user '#{user[:name]}', saving to '#{file_name}'"
 
-    case type
-      when 'build'
-        Audit.log :actor => user[:name], :action => "build", :desc => "Created an installer for #{params['platform']}"
-      when 'audit'
-        Audit.log :actor => user[:name], :action => "audit.export", :desc => "Exported the audit log: #{params.inspect}"
-      when 'evidence'
-        Audit.log :actor => user[:name], :action => "evidence.export", :desc => "Exported some evidence: #{params.inspect}"
-      when 'injector'
-        Audit.log :actor => user[:name], :action => "injector.push", :desc => "Pushed the rules to a Network Injector"
-      when 'topology'
-        Audit.log :actor => user[:name], :action => "topology", :desc => "Reconfigured the topology of the frontend"
-    end
+    audit_new_task(type, user[:name], params)
 
     begin
       task.run
