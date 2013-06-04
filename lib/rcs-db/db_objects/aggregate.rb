@@ -66,7 +66,7 @@ class Aggregate
 
   def self.rebuild_summary
     #TODO: enable when mongo 2.4 is in place.
-    return
+    return if RCS::DB::Config.instance.mongo_version < "2.4.0"
 
     return if self.empty?
 
