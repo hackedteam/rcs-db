@@ -27,6 +27,7 @@ class Aggregate
   index({day: 1}, {background: true})
   index({"data.peer" => 1}, {background: true})
   index({"data.type" => 1}, {background: true})
+  index({"data.host" => 1}, {background: true})
   index({type: 1, "data.peer" => 1 }, {background: true})
 
   index({'data.position' => "2dsphere"}, {background: true})
@@ -118,6 +119,20 @@ class Aggregate
   def self.collection_name
     raise "Missing target id. Maybe you're trying to instantiate Aggregate without using Aggregate#target." unless @target_id
     "aggregate.#{@target_id}"
+  end
+
+  # Extracts the most visited urls for a given target (within a timeframe).
+  # Params accepted are "from", "to" (in the form of yyyymmdd strings) and "limit" (integer).
+  # @example Aggregate.most_visited(target._id, 'from' => '20130103', 'to' => '20140502').
+  def self.most_visited(target_id, params = {})
+    match = {:type => :url}
+    match[:day] = {'$gte' => params['from'], '$lte' => params['to']} if params['from'] and params['to']
+    limit = params['limit'] || 5
+    group = {_id: "$data.host", count: {"$sum" => "$count"}}
+
+    pipeline = [{"$match" => match}, {"$group" => group}, {"$sort" => {count: -1}}, {"$limit" => limit}]
+
+    Aggregate.target(target_id).collection.aggregate(pipeline)
   end
 
   def self.most_contacted(target_id, params)

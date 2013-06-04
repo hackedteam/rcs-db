@@ -189,4 +189,55 @@ describe Aggregate do
       end
     end
   end
+
+  describe '#most_visited' do
+
+    def url_aggregate day, host, count
+      Aggregate.target('testtarget').create!(type: :url, day: day, aid: 'test', data: {host: host}, count: count)
+    end
+
+    before do
+      url_aggregate '20130101', 'it.wikipedia.org', 30
+      url_aggregate '20130103', 'google.com',       5
+      url_aggregate '20130110', 'it.wikipedia.org', 20
+      url_aggregate '20130113', '4chan.org',        10
+      url_aggregate '20130113', 'google.com',       1
+      url_aggregate '20130113', 'yahoo.com',        1
+      url_aggregate '20130113', 'youtube.com',      1
+      url_aggregate '20130114', 'reddit.com',       1
+    end
+
+    context 'called with no params' do
+
+      before { @result = Aggregate.most_visited('testtarget', {}) }
+
+      it 'returns the most visited' do
+        expect(@result.size).to eql 5
+        expect(@result[0]).to eql({"_id" => 'it.wikipedia.org', "count" => 50})
+        expect(@result[1]).to eql({"_id" => '4chan.org',        "count" => 10})
+        expect(@result[2]).to eql({"_id" => 'google.com',       "count" => 6})
+      end
+    end
+
+    context 'called with "limit"' do
+
+      before { @result = Aggregate.most_visited('testtarget', {'limit' => 2}) }
+
+      it 'returns the most visited' do
+        expect(@result.size).to eql 2
+        expect(@result[0]).to eql({"_id" => 'it.wikipedia.org', "count" => 50})
+        expect(@result[1]).to eql({"_id" => '4chan.org',        "count" => 10})
+      end
+    end
+
+    context 'called with "from" and "to"' do
+
+      before { @result = Aggregate.most_visited('testtarget', {'from' => '20130109', 'to' => '20130111'}) }
+
+      it 'returns the most visited' do
+        expect(@result.size).to eql 1
+        expect(@result[0]).to eql({"_id" => 'it.wikipedia.org', "count" => 20})
+      end
+    end
+  end
 end
