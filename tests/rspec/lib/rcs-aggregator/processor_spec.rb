@@ -419,6 +419,76 @@ describe Processor do
     end
   end
 
+  describe 'Processing an evidence of type "url"' do
+
+    def queue_entry(url_evidence)
+      {'target_id' => target._id, 'evidence_id' => url_evidence._id}
+    end
+
+    def url_evidence(url)
+      params = {da: Time.now.to_i, aid: agent._id, type: 'url', data: {url: url}}
+      Evidence.collection_class(target._id).create!(params)
+    end
+
+    let(:operation) { Item.create!(name: 'op', _kind: 'operation', path: [], stat: ::Stat.new) }
+    let(:target) { Item.create!(name: 'bob', _kind: 'target', path: [operation._id], stat: ::Stat.new) }
+    let(:agent) { Item.create(name: 'test-agent', _kind: 'agent', path: [target._id], stat: ::Stat.new) }
+    let(:entry_wikipedia_tbl) { entry = queue_entry(url_evidence('http://it.wikipedia.org/wiki/Tim_Berners-Lee')) }
+    let(:entry_wikipedia) { entry = queue_entry(url_evidence('http://it.wikipedia.org/')) }
+    let(:entry_google) { entry = queue_entry(url_evidence('http://www.google.com/')) }
+
+    context 'there are no exiting url aggregates' do
+
+      let(:aggregate) { Aggregate.target(target).first }
+
+      context 'an url evidence arrives' do
+
+        before { described_class.process(entry_google) }
+
+        it 'creates a valid url aggregate' do
+          expect(aggregate.count).to eql 1
+          expect(aggregate.info).to be_blank
+          expect(aggregate.data['host']).to eql 'google.com'
+          expect(aggregate.data['path']).to be_nil
+        end
+      end
+    end
+
+    context 'an url aggregate for "wikipedia" exists' do
+
+      before { described_class.process(entry_wikipedia) }
+
+      context 'some url evidences for the same domain arrives' do
+
+        before do
+          3.times { described_class.process(entry_wikipedia_tbl) }
+          3.times { described_class.process(entry_wikipedia) }
+        end
+
+        let(:aggregate) { Aggregate.target(target).first }
+
+        it 'increments the count of the exiting aggregate' do
+          expect(aggregate.count).to eql 6+1
+        end
+
+        it 'adds the ulrs\' paths to the aggregate "info" attribute' do
+          expect(aggregate.info).to eql ['wiki/Tim_Berners-Lee']
+        end
+      end
+
+      context 'an url for "google" arrives' do
+
+        before { described_class.process(entry_google) }
+
+        let(:aggregates) { Aggregate.target(target).all }
+
+        it 'creates another url aggregate without updating the exiting one' do
+          expect(aggregates.size).to eql 2
+          expect(aggregates.sum(&:count)).to eql 2
+        end
+      end
+    end
+  end
 end
 
 end

@@ -11,7 +11,8 @@ require 'fileutils'
 
 require_relative 'peer'
 require_relative 'position'
-require 'pry'
+require_relative 'virtual'
+
 module RCS
 module Aggregator
 
@@ -81,6 +82,9 @@ class Processor
         when :position
           params.merge!({data: {position: datum[:point]}})
           agg = aggregate_position(datum, entry, params)
+        when :url
+          params.merge!({data: {host: datum[:host]}})
+          agg = aggregate_virtual(datum, entry, params)
         else
           params.merge!({data: {peer: datum[:peer], versus: datum[:versus], sender: datum[:sender]}})
           agg = aggregate_peer(datum, entry, params, type)
@@ -133,6 +137,15 @@ class Processor
     return agg
   end
 
+  def self.aggregate_virtual(datum, entry, unique_filter)
+    aggregate_class = Aggregate.target(entry['target_id'])
+
+    agg = aggregate_class.find_or_create_by(unique_filter)
+    agg.add_to_set(:info, datum[:path]) if datum[:path]
+    agg.inc(:count, 1)
+    agg
+  end
+
   def self.extract_data(target_id, ev)
     data = []
 
@@ -148,6 +161,9 @@ class Processor
 
       when 'position'
         data += PositionAggregator.extract(target_id, ev) if check_intelligence_license
+
+      when 'url'
+        data += VirtualAggregator.extract(ev) if check_intelligence_license
     end
 
     return data
