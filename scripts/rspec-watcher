@@ -18,7 +18,7 @@ end
 
 def spec filepath
   spec_filepath = File.join $root_path, filepath
-  cmd = "cd \"#{$root_path}\"; rspec -I tests/rspec --color --format doc \"#{spec_filepath}\""
+  cmd = "cd \"#{$root_path}\"; rspec -I tests/rspec --color --format doc \"#{spec_filepath}\" --tag ~speed:slow"
   start = Time.now
   result = system(cmd)
   send_system_notification(result, filepath, Time.now - start) rescue nil
