@@ -122,48 +122,10 @@ class Aggregate
 
   def self.most_contacted(target_id, params)
     start = Time.now
-
     most_contacted_types = [:call, :chat, :mail, :sms, :mms, :facebook, :gmail, :skype, :bbm, :whatsapp, :msn, :adium, :viber]
 
-    #
-    # Map Reduce has some downsides
-    # let's try if the Mongo::Aggregation framework is better...
-    #
-=begin
-    # emit count and size for each tuple of peer/type
-    map = "function() {
-             emit({peer: this.data.peer, type: this.type}, {count: this.count, size: this.size});
-          }"
+    # mongoDB aggregation framework
 
-    # sum each value grouping them by key(peer, type)
-    reduce = "function(key, values) {
-                var sum_count = 0;
-                var sum_size = 0;
-                values.forEach(function(e) {
-                    sum_count += e.count;
-                    sum_size += e.size;
-                  });
-                return {count: sum_count, size: sum_size};
-              };"
-
-    # from/to period to consider
-    options = {:query => {:day => {'$gte' => params['from'], '$lte' => params['to']}, :type => {'$in' => most_contacted_types} },
-               :out => {:inline => 1}, :raw => true }
-
-    # execute the map reduce job
-    reduced = collection.map_reduce(map, reduce, options)
-    # extract the results
-    contacted = reduced['results']
-    # normalize them in a better form
-    contacted.collect! {|e| {peer: e['_id']['peer'], type: e['_id']['type'], count: e['value']['count'], size: e['value']['size']}}
-
-    #trace :debug, reduced['results']
-    #trace :debug, ""
-=end
-
-    #
-    # Aggregation Framework is better...
-    #
     match = {:type => {'$in' => most_contacted_types}}
     match[:day] = {'$gte' => params['from'], '$lte' => params['to']} if params['from'] and params['to']
 
