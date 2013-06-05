@@ -86,6 +86,8 @@ class Processor
       when 'password'
         # analyze the accounts
         Passwords.add_handle(entity, evidence)
+      when 'url'
+        Virtual.process_url_evidence(entity, evidence)
     end
   end
 
