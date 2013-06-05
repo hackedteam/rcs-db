@@ -141,7 +141,6 @@ class Processor
     aggregate_class = Aggregate.target(entry['target_id'])
 
     agg = aggregate_class.find_or_create_by(unique_filter)
-    agg.add_to_set(:info, datum[:path]) if datum[:path]
     agg.inc(:count, 1)
     agg
   end

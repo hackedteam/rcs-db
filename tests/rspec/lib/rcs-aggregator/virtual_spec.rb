@@ -22,7 +22,6 @@ describe VirtualAggregator do
     it 'return the data needed to create an aggregate' do
       hash = subject.extract(url_evidence).first
       expect(hash[:type]).to eql :url
-      expect(hash[:path]).to eql 'wiki/Tim_Berners-Lee'
       expect(hash[:host]).to eql 'it.wikipedia.org'
     end
   end
@@ -42,24 +41,6 @@ describe VirtualAggregator do
     it 'returns a valid host even when the uri scheme is missing' do
       pending "What to assume a default scheme in these cases?"
       # expect(subject.host('it.wikipedia.org/wiki/Tim_Berners-Lee')).to eql 'it.wikipedia.org'
-    end
-  end
-
-  describe '#path' do
-
-    it 'returns nil when the url is missing' do
-      expect(subject.path(nil)).to be_nil
-    end
-
-    it 'returns a valid path even when the url is invalid' do
-      expect(subject.path('not_an_url')).to eql 'not_an_url'
-    end
-
-    it 'returns the path of the url without trailing slashes' do
-      expect(subject.path('http://it.wikipedia.org/wiki/Tim_Berners-Lee')).to eql 'wiki/Tim_Berners-Lee'
-      expect(subject.path('http://it.wikipedia.org/wiki/Tim_Berners-Lee/')).to eql 'wiki/Tim_Berners-Lee'
-      expect(subject.path('http://it.wikipedia.org/')).to eql nil
-      expect(subject.path('http://it.wikipedia.org')).to eql nil
     end
   end
 end

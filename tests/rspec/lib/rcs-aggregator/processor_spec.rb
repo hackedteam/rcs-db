@@ -449,7 +449,6 @@ describe Processor do
           expect(aggregate.count).to eql 1
           expect(aggregate.info).to be_blank
           expect(aggregate.data['host']).to eql 'google.com'
-          expect(aggregate.data['path']).to be_nil
         end
       end
     end
@@ -469,10 +468,6 @@ describe Processor do
 
         it 'increments the count of the exiting aggregate' do
           expect(aggregate.count).to eql 6+1
-        end
-
-        it 'adds the ulrs\' paths to the aggregate "info" attribute' do
-          expect(aggregate.info).to eql ['wiki/Tim_Berners-Lee']
         end
       end
 
