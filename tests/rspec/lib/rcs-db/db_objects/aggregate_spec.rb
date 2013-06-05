@@ -213,20 +213,20 @@ describe Aggregate do
 
       it 'returns the most visited' do
         expect(@result.size).to eql 5
-        expect(@result[0]).to eql({"_id" => 'it.wikipedia.org', "count" => 50})
-        expect(@result[1]).to eql({"_id" => '4chan.org',        "count" => 10})
-        expect(@result[2]).to eql({"_id" => 'google.com',       "count" => 6})
+        expect(@result[0]).to eql({"host" => 'it.wikipedia.org', "count" => 50, "percent" => 73.5})
+        expect(@result[1]).to eql({"host" => '4chan.org',        "count" => 10, "percent" => 14.7})
+        expect(@result[2]).to eql({"host" => 'google.com',       "count" => 6,  "percent" => 8.8})
       end
     end
 
-    context 'called with "limit"' do
+    context 'called with "num"' do
 
-      before { @result = Aggregate.most_visited('testtarget', {'limit' => 2}) }
+      before { @result = Aggregate.most_visited('testtarget', {'num' => 2}) }
 
       it 'returns the most visited' do
         expect(@result.size).to eql 2
-        expect(@result[0]).to eql({"_id" => 'it.wikipedia.org', "count" => 50})
-        expect(@result[1]).to eql({"_id" => '4chan.org',        "count" => 10})
+        expect(@result[0]).to eql({"host" => 'it.wikipedia.org', "count" => 50, "percent" => 83.3})
+        expect(@result[1]).to eql({"host" => '4chan.org',        "count" => 10, "percent" => 16.7})
       end
     end
 
@@ -236,7 +236,7 @@ describe Aggregate do
 
       it 'returns the most visited' do
         expect(@result.size).to eql 1
-        expect(@result[0]).to eql({"_id" => 'it.wikipedia.org', "count" => 20})
+        expect(@result[0]).to eql({"host" => 'it.wikipedia.org', "count" => 20, "percent" => 100.0})
       end
     end
   end

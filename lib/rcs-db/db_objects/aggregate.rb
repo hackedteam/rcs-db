@@ -127,12 +127,23 @@ class Aggregate
   def self.most_visited(target_id, params = {})
     match = {:type => :url}
     match[:day] = {'$gte' => params['from'], '$lte' => params['to']} if params['from'] and params['to']
-    limit = params['limit'] || 5
+    limit = params['num'] || 5
     group = {_id: "$data.host", count: {"$sum" => "$count"}}
 
     pipeline = [{"$match" => match}, {"$group" => group}, {"$sort" => {count: -1}}, {"$limit" => limit}]
 
-    Aggregate.target(target_id).collection.aggregate(pipeline)
+    results = Aggregate.target(target_id).collection.aggregate(pipeline)
+
+    # Rename the "_id" key to "host" and adds the "percent" key
+    total = results.inject(0) { |num, hash| num += hash["count"]; num }
+
+    results.each do |hash|
+      hash["host"] = hash["_id"]
+      hash.delete("_id")
+      hash["percent"] = ((hash["count"].to_f / total.to_f)*100).round(1)
+    end
+
+    results
   end
 
   def self.most_contacted(target_id, params)
