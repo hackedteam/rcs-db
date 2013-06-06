@@ -75,3 +75,11 @@ factory_define :agent do |params|
   attributes.merge! params
   Item.create! attributes
 end
+
+factory_define :evidence do |params|
+  target = params.delete(:target) || factory_create(:target)
+  agent = params.delete(:agent) || factory_create(:agent, target: target)
+  attributes = {da: Time.now.to_i, aid: agent._id, data: {}}
+  attributes.merge! params
+  Evidence.collection_class(target._id).create! attributes
+end
