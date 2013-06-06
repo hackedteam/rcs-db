@@ -130,7 +130,7 @@ class Aggregate
     limit = params['num'] || 5
     group = {_id: "$data.host", count: {"$sum" => "$count"}}
 
-    pipeline = [{"$match" => match}, {"$group" => group}, {"$sort" => {count: -1}}, {"$limit" => limit}]
+    pipeline = [{"$match" => match}, {"$group" => group}, {"$sort" => {count: -1}}, {"$limit" => limit.to_i}]
 
     results = Aggregate.target(target_id).collection.aggregate(pipeline)
 

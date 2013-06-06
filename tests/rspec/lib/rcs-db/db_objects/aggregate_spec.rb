@@ -219,6 +219,10 @@ describe Aggregate do
       end
     end
 
+    it 'does not raise erros if "num" is a string' do
+      expect{ Aggregate.most_visited('testtarget', {'num' => '3'}) }.not_to raise_error
+    end
+
     context 'called with "num"' do
 
       before { @result = Aggregate.most_visited('testtarget', {'num' => 2}) }
