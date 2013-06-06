@@ -75,9 +75,10 @@ reload!
 RCS::DB::Config.instance.load_from_file
 RCS::DB::DB.instance.connect
 
-puts 'Using "rcs-test" database.'
-
-Mongoid.override_database 'rcs-test'
+if !ARGV.include?('--rcs')
+  puts 'Using "rcs-test" database.'
+  Mongoid.override_database 'rcs-test'
+end
 
 puts 'Use the #reload! method to reload the application without restaring the console.'
 
