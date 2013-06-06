@@ -7,6 +7,9 @@ require 'pry-nav'
 # require customer rspec matchers
 require File.expand_path 'spec_matchers', File.dirname(__FILE__)
 
+# require factory framework
+require File.expand_path 'spec_factories', File.dirname(__FILE__)
+
 begin
   Bundler.setup(:default, :development)
 rescue Bundler::BundlerError => e
