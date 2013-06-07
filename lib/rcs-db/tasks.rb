@@ -339,7 +339,7 @@ class TaskManager
     #Task.instance_eval { @generator_class = DummyTask }
   end
   
-  def audit_new_task type, user, params
+  def audit_new_task type, user_name, params
     case type
       when 'build'
         Audit.log :actor => user_name, :action => "build", :desc => "Created an installer for #{params['platform']}"
