@@ -38,6 +38,8 @@ class Evidence
   index({blo: 1}, {background: true})
   index({kw: 1}, {background: true})
 
+  index({'data.position' => "2dsphere"}, {background: true})
+
   shard_key :type, :da, :aid
 
   def self.create_collection

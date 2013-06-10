@@ -39,6 +39,9 @@ module RCS
 
       return if reply['latitude'].nil? or reply['longitude'].nil?
 
+      # Adds also a "position" array field to support mongoDB 2dSphere index
+      self[:data][:position] = [reply['longitude'], reply['latitude']]
+
       # fallback if the accuracy is ZERO
       self[:data][:accuracy] = 50 if self[:data][:type] == 'GPS' and self[:data][:accuracy] == 0
       self[:data].merge!(reply)
