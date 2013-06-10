@@ -119,6 +119,11 @@ class LicenseManager
         exit!
       end
 
+      if lic[:maintenance].nil?
+        trace :fatal, "Invalid License File: invalid maintenance period"
+        exit!
+      end
+
       # load only licenses valid for the current dongle's serial and current version
       add_limits lic
     end
@@ -196,7 +201,7 @@ class LicenseManager
     @limits[:serial] = limit[:serial]
 
     @limits[:expiry] = limit[:expiry].nil? ? nil : Time.parse(limit[:expiry]).getutc
-    @limits[:maintenance] = limit[:maintenance].nil? ? nil : Time.parse(limit[:maintenance]).getutc
+    @limits[:maintenance] = Time.parse(limit[:maintenance]).getutc
 
     @limits[:users] = limit[:users]
 
@@ -248,7 +253,12 @@ class LicenseManager
 
     # check if the platform can be used
     unless @limits[:agents][platform][0]
-      trace :warn, "You don't have a license for #{platform.to_s}. Queuing..."
+      trace :warn, "You don't have a license for #{platform.to_s}. Queuing agent..."
+      return false
+    end
+
+    unless check(:maintenance)
+      trace :warn, "Maintenance period expired. Queuing agent..."
       return false
     end
 
@@ -368,6 +378,9 @@ class LicenseManager
         if RCS::DB::Shard.count < @limits[:shards]
           return true
         end
+
+      when :maintenance
+        return Time.now.getutc <= @limits[:maintenance]
     end
 
     trace :warn, 'LICENCE EXCEEDED: ' + field.to_s
