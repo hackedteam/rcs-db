@@ -20,36 +20,32 @@ describe Processor do
   before { Entity.any_instance.stub(:fetch_address) }
 
   describe '#process' do
-    target_name = 'atarget'
-    let! (:operation) { Item.create!(name: 'test-operation-x', _kind: 'operation', path: [], stat: ::Stat.new) }
-    let! (:target) { Item.create!(name: target_name, _kind: 'target', path: [operation.id], stat: ::Stat.new) }
-    let! (:entity) { Entity.where(name: target_name).first }
+    let! (:target) { factory_create(:target) }
+    let! (:entity) { factory_create(:target_entity, target: target) }
 
     context 'the item is an aggregate' do
-      before do
-        aggregate_class = Aggregate.target target.id
-        @aggregate = aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: :sms, aid: 'agent_id', count: 1, data: {'peer' => 'harrenhal', 'versus' => :in})
-        @queued_item = IntelligenceQueue.create! target_id: target.id, type: :aggregate, ident: @aggregate.id
+
+      let!(:aggregate) do
+        factory_create(:aggregate, target: target, type: :sms, count: 1, data: {'peer' => 'harrenhal', 'versus' => :in})
       end
 
+      let!(:queued_item) { IntelligenceQueue.create! target_id: target.id, type: :aggregate, ident: aggregate.id }
 
       it 'call #process_aggregate' do
-        described_class.should_receive(:process_aggregate).with(entity, @aggregate)
-        described_class.process @queued_item
+        described_class.should_receive(:process_aggregate).with(entity, aggregate)
+        described_class.process queued_item
       end
     end
 
     context 'the item is an evidence' do
-      before do
-        agent = Item.create! name: 'test-agent', _kind: 'agent', path: target.path+[target.id], stat: ::Stat.new
-        @evidence = Evidence.collection_class(target._id).create!(da: Time.now.to_i, aid: agent._id, type: 'camera', data: {})
-        @queued_item = IntelligenceQueue.create! target_id: target.id, type: :evidence, ident: @evidence.id
-      end
 
+      let!(:evidence) { factory_create(:evidence, target: target, type: 'camera') }
+
+      let!(:queued_item) { IntelligenceQueue.create! target_id: target.id, type: :evidence, ident: evidence.id }
 
       it 'call #process_evidence' do
         described_class.should_receive(:process_evidence)
-        described_class.process @queued_item
+        described_class.process queued_item
       end
     end
   end
