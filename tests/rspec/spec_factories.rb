@@ -95,12 +95,17 @@ factory_define :evidence do |params|
     raise "An agent or a target must be supplied"
   end
 
-  if params[:agent] and params[:target] and !params[:agent].path.include?(params[:target].id)
+  target = params.delete(:target)
+  unless target
+    target = params[:agent] ? Item.find(params[:agent].path.last) : factory_create(:target)
+  end
+
+  agent = params.delete(:agent) || factory_create(:agent, target: target)
+
+  if agent.path.last != target.id
     raise "The given agent does not belong to the given target"
   end
 
-  target = params.delete(:target) || Item.find(agent.path.last)
-  agent = params.delete(:agent) || factory_create(:agent, target: target)
   attributes = {dr: Time.now.to_i, da: Time.now.to_i, aid: agent._id, data: {}}
   attributes.merge! params
   Evidence.collection_class(target._id).create! attributes

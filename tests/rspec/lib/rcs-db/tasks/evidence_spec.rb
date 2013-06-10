@@ -26,7 +26,7 @@ module DB
 
     # Creates some evidences
     before do
-      factory_create(:evidence, agent: agent, type: 'sms', data: {from: 'a', to: 'b', content: 'ciao', incoming: 1})
+      factory_create(:evidence, agent: agent, target: target, type: 'sms', data: {from: 'a', to: 'b', content: 'ciao', incoming: 1})
       factory_create(:screenshot_evidence, agent: agent, target: target, data: {program: 'viewer'})
       factory_create(:mic_evidence, agent: agent, target: target)
     end
