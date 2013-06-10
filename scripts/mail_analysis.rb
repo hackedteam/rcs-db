@@ -4,7 +4,7 @@ require 'set'
 
 PEER = 'marchetti'
 
-$analysis = Hash.new { |hash, key| hash[key] = Hash.new {|h,k| h[k] = Array.new(2, 0)} }
+$analysis = Hash.new { |h,k| h[k] = Hash.new {|h,k| h[k] = Array.new(2, 0)} }
 $total = Hash.new(0)
 $peers = Set.new
 
