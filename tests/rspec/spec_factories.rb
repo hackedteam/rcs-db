@@ -117,3 +117,16 @@ factory_define :screenshot_evidence do |params|
   evidence.save
   evidence
 end
+
+factory_define :mic_evidence do |params|
+  target = params[:target] || raise("A target must be supplied")
+
+  file_content = params.delete(:content) || fixtures_path('audio.001.mp3')
+  file_data = factory_create(:file, target: target, content: file_content)
+
+  evidence = factory_create(:evidence, params.merge(type: 'mic', target: target, mic_id: "MIC#{rand(1E20)}"))
+  evidence.data.merge! file_data
+  evidence.save
+  evidence
+end
+
