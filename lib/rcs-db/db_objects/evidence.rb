@@ -1,107 +1,104 @@
 require 'mongoid'
-require_relative '../shard'
-
 require 'rcs-common/keywords'
+require_relative '../shard'
 
 #module RCS
 #module DB
 
 class Evidence
   extend RCS::Tracer
+  include Mongoid::Document
 
   TYPES = ["addressbook", "application", "calendar", "call", "camera", "chat", "clipboard", "device",
            "file", "keylog", "position", "message", "mic", "mouse", "password", "print", "screenshot", "url"]
 
-  def self.collection_name(target)
-    "evidence.#{target}"
+  STAT_EXCLUSION = ['filesystem', 'info', 'command', 'ip']
+
+  field :da, type: Integer                      # date acquired
+  field :dr, type: Integer                      # date received
+  field :type, type: String
+  field :rel, type: Integer, default: 0         # relevance (tag)
+  field :blo, type: Boolean, default: false     # blotter (report)
+  field :note, type: String
+  field :aid, type: String                      # agent BSON_ID
+  field :data, type: Hash
+  field :kw, type: Array, default: []           # keywords for full text search
+
+  # store_in collection: Evidence.collection_name('#{target}')
+  store_in collection: -> { self.collection_name }
+
+  after_create :create_callback
+  before_destroy :destroy_callback
+
+  index({type: 1}, {background: true})
+  index({da: 1}, {background: true})
+  index({dr: 1}, {background: true})
+  index({aid: 1}, {background: true})
+  index({rel: 1}, {background: true})
+  index({blo: 1}, {background: true})
+  index({kw: 1}, {background: true})
+
+  shard_key :type, :da, :aid
+
+  def self.create_collection
+    # create the collection for the target's evidence and shard it
+    db = RCS::DB::DB.instance.mongo_connection
+    collection = db.collection self.collection.name
+    # ensure indexes
+    self.create_indexes
+    # enable sharding only if not enabled
+    RCS::DB::Shard.set_key(collection, {type: 1, da: 1, aid: 1}) unless collection.stats['sharded']
   end
 
-  def self.collection_class(target)
+  def create_callback
+    return if STAT_EXCLUSION.include? self.type
+    agent = Item.find self.aid
+    agent.stat.evidence ||= {}
+    agent.stat.evidence[self.type] ||= 0
+    agent.stat.evidence[self.type] += 1
+    agent.stat.dashboard ||= {}
+    agent.stat.dashboard[self.type] ||= 0
+    agent.stat.dashboard[self.type] += 1
+    agent.stat.size += self.data.to_s.length
+    agent.stat.grid_size += self.data[:_grid_size] unless self.data[:_grid].nil?
+    agent.save
+    # update the target of this agent
+    agent.get_parent.restat
+  end
 
-    class_definition = <<-END
-      class Evidence_#{target}
-        include Mongoid::Document
-
-        field :da, type: Integer                      # date acquired
-        field :dr, type: Integer                      # date received
-        field :type, type: String
-        field :rel, type: Integer, default: 0         # relevance (tag)
-        field :blo, type: Boolean, default: false     # blotter (report)
-        field :note, type: String
-        field :aid, type: String                      # agent BSON_ID
-        field :data, type: Hash
-        field :kw, type: Array, default: []           # keywords for full text search
-
-        store_in collection: Evidence.collection_name('#{target}')
-
-        after_create :create_callback
-        before_destroy :destroy_callback
-
-        index({type: 1}, {background: true})
-        index({da: 1}, {background: true})
-        index({dr: 1}, {background: true})
-        index({aid: 1}, {background: true})
-        index({rel: 1}, {background: true})
-        index({blo: 1}, {background: true})
-        index({kw: 1}, {background: true})
-
-        shard_key :type, :da, :aid
-
-        STAT_EXCLUSION = ['filesystem', 'info', 'command', 'ip']
-
-        def self.create_collection
-          # create the collection for the target's evidence and shard it
-          db = RCS::DB::DB.instance.mongo_connection
-          collection = db.collection(Evidence.collection_name('#{target}'))
-          # ensure indexes
-          self.create_indexes
-          # enable sharding only if not enabled
-          RCS::DB::Shard.set_key(collection, {type: 1, da: 1, aid: 1}) unless collection.stats['sharded']
-        end
-
-        protected
-
-        def create_callback
-          return if STAT_EXCLUSION.include? self.type
-          agent = Item.find self.aid
-          agent.stat.evidence ||= {}
-          agent.stat.evidence[self.type] ||= 0
-          agent.stat.evidence[self.type] += 1
-          agent.stat.dashboard ||= {}
-          agent.stat.dashboard[self.type] ||= 0
-          agent.stat.dashboard[self.type] += 1
-          agent.stat.size += self.data.to_s.length
-          agent.stat.grid_size += self.data[:_grid_size] unless self.data[:_grid].nil?
-          agent.save
-          # update the target of this agent
-          agent.get_parent.restat
-        end
-
-        def destroy_callback
-          agent = Item.find self.aid
-          # drop the file (if any) in grid
-          unless self.data['_grid'].nil?
-            RCS::DB::GridFS.delete(self.data['_grid'], agent.path.last.to_s) rescue nil
-          end
-        end
-      end
-    END
-    
-    classname = "Evidence_#{target}"
-    
-    if self.const_defined? classname.to_sym
-      klass = eval classname
-    else
-      eval class_definition
-      klass = eval classname
+  def destroy_callback
+    agent = Item.find self.aid
+    # drop the file (if any) in grid
+    unless self.data['_grid'].nil?
+      RCS::DB::GridFS.delete(self.data['_grid'], agent.path.last.to_s) rescue nil
     end
-    
-    return klass
   end
 
-  def self.dynamic_new(target_id)
-    klass = self.collection_class(target_id)
-    return klass.new
+  # #TODO: rename into self.target (just like Aggregate#target)
+  def self.collection_class(target)
+    target_id = target.respond_to?(:id) ? target.id : target
+    dynamic_classname = "Evidence#{target_id}"
+
+    if const_defined? dynamic_classname
+      const_get dynamic_classname
+    else
+      const_set dynamic_classname, Class.new(Evidence) { @target_id = target_id }
+    end
+  end
+
+  # Prevent people from calling Evidence.new instead of Evidence.target(...).new
+  def initialize *args
+    collection_name
+    super
+  end
+
+  def self.dynamic_new(target)
+    collection_class(target).new
+  end
+
+  def self.collection_name
+    raise "Missing target id. Maybe you're trying to instantiate Evidence without using Evidence#target." unless @target_id
+    "evidence.#{@target_id}"
   end
 
   def self.deep_copy(src, dst)
