@@ -66,11 +66,18 @@ module Intelligence
         end
       end
 
+      let(:another_url_evidence) do
+        Evidence.dynamic_new('bob').tap do |e|
+          e.data = {'url' => 'http://it.wikipedia.org/wiki/Computing'}
+          e.type = :url
+        end
+      end
+
       context 'when there isn\'t any matching virtual entity' do
 
         let!(:entity) { virtual_entity("4chan", "http://4chan.org/terrorism") }
 
-        it 'does not creata any link' do
+        it 'does not create any link' do
           subject.process_url_evidence target_entity, url_evidence
           expect(target_entity.reload).not_to be_linked_to entity.reload
         end
@@ -78,11 +85,17 @@ module Intelligence
 
       context 'when there is a matching virtual entity' do
 
-        let!(:entity) { virtual_entity("wikipedia", "http://it.wikipedia.org/wiki/Tim_Berners-Lee") }
+        let!(:entity) { virtual_entity("wikipedia", ["http://it.wikipedia.org/wiki/Tim_Berners-Lee", 'http://it.wikipedia.org/wiki/Computing']) }
 
-        it 'does not creata any link' do
+        it 'creates a virtual link' do
           subject.process_url_evidence target_entity, url_evidence
+          subject.process_url_evidence target_entity, another_url_evidence
+          link = target_entity.links.first
+
           expect(target_entity.reload).to be_linked_to entity.reload
+          expect(target_entity.links.size).to eql 1
+          expect(link.type).to eql :virtual
+          expect(link.info).to eql ['http://it.wikipedia.org/wiki/Tim_Berners-Lee', 'http://it.wikipedia.org/wiki/Computing']
         end
       end
     end

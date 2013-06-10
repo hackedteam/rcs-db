@@ -8,9 +8,11 @@ module Virtual
   extend self
 
   def process_url_evidence target_entity, url_evidence
-    virtual_entity = find_virtual_entity_by_url(url_evidence.data['url'])
+    url = url_evidence.data['url']
+    virtual_entity = find_virtual_entity_by_url(url)
     return unless virtual_entity
-    link_params = {from: target_entity, to: virtual_entity, level: :automatic, type: :virtual, versus: :out}
+
+    link_params = {from: target_entity, to: virtual_entity, level: :automatic, type: :virtual, versus: :out, info: url}
     RCS::DB::LinkManager.instance.add_link(link_params)
   end
 
