@@ -35,12 +35,12 @@ describe VirtualAggregator do
 
     it 'returns the host downcased without "www."' do
       expect(subject.host('http://it.wikipedia.org/wiki/Tim_Berners-Lee')).to eql 'it.wikipedia.org'
-      expect(subject.host('http://www.it.WIKIPEDIA.org/wiki/Tim_Berners-Lee')).to eql 'it.wikipedia.org'
+      expect(subject.host('https://www.it.WIKIPEDIA.org/wiki/Tim_Berners-Lee')).to eql 'it.wikipedia.org'
     end
 
-    it 'returns a valid host even when the uri scheme is missing' do
-      pending "What to assume a default scheme in these cases?"
-      # expect(subject.host('it.wikipedia.org/wiki/Tim_Berners-Lee')).to eql 'it.wikipedia.org'
+    it 'returns nil when the url scheme is missing or invalid' do
+      expect(subject.host('it.wikipedia.org/wiki/Tim_Berners-Lee')).to be_nil
+      expect(subject.host('magnet://it.wikipedia.org/wiki/Tim_Berners-Lee')).to be_nil
     end
   end
 end
