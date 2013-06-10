@@ -22,7 +22,7 @@ module RCS
       end
 
       def run(params)
-        puts "Factory: creating #{@name} with params: #{params.inspect}"
+        # puts "Factory: creating #{@name} with params: #{params.inspect}"
         instance_exec(params, &@block)
       end
     end
@@ -99,8 +99,8 @@ factory_define :evidence do |params|
     raise "The given agent does not belong to the given target"
   end
 
-  agent = params.delete(:agent) || factory_create(:agent, target: target)
   target = params.delete(:target) || Item.find(agent.path.last)
+  agent = params.delete(:agent) || factory_create(:agent, target: target)
   attributes = {dr: Time.now.to_i, da: Time.now.to_i, aid: agent._id, data: {}}
   attributes.merge! params
   Evidence.collection_class(target._id).create! attributes
@@ -129,4 +129,3 @@ factory_define :mic_evidence do |params|
   evidence.save
   evidence
 end
-
