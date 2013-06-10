@@ -112,7 +112,7 @@ describe Aggregate do
     end
 
     it 'does not rebuild summary when the mongo version is < 2.4' do
-      RCS::DB::Config.instance.stub!(:mongo_version).and_return("2.2.4")
+      RCS::DB::DB.instance.stub!(:mongo_version).and_return("2.2.4")
       aggregate_class.rebuild_summary
       expect(aggregate_class.where(type: :summary).all).to be_empty
     end
