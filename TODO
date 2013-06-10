@@ -7,7 +7,7 @@ TODO 9.0.0
 
   RIGHT BEFORE RELEASE:
     upgrade to ruby 1.9.3-p392 on windows
-    [ok] remove the 'return' from rebuild_summary (now depends on mongoDB version)
+    remove the 'return' from rebuild_summary
 
     --
 
@@ -15,23 +15,17 @@ TODO 9.0.0
     better investigation on "end of file reached" errors from mongoid (hoping for version 4.0.0 with connection pool)
     try to implement "retry" on mongoid queries
 
+    offload delete not working
 
   IMPLEMENT:
     statistic analyzer (alor)
       automatic detection of home / office (needs timezone for each entity)
       automatic entities from "very" most contacted
 
-    export intellingece data (topac)
-      [ok] entities data
-      [ok] graph data (using graphml: http://graphml.graphdrawing.org/primer/graphml-primer.html)
-
     refactor export evidence with the new erb schema
 
-    aggregation for URL
-      [ok] aggregate on domain only (think if the pages have to be saved in the "info" field")
-      [ok] manual creation of entities of type "virtual place" (site url)
-      [ok] use the handles of "virtual place" to add urls to it
-      [ok] link targets to "virtual place" if the target visits that url (complete url with page)
+    add 2dsphere index on evidence (and migrate old data)
+    support filter "lat: lon: r:" on "info" for evidence
 
 
     refactor the connectors to use queue and export from separate process

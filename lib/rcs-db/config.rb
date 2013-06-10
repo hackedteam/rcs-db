@@ -616,9 +616,6 @@ class Config
     return Config.instance.run(options)
   end
 
-  def mongo_version
-    @mongo_version ||= Mongoid.default_session.command(:buildinfo => 1)['version']
-  end
 end #Config
 
 end #DB::

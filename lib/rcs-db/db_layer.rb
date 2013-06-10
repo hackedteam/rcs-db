@@ -90,6 +90,10 @@ class DB
     return session
   end
 
+  def mongo_version
+    @mongo_version ||= Mongoid.default_session.command(:buildinfo => 1)['version']
+  end
+
   # insert here the class to be indexed
   @@classes_to_be_indexed = [::Audit, ::User, ::Group, ::Alert, ::Status, ::Core, ::Collector, ::Injector, ::Item, ::PublicDocument, ::EvidenceFilter, ::Entity]
 
