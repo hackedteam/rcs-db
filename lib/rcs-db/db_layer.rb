@@ -49,7 +49,7 @@ class DB
 
       Mongoid.load!(Config.instance.file('mongoid.yaml'), :production)
 
-      trace :info, "Connected to MongoDB at #{ENV['MONGOID_HOST']}:#{ENV['MONGOID_PORT']}"
+      trace :info, "Connected to MongoDB at #{ENV['MONGOID_HOST']}:#{ENV['MONGOID_PORT']} version #{mongo_version}"
 
     rescue Exception => e
       trace :fatal, e
