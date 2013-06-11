@@ -24,9 +24,9 @@ gem 'rest-client'
 gem 'xml-simple'
 
 # databases
-gem 'mongo', "= 1.8.3", :git => "git://github.com/alor/mongo-ruby-driver.git", :branch => "1.8.3_append"
-gem 'bson', "= 1.8.3"
-gem 'bson_ext', "= 1.8.3"
+gem 'mongo', "= 1.8.6", :git => "git://github.com/alor/mongo-ruby-driver.git", :branch => "1.8.6_append"
+gem 'bson', "= 1.8.6"
+gem 'bson_ext', "= 1.8.6"
 
 gem 'mongoid', ">= 3.0.0"
 gem 'rvincenty'

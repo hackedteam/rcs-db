@@ -35,9 +35,6 @@ pkg
 # RubyMine
 .idea
 
-# bundler
-Gemfile.lock
-
 # log files
 log/*
 

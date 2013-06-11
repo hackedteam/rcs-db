@@ -1,0 +1,148 @@
+GIT
+  remote: git://github.com/alor/mongo-ruby-driver.git
+  revision: a996604f1bb4ff54a2a8af24e264f891dbb94d08
+  branch: 1.8.6_append
+  specs:
+    bson (1.8.6)
+    bson_ext (1.8.6)
+      bson (~> 1.8.6)
+    mongo (1.8.6)
+      bson (~> 1.8.6)
+
+GIT
+  remote: git://github.com/danielemilan/minitar.git
+  revision: 56af58400e2d8171906dee4bf5c5a1d930e5b7b6
+  branch: master
+  specs:
+    minitar (0.5.5)
+
+PATH
+  remote: ../rcs-common
+  specs:
+    rcs-common (8.4.0)
+      ffi
+      log4r (>= 1.1.9)
+      mail
+      mime-types
+      sys-cpu
+      sys-filesystem
+
+GEM
+  remote: http://rubygems.org/
+  specs:
+    PriorityQueue (0.1.2)
+    activemodel (3.2.13)
+      activesupport (= 3.2.13)
+      builder (~> 3.0.0)
+    activesupport (3.2.13)
+      i18n (= 0.6.1)
+      multi_json (~> 1.0)
+    addressable (2.3.4)
+    bcrypt-ruby (3.0.1)
+    builder (3.0.4)
+    coderay (1.0.9)
+    cookiejar (0.3.0)
+    diff-lcs (1.2.4)
+    em-http-request (1.0.3)
+      addressable (>= 2.2.3)
+      cookiejar
+      em-socksify
+      eventmachine (>= 1.0.0.beta.4)
+      http_parser.rb (>= 0.5.3)
+    em-http-server (0.1.6)
+      eventmachine
+    em-socksify (0.2.1)
+      eventmachine (>= 1.0.0.beta.4)
+    em-websocket (0.5.0)
+      eventmachine (>= 0.12.9)
+      http_parser.rb (~> 0.5.3)
+    eventmachine (1.0.3)
+    ffi (1.9.0)
+    http_parser.rb (0.5.3)
+    i18n (0.6.1)
+    log4r (1.1.10)
+    lrucache (0.1.4)
+      PriorityQueue (~> 0.1.2)
+    mail (2.5.4)
+      mime-types (~> 1.16)
+      treetop (~> 1.4.8)
+    method_source (0.8.1)
+    mime-types (1.23)
+    mongoid (3.1.4)
+      activemodel (~> 3.2)
+      moped (~> 1.4)
+      origin (~> 1.0)
+      tzinfo (~> 0.3.22)
+    moped (1.5.0)
+    multi_json (1.7.6)
+    origin (1.1.0)
+    plist (3.1.0)
+    polyglot (0.3.3)
+    pry (0.9.12.2)
+      coderay (~> 1.0.5)
+      method_source (~> 0.8)
+      slop (~> 3.4)
+    pry-nav (0.2.3)
+      pry (~> 0.9.10)
+    rake (10.0.4)
+    rest-client (1.6.7)
+      mime-types (>= 1.16)
+    rspec (2.13.0)
+      rspec-core (~> 2.13.0)
+      rspec-expectations (~> 2.13.0)
+      rspec-mocks (~> 2.13.0)
+    rspec-core (2.13.1)
+    rspec-expectations (2.13.0)
+      diff-lcs (>= 1.1.3, < 2.0)
+    rspec-mocks (2.13.1)
+    rubyzip (0.9.9)
+    rvincenty (0.1.0)
+    simplecov (0.7.1)
+      multi_json (~> 1.0)
+      simplecov-html (~> 0.7.1)
+    simplecov-html (0.7.1)
+    slop (3.4.5)
+    sys-cpu (0.7.1)
+      ffi (>= 1.0.0)
+    sys-filesystem (1.1.0)
+      ffi
+    treetop (1.4.14)
+      polyglot
+      polyglot (>= 0.3.1)
+    tzinfo (0.3.37)
+    uuidtools (2.1.4)
+    xml-simple (1.1.2)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  activesupport
+  bcrypt-ruby
+  bson (= 1.8.6)
+  bson_ext (= 1.8.6)
+  bundler (> 1.0.0)
+  em-http-request
+  em-http-server (>= 0.1.3)
+  em-websocket
+  eventmachine (>= 1.0.0)
+  ffi
+  jruby-openssl
+  json
+  lrucache
+  mail
+  minitar (>= 0.5.5)!
+  mongo (= 1.8.6)!
+  mongoid (>= 3.0.0)
+  plist
+  pry
+  pry-nav
+  rake
+  rcs-common (>= 8.3.3)!
+  rest-client
+  rspec
+  rubyzip
+  rvincenty
+  simplecov
+  uuidtools
+  xml-simple

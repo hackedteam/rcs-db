@@ -6,7 +6,6 @@
 TODO 9.0.0
 
   RIGHT BEFORE RELEASE:
-    upgrade to ruby 1.9.3-p392 on windows
     remove the 'return' from rebuild_summary
 
     --
