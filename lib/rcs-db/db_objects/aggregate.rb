@@ -6,39 +6,39 @@ require_relative '../position/proximity'
 #module RCS
 #module DB
 
-class Aggregate
-  extend RCS::Tracer
-  include Mongoid::Document
-  include RCS::DB::Proximity
+module Aggregate
+  def self.included(base)
+    base.field :aid, type: String                      # agent BSON_ID
+    base.field :day, type: String                      # day of aggregation
+    base.field :type, type: Symbol
+    base.field :count, type: Integer, default: 0
+    base.field :size, type: Integer, default: 0        # seconds for calls, bytes for the others
+    base.field :info, type: Array                      # for summary or timeframe (position
 
-  field :aid, type: String                      # agent BSON_ID
-  field :day, type: String                      # day of aggregation
-  field :type, type: Symbol
-  field :count, type: Integer, default: 0
-  field :size, type: Integer, default: 0        # seconds for calls, bytes for the others
-  field :info, type: Array                      # for summary or timeframe (position
+    base.field :data, type: Hash, default: {}
 
-  field :data, type: Hash, default: {}
+    base.store_in collection: -> { self.collection_name }
 
-  store_in collection: -> { self.collection_name }
+    base.index({aid: 1}, {background: true})
+    base.index({type: 1}, {background: true})
+    base.index({day: 1}, {background: true})
+    base.index({"data.peer" => 1}, {background: true})
+    base.index({"data.type" => 1}, {background: true})
+    base.index({"data.host" => 1}, {background: true})
+    base.index({type: 1, "data.peer" => 1 }, {background: true})
 
-  index({aid: 1}, {background: true})
-  index({type: 1}, {background: true})
-  index({day: 1}, {background: true})
-  index({"data.peer" => 1}, {background: true})
-  index({"data.type" => 1}, {background: true})
-  index({"data.host" => 1}, {background: true})
-  index({type: 1, "data.peer" => 1 }, {background: true})
+    base.index({'data.position' => "2dsphere"}, {background: true})
 
-  index({'data.position' => "2dsphere"}, {background: true})
+    base.shard_key :type, :day, :aid
 
-  shard_key :type, :day, :aid
+    base.scope :positions, base.where(type: :position)
 
-  scope :positions, where(type: :position)
+    # The "day" attribute must be a string in the format of YYYYMMDD
+    # or the string "0" (when the type if :postioner or :summary)
+    base.validates_format_of :day, :with => /\A(\d{8}|0)\z/
 
-  # The "day" attribute must be a string in the format of YYYYMMDD
-  # or the string "0" (when the type if :postioner or :summary)
-  validates_format_of :day, :with => /\A(\d{8}|0)\z/
+    base.extend ClassMethods
+  end
 
   def to_point
     raise "not a position" unless type.eql? :position
@@ -46,57 +46,83 @@ class Aggregate
     Point.new time_params.merge(lat: data['position'][1], lon: data['position'][0], r: data['radius'])
   end
 
-  def self.summary_include? type, peer
-    summary = self.where(day: '0', type: :summary).first
-    return false unless summary
+  def position
+    {latitude: self.data['position'][1], longitude: self.data['position'][0], radius: self.data['radius']}
+  end
 
-    # type can be an array of types
-    type = [type].flatten
+  def entity_handle_type
+    t = self.type.to_sym
 
-    type.each do |t|
-      return true if summary.info.include? "#{t}_#{peer}"
+    if [:call, :sms, :mms].include? t
+      'phone'
+    elsif [:mail, :gmail, :outlook].include? t
+      'mail'
+    else
+      "#{t}"
+    end
+  end
+
+  module ClassMethods
+    def create_collection
+      # create the collection for the target's aggregate and shard it
+      db = RCS::DB::DB.instance.mongo_connection
+      collection = db.collection self.collection.name
+      # ensure indexes
+      self.create_indexes
+      # enable sharding only if not enabled
+      RCS::DB::Shard.set_key(collection, {type: 1, day: 1, aid: 1}) unless collection.stats['sharded']
     end
 
-    false
-  end
+    def collection_name
+      raise "Missing target id. Maybe you're trying to instantiate Aggregate without using Aggregate#target." unless @target_id
+      "aggregate.#{@target_id}"
+    end
 
-  def self.add_to_summary(type, peer)
-    summary = self.where(day: '0', aid: '0', type: :summary).first_or_create!
-    summary.add_to_set(:info, type.to_s + '_' + peer.to_s)
-  end
 
-  def self.rebuild_summary
-    #TODO: enable when mongo 2.4 is in place.
-    return if RCS::DB::DB.instance.mongo_version < "2.4.0"
+    # Summary related methods
 
-    return if self.empty?
+    def add_to_summary(type, peer)
+      summary = self.where(day: '0', aid: '0', type: :summary).first_or_create!
+      summary.add_to_set(:info, type.to_s + '_' + peer.to_s)
+    end
 
-    # get all the tuple (type, peer)
-    pipeline = [{ "$match" => {:type => {'$nin' => [:summary, :positioner]} }},
-                { "$group" =>
-                  { _id: { peer: "$data.peer", type: "$type" }}
-                }]
-    data = self.collection.aggregate(pipeline)
+    def summary_include? type, peer
+      summary = self.where(day: '0', type: :summary).first
+      return false unless summary
 
-    return if data.empty?
+      # type can be an array of types
+      type = [type].flatten
 
-    # normalize them in a better form
-    data.collect! {|e| e['_id']['type'].to_s + '_' + e['_id']['peer']}
+      type.each do |t|
+        return true if summary.info.include? "#{t}_#{peer}"
+      end
 
-    summary = self.where(day: '0', aid: '0', type: :summary).first_or_create!
+      false
+    end
 
-    summary.info = data
-    summary.save!
-  end
+    def rebuild_summary
+      #TODO: enable when mongo 2.4 is in place.
+      return if RCS::DB::DB.instance.mongo_version < "2.4.0"
 
-  def self.create_collection
-    # create the collection for the target's aggregate and shard it
-    db = RCS::DB::DB.instance.mongo_connection
-    collection = db.collection self.collection.name
-    # ensure indexes
-    self.create_indexes
-    # enable sharding only if not enabled
-    RCS::DB::Shard.set_key(collection, {type: 1, day: 1, aid: 1}) unless collection.stats['sharded']
+      return if self.empty?
+
+      # get all the tuple (type, peer)
+      pipeline = [{ "$match" => {:type => {'$nin' => [:summary, :positioner]} }},
+                  { "$group" =>
+                    { _id: { peer: "$data.peer", type: "$type" }}
+                  }]
+      data = self.collection.aggregate(pipeline)
+
+      return if data.empty?
+
+      # normalize them in a better form
+      data.collect! {|e| e['_id']['type'].to_s + '_' + e['_id']['peer']}
+
+      summary = self.where(day: '0', aid: '0', type: :summary).first_or_create!
+
+      summary.info = data
+      summary.save!
+    end
   end
 
   def self.target target
@@ -106,19 +132,15 @@ class Aggregate
     if const_defined? dynamic_classname
       const_get dynamic_classname
     else
-      const_set dynamic_classname, Class.new(Aggregate) { @target_id = target_id }
+      c = Class.new do
+        extend RCS::Tracer
+        include Mongoid::Document
+        include RCS::DB::Proximity
+        include Aggregate
+      end
+      c.instance_variable_set '@target_id', target_id
+      const_set(dynamic_classname, c)
     end
-  end
-
-  # Prevent people from calling Aggregate.new instead of Aggregate.target(...).new
-  def initialize *args
-    collection_name
-    super
-  end
-
-  def self.collection_name
-    raise "Missing target id. Maybe you're trying to instantiate Aggregate without using Aggregate#target." unless @target_id
-    "aggregate.#{@target_id}"
   end
 
   # Extracts the most visited urls for a given target (within a timeframe).
@@ -203,22 +225,6 @@ class Aggregate
     trace :debug, "Most contacted: Resolv time #{Time.now - time}" if RCS::DB::Config.instance.global['PERF']
 
     return top
-  end
-
-  def position
-    {latitude: self.data['position'][1], longitude: self.data['position'][0], radius: self.data['radius']}
-  end
-
-  def entity_handle_type
-    t = self.type.to_sym
-
-    if [:call, :sms, :mms].include? t
-      'phone'
-    elsif [:mail, :gmail, :outlook].include? t
-      'mail'
-    else
-      "#{t}"
-    end
   end
 end
 
