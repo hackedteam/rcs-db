@@ -14,7 +14,7 @@ require 'date'
 class LicenseGenerator
   include Singleton
 
-  LICENSE_VERSION = '8.3'
+  LICENSE_VERSION = '8.4'
 
   def initialize
     # default values.
