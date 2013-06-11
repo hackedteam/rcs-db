@@ -30,6 +30,12 @@ TODO 9.0.0
       automatic detection of home / office (needs timezone for each entity)
       automatic entities from "very" most contacted
 
+    refactor export evidence with the new erb schema
+
+    Search for position evidences by clicking on a position link (intelligence)
+      - add 2dsphere index on evidence [OK]
+      - support filter "lat: lon: r:" on "info" for evidence
+      - migrate old data
 
     refactor the connectors to use queue and export from separate process
       - xml export
@@ -52,6 +58,7 @@ TODO FUTURE:
       - agent (too much logic here)
       - evidence (too much logic here)
 
+    Refactor evidence search filters (Evidence#common_filter, etc.)
 
 ======================================
 IDEAS:
