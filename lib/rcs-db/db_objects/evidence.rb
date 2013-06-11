@@ -204,7 +204,14 @@ class Evidence
     filter_hash[date.lte] = filter.delete('to') if filter.has_key? 'to'
 
     # custom filters for info
-    filter_for_keywords(filter, filter_hash) if filter.has_key?('info')
+    if filter.has_key?('info')
+      info = filter.delete('info')
+      # backward compatibility
+      info = [info].flatten.compact
+
+      filter_for_keywords(info, filter_hash)
+      filter_for_position(info, filter_hash)
+    end
 
     # filter on note
     groups_of_words = filter.delete('note')
@@ -223,24 +230,46 @@ class Evidence
     return filter, filter_hash, target
   end
 
-  def self.filter_for_keywords(filter, filter_hash)
-    info = filter.delete('info')
+  def self.each_filter_key_value string
+    key_values = string.split(',')
+    key_values.each do |kv|
+      key, value = kv.split(':')
+      key.downcase!
 
-    # backward compatibility
-    info = [info].flatten.compact
+      next if value.blank?
+      # special case for email (the field is called "rcpt" but presented as "to")
+      key = 'rcpt' if key == 'to'
+      yield(key, value) if block_given?
+    end
+  end
 
+  # If the info array contains a string like "lon:40,lat:10,r:34" than adds
+  # a $near filter for the "data.position" attribute.
+  def self.filter_for_position(info, filter_hash)
+    return if info.size != 1
+    return if info.first !~ /[[:alpha:]]:[[:alpha:]]/
+
+    lat, lon, r = nil
+
+    each_filter_key_value(info.first) do |k, v|
+      lat = v if k == 'lat'
+      lon = v if k == 'lon'
+      r   = v if k == 'r'
+    end
+
+    return unless lat and lon and r
+
+    near_filter = {'$geometry' => {'type' => 'Point', 'coordinates' => [lon, lat], '$maxDistance' => r}}
+    filter_hash['data.position'] = {'$near' => near_filter}
+  end
+
+  def self.filter_for_keywords(info, filter_hash)
     # check if it's in the form of specific field name:
-    #   field1:value1,field2:value2,etc,etc
-    #
+    # field1:value1,field2:value2,etc,etc
     if info.size == 1 && /[[:alpha:]]:[[:alpha:]]/ =~ info.first
-      info = info.first
-      key_values = info.split(',')
-      key_values.each do |kv|
-        k, v = kv.split(':')
-        k.downcase!
-
-        # special case for email (the field is called "rcpt" but presented as "to")
-        k = 'rcpt' if k == 'to'
+      each_filter_key_value(info.first) do |k, v|
+        # special case for $near search
+        next if %w[lat lon r].include?(k)
 
         filter_hash["data.#{k}"] = Regexp.new("#{v}", Regexp::IGNORECASE)
         # add the keyword search to cut the nscanned item
@@ -253,8 +282,6 @@ class Evidence
       filter_hash['$or'] ||= []
       filter_hash['$or'].concat groups_of_words.map { |words| {'kw' => {'$all' => words}} }
     end
-  rescue Exception => e
-    trace :error, "Invalid filter for data [#{e.message}], ignoring..."
   end
 
   def self.offload_move_evidence(params)

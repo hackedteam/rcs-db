@@ -133,12 +133,10 @@ describe Evidence do
 
     let(:info) { ['john dorian skype'] }
 
-    let(:filter) { {'info' => info} }
-
     let(:filter_hash) { {} }
 
     it 'adds to the filter_hash a selector on the :kw attribute' do
-      described_class.filter_for_keywords filter, filter_hash
+      described_class.filter_for_keywords info, filter_hash
       selector = filter_hash.keys.first
       expect(selector).to eql '$or'
       expect(filter_hash[selector]).to eql [{"kw"=>{"$all"=>["dorian", "john", "skype"]}}]
@@ -149,8 +147,40 @@ describe Evidence do
       let(:info) { %w[john dorian skype] }
 
       it 'adds to the filter_hash a selector on the :kw attribute' do
-        described_class.filter_for_keywords filter, filter_hash
+        described_class.filter_for_keywords info, filter_hash
         expect(filter_hash).not_to be_empty
+      end
+    end
+
+    context 'when "info" contains "lat", "lon" and "r"' do
+
+      let(:info) { ["to:prova@gmail.com,lat:30,lon:30,r:100"] }
+
+      it 'does not inclue lat, lon and r in the filter_hash' do
+        described_class.filter_for_keywords info, filter_hash
+        expect(filter_hash.size).to eql 2
+      end
+    end
+  end
+
+  describe '#filter_for_position' do
+
+    context 'when "info" contains "lat", "lon" and "r"' do
+
+      let(:info) { ["to:prova@gmail.com,lat:30,lon:30,r:100"] }
+
+      let(:filter_hash) { {} }
+
+      # let!(:target) { factory_create(:target) }
+
+      # before do
+      #   factory_create(:position_evidence, target: target, latitude: 30.0, longitude: 30.0)
+      #   factory_create(:position_evidence, target: target, latitude: 1.0, longitude: 1.0)
+      # end
+
+      it 'adds a $near filter to search for a position evidence' do
+        described_class.filter_for_position info, filter_hash
+        expect(filter_hash['data.position']).not_to be_empty
       end
     end
   end
