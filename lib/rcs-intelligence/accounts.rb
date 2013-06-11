@@ -19,8 +19,8 @@ module Accounts
     end
   end
 
-  # Check if the given evidence if the given addressbook evidence
-  # has all the information that #add_handle method needs.
+  # Check if the given evidence has all the information that
+  # the #add_handle method needs.
   def valid_addressbook_evidence?(evidence)
     return false unless evidence.type == 'addressbook'
     data = evidence[:data]
