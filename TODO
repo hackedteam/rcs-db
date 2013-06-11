@@ -14,8 +14,6 @@ TODO 9.0.0
     better investigation on "end of file reached" errors from mongoid (hoping for version 4.0.0 with connection pool)
     try to implement "retry" on mongoid queries
 
-    offload delete not working
-
   IMPLEMENT:
     statistic analyzer (alor)
       automatic detection of home / office (needs timezone for each entity)
