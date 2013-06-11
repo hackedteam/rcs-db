@@ -117,10 +117,10 @@ factory_define :screenshot_evidence do |params|
   file_content = params.delete(:content) || fixtures_path('image.001.jpg')
   file_data = factory_create(:file, target: target, content: file_content)
 
-  evidence = factory_create(:evidence, params.merge(type: 'screenshot', target: target))
-  evidence.data.merge! file_data
-  evidence.save
-  evidence
+  attributes = {type: 'screenshot', target: target, data: file_data}
+  attributes.merge! params
+
+  factory_create(:evidence, attributes)
 end
 
 factory_define :mic_evidence do |params|
@@ -129,8 +129,27 @@ factory_define :mic_evidence do |params|
   file_content = params.delete(:content) || fixtures_path('audio.001.mp3')
   file_data = factory_create(:file, target: target, content: file_content)
 
-  evidence = factory_create(:evidence, params.merge(type: 'mic', target: target, mic_id: "MIC#{rand(1E20)}"))
-  evidence.data.merge! file_data
-  evidence.save
-  evidence
+  data = {mic_id: "MIC#{rand(1E20)}"}.merge(file_data)
+  attributes = {type: 'mic', target: target, data: data}
+  attributes.merge! params
+
+  factory_create(:evidence, attributes)
+end
+
+factory_define :position_evidence do |params|
+  lat, lon, acc = params[:latitude], params[:longitude], params[:accuracy]
+
+  if (!lat and lon) or (lon and !lat)
+    raise "Latitude and longitude must be both specified"
+  end
+
+  lat ||= 45.4766561
+  lon ||= 9.1915256
+  acc ||= 25
+
+  data = {type: 'WIFI', position: [lon, lat], latitude: lat, longitude: lon, accuracy: acc}
+  attributes = {type: 'position', data: data}
+  attributes.merge! params
+
+  factory_create(:evidence, attributes)
 end
