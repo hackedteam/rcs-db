@@ -118,6 +118,8 @@ module Aggregate
       # normalize them in a better form
       data.collect! {|e| e['_id']['type'].to_s + '_' + e['_id']['peer']}
 
+      self.where(type: :summary).destroy_all
+
       summary = self.where(day: '0', aid: '0', type: :summary).first_or_create!
 
       summary.info = data

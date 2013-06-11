@@ -8,12 +8,6 @@ TODO 8.4.0
   add 2dsphere index on evidence
   support filter "lat: lon: r:" on "info" for evidence
 
-
-  MIGRATION:
-    change all the aggregates of [:gmail, :mail] to :mail
-    rebuild all the summaries
-    change all the handles of :gmail to :mail
-
   TEST:
     migration of mongo 2.4 on real data (copy db from castore to vm and try)
     export entity from console
