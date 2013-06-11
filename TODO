@@ -1,14 +1,25 @@
 
-#####################################################
- REMOVE 2dsphere before releasing on mongodb 2.2.x
-#####################################################
+TODO 8.4.0
+
+  remove the 'return' from rebuild_summary
+
+  refactor export evidence with the new erb schema
+
+  add 2dsphere index on evidence
+  support filter "lat: lon: r:" on "info" for evidence
+
+
+  MIGRATION:
+    change all the aggregates of [:gmail, :mail] to :mail
+    rebuild all the summaries
+    change all the handles of :gmail to :mail
+
+  TEST:
+    migration of mongo 2.4 on real data (copy db from castore to vm and try)
+    export entity from console
+
 
 TODO 9.0.0
-
-  RIGHT BEFORE RELEASE:
-    remove the 'return' from rebuild_summary
-
-    --
 
   FIX:
     better investigation on "end of file reached" errors from mongoid (hoping for version 4.0.0 with connection pool)
@@ -19,11 +30,6 @@ TODO 9.0.0
       automatic detection of home / office (needs timezone for each entity)
       automatic entities from "very" most contacted
 
-    refactor export evidence with the new erb schema
-
-    add 2dsphere index on evidence (and migrate old data)
-    support filter "lat: lon: r:" on "info" for evidence
-
 
     refactor the connectors to use queue and export from separate process
       - xml export
@@ -32,15 +38,11 @@ TODO 9.0.0
   TRY:
     hash index for sharding (topac - on branch 9.0.x)
 
-  MIGRATION:
-    change all the aggregates of [:gmail, :mail] to :mail
-    rebuild all the summaries
-    change all the handles of :gmail to :mail
-
   TEST:
-    migration of mongo 2.4 on real data (copy db from castore to vm and try)
     flow integration with console
-    export entity from console
+
+  MIGRATION:
+    and migrate old position to the new 2dsphere index
 
 
 ======================================
