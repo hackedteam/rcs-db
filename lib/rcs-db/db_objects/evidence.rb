@@ -5,51 +5,46 @@ require_relative '../shard'
 #module RCS
 #module DB
 
-class Evidence
-  extend RCS::Tracer
-  include Mongoid::Document
+
+module Evidence
+  # extend RCS::Tracer
+  # include Mongoid::Document
 
   TYPES = ["addressbook", "application", "calendar", "call", "camera", "chat", "clipboard", "device",
            "file", "keylog", "position", "message", "mic", "mouse", "password", "print", "screenshot", "url"]
 
   STAT_EXCLUSION = ['filesystem', 'info', 'command', 'ip']
 
-  field :da, type: Integer                      # date acquired
-  field :dr, type: Integer                      # date received
-  field :type, type: String
-  field :rel, type: Integer, default: 0         # relevance (tag)
-  field :blo, type: Boolean, default: false     # blotter (report)
-  field :note, type: String
-  field :aid, type: String                      # agent BSON_ID
-  field :data, type: Hash
-  field :kw, type: Array, default: []           # keywords for full text search
+  def self.included(base)
+    base.field :da, type: Integer                      # date acquired
+    base.field :dr, type: Integer                      # date received
+    base.field :type, type: String
+    base.field :rel, type: Integer, default: 0         # relevance (tag)
+    base.field :blo, type: Boolean, default: false     # blotter (report)
+    base.field :note, type: String
+    base.field :aid, type: String                      # agent BSON_ID
+    base.field :data, type: Hash
+    base.field :kw, type: Array, default: []           # keywords for full text search
 
-  # store_in collection: Evidence.collection_name('#{target}')
-  store_in collection: -> { self.collection_name }
+    # store_in collection: Evidence.collection_name('#{target}')
+    base.store_in collection: -> { self.collection_name }
 
-  after_create :create_callback
-  before_destroy :destroy_callback
+    base.after_create :create_callback
+    base.before_destroy :destroy_callback
 
-  index({type: 1}, {background: true})
-  index({da: 1}, {background: true})
-  index({dr: 1}, {background: true})
-  index({aid: 1}, {background: true})
-  index({rel: 1}, {background: true})
-  index({blo: 1}, {background: true})
-  index({kw: 1}, {background: true})
+    base.index({type: 1}, {background: true})
+    base.index({da: 1}, {background: true})
+    base.index({dr: 1}, {background: true})
+    base.index({aid: 1}, {background: true})
+    base.index({rel: 1}, {background: true})
+    base.index({blo: 1}, {background: true})
+    base.index({kw: 1}, {background: true})
 
-  index({'data.position' => "2dsphere"}, {background: true})
+    base.index({'data.position' => "2dsphere"}, {background: true})
 
-  shard_key :type, :da, :aid
+    base.shard_key :type, :da, :aid
 
-  def self.create_collection
-    # create the collection for the target's evidence and shard it
-    db = RCS::DB::DB.instance.mongo_connection
-    collection = db.collection self.collection.name
-    # ensure indexes
-    self.create_indexes
-    # enable sharding only if not enabled
-    RCS::DB::Shard.set_key(collection, {type: 1, da: 1, aid: 1}) unless collection.stats['sharded']
+    base.extend ClassMethods
   end
 
   def create_callback
@@ -84,23 +79,35 @@ class Evidence
     if const_defined? dynamic_classname
       const_get dynamic_classname
     else
-      const_set dynamic_classname, Class.new(Evidence) { @target_id = target_id }
+      c = Class.new do
+        extend RCS::Tracer
+        include Mongoid::Document
+        include Evidence
+      end
+      c.instance_variable_set '@target_id', target_id
+      const_set(dynamic_classname, c)
     end
   end
 
-  # Prevent people from calling Evidence.new instead of Evidence.target(...).new
-  def initialize *args
-    collection_name
-    super
+  module ClassMethods
+    def collection_name
+      raise "Missing target id. Maybe you're trying to instantiate Evidence without using Evidence#target." unless @target_id
+      "evidence.#{@target_id}"
+    end
+
+    def create_collection
+      # create the collection for the target's evidence and shard it
+      db = RCS::DB::DB.instance.mongo_connection
+      collection = db.collection self.collection.name
+      # ensure indexes
+      self.create_indexes
+      # enable sharding only if not enabled
+      RCS::DB::Shard.set_key(collection, {type: 1, da: 1, aid: 1}) unless collection.stats['sharded']
+    end
   end
 
   def self.dynamic_new(target)
     collection_class(target).new
-  end
-
-  def self.collection_name
-    raise "Missing target id. Maybe you're trying to instantiate Evidence without using Evidence#target." unless @target_id
-    "evidence.#{@target_id}"
   end
 
   def self.deep_copy(src, dst)
@@ -230,10 +237,17 @@ class Evidence
     return filter, filter_hash, target
   end
 
+  # Check if the first string of the "info" filter is in the form of
+  # field_1:value_1,field_2:value_2,...,field_x:value_y
+  def self.filter_info_has_key_values? info
+    regexp = /^([a-zA-Z]+:[^\,]+(\,|\,\s|$))+$/
+    info.size == 1 && info.first =~ regexp
+  end
+
   def self.each_filter_key_value string
     key_values = string.split(',')
     key_values.each do |kv|
-      key, value = kv.split(':')
+      key, value = kv.split(':').map(&:strip)
       key.downcase!
 
       next if value.blank?
@@ -246,8 +260,7 @@ class Evidence
   # If the info array contains a string like "lon:40,lat:10,r:34" than adds
   # a $near filter for the "data.position" attribute.
   def self.filter_for_position(info, filter_hash)
-    return if info.size != 1
-    return if info.first !~ /[[:alpha:]]:[[:alpha:]]/
+    return unless filter_info_has_key_values?(info)
 
     lat, lon, r = nil
 
@@ -260,13 +273,11 @@ class Evidence
     return unless lat and lon and r
 
     near_filter = {'$geometry' => {'type' => 'Point', 'coordinates' => [lon, lat], '$maxDistance' => r}}
-    filter_hash['data.position'] = {'$near' => near_filter}
+    filter_hash['data.position'] = {'$nearSphere' => near_filter}
   end
 
   def self.filter_for_keywords(info, filter_hash)
-    # check if it's in the form of specific field name:
-    # field1:value1,field2:value2,etc,etc
-    if info.size == 1 && /[[:alpha:]]:[[:alpha:]]/ =~ info.first
+    if filter_info_has_key_values?(info)
       each_filter_key_value(info.first) do |k, v|
         # special case for $near search
         next if %w[lat lon r].include?(k)
