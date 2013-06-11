@@ -92,6 +92,8 @@ class DB
 
   def mongo_version
     @mongo_version ||= Mongoid.default_session.command(:buildinfo => 1)['version']
+  rescue
+    "unknown"
   end
 
   # insert here the class to be indexed
