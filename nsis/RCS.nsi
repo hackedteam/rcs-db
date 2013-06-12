@@ -175,10 +175,10 @@ ${StrStr}
   File "..\mongodb\win\mongos.exe"
 
   SetOutPath "$INSTDIR\DB\bin"
-  File "..\scripts\rcs-upgrate-to-mongo24.rb"
+  File "..\bin\rcs-db-mongo-upgrade24.rb"
 
   DetailPrint "Launching mongoDB upgrade script..."
-  !insertmacro ExecOrQuit "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-upgrate-to-mongo24.rb" "Upgrade to mongoDB 2.4 has failed. Check out the logfile for details."
+  !insertmacro ExecOrQuit "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-mongo-upgrade24.rb" "Upgrade to mongoDB 2.4 has failed. Check out the logfile for details."
 !macroend
 
 ;--------------------------------
