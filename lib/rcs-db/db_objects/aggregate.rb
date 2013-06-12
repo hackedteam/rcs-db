@@ -101,9 +101,6 @@ module Aggregate
     end
 
     def rebuild_summary
-      #TODO: enable when mongo 2.4 is in place.
-      return if RCS::DB::DB.instance.mongo_version < "2.4.0"
-
       return if self.empty?
 
       # get all the tuple (type, peer)
