@@ -1,12 +1,11 @@
 
 TODO 8.4.0
 
-  remove the 'return' from rebuild_summary
-
   refactor export evidence with the new erb schema
 
-  add 2dsphere index on evidence
-  support filter "lat: lon: r:" on "info" for evidence
+  Search for position evidence by clicking on a position link (intelligence)
+    add 2dsphere index on evidence
+    support filter "lat: lon: r:" on "info" for evidence
 
   TEST:
     migration of mongo 2.4 on real data (copy db from castore to vm and try)
@@ -23,13 +22,6 @@ TODO 9.0.0
     statistic analyzer (alor)
       automatic detection of home / office (needs timezone for each entity)
       automatic entities from "very" most contacted
-
-    refactor export evidence with the new erb schema
-
-    Search for position evidences by clicking on a position link (intelligence)
-      - add 2dsphere index on evidence [OK]
-      - support filter "lat: lon: r:" on "info" for evidence
-      - migrate old data
 
     refactor the connectors to use queue and export from separate process
       - xml export
