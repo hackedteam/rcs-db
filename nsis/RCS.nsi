@@ -171,8 +171,8 @@ ${StrStr}
 ;If the version 2.4 is already installed, the ruby script will exit immediatly
 ;Two log files should be created in c:\rcs\db\log
 !macro UpgradeMongoDB
-  SetOutPath "$INSTDIR\DB\temp"
-  File "..\mongodb\win\mongos.exe"
+  SetOutPath "$INSTDIR\DB\temp\mongo24"
+  File "..\mongodb\win\*"
 
   SetOutPath "$INSTDIR\DB\bin"
   File "..\bin\rcs-db-mongo-upgrade24.rb"

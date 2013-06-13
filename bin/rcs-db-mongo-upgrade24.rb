@@ -18,9 +18,11 @@ require 'open3'
 require 'logger'
 require 'mongoid'
 require 'yaml'
+require 'fileutils'
 
 MONGO_SERVER_ADDR = "127.0.0.1:27017"
-MONGOS24_BIN_PATH = "C:\\RCS\\DB\\temp\\mongos.exe"
+MONGOS24_BINS_PATH = "C:\\RCS\\DB\\temp\\mongo24"
+MONGOS22_BINS_PATH = "C:\\RCS\\DB\\mongodb\\win"
 MONGO_UPGRADE_LOGPATH = "C:\\RCS\\DB\\log\\mongo_upgrade.log"
 LOGPATH = "C:\\RCS\\DB\\log\\#{File.basename(__FILE__)}.log"
 RCSDB_CONFIG_FILEPATH = "C:\\RCS\\DB\\config\\config.yaml"
@@ -66,7 +68,7 @@ def mongo_session
 end
 
 def mongo_renew_session
-  @mongo_session.disconnect
+  @mongo_session.disconnect rescue nil
   @mongo_session = nil
   mongo_session
 end
@@ -89,7 +91,8 @@ def mongo_24?
 end
 
 def mongo_start_balancer
-  mongo_session[:settings].find(_id: 'balancer').update stopped: false
+  # mongo_session[:settings].find(_id: 'balancer').update stopped: false
+  mongo_session.command "$eval" =>  "sh.startBalancer()"
 end
 
 def mongo_stop_balancer
@@ -97,7 +100,7 @@ def mongo_stop_balancer
 end
 
 def mongo_upgrade
-  command = "#{MONGOS24_BIN_PATH} --configdb \"#{configured_cn}\" --upgrade --logpath \"#{MONGO_UPGRADE_LOGPATH}\""
+  command = "#{MONGOS24_BINS_PATH}\\mongos.exe --configdb \"#{configured_cn}\" --upgrade --logpath \"#{MONGO_UPGRADE_LOGPATH}\""
   stdin, stdout, stderr, thread = Open3.popen3 command
   lines = []
   error = nil
@@ -154,7 +157,7 @@ begin
 
   if mongo_24?
     logger.info "Mongo 2.4 is already installed."
-    return
+    exit(0)
   end
 
   if windows_diskfree < mongo_config_db_size*5
@@ -168,7 +171,34 @@ begin
   windows_service "RCS Master Router", :stop
 
   logger.info "Starting upgrade of metadata."
+  mongo_renew_session
   mongo_upgrade
+
+  logger.info "Killing mongos.exe (2.4)"
+  mongos_kill
+
+  logger.info "Stopping mongo config (2.2)"
+  windows_service "RCS Master Config", :stop
+
+  logger.info "Stopping shard (2.2)"
+  windows_service "RCS Shard", :stop
+
+  # copy all mongo 2.4 bins to the default folder
+  Dir[File.join(MONGOS24_BINS_PATH, '*')].each do |path|
+    logger.debug "Copying #{path} to #{MONGOS22_BINS_PATH}"
+    FileUtils.cp path, MONGOS22_BINS_PATH
+  end
+
+  # restart all
+
+  logger.info "Starting shard (2.4)"
+  windows_service "RCS Shard", :start
+
+  logger.info "Starting mongo config (2.4)"
+  windows_service "RCS Master Config", :start
+
+  logger.info "Starting mongo router (2.4)"
+  windows_service "RCS Master Router", :start
 
   mongo_renew_session
 
@@ -178,9 +208,6 @@ begin
 
   logger.info "Restarting balancer."
   mongo_start_balancer
-
-  logger.info "Killing mongos.exe (2.4)"
-  mongos_kill
 rescue Exception => e
   log_and_raise e
 end

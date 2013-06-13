@@ -174,7 +174,7 @@ task :protect do
 
   execute "Copying the rgloader" do
     RGPATH = RUBYENCPATH + '/Loaders'
-    Dir.mkdir(Dir.pwd + '/lib/rgloader')
+    Dir.mkdir(Dir.pwd + '/lib/rgloader') rescue puts("Folder lib/rgloader already exists.")
     files = Dir[RGPATH + '/**/**']
     # keep only the interesting files (1.9.3 windows, macos)
     files.delete_if {|v| v.match(/bsd/i) or v.match(/linux/i)}
