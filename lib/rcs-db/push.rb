@@ -43,7 +43,7 @@ class PushManager
           type = entry.type
           message = entry.message
 
-          trace :info, "#{count} push messages to be processed in queue"
+          trace :debug, "#{count} push messages to be processed in queue"
 
           SessionManager.instance.all.each do |session|
             ws = WebSocketManager.instance.get_ws_from_cookie session[:cookie]
