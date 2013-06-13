@@ -43,7 +43,7 @@ end
 
 factory_define :operation do |params|
   attributes = {name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new}
-  attributes.merge! params
+  attributes.deep_merge! params
 
   operation = Item.create! attributes
   operation.users << factory_create(:user)
@@ -53,7 +53,7 @@ end
 factory_define :target do |params|
   operation = params.delete(:operation) || factory_create(:operation)
   attributes = {name: "test-target", _kind: 'target', path: [operation._id], stat: ::Stat.new}
-  attributes.merge! params
+  attributes.deep_merge! params
   Item.create! attributes
 end
 
@@ -65,14 +65,14 @@ end
 factory_define :aggregate do |params|
   target = params.delete :target
   attributes = {day: Time.now.strftime('%Y%m%d'), aid: 'agent_id'}
-  attributes.merge! params
+  attributes.deep_merge! params
   Aggregate.target(target).create! attributes
 end
 
 factory_define :agent do |params|
   target = params.delete(:target) || factory_create(:target)
   attributes = {name: 'test-agent', _kind: 'agent', path: target.path+[target.id], stat: ::Stat.new}
-  attributes.merge! params
+  attributes.deep_merge! params
   Item.create! attributes
 end
 
@@ -107,7 +107,7 @@ factory_define :evidence do |params|
   end
 
   attributes = {dr: Time.now.to_i, da: Time.now.to_i, aid: agent._id, data: {}}
-  attributes.merge! params
+  attributes.deep_merge! params
   Evidence.collection_class(target._id).create! attributes
 end
 
@@ -118,7 +118,7 @@ factory_define :screenshot_evidence do |params|
   file_data = factory_create(:file, target: target, content: file_content)
 
   attributes = {type: 'screenshot', target: target, data: file_data}
-  attributes.merge! params
+  attributes.deep_merge! params
 
   factory_create(:evidence, attributes)
 end
@@ -129,9 +129,9 @@ factory_define :mic_evidence do |params|
   file_content = params.delete(:content) || fixtures_path('audio.001.mp3')
   file_data = factory_create(:file, target: target, content: file_content)
 
-  data = {mic_id: "MIC#{rand(1E20)}"}.merge(file_data)
+  data = {mic_id: "MIC#{rand(1E20)}"}.deep_merge(file_data)
   attributes = {type: 'mic', target: target, data: data}
-  attributes.merge! params
+  attributes.deep_merge! params
 
   factory_create(:evidence, attributes)
 end
@@ -147,9 +147,24 @@ factory_define :position_evidence do |params|
   lon ||= 9.1915256
   acc ||= 25
 
-  data = {type: 'WIFI', position: [lon, lat], latitude: lat, longitude: lon, accuracy: acc}
+  data = {type: 'WIFI', latitude: lat, longitude: lon, accuracy: acc}
   attributes = {type: 'position', data: data}
-  attributes.merge! params
+  attributes.deep_merge! params
+  attributes[:data][:position] = [attributes[:data][:longitude], attributes[:data][:latitude]]
 
-  factory_create(:evidence, attributes)
+  evidence = factory_create(:evidence, attributes)
+  evidence.class.create_indexes
+  evidence
+end
+
+factory_define :chat_evidence do |params|
+  data = {'from' => 'test-sender', 'rcpt' => 'test-receiver', 'incoming' => 1, 'program' => 'skype', 'content' => 'all your base are belong to us'}
+  attributes = {type: 'chat', data: data}
+  attributes.deep_merge! params
+
+  evidence = factory_create(:evidence, attributes)
+  if evidence.kw.blank?
+    evidence.update_attributes kw: Indexer.keywordize(evidence.type, evidence.data, evidence.note)
+  end
+  evidence
 end

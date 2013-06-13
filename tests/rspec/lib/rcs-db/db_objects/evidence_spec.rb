@@ -171,16 +171,9 @@ describe Evidence do
 
       let(:filter_hash) { {} }
 
-      # let!(:target) { factory_create(:target) }
-
-      # before do
-      #   factory_create(:position_evidence, target: target, latitude: 30.0, longitude: 30.0)
-      #   factory_create(:position_evidence, target: target, latitude: 1.0, longitude: 1.0)
-      # end
-
       it 'adds a $near filter to search for a position evidence' do
         described_class.filter_for_position info, filter_hash
-        expect(filter_hash['data.position']).not_to be_empty
+        expect(filter_hash['geoNear_coordinates']).not_to be_empty
       end
     end
   end

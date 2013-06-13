@@ -335,6 +335,9 @@ class EvidenceController < RESTController
       filter, filter_hash, target = ::Evidence.common_filter @params
       return not_found("Target or Agent not found") if filter.nil?
 
+      geo_near_coordinates = filter_hash.delete('geoNear_coordinates')
+      geo_near_accuracy = filter_hash.delete('geoNear_accuracy')
+
       # copy remaining filtering criteria (if any)
       filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info', 'command', 'ip'])
       filter.each_key do |k|
@@ -350,6 +353,11 @@ class EvidenceController < RESTController
         # without paging, return everything
         query = filtering.where(filter_hash).without(:body, :kw).order_by([[:da, :asc]])
       end
+
+      if geo_near_coordinates
+        query = query.positions_within(geo_near_coordinates, geo_near_accuracy)
+      end
+
       # fix to provide correct stats
       return ok(query, {gzip: true})
     end
@@ -363,13 +371,22 @@ class EvidenceController < RESTController
       filter, filter_hash, target = ::Evidence.common_filter @params
       return not_found("Target or Agent not found") if filter.nil?
 
+      geo_near_coordinates = filter_hash.delete('geoNear_coordinates')
+      geo_near_accuracy = filter_hash.delete('geoNear_accuracy')
+
       # copy remaining filtering criteria (if any)
       filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info', 'command', 'ip'])
       filter.each_key do |k|
         filtering = filtering.any_in(k.to_sym => filter[k])
       end
 
-      num_evidence = filtering.where(filter_hash).count
+      filtering = filtering.where(filter_hash)
+
+      if geo_near_coordinates
+        filtering = filtering.positions_within(geo_near_coordinates, geo_near_accuracy)
+      end
+
+      num_evidence = filtering.count
 
       # Flex RPC does not accept 0 (zero) as return value for a pagination (-1 is a safe alternative)
       num_evidence = -1 if num_evidence == 0

@@ -44,6 +44,8 @@ module Evidence
 
     base.shard_key :type, :da, :aid
 
+    base.scope :positions, base.where(type: 'position')
+
     base.extend ClassMethods
   end
 
@@ -82,6 +84,7 @@ module Evidence
       c = Class.new do
         extend RCS::Tracer
         include Mongoid::Document
+        include RCS::DB::Proximity
         include Evidence
       end
       c.instance_variable_set '@target_id', target_id
@@ -153,7 +156,6 @@ module Evidence
 
     return num_evidence
   end
-
 
   def self.filtered_count(params)
 
@@ -270,10 +272,10 @@ module Evidence
       r   = v if k == 'r'
     end
 
-    return unless lat and lon and r
+    return unless lat and lon
 
-    near_filter = {'$geometry' => {'type' => 'Point', 'coordinates' => [lon, lat], '$maxDistance' => r}}
-    filter_hash['data.position'] = {'$nearSphere' => near_filter}
+    filter_hash['geoNear_coordinates'] = [lon, lat].map(&:to_f)
+    filter_hash['geoNear_accuracy'] = r.to_i if r
   end
 
   def self.filter_for_keywords(info, filter_hash)
