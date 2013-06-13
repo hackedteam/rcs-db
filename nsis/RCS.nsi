@@ -199,7 +199,9 @@ Section "Update Section" SecUpdate
    Sleep 3000
    SimpleSC::StopService "RCSIntelligence" 1
 
-   !insertmacro UpgradeMongoDB
+   ${If} $installMaster == ${BST_CHECKED}
+     !insertmacro UpgradeMongoDB
+   ${EndIf}
 
    Sleep 3000
    SimpleSC::StopService "RCSMasterRouter" 1
