@@ -192,7 +192,7 @@ begin
   windows_execute "copy \"#{MONGOS24_BINS_PATH}\\*.exe\" \"#{MONGOS22_BINS_PATH}\""
 
   logger.info "Starting shard (2.4)"
-  windows_service "RCS Shard", :started
+  windows_service "RCS Shard", :start
 
   logger.info "Starting mongo config (2.4)"
   windows_service "RCS Master Config", :start
