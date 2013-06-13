@@ -105,18 +105,19 @@ def mongo_upgrade
   lines = []
   error = nil
   buffer = ""
-
+  completed = false
   sleep 1
 
   File.open(MONGO_UPGRADE_LOGPATH, 'rb') do |file|
-    until file.eof?
-      buffer += file.read 32
-      
+    until completed == false
+      buffer += file.read(32) rescue ''
+
       if buffer.index("\n")
         line = buffer.slice!(0, (buffer.index("\n")+1)).strip
         logger.debug "[mongos.exe] #{line}"
         lines << line
         error = line if line =~ /ERROR:/
+        completed = true if line =~ /balancer id\:.*started at/i
       end
     end
   end
@@ -135,7 +136,9 @@ end
 def windows_execute command
   logger.debug "Executing \"#{command}\""
   out, err = Open3.capture3 command
-  log_and_raise "Command \"#{command}\" generates error \"#{err}\"" unless err.empty?
+  if !err.empty? and err !~ /pipe has been ended/i
+    log_and_raise "Command \"#{command}\" generates error \"#{err}\""
+  end
   out
 end
 
@@ -174,6 +177,8 @@ begin
   mongo_renew_session
   mongo_upgrade
 
+  sleep 1
+
   logger.info "Killing mongos.exe (2.4)"
   mongos_kill
 
@@ -183,13 +188,12 @@ begin
   logger.info "Stopping shard (2.2)"
   windows_service "RCS Shard", :stop
 
-  # copy all mongo 2.4 bins to the default folder
+  logger.info "Copying all mongo 2.4 bins to the default folder: #{MONGOS24_BINS_PATH}"
+
   Dir[File.join(MONGOS24_BINS_PATH, '*')].each do |path|
     logger.debug "Copying #{path} to #{MONGOS22_BINS_PATH}"
     FileUtils.cp path, MONGOS22_BINS_PATH
   end
-
-  # restart all
 
   logger.info "Starting shard (2.4)"
   windows_service "RCS Shard", :start
