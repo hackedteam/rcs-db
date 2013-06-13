@@ -41,11 +41,11 @@ class DB
       ENV['MONGOID_HOST'] = "#{Config.instance.global['CN']}"
       ENV['MONGOID_PORT'] = "27017"
 
-      #Mongoid.logger.level = ::Logger::DEBUG
-      #Moped.logger.level = ::Logger::DEBUG
-
       #Mongoid.logger = ::Logger.new($stdout)
       #Moped.logger = ::Logger.new($stdout)
+
+      #Mongoid.logger.level = ::Logger::DEBUG
+      #Moped.logger.level = ::Logger::DEBUG
 
       Mongoid.load!(Config.instance.file('mongoid.yaml'), :production)
 

@@ -30,11 +30,11 @@ class Migration
   def self.run(params)
     puts "Migration procedure started..."
 
-    #Mongoid.logger.level = ::Logger::DEBUG
-    #Moped.logger.level = ::Logger::DEBUG
-
     #Mongoid.logger = ::Logger.new($stdout)
     #Moped.logger = ::Logger.new($stdout)
+
+    #Mongoid.logger.level = ::Logger::DEBUG
+    #Moped.logger.level = ::Logger::DEBUG
 
     # we are standalone (no rails or rack)
     ENV['MONGOID_ENV'] = 'yes'
@@ -89,11 +89,12 @@ class Migration
     puts "Re-indexing aggregates..."
     ::Item.targets.each do |target|
       begin
-        next if Aggregate.target(target._id).empty?
+        next unless Aggregate.target(target._id).exists?
         Aggregate.target(target._id).collection.indexes.drop
         Aggregate.target(target._id).create_collection
         print "\r%d aggregates reindexed" % count += 1
-      rescue
+      rescue Exception => e
+        puts e.message
       end
     end
     puts

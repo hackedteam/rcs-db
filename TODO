@@ -29,6 +29,7 @@ TODO 9.0.0
 
   TRY:
     hash index for sharding (topac - on branch 9.0.x)
+    tailable cursor on get_queue instead of busy loop with sleep
 
   TEST:
     flow integration with console
