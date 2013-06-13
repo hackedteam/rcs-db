@@ -3,14 +3,9 @@ TODO 8.4.0
 
   refactor export evidence with the new erb schema
 
-  Search for position evidence by clicking on a position link (intelligence)
-    add 2dsphere index on evidence
-    support filter "lat: lon: r:" on "info" for evidence
-
   TEST:
-    migration of mongo 2.4 on real data (copy db from castore to vm and try)
+    migration of mongo 2.4 on real data (copy db from castore to vm and try) [OK]
     export entity from console
-
 
 TODO 9.0.0
 
@@ -51,3 +46,9 @@ TODO FUTURE:
 IDEAS:
 
     global target position (http://www.zeit.de/datenschutz/malte-spitz-data-retention)
+
+
+======================================
+Documentation:
+
+  - info filter support lat:12.4,lon:34.4,r:100 or also lat:12.4,lon:34.4
