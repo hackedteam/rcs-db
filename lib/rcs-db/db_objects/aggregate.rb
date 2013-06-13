@@ -169,7 +169,9 @@ module Aggregate
 
   def self.most_contacted(target_id, params)
     start = Time.now
-    most_contacted_types = [:call, :chat, :mail, :sms, :mms, :facebook, :gmail, :skype, :bbm, :whatsapp, :msn, :adium, :viber, :outlook]
+    most_contacted_types = [:call, :chat, :mail, :sms, :mms, :facebook,
+                            :gmail, :skype, :bbm, :whatsapp, :msn, :adium,
+                            :viber, :outlook, :wechat, :line]
 
     # mongoDB aggregation framework
 

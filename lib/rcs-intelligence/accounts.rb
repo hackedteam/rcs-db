@@ -8,7 +8,8 @@ module Accounts
   extend self
 
   def known_services
-    [:facebook, :twitter, :gmail, :skype, :bbm, :whatsapp, :phone, :mail, :linkedin, :viber, :outlook]
+    [:facebook, :twitter, :gmail, :skype, :bbm, :whatsapp,
+     :phone, :mail, :linkedin, :viber, :outlook, :wechat, :line]
   end
 
   def service_to_handle_type service
