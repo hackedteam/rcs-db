@@ -38,7 +38,7 @@ include RCS::Factory::Helpers
 # Definitions
 
 factory_define :user do |params|
-  User.create! name: 'testuser', enabled: true
+  User.create! name: "testuser_#{rand(1E10)}", enabled: true
 end
 
 factory_define :operation do |params|
