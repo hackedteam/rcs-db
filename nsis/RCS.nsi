@@ -421,7 +421,7 @@ Section "Install Section" SecInstall
 
       ; generate the SSL cert for anon
       DetailPrint "Generating anonymizer certs..."
-      !insertmacro ExecOrQuit "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-certs-anon --log" "Unable to generate Generating anonymizer certs."
+      !insertmacro ExecOrQuit "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-certs-anon --log" "Unable to generate anonymizer certs."
       DetailPrint "done"
 
       ; generate the keystores
