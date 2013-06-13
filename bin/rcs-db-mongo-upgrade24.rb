@@ -109,7 +109,8 @@ def mongo_upgrade
 
   File.open(MONGO_UPGRADE_LOGPATH, 'rb') do |file|
     while true
-      buffer += file.read(32) rescue ''
+      readed = file.read(32) rescue nil
+      buffer += readed if readed
 
       if buffer.index("\n")
         line = buffer.slice!(0, (buffer.index("\n")+1)).strip
@@ -191,7 +192,7 @@ begin
   windows_execute "copy \"#{MONGOS24_BINS_PATH}\\*.exe\" \"#{MONGOS22_BINS_PATH}\""
 
   logger.info "Starting shard (2.4)"
-  windows_service "RCS Shard", :start
+  windows_service "RCS Shard", :started
 
   logger.info "Starting mongo config (2.4)"
   windows_service "RCS Master Config", :start
