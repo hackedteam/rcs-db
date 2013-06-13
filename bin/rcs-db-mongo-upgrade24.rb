@@ -33,7 +33,7 @@ RCSDB_CONFIG_FILEPATH = "C:\\RCS\\DB\\config\\config.yaml"
 
 def logger
   @logger ||= begin
-    lgr = Logger.new LOGPATH
+    lgr = Logger.new(ARGV.include?('--verbose') ? $stdout : LOGPATH)
     lgr.level = Logger::DEBUG
     lgr.formatter = proc { |severity, datetime, progname, msg| "#{severity} | #{datetime} | #{msg}\n" }
     lgr
@@ -105,11 +105,10 @@ def mongo_upgrade
   lines = []
   error = nil
   buffer = ""
-  completed = false
   sleep 1
 
   File.open(MONGO_UPGRADE_LOGPATH, 'rb') do |file|
-    until completed == false
+    while true
       buffer += file.read(32) rescue ''
 
       if buffer.index("\n")
@@ -117,11 +116,11 @@ def mongo_upgrade
         logger.debug "[mongos.exe] #{line}"
         lines << line
         error = line if line =~ /ERROR:/
-        completed = true if line =~ /balancer id\:.*started at/i
+        break if line =~ /balancer id\:.*started at/i
       end
     end
   end
-  
+
   log_and_raise "Command \"#{command}\" generates error \"#{error}\"" if error
 end
 
@@ -177,7 +176,7 @@ begin
   mongo_renew_session
   mongo_upgrade
 
-  sleep 1
+  sleep 2
 
   logger.info "Killing mongos.exe (2.4)"
   mongos_kill
@@ -188,12 +187,8 @@ begin
   logger.info "Stopping shard (2.2)"
   windows_service "RCS Shard", :stop
 
-  logger.info "Copying all mongo 2.4 bins to the default folder: #{MONGOS24_BINS_PATH}"
-
-  Dir[File.join(MONGOS24_BINS_PATH, '*')].each do |path|
-    logger.debug "Copying #{path} to #{MONGOS22_BINS_PATH}"
-    FileUtils.cp path, MONGOS22_BINS_PATH
-  end
+  logger.info "Copying all mongo 2.4 bins to the default folder: #{MONGOS22_BINS_PATH}"
+  windows_execute "copy \"#{MONGOS24_BINS_PATH}\\*.exe\" \"#{MONGOS22_BINS_PATH}\""
 
   logger.info "Starting shard (2.4)"
   windows_service "RCS Shard", :start
@@ -211,7 +206,7 @@ begin
   end
 
   logger.info "Restarting balancer."
-  mongo_start_balancer
+  mongo_start_balancer rescue logger.error('Starting balancer may have been failed.')
 rescue Exception => e
   log_and_raise e
 end
