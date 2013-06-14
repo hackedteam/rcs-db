@@ -13,13 +13,15 @@ module Ghost
     name, type, handle = handle_attrs[:name], handle_attrs[:type], handle_attrs[:handle]
 
     # search for entity
-    ghost = Entity.same_path_of(entity).where("handles.type" => type, "handles.handle" => handle).first
+    ghost = Entity.path_include(entity.path.first).where("handles.type" => type, "handles.handle" => handle).first
+
+    return if entity == ghost
 
     # create a new entity if not found
     unless ghost
       trace :debug, "Creating ghost entity: #{name} -- #{type} #{handle}"
-
-      ghost = Entity.create!(name: name, type: :person, level: :ghost, path: [entity.path.first])
+      description = "Created automatically to represent the handle #{handle}"
+      ghost = Entity.create!(name: name, type: :person, level: :ghost, path: [entity.path.first], desc: description)
       # add the handle
       ghost.create_or_update_handle(type, handle, name)
     end
