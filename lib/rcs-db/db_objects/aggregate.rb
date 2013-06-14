@@ -7,6 +7,8 @@ require_relative '../position/proximity'
 #module DB
 
 module Aggregate
+  extend RCS::Tracer
+
   def self.included(base)
     base.field :aid, type: String                      # agent BSON_ID
     base.field :day, type: String                      # day of aggregation
@@ -133,6 +135,7 @@ module Aggregate
     else
       c = Class.new do
         extend RCS::Tracer
+        include RCS::Tracer
         include Mongoid::Document
         include RCS::DB::Proximity
         include Aggregate

