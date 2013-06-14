@@ -13,7 +13,7 @@ module Aggregate
     base.field :type, type: Symbol
     base.field :count, type: Integer, default: 0
     base.field :size, type: Integer, default: 0        # seconds for calls, bytes for the others
-    base.field :info, type: Array                      # for summary or timeframe (position
+    base.field :info, type: Array, default: []         # for summary or timeframe (position)
 
     base.field :data, type: Hash, default: {}
 
