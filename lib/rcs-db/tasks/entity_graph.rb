@@ -10,15 +10,9 @@ module DB
 
     def entities
       @entities ||= begin
-        criteria = Entity.path_include(@params['operation'])
-        case @params['map_type']
-        when 'link'
-          criteria.targets_or_persons.all
-        when 'position'
-          criteria.positions.all
-        else
-          criteria.all
-        end
+        ids = @params['id']
+        filters = {'id' => {'$in' => ids}} unless ids.blank?
+        Entity.path_include(@params['operation']).where(filters || {}).all
       end
     end
 

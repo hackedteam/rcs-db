@@ -80,17 +80,12 @@ module DB
 
     describe '#entities' do
 
-      it 'returns 2 entities when map_type is "link"' do
-        task = subject(map_type: 'link')
+      it 'returns the right number of entities filtered by the given ids' do
+        task = subject(id: [alice.id, bob.id])
         expect(task.entities.size).to eql 2
       end
 
-      it 'returns 1 entity when map_type is "position"' do
-        task = subject(map_type: 'position')
-        expect(task.entities.size).to eql 1
-      end
-
-      it 'returns all the entities when map_type is invalid or missing' do
+      it 'returns all the entities when the ids params is missing or empty' do
         task = subject({})
         expect(task.entities.size).to eql 3
       end

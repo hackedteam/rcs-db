@@ -104,7 +104,7 @@ module DB
 
     describe '#total' do
 
-      let(:task) { subject(id: bob.id) }
+      let(:task) { subject(id: [bob.id]) }
 
       it 'reurn the number of the entities + 1 + the number of photos + the number of files in "export.zip"' do
         expect(task.total).to eql task.entities.size + 1 + 2 + FileTask.style_assets_count
@@ -115,9 +115,9 @@ module DB
 
       context 'when the "id" param is present' do
 
-        let(:task) { subject(id: bob.id) }
+        let(:task) { subject(id: [bob.id]) }
 
-        it 'returns an array with the entity fetched by the given id' do
+        it 'returns an array with the entity fetched by the given ids' do
           expect(task.entities.size).to eql 1
           expect(task.entities.first).to eql bob
         end
