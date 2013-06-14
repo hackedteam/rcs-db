@@ -19,7 +19,7 @@ class EntityController < RESTController
 
       ::Entity.in(user_ids: [@session.user[:_id]]).ne(level: :ghost).only(fields).each do |ent|
         ent = ent.as_document
-        link_size = ent['links'] ? ent['links'].size : 0
+        link_size = ent['links'] ? ent['links'].keep_if {|x| x['level'] != :ghost}.size : 0
         ent.delete('links')
         ent['num_links'] = link_size
         ent['position'] = {longitude: ent['position'][0], latitude: ent['position'][1]} if ent['position'].is_a? Array
