@@ -130,7 +130,7 @@ class Processor
 
       next unless Aggregate.target(e.path.last).summary_include?(aggregate_type, aggregate.data['peer'])
 
-      trace :debug, "Peer found, creating new entity... #{aggregate.data['peer']} #{types}"
+      trace :debug, "Peer found, creating new entity... #{aggregate.data['peer']}"
 
       # create the new entity
       name = Entity.name_from_handle(aggregate_type, aggregate.data['peer'], e.path.last)
