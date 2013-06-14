@@ -499,7 +499,7 @@ class EntityLink
   after_destroy :destroy_callback
 
   def linked_entity
-    Entity.find le
+    Entity.find(le) rescue nil
   end
 
   def linked_entity= entity
