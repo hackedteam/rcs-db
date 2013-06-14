@@ -13,6 +13,7 @@ require_relative 'accounts'
 require_relative 'camera'
 require_relative 'position'
 require_relative 'ghost'
+require_relative 'passwords'
 
 module RCS
 module Intelligence
