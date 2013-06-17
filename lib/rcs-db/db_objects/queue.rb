@@ -177,7 +177,7 @@ class IntelligenceQueue < NotificationQueue
   index({flag: 1}, {background: true})
 
   def related_entity
-    bson_target_id = Moped::BSON::ObjectId.from_string target_id
+    bson_target_id = Moped::BSON::ObjectId.from_string(target_id.to_s)
     Entity.any_in(path: [bson_target_id]).first
   end
 
