@@ -95,6 +95,23 @@ factory_define :file do |params|
   {'_grid' => id, '_grid_size' => file_content.size}
 end
 
+factory_define :connector do |params|
+  if params[:path].blank?
+    item = params.delete(:item) || raise("An item (like operation, target, agent, etc.) must be supplied")
+    path = item.path + [item._id]
+  else
+    path = params[:path]
+  end
+
+  dest = RCS::DB::Config.instance.temp
+  raise("Cannot find folder #{dest}") unless Dir.exists?(dest)
+
+  attributes = {enabled: true, name: "connector_#{rand(1E10)}", dest: dest, path: path, raw: false}
+  attributes.deep_merge! params
+
+  Connector.create! attributes
+end
+
 
 # Evidence factories
 

@@ -1,9 +1,9 @@
 require 'mongoid'
-
-#module RCS
-#module DB
+require 'rcs-common/trace'
 
 class Connector
+  extend RCS::Tracer
+  include RCS::Tracer
   include Mongoid::Document
   include Mongoid::Timestamps
 
@@ -17,22 +17,17 @@ class Connector
 
   store_in collection: 'connectors'
 
+  index enabled: 1
+
   def delete_if_item(id)
-    if self.path.include? id
-      trace :debug, "Deleting Connector because it contains #{id}"
-      self.destroy
-    end
+    return unless path.include?(id)
+    trace :debug, "Deleting Connector because it contains #{id}"
+    destroy
   end
 
   def update_path(id, path)
-    if self.path.last == id
-      trace :debug, "Updating Connector because it contains #{id}"
-      self.path = path
-      self.save
-    end
+    return if self.path.last != id
+    trace :debug, "Updating Connector because it contains #{id}"
+    update_attributes! path: path
   end
-
 end
-
-#end # ::DB
-#end # ::RCS
