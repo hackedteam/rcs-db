@@ -1,4 +1,5 @@
 require 'rcs-common/trace'
+require_relative 'accounts'
 
 module RCS
 module Intelligence
@@ -7,8 +8,10 @@ module Ghost
   extend Tracer
   extend self
 
-  def create_and_link_entity(entity, handle_attrs)
+  def create_and_link_entity(entity, addressbook_evidence)
+    handle_attrs =  Accounts.handle_attributes(addressbook_evidence)
     return if handle_attrs.blank?
+    return if addressbook_evidence[:data]['type'] == :target
 
     name, type, handle = handle_attrs[:name], handle_attrs[:type], handle_attrs[:handle]
 

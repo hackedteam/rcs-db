@@ -62,6 +62,14 @@ factory_define :target_entity do |params|
   Entity.where(type: :target, path: target._id).first
 end
 
+factory_define :person_entity do |params|
+  operation = params.delete(:operation) || factory_create(:operation)
+  attributes = {name: 'Steve Ballmer', level: :automatic}
+  attributes.deep_merge! params
+  attributes.deep_merge! type: :person, path: [operation._id]
+  Entity.create! attributes
+end
+
 factory_define :aggregate do |params|
   target = params.delete :target
   attributes = {day: Time.now.strftime('%Y%m%d'), aid: 'agent_id'}
@@ -159,12 +167,24 @@ end
 
 factory_define :chat_evidence do |params|
   data = {'from' => 'test-sender', 'rcpt' => 'test-receiver', 'incoming' => 1, 'program' => 'skype', 'content' => 'all your base are belong to us'}
-  attributes = {type: 'chat', data: data}
+  params[:data].stringify_keys! if params[:data]
+  attributes = {data: data}
   attributes.deep_merge! params
+  attributes.merge! type: 'chat'
 
   evidence = factory_create(:evidence, attributes)
   if evidence.kw.blank?
     evidence.update_attributes kw: Indexer.keywordize(evidence.type, evidence.data, evidence.note)
   end
   evidence
+end
+
+factory_define :addressbook_evidence do |params|
+  data = {'handle' => 'j.snow', 'program' => :skype, 'name' => 'John Snow'}
+  params[:data].stringify_keys! if params[:data]
+  attributes = {data: data}
+  attributes.deep_merge! params
+  attributes.merge! type: 'addressbook'
+
+  factory_create(:evidence, attributes)
 end

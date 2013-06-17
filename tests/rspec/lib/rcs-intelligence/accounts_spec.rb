@@ -75,7 +75,7 @@ module Intelligence
           expect(subject.valid_addressbook_evidence?(evidence)).to be_false
 
           evidence = addressbook_evidence 'type' => :not_target, 'program' => known_program, 'handle' => 'john@asd.com'
-          expect(subject.valid_addressbook_evidence?(evidence)).to be_false
+          expect(subject.valid_addressbook_evidence?(evidence)).to be_true
         end
 
         it 'returns true when the given evidence is valid' do

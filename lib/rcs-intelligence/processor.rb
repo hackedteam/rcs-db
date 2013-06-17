@@ -83,7 +83,7 @@ class Processor
         # analyze the accounts
         Accounts.add_handle(entity, evidence)
         # create a ghost entity and link it as :know
-        Ghost.create_and_link_entity(entity, Accounts.handle_attributes(evidence)) if check_intelligence_license
+        Ghost.create_and_link_entity(entity, evidence) if check_intelligence_license
       when 'password'
         # analyze the accounts
         Passwords.add_handle(entity, evidence)

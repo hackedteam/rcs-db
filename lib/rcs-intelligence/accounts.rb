@@ -25,16 +25,16 @@ module Accounts
   def valid_addressbook_evidence?(evidence)
     return false unless evidence.type == 'addressbook'
     data = evidence[:data]
-    return false unless data['type'] == :target
     return false unless known_services.include? data['program']
     return false if data['handle'].blank?
     true
   end
 
-  # If the given evidence is valid, add an EntityHandle to the
-  # given Entity.
+  # If the given evidence is valid, an it represents an local (of the entity)
+  # account, add an EntityHandle to the given Entity.
   def add_handle(entity, addressbook_evidence)
     data = addressbook_evidence[:data]
+    return unless data['type'] == :target
 
     trace :debug, "Parsing handle data: #{data.inspect}"
 
