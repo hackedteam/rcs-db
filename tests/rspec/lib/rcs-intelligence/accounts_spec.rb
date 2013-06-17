@@ -12,20 +12,15 @@ module Intelligence
     enable_license
     silence_alerts
 
-    let(:operation) { Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new) }
+    let(:operation) { factory_create :operation }
 
-    let(:target) { Item.create!(name: 'test-target', _kind: 'target', path: [operation._id], stat: ::Stat.new) }
+    let(:target) { factory_create :target, operation: operation }
 
-    let(:agent) { Item.create!(name: 'test-agent', _kind: 'agent', path: target.path+[target._id], stat: ::Stat.new) }
+    let(:agent) { factory_create :agent, target: target }
 
-    let(:entity) { Entity.any_in({path: [target._id]}).first }
+    let(:entity) { factory_create :target_entity, target: target }
 
     let(:known_program) { subject.known_services.sample }
-
-    def addressbook_evidence data
-      attributes = {da: Time.now.to_i, aid: agent._id, type: 'addressbook', data: data}
-      Evidence.collection_class(entity.target_id).create! attributes
-    end
 
     it 'should use the Tracer module' do
       subject.should respond_to :trace
@@ -34,7 +29,9 @@ module Intelligence
 
     describe '#add_handle' do
 
-      let(:evidence) { addressbook_evidence 'type' => :target, 'program' => known_program, 'handle' => 'j.snow', 'name' => 'John Snow' }
+      let(:evidence) do
+        factory_create :addressbook_evidence, agent: agent, data: {'type' => :target, 'program' => known_program, 'handle' => 'j.snow', 'name' => 'John Snow'}
+      end
 
       it 'adds an handle to the given entity' do
         subject.add_handle entity, evidence
@@ -57,7 +54,9 @@ module Intelligence
       context 'when the evidence is not valid' do
 
         # Is invalid because the 'handle' key is missing in the data hash.
-        let(:invalid_evidence) { addressbook_evidence 'type' => :target, 'program' => known_program }
+        let(:invalid_evidence) do
+          factory_create :addressbook_evidence, agent: agent, data: {'type' => :target, 'program' => known_program, 'handle' => nil}
+        end
 
         it 'does not add any handles' do
           subject.add_handle entity, invalid_evidence
@@ -68,18 +67,18 @@ module Intelligence
       describe '#valid_addressbook_evidence?' do
 
         it 'returns false when the given evidence is not valid' do
-          evidence = addressbook_evidence 'type' => :not_target, 'program' => known_program
+          evidence = factory_create :addressbook_evidence, agent: agent, data: {'type' => :not_target, 'program' => known_program, 'handle' => nil}
           expect(subject.valid_addressbook_evidence?(evidence)).to be_false
 
-          evidence = addressbook_evidence 'type' => :target, 'program' => :my_program, 'handle' => 'john@asd.com'
+          evidence = factory_create :addressbook_evidence, agent: agent, data: {'program' => :my_program}
           expect(subject.valid_addressbook_evidence?(evidence)).to be_false
 
-          evidence = addressbook_evidence 'type' => :not_target, 'program' => known_program, 'handle' => 'john@asd.com'
+          evidence = factory_create :addressbook_evidence, agent: agent, data:{'type' => :not_target_or_invalid}
           expect(subject.valid_addressbook_evidence?(evidence)).to be_true
         end
 
         it 'returns true when the given evidence is valid' do
-          evidence = addressbook_evidence 'type' => :target, 'program' => known_program, 'handle' => 'john@asd.com'
+          evidence = factory_create :addressbook_evidence, agent: agent
           expect(subject.valid_addressbook_evidence?(evidence)).to be_true
         end
       end
@@ -88,18 +87,22 @@ module Intelligence
     describe '#handle_attributes' do
 
       context 'when the evidence is not valid' do
-        let(:evidence) { addressbook_evidence('type' => :target, 'program' => :asdasd, 'handle' => 'JoHn.SnOw', 'name' => 'John Snow') }
+        let(:evidence) { factory_create :addressbook_evidence, agent: agent, data: {'type' => :target, 'program' => :asdasd, 'handle' => 'JoHn.SnOw', 'name' => 'John Snow'} }
         it ('returns nil') { expect(subject.handle_attributes(evidence)).to be_nil }
       end
 
       context 'when the evidence is valid' do
-        let(:expectd_result) { {name: 'John Snow', type: :skype, handle: 'john.snow'} }
-        let(:evidence) { addressbook_evidence('type' => :target, 'program' => :skype, 'handle' => 'JoHn.SnOw', 'name' => 'John Snow') }
+        let(:expectd_result) { {name: 'John Snow', type: :skype, handle: 'j.snow'} }
+        let(:evidence) {  factory_create :addressbook_evidence, agent: agent }
 
         it 'returns an array with name, program and handle' do
           expect(subject.handle_attributes(evidence)).to eql expectd_result
         end
       end
+    end
+
+    describe '#update_person_entity_name' do
+      pending
     end
   end
 
