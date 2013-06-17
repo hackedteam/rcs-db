@@ -56,6 +56,15 @@ module Accounts
     handle_type = service_to_handle_type data['program']
     {name: data['name'], type: handle_type, handle: data['handle'].downcase}
   end
+
+  def update_person_entity_name addressbook_evidence
+    attrs = handle_attributes addressbook_evidence
+    return unless attrs
+    return if attrs[:name].blank?
+
+    entity = Entity.persons.where(level: :automatic).in(name: [nil, '', attrs[:handle]]).first
+    entity.update_attributes!(name: attrs[:name]) if entity
+  end
 end
 
 end
