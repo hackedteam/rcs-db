@@ -23,37 +23,25 @@ def fixtures_path subpath = nil
   subpath && File.join(@fixtures_path, subpath) || @fixtures_path
 end
 
-def require_db(file)
-  relative_path_to_db = 'lib/rcs-db/'
-  relative_path_file = File.join(Dir.pwd, relative_path_to_db, file)
+def rcs_require relative_path, file
+  relative_path_file = File.join(Dir.pwd, relative_path, file)
+  require_relative(relative_path_file)
+end
 
-  if File.exist?(relative_path_file) or File.exist?(relative_path_file + ".rb")
-    require_relative relative_path_file
-  else
-    raise "Could not load #{file}"
-  end
+def require_db(file)
+  rcs_require('lib/rcs-db/', file)
 end
 
 def require_aggregator(file)
-  relative_path_to_db = 'lib/rcs-aggregator/'
-  relative_path_file = File.join(Dir.pwd, relative_path_to_db, file)
-
-  if File.exist?(relative_path_file) or File.exist?(relative_path_file + ".rb")
-    require_relative relative_path_file
-  else
-    raise "Could not load #{file}"
-  end
+  rcs_require('lib/rcs-aggregator/', file)
 end
 
 def require_intelligence(file)
-  relative_path_to_db = 'lib/rcs-intelligence/'
-  relative_path_file = File.join(Dir.pwd, relative_path_to_db, file)
+  rcs_require('lib/rcs-intelligence/', file)
+end
 
-  if File.exist?(relative_path_file) or File.exist?(relative_path_file + ".rb")
-    require_relative relative_path_file
-  else
-    raise "Could not load #{file}"
-  end
+def require_worker(file)
+  rcs_require('lib/rcs-worker/', file)
 end
 
 def connect_mongoid
