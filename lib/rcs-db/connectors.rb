@@ -1,11 +1,6 @@
-#
-# The forwarding subsystem (for connectors with third party)
-#
-
-# from RCS::Common
 require 'rcs-common/trace'
-
 require 'pp'
+require_relative 'db_objects/queue'
 
 module RCS
 module DB
@@ -14,125 +9,75 @@ class Connectors
   extend RCS::Tracer
 
   class << self
+    # If the evidence match a connector, adds that evidence and that
+    # collector to the CollectorQueue.
+    # @retuns False if evidence match at least one connector with keep = false,
+    # otherwise true.
+    def add_to_queue(evidence)
+      keep = true
 
-    def check_connector(f, agent)
-      # skip non matching rules
-      return :skip unless match_path(f, agent)
-      # check for unsupported types
-      return :unsupported if f.type != 'JSON'
-      return :ok
+      ::Connector.matching(evidence).each do |connector|
+        ConnectorQueue.add(evidence, connector)
+        keep = false unless connector.keep
+      end
+
+      keep
     end
 
-    def get_parents(agent)
+    # Dump the given evidence to a file following the rules specified
+    # in the connector.
+    def dump(evidence, connector)
+      # the generator of the evidence
+      agent = ::Item.find(evidence.aid)
       operation = ::Item.find(agent.path.first)
       target = ::Item.find(agent.path.last)
-      return operation, target
-    end
 
-    def new_evidence(evidence)
-      ::Connector.where(:enabled => true).each do |f|
+      # make a deep copy to prepare it for export
+      # TODO: are .dup() really needed?
+      exported = evidence.as_document.dup
+      exported['data'] = evidence['data'].dup
 
-        # the generator of the evidence
-        agent = ::Item.find(evidence.aid)
+      # don't export uninteresting fields
+      ['blo', 'note', 'kw'].each {|name| exported.delete(name) }
 
-        # skip non matching rules or unsupported types
-        action = check_connector(f, agent)
-        next if action == :skip
-        raise "unsupported forwarding method: #{f.type}" if action == :unsupported
-        
-        # get the parents
-        operation, target = get_parents agent
-        
-        # the full exporting path will be splitted in subdir (one for each item)
-        path = File.join(f.dest, operation.name + '-' + operation[:_id].to_s,
-                                 target.name + '-' + target[:_id].to_s,
-                                 agent.name + '-' + agent[:_id].to_s)
+      # insert operation and target references
+      exported['oid'] = operation.id.to_s
+      exported['tid'] = target.id.to_s
 
-        # ensure the dest dir is created
-        FileUtils.mkdir_p path
+      exported['operation'] = operation.name
+      exported['target'] = target.name
+      exported['agent'] = agent.name
 
-        # make a deep copy to prepare it for export
-        exported = evidence.as_document.dup
-        exported['data'] = evidence['data'].dup
-
-        # don't export uninteresting fields
-        exported.delete('blo')
-        exported.delete('note')
-        exported.delete('kw')
-
-        # insert operation and target references
-        exported['oid'] = operation[:_id].to_s
-        exported['tid'] = target[:_id].to_s
-
-        exported['operation'] = operation.name
-        exported['target'] = target.name
-        exported['agent'] = agent.name
-
-        if exported['data'][:_grid]
-          exported['data'].delete(:_grid)
-          exported['data'][:_bin_size] = exported['data'].delete(:_grid_size)
-        end
-
-        # convert it to json
-        exported = exported.to_json
-
-        # dump the evidence
-        File.open(File.join(path, evidence[:_id].to_s + '.json'), 'wb') {|d| d.write exported}
-
-        # dump the binary (if any)
-        if evidence[:data][:_grid]
-          file = GridFS.get evidence[:data][:_grid], target[:_id].to_s
-          File.open(File.join(path, evidence[:_id].to_s + '.bin'), 'wb') {|d| d.write file.read}
-        end
-        
-        # delete the evidence if the rule specify to not store it in the db
-        if f.keep
-          return true
-        else
-          evidence.destroy
-          return false
-        end
+      if exported['data'][:_grid]
+        exported['data'].delete(:_grid)
+        exported['data'][:_bin_size] = exported['data'].delete(:_grid_size)
       end
-    end
-    
-    def new_raw(raw_id, index, agent, evidence_id)
-      ::Connector.where(:enabled => true).each do |f|
 
-        # skip non matching rules or unsupported types
-        action = check_connector(f, agent)
-        next if action == :skip
-        raise "unsupported forwarding method: #{f.type}" if action == :unsupported
-        
-        # get the parents
-        operation, target = get_parents agent
+      # TODO: support XML conversion
+      # convert it to json
+      exported = exported.to_json
 
-        # the full exporting path will be splitted in subdir (one for each item)
-        path = File.join(f.dest, operation.name + '-' + operation[:_id].to_s,
-                                 target.name + '-' + target[:_id].to_s,
-                                 agent.name + '-' + agent[:_id].to_s)
+      # the full exporting path will be splitted in subdir (one for each item)
+      sub_folder =  "#{operation.name}-#{operation.id}"
+      sub_folder << "#{target.name}-#{target.id}"
+      sub_folder << "#{agent.name}-#{agent.id}"
+      path = File.join(connector.dest, sub_folder)
 
-        # ensure the dest dir is created
-        FileUtils.mkdir_p path
-        
-        return unless f.raw
-        file = GridFS.get raw_id, 'evidence'
-        File.open(File.join(path, evidence_id + '-' + index + '.raw'), 'wb') {|d| d.write file.read}
+      # ensure the dest folder is created
+      FileUtils.mkdir_p(path)
+
+      # dump the evidence
+      File.open(File.join(path, "#{evidence.id}.json"), 'wb') { |d| d.write(exported) }
+
+      # dump the binary (if any)
+      if evidence[:data][:_grid]
+        file = GridFS.get(evidence[:data][:_grid], target.id.to_s)
+        File.open(File.join(path, "#{evidence.id}.bin"), 'wb') { |d| d.write(file.read) }
       end
-    end
-    
-    def match_path(connector, agent)
-      # empty path means everything
-      return true if connector.path.empty?
-      
-      # the path of an agent does not include itself, add it to obtain the full path
-      agent_path = agent.path + [agent._id]
-      
-      # check if the agent path is included in the path
-      # this way an alert on a target will be triggered by all of its agent
-      (agent_path & connector.path == connector.path)
+
+      evidence.destroy unless connector.keep
     end
   end
-
 end
 
 end # ::DB

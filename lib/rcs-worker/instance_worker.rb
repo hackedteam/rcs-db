@@ -221,12 +221,11 @@ class InstanceWorker
   end
 
   def save_evidence(evidence)
+    # Returns if the evidence matches at least one connector with `keep` = false
+    return unless RCS::DB::Connectors.add_to_queue(evidence)
+
     # check if there are matching alerts for this evidence
     RCS::DB::Alerting.new_evidence(evidence)
-
-    # forward the evidence to connectors (if any) return if not kept in the db
-    # since the evidence is destroyed
-    return unless RCS::DB::Connectors.new_evidence(evidence)
 
     # add to the ocr processor queue
     if LicenseManager.instance.check :ocr

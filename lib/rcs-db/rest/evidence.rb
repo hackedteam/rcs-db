@@ -245,7 +245,7 @@ class EvidenceController < RESTController
     ev[:data] = ev[:data].merge(position)
     ev.save
 
-    Connectors.new_evidence(ev)
+    Connectors.add_to_queue(ev)
   end
 
   # used by the collector to update the synctime during evidence transfer

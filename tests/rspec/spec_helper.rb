@@ -3,6 +3,7 @@ require 'mongo'
 require 'mongoid'
 require 'pry'
 require 'pry-nav'
+require 'fileutils'
 
 # require customer rspec matchers
 require File.expand_path 'spec_matchers', File.dirname(__FILE__)
@@ -16,6 +17,24 @@ rescue Bundler::BundlerError => e
   $stderr.puts e.message
   $stderr.puts "Run `bundle install` to install missing gems"
   exit e.status_code
+end
+
+# Define global before and each proc
+RSpec.configure do |config|
+
+  # Clean up the spec_temp_folder each time, and completely remove it
+  # at the end of all
+  config.before(:all) do
+    FileUtils.rm_rf(spec_temp_folder)
+    FileUtils.mkdir_p(spec_temp_folder)
+  end
+
+  config.after(:all) { FileUtils.rm_rf(spec_temp_folder) }
+end
+
+def spec_temp_folder(subpath = nil)
+  @spec_temp_folder ||= File.join(File.dirname(__FILE__), '_temp')
+  subpath && File.join(@spec_temp_folder, subpath) || @spec_temp_folder
 end
 
 def fixtures_path subpath = nil
@@ -138,7 +157,7 @@ end
 # and clean it after each example
 def stub_temp_folder
   before do
-    RCS::DB::Config.instance.stub(:temp_folder_name).and_return "temp/_spec"
+    RCS::DB::Config.instance.stub(:temp_folder_name).and_return spec_temp_folder
     FileUtils.mkdir_p RCS::DB::Config.instance.temp
   end
 
