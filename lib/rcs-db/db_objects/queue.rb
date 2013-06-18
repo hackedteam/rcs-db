@@ -1,5 +1,8 @@
 require 'mongoid'
 
+#module RCS
+#module DB
+
 class NotificationQueue
   extend RCS::Tracer
 
@@ -196,5 +199,23 @@ class IntelligenceQueue < NotificationQueue
   def self.add(target_id, _id, type)
     trace :debug, "Adding to #{self.name}: #{target_id} #{_id} (#{type})"
     self.create!({target_id: target_id.to_s, ident: _id.to_s, type: type})
+  end
+end
+
+class ConnectorQueue < NotificationQueue
+  include Mongoid::Document
+
+  field :flag, type: Integer, default: QUEUED
+
+  field :ev_id, type: Moped::BSON::ObjectId
+  field :cn_id, type: Moped::BSON::ObjectId
+
+  store_in collection: 'connector_queue'
+  index({flag: 1}, {background: true})
+
+  # override the inherited method
+  def self.add(evidence, connector)
+    trace :debug, "Adding to ConnectorQueue: #{evidence}, #{connector}"
+    create! ev_id: evidence._id, cn_id: connector._id
   end
 end
