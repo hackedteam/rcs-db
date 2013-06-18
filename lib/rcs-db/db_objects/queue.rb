@@ -1,8 +1,5 @@
 require 'mongoid'
 
-#module RCS
-#module DB
-
 class NotificationQueue
   extend RCS::Tracer
 
@@ -201,6 +198,3 @@ class IntelligenceQueue < NotificationQueue
     self.create!({target_id: target_id.to_s, ident: _id.to_s, type: type})
   end
 end
-
-#end # ::DB
-#end # ::RCS
