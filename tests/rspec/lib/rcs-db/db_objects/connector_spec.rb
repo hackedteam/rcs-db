@@ -28,6 +28,61 @@ describe Connector do
 
   let(:connector) { factory_create :connector, item: target }
 
+  describe '#match' do
+
+    context 'when the path in blank' do
+
+      let(:connector) { factory_create :connector, path: []}
+
+      let(:evidence) { factory_create :addressbook_evidence, target: target }
+
+      it 'returns true' do
+        expect(connector.match?(evidence)).to be_true
+      end
+    end
+
+    context 'when the path does not match the evidence path' do
+
+      let(:connector) { factory_create :connector, item: target}
+
+      let(:evidence) { factory_create :addressbook_evidence, agent: factory_create(:agent) }
+
+      it 'returns false' do
+        expect(connector.match?(evidence)).to be_false
+      end
+    end
+
+    context 'when the path match the evidence path' do
+
+      let(:operation) { factory_create :operation }
+
+      let(:target) { factory_create :target, operation: operation }
+
+      let(:agent) { factory_create :agent, target: target }
+
+      let(:evidence) { factory_create :addressbook_evidence, agent: agent}
+
+      let(:connector) { factory_create :connector, item: operation }
+      it('returns true') { expect(connector.match?(evidence)).to be_true }
+
+      let(:connector) { factory_create :connector, item: target }
+      it('returns true') { expect(connector.match?(evidence)).to be_true }
+
+      let(:connector) { factory_create :connector, item: agent }
+      it('returns true') { expect(connector.match?(evidence)).to be_true }
+    end
+  end
+
+  describe '#type' do
+
+    context 'when is not included in the whitelist' do
+
+      it 'raises a validation error' do
+        expect { factory_create(:connector, item: target, type: 'LOLZ') }.to raise_error(Mongoid::Errors::Validations)
+      end
+    end
+  end
+
   describe '#delete_if_item' do
 
     context 'when the given id is in the connector\'s path' do

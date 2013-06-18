@@ -1,5 +1,6 @@
 require 'mongoid'
 require 'rcs-common/trace'
+require_relative 'item'
 
 class Connector
   extend RCS::Tracer
@@ -19,6 +20,8 @@ class Connector
 
   index enabled: 1
 
+  validates_inclusion_of :type, in: ['JSON']
+
   def delete_if_item(id)
     return unless path.include?(id)
     trace :debug, "Deleting Connector because it contains #{id}"
@@ -29,5 +32,16 @@ class Connector
     return if self.path.last != id
     trace :debug, "Updating Connector because it contains #{id}"
     update_attributes! path: path
+  end
+
+  def match?(evidence)
+    # Blank path means everything
+    return true if path.blank?
+
+    agent = ::Item.find(evidence.aid)
+    # The path of an agent does not include itself, add it to obtain the full path
+    agent_path = agent.path + [agent._id]
+    # Check if the agent path is included in the path
+    (agent_path & path) == path
   end
 end
