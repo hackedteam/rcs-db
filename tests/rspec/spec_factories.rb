@@ -96,11 +96,11 @@ factory_define :file do |params|
 end
 
 factory_define :connector do |params|
-  if params[:path].blank?
+  if params.keys.include?(:path)
+    path = params[:path]
+  else
     item = params.delete(:item) || raise("An item (like operation, target, agent, etc.) must be supplied")
     path = item.path + [item._id]
-  else
-    path = params[:path]
   end
 
   dest = RCS::DB::Config.instance.temp
