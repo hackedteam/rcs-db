@@ -24,9 +24,40 @@ describe Connector do
     expect(subject.index_options).to have_key({enabled: 1})
   end
 
+
   let(:target) { factory_create :target }
 
   let(:connector) { factory_create :connector, item: target }
+
+  describe '#enabled scope' do
+
+    let(:disable_connector) { factory_create :connector, item: target, enabled: false }
+
+    before do
+      connector
+      disable_connector
+      expect(described_class.all.count).to eql 2
+    end
+
+    it 'returns only enabled connectors' do
+      expect(described_class.enabled.count).to eql 1
+    end
+  end
+
+  describe '#matching' do
+
+    let(:evidence) { factory_create :addressbook_evidence, target: target }
+
+    let!(:matching_connector) { factory_create :connector, item: target }
+
+    let!(:nonmatching_connector) { factory_create :connector, item: factory_create(:target) }
+
+    before { expect(described_class.all.count).to eql 2 }
+
+    it 'returns all the connectors that match the given evidence' do
+      expect(described_class.matching(evidence).size).to eql 1
+    end
+  end
 
   describe '#match' do
 

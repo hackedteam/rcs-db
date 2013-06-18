@@ -22,6 +22,14 @@ class Connector
 
   validates_inclusion_of :type, in: ['JSON']
 
+  # Scope: only enabled connectors
+  scope :enabled, where(enabled: true)
+
+  # Scope: only enabled and matching collectors
+  def self.matching(evidence)
+    enabled.select { |connector| connector.match?(evidence) }
+  end
+
   def delete_if_item(id)
     return unless path.include?(id)
     trace :debug, "Deleting Connector because it contains #{id}"
