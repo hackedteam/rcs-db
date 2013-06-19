@@ -11,7 +11,8 @@ module DB
 
     def entities
       @entities ||= begin
-        ids = @params['id']
+        trace :debug, "EntityTask: @params=#{@params.inspect}"
+        ids = [@params['id']].flatten
         filters = {'id' => {'$in' => ids}} unless ids.blank?
         Entity.path_include(@params['operation']).where(filters || {}).all
       end
