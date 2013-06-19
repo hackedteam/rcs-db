@@ -10,7 +10,8 @@ module DB
 
     def entities
       @entities ||= begin
-        ids = @params['id']
+        trace :debug, "EntitygraphTask: @params=#{@params.inspect}"
+        ids = [@params['id']].flatten
         filters = {'id' => {'$in' => ids}} unless ids.blank?
         Entity.path_include(@params['operation']).where(filters || {}).all
       end
@@ -32,6 +33,7 @@ module DB
       @description = "Exporting the graph"
 
       list = entities
+      list_ids = entities.map { |e| e.id.to_s }
       unique_edges = []
 
       # The helpers used here are: node_attr, edge_attr, node, edge
@@ -62,7 +64,9 @@ module DB
               else [en.id, link.le, {directed: false}]
             end
 
-            edge link.id, val[0], val[1], {link_type: link.type, link_level: link.level}, (val[2] || {})
+            if list_ids.include?(val[0].to_s) or list_ids.include?(val[1].to_s)
+              edge link.id, val[0], val[1], {link_type: link.type, link_level: link.level}, (val[2] || {})
+            end
             unique_edges << unique_edges_key
           end
         end
