@@ -75,15 +75,31 @@ module RCS
 
       describe '#dump' do
 
-        let(:target) { factory_create :target }
+        let(:operation) { factory_create :operation }
+        let(:target) { factory_create :target, operation: operation }
+        let(:agent) { factory_create :agent, target: target }
 
-        let(:evidence) { factory_create :mic_evidence, target: target }
+        context 'given a MIC evidence' do
 
-        let(:connector) { factory_create :connector, item: target, dest: spec_temp_folder }
+          let(:evidence) { factory_create :mic_evidence, agent: agent, target: target }
 
-        it 'creates the expeted files' do
-          described_class.dump(evidence, connector)
-          pending
+          let(:connector) { factory_create :connector, item: target, dest: spec_temp_folder }
+
+          let(:expeted_dest_path) do
+            File.join(spec_temp_folder, "#{operation.name}-#{operation.id}", "#{target.name}-#{target.id}", "#{agent.name}-#{agent.id}")
+          end
+
+          before { described_class.dump(evidence, connector) }
+
+          it 'creates a json file' do
+            path = File.join(expeted_dest_path, "#{evidence.id}.json")
+            expect { JSON.parse(File.read(path)) }.not_to raise_error
+          end
+
+          it 'creates a binary file with the content of the mic registration' do
+            path = File.join(expeted_dest_path, "#{evidence.id}.bin")
+            expect(File.read(path)).to eql File.read(fixtures_path('audio.001.mp3'))
+          end
         end
       end
     end

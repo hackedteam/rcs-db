@@ -32,10 +32,9 @@ class Connectors
       operation = ::Item.find(agent.path.first)
       target = ::Item.find(agent.path.last)
 
-      # make a deep copy to prepare it for export
-      # TODO: are .dup() really needed?
-      exported = evidence.as_document.dup
-      exported['data'] = evidence['data'].dup
+      # prepare it for export
+      exported = evidence.as_document.stringify_keys
+      exported['data'] = evidence.data.stringify_keys
 
       # don't export uninteresting fields
       ['blo', 'note', 'kw'].each {|name| exported.delete(name) }
@@ -48,9 +47,9 @@ class Connectors
       exported['target'] = target.name
       exported['agent'] = agent.name
 
-      if exported['data'][:_grid]
-        exported['data'].delete(:_grid)
-        exported['data'][:_bin_size] = exported['data'].delete(:_grid_size)
+      if evidence.data['_grid']
+        exported['data'].delete('_grid')
+        exported['data']['_bin_size'] = exported['data'].delete('_grid_size')
       end
 
       # TODO: support XML conversion
@@ -58,10 +57,11 @@ class Connectors
       exported = exported.to_json
 
       # the full exporting path will be splitted in subdir (one for each item)
-      sub_folder =  "#{operation.name}-#{operation.id}"
-      sub_folder << "#{target.name}-#{target.id}"
-      sub_folder << "#{agent.name}-#{agent.id}"
-      path = File.join(connector.dest, sub_folder)
+      folders = [connector.dest]
+      folders << "#{operation.name}-#{operation.id}"
+      folders << "#{target.name}-#{target.id}"
+      folders << "#{agent.name}-#{agent.id}"
+      path = File.join(*folders)
 
       # ensure the dest folder is created
       FileUtils.mkdir_p(path)
@@ -70,8 +70,8 @@ class Connectors
       File.open(File.join(path, "#{evidence.id}.json"), 'wb') { |d| d.write(exported) }
 
       # dump the binary (if any)
-      if evidence[:data][:_grid]
-        file = GridFS.get(evidence[:data][:_grid], target.id.to_s)
+      if evidence.data['_grid']
+        file = GridFS.get(evidence.data['_grid'], target.id.to_s)
         File.open(File.join(path, "#{evidence.id}.bin"), 'wb') { |d| d.write(file.read) }
       end
 
