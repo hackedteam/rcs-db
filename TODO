@@ -10,6 +10,13 @@ TODO 8.4.0
   [OK] If a person entity is created with an handle-like name (ex: wxa_d231231), wait for an adressbook ev. and 
   update its name with human readable one.
 
+  bug privilegi (?):
+    - non vedo le factory se tolto "factory_creation" ( e "agent_configuration"??)
+    - castore non riesco a togliere "factory_creation"
+    - possibilita' di buildare le factory ma non di editarle
+    - nella lista degli item visitati di recenti vedo anche quelli che avevo usato ma ora non potrei piu' vedere (causa variazione permessi)
+
+
 TODO 9.0.0
 
   FIX:
