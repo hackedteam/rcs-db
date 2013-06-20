@@ -115,7 +115,7 @@ module Aggregate
       return if data.empty?
 
       # normalize them in a better form
-      data.collect! {|e| e['_id']['type'].to_s + '_' + e['_id']['peer']}
+      data.collect! {|e| "#{e['_id']['type']}_#{e['_id']['peer']}"}
 
       self.where(type: :summary).destroy_all
 
