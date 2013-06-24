@@ -5,12 +5,6 @@ TODO 8.4.0
 
   bug privilegi (?):
     - castore: a volte non salva subito i nuovi privilegi
-  TEST:
-    migration of mongo 2.4 on real data (copy db from castore to vm and try) [OK]
-    export entity from console
-
-  [OK] If a person entity is created with an handle-like name (ex: wxa_d231231), wait for an adressbook ev. and 
-  update its name with human readable one.
 
   destroy connector when item is destroyed
   conservative behaviour
