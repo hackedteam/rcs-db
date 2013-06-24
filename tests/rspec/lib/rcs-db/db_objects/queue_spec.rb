@@ -36,7 +36,7 @@ describe ConnectorQueue do
       it 'creates a valid NotificationQueue document' do
         saved_document = described_class.first
         expect(saved_document.ev_id).to eql evidence._id
-        expect(saved_document.cn_id).to eql connector._id
+        expect(saved_document.cn_ids).to eql [connector._id]
       end
     end
   end
