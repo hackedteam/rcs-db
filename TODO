@@ -13,7 +13,6 @@ TODO 8.4.0
   bug privilegi (?):
     - castore: a volte non salva subito i nuovi privilegi
     - [ask alor] possibilita' di buildare le factory ma non di editarle
-    - nella lista degli item visitati di recenti vedo anche quelli che avevo usato ma ora non potrei piu' vedere (causa variazione permessi) + visuallizzare entities
 
 
 TODO 9.0.0
