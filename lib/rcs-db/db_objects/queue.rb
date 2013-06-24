@@ -207,6 +207,7 @@ class ConnectorQueue < NotificationQueue
 
   field :flag, type: Integer, default: QUEUED
 
+  field :tg_id, type: Moped::BSON::ObjectId
   field :ev_id, type: Moped::BSON::ObjectId
   field :cn_ids, type: Array
 
@@ -214,9 +215,9 @@ class ConnectorQueue < NotificationQueue
   index({flag: 1}, {background: true})
 
   # override the inherited method
-  def self.add(evidence, connectors)
+  def self.add(target, evidence, connectors)
     connectors = [connectors].flatten
     trace :debug, "Adding to ConnectorQueue: #{evidence}, #{connectors}"
-    create! ev_id: evidence._id, cn_ids: connectors.map(&:id)
+    create! ev_id: evidence.id, cn_ids: connectors.map(&:id), tg_id: target.id
   end
 end

@@ -31,8 +31,8 @@ module RCS
           before { Connector.stub(:matching).and_return([connector]) }
 
           it 'creates a ConnectorQueue doc' do
-            ConnectorQueue.should_receive(:add).with(evidence, [connector])
-            described_class.add_to_queue evidence
+            ConnectorQueue.should_receive(:add).with(target, evidence, [connector])
+            described_class.add_to_queue target, evidence
           end
         end
 
@@ -43,7 +43,7 @@ module RCS
           before { Connector.stub(:matching).and_return([connector]) }
 
           it 'returns :keep' do
-            expect(described_class.add_to_queue(evidence)).to eql :keep
+            expect(described_class.add_to_queue(target, evidence)).to eql :keep
           end
         end
 
@@ -54,7 +54,7 @@ module RCS
           before { Connector.stub(:matching).and_return([connector]) }
 
           it 'returns :discard' do
-            expect(described_class.add_to_queue(evidence)).to eql :discard
+            expect(described_class.add_to_queue(target, evidence)).to eql :discard
           end
         end
 
@@ -63,45 +63,44 @@ module RCS
           before { Connector.stub(:matching).and_return([]) }
 
           it 'returns nil' do
-            expect(described_class.add_to_queue(evidence)).to be_nil
+            expect(described_class.add_to_queue(target, evidence)).to be_nil
           end
 
           it 'does not create a ConnectorQueue doc' do
             ConnectorQueue.should_not_receive(:add)
-            result = described_class.add_to_queue evidence
+            described_class.add_to_queue target, evidence
           end
         end
       end
 
-      describe '#dump' do
+      # describe '#dump' do
+      #   let(:operation) { factory_create :operation }
+      #   let(:target) { factory_create :target, operation: operation }
+      #   let(:agent) { factory_create :agent, target: target }
 
-        let(:operation) { factory_create :operation }
-        let(:target) { factory_create :target, operation: operation }
-        let(:agent) { factory_create :agent, target: target }
+      #   context 'given a MIC evidence' do
 
-        context 'given a MIC evidence' do
+      #     let(:evidence) { factory_create :mic_evidence, agent: agent, target: target }
 
-          let(:evidence) { factory_create :mic_evidence, agent: agent, target: target }
+      #     let(:connector) { factory_create :connector, item: target, dest: spec_temp_folder }
 
-          let(:connector) { factory_create :connector, item: target, dest: spec_temp_folder }
+      #     let(:expeted_dest_path) do
+      #       File.join(spec_temp_folder, "#{operation.name}-#{operation.id}", "#{target.name}-#{target.id}", "#{agent.name}-#{agent.id}")
+      #     end
 
-          let(:expeted_dest_path) do
-            File.join(spec_temp_folder, "#{operation.name}-#{operation.id}", "#{target.name}-#{target.id}", "#{agent.name}-#{agent.id}")
-          end
+      #     before { described_class.dump(evidence, connector) }
 
-          before { described_class.dump(evidence, connector) }
+      #     it 'creates a json file' do
+      #       path = File.join(expeted_dest_path, "#{evidence.id}.json")
+      #       expect { JSON.parse(File.read(path)) }.not_to raise_error
+      #     end
 
-          it 'creates a json file' do
-            path = File.join(expeted_dest_path, "#{evidence.id}.json")
-            expect { JSON.parse(File.read(path)) }.not_to raise_error
-          end
-
-          it 'creates a binary file with the content of the mic registration' do
-            path = File.join(expeted_dest_path, "#{evidence.id}.bin")
-            expect(File.read(path)).to eql File.read(fixtures_path('audio.001.mp3'))
-          end
-        end
-      end
+      #     it 'creates a binary file with the content of the mic registration' do
+      #       path = File.join(expeted_dest_path, "#{evidence.id}.bin")
+      #       expect(File.read(path)).to eql File.read(fixtures_path('audio.001.mp3'))
+      #     end
+      #   end
+      # end
     end
   end
 end
