@@ -41,6 +41,19 @@ factory_define :user do |params|
   User.create! name: "testuser_#{rand(1E10)}", enabled: true
 end
 
+factory_define :group do |params|
+  users = params.delete(:users)
+  items = params.delete(:items)
+
+  group = Group.new name: "testgroup_#{rand(1E10)}", alert: 'NO'
+
+  group.users = users if users
+  group.items = items if items
+
+  group.save!
+  group
+end
+
 factory_define :operation do |params|
   attributes = {name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new}
   attributes.deep_merge! params
