@@ -9,19 +9,17 @@ class Connectors
   extend RCS::Tracer
 
   class << self
-    # If the evidence match a connector, adds that evidence and that
-    # collector to the CollectorQueue.
-    # @retuns False if evidence match at least one connector with keep = false,
-    # otherwise true.
+    # If the evidence match some connectors, adds that evidence and that
+    # collectors to the CollectorQueue.
+    # @retuns :keep if evidence match at least one connector with keep = true,
+    # otherwise :discard.
     def add_to_queue(evidence)
-      keep = true
+      matched_connectors = ::Connector.matching(evidence)
+      return if matched_connectors.blank?
 
-      ::Connector.matching(evidence).each do |connector|
-        ConnectorQueue.add(evidence, connector)
-        keep = false unless connector.keep
-      end
-
-      keep
+      ConnectorQueue.add(evidence, matched_connectors)
+      discard_evidence = matched_connectors.inject(0) { |n, conn| n += (conn.keep) ? 1 : 0 } == 0
+      discard_evidence ? :discard : :keep
     end
 
     # Dump the given evidence to a file following the rules specified

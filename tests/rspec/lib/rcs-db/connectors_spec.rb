@@ -26,35 +26,35 @@ module RCS
 
         before { ConnectorQueue.stub(:add) }
 
-        context 'when the given evidence match at least one connector' do
+        context 'when the given evidence matches at least one connector' do
 
           before { Connector.stub(:matching).and_return([connector]) }
 
-          it 'create a ConnectorQueue doc' do
-            ConnectorQueue.should_receive(:add).with(evidence, connector)
-            result = described_class.add_to_queue evidence
+          it 'creates a ConnectorQueue doc' do
+            ConnectorQueue.should_receive(:add).with(evidence, [connector])
+            described_class.add_to_queue evidence
           end
         end
 
-        context 'when the given evidence match at least one connector (keep = true)' do
+        context 'when the given evidence matches at least one connector with "keep" = true' do
 
           let(:connector) { factory_create :connector, item: target, keep: true }
 
           before { Connector.stub(:matching).and_return([connector]) }
 
-          it 'returns true' do
-            expect(described_class.add_to_queue(evidence)).to eql true
+          it 'returns :keep' do
+            expect(described_class.add_to_queue(evidence)).to eql :keep
           end
         end
 
-        context 'when the given evidence match at least one connector (keep = false)' do
+        context 'when the given evidence matches only connector with "keep" = false' do
 
           let(:connector) { factory_create :connector, item: target, keep: false }
 
           before { Connector.stub(:matching).and_return([connector]) }
 
-          it 'returns true' do
-            expect(described_class.add_to_queue(evidence)).to eql false
+          it 'returns :discard' do
+            expect(described_class.add_to_queue(evidence)).to eql :discard
           end
         end
 
@@ -62,8 +62,8 @@ module RCS
 
           before { Connector.stub(:matching).and_return([]) }
 
-          it 'returns true' do
-            expect(described_class.add_to_queue(evidence)).to eql true
+          it 'returns nil' do
+            expect(described_class.add_to_queue(evidence)).to be_nil
           end
 
           it 'does not create a ConnectorQueue doc' do

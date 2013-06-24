@@ -221,8 +221,8 @@ class InstanceWorker
   end
 
   def save_evidence(evidence)
-    # Returns if the evidence matches at least one connector with `keep` = false
-    return unless RCS::DB::Connectors.add_to_queue(evidence)
+    # Returns if the evidence matches Connectors with `keep` = false
+    return if RCS::DB::Connectors.add_to_queue(evidence) == :discard
 
     # check if there are matching alerts for this evidence
     RCS::DB::Alerting.new_evidence(evidence)
