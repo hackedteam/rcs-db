@@ -44,7 +44,7 @@ def analyze_win(win)
 
     if adjusted >= MIN_FREQ #and density >= 1
       puts "#{dmin} #{dmax} #{peer} freq: #{frequency} twfi: %.2f twfo: %.2f adj: %.2f  [#{total_in}, #{total_out}][#{contacts}]" % [twfi, twfo, adjusted] 
-      $peers << peer
+        yield peer
     end
   end
   #exit
@@ -58,7 +58,9 @@ def analyze
     win = Hash[$analysis.sort_by{|k,v| k}.first WINDOW_SIZE]
 
     # analyze current window
-    analyze_win win
+    analyze_win(win) do |peer|
+      yield peer
+    end
   
     #cut the first one until window size
     $analysis.delete($analysis.keys.min)
@@ -69,7 +71,9 @@ def frequencer(date, peer, versus)
   i = (versus.eql? :in) ? 0 : 1
   $analysis[date][peer][i] += 1
   fill_holes
-  analyze
+  analyze do |peer|
+    yield peer
+  end
 end
 
 
@@ -78,7 +82,9 @@ File.readlines('mail.txt').each do |line|
   date, versus, peer, from, to = line.split(' ')
   $total[peer] += 1
   #next unless peer.include? PEER
-  frequencer(date, peer, versus.to_sym)
+  frequencer(date, peer, versus.to_sym) do |peer|
+    $peers << peer
+  end
 end
 
 pp $peers.to_a

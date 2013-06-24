@@ -3,6 +3,8 @@ TODO 8.4.0
 
   refactor export evidence with the new erb schema
 
+  bug privilegi (?):
+    - castore: a volte non salva subito i nuovi privilegi
   TEST:
     migration of mongo 2.4 on real data (copy db from castore to vm and try) [OK]
     export entity from console
@@ -29,6 +31,8 @@ TODO 9.0.0
     refactor the connectors to use queue and export from separate process
       - xml export
       - sync with "archive" rcs installation
+
+    entities in the recent item list (must modify the structure of recents)
 
   TRY:
     hash index for sharding (topac - on branch 9.0.x)
