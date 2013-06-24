@@ -38,14 +38,14 @@ include RCS::Factory::Helpers
 # Definitions
 
 factory_define :user do |params|
-  User.create! name: "testuser_#{rand(1E10)}", enabled: true
+  ::User.create! name: "testuser_#{rand(1E10)}", enabled: true
 end
 
 factory_define :operation do |params|
   attributes = {name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new}
   attributes.deep_merge! params
 
-  operation = Item.create! attributes
+  operation = ::Item.create! attributes
   operation.users << factory_create(:user)
   operation
 end
@@ -54,12 +54,12 @@ factory_define :target do |params|
   operation = params.delete(:operation) || factory_create(:operation)
   attributes = {name: "test-target", _kind: 'target', path: [operation._id], stat: ::Stat.new}
   attributes.deep_merge! params
-  Item.create! attributes
+  ::Item.create! attributes
 end
 
 factory_define :target_entity do |params|
   target = params.delete(:target) || factory_create(:target)
-  Entity.where(type: :target, path: target._id).first
+  ::Entity.where(type: :target, path: target._id).first
 end
 
 factory_define :person_entity do |params|
@@ -67,21 +67,21 @@ factory_define :person_entity do |params|
   attributes = {name: 'Steve Ballmer', level: :automatic}
   attributes.deep_merge! params
   attributes.deep_merge! type: :person, path: [operation._id]
-  Entity.create! attributes
+  ::Entity.create! attributes
 end
 
 factory_define :aggregate do |params|
   target = params.delete :target
   attributes = {day: Time.now.strftime('%Y%m%d'), aid: 'agent_id'}
   attributes.deep_merge! params
-  Aggregate.target(target).create! attributes
+  ::Aggregate.target(target).create! attributes
 end
 
 factory_define :agent do |params|
   target = params.delete(:target) || factory_create(:target)
   attributes = {name: 'test-agent', _kind: 'agent', path: target.path+[target.id], stat: ::Stat.new}
   attributes.deep_merge! params
-  Item.create! attributes
+  ::Item.create! attributes
 end
 
 factory_define :file do |params|
@@ -109,7 +109,7 @@ factory_define :connector do |params|
   attributes = {enabled: true, name: "connector_#{rand(1E10)}", dest: dest, path: path, raw: false}
   attributes.deep_merge! params
 
-  Connector.create! attributes
+  ::Connector.create! attributes
 end
 
 
@@ -122,7 +122,7 @@ factory_define :evidence do |params|
 
   target = params.delete(:target)
   unless target
-    target = params[:agent] ? Item.find(params[:agent].path.last) : factory_create(:target)
+    target = params[:agent] ? ::Item.find(params[:agent].path.last) : factory_create(:target)
   end
 
   agent = params.delete(:agent) || factory_create(:agent, target: target)
@@ -133,7 +133,7 @@ factory_define :evidence do |params|
 
   attributes = {dr: Time.now.to_i, da: Time.now.to_i, aid: agent._id, data: {}}
   attributes.deep_merge! params
-  Evidence.collection_class(target._id).create! attributes
+  ::Evidence.collection_class(target._id).create! attributes
 end
 
 factory_define :screenshot_evidence do |params|

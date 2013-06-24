@@ -9,3 +9,8 @@ module RCS::Worker
     end
   end
 end
+
+# Remove the RCS::Evidence class defined by rcs-common/evidence
+if defined? RCS::Evidence
+  RCS.send :remove_const, 'Evidence'
+end
