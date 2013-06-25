@@ -6,10 +6,7 @@ TODO 8.4.0
   bug privilegi (?):
     - castore: a volte non salva subito i nuovi privilegi
 
-  destroy connector when item is destroyed
-  conservative behaviour
-
-  Analyze twit content to discover recipients (@-prefixed words)
+  [OK] Analyze twit content to discover recipients (@-prefixed words)
 
 TODO 9.0.0
 

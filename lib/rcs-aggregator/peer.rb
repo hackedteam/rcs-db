@@ -7,41 +7,61 @@ module Aggregator
 
 class PeerAggregator
 
+  # Search for all the @-prefixed word in the twit content
+  def self.twit_recipients twit_content
+    return [] if twit_content.blank?
+
+    regexp = /(^|\s)(@[a-zA-Z0-9\_]+)(\s|$)/
+    ary = twit_content.scan(regexp).flatten
+    ary.reject!(&:blank?)
+  end
+
   def self.extract_chat(ev)
     data = []
 
-    # twitter does not have a peer to sent message to :)
-    # skip if for aggregation
-    return [] if ev.data['program'].downcase.eql? 'twitter'
+    # "peer" attribute was present before 9.0.0
+    # than has been replaced by "from" and "rcpt"
+    peer = "#{ev.data['peer']}".strip.downcase
+    from = "#{ev.data['from']}".strip.downcase
+    rcpt = "#{ev.data['rcpt']}".strip.downcase
 
     hash = {:time => ev.da, :type => ev.data['program'].downcase.to_sym, :size => ev.data['content'].length}
 
-    # TODO: remove old chat format (after 9.0.0)
-    if ev.data['peer']
+    # When the program is twitter, extracts peers from the
+    # twit content.
+    if hash[:type] == :twitter
+      peers = twit_recipients(ev.data['content'])
 
-      # multiple rcpts creates multiple entries
-      ev.data['peer'].split(',').each do |peer|
-        data << hash.merge(:peer => peer.strip.downcase, :versus => :both)
+      peers.each do |peer|
+        data << hash.merge(peer: peer, versus: :out)
       end
 
       return data
     end
 
-    rcpt = ev.data['rcpt']
+    # TODO: remove old chat format (after 9.0.0)
+    unless peer.blank?
+      # multiple rcpts creates multiple entries
+      peer.split(',').each do |peer|
+        data << hash.merge(:peer => peer.strip, :versus => :both)
+      end
 
-    # new chat format
+      return data
+    end
+
+    # new chat format >= 9.0.0
     if ev.data['incoming'] == 1
       # special case when the agent is not able to get the account but only display_name
-      return [] if ev.data['from'].blank?
-      hash.merge!(:peer => ev.data['from'].strip.downcase, :versus => :in)
-      hash.merge!(:sender => rcpt.strip.downcase) unless rcpt.blank? or rcpt =~ /\,/
+      return [] if from.blank?
+      hash.merge!(:peer => from, :versus => :in)
+      hash.merge!(:sender => rcpt) unless rcpt.blank? or rcpt =~ /\,/
       data << hash
     elsif ev.data['incoming'] == 0
       # special case when the agent is not able to get the account but only display_name
       return [] if rcpt.blank?
       # multiple rcpts creates multiple entries
       rcpt.split(',').each do |rcpt|
-        data << hash.merge(:peer => rcpt.strip.downcase, :versus => :out, sender: ev.data['from'].strip.downcase)
+        data << hash.merge(:peer => rcpt.strip, :versus => :out, sender: from)
       end
     end
 
