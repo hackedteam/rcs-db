@@ -14,6 +14,7 @@ class PeerAggregator
     regexp = /(^|\s)(@[a-zA-Z0-9\_]+)(\s|$)/
     ary = twit_content.scan(regexp).flatten
     ary.reject!(&:blank?)
+    ary.map! { |username| username.gsub('@', '') }
   end
 
   def self.extract_chat(ev)
@@ -30,10 +31,13 @@ class PeerAggregator
     # When the program is twitter, extracts peers from the
     # twit content.
     if hash[:type] == :twitter
-      peers = twit_recipients(ev.data['content'])
+      rcpts = twit_recipients(ev.data['content'])
+      from.gsub!('@', '')
 
-      peers.each do |peer|
-        data << hash.merge(peer: peer, versus: :out)
+      rcpts.each do |rcpt|
+        attributes = {peer: rcpt, versus: :out}
+        attributes.merge!(sender: from) unless from.blank? # < 9.0.0
+        data << hash.merge(attributes)
       end
 
       return data

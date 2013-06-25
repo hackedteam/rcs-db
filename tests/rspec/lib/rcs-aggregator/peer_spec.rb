@@ -18,11 +18,12 @@ describe PeerAggregator do
 
       context 'when the program is twitter' do
         it 'should extract the peer from the twit content' do
-          @evidence_chat.data = {'peer' => '@alice', 'program' => 'twitter', 'content' => '@bob hello dear'}
+          @evidence_chat.data = {'from' => '@alice', 'program' => 'twitter', 'content' => '@bob hello dear'}
           parsed = PeerAggregator.extract_chat(@evidence_chat)
           parsed.should be_a Array
           aggregated = parsed.first
-          aggregated[:peer].should eq '@bob'
+          aggregated[:peer].should eq 'bob'
+          aggregated[:sender].should eq 'alice'
           aggregated[:size].should eq @evidence_chat.data['content'].size
           aggregated[:type].should eq :twitter
           aggregated[:versus].should eq :out
