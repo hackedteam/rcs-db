@@ -33,6 +33,8 @@ class LicenseManager
       when :intelligence
         return @limits['intelligence']
 
+      when :connectors
+        return @limits['connectors']
     end
 
     return false
