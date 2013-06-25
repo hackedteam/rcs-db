@@ -17,7 +17,6 @@ TODO 9.0.0
   IMPLEMENT:
     statistic analyzer (alor)
       automatic detection of home / office (needs timezone for each entity)
-      automatic entities from "very" most contacted
 
     refactor the connectors to use queue and export from separate process
       - xml export

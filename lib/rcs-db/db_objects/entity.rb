@@ -17,7 +17,7 @@ class Entity
   # this is the type of entity: target, person, position, etc
   field :type, type: Symbol
 
-  # the level of trust of the entity (manual, automatic, ghost)
+  # the level of trust of the entity (manual, automatic, ghost, suggested)
   field :level, type: Symbol
 
   # membership of this entity (inside operation or target)

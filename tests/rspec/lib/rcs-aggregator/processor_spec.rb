@@ -92,6 +92,36 @@ describe Processor do
         entry = aggregates.first
         entry.info.should include 'skype_receiver'
       end
+
+      it 'should create suggested entity if the communication score is higher enough' do
+        15.times do |day|
+          data_in = {'from' => ' receiver ', 'rcpt' => 'sender', 'incoming' => 1, 'program' => 'skype', 'content' => 'test message'}
+          evidence_in = Evidence.collection_class(@target._id).create!(da: Time.now.to_i + day*86400, aid: @agent._id, type: :chat, data: data_in)
+          entry_in = {'target_id' => @target._id, 'evidence_id' => evidence_in._id}
+
+          data_out = {'from' => ' sender ', 'rcpt' => 'receiver', 'incoming' => 0, 'program' => 'skype', 'content' => 'test message'}
+          evidence_out = Evidence.collection_class(@target._id).create!(da: Time.now.to_i + day*86400, aid: @agent._id, type: :chat, data: data_out)
+          entry_out = {'target_id' => @target._id, 'evidence_id' => evidence_out._id}
+
+          Processor.process entry_out
+          Processor.process entry_in
+        end
+
+        entity = Entity.where(name: 'receiver').first
+
+        entity.should_not be_nil
+        entity.level.should be :suggested
+        handle = entity.handles.first
+        handle.type.should eq :skype
+        handle.handle.should eq 'receiver'
+
+        entity.links.size.should be 1
+
+        target_entity = Entity.targets.where(path: @target.id).first
+
+        entity.links.first.le.should eq target_entity.id
+      end
+
     end
 
     context 'given an evidence of type "position"' do

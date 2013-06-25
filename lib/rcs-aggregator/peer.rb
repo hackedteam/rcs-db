@@ -2,10 +2,13 @@
 #  Module for handling peer aggregations
 #
 
+require_relative 'frequencer'
+
 module RCS
 module Aggregator
 
 class PeerAggregator
+  extend RCS::Tracer
 
   # Search for all the @-prefixed word in the twit content
   def self.twit_recipients twit_content
@@ -153,6 +156,47 @@ class PeerAggregator
       extract_sms_or_mms ev
     end
   end
+
+  def self.create_suggested_peer(target_id, params)
+    time = Time.parse(params[:day])
+    peer = params[:data][:peer]
+    type = params[:type]
+    versus = params[:data][:versus]
+
+    frequencer_agg = Aggregate.target(target_id).find_or_create_by(type: :frequencer, day: '0', aid: '0')
+
+    # load the frequencer from the db, if already saved, otherwise create a new one
+    if frequencer_agg.data['frequencer']
+      begin
+        trace :debug, "Reloading frequencer from saved status "
+        frequencer = Frequencer.new_from_dump(frequencer_agg.data['frequencer'])
+      rescue Exception => e
+        trace :warn, "Cannot restore frequencer status, creating a new one..."
+        frequencer = Frequencer.new
+      end
+    else
+      trace :debug, "Creating a new frequencer for target #{target_id}"
+      frequencer = Frequencer.new
+    end
+
+    frequencer.feed(time, "#{type} #{peer}", versus) do |output|
+      type, peer = output.split(' ')
+
+      entity = Entity.targets.where(path: target_id).first
+
+      # search for existing entity or create a new one
+      if not Entity.same_path_of(entity).where("handles.handle" => peer, "handles.type" => type).first
+        description = "Created automatically because #{entity.name} has frequent communication with #{type} #{peer}"
+        new_entity = Entity.create!(name: peer, type: :person, level: :suggested, path: [entity.path.first], desc: description)
+        new_entity.create_or_update_handle(type, peer)
+      end
+    end
+
+    # save the frequencer status into the aggregate
+    frequencer_agg.data = {frequencer: frequencer.dump}
+    frequencer_agg.save
+  end
+
 end
 
 end
