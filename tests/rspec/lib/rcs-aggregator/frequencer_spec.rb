@@ -9,6 +9,7 @@ module Aggregator
 describe Frequencer do
 
   def feeder(frequencer, peer, days, freq_in, freq_out)
+
     days.times do |day|
       freq_in.times do
         frequencer.feed(Time.now + 86400*day, peer, :in) do |peer|
@@ -20,6 +21,11 @@ describe Frequencer do
           yield peer
         end
       end
+    end
+
+    # make sure the window is filled by inserting the last element
+    frequencer.feed(Time.now + 86400*(Frequencer::WINDOW_SIZE + 1), peer, :in) do |peer|
+      yield peer
     end
   end
 
@@ -49,7 +55,7 @@ describe Frequencer do
   end
 
   context 'given a low interaction peer' do
-    it 'should not emit any peer' do
+    it 'should not emit any peer (not enough two way factor)' do
       frequencer = Frequencer.new
 
       outputs = []
@@ -59,13 +65,54 @@ describe Frequencer do
 
       outputs.should be_empty
     end
+
+    it 'should not emit any peer (not enough daily frequency)' do
+      frequencer = Frequencer.new
+
+      outputs = []
+      feeder(frequencer, 'test', 2, 2, 2) do |peer|
+        outputs << peer
+      end
+
+      outputs.should be_empty
+    end
   end
 
   context 'given a high interaction peer (spammer)' do
+    it 'should not emit any peer (too much one way factor)' do
+      frequencer = Frequencer.new
 
+      outputs = []
+      feeder(frequencer, 'test', Frequencer::WINDOW_SIZE + 1, 10, 1) do |peer|
+        outputs << peer
+      end
+
+      outputs.should be_empty
+    end
   end
 
   context 'given a high interaction peer (balanced)' do
+    it 'should emit the peer (everyday 2 in and 2 out)' do
+      frequencer = Frequencer.new
+
+      outputs = []
+      feeder(frequencer, 'test', Frequencer::WINDOW_SIZE + 1, 2, 2) do |peer|
+        outputs << peer
+      end
+
+      outputs.should_not be_empty
+    end
+
+    it 'should emit the peer (3 days 1 in and 1 out)' do
+      frequencer = Frequencer.new
+
+      outputs = []
+      feeder(frequencer, 'test', 4, 1, 1) do |peer|
+        outputs << peer
+      end
+
+      outputs.should_not be_empty
+    end
 
   end
 

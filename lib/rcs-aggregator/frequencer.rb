@@ -81,7 +81,7 @@ class Frequencer
       density = (total_in + total_out) / @win_size
 
       if score >= @relevance #and density >= 1
-        puts "#{dmin} #{dmax} #{peer} freq: #{frequency} twfi: %.2f twfo: %.2f adj: %.2f  [#{total_in}, #{total_out}][#{contacts}]" % [twfi, twfo, score]
+        #puts "#{dmin} #{dmax} #{peer} freq: #{frequency} twfi: %.2f twfo: %.2f adj: %.2f  [#{total_in}, #{total_out}][#{contacts}]" % [twfi, twfo, score]
         yield peer
       end
     end
