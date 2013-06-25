@@ -205,3 +205,19 @@ factory_define :addressbook_evidence do |params|
 
   factory_create(:evidence, attributes)
 end
+
+
+# Queue
+
+factory_define :connector_queue do |params|
+  target = params.delete(:target) || factory_create(:target)
+  evidence = params.delete(:evidence) || factory_create(:chat_evidence, target: target)
+
+  connectors = []
+  connectors << params.delete(:connector)
+  connectors.concat(params.delete(:connectors) || [])
+  connectors.compact!
+  connectors << factory_create(:connector, item: target) if connectors.empty?
+
+  ConnectorQueue.add target, evidence, connectors
+end
