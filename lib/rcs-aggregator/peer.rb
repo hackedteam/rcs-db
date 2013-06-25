@@ -27,16 +27,20 @@ class PeerAggregator
       return data
     end
 
+    rcpt = ev.data['rcpt']
+
     # new chat format
     if ev.data['incoming'] == 1
       # special case when the agent is not able to get the account but only display_name
       return [] if ev.data['from'].blank?
-      data << hash.merge(:peer => ev.data['from'].strip.downcase, :versus => :in)
+      hash.merge!(:peer => ev.data['from'].strip.downcase, :versus => :in)
+      hash.merge!(:sender => rcpt) unless rcpt.blank? or rcpt =~ /\,/
+      data << hash
     elsif ev.data['incoming'] == 0
       # special case when the agent is not able to get the account but only display_name
-      return [] if ev.data['rcpt'].blank?
+      return [] if rcpt.blank?
       # multiple rcpts creates multiple entries
-      ev.data['rcpt'].split(',').each do |rcpt|
+      rcpt.split(',').each do |rcpt|
         data << hash.merge(:peer => rcpt.strip.downcase, :versus => :out, sender: ev.data['from'].strip.downcase)
       end
     end
