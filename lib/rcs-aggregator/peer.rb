@@ -34,7 +34,7 @@ class PeerAggregator
       # special case when the agent is not able to get the account but only display_name
       return [] if ev.data['from'].blank?
       hash.merge!(:peer => ev.data['from'].strip.downcase, :versus => :in)
-      hash.merge!(:sender => rcpt) unless rcpt.blank? or rcpt =~ /\,/
+      hash.merge!(:sender => rcpt.strip.downcase) unless rcpt.blank? or rcpt =~ /\,/
       data << hash
     elsif ev.data['incoming'] == 0
       # special case when the agent is not able to get the account but only display_name
