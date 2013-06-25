@@ -109,9 +109,9 @@ module Intelligence
 
         let!(:existing_entity) { factory_create :person_entity, operation: operation, name: '' }
 
-        it 'updates the person entity name' do
-          subject.update_person_entity_name evidence
-          expect(existing_entity.reload.name).to eql 'John Snow'
+        it 'does not update the person entity name' do
+          subject.update_person_entity_name entity, evidence
+          expect(existing_entity.reload.name).to eql ''
         end
       end
 
@@ -120,7 +120,7 @@ module Intelligence
         let!(:existing_entity) { factory_create :person_entity, operation: operation, name: 'j.snow' }
 
         it 'updates the person entity name' do
-          subject.update_person_entity_name evidence
+          subject.update_person_entity_name entity, evidence
           expect(existing_entity.reload.name).to eql 'John Snow'
         end
 
@@ -129,7 +129,7 @@ module Intelligence
           let(:evidence) { factory_create :addressbook_evidence, agent: agent, data: {'name' => ''} }
 
           it 'does not updates the person entity name' do
-            subject.update_person_entity_name evidence
+            subject.update_person_entity_name entity, evidence
             expect(existing_entity.reload.name).to eql 'j.snow'
           end
         end
@@ -140,7 +140,7 @@ module Intelligence
         let!(:existing_entity) { factory_create :person_entity, operation: operation, name: 'Bob' }
 
         it 'does not updates the person entity name' do
-          subject.update_person_entity_name evidence
+          subject.update_person_entity_name entity, evidence
           expect(existing_entity.reload.name).to eql 'Bob'
         end
       end

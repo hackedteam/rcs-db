@@ -84,6 +84,9 @@ class Processor
         Accounts.add_handle(entity, evidence)
         # create a ghost entity and link it as :know
         Ghost.create_and_link_entity(entity, evidence) if check_intelligence_license
+        # If a person entity is created with an handle-like name (ex: wxa_d231231),
+        # wait for an adressbook ev. and update its name with human readable one.
+        Accounts.update_person_entity_name(entity, evidence)
       when 'password'
         # analyze the accounts
         Passwords.add_handle(entity, evidence)

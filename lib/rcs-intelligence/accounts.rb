@@ -57,12 +57,14 @@ module Accounts
     {name: data['name'], type: handle_type, handle: data['handle'].downcase}
   end
 
-  def update_person_entity_name addressbook_evidence
+  def update_person_entity_name entity, addressbook_evidence
     attrs = handle_attributes addressbook_evidence
     return unless attrs
     return if attrs[:name].blank?
 
-    entity = Entity.persons.where(level: :automatic).in(name: [nil, '', attrs[:handle]]).first
+    operation = entity.path.first
+
+    entity = Entity.persons.path_include(operation).where(name: attrs[:handle]).first
     entity.update_attributes!(name: attrs[:name]) if entity
   end
 end
