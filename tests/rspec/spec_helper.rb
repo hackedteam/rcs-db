@@ -63,6 +63,10 @@ def require_worker(file)
   rcs_require('lib/rcs-worker/', file)
 end
 
+def require_connector(file)
+  rcs_require('lib/rcs-connector/', file)
+end
+
 def connect_mongoid
   ENV['MONGOID_ENV'] = 'yes'
   ENV['MONGOID_DATABASE'] = 'rcs-test'
