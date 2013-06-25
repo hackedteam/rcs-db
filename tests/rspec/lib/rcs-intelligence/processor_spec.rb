@@ -79,12 +79,12 @@ describe Processor do
 
 
   describe '#process_evidence' do
-    let(:evidence) { mock(type: 'addressbook') }
-    let(:entity) { mock() }
+    let(:target) { factory_create :target }
+    let(:entity) { factory_create :target_entity, target: target }
+    let(:evidence) { factory_create :addressbook_evidence, target: target }
 
     context 'the type of the evidence is "addressbook"' do
-      before { evidence.stub(:type).and_return 'addressbook' }
-      before { Accounts.stub(:get_addressbook_handle).and_return nil }
+      # before { evidence.stub(:type).and_return 'addressbook' }
       before { Accounts.stub(:add_handle).and_return nil }
 
       context 'the license is invalid' do
