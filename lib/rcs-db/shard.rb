@@ -21,10 +21,17 @@ class Shard
     db.command({ listshards: 1 })
   end
 
-  def self.last
+  def self.sorted
     shards = all['shards']
-    shards.sort_by {|x| x['_id']}
-    shards.last['_id']
+    shards.sort_by { |x| x['_id'] }
+  end
+
+  def self.last
+    sorted.last['_id']
+  end
+
+  def self.first
+    sorted.first['_id']
   end
 
   def self.create(host)
