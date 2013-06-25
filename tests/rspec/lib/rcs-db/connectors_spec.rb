@@ -10,7 +10,6 @@ module RCS
       use_db
       silence_alerts
       enable_license
-      stub_temp_folder
 
       it 'uses the tracer module' do
         expect(described_class).to respond_to :trace
@@ -72,35 +71,6 @@ module RCS
           end
         end
       end
-
-      # describe '#dump' do
-      #   let(:operation) { factory_create :operation }
-      #   let(:target) { factory_create :target, operation: operation }
-      #   let(:agent) { factory_create :agent, target: target }
-
-      #   context 'given a MIC evidence' do
-
-      #     let(:evidence) { factory_create :mic_evidence, agent: agent, target: target }
-
-      #     let(:connector) { factory_create :connector, item: target, dest: spec_temp_folder }
-
-      #     let(:expeted_dest_path) do
-      #       File.join(spec_temp_folder, "#{operation.name}-#{operation.id}", "#{target.name}-#{target.id}", "#{agent.name}-#{agent.id}")
-      #     end
-
-      #     before { described_class.dump(evidence, connector) }
-
-      #     it 'creates a json file' do
-      #       path = File.join(expeted_dest_path, "#{evidence.id}.json")
-      #       expect { JSON.parse(File.read(path)) }.not_to raise_error
-      #     end
-
-      #     it 'creates a binary file with the content of the mic registration' do
-      #       path = File.join(expeted_dest_path, "#{evidence.id}.bin")
-      #       expect(File.read(path)).to eql File.read(fixtures_path('audio.001.mp3'))
-      #     end
-      #   end
-      # end
     end
   end
 end
