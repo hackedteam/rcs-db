@@ -115,8 +115,8 @@ class Processor
 
     # As the version 9.0.0 the aggregate has a "sender" key that contains the handle of the other peer
     # involved in a communication. The "sender" is an handle of the current entity (the one under surveillance)
-    if aggregate.data['sender']
-      entity.create_or_update_handle handle_type, aggregate.data['sender']
+    if !aggregate.data['sender'].blank? and aggregate.data['versus'] == :out
+      entity.create_or_update_handle handle_type, aggregate.data['sender'].downcase
     end
 
     # search for existing entity with that account and link it (direct link)
