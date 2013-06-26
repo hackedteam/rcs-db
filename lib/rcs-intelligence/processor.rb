@@ -138,7 +138,7 @@ class Processor
       # create the new entity
       name = Entity.name_from_handle(aggregate_type, aggregate.data['peer'], e.path.last)
       name ||= aggregate.data['peer']
-      description = "Created automatically because #{entity.name} has been in touch with #{e.name}"
+      description = "Created automatically because known by #{entity.name} and #{e.name}"
       ghost = Entity.create!(name: name, type: :person, level: :automatic, path: [entity.path.first], desc: description)
 
       # the entities will be linked on callback

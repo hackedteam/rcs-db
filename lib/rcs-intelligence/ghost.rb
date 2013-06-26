@@ -23,7 +23,7 @@ module Ghost
     # create a new entity if not found
     unless ghost
       trace :debug, "Creating ghost entity: #{name} -- #{type} #{handle}"
-      description = "Created automatically to represent the handle #{handle}"
+      description = "Created automatically to represent #{name}"
       ghost = Entity.create!(name: name, type: :person, level: :ghost, path: [entity.path.first], desc: description)
       # add the handle
       ghost.create_or_update_handle(type, handle, name)

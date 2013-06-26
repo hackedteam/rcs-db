@@ -305,6 +305,7 @@ class Entity
 
     if self.links.size >= 2
       self.level = :automatic
+      self.desc = 'Represent a person known by two or more targets'
       self.save
 
       # notify the new entity
