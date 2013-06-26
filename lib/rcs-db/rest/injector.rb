@@ -177,7 +177,7 @@ class InjectorController < RESTController
       rule.target_id = [ target[:_id] ]
 
       # the file is uploaded to the grid before calling this method
-      if rule.action == 'REPLACE' and not @params['rule']['action_param'].nil?
+      if (rule.action == 'REPLACE' or rule.action == 'INJECT-HTML-FILE') and not @params['rule']['action_param'].nil?
         path = Config.instance.temp(@params['rule']['action_param'])
         if File.exist?(path) and File.file?(path)
           rule[:_grid] = GridFS.put(File.open(path, 'rb+') {|f| f.read}, {filename: @params['rule']['action_param']})
@@ -231,13 +231,13 @@ class InjectorController < RESTController
       rule.update_attributes(@params['rule'])
 
       # remove any grid pointer if we are changing the type of action
-      if rule.action != 'REPLACE'
+      if (rule.action != 'REPLACE' and rule.action != 'INJECT-HTML-FILE')
         GridFS.delete rule[:_grid] unless rule[:_grid].nil?
         rule[:_grid] = nil
       end
       
       # the file is uploaded to the grid before calling this method
-      if rule.action == 'REPLACE' and not @params['rule']['action_param'].nil?
+      if (rule.action == 'REPLACE' or rule.action == 'INJECT-HTML-FILE') and not @params['rule']['action_param'].nil?
         path = Config.instance.temp(@params['rule']['action_param'])
         if File.exist?(path) and File.file?(path)
           # delete any previous file in the grid
