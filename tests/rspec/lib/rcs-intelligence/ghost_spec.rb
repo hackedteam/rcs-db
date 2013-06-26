@@ -60,6 +60,18 @@ module Intelligence
           ghost_entity.handles.first.type == :skype
         end
 
+        context 'when the given handle has a blank name' do
+
+          let(:evidence) { factory_create :addressbook_evidence, target: target, data: {'name' => ''} }
+
+          it 'creates a ghost entity whose name is the handle value' do
+            RCS::DB::LinkManager.any_instance.stub :add_link
+            described_class.create_and_link_entity entity, evidence
+            ghost_entity = Entity.where(:id.ne => entity.id, :level => :ghost).first
+            ghost_entity.name.should == 'j.snow'
+          end
+        end
+
         it 'creates a link from the entity to the new ghost entity' do
           described_class.create_and_link_entity entity, evidence
           ghost_entity = Entity.where(:id.ne => entity.id, :level => :ghost).first

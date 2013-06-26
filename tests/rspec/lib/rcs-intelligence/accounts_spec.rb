@@ -99,6 +99,15 @@ module Intelligence
           expect(subject.handle_attributes(evidence)).to eql expectd_result
         end
       end
+
+      context 'when the evidence has an empty name' do
+        let(:evidence) {  factory_create :addressbook_evidence, agent: agent, data: {'name' => ''} }
+
+        it 'uses the handle value for the name' do
+          result = subject.handle_attributes(evidence)
+          expect(result[:name]).to eql result[:handle]
+        end
+      end
     end
 
     describe '#update_person_entity_name' do
