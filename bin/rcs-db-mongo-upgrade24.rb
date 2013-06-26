@@ -125,10 +125,24 @@ def mongo_upgrade
   log_and_raise "Command \"#{command}\" generates error \"#{error}\"" if error
 end
 
-def mongos_kill
-  windows_execute "taskkill /IM mongos.exe /F"
-end
+def mongo_shutdown
+  mongo_session.use :admin
 
+  begin
+    mongo_session.command(shutdown: 1)
+  rescue Exception => e
+    logger.error("The shutdown command result in exception: #{e.message}")
+  end
+
+  list_str = windows_execute("tasklist")
+  mongos_running = !!(list_str =~ /mongos.exe/i)
+
+  logger.debug "Is there any mongos.exe? #{mongos_running}"
+
+  if mongos_running
+    windows_execute("taskkill /IM mongos.exe /F")
+  end
+end
 
 
 # Windows methods: safe command execution, service ctrl, etc.
@@ -179,8 +193,8 @@ begin
 
   sleep 2
 
-  logger.info "Killing mongos.exe (2.4)"
-  mongos_kill
+  logger.info "Shutdown mongo (2.4)"
+  mongo_shutdown
 
   logger.info "Stopping mongo config (2.2)"
   windows_service "RCS Master Config", :stop
