@@ -189,6 +189,39 @@ describe Processor do
           described_class.process_aggregate entity_bob, sms_aggregate_of_bob
         end
       end
+
+      context 'given an a target entity and a ghost entity linked to it' do
+
+        let!(:operation) { factory_create :operation }
+        let!(:target) { factory_create :target, operation: operation }
+        let!(:target_entity) { factory_create :target_entity, target: target }
+        let!(:ghost_entity) do
+          e = factory_create :ghost_entity, operation: operation
+          factory_create :entity_handle, entity: e, type: :phone, handle: '0010012'
+          RCS::DB::LinkManager.instance.add_link(from: target_entity, to: e, level: :ghost, type: :know, versus: :out, info: '0010012')
+          e
+        end
+
+        before do
+          expect(target_entity.linked_to?(ghost_entity, type: :know, level: :ghost)).to be_true
+        end
+
+        context 'when a peer aggregate (communication beetwen the target and the ghost entity) arrives' do
+
+          let!(:peer_aggregate) do
+            factory_create :aggregate, target: target, type: :sms, count: 3, data: {'peer' => '0010012', 'versus' => :out, 'sender' => 'numer_of_target'}
+          end
+
+          it 'changes the level and the type of the link beetwen the two entities' do
+            described_class.process_aggregate target_entity, peer_aggregate
+            target_entity.reload
+            ghost_entity.reload
+
+            expect(ghost_entity.level).to eql :ghost
+            expect(target_entity.linked_to?(ghost_entity, type: :peer, level: :ghost)).to be_true
+          end
+        end
+      end
     end
   end
 

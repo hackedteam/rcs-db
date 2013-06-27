@@ -182,10 +182,16 @@ class PeerAggregator
     frequencer.feed(time, "#{type} #{peer}", versus) do |output|
       type, peer = output.split(' ')
 
-      entity = Entity.targets.where(path: target_id).first
+      entity = Entity.targets.any_in(path: [Moped::BSON::ObjectId.from_string(target_id)]).first
 
       # search for existing entity or create a new one
-      if not Entity.same_path_of(entity).where("handles.handle" => peer, "handles.type" => type).first
+      if (old_entity = Entity.same_path_of(entity).where("handles.handle" => peer, "handles.type" => type).first)
+        if old_entity.level.eql? :ghost
+          old_entity.level = :suggested
+          old_entity.save
+          RCS::DB::LinkManager.instance.add_link from: entity, to: old_entity, level: :automatic, type: :peer, versus: :both
+        end
+      else
         description = "Created automatically because #{entity.name} has frequent communication with #{type} #{peer}"
         new_entity = Entity.create!(name: peer, type: :person, level: :suggested, path: [entity.path.first], desc: description)
         new_entity.create_or_update_handle(type, peer)
