@@ -53,6 +53,7 @@ class Frequencer
 
 
   def analyze_win(win)
+    #puts win
     dmin = win.keys.min
     dmax = win.keys.max
 
@@ -79,6 +80,8 @@ class Frequencer
       # to eliminate spamming spikes
       score = frequency * [twfo, twfi].min
       density = (total_in + total_out) / @win_size
+
+      #puts "#{dmin} #{dmax} #{peer} freq: #{frequency} twfi: %.2f twfo: %.2f adj: %.2f  [#{total_in}, #{total_out}][#{contacts}]" % [twfi, twfo, score]
 
       if score >= @relevance #and density >= 1
         #puts "#{dmin} #{dmax} #{peer} freq: #{frequency} twfi: %.2f twfo: %.2f adj: %.2f  [#{total_in}, #{total_out}][#{contacts}]" % [twfi, twfo, score]
@@ -115,8 +118,16 @@ class Frequencer
   end
 
   def insert_peer(date, peer, versus)
-    index = (versus.eql? :in) ? 0 : 1
-    @analysis[date][peer][index] += 1
+    case versus
+      when :in
+        versa = [0]
+      when :out
+        versa = [1]
+      when :both
+        versa = [0, 1]
+    end
+
+    versa.each { |v| @analysis[date][peer][v] += 1 }
   end
 
   def feed(time, peer, versus)

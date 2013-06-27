@@ -163,6 +163,9 @@ class PeerAggregator
     type = params[:type]
     versus = params[:data][:versus]
 
+    # a call is always bidirectional, we don't care here who initiated it
+    versus = :both if params[:ev_type].eql? 'call'
+
     frequencer_agg = Aggregate.target(target_id).find_or_create_by(type: :frequencer, day: '0', aid: '0')
 
     # load the frequencer from the db, if already saved, otherwise create a new one
