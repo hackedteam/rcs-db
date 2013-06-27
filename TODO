@@ -1,8 +1,6 @@
 
 TODO 8.4.0
 
-  refactor export evidence with the new erb schema
-
   bug privilegi (?):
     - castore: a volte non salva subito i nuovi privilegi
 
