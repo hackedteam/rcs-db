@@ -122,6 +122,25 @@ describe Processor do
         entity.links.first.le.should eq target_entity.id
       end
 
+      it 'should not create suggested entity if intelligence is disabled' do
+        Processor.stub(:check_intelligence_license).and_return false
+
+        15.times do |day|
+          data_in = {'from' => ' receiver ', 'rcpt' => 'sender', 'incoming' => 1, 'program' => 'skype', 'content' => 'test message'}
+          evidence_in = Evidence.collection_class(@target._id).create!(da: Time.now.to_i + day*86400, aid: @agent._id, type: :chat, data: data_in)
+          entry_in = {'target_id' => @target._id, 'evidence_id' => evidence_in._id}
+
+          data_out = {'from' => ' sender ', 'rcpt' => 'receiver', 'incoming' => 0, 'program' => 'skype', 'content' => 'test message'}
+          evidence_out = Evidence.collection_class(@target._id).create!(da: Time.now.to_i + day*86400, aid: @agent._id, type: :chat, data: data_out)
+          entry_out = {'target_id' => @target._id, 'evidence_id' => evidence_out._id}
+
+          Processor.process entry_out
+          Processor.process entry_in
+        end
+
+        entity = Entity.where(name: 'receiver').first
+        entity.should be_nil
+      end
     end
 
     context 'given an evidence of type "position"' do
