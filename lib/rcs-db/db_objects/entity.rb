@@ -339,6 +339,7 @@ class Entity
   def linked_to? another_entity, options = {}
     filter = {}
     filter[:type] = options[:type] if options[:type]
+    filter[:level] = options[:level] if options[:level]
 
     link_to_another_entity = links.connected_to(another_entity).where(filter).first
     link_to_this_entity = another_entity.links.connected_to(self).where(filter).first
