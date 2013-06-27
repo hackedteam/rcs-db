@@ -1,0 +1,44 @@
+<%= render(:header) %>
+
+<table>
+  <thead>
+    <tr>
+      <th scope="col" class="date">date</th>
+      <th scope="col" class="evidence">evidence statistics by hour</th>
+    </tr>
+  </thead>
+
+  <tbody>
+
+    <% summary.each_pair do |date, nums| %>
+      <tr>
+        <td class="date">
+          <a href="<%= date %>/index.html"><%= date %></a>
+        </td>
+
+        <td class="evidence">
+          <% max = nums.max %>
+          <table class="stat">
+            <tbody>
+              <tr>
+                <% nums.each_with_index do |value| %>
+                  <% h = value * 20 / max %>
+                  <% title = "#{value} evidence"+(value > 1 ? "s" : "") %>
+                  <td class="stat"><img src="style/stat.png" height="<%= h %>" width="6" title="<%= title %>"></td>
+                <% end %>
+              </tr>
+
+              <tr>
+                <% (0..23).each do |h| %>
+                  <td  class="stat"><%= '%02d' % h %></td>
+                <% end %>
+              </tr>
+            </tbody>
+          </table> <!-- stat table -->
+        </td>
+      </tr>
+    <% end %>
+
+<%= render(:table_footer) %>
+
+<%= render(:footer) %>
