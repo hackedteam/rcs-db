@@ -156,7 +156,7 @@ module Intelligence
 
         let!(:existing_entity) do
           e = factory_create :person_entity, operation: operation, name: 'Bob'
-          e.create_or_update_handle :skype, 'j.snow', 'John Snow'
+          factory_create :entity_handle, entity: e, type: :skype, handle: 'j.snow', name: 'John Snow'
           e
         end
 
