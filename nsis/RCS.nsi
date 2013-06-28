@@ -199,17 +199,6 @@ Section "Update Section" SecUpdate
    Sleep 3000
    SimpleSC::StopService "RCSIntelligence" 1
 
-   ${If} $installMaster == ${BST_CHECKED}
-     !insertmacro UpgradeMongoDB
-   ${EndIf}
-
-   Sleep 3000
-   SimpleSC::StopService "RCSMasterRouter" 1
-   Sleep 3000
-   SimpleSC::StopService "RCSMasterConfig" 1
-   Sleep 3000
-   SimpleSC::StopService "RCSShard" 1
-
    ReadRegDWORD $R0 HKLM "Software\HT\RCS" "ocr"
    IntCmp $R0 1 0 noocr noocr
      Sleep 3000
@@ -221,6 +210,17 @@ Section "Update Section" SecUpdate
      Sleep 3000
      SimpleSC::StopService "RCSTranslate" 1
    notrans:
+
+   ${If} $installMaster == ${BST_CHECKED}
+     !insertmacro UpgradeMongoDB
+   ${EndIf}
+
+   Sleep 3000
+   SimpleSC::StopService "RCSMasterRouter" 1
+   Sleep 3000
+   SimpleSC::StopService "RCSMasterConfig" 1
+   Sleep 3000
+   SimpleSC::StopService "RCSShard" 1
 
    Sleep 5000
    
