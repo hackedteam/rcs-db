@@ -4,6 +4,8 @@ TODO 8.4.0
   bug privilegi (?):
     - castore: a volte non salva subito i nuovi privilegi
 
+  OCR sanitize (remove invalid char) not working...
+
 TODO 9.0.0
 
   FIX:
@@ -11,6 +13,8 @@ TODO 9.0.0
     try to implement "retry" on mongoid queries
 
   merge links -> merge info for evidence filtering
+
+  em-http-request (1.1.0 has some problem with dependencies under windows.. check it)
 
   IMPLEMENT:
     statistic analyzer (alor)
