@@ -11,6 +11,7 @@ TODO 8.4.0
 TODO 9.0.0
 
   FIX:
+    phone number comparison (ex. +39123 / 123)
     better investigation on "end of file reached" errors from mongoid (hoping for version 4.0.0 with connection pool)
     try to implement "retry" on mongoid queries
 
