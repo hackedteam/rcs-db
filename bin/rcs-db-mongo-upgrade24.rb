@@ -149,7 +149,7 @@ def mongo_shards
     mongo_session.use :admin
     result = mongo_session.command(listshards: 1)
     mongo_session.use :config
-    result['shards'].map{ |el| el['host'] }.reject{ |el| el =~ /#{configured_cn}/i }
+    result['shards'].reject{ |hash| hash["_id"] == "shard0000" }.map{ |el| el['host'] }
   end
 end
 
