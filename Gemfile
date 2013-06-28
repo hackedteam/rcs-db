@@ -3,11 +3,11 @@ source "http://rubygems.org"
 
 gem "rcs-common", ">= 8.3.3", :path => "../rcs-common"
 
-gem 'em-http-request'
+gem 'em-http-request', "=1.0.3"
 gem 'em-websocket'
 gem 'em-http-server', ">= 0.1.3"
 
-gem 'eventmachine', ">= 1.0.0"
+gem 'eventmachine', ">= 1.0.3"
 
 # TAR/GZIP compression
 gem "minitar", ">= 0.5.5", :git => "git://github.com/danielemilan/minitar.git", :branch => "master"
