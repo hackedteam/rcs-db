@@ -91,7 +91,7 @@ class DB
   end
 
   def mongo_version
-    @mongo_version ||= Mongoid.default_session.command(:buildinfo => 1)['version']
+    Mongoid.default_session.command(:buildinfo => 1)['version']
   rescue
     "unknown"
   end

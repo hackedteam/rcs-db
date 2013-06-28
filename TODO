@@ -6,6 +6,8 @@ TODO 8.4.0
 
   OCR sanitize (remove invalid char) not working...
 
+  aggregate reindexed on every restart????
+
 TODO 9.0.0
 
   FIX:
