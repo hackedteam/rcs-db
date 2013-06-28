@@ -144,6 +144,23 @@ def mongo_shutdown
   end
 end
 
+def mongo_shards
+  @shards ||= begin
+    mongo_session.use :admin
+    result = mongo_session.command(listshards: 1)
+    mongo_session.use :config
+    result['shards'].map{ |el| el['host'] }.reject{ |el| el =~ /#{configured_cn}/i }
+  end
+end
+
+def shard_version host
+  logger.debug "Establishing a new Moped session to shard #{host}"
+  session = Moped::Session.new [host]
+  session.use :config
+  version = session.command(buildinfo: 1)["version"]
+  session.disconnect
+  version
+end
 
 # Windows methods: safe command execution, service ctrl, etc.
 
@@ -175,6 +192,14 @@ begin
   if mongo_24?
     logger.info "Mongo 2.4 is already installed."
     exit(0)
+  end
+
+  logger.info "Checking that all the shards are 2.4"
+
+  mongo_shards.each do |host|
+    unless shard_version(host).start_with? "2.4"
+      log_and_raise "All the shards must be upgraded first. Version of mongo at #{host} is not 2.4."
+    end
   end
 
   if windows_diskfree < mongo_config_db_size*5
