@@ -154,7 +154,7 @@ class DB
       coll = db.collection(coll_name)
       a = Aggregate.target(coll_name.split('.').last)
       # number of index + _id + shard_key
-      next if coll.stats['nindexes'] == a.index_options.size + 2
+      next if coll.stats['nindexes'] == a.index_options.size + 1
       trace :info, "Creating indexes for #{coll_name} - " + coll.stats['size'].to_s_bytes
       Aggregate.target(coll_name.split('.').last).create_collection
     end
