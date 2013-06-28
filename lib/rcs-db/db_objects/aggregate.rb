@@ -55,7 +55,7 @@ module Aggregate
   def entity_handle_type
     t = self.type.to_sym
 
-    if [:call, :sms, :mms].include? t
+    if [:phone, :sms, :mms].include? t
       'phone'
     elsif [:mail, :gmail, :outlook].include? t
       'mail'
@@ -172,9 +172,9 @@ module Aggregate
 
   def self.most_contacted(target_id, params)
     start = Time.now
-    most_contacted_types = [:call, :chat, :mail, :sms, :mms, :facebook,
+    most_contacted_types = [:chat, :mail, :sms, :mms, :facebook,
                             :gmail, :skype, :bbm, :whatsapp, :msn, :adium,
-                            :viber, :outlook, :wechat, :line]
+                            :viber, :outlook, :wechat, :line, :phone]
 
     # mongoDB aggregation framework
 

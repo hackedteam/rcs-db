@@ -440,7 +440,7 @@ class EntityHandle
 
   def aggregate_types
     if type == :phone
-      [:call, :sms, :mms]
+      [:sms, :mms, :phone]
     elsif type == :mail
       [:mail, :gmail, :outlook]
     else
