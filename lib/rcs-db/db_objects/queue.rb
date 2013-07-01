@@ -146,6 +146,7 @@ class AggregatorQueue < NotificationQueue
 
   store_in collection: 'aggregator_queue'
   index({flag: 1}, {background: true})
+  index({type: 1}, {background: true})
 
   AGGREGATOR_TYPES = ['call', 'message', 'chat', 'position']
 
