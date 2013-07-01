@@ -4,8 +4,6 @@ TODO 8.4.0
   bug privilegi (?):
     - castore: a volte non salva subito i nuovi privilegi
 
-  aggregate reindexed on every restart????
-
   utility to clean the db from dangling gridfs entries
     - check all the "existing" agents and remove all the entry in the grid that are orphaned
     - also perform this on targets
