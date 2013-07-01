@@ -4,8 +4,6 @@ TODO 8.4.0
   bug privilegi (?):
     - castore: a volte non salva subito i nuovi privilegi
 
-  aggregate reindexed on every restart????
-
 TODO 9.0.0
 
   FIX:
