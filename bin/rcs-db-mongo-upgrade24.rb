@@ -40,12 +40,14 @@ def logger
   end
 end
 
-def log_and_raise msg_or_exception
+def log_and_raise msg_or_exception, return_value = nil
   if msg_or_exception.respond_to?(:backtrace)
     logger.error "#{msg_or_exception.message} | #{msg_or_exception.backtrace.inspect}"
   else
     logger.error msg_or_exception
   end
+
+  exit(return_value) if return_value
 
   raise msg_or_exception
 end
@@ -198,12 +200,12 @@ begin
 
   mongo_shards.each do |host|
     unless shard_version(host).start_with? "2.4"
-      log_and_raise "All the shards must be upgraded first. Version of mongo at #{host} is not 2.4."
+      log_and_raise "All the shards must be upgraded first. Version of mongo at #{host} is not 2.4.", 2
     end
   end
 
   if windows_diskfree < mongo_config_db_size*5
-    log_and_raise "There is not enough free space for the mongoDB config database."
+    log_and_raise "There is not enough free space for the mongoDB config database.", 3
   end
 
   logger.info "Stopping balancer"

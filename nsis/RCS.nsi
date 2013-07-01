@@ -178,7 +178,24 @@ ${StrStr}
   File "..\bin\rcs-db-mongo-upgrade24.rb"
 
   DetailPrint "Launching mongoDB upgrade script..."
-  !insertmacro ExecOrQuit "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-mongo-upgrade24.rb" "Upgrade to mongoDB 2.4 has failed. Check out the logfile for details."
+
+  nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-mongo-upgrade24.rb"
+  Pop $0
+
+  ${If} $0 == 2
+    MessageBox MB_ICONSTOP|MB_OK "All the shards must be upgraded first."
+    Quit
+  ${EndIf}
+
+  ${If} $0 == 3
+    MessageBox MB_ICONSTOP|MB_OK "There is not enough free space for the mongoDB config database."
+    Quit
+  ${EndIf}
+
+  ${If} $0 != 0
+    MessageBox MB_ICONSTOP|MB_OK "Upgrade to mongoDB 2.4 has failed. Check out the logfile for details."
+    Quit
+  ${EndIf}
 !macroend
 
 ;--------------------------------
