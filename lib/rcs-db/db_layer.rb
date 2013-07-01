@@ -96,6 +96,47 @@ class DB
     "unknown"
   end
 
+  def config_collections
+    @config_collections ||= begin
+      mongo_connection unless @mongo_db
+      @mongo_db.db('config').collections.find { |c| c.name == 'collections' }
+    end
+  end
+
+  def index_diff(mongoid_document_class)
+    collection = mongo_connection.collection(mongoid_document_class.collection.name)
+
+    # Return true if the collection does not exists
+    return true unless collection
+
+    # Gets an array of hashes containing the index keys. Something
+    # like [{"type"=>1}, {"type"=>1, "da"=>1, "aid"=>1}, {"da"=>1}].
+    model_indexes_keys = mongoid_document_class.index_options.keys.map(&:stringify_keys)
+    actual_indexes_keys = collection.index_information.map { |p| p.last['key'] }
+
+    # Exclude the automatic index on the "_id" attribute
+    actual_indexes_keys.reject! { |hash| hash == {'_id' => 1} }
+
+    # Exclude the automatic index on the shard key
+    namespace = "rcs.#{collection.name}"
+    if mongoid_document_class.shard_key_fields
+      key = mongoid_document_class.shard_key_fields.inject({}) { |h, v| h[v.to_s] = 1; h } # somehing like {"type"=>1, "da"=>1, "aid"=>1}
+      actual_indexes_keys.reject! { |hash| hash == key }
+    else
+      config_coll = config_collections.find({'_id' => namespace}).first
+      actual_indexes_keys.reject! { |hash| hash == config_coll['key'] } if config_coll
+    end
+
+    diff = {}
+    diff[:added] = model_indexes_keys - actual_indexes_keys
+    diff[:removed] = actual_indexes_keys - model_indexes_keys
+
+
+    diff = nil if diff[:added].empty? and diff[:removed].empty?
+    trace :debug, "Index diff of #{namespace}: #{diff ? diff.inspect : 'none'}"
+    diff
+  end
+
   # insert here the class to be indexed
   @@classes_to_be_indexed = [::Audit, ::User, ::Group, ::Alert, ::Status, ::Core, ::Collector, ::Injector, ::Item, ::PublicDocument, ::EvidenceFilter, ::Entity]
 
@@ -103,61 +144,21 @@ class DB
     db = DB.instance.mongo_connection
 
     trace :info, "Database size is: " + db.stats['dataSize'].to_s_bytes
-
     trace :info, "Ensuring indexing on collections..."
 
-    @@classes_to_be_indexed.each do |k|
-      # get the metadata of the collection
-      coll = db.collection(k.collection_name)
+    @@classes_to_be_indexed.each do |klass|
+      diff = index_diff(klass)
+      next unless diff
 
-      # skip if already indexed
-      begin
-        # reindex only collections that don't match the index count + 1
-        # the +1 is the automatic _id index
-        # if the collection is sharded, there is another automatic index (for the sharding)
-        next if coll.stats['nindexes'] == k.index_options.size + 1 + (coll.stats['sharded'] ? 1 : 0)
-      rescue Mongo::OperationFailure
-        # ignored
-      end
       # create the index
-      trace :info, "Creating indexes for #{k.collection_name}"
-      k.create_indexes
-    end
-
-    # ensure indexes on every evidence collection
-    collections = db.collection_names
-    collections.keep_if {|x| x['evidence.']}
-    collections.delete_if {|x| x['grid.'] or x['files'] or x['chunks']}
-
-    trace :debug, "Indexing #{collections.size} evidence collections"
-
-    collections.each do |coll_name|
-      coll = db.collection(coll_name)
-      e = Evidence.collection_class(coll_name.split('.').last)
-      # number of index + _id + shard_key
-      next if coll.stats['nindexes'] == e.index_options.size + 2
-      trace :info, "Creating indexes for #{coll_name} - " + coll.stats['size'].to_s_bytes
-      Evidence.collection_class(coll_name.split('.').last).create_collection
+      trace :info, "Creating indexes for #{klass.collection_name}"
+      klass.remove_indexes if diff[:removed].any?
+      klass.create_indexes
     end
 
     # index on shard id for the worker
     coll = db.collection('grid.evidence.files')
     coll.create_index('metadata.shard')
-
-    # ensure indexes on every evidence collection
-    collections = db.collection_names
-    collections.keep_if {|x| x['aggregate.']}
-
-    trace :debug, "Indexing #{collections.size} aggregate collections"
-
-    collections.each do |coll_name|
-      coll = db.collection(coll_name)
-      a = Aggregate.target(coll_name.split('.').last)
-      # number of index + _id + shard_key
-      next if coll.stats['nindexes'] == a.index_options.size + 1
-      trace :info, "Creating indexes for #{coll_name} - " + coll.stats['size'].to_s_bytes
-      Aggregate.target(coll_name.split('.').last).create_collection
-    end
   end
 
   def enable_sharding
