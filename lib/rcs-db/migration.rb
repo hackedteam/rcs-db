@@ -22,7 +22,7 @@ class Migration
 
     run [:mongoid3, :access_control, :reindex_aggregates] if version >= '8.3.2'
     run [:reindex_queues, :drop_sessions] if version >= '8.3.3'
-    run [:gmail_to_mail, :aggregate_summary] if version >= '8.4.0'
+    run [:gmail_to_mail, :aggregate_summary, :reindex_evidences] if version >= '8.4.0'
 
     return 0
   end
@@ -93,6 +93,25 @@ class Migration
         Aggregate.target(target._id).collection.indexes.drop
         Aggregate.target(target._id).create_collection
         print "\r%d aggregates reindexed" % count += 1
+      rescue Exception => e
+        puts e.message
+      end
+    end
+    puts
+    puts "done in #{Time.now - start} secs"
+  end
+
+  def self.reindex_evidences
+    start = Time.now
+    count = 0
+    puts "Re-indexing evidences..."
+    ::Item.targets.each do |target|
+      begin
+        klass = Evidence.collection_class(target._id)
+        next unless klass.exists?
+        klass.collection.indexes.drop
+        klass.create_collection
+        print "\r%d evidences reindexed" % count += 1
       rescue Exception => e
         puts e.message
       end
