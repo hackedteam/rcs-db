@@ -100,22 +100,10 @@ class Item
     self.stat.dashboard = {}
     self.save
   end
-
-  # performs global recalculation of stats (to be called periodically)
-  def self.restat
-    begin
-      t = Time.now
-      # to make stat converge in one step, first restat agent, targets, then operations
-      #Item.where(_kind: 'agent').each {|i| i.restat}
-      Item.where(_kind: 'target').each {|i| i.restat}
-      Item.where(_kind: 'operation').each {|i| i.restat}
-      trace :debug, "Restat time: #{Time.now - t}" if RCS::DB::Config.instance.global['PERF']
-    rescue Exception => e
-      trace :fatal, "Cannot restat items: #{e.message}"
-    end
-  end
   
   def restat
+    trace :info, "Recalculating stats for #{self._kind} #{self.name}"
+    t = Time.now
     case self._kind
       when 'operation'
         self.stat.size = 0
@@ -163,6 +151,7 @@ class Item
         end
         self.save
     end
+    trace :debug, "Restat for #{self._kind} #{self.name} performed in #{Time.now - t} secs" if RCS::DB::Config.instance.global['PERF']
   end
 
   def move_target(operation)
@@ -487,6 +476,8 @@ class Item
         # drop evidence and aggregates
         self.drop_target_collections
 
+        # recalculate stats for the operation
+        self.get_parent.restat
       when 'agent'
         # dropping flag is set only by cascading from target
         unless self[:dropping]
@@ -497,6 +488,8 @@ class Item
           trace :info, "Rebuilding summary for target #{self.get_parent.name}..."
           Aggregate.target(self.path.last).rebuild_summary
           trace :info, "Deleting evidence for agent #{self.name} done."
+          # recalculate stats for the target
+          self.get_parent.restat
         end
       when 'factory'
         # delete all the pushed documents of this factory
