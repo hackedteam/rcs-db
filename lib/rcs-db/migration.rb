@@ -188,6 +188,87 @@ class Migration
     puts "done in #{Time.now - start} secs"
   end
 
+  def self.cleanup_storage
+    start = Time.now
+    count = 0
+    puts "Dropping orphaned collections..."
+    db = DB.instance.mongo_connection
+
+    total_size =  db.stats['dataSize']
+
+    collections = db.collection_names
+    # keep only collection with _id in the name
+    collections.keep_if {|x| x.match /\.[a-f0-9]{24}/}
+    puts "#{collections.size} collections"
+    targets = Item.targets.collect {|t| t.id.to_s}
+    puts "#{targets.size} targets"
+    # remove collections of existing targets
+    collections.delete_if {|x| targets.any? {|t| x.match /#{t}/}}
+    collections.each {|c| db.drop_collection c }
+    puts "#{collections.size} collections deleted"
+    puts "done in #{Time.now - start} secs"
+    puts
+
+    start = Time.now
+    puts "Cleaning up evidence storage for dangling agents..."
+    collections = db.collection_names
+    # keep only collection with _id in the name
+    collections.keep_if {|x| x.match /evidence\.[a-f0-9]{24}/}
+    collections.each do |coll|
+      tid = coll.split('.')[1]
+      target = Item.find(tid)
+      # calculate the agents of the target (not deleted), the evidence in the collection
+      # and subtract the first from the second
+      agents = Item.agents.where(deleted: false, path: target.id).collect {|a| a.id}
+      grouped = Evidence.collection_class(tid).collection.aggregate([{ "$group" => { _id: "$aid" }}]).collect {|x| x['_id']}
+      deleted_aid_evidence = grouped - agents
+
+      next if deleted_aid_evidence.empty?
+
+      puts
+      puts target.name
+
+      pre_size = db[coll].stats['size']
+      deleted_aid_evidence.each do |aid|
+        count = Evidence.collection_class(tid).where(aid: aid).count
+        Evidence.collection_class(tid).where(aid: aid).delete_all
+        puts "#{count} evidence deleted"
+      end
+      post_size = db[coll].stats['size']
+      puts "#{(pre_size - post_size).to_s_bytes} cleaned up"
+    end
+
+    collections = db.collection_names
+    # keep only collection with _id in the name
+    collections.keep_if {|x| x.match /grid\.[a-f0-9]{24}\.files/}
+    collections.each do |coll|
+      tid = coll.split('.')[1]
+      target = Item.find(tid)
+      # calculate the agents of the target (not deleted), the evidence in the collection
+      # and subtract the first from the second
+      agents = Item.agents.where(deleted: false, path: target.id).collect {|a| a.id}
+      grouped = GridFS.get_distinct_filenames(tid)
+      deleted_aid_grid = grouped - agents
+
+      next if deleted_aid_grid.empty?
+
+      puts
+      puts target.name
+
+      pre_size = db["grid.#{tid}.files"].stats['size'] + db["grid.#{tid}.chunks"].stats['size']
+      deleted_aid_grid.each do |aid|
+        GridFS.delete_by_agent(aid, tid)
+      end
+      post_size = db["grid.#{tid}.files"].stats['size'] + db["grid.#{tid}.chunks"].stats['size']
+      puts "#{(pre_size - post_size).to_s_bytes} cleaned up"
+    end
+
+    current_size = total_size - db.stats['dataSize']
+
+    puts "#{current_size.to_s_bytes} saved"
+    puts "done in #{Time.now - start} secs"
+  end
+
 end
 
 end

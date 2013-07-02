@@ -71,22 +71,23 @@ module Evidence
   def destroy_callback
     return if STAT_EXCLUSION.include? self.type
     agent = Item.find self.aid
-    agent.stat.dec(:"evidence.#{self.type}", 1)
-    agent.stat.dec(:size, self.data.to_s.length)
+    return unless agent
+    agent.stat.inc(:"evidence.#{self.type}", -1)
+    agent.stat.inc(:size, -self.data.to_s.length)
     # drop the file (if any) in grid
     unless self.data['_grid'].nil?
-      agent.stat.dec(:grid_size, self.data['_grid_size'])
+      agent.stat.inc(:grid_size, -self.data['_grid_size'])
       RCS::DB::GridFS.delete(self.data['_grid'], agent.path.last.to_s) rescue nil
     end
     # update the target of this agent
     target = agent.get_parent
-    target.stat.dec(:"evidence.#{self.type}", 1)
-    target.stat.dec(:size, self.data.to_s.length)
-    target.stat.dec(:grid_size, self.data[:_grid_size]) unless self.data[:_grid].nil?
+    target.stat.inc(:"evidence.#{self.type}", -1)
+    target.stat.inc(:size, -self.data.to_s.length)
+    target.stat.inc(:grid_size, -self.data[:_grid_size]) unless self.data[:_grid].nil?
     # update the operation of this agent
     operation = target.get_parent
-    operation.stat.dec(:size, self.data.to_s.length)
-    operation.stat.dec(:grid_size, self.data[:_grid_size]) unless self.data[:_grid].nil?
+    operation.stat.inc(:size, -self.data.to_s.length)
+    operation.stat.inc(:grid_size, -self.data[:_grid_size]) unless self.data[:_grid].nil?
   end
 
   # #TODO: rename into self.target (just like Aggregate#target)

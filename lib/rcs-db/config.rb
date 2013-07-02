@@ -148,8 +148,10 @@ class Config
 
     $version = File.read(Dir.pwd + '/config/VERSION')
 
-    # migration to mongoid3 and new access control
+    # migration
     return Migration.up_to $version if options[:migrate]
+
+    return Migration.run [:cleanup_storage] if options[:cleanup]
 
     # keyword indexing
     return Indexer.run options[:kw_index] if options[:kw_index]
@@ -570,7 +572,7 @@ class Config
       opts.on( '--index TARGET', String, 'Calculate the full text index for this target' ) do |target|
         options[:kw_index] = target
       end
-      opts.on( '--migrate', String, 'Migrate data to the new version' ) do
+      opts.on( '--migrate', 'Migrate data to the new version' ) do
         options[:migrate] = true
       end
       opts.on( '--log', 'Log all operation to a file' ) do
@@ -607,7 +609,9 @@ class Config
       opts.on( '-W', '--restore-shard SHARD:HOST', 'Restore SHARD after failure.') do |params|
         options[:shard_failure_add] = params
       end
-
+      opts.on( '--cleanup', 'Cleanup the db by deleting dangling entries') do
+        options[:cleanup] = true
+      end
     end
 
     optparse.parse(argv)
