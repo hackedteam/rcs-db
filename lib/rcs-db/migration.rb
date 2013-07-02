@@ -88,6 +88,9 @@ class Migration
     count = 0
     puts "Re-indexing aggregates..."
     ::Item.targets.each do |target|
+      target.create_target_collections
+      target.create_target_entity
+
       begin
         next unless Aggregate.target(target._id).exists?
         Aggregate.target(target._id).collection.indexes.drop
@@ -142,6 +145,7 @@ class Migration
     ::Item.targets.each do |target|
       begin
         next if Aggregate.target(target._id).empty?
+
         Aggregate.target(target._id).rebuild_summary
         print "\r%d summaries" % count += 1
       rescue Exception => e
