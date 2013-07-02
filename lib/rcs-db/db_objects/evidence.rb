@@ -378,6 +378,12 @@ module Evidence
       Aggregate.target(old_target[:_id]).rebuild_summary
     end
 
+    # recalculate stats
+    old_target.restat
+    old_target.get_parent.restat
+    target.restat
+    target.get_parent.restat
+
     trace :info, "Evidence Move: completed for #{agent.name}"
   end
 
