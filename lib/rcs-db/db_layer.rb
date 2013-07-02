@@ -119,22 +119,61 @@ class DB
 
     # Exclude the automatic index on the shard key
     namespace = "rcs.#{collection.name}"
-    if mongoid_document_class.shard_key_fields
-      key = mongoid_document_class.shard_key_fields.inject({}) { |h, v| h[v.to_s] = 1; h } # somehing like {"type"=>1, "da"=>1, "aid"=>1}
-      actual_indexes_keys.reject! { |hash| hash == key }
-    else
-      config_coll = config_collections.find({'_id' => namespace}).first
-      actual_indexes_keys.reject! { |hash| hash == config_coll['key'] } if config_coll
+    model_shard_key = nil
+    actual_shard_key = nil
+    if mongoid_document_class.shard_key_fields.any?
+      model_shard_key = mongoid_document_class.shard_key_fields.inject({}) { |h, v| h[v.to_s] = 1; h } # somehing like {"type"=>1, "da"=>1, "aid"=>1}
     end
+    config_coll = config_collections.find({'_id' => namespace}).first
+    actual_shard_key = config_coll['key'] if config_coll
 
     diff = {}
+
+    if !model_shard_key and !actual_shard_key
+      # unsharded collection
+    elsif model_shard_key and !actual_shard_key
+      diff[:shard_key] = model_shard_key
+    else #ignores any other case...
+      actual_indexes_keys.reject! { |hash| hash == actual_shard_key }
+      actual_indexes_keys.reject! { |hash| hash == model_shard_key }
+    end
+
     diff[:added] = model_indexes_keys - actual_indexes_keys
     diff[:removed] = actual_indexes_keys - model_indexes_keys
+    diff[:added].map! do |index_key|
+      opts = mongoid_document_class.index_options.find { |key, opts| key.stringify_keys == index_key }.last
+      [index_key, opts.stringify_keys]
+    end
 
-
-    diff = nil if diff[:added].empty? and diff[:removed].empty?
+    diff = nil if diff[:added].empty? and diff[:removed].empty? and !diff[:shard_key]
     trace :debug, "Index diff of #{namespace}: #{diff ? diff.inspect : 'none'}"
     diff
+  end
+
+  def sync_indexes(mongoid_document_class)
+    diff = index_diff(mongoid_document_class)
+    return unless diff
+
+    indexes = mongoid_document_class.collection.indexes
+    coll_name = mongoid_document_class.collection.name
+
+    if diff[:shard_key]
+      trace :debug, "Creating shard #{diff[:shard_key].inspect} on #{coll_name}"
+      coll = mongo_connection.collection(mongoid_document_class.collection.name)
+      result = RCS::DB::Shard.set_key(coll, diff[:shard_key])
+      trace :debug, result
+    end
+
+    diff[:removed].each do |index_key|
+      trace :debug, "Dropping index #{index_key.inspect} on #{coll_name}"
+      indexes.drop(index_key)
+    end
+
+    diff[:added].each do |spec|
+      index_key, opts = *spec
+      trace :debug, "Creating index #{index_key.inspect} (#{opts.inspect}) on #{coll_name}"
+      indexes.create(index_key, opts)
+    end
   end
 
   # insert here the class to be indexed
@@ -146,15 +185,7 @@ class DB
     trace :info, "Database size is: " + db.stats['dataSize'].to_s_bytes
     trace :info, "Ensuring indexing on collections..."
 
-    @@classes_to_be_indexed.each do |klass|
-      diff = index_diff(klass)
-      next unless diff
-
-      # create the index
-      trace :info, "Creating indexes for #{klass.collection_name}"
-      klass.remove_indexes if diff[:removed].any?
-      klass.create_indexes
-    end
+    @@classes_to_be_indexed.each { |klass| sync_indexes(klass) }
 
     # index on shard id for the worker
     coll = db.collection('grid.evidence.files')
