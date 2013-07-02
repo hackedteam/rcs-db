@@ -42,6 +42,7 @@ module Evidence
     base.index({'data.position' => "2dsphere"}, {background: true})
 
     base.shard_key :type, :da, :aid
+    base.validates_presence_of :type, :da, :aid
 
     base.scope :positions, base.where(type: 'position')
 

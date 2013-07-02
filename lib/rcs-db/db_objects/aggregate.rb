@@ -16,7 +16,6 @@ module Aggregate
     base.field :count, type: Integer, default: 0
     base.field :size, type: Integer, default: 0        # seconds for calls, bytes for the others
     base.field :info, type: Array, default: []         # for summary or timeframe (position)
-
     base.field :data, type: Hash, default: {}
 
     base.store_in collection: -> { self.collection_name }
@@ -28,7 +27,6 @@ module Aggregate
     base.index({"data.type" => 1}, {background: true})
     base.index({"data.host" => 1}, {background: true})
     base.index({type: 1, "data.peer" => 1 }, {background: true})
-
     base.index({'data.position' => "2dsphere"}, {background: true})
 
     base.shard_key :type, :day, :aid
@@ -38,6 +36,8 @@ module Aggregate
     # The "day" attribute must be a string in the format of YYYYMMDD
     # or the string "0" (when the type if :postioner or :summary)
     base.validates_format_of :day, :with => /\A(\d{8}|0)\z/
+    # Valalidates the presence of the shard key attributes
+    base.validates_presence_of :type, :day, :aid
 
     base.extend ClassMethods
   end
