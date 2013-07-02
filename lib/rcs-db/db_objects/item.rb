@@ -89,7 +89,7 @@ class Item
   before_create :do_checksum
   before_update :do_checksum
   before_save :do_checksum
-  
+
   public
 
   def self.reset_dashboard
@@ -417,21 +417,26 @@ class Item
     self.filesystem_requests.create!({path: '%USERPROFILE%', depth: 2})
   end
 
+  # This apply only to "target" items.
+  # If a target entity (related to this target item) does not exists,
+  # creates a new one.
+  def create_target_entity
+    return if _kind != 'target'
+
+    entity_path = path + [_id]
+
+    return if Entity.targets.where(path: entity_path).exists?
+
+    Entity.create!(type: :target, level: :automatic, path: entity_path, name: name, desc: desc)
+  end
+
   def create_callback
-    case self._kind
-      when 'target'
-        self.create_target_collections
-        # also create the relative entity
-        Entity.create! do |entity|
-          entity.type = :target
-          entity.level = :automatic
-          entity.path = self.path + [self._id]
-          entity.name = self.name
-          entity.desc = self.desc
-        end
+    if _kind == 'target'
+      create_target_collections
+      create_target_entity
     end
 
-    RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'create'})
+    RCS::DB::PushManager.instance.notify(_kind, {id: _id, action: 'create'})
   end
 
   def notify_callback
