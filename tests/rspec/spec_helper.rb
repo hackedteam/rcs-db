@@ -74,7 +74,16 @@ class FakeLog4rLogger
     raise msg
   end
 
-  alias_method :error, :raise_error
+  def yellow(text)
+    "\033[30;33m#{text}\033[0m"
+  end
+
+  def print_error ex
+    ex = ex.respond_to?(:message) && ex.message || ex
+    puts yellow("trace error: #{ex[0, 100].gsub("\n", '/')+("..." if ex.size >= 100)}")
+  end
+
+  alias_method :error, :print_error
   alias_method :fatal, :raise_error
 end
 

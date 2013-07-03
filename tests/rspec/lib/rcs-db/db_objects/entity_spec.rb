@@ -105,7 +105,7 @@ describe Entity do
       photo_id.should be_a String
 
       @entity.del_photo(photo_id)
-      expect { RCS::DB::GridFS.get(photo_id, @entity.path.last.to_s) }.to raise_error RuntimeError, /Cannot get content from the Grid/
+      expect { RCS::DB::GridFS.get(photo_id, @entity.path.last.to_s) }.to raise_error(Mongo::GridFileNotFound)
     end
 
   end
@@ -139,7 +139,7 @@ describe Entity do
       @entity.add_photo("This_is_a_binary_photo")
       photo_id = @entity.photos.first
       @entity.destroy
-      expect { RCS::DB::GridFS.get(photo_id, @entity.path.last.to_s) }.to raise_error RuntimeError, /Cannot get content from the Grid/
+      expect { RCS::DB::GridFS.get(photo_id, @entity.path.last.to_s) }.to raise_error(Mongo::GridFileNotFound)
     end
   end
 
