@@ -106,8 +106,8 @@ class DB
   def index_diff(mongoid_document_class)
     collection = mongo_connection.collection(mongoid_document_class.collection.name)
 
-    # Return true if the collection does not exists
-    return true unless collection
+    # Return nil if the collection does not exists
+    return nil unless collection
 
     # Gets an array of hashes containing the index keys. Something
     # like [{"type"=>1}, {"type"=>1, "da"=>1, "aid"=>1}, {"da"=>1}].
