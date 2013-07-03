@@ -134,6 +134,9 @@ class DB
     elsif model_shard_key and !actual_shard_key
       diff[:shard_key] = model_shard_key
     else #ignores any other case...
+      if actual_shard_key and !model_shard_key
+        trace :warn, "The shard key #{actual_shard_key.inspect} on #{namespace} has been removed from the model."
+      end
       actual_indexes_keys.reject! { |hash| hash == actual_shard_key }
       actual_indexes_keys.reject! { |hash| hash == model_shard_key }
     end
