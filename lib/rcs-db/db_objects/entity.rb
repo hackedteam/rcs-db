@@ -261,10 +261,9 @@ class Entity
     return name if name
 
     # find if there is an entity owning that handle (the ghosts are from addressbook as well)
-    search_query = {"handles.type" => type, "handles.handle" => handle}
-    search_query['path'] = path if path
+    path_filter = path ? {path: path} : {}
 
-    entity = Entity.where(search_query).first
+    entity = Entity.with_handle(type, handle).where(path_filter).first
     if entity
       @@acc_cache.store(search_key, entity.name)
       return entity.name

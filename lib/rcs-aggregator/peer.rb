@@ -188,7 +188,7 @@ class PeerAggregator
       entity = Entity.targets.any_in(path: [Moped::BSON::ObjectId.from_string(target_id)]).first
 
       # search for existing entity or create a new one
-      if (old_entity = Entity.same_path_of(entity).where("handles.handle" => peer, "handles.type" => type).first)
+      if (old_entity = Entity.same_path_of(entity).with_handle(type, peer).first)
         if old_entity.level.eql? :ghost
           old_entity.level = :suggested
           old_entity.save

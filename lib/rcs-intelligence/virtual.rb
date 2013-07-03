@@ -17,7 +17,7 @@ module Virtual
   end
 
   def find_virtual_entity_by_url url
-    Entity.virtuals.where("handles.type" => :url, "handles.handle" => url).first
+    Entity.virtuals.with_handle(:url, url).first
   end
 end
 

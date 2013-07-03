@@ -120,7 +120,7 @@ class Processor
     end
 
     # search for existing entity with that account and link it (direct link)
-    if (peer = Entity.same_path_of(entity).where("handles.handle" => aggregate.data['peer'], "handles.type" => handle_type).first)
+    if (peer = Entity.same_path_of(entity).with_handle(handle_type, aggregate.data['peer']).first)
       info = "#{aggregate.data['sender']} #{aggregate.data['peer']}".strip
       level = peer.level == :ghost ? :ghost : :automatic
       RCS::DB::LinkManager.instance.add_link(from: entity, to: peer, level: level, type: :peer, versus: aggregate.data['versus'].to_sym, info: info)

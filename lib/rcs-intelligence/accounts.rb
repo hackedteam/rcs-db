@@ -68,7 +68,8 @@ module Accounts
     operation = entity.path.first
 
     entity = Entity.persons.path_include(operation)
-             .where('name'=> attrs[:handle], 'handles.handle' => attrs[:handle], 'handles.type' => attrs[:type])
+             .with_handle(attrs[:type], attrs[:handle])
+             .where('name'=> attrs[:handle])
              .first
 
     entity.update_attributes!(name: attrs[:name]) if entity
