@@ -91,7 +91,7 @@ class Processor
         # analyze the accounts
         Passwords.add_handle(entity, evidence)
       when 'url'
-        Virtual.process_url_evidence(entity, evidence)
+        Virtual.process_url_evidence(entity, evidence) if check_intelligence_license
     end
   end
 
