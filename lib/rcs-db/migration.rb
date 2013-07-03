@@ -30,6 +30,9 @@ class Migration
   def self.run(params)
     puts "Migration procedure started..."
 
+    ENV['no_trace'] = '1'
+    puts "Trace has been disabled (no_trace = 1)"
+
     #Mongoid.logger = ::Logger.new($stdout)
     #Moped.logger = ::Logger.new($stdout)
 
