@@ -27,34 +27,31 @@ module RCS
         "+881 9", "+881 0", "+881 1", "+881 6", "+881 7"
       ]
 
-      # Caches an array of prefix without any spaces nor plus, and sort them
-      # starting from the biggest one.
+      # Caches an array of all the calling codes sorted from the biggest one to
+      # the smaller one.
       def self.calling_codes_search_ary
         @@calling_codes_search_hash ||= begin
-          CALLING_CODES.map { |val| val.gsub(/[^0-9]/, '')  }.sort { |v1, v2| v2.to_i <=> v1.to_i }
+          CALLING_CODES.sort { |v1, v2| v2.gsub(/[^0-9]/, '').to_i <=> v1.gsub(/[^0-9]/, '').to_i }
         end
       end
 
       # If the given number starts with a calling code, return the given number without the
-      # calling code (and stripped from anything other than numbers), otherwise returns the
-      # given number as is.
+      # calling code, otherwise returns the given number as is.
       def self.number_without_calling_code(number)
         parsed = number.to_s.strip
         twochrs = parsed[0..1]
 
         if twochrs[0] != '+' and twochrs != '00'
-          return number
-        elsif twochrs[0] == '+'
-          parsed.gsub!(/[^0-9]/, '')
-        elsif twochrs == '00'
-          parsed = parsed[2..-1].gsub(/[^0-9]/, '')
+          return parsed
+        else
+          calling_codes_search_ary.each do |code|
+            regexp = /^(\+|00)(#{code.gsub('+', '')}|#{code.gsub(/[^0-9]/, '')})(.+)/
+            parts = parsed.scan(regexp).flatten
+            return parts.last.strip if parts.any?
+          end
         end
 
-        calling_codes_search_ary.each do |prefix|
-          return parsed[prefix.size..-1] if parsed.start_with?(prefix)
-        end
-
-        return number
+        parsed
       end
     end
   end

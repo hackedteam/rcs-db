@@ -70,7 +70,8 @@ class Entity
         regexp = /^#{parsed.split('').join('\s{0,1}\-{0,1}')}$/
         elem_match(handles: {type: type, handle: regexp})
       else
-        regexp = /#{parsed.split('').join('\s{0,1}\-{0,1}')}/
+        parsed.gsub!(/[^0-9]/, '')
+        regexp = /#{parsed.split('').join('\s{0,1}\-{0,1}')}$/
         elem_match(handles: {type: type, handle: regexp})
       end
     end
