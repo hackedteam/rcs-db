@@ -16,10 +16,10 @@ describe Processor do
 
   context 'processing evidence from the queue' do
     before do
-      @target = Item.create!(name: 'test-target', _kind: 'target', path: [], stat: ::Stat.new)
-      @agent = Item.create(name: 'test-agent', _kind: 'agent', path: [@target._id], stat: ::Stat.new)
+      @target = factory_create :target, name: 'testtarget'
+      @agent = factory_create :agent, target: @target, name: 'test-agent'
       data = {'from' => ' sender ', 'rcpt' => 'receiver', 'incoming' => 1, 'program' => 'skype', 'content' => 'test message'}
-      @evidence = Evidence.collection_class(@target._id).create!(da: Time.now.to_i, aid: @agent._id, type: :chat, data: data)
+      @evidence = factory_create :chat_evidence, agent: @agent, data: data
       @entry = {'target_id' => @target._id, 'evidence_id' => @evidence._id}
     end
 
@@ -47,8 +47,10 @@ describe Processor do
 
     context 'given an evidence of type "peer"' do
       before do
+        @target = factory_create :target, name: 'testtarget'
+        @agent = factory_create :agent, target: @target, name: 'test-agent'
         data = {'from' => ' sender ', 'rcpt' => 'receiver', 'incoming' => 0, 'program' => 'skype', 'content' => 'test message'}
-        @evidence = Evidence.collection_class(@target._id).create!(da: Time.now.to_i, aid: @agent._id, type: :chat, data: data)
+        @evidence = factory_create :chat_evidence, agent: @agent, data: data
         @entry = {'target_id' => @target._id, 'evidence_id' => @evidence._id}
       end
 
@@ -145,14 +147,12 @@ describe Processor do
 
     context 'given an evidence of type "position"' do
 
-      def new_position(data)
-        evidence = Evidence.collection_class(@target._id).create!(da: Time.now.to_i, aid: @agent._id, type: :position, data: data)
-        {'target_id' => @target._id, 'evidence_id' => evidence._id}
-      end
-
       before do
+        @target = factory_create :target, name: 'testtarget'
+        @agent = factory_create :agent, target: @target, name: 'test-agent'
         data = {'latitude' => 45.5353563, 'longitude' => 9.5939346, 'accuracy' => 50}
-        @evidence = Evidence.collection_class(@target._id).create!(da: Time.now.to_i, aid: @agent._id, type: :position, data: data)
+        # @evidence = Evidence.collection_class(@target._id).create!(da: Time.now.to_i, aid: @agent._id, type: :position, data: data)
+        @evidence = factory_create :position_evidence, agent: @agent, data: data
         @entry = {'target_id' => @target._id, 'evidence_id' => @evidence._id}
         PositionAggregator.stub(:extract) do |target, ev|
           [{type: :position,
@@ -216,8 +216,8 @@ describe Processor do
 
   context 'given some evidence to be parsed' do
     before do
-      @target = Item.create!(name: 'test-target', _kind: 'target', path: [], stat: ::Stat.new)
-      @agent = Item.create(name: 'test-agent', _kind: 'agent', path: [@target._id], stat: ::Stat.new)
+      @target = factory_create :target, name: 'testtarget'
+      @agent = factory_create :agent, target: @target, name: 'test-agent'
       @evidence = Evidence.dynamic_new('testtarget')
     end
 
@@ -249,10 +249,6 @@ describe Processor do
       end
     end
 
-    def new_position(time, data)
-      Evidence.collection_class(@target._id).create!(da: time, aid: @agent._id, type: :position, data: data)
-    end
-
     it 'should parse position evidence' do
       # the STAY point is:
       # 45.514992 9.5873462 10 (2013-01-15 07:37:43 - 2013-01-15 07:48:43)
@@ -278,7 +274,8 @@ describe Processor do
         lon = values.shift.to_f
         r = values.shift.to_i
 
-        results << Processor.extract_data(@target.id, new_position(time, {'latitude' => lat, 'longitude' => lon, 'accuracy' => r}))
+        ev = factory_create :position_evidence, agent: @agent, da: time, data: {'latitude' => lat, 'longitude' => lon, 'accuracy' => r}
+        results << Processor.extract_data(@target.id, ev)
       end
 
       results[0].should eq []
@@ -302,8 +299,8 @@ describe Processor do
 
   context 'given a bounch of positions (multiple days)' do
     before do
-      @target = Item.create!(name: 'test-target', _kind: 'target', path: [], stat: ::Stat.new)
-      @agent = Item.create(name: 'test-agent', _kind: 'agent', path: [@target._id], stat: ::Stat.new)
+      @target = factory_create :target, name: 'testtarget'
+      @agent = factory_create :agent, target: @target, name: 'test-agent'
       @evidence = Evidence.dynamic_new('testtarget')
     end
 
@@ -317,10 +314,6 @@ describe Processor do
 
         yield time, lat, lon, r if block_given?
       end
-    end
-
-    def new_position(time, data)
-      Evidence.collection_class(@target._id).create!(da: time, aid: @agent._id, type: :position, data: data)
     end
 
     it 'should emit two consecutive points if reset at midnight' do
@@ -341,7 +334,7 @@ describe Processor do
       2013-01-02 01:15:00 45.123456 9.987654 10" #fake one to trigger the data hole
 
       parse_data(points) do |time, lat, lon, r|
-        ev = new_position(time, {'latitude' => lat, 'longitude' => lon, 'accuracy' => r})
+        ev = factory_create :position_evidence, agent: @agent, da: time, data: {'latitude' => lat, 'longitude' => lon, 'accuracy' => r}
         Processor.process('target_id' => @target.id, 'evidence_id' => ev)
       end
 
@@ -370,7 +363,7 @@ describe Processor do
       points = File.read(file)
 
       parse_data(points) do |time, lat, lon, r|
-        ev = new_position(time, {'latitude' => lat, 'longitude' => lon, 'accuracy' => r})
+        ev = factory_create :position_evidence, agent: @agent, da: time, data: {'latitude' => lat, 'longitude' => lon, 'accuracy' => r}
         Processor.process('target_id' => @target.id, 'evidence_id' => ev)
       end
 
