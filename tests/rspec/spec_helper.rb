@@ -79,8 +79,10 @@ class FakeLog4rLogger
   end
 
   def print_error ex
+    file_and_line = caller.find {|line| line =~ /_spec.rb/ }.scan(/\/([^\/]+)\:in\s/).flatten.first rescue nil
+    file_and_line = " (#{file_and_line})" if file_and_line
     ex = ex.respond_to?(:message) && ex.message || ex
-    puts yellow("trace error: #{ex[0, 100].gsub("\n", '/')+("..." if ex.size >= 100)}")
+    puts yellow("trace error#{file_and_line}: #{ex[0, 100].gsub("\n", '/')+("..." if ex.size >= 100)}")
   end
 
   alias_method :error, :print_error
