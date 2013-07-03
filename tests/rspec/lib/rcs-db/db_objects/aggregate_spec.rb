@@ -43,7 +43,7 @@ describe Aggregate do
   end
 
   describe '#to_point' do
-    let!(:agg) {Aggregate.target('testtarget').create!(type: :position, data: {'position' => [9.1, 45.2], 'radius' => 50}, day: '20130405') }
+    let!(:agg) {Aggregate.target('testtarget').create!(type: :position, aid: 'agent_id' , data: {'position' => [9.1, 45.2], 'radius' => 50}, day: '20130405') }
 
     it 'should not convert if the aggregate is not a position' do
       agg.type = 'peer'
@@ -178,7 +178,7 @@ describe Aggregate do
 
     it 'is valid' do
       valid_days.each do |day|
-        aggregate = described_class.target('target_id').new day: day
+        aggregate = described_class.target('target_id').new day: day,  aid: 'agent_id', type: 'position'
         expect(aggregate).to be_valid
       end
     end
