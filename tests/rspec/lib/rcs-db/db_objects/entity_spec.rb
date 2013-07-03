@@ -33,12 +33,24 @@ describe Entity do
 
       before do
         factory_create :entity_handle, entity: entity, type: 'skype', handle: 'g.lucas'
-        factory_create :entity_handle, entity: entity, type: 'skype', handle: 'g.lucas_1'
+        factory_create :entity_handle, entity: entity, type: 'phone', handle: '342 1232981'
+        factory_create :entity_handle, entity: entity, type: 'phone', handle: '00393991242999'
+        factory_create :entity_handle, entity: entity, type: 'phone', handle: '393699801223'
       end
 
       it 'finds the entity that matches the given handle\'s type and value' do
         expect(described_class.with_handle('skype', 'g.lucas').count).to eql 1
-        expect(described_class.with_handle('skype', 'g.lucas_3').count).to eql 0
+        expect(described_class.with_handle('skype', '342 1232981').count).to eql 0
+        expect(described_class.with_handle('phone', '3421232981').count).to eql 1
+        expect(described_class.with_handle('phone', '342-1232981').count).to eql 1
+        expect(described_class.with_handle('phone', '+1111 342-1232981').count).to eql 0
+        expect(described_class.with_handle('phone', '+39 342 1232981').count).to eql 1
+        expect(described_class.with_handle('phone', '001 342 1232981').count).to eql 1
+        expect(described_class.with_handle('phone', '+39 399-1242999').count).to eql 1
+        expect(described_class.with_handle('phone', '3421232981').count).to eql 1
+        expect(described_class.with_handle('phone', '421232981').count).to eql 0
+        expect(described_class.with_handle('phone', '981').count).to eql 0
+        expect(described_class.with_handle('phone', '981').count).to eql 0
       end
     end
   end
@@ -245,9 +257,9 @@ describe Entity do
     context 'with intelligence enabled' do
 
       it 'should return name from handle (from entities)' do
-        @entity.handles.create!(type: 'phone', handle: 'test')
+        @entity.handles.create!(type: 'phone', handle: '123')
 
-        name = Entity.name_from_handle('sms', 'test', @target._id.to_s)
+        name = Entity.name_from_handle('sms', '123', @target._id.to_s)
 
         name.should eq @target.name
       end
@@ -304,12 +316,12 @@ describe Entity do
     end
 
     it 'should check for identity with other entities' do
-      @entity.handles.create!(type: 'phone', handle: 'test')
+      @entity.handles.create!(type: 'phone', handle: '123')
 
       @entity.links.size.should be 0
       @identity.links.size.should be 0
 
-      @identity.handles.create!(type: 'phone', handle: 'test')
+      @identity.handles.create!(type: 'phone', handle: '123')
       @entity.reload
       @identity.reload
 

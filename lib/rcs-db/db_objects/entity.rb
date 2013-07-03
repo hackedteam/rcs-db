@@ -3,6 +3,7 @@ require 'lrucache'
 
 require_relative '../link_manager'
 require_relative '../position/proximity'
+require_relative '../country_calling_codes'
 
 #module RCS
 #module DB
@@ -59,7 +60,21 @@ class Entity
   # for example all the entities in the same "operation" of the given one
   scope :same_path_of, lambda { |other_entity| where(:_id.ne => other_entity._id, :path => other_entity.path.first) }
   scope :path_include, lambda { |item| where('path' => {'$in' =>[item.respond_to?(:_id) ? item._id : Moped::BSON::ObjectId.from_string(item.to_s)]}) }
-  scope :with_handle, lambda { |type, value| where("handles.type" => type, "handles.handle" => value) }
+  scope :with_handle, lambda { |type, value|
+    if type.to_s != 'phone'
+      elem_match(handles: {type: type, handle: value})
+    else
+      parsed = RCS::DB::CountryCallingCodes.number_without_calling_code(value)
+      if parsed == value
+        parsed = value.gsub(/[^0-9]/, '')
+        regexp = /^#{parsed.split('').join('\s{0,1}\-{0,1}')}$/
+        elem_match(handles: {type: type, handle: regexp})
+      else
+        regexp = /#{parsed.split('').join('\s{0,1}\-{0,1}')}/
+        elem_match(handles: {type: type, handle: regexp})
+      end
+    end
+  }
 
   after_create :create_callback
   before_destroy :destroy_callback
