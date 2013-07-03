@@ -176,7 +176,7 @@ class DB
     coll_name = mongoid_document_class.collection.name
 
     if diff[:shard_key]
-      trace :debug, "Creating shard #{diff[:shard_key].inspect} on #{coll_name}"
+      trace :debug, "Enable sharding with key #{diff[:shard_key].inspect} on #{coll_name}"
       coll = mongo_connection.collection(mongoid_document_class.collection.name)
       result = RCS::DB::Shard.set_key(coll, diff[:shard_key])
       trace :debug, result
