@@ -48,8 +48,7 @@ class InjectorTask
       redirect_url << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.probability} #{rule.resource}"
 
       case rule.action
-        when 'REPLACE'
-        when 'INJECT-HTML-FILE'
+        when 'REPLACE', 'INJECT-HTML-FILE'
           vector_files[rule.action_param_name] = RCS::DB::GridFS.to_tmp(rule[:_grid])
           intercept_files << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.action} #{rule.action_param_name} #{rule.resource}"
 
