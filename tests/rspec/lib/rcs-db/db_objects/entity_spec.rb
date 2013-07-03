@@ -25,6 +25,24 @@ describe Entity do
   end
 
 
+  describe '#with_handle' do
+
+    context "given an entity with two handles" do
+
+      let!(:entity) { factory_create(:target_entity) }
+
+      before do
+        factory_create :entity_handle, entity: entity, type: 'skype', handle: 'g.lucas'
+        factory_create :entity_handle, entity: entity, type: 'skype', handle: 'g.lucas_1'
+      end
+
+      it 'finds the entity that matches the given handle\'s type and value' do
+        expect(described_class.with_handle('skype', 'g.lucas').count).to eql 1
+        expect(described_class.with_handle('skype', 'g.lucas_3').count).to eql 0
+      end
+    end
+  end
+
   context 'creating a new target' do
 
     it 'should create a new entity' do

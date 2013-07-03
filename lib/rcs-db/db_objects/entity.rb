@@ -59,6 +59,7 @@ class Entity
   # for example all the entities in the same "operation" of the given one
   scope :same_path_of, lambda { |other_entity| where(:_id.ne => other_entity._id, :path => other_entity.path.first) }
   scope :path_include, lambda { |item| where('path' => {'$in' =>[item.respond_to?(:_id) ? item._id : Moped::BSON::ObjectId.from_string(item.to_s)]}) }
+  scope :with_handle, lambda { |type, value| where("handles.type" => type, "handles.handle" => value) }
 
   after_create :create_callback
   before_destroy :destroy_callback
