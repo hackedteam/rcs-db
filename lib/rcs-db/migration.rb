@@ -90,12 +90,10 @@ class Migration
     ::Item.targets.each do |target|
       target.create_target_collections
       target.create_target_entity
-
       begin
-        next unless Aggregate.target(target._id).exists?
-        Aggregate.target(target._id).collection.indexes.drop
-        Aggregate.target(target._id).create_collection
-        print "\r%d aggregates reindexed" % count += 1
+        klass = Aggregate.target(target._id)
+        DB.instance.sync_indexes(klass)
+        print "\r%d aggregates collection reindexed" % count += 1
       rescue Exception => e
         puts e.message
       end
@@ -111,10 +109,8 @@ class Migration
     ::Item.targets.each do |target|
       begin
         klass = Evidence.collection_class(target._id)
-        next unless klass.exists?
-        klass.collection.indexes.drop
-        klass.create_collection
-        print "\r%d evidences reindexed" % count += 1
+        DB.instance.sync_indexes(klass)
+        print "\r%d evidences collection reindexed" % count += 1
       rescue Exception => e
         puts e.message
       end
