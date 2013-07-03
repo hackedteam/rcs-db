@@ -106,8 +106,12 @@ class DB
   def index_diff(mongoid_document_class)
     collection = mongo_connection.collection(mongoid_document_class.collection.name)
 
-    # Return nil if the collection does not exists
-    return nil unless collection
+    # Return if the collection does not exists
+    if !collection
+      diff = {missing_collection: true}
+      trace :debug, "Index diff of #{mongoid_document_class.collection.name}: #{diff.inspect}"
+      return diff
+    end
 
     # Gets an array of hashes containing the index keys. Something
     # like [{"type"=>1}, {"type"=>1, "da"=>1, "aid"=>1}, {"da"=>1}].
@@ -156,6 +160,17 @@ class DB
   def sync_indexes(mongoid_document_class)
     diff = index_diff(mongoid_document_class)
     return unless diff
+
+    if diff[:missing_collection]
+      trace :debug, "Creating collection and indexes of model #{mongoid_document_class.name}"
+      if mongoid_document_class.respond_to?(:create_collection)
+        mongoid_document_class.create_collection
+      else
+        mongoid_document_class.create_indexes
+      end
+
+      return
+    end
 
     indexes = mongoid_document_class.collection.indexes
     coll_name = mongoid_document_class.collection.name

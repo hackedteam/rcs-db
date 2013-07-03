@@ -88,8 +88,6 @@ class Migration
     count = 0
     puts "Re-indexing aggregates..."
     ::Item.targets.each do |target|
-      target.create_target_collections
-      target.create_target_entity
       begin
         klass = Aggregate.target(target._id)
         DB.instance.sync_indexes(klass)
