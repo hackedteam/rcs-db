@@ -66,19 +66,21 @@ module Evidence
     operation = target.get_parent
     operation.stat.inc(:size, self.data.to_s.length)
     operation.stat.inc(:grid_size, self.data[:_grid_size]) unless self.data[:_grid].nil?
+  rescue Exception => e
+    trace :error, "Cannot update statisting while creating evidence #{e.message}"
   end
 
   def destroy_callback
+    unless self.data['_grid'].nil?
+      RCS::DB::GridFS.delete(self.data['_grid'], agent.path.last.to_s) rescue nil
+    end
+
     return if STAT_EXCLUSION.include? self.type
     agent = Item.find self.aid
     return unless agent
     agent.stat.inc(:"evidence.#{self.type}", -1)
     agent.stat.inc(:size, -self.data.to_s.length)
-    # drop the file (if any) in grid
-    unless self.data['_grid'].nil?
-      agent.stat.inc(:grid_size, -self.data['_grid_size'])
-      RCS::DB::GridFS.delete(self.data['_grid'], agent.path.last.to_s) rescue nil
-    end
+    agent.stat.inc(:grid_size, -self.data['_grid_size']) unless self.data['_grid'].nil?
     # update the target of this agent
     target = agent.get_parent
     target.stat.inc(:"evidence.#{self.type}", -1)
@@ -88,6 +90,8 @@ module Evidence
     operation = target.get_parent
     operation.stat.inc(:size, -self.data.to_s.length)
     operation.stat.inc(:grid_size, -self.data[:_grid_size]) unless self.data[:_grid].nil?
+  rescue Exception => e
+    trace :error, "Cannot update statisting while deleting evidence #{e.message}"
   end
 
   # #TODO: rename into self.target (just like Aggregate#target)
