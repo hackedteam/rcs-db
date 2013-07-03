@@ -213,7 +213,7 @@ class Migration
       target = Item.find(tid)
       # calculate the agents of the target (not deleted), the evidence in the collection
       # and subtract the first from the second
-      agents = Item.agents.where(deleted: false, path: target.id).collect {|a| a.id}
+      agents = Item.agents.where(deleted: false, path: target.id).collect {|a| a.id.to_s}
       grouped = Evidence.collection_class(tid).collection.aggregate([{ "$group" => { _id: "$aid" }}]).collect {|x| x['_id']}
       deleted_aid_evidence = grouped - agents
 
@@ -229,6 +229,8 @@ class Migration
         puts "#{count} evidence deleted"
       end
       post_size = db[coll].stats['size']
+      target.restat
+      target.get_parent.restat
       puts "#{(pre_size - post_size).to_s_bytes} cleaned up"
     end
 
@@ -240,20 +242,22 @@ class Migration
       target = Item.find(tid)
       # calculate the agents of the target (not deleted), the evidence in the collection
       # and subtract the first from the second
-      agents = Item.agents.where(deleted: false, path: target.id).collect {|a| a.id}
+      agents = Item.agents.where(deleted: false, path: target.id).collect {|a| a.id.to_s}
       grouped = GridFS.get_distinct_filenames(tid)
       deleted_aid_grid = grouped - agents
 
       next if deleted_aid_grid.empty?
 
       puts
-      puts target.name
+      puts "#{target.name} (gridfs)"
 
       pre_size = db["grid.#{tid}.files"].stats['size'] + db["grid.#{tid}.chunks"].stats['size']
       deleted_aid_grid.each do |aid|
         GridFS.delete_by_agent(aid, tid)
       end
       post_size = db["grid.#{tid}.files"].stats['size'] + db["grid.#{tid}.chunks"].stats['size']
+      target.restat
+      target.get_parent.restat
       puts "#{(pre_size - post_size).to_s_bytes} cleaned up"
     end
 
