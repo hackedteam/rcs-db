@@ -155,6 +155,36 @@ describe Entity do
     end
   end
 
+  describe '#move_links' do
+
+    let(:operation) { factory_create :operation }
+    let(:target_a) { factory_create :target, operation: operation }
+    let(:target_b) { factory_create :target, operation: operation }
+    let(:target_entity_a) { factory_create :target_entity, target: target_a }
+    let(:target_entity_b) { factory_create :target_entity, target: target_b }
+    let(:person_entity_c) { factory_create :person_entity, operation: operation }
+    let(:person_entity_d) { factory_create :person_entity, operation: operation }
+
+    before do
+      RCS::DB::LinkManager.instance.add_link(from: person_entity_c, to: person_entity_d, level: :automatic, type: :identity)
+      RCS::DB::LinkManager.instance.add_link(from: person_entity_c, to: target_entity_a, level: :automatic, type: :peer, info: ["x"])
+      RCS::DB::LinkManager.instance.add_link(from: person_entity_d, to: target_entity_a, level: :automatic, type: :peer, info: ["y"])
+      RCS::DB::LinkManager.instance.add_link(from: person_entity_d, to: target_entity_b, level: :automatic, type: :peer, info: ["z"])
+    end
+
+    it 'preserves the value of the info array' do
+      person_entity_d.merge person_entity_c
+
+      links_from_d_to_a = person_entity_d.reload.links.connected_to(target_entity_a)
+      expect(links_from_d_to_a.count).to eql 1
+      expect(links_from_d_to_a.first.info).to eql %w[y x]
+
+      links_from_d_to_b = person_entity_d.reload.links.connected_to(target_entity_b)
+      expect(links_from_d_to_b.count).to eql 1
+      expect(links_from_d_to_b.first.info).to eql %w[z]
+    end
+  end
+
   context 'merging two entities' do
     before do
       Entity.any_instance.stub :link_target_entities_passed_from_here
@@ -195,14 +225,15 @@ describe Entity do
       # we will merge 1 and 2 and it should result in:
       # 1 -> 3 (peer)
       # 1 -> 4 (position)
-      RCS::DB::LinkManager.instance.add_link(from: @first_entity, to: @second_entity, level: :manual, type: :identity)
-      RCS::DB::LinkManager.instance.add_link(from: @second_entity, to: @third_entity, level: :manual, type: :peer)
-      RCS::DB::LinkManager.instance.add_link(from: @second_entity, to: @position_entity, level: :manual, type: :position)
+      RCS::DB::LinkManager.instance.add_link(from: @first_entity, to: @second_entity, level: :manual, type: :identity, info: ["a"])
+      RCS::DB::LinkManager.instance.add_link(from: @second_entity, to: @third_entity, level: :manual, type: :peer, info: ["b"])
+      RCS::DB::LinkManager.instance.add_link(from: @second_entity, to: @position_entity, level: :manual, type: :position, info: ["c"])
 
       @first_entity.merge @second_entity
       @first_entity.reload
       @third_entity.reload
       @position_entity.reload
+      expect { @second_entity.reload }.to raise_error
 
       # total link count
       @first_entity.links.size.should be 2

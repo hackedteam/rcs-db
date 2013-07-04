@@ -142,16 +142,27 @@ class LinkManager
 
     # merge links
     first_entity.links.each do |link|
-      # exclude links to the mergee
-      next if link.le.eql? second_entity._id
-      # add the link
-      second_entity.links << link
+      linked_entity = link.linked_entity
+      backlink = linked_entity.links.connected_to(first_entity).first
 
-      # update the backlink
-      other = link.linked_entity
-      backlink = other.links.connected_to(first_entity).first
-      backlink.le = second_entity._id
-      backlink.save
+      # exclude links between the 2 entities that have to be merged
+      next if linked_entity == second_entity
+
+      # Finds (if any) a link from the second entity to the `linked_entity`
+      existing_link = second_entity.links.connected_to(linked_entity).first
+
+      if existing_link
+        existing_backlink = linked_entity.links.connected_to(second_entity).first
+
+        existing_link.add_info(link.info)
+        existing_backlink.add_info(link.info)
+      else
+        # adds the link to second entity
+        second_entity.links << link
+        # updates the backlink
+        backlink.le = second_entity._id
+        backlink.save
+      end
     end
 
     # delete all the old links
