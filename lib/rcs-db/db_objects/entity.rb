@@ -525,6 +525,8 @@ class EntityLink
   end
 
   def add_info value
+    return if value.blank?
+
     if value.kind_of? Array
       info.concat value
       info.uniq!
