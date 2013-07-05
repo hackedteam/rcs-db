@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'xmlsimple'
 require_db 'db_layer'
 require_db 'connectors'
 require_db 'grid'
@@ -94,16 +95,43 @@ describe RCS::Connector::Dispatcher do
         File.join(spec_temp_folder, "#{operation.name}-#{operation.id}", "#{target.name}-#{target.id}", "#{agent.name}-#{agent.id}")
       end
 
-      before { described_class.dump(evidence, connector) }
+      context 'when the connector type is JSON' do
 
-      it 'creates a json file' do
-        path = File.join(expeted_dest_path, "#{evidence.id}.json")
-        expect { JSON.parse(File.read(path)) }.not_to raise_error
+        before { described_class.dump(evidence, connector) }
+
+        it 'creates a json file' do
+          path = File.join(expeted_dest_path, "#{evidence.id}.json")
+          expect { JSON.parse(File.read(path)) }.not_to raise_error
+        end
+
+        it 'does not create an xml file' do
+          path = File.join(expeted_dest_path, "#{evidence.id}.xml")
+          expect(File.exists?(path)).to be_false
+        end
+
+        it 'creates a binary file with the content of the mic registration' do
+          path = File.join(expeted_dest_path, "#{evidence.id}.bin")
+          expect(File.read(path)).to eql File.read(fixtures_path('audio.001.mp3'))
+        end
       end
 
-      it 'creates a binary file with the content of the mic registration' do
-        path = File.join(expeted_dest_path, "#{evidence.id}.bin")
-        expect(File.read(path)).to eql File.read(fixtures_path('audio.001.mp3'))
+      context 'when the connector type is XML' do
+
+        before do
+          connector.update_attributes type: 'XML'
+          described_class.dump(evidence, connector)
+        end
+
+        it 'does not create a json file' do
+          path = File.join(expeted_dest_path, "#{evidence.id}.json")
+          expect(File.exists?(path)).to be_false
+        end
+
+        it 'creates an xml file' do
+          path = File.join(expeted_dest_path, "#{evidence.id}.xml")
+          xml_str = File.read(path)
+          expect { XmlSimple.xml_in(xml_str) }.not_to raise_error
+        end
       end
     end
   end

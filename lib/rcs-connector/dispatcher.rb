@@ -80,7 +80,8 @@ module RCS
 
         # TODO: support XML conversion
         # convert it to json
-        exported = exported.to_json
+        exported = connector.type == 'XML' ? exported.to_xml : exported.to_json
+        file_ext = connector.type.downcase
 
         # the full exporting path will be splitted in subdir (one for each item)
         folders = [connector.dest]
@@ -93,7 +94,7 @@ module RCS
         FileUtils.mkdir_p(path)
 
         # dump the evidence
-        File.open(File.join(path, "#{evidence.id}.json"), 'wb') { |d| d.write(exported) }
+        File.open(File.join(path, "#{evidence.id}.#{file_ext}"), 'wb') { |d| d.write(exported) }
 
         # dump the binary (if any)
         if evidence.data['_grid']
