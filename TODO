@@ -9,8 +9,8 @@ TODO 9.0.0
     statistic analyzer (alor)
       automatic detection of home / office (needs timezone for each entity)
 
-    refactor the connectors to use queue and export from separate process
-      - xml export
+    refactor the connectors to use queue and export from separate process [OK]
+      - xml export [OK]
       - sync with "archive" rcs installation
 
     entities in the recent item list (must modify the structure of recents)
