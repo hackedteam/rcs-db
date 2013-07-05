@@ -270,12 +270,8 @@ class Alerting
                 PushManager.instance.notify('alert', {id: entry.path.last, rcpt: user[:_id]})
               end
             else
-              trace :debug, "Triggering alert: #{alert._id} (suppressed)"
-              al = alert.logs.last
-              al.evidence += entry.evidence unless al.evidence.include? entry.evidence
-              al.save
-              # notify even if suppressed so the console will reload the alert log list
-              PushManager.instance.notify('alert', {id: entry.path.last, rcpt: user[:_id]})
+              # for queued items without an associated alert, send the mail
+              send_mail(entry.to, entry.subject, entry.body)
             end
           rescue Exception => e
             trace :warn, "Cannot process alert queue: #{e.message}"
@@ -285,11 +281,7 @@ class Alerting
           # Nothing to do, waiting...
           sleep 1
         end
-      end while count and count > 0
-
-    rescue Exception => e
-      trace :warn, "Cannot process alert queue: #{e.message}"
-      trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
+      end
     end
 
     def send_mail(to, subject, body)
