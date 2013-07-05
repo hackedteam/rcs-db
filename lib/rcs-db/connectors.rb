@@ -1,5 +1,4 @@
 require 'rcs-common/trace'
-require 'pp'
 require_relative 'db_objects/queue'
 
 module RCS
