@@ -1,16 +1,9 @@
 
-TODO 8.4.0
-
-
 TODO 9.0.0
 
   FIX:
-    [ok] phone number comparison (ex. +39123 / 123)
-    salvare nel summary il numero di telefono strippato?
     better investigation on "end of file reached" errors from mongoid (hoping for version 4.0.0 with connection pool)
     try to implement "retry" on mongoid queries
-
-  [ok] merge links -> merge info for evidence filtering
 
   IMPLEMENT:
     statistic analyzer (alor)
@@ -33,7 +26,6 @@ TODO 9.0.0
 
   TRY:
     hash index for sharding (topac - on branch 9.0.x)
-    tailable cursor on get_queue instead of busy loop with sleep
     caching slow query. try to cache already jsonized list of items and similar
 
 ======================================
