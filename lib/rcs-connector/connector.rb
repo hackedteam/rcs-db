@@ -25,7 +25,7 @@ class Runner
   extend Tracer
 
   def first_shard?
-    RCS::DB::Shard.first == current_shard
+    current_shard == 'shard00001'
   end
 
   def current_shard
@@ -33,13 +33,14 @@ class Runner
   end
 
   def run
-    # if we have epoll(), prefer it over select()
     EM.epoll
-    # set the thread pool size
     EM.threadpool_size = 30
-    # all the events are handled here
+
     EM::run do
-      raise("Must be executed only on the first shard.") unless first_shard?
+      unless first_shard?
+        trace :fatal, "Must be executed only on the first shard."
+        break
+      end
 
       # TODO
       # set up the heartbeat (the interval is in the config)
