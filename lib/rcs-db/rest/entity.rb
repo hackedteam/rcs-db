@@ -14,11 +14,32 @@ class EntityController < RESTController
     require_auth_level :view_profiles
 
     mongoid_query do
-      fields = ["type", "level", "name", "desc", "path", "photos"]
-      # TODO: don't send ghost entities
-      #entities = ::Entity.in(user_ids: [@session.user[:_id]]).ne(level: :ghost).only(fields)
-      entities = ::Entity.in(user_ids: [@session.user[:_id]]).only(fields)
+      fields = ["type", "level", "name", "desc", "path", "photos", 'position', 'position_attr', 'links']
+      entities = []
+
+      ::Entity.in(user_ids: [@session.user[:_id]]).ne(level: :ghost).only(fields).each do |ent|
+        ent = ent.as_document
+        link_size = ent['links'] ? ent['links'].keep_if {|x| x['level'] != :ghost}.size : 0
+        ent.delete('links')
+        ent['num_links'] = link_size
+        ent['position'] = {longitude: ent['position'][0], latitude: ent['position'][1]} if ent['position'].is_a? Array
+        entities << ent
+      end
+
       ok(entities)
+    end
+  end
+
+  def flow
+    require_auth_level :view
+
+    mongoid_query do
+      # Check the presence of the required params
+      [:entities, :from, :to].each do |param_name|
+        return bad_request('INVALID_OPERATION') if @params[param_name].blank?
+      end
+
+      return ok Entity.flow(@params)
     end
   end
 
@@ -30,14 +51,14 @@ class EntityController < RESTController
       ent = ::Entity.where(_id: @params['_id']).in(user_ids: [@session.user[:_id]]).only(['type', 'level', 'name', 'desc', 'path', 'photos', 'position', 'position_attr', 'handles', 'links'])
       entity = ent.first
       return not_found if entity.nil?
+      return not_found if entity.level == :ghost
 
       # convert position to hash {:latitude, :longitude}
       entity = entity.as_document
       entity['position'] = {longitude: entity['position'][0], latitude: entity['position'][1]} if entity['position'].is_a? Array
 
       # don't send ghost links
-      # TODO: don't send ghost links
-      #entity['links'].keep_if {|l| l['level'] != :ghost} if entity['links']
+      entity['links'].keep_if {|l| l['level'] != :ghost} if entity['links']
 
       ok(entity)
     end
@@ -61,9 +82,9 @@ class EntityController < RESTController
         doc[:type] = @params['type'].to_sym
         doc[:desc] = @params['desc']
         doc[:level] = :manual
-        if @params['position']
-          doc.position = [@params['position']['longitude'], @params['position']['latitude']]
-          doc.position_attr[:accuracy] = @params['position_attr']['accuracy']
+        if @params['position'] and @params['position'].size > 0
+          doc.position = [@params['position']['longitude'].to_f, @params['position']['latitude'].to_f]
+          doc.position_attr[:accuracy] = @params['position_attr']['accuracy'].to_i
         end
       end
 
@@ -85,6 +106,14 @@ class EntityController < RESTController
     mongoid_query do
       entity = ::Entity.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
       @params.delete('_id')
+
+      if @params['position'] and @params['position'].size > 0
+        entity.position = [@params['position']['longitude'].to_f, @params['position']['latitude'].to_f]
+        entity.position_attr[:accuracy] = @params['position_attr']['accuracy'].to_i
+        entity.save
+        @params.delete('position')
+        @params.delete('position_attr')
+      end
 
       @params.each_pair do |key, value|
         if key == 'path'
@@ -212,6 +241,23 @@ class EntityController < RESTController
     end
   end
 
+  def most_visited
+    require_auth_level :view
+    require_auth_level :view_profiles
+
+    return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :correlation
+
+    mongoid_query do
+      entity = Entity.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
+      return conflict('NO_AGGREGATES_FOR_ENTITY') unless entity.type.eql? :target
+
+      # extract the most contacted peers for this entity
+      contacted = Aggregate.most_visited(entity.path.last.to_s, @params)
+
+      return ok(contacted)
+    end
+  end
+
   def add_link
     require_auth_level :view
     require_auth_level :view_profiles
@@ -272,6 +318,27 @@ class EntityController < RESTController
       Audit.log :actor => @session.user[:name], :action => 'entity.del_link', :desc => "Deleted a link between #{e.name} and #{e2.name}"
 
       return ok
+    end
+  end
+
+  def merge
+    require_auth_level :view
+    require_auth_level :view_profiles
+
+    return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :intelligence
+
+    mongoid_query do
+
+      e = Entity.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
+      e2 = Entity.any_in(user_ids: [@session.user[:_id]]).find(@params['entity'])
+
+      return not_found() if e.nil? or e2.nil?
+
+      e.merge(e2)
+
+      Audit.log :actor => @session.user[:name], :action => 'entity.merge', :desc => "Merged entity '#{e.name}' and '#{e2.name}'"
+
+      return ok(e)
     end
   end
 

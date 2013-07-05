@@ -3,6 +3,6 @@ production:
     default:
       database: <%= ENV['MONGOID_DATABASE'] %>
       hosts:
-        - <%= ENV['MONGOID_HOST'] %>
+        - <%= ENV['MONGOID_HOST'] %>:<%= ENV['MONGOID_PORT'] %>
       options:
-        safe: false
+        safe: true

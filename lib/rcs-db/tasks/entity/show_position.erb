@@ -1,0 +1,50 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" type="text/css" href="../style/reset.css"/>
+    <link rel="stylesheet" type="text/css" href="../style/entity.css"/>
+  </head>
+
+  <body>
+
+    <h1><%= [operation_name, entity.name].join(' > ') %></h1>
+
+
+    <h2>Details</h2>
+
+    <table>
+      <tr class="id">
+        <th>Id</th><td><%= entity.id %></td>
+      </tr>
+      <tr>
+        <th>Type</th><td><%= entity.type %></td>
+      </tr>
+      <tr>
+        <th>Level</th><td><%= entity.level %></td>
+      </tr>
+      <tr>
+        <th>Description</th><td><%= entity.desc %></td>
+      </tr>
+    </table>
+
+
+    <h2>Position</h2>
+
+    <table>
+      <tr>
+        <th>Acquired at</th><td><%= entity.position_attr['time'] %></td>
+      </tr>
+      <tr>
+        <th>Lat, Lon</th><td><%= (entity.position || []).reverse.join(', ') %></td>
+      </tr>
+      <tr>
+        <th>Accuracy</th><td><%= "#{entity.position_attr['accuracy']} mt" if entity.position_attr['accuracy'] %></td>
+      </tr>
+    </table>
+
+    <%= google_map(entity.position) %>
+
+  </body>
+</html>

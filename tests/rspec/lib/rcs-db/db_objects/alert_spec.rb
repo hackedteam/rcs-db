@@ -1,7 +1,10 @@
 require 'spec_helper'
 require_db 'db_layer'
 
+
 describe Alert do
+  before { turn_off_tracer}
+
   describe 'relations' do
   	it 'should embeds many AlertLogs' do
       subject.should respond_to :logs
@@ -30,10 +33,13 @@ describe Alert do
 
 
   context 'given an Alert with two Logs' do
+    use_db
+
     before do
       @last_time = Time.now.to_i
       @alert = Alert.new last: @last_time
-      @alert.logs.concat [AlertLog.new, AlertLog.new]
+      @alertLogA, @alertLogB = AlertLog.new, AlertLog.new
+      @alert.logs.concat [@alertLogA, @alertLogB]
     end
 
     context 'when only one AlertLog is deleted' do
@@ -41,6 +47,25 @@ describe Alert do
 
       it 'the "last" attribute should not be resetted' do
         @alert.last.should == @last_time
+      end
+    end
+
+    context 'when an AlertLog is too old' do
+      before do
+        @alertLogA.time = Time.now - 2.weeks
+        @alert.save
+      end
+
+      context '#destroy_old_logs' do
+        before do
+          Alert.destroy_old_logs
+          @alert.reload
+        end
+
+        it 'should destroy the old AlertLog' do
+          @alert.logs.count.should == 1
+          @alert.logs.first.should == @alertLogB
+        end
       end
     end
   end

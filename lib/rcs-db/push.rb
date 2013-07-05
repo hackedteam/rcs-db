@@ -22,13 +22,28 @@ class PushManager
     PushQueue.add(type, message)
   end
 
+  def dispatcher_start
+    Thread.new do
+      begin
+        dispatcher
+      rescue Exception => e
+        trace :error, "PUSH ERROR: Thread error: #{e.message}"
+        trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
+        retry
+      end
+    end
+  end
+
   def dispatcher
     loop do
       if (queued = PushQueue.get_queued)
         begin
           entry = queued.first
+          count = queued.last
           type = entry.type
           message = entry.message
+
+          trace :debug, "#{count} push messages to be processed in queue"
 
           SessionManager.instance.all.each do |session|
             ws = WebSocketManager.instance.get_ws_from_cookie session[:cookie]
@@ -48,11 +63,9 @@ class PushManager
 
             trace :debug, "PUSH Event (sent): #{type} #{message}"
           end
-
         rescue Exception => e
           trace :error, "PUSH ERROR: Cannot notify clients #{e.message}"
         end
-
       else
         # Nothing to do, waiting...
         sleep 1

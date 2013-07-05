@@ -72,12 +72,13 @@ class BackupManager
 
       grid_filter = "{}"
       item_filter = "{}"
-      params = {what: backup.what, coll: collections, ifilter: item_filter, gfilter: grid_filter}
+      entity_filter = "{}"
+      params = {what: backup.what, coll: collections, ifilter: item_filter, efilter: entity_filter, gfilter: grid_filter}
 
       case backup.what
         when 'metadata'
           # don't backup evidence collections
-          params[:coll].delete_if {|x| x['evidence.'] || x['aggregate.'] || x['grid.'] || x['cores'] || x['ocr_queue']}
+          params[:coll].delete_if {|x| x['evidence.'] || x['aggregate.'] || x['grid.'] || x['cores'] || x['queue']}
         when 'full'
           # we backup everything... woah !!
         else
@@ -112,6 +113,8 @@ class BackupManager
         command = mongodump + " -c #{coll}"
 
         command += " -q #{params[:ifilter]}" if coll == 'items'
+
+        command += " -q #{params[:efilter]}" if coll == 'entities'
 
         command += incremental_filter(coll, backup) if backup.incremental
 
@@ -182,14 +185,16 @@ class BackupManager
 
     # take the item and subitems contained in it
     items = ::Item.any_of({_id: id}, {path: id})
+    entities = ::Entity.where({path: id})
 
     raise "cannot perform partial backup: invalid ObjectId" if items.empty?
 
     # remove all the collections except 'items'
-    params[:coll].delete_if {|c| c != 'items'}
+    params[:coll].delete_if {|c| c != 'items' and c != 'entities'}
 
     # prepare the json query to filter the items
     params[:ifilter] = "{\"_id\":{\"$in\": ["
+    params[:efilter] = "{\"_id\":{\"$in\": ["
     params[:gfilter] = "{\"_id\":{\"$in\": ["
 
     items.each do |item|
@@ -212,13 +217,19 @@ class BackupManager
           end
       end
     end
+
+    entities.each do |entity|
+      params[:efilter] += "ObjectId(\"#{entity._id}\"),"
+    end
+
     params[:ifilter] += "0]}}"
+    params[:efilter] += "0]}}"
     params[:gfilter] += "0]}}"
 
     # insert the correct delimiter and escape characters
     shell_escape(params[:ifilter])
+    shell_escape(params[:efilter])
     shell_escape(params[:gfilter])
-
   end
 
   def self.incremental_filter(coll, backup)
@@ -252,31 +263,46 @@ class BackupManager
     trace :info, "Metadata backup job created"
   end
 
+  def self.folder_size path
+    if RbConfig::CONFIG['host_os'] =~ /mingw/
+      @fso ||= WIN32OLE.new 'Scripting.FileSystemObject'
+      @fso.GetFolder(path).size
+    else
+      Find.find(path).inject(0) { |total, f| total += File.stat(f).size }
+    end
+  end
+
   def self.backup_index
     index = []
 
-    Dir[Config.instance.global['BACKUP_DIR'] + '/*'].each do |dir|
-      dirsize = 0
-      # consider only valid backups dir (containing 'rcs' or 'config')
-      next unless File.exist?(dir + '/rcs') or File.exist?(dir + '/config')
-      Find.find(dir + '/rcs') { |f| dirsize += File.stat(f).size } if File.exist?(dir + '/rcs')
-      Find.find(dir + '/config') { |f| dirsize += File.stat(f).size } if File.exist?(dir + '/config')
-      # the name is in the first half of the directory name
+    glob = File.join File.expand_path(Config.instance.global['BACKUP_DIR']), '*'
+
+    Dir[glob].each do |dir|
+      # Backup folder may contain the following subfolder
+      rcs_subfolder = File.join dir, 'rcs'
+      config_subfolder = File.join dir, 'config'
+
+      # Consider only valid backups dir (containing 'rcs' or 'config')
+      next unless File.exist?(rcs_subfolder) or File.exist?(config_subfolder)
+
+      # The name is in the first half of the directory name
       name = File.basename(dir).split('-')[0]
       time = File.stat(dir).ctime.getutc
-      index << {_id: File.basename(dir), name: name, when: time.strftime('%Y-%m-%d %H:%M'), size: dirsize}
+
+      index << {_id: File.basename(dir), name: name, when: time.strftime('%Y-%m-%d %H:%M'), size: folder_size(dir)}
     end
 
-    return index
+    index
   end
 
   def self.restore_backup(params)
-
     trace :info, "Restoring backup: #{params['_id']}"
 
+    backup_path = File.join File.expand_path(Config.instance.global['BACKUP_DIR']), params['_id']
+
     command = Config.mongo_exec_path('mongorestore')
-    command += " --drop" if params['drop']
-    command += " #{Config.instance.global['BACKUP_DIR']}/#{params['_id']}"
+    command << " --drop" if params['drop']
+    command << " \"#{backup_path}\""
 
     trace :debug, "Restoring backup: #{command}"
 

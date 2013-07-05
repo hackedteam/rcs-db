@@ -38,7 +38,8 @@ class HeartBeat
       ip = 'unknown'
     end
 
-    message = SystemStatus.my_error_msg || 'Idle...'
+    msg = Processor.status
+    message = SystemStatus.my_error_msg || msg
 
     # report our status
     status = SystemStatus.my_status

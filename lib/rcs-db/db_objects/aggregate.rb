@@ -1,150 +1,187 @@
 require 'mongoid'
 require 'set'
 
+require_relative '../position/proximity'
+
 #module RCS
 #module DB
 
-class Aggregate
+module Aggregate
   extend RCS::Tracer
 
-  def self.collection_name(target)
-    "aggregate.#{target}"
+  def self.included(base)
+    base.field :aid, type: String                      # agent BSON_ID
+    base.field :day, type: String                      # day of aggregation
+    base.field :type, type: Symbol
+    base.field :count, type: Integer, default: 0
+    base.field :size, type: Integer, default: 0        # seconds for calls, bytes for the others
+    base.field :info, type: Array, default: []         # for summary or timeframe (position)
+    base.field :data, type: Hash, default: {}
+
+    base.store_in collection: -> { self.collection_name }
+
+    base.index({aid: 1}, {background: true})
+    base.index({type: 1}, {background: true})
+    base.index({day: 1}, {background: true})
+    base.index({"data.peer" => 1}, {background: true})
+    base.index({"data.type" => 1}, {background: true})
+    base.index({"data.host" => 1}, {background: true})
+    base.index({type: 1, "data.peer" => 1 }, {background: true})
+    base.index({'data.position' => "2dsphere"}, {background: true})
+
+    base.shard_key :type, :day, :aid
+
+    base.scope :positions, base.where(type: :position)
+
+    # The "day" attribute must be a string in the format of YYYYMMDD
+    # or the string "0" (when the type if :postioner or :summary)
+    base.validates_format_of :day, :with => /\A(\d{8}|0)\z/
+    # Valalidates the presence of the shard key attributes
+    base.validates_presence_of :type, :day, :aid
+
+    base.extend ClassMethods
   end
 
-  def self.collection_class(target)
+  def to_point
+    raise "not a position" unless type.eql? :position
+    time_params = (info.last.symbolize_keys rescue nil) || {}
+    Point.new time_params.merge(lat: data['position'][1], lon: data['position'][0], r: data['radius'])
+  end
 
-    class_definition = <<-END
-      class Aggregate_#{target}
-        include Mongoid::Document
+  def position
+    {latitude: self.data['position'][1], longitude: self.data['position'][0], radius: self.data['radius']}
+  end
 
-        field :aid, type: String                      # agent BSON_ID
-        field :day, type: String                      # day of aggregation
-        field :type, type: String
-        field :count, type: Integer, default: 0
-        field :size, type: Integer, default: 0        # seconds for calls, bytes for the others
-        field :data, type: Hash, default: {}
-        field :peers, type: Array                     # for summary
+  def entity_handle_type
+    t = self.type.to_sym
 
-        store_in collection: Aggregate.collection_name('#{target}')
-
-        index({aid: 1}, {background: true})
-        index({type: 1}, {background: true})
-        index({day: 1}, {background: true})
-        index({"data.peer" => 1}, {background: true})
-        index({"data.type" => 1}, {background: true})
-        index({type: 1, "data.peer" => 1 }, {background: true})
-
-        shard_key :type, :day
-
-        after_create :create_callback
-
-        def self.summary_include?(type, peer)
-          summary = self.where(day: '0', type: 'summary').first
-          return false unless summary
-          return summary.peers.include? type.to_s + '_' + peer.to_s
-        end
-
-        def self.add_to_summary(type, peer)
-          summary = self.where(day: '0', type: 'summary').first_or_create!
-          summary.add_to_set(:peers, type.to_s + '_' + peer.to_s)
-        end
-
-        def self.rebuild_summary
-          return if self.empty?
-
-          # get all the tuple (type, peer)
-          pipeline = [{ "$match" => {:type => {'$nin' => ['summary']} }},
-                      { "$group" =>
-                        { _id: { peer: "$data.peer", type: "$type" }}
-                      }]
-          data = self.collection.aggregate(pipeline)
-
-          # normalize them in a better form
-          data.collect! {|e| e['_id']['type'] + '_' + e['_id']['peer']}
-
-          summary = self.where(day: '0', type: 'summary').first_or_create!
-          summary.peers = data
-          summary.save
-        end
-
-        protected
-
-        def create_callback
-          # enable sharding only if not enabled
-          db = RCS::DB::DB.instance.mongo_connection
-          coll = db.collection(Aggregate.collection_name('#{target}'))
-          unless coll.stats['sharded']
-            Aggregate.collection_class('#{target}').create_indexes
-            RCS::DB::Shard.set_key(coll, {type: 1, day: 1, aid: 1})
-          end
-        end
-
-      end
-    END
-    
-    classname = "Aggregate_#{target}"
-    
-    if self.const_defined? classname.to_sym
-      klass = eval classname
+    if [:phone, :sms, :mms].include? t
+      'phone'
+    elsif [:mail, :gmail, :outlook].include? t
+      'mail'
     else
-      eval class_definition
-      klass = eval classname
+      "#{t}"
     end
-    
-    return klass
   end
 
-  def self.dynamic_new(target_id)
-    klass = self.collection_class(target_id)
-    return klass.new
+  module ClassMethods
+    def create_collection
+      # create the collection for the target's aggregate and shard it
+      db = RCS::DB::DB.instance.mongo_connection
+      collection = db.collection self.collection.name
+      # ensure indexes
+      self.create_indexes
+      # enable sharding only if not enabled
+      RCS::DB::Shard.set_key(collection, {type: 1, day: 1, aid: 1}) unless collection.stats['sharded']
+    end
+
+    def collection_name
+      raise "Missing target id. Maybe you're trying to instantiate Aggregate without using Aggregate#target." unless @target_id
+      "aggregate.#{@target_id}"
+    end
+
+
+    # Summary related methods
+
+    def add_to_summary(type, peer)
+      summary = self.where(day: '0', aid: '0', type: :summary).first_or_create!
+      summary.add_to_set(:info, type.to_s + '_' + peer.to_s)
+    end
+
+    def summary_include? type, peer
+      summary = self.where(day: '0', type: :summary).first
+      return false unless summary
+
+      # type can be an array of types
+      type = [type].flatten
+
+      type.each do |t|
+        return true if summary.info.include? "#{t}_#{peer}"
+      end
+
+      false
+    end
+
+    def rebuild_summary
+      return if self.empty?
+
+      # get all the tuple (type, peer)
+      pipeline = [{ "$match" => {:type => {'$nin' => [:summary, :positioner, :frequencer]} }},
+                  { "$group" =>
+                    { _id: { peer: "$data.peer", type: "$type" }}
+                  }]
+      data = self.collection.aggregate(pipeline)
+
+      return if data.empty?
+
+      # normalize them in a better form
+      data.collect! {|e| "#{e['_id']['type']}_#{e['_id']['peer']}"}
+
+      self.where(type: :summary).destroy_all
+
+      summary = self.where(day: '0', aid: '0', type: :summary).first_or_create!
+
+      summary.info = data
+      summary.save!
+    end
+  end
+
+  def self.target target
+    target_id = target.respond_to?(:id) ? target.id : target
+    dynamic_classname = "Aggregate#{target_id}"
+
+    if const_defined? dynamic_classname
+      const_get dynamic_classname
+    else
+      c = Class.new do
+        extend RCS::Tracer
+        include RCS::Tracer
+        include Mongoid::Document
+        include RCS::DB::Proximity
+        include Aggregate
+      end
+      c.instance_variable_set '@target_id', target_id
+      const_set(dynamic_classname, c)
+    end
+  end
+
+  # Extracts the most visited urls for a given target (within a timeframe).
+  # Params accepted are "from", "to" (in the form of yyyymmdd strings) and "limit" (integer).
+  # @example Aggregate.most_visited(target._id, 'from' => '20130103', 'to' => '20140502').
+  def self.most_visited(target_id, params = {})
+    match = {:type => :url}
+    match[:day] = {'$gte' => params['from'], '$lte' => params['to']} if params['from'] and params['to']
+    limit = params['num'] || 5
+    group = {_id: "$data.host", count: {"$sum" => "$count"}}
+
+    pipeline = [{"$match" => match}, {"$group" => group}, {"$sort" => {count: -1}}, {"$limit" => limit.to_i}]
+
+    results = Aggregate.target(target_id).collection.aggregate(pipeline)
+
+    # Rename the "_id" key to "host" and adds the "percent" key
+    total = results.inject(0) { |num, hash| num += hash["count"]; num }
+
+    results.each do |hash|
+      hash["host"] = hash["_id"]
+      hash.delete("_id")
+      hash["percent"] = ((hash["count"].to_f / total.to_f)*100).round(1)
+    end
+
+    results
   end
 
   def self.most_contacted(target_id, params)
-
     start = Time.now
+    most_contacted_types = [:chat, :mail, :sms, :mms, :facebook,
+                            :gmail, :skype, :bbm, :whatsapp, :msn, :adium,
+                            :viber, :outlook, :wechat, :line, :phone]
 
-    most_contacted_types = ['call', 'chat', 'mail', 'sms', 'mms', 'facebook', 'gmail', 'skype', 'bbm', 'whatsapp', 'msn', 'adium', 'viber']
+    # mongoDB aggregation framework
 
-    #
-    # Map Reduce has some downsides
-    # let's try if the Mongo::Aggregation framework is better...
-    #
-=begin
-    # emit count and size for each tuple of peer/type
-    map = "function() {
-             emit({peer: this.data.peer, type: this.type}, {count: this.count, size: this.size});
-          }"
+    match = {:type => {'$in' => most_contacted_types}}
+    match[:day] = {'$gte' => params['from'], '$lte' => params['to']} if params['from'] and params['to']
 
-    # sum each value grouping them by key(peer, type)
-    reduce = "function(key, values) {
-                var sum_count = 0;
-                var sum_size = 0;
-                values.forEach(function(e) {
-                    sum_count += e.count;
-                    sum_size += e.size;
-                  });
-                return {count: sum_count, size: sum_size};
-              };"
-
-    # from/to period to consider
-    options = {:query => {:day => {'$gte' => params['from'], '$lte' => params['to']}, :type => {'$in' => most_contacted_types} },
-               :out => {:inline => 1}, :raw => true }
-
-    # execute the map reduce job
-    reduced = collection.map_reduce(map, reduce, options)
-    # extract the results
-    contacted = reduced['results']
-    # normalize them in a better form
-    contacted.collect! {|e| {peer: e['_id']['peer'], type: e['_id']['type'], count: e['value']['count'], size: e['value']['size']}}
-
-    #trace :debug, reduced['results']
-    #trace :debug, ""
-=end
-
-    #
-    # Aggregation Framework is better...
-    #
-    pipeline = [{ "$match" => {:day => {'$gte' => params['from'], '$lte' => params['to']}, :type => {'$in' => most_contacted_types} }},
+    pipeline = [{ "$match" => match },
                 { "$group" =>
                   { _id: { peer: "$data.peer", type: "$type" },
                     count: { "$sum" => "$count" },
@@ -154,7 +191,7 @@ class Aggregate
 
     time = Time.now
     # extract the results
-    contacted = Aggregate.collection_class(target_id).collection.aggregate(pipeline)
+    contacted = Aggregate.target(target_id).collection.aggregate(pipeline)
 
     trace :debug, "Most contacted: Aggregation time #{Time.now - time}" if RCS::DB::Config.instance.global['PERF']
 
@@ -193,7 +230,6 @@ class Aggregate
 
     return top
   end
-
 end
 
 #end # ::DB

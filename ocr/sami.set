@@ -1,0 +1,140 @@
+set 3: Windows Sami                            Sami
+
+	128: U20ac	; euro
+	129: -
+	130: U010c	; C caron
+	131: U0192	; f hook
+	132: U010d	; c caron
+	133: - ; U01b7	; Ezh
+	134: - ; U0292	; ezh
+	135: - ; U01ee	; Ezh caron
+	136: - ; U01ef	; ezh caron
+	137: U0110	; D stroke
+	138: U0160	; S caron
+	139: U2039	; single < angle quote
+	140: U0152	; OE
+	141: -
+	142: -
+
+;; These 2 are not standard:
+;;;;	143: -
+	143: U0143  ; N acute
+;;;;	144: -
+	144: U0144  ; n acute
+
+	145: - ; U2018	; left single '
+	146: - ; U2019	; right single '
+	147: U201c	; left double "
+	148: U201d	; right double "
+	149: U2022	; bullet
+	150: - ; U2013	; en dash
+	151: U2014	; em dash
+	152: U0111	; d stroke
+	153: - ; U01e6	; G caron
+	154: U0161	; s caron
+	155: U203a	; single > angle quote
+	156: U0153	; oe
+
+;; These 2 are not standard:
+;;;;	157: -
+	157: U201e  ; double low-9 quote
+;;;;	158: -
+	158: U00bf  ; inverted question mark
+
+	159: U0178	; Y diaeresis
+	160: - ; U00a0	; no-break space
+	161: - ; U01e7	; g caron
+	162: - ; U01e4	; G stroke
+	163: U00a3	; pound
+	164: - ; U00a4	; currency
+	165: - ; U01e5	; g stroke
+	166: - ; U00a6	; broken bar
+	167: U00a7	; section
+	168: - ; U00a8	; diaeresis
+	169: U00a9	; copyright
+	170: - ; U021e	; H caron
+	171: U00ab	; double << angle quote
+	172: - ; U00ac	; not
+	173: - ; U00ad	; soft hyphen
+	174: U00ae	; registered
+	175: - ; U021f	; h caron
+	176: U00b0	; degree
+	177: U00b1	; plus-minus
+	178: - ; U01e8	; K caron
+	179: - ; U01e9	; kcaron
+	180: - ; U00b4	; acute accent
+	181: U00b5	; micro
+	182: U00b6	; pilcrow
+	183: U00b7	; middle dot
+	184: U014a	; Eng
+	185: U014b	; eng
+	186: U0166	; T stroke
+	187: U00bb	; double >> angle quote
+	188: U0167	; t stroke
+	189: - ; U00bd	; vulgar fraction one half
+	190: U017d	; Z caron
+	191: U017e	; z caron
+	192: U00c0	; A grave
+	193: U00c1	; A acute
+	194: U00c2	; A circumflex
+	195: U00c3	; A tilde
+	196: U00c4	; A diaeresis
+	197: U00c5	; A ring above
+	198: U00c6	; AE
+	199: U00c7	; C cedilla
+	200: U00c8	; E grave
+	201: U00c9	; E acute
+	202: U00ca	; E circumflex
+	203: U00cb	; E diaeresis
+	204: U00cc	; I grave
+	205: U00cd	; I acute
+	206: U00ce	; I circumflex
+	207: U00cf	; I diaeresis
+	208: U00d0	; Eth
+	209: U00d1	; N tilde
+	210: U00d2	; O grave
+	211: U00d3	; O acute
+	212: U00d4	; O circumflex
+	213: U00d5	; O tilde
+	214: U00d6	; O diaeresis
+	215: - ; U00d7	; multiplication
+	216: U00d8	; O stroke
+	217: U00d9	; U grave
+	218: U00da	; U acute
+	219: U00db	; U circumflex
+	220: U00dc	; U diaeresis
+	221: U00dd	; Y acute
+	222: U00de	; Thorn
+	223: U00df	; sharp s
+	224: U00e0	; a grave
+	225: U00e1	; a acute
+	226: U00e2	; a circumflex
+	227: U00e3	; a tilde
+	228: U00e4	; a diaeresis
+	229: U00e5	; a ring above
+	230: U00e6	; ae
+	231: U00e7	; c cedilla
+	232: U00e8	; e grave
+	233: U00e9	; e acute
+	234: U00ea	; e circumflrx
+	235: U00eb	; e diaeresis
+	236: U00ec	; i grave
+	237: U00ed	; i acute
+	238: U00ee	; i circumflex
+	239: U00ef	; i diaeresis
+	240: U00f0	; eth
+	241: U00f1	; n tilde
+	242: U00f2	; o grave
+	243: U00f3	; o acute
+	244: U00f4	; o circumflex
+	245: U00f5	; o tilde
+	246: U00f6	; o diaeresis
+	247: - ; U00f7	; division
+	248: U00f8	; o stroke
+	249: U00f9	; u grave
+	250: U00fa	; u acute
+	251: U00fb	; u circumflex
+	252: U00fc	; u diaeresis
+	253: U00fd	; y acute
+	254: U00fe	; thorn
+	255: U00ff	; y diaeresis

@@ -1,0 +1,87 @@
+#!/usr/bin/env ruby
+
+def verbose?
+  ARGV.include? '--verbose'
+end
+
+def root_path
+  @root_path ||= begin
+    current_path = File.dirname __FILE__
+    root_path = File.expand_path File.join(current_path, '..')
+  end
+end
+
+def _require path
+  full_path = File.join root_path, 'lib/rcs-db', path
+
+  if File.exists? "#{full_path}.rb"
+    puts "#{full_path}.rb" if verbose?
+    load "#{full_path}.rb"
+  else
+    if Dir.exists? full_path
+      Dir[File.join(full_path, "*.rb")].each { |p| _require(p) }
+    end
+  end
+end
+
+def ignoring_warnings
+  v, $VERBOSE = $VERBOSE, nil
+  yield if block_given?
+ensure
+  $VERBOSE = v
+end
+
+def reload!
+  puts 'Loading application...'
+
+  ignoring_warnings do
+    $: << File.expand_path(File.join(root_path, '../rcs-common/lib'))
+
+    _require 'heartbeat'
+    _require 'parser'
+    _require 'sessions'
+    _require 'backup'
+    _require 'websocket'
+    _require 'push'
+    _require 'events'
+    _require 'config'
+    _require 'core'
+    _require 'license'
+    _require 'tasks'
+    _require 'offload_manager'
+    _require 'statistics'
+    _require 'backup'
+    _require 'sessions'
+    _require 'audit'
+
+    # require all the DB objects
+    _require 'db_layer'
+  end
+end
+
+puts 'Loading bundle...'
+
+require 'bundler/setup'
+Bundler.setup
+Bundler.require :development
+
+reload!
+
+def colorize(text); "\033[30;42m#{text}\033[0m "; end
+
+RCS::DB::Config.instance.load_from_file
+RCS::DB::DB.instance.connect
+
+if !ARGV.include?('--rcs')
+  puts 'Using "rcs-test" database.'
+  Mongoid.override_database 'rcs-test'
+end
+
+# Show moped queries
+Moped.logger = Logger.new $stdout
+Moped.logger.level = 0
+Moped.logger.formatter = proc { |sev, time, progname, str| colorize("#{str}\n") }
+
+puts 'Use the #reload! method to reload the application without restaring the console.'
+
+binding.pry

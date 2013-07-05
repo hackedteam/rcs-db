@@ -234,19 +234,15 @@ class Events
         # timeout for the sessions (will destroy inactive sessions)
         EM::PeriodicTimer.new(60) { EM.defer(proc{ SessionManager.instance.timeout }) }
 
-        # recalculate size statistics for operations and targets
-        EM.defer(proc{ Item.restat })
-        EM::PeriodicTimer.new(60) { EM.defer(proc{ Item.restat }) }
-
         # perform the backups
         EM::PeriodicTimer.new(60) { EM.defer(proc{ BackupManager.perform }) }
 
         # use a thread for the infinite processor waiting on the alert queue
-        EM::PeriodicTimer.new(5) { EM.defer(proc{ Alerting.dispatcher }) }
-        EM::PeriodicTimer.new(3600) { EM.defer(proc{ Alerting.clean_old_alerts }) }
+        Alerting.dispatcher_start
+        EM::PeriodicTimer.new(3600) { EM.defer(proc{ Alert.destroy_old_logs }) }
 
         # use a thread for the infinite processor waiting on the push queue
-        EM.defer(proc{ PushManager.instance.dispatcher })
+        PushManager.instance.dispatcher_start
 
         # calculate and save the stats
         EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }

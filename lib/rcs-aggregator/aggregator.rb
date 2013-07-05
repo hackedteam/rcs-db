@@ -3,16 +3,22 @@
 #
 
 # from RCS::DB
-if File.directory?(Dir.pwd + '/lib/rcs-ocr-release')
+if File.directory?(Dir.pwd + '/lib/rcs-aggregator-release')
   require 'rcs-db-release/db'
   require 'rcs-db-release/config'
   require 'rcs-db-release/db_layer'
   require 'rcs-db-release/grid'
+  require 'rcs-db-release/position/point'
+  require 'rcs-db-release/position/positioner'
+  require 'rcs-db-release/position/resolver'
 else
   require 'rcs-db/db'
   require 'rcs-db/config'
   require 'rcs-db/db_layer'
   require 'rcs-db/grid'
+  require 'rcs-db/position/point'
+  require 'rcs-db/position/positioner'
+  require 'rcs-db/position/resolver'
 end
 
 # from RCS::Common
@@ -119,6 +125,13 @@ class Application
           sleep 60
         end
       end
+
+      # TODO: remove after 8.4.0
+      until RCS::DB::DB.instance.mongo_version >= '2.4.0'
+        trace :warn, "Mongodb is not 2.4.x, waiting for upgrade..."
+        sleep 60
+      end
+
 
       # the infinite processing loop
       Aggregator.new.run

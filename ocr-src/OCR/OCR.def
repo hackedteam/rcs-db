@@ -1,0 +1,3 @@
+LIBRARY	OCR
+EXPORTS 
+	OCRDump = OCRDump

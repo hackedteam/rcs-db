@@ -15,6 +15,9 @@ class BuildTask
   end
   
   def next_entry
+
+    raise "Maintenance period expired. Creation failed." unless LicenseManager.instance.check :maintenance
+
     yield @description = 'Loading components'
     yield @builder.load @params['factory']
     yield @description = 'Unpacking'

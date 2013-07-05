@@ -39,6 +39,9 @@ module RCS
 
       return if reply['latitude'].nil? or reply['longitude'].nil?
 
+      # Adds also a "position" array field to support mongoDB 2dSphere index
+      self[:data][:position] = [reply['longitude'], reply['latitude']]
+
       # fallback if the accuracy is ZERO
       self[:data][:accuracy] = 50 if self[:data][:type] == 'GPS' and self[:data][:accuracy] == 0
       self[:data].merge!(reply)
@@ -46,8 +49,6 @@ module RCS
 
     def keyword_index
       self[:kw] = []
-
-      puts self[:data].inspect
 
       self[:kw] += self[:data]['latitude'].to_s.keywords unless self[:data]['latitude'].nil?
       self[:kw] += self[:data]['longitude'].to_s.keywords unless self[:data]['longitude'].nil?

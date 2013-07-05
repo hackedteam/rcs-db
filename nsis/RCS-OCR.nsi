@@ -132,7 +132,7 @@ Section "Install Section" SecInstall
 
   DetailPrint "Writing uninstall informations..."
   SetDetailsPrint "textonly"
-  WriteUninstaller "$INSTDIR\setup\RCS-ORC-uninstall.exe"
+  WriteUninstaller "$INSTDIR\setup\RCS-OCR-uninstall.exe"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSOCR" "DisplayName" "RCS OCR"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSOCR" "DisplayIcon" "$INSTDIR\setup\RCS.ico"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSOCR" "DisplayVersion" "${PACKAGE_VERSION}"
@@ -180,14 +180,14 @@ SectionEnd
 
 Function .onInit
 
-	; check that 8.3.x is already installed
+	; check that 8.4.x is already installed
 	FileOpen $4 "$INSTDIR\DB\config\VERSION" r
 	FileRead $4 $1
 	FileClose $4
 	${If} $1 != ""
-	   ${StrStr} $0 $1 "8.3"
+	   ${StrStr} $0 $1 "8.4"
 	   ${If} $0 == ""
-  	   MessageBox MB_OK "This version can only be installed on 8.3.x systems, you have $1"
+  	   MessageBox MB_OK "This version can only be installed on 8.4.x systems, you have $1"
   	   Quit
 	   ${EndIf}
 	${EndIf}

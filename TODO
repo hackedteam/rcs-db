@@ -1,58 +1,48 @@
-TODO 8.3.x
-
-
-
 
 TODO 9.0.0
 
-    upgrade to ruby 1.9.3-p392 on windows
+  FIX:
+    better investigation on "end of file reached" errors from mongoid (hoping for version 4.0.0 with connection pool)
+    try to implement "retry" on mongoid queries
 
-    upgrade to mongodb 2.4.x (write the upgrade procedure during NSIS installer)
-      - running 2.2
-      - stop all rcs services
-      - issue sh.stopBalancer() to mongos
-      - kill only mongos
-      - execute mongos24 --upgrade
-      - issue sh.startBalancer() to mongos (24)
-      - kill all (mongo processes)
-      - copy 24 over 22
-      - restart all
+  IMPLEMENT:
+    statistic analyzer (alor)
+      automatic detection of home / office (needs timezone for each entity)
 
-    upgrade RubyEncoder 1.5
+    refactor the connectors to use queue and export from separate process
+      - xml export
+      - sync with "archive" rcs installation
 
-    --
+    entities in the recent item list (must modify the structure of recents)
 
-    TTL index for sessions
-    TTL index for alertlog
+    dashboard in push mode
 
-    accounts from outbound/inbound messages
+  TEST:
+    flow integration with console
 
-    if too many bakcups, take only the last entries
+  MIGRATION:
+    migrate old position to the new 2dsphere index
 
-    hash index for sharding
-
-    aggregates for places (positioner algorithm)
-
-    flows:
-      - message
-      - call
-
-     export entities data
-     export graph data
-
-TODO FUTURE:
-
-    differentiate between input/output connectors:
-        - xml format
-        - implement transport layers:
-        - proprietary for read-only db
-        - sftp
-
-    correlation:
-        global target position (http://www.zeit.de/datenschutz/malte-spitz-data-retention)
+  TRY:
+    hash index for sharding (topac - on branch 9.0.x)
+    caching slow query. try to cache already jsonized list of items and similar
 
 ======================================
+TODO FUTURE:
 
     Refactoring on rest methods:
       - agent (too much logic here)
       - evidence (too much logic here)
+
+    Refactor evidence search filters (Evidence#common_filter, etc.)
+
+======================================
+IDEAS:
+
+    global target position (http://www.zeit.de/datenschutz/malte-spitz-data-retention)
+
+
+======================================
+Documentation:
+
+  - info filter support lat:12.4,lon:34.4,r:100 or also lat:12.4,lon:34.4

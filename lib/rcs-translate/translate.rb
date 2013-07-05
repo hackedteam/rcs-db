@@ -3,7 +3,7 @@
 #
 
 # from RCS::DB
-if File.directory?(Dir.pwd + '/lib/rcs-ocr-release')
+if File.directory?(Dir.pwd + '/lib/rcs-translate-release')
   require 'rcs-db-release/config'
   require 'rcs-db-release/db_layer'
   require 'rcs-db-release/grid'
@@ -85,6 +85,12 @@ class Application
         while true do
           sleep 60
         end
+      end
+
+      # TODO: remove after 8.4.0
+      until RCS::DB::DB.instance.mongo_version >= '2.4.0'
+        trace :warn, "Mongodb is not 2.4.x, waiting for upgrade..."
+        sleep 60
       end
 
       # the infinite processing loop

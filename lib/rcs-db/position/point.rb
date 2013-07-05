@@ -4,13 +4,9 @@
 
 require 'rcs-common/trace'
 require 'rvincenty'
-
-module RCS
-module DB
-
+require 'active_support'
 
 class Point
-  
   attr_accessor :lat, :lon, :r, :time, :start, :end
 
   # to obtain 2sigma on gps precision = 80%
@@ -26,29 +22,48 @@ class Point
   EARTH_RADIUS = 6371
   # Earth equator in kilometers
   EARTH_EQUATOR = 40075.017
+  # minimum intersection time between two timeframes
+  MINIMUM_INTERSECT_TIME = 10.minutes
 
   def initialize(params = {})
-    self.time = Time.now
-    self.start = self.time
-    self.end = self.start
-    self.lat = 0.0
-    self.lon = 0.0
-    self.r = 0
-    
+    set_attributes_default_values
+
     if params[:time]
-      self.time = params[:time] 
-      self.start = params[:time] 
+      [:time, :start, :end].each do |param_name|
+        send :"#{param_name}=", convert_to_time(params[:time])
+      end
     end
-    self.start = params[:start] if params[:start]
-    self.end = params[:end] if params[:end]
-    self.lat = params[:lat] if params[:lat]
-    self.lon = params[:lon] if params[:lon]
-    self.r = params[:r] if params[:r]
-    
+
+    [:start, :end].each do |param_name|
+      value = params[param_name]
+      next unless value
+      send :"#{param_name}=", convert_to_time(value)
+    end
+
+    [:lat, :lon, :r].each do |param_name|
+      value = params[param_name]
+      next unless value
+      send :"#{param_name}=", params[param_name]
+    end
+
     # set a minimum radius
     self.r = MIN_RADIUS if r <= 0
   end
-  
+
+  def set_attributes_default_values
+    now = Time.now
+    hash = {lat: 0.0, lon: 0.0, r: MIN_RADIUS, time: now, start: now, end: now}
+    hash.each do |attribute_name, default_value|
+      send :"#{attribute_name}=", default_value
+    end
+  end
+
+  def convert_to_time value
+    return Time.at(value) if value.is_a? Integer
+    raise "invalid time [#{value}] (#{value.class})" unless value.is_a? Time
+    value
+  end
+
   def to_s
     "#{self.lat} #{self.lon} #{self.r} - #{self.time} (#{self.start} #{self.end})"
   end
@@ -56,6 +71,17 @@ class Point
   def same_point?(b)
     self.lat == b.lat and self.lon == b.lon and self.r == b.r
   end
+
+  def ==(other)
+    self.class == other.class and
+    self.lat == other.lat and
+    self.lon == other.lon and
+    self.r == other.r and
+    self.time == other.time and
+    self.start == other.start and
+    self.end == other.end
+  end
+  alias_method :eql?, :==
 
 =begin
   # Haversine formula to calculate the distance between two coordinates
@@ -114,7 +140,7 @@ class Point
   end
 
   def similar_to?(b)
-    # to circles are considered similar if:
+    # two circles are considered similar if:
     # - they overlap
     # - they intersect but are near each other
     return true if self.class.overlapped?(self, b)
@@ -143,8 +169,19 @@ class Point
     return best
   end
 
+
+  def intersect_timeframes? timeframes
+    timeframes = [timeframes].flatten
+    range1 = self.start.to_i..self.end.to_i
+
+    timeframes.each do |timeframe|
+      range2 = timeframe['start'].to_i..timeframe['end'].to_i
+      intersection = range1.to_a & range2.to_a
+      next if intersection.empty?
+      delta = intersection.max - intersection.min
+      return true if delta >= MINIMUM_INTERSECT_TIME
+    end
+
+    false
+  end
 end
-
-
-end #DB::
-end #RCS::

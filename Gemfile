@@ -3,11 +3,11 @@ source "http://rubygems.org"
 
 gem "rcs-common", ">= 8.3.3", :path => "../rcs-common"
 
-gem 'em-http-request'
+gem 'em-http-request', "=1.0.3"
 gem 'em-websocket'
 gem 'em-http-server', ">= 0.1.3"
 
-gem 'eventmachine', ">= 1.0.0"
+gem 'eventmachine', ">= 1.0.3"
 
 # TAR/GZIP compression
 gem "minitar", ">= 0.5.5", :git => "git://github.com/danielemilan/minitar.git", :branch => "master"
@@ -19,16 +19,16 @@ gem 'uuidtools'
 gem 'ffi'
 gem 'lrucache'
 gem 'mail'
+gem 'activesupport'
 gem 'rest-client'
 gem 'xml-simple'
 
 # databases
-gem 'mongo', "= 1.8.3", :git => "git://github.com/alor/mongo-ruby-driver.git", :branch => "1.8.3_append"
-gem 'bson', "= 1.8.3"
-gem 'bson_ext', "= 1.8.3"
+gem 'mongo', "= 1.8.6", :git => "git://github.com/alor/mongo-ruby-driver.git", :branch => "1.8.6_append"
+gem 'bson', "= 1.8.6"
+gem 'bson_ext', "= 1.8.6"
 
 gem 'mongoid', ">= 3.0.0"
-gem 'mongoid_geospatial'
 gem 'rvincenty'
 
 platforms :jruby do
@@ -41,9 +41,8 @@ end
 group :development do
   gem "bundler", "> 1.0.0"
   gem 'rake'
-  gem 'test-unit'
   gem 'simplecov'
   gem 'rspec'
   gem 'pry'
+  gem 'pry-nav'
 end
-

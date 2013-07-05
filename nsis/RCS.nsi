@@ -167,6 +167,38 @@ ${StrStr}
 !macroend
 
 ;--------------------------------
+;Upgrade mongoDB from version 2.2 (or 2.3) to 2.4
+;If the version 2.4 is already installed, the ruby script will exit immediatly
+;Two log files should be created in c:\rcs\db\log
+!macro UpgradeMongoDB
+  SetOutPath "$INSTDIR\DB\temp\mongo24"
+  File "..\mongodb\win\*"
+
+  SetOutPath "$INSTDIR\DB\bin"
+  File "..\bin\rcs-db-mongo-upgrade24.rb"
+
+  DetailPrint "Launching mongoDB upgrade script..."
+
+  nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-mongo-upgrade24.rb"
+  Pop $0
+
+  ${If} $0 == 2
+    MessageBox MB_ICONSTOP|MB_OK "All the shards must be upgraded first."
+    Quit
+  ${EndIf}
+
+  ${If} $0 == 3
+    MessageBox MB_ICONSTOP|MB_OK "There is not enough free space for the mongoDB config database."
+    Quit
+  ${EndIf}
+
+  ${If} $0 != 0
+    MessageBox MB_ICONSTOP|MB_OK "Upgrade to mongoDB 2.4 has failed. Check out the logfile for details."
+    Quit
+  ${EndIf}
+!macroend
+
+;--------------------------------
 ;Installer Sections
 
 Section "Update Section" SecUpdate
@@ -183,12 +215,6 @@ Section "Update Section" SecUpdate
    SimpleSC::StopService "RCSAggregator" 1
    Sleep 3000
    SimpleSC::StopService "RCSIntelligence" 1
-   Sleep 3000
-   SimpleSC::StopService "RCSMasterRouter" 1
-   Sleep 3000
-   SimpleSC::StopService "RCSMasterConfig" 1
-   Sleep 3000
-   SimpleSC::StopService "RCSShard" 1
 
    ReadRegDWORD $R0 HKLM "Software\HT\RCS" "ocr"
    IntCmp $R0 1 0 noocr noocr
@@ -201,6 +227,17 @@ Section "Update Section" SecUpdate
      Sleep 3000
      SimpleSC::StopService "RCSTranslate" 1
    notrans:
+
+   ${If} $installMaster == ${BST_CHECKED}
+     !insertmacro UpgradeMongoDB
+   ${EndIf}
+
+   Sleep 3000
+   SimpleSC::StopService "RCSMasterRouter" 1
+   Sleep 3000
+   SimpleSC::StopService "RCSMasterConfig" 1
+   Sleep 3000
+   SimpleSC::StopService "RCSShard" 1
 
    Sleep 5000
    
@@ -401,7 +438,7 @@ Section "Install Section" SecInstall
 
       ; generate the SSL cert for anon
       DetailPrint "Generating anonymizer certs..."
-      !insertmacro ExecOrQuit "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-certs-anon --log" "Unable to generate Generating anonymizer certs."
+      !insertmacro ExecOrQuit "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-certs-anon --log" "Unable to generate anonymizer certs."
       DetailPrint "done"
 
       ; generate the keystores
@@ -596,6 +633,7 @@ Section "Install Section" SecInstall
     File /r "bin\*.*"
     
     SetOutPath "$INSTDIR\Collector\lib"
+    File /r "lib\rgloader"
     File "lib\rcs-collector.rb"
     
     SetOutPath "$INSTDIR\Collector\lib\rcs-collector-release"

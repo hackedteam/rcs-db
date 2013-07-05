@@ -21,8 +21,12 @@ class Group
   
   store_in collection: 'groups'
 
+  def defer &block
+    Thread.new(&block)
+  end
+
   def add_user_callback(user)
-    Thread.new do
+    defer do
       # user added to a group, we have to put in every item and entity of this group
       # if already present, it will not be duplicated by mongoid
       self.items.each do |operation|
@@ -40,19 +44,26 @@ class Group
   end
 
   def remove_user_callback(user)
-    Thread.new do
+    defer do
       # user removed from a group, it is not enough to delete it in every item and entity of this group
       # since it could be able to access that item through another group.
       # rebuild the whole access control of the operations
       self.items.each do |operation|
         trace :debug, "Rebuilding access control for #{operation.name}"
+
+        # delete the items related to this operation from the recent_ids
+        # and dashboard_ids list of the removed user
+        ::Item.any_in({path: [operation._id]}).each do |item|
+          user.delete_item(item.id)
+        end
+
         Group.rebuild_access_control(operation)
       end
     end
   end
 
   def add_item_callback(operation)
-    Thread.new do
+    defer do
       # operation added to a group, we have to put the users in all items and entities
       # if already present, it will not be duplicated by mongoid
       operation.users += self.users
@@ -68,7 +79,7 @@ class Group
   end
 
   def remove_item_callback(operation)
-    Thread.new do
+    defer do
       # rebuild the whole access control of the operation
       trace :debug, "Rebuilding access control for #{operation.name}"
       Group.rebuild_access_control(operation)

@@ -1,0 +1,35 @@
+#!/usr/bin/env ruby
+
+if ['--help', 'help', '--h'].include?(ARGV[0])
+  puts "Usage:   ./script/castore cp|diff path_of_file"
+  puts "Example: ./script/castore diff lib/rcs-db/rest/entity.rb"
+  exit
+end
+
+# Config
+DESTINATION = '/Volumes/rcs-castore/RCS/DB'
+RELEASES = ['rcs-intelligence', 'rcs-worker', 'rcs-translate', 'rcs-ocr', 'rcs-db', 'rcs-aggregator']
+
+# Input parameters
+action, src = ARGV[0], ARGV[1].dup
+
+# Check input parameters
+puts "ERROR: Invalid action #{action}" unless ['cp', 'diff'].include?(action)
+puts "ERROR: Local file not found #{src}" unless File.exists?(src)
+
+# Find the remote path of the script
+dest = nil
+RELEASES.each do |folder|
+  if src.include?(folder)
+    dest = File.join(DESTINATION, src.gsub(folder, "#{folder}-release"))
+    break
+  end
+end
+
+if (File.exists?(dest) and action == 'diff') or (action == 'cp')
+  cmd = "#{action} \"#{src}\" \"#{dest}\""
+  puts cmd
+  system cmd
+else
+  puts "ERROR: Cannot find remote file into #{DESTINATION}"
+end

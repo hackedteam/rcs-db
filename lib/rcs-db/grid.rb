@@ -22,6 +22,21 @@ class GridFS
       coll.nil? ? DEFAULT_GRID_NAME : DEFAULT_GRID_NAME + '.' + coll
     end
 
+    def create_collection(collection = nil)
+      db = RCS::DB::DB.instance.mongo_connection
+      grid = Mongo::Grid.new db, collection_name(collection)
+      # insert and delete a fake entry to force collection creation
+      id = grid.put('fakeentry')
+      grid.delete id
+
+      # enable sharding only if not enabled
+      chunks = db.collection(collection_name(collection) + '.chunks')
+      Shard.set_key(chunks, {files_id: 1}) unless chunks.stats['sharded']
+
+      #files = db.collection(collection_name(collection) + '.files')
+      #Shard.set_key(files, {md5: 1}) unless files.stats['sharded']
+    end
+
     #
     # Make sure that every internal Mongo::BSON object is returned as Moped::BSON
     # and that every external parameter is converted from Moped:: to Mongo::
@@ -34,10 +49,6 @@ class GridFS
         db = DB.instance.mongo_connection
         grid = Mongo::Grid.new db, collection_name(collection)
         grid_id = grid.put(content, opts)
-
-        # enable sharding only if not enabled
-        chunks = db.collection(collection_name(collection) + '.chunks')
-        Shard.set_key(chunks, {files_id: 1}) unless chunks.stats['sharded']
 
         return Moped::BSON::ObjectId.from_string(grid_id.to_s)
       rescue Exception => e
@@ -91,8 +102,8 @@ class GridFS
     end
 
     def delete_by_agent(agent, collection = nil)
-      items = get_by_filename(agent, collection_name(collection))
-      items.each {|item| delete(item["_id"], collection_name(collection))}
+      items = get_by_filename(agent, collection)
+      items.each {|item| delete(item["_id"], collection)}
     end
 
     def drop_collection(name)

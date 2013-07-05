@@ -35,9 +35,6 @@ pkg
 # RubyMine
 .idea
 
-# bundler
-Gemfile.lock
-
 # log files
 log/*
 
@@ -91,6 +88,9 @@ backups/
 # cores
 cores/
 
+# temporary folder for core builds
+temp/*
+
 # HASP
 hasp/*.sdf
 hasp/*.suo
@@ -100,3 +100,6 @@ hasp/*.opensdf
 backup
 
 exploits
+
+# this folder is compressed into config/export.zip
+config/export.zip.src

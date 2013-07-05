@@ -649,10 +649,15 @@ class AgentController < RESTController
         when 'POST'
           require_auth_level :view_filesystem
 
-          if @params['filesystem']['path'] == 'default'
-            agent.add_default_filesystem_requests
-          else
-            agent.filesystem_requests.create(@params['filesystem'])
+          begin
+            if @params['filesystem']['path'] == 'default'
+              agent.add_default_filesystem_requests
+            else
+              agent.filesystem_requests.create!(@params['filesystem'])
+            end
+          rescue Mongoid::Errors::Validations => error
+            return bad_request('ALREADY_PENDING') if error.document.errors['path']
+            raise error
           end
 
           trace :info, "[#{@request[:peer]}] Added filesystem request #{@params['filesystem']}"

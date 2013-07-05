@@ -4,25 +4,48 @@ require 'rbconfig'
 
 # rspec
 require 'rspec/core/rake_task'
-# minitest
-require 'rake/testtask'
 
-Rake::TestTask.new(:minitest) do |test|
-  test.libs << 'lib' << 'tests/minitest'
-  test.pattern = 'tests/minitest/**/*_test.rb'
-  test.verbose = true
+def default_rspec_opts
+  "-I tests/rspec --color --tag ~speed:slow --order rand"
 end
 
-RSpec::Core::RakeTask.new(:spec) do |test|
-  test.rspec_opts = "-I tests/rspec --color --format doc"
-  test.pattern = 'tests/rspec/**/*_spec.rb'
+def default_rspec_opts_slow
+  "-I tests/rspec --color --order rand"
 end
 
+def rspec_tasks
+  {
+    all: 'tests/rspec/**/*_spec.rb',
+    db: 'tests/rspec/**/rcs-db/**/*_spec.rb',
+    rest: 'tests/rspec/**/rcs-db/rest/*_spec.rb',
+    aggregator: '{tests/rspec/**/rcs-aggregator/**/*_spec.rb,tests/rspec/lib/rcs-db/db_objects/aggregate_spec.rb,tests/rspec/lib/rcs-db/position/po*_spec.rb}',
+    intelligence: '{tests/rspec/**/rcs-intelligence/**/*_spec.rb,tests/rspec/lib/rcs-db/db_objects/entity_spec.rb,tests/rspec/lib/rcs-db/link_manager_spec.rb}'
+  }
+end
+
+rspec_tasks.each do |task_name, pattern|
+
+  desc "Run RSpec test (#{task_name})"
+  RSpec::Core::RakeTask.new("spec:#{task_name}") do |test|
+    test.rspec_opts = default_rspec_opts
+    test.pattern = pattern
+  end
+
+  desc "Run RSpec test (#{task_name}) including slow examples"
+  RSpec::Core::RakeTask.new("spec:#{task_name}:slow") do |test|
+    test.rspec_opts = default_rspec_opts_slow
+    test.pattern = pattern
+  end
+end
+
+desc 'Alias for "rake spec:all"'
 task :test do
-  puts "\nExecuting minitests...\n"
-  Rake::Task[:minitest].invoke
-  puts "\nExecuting rspec...\n"
-  Rake::Task[:spec].invoke
+  Rake::Task['spec:all'].invoke
+end
+
+desc 'Alias for "rake spec:all"'
+task :spec do
+  Rake::Task['spec:all'].invoke
 end
 
 task :default => :test
@@ -130,11 +153,11 @@ end
 
 case RbConfig::CONFIG['host_os']
   when /darwin/
-    RUBYENCPATH = '/Applications/Development/RubyEncoder'
-    RUBYENC = "#{RUBYENCPATH}/bin/rubyencoder"
+    RUBYENCPATH = '/Applications/Development/RubyEncoder.app/Contents/MacOS'
+    RUBYENC = "#{RUBYENCPATH}/rgencoder"
   when /mingw/
-    RUBYENCPATH = 'C:/Program Files (x86)/RubyEncoder'
-    RUBYENC = "\"C:\\Program Files (x86)\\RubyEncoder\\bin\\rubyencoder.exe\""
+    RUBYENCPATH = 'C:/Program Files (x86)/RubyEncoder15'
+    RUBYENC = "\"C:\\Program Files (x86)\\RubyEncoder15\\rgencoder.exe\""
 end
 
 desc "Create the encrypted code for release"
@@ -148,33 +171,34 @@ task :protect do
     Dir.mkdir(Dir.pwd + '/lib/rcs-ocr-release') if not File.directory?(Dir.pwd + '/lib/rcs-ocr-release')
     Dir.mkdir(Dir.pwd + '/lib/rcs-translate-release') if not File.directory?(Dir.pwd + '/lib/rcs-translate-release')
   end
+
   execute "Copying the rgloader" do
-    RGPATH = RUBYENCPATH + '/rgloader'
-    Dir.mkdir(Dir.pwd + '/lib/rgloader')
-    files = Dir[RGPATH + '/*']
-    # keep only the interesting files (1.9.3 windows, macos, linux)
-    files.delete_if {|v| v.match(/rgloader\./)}
-    files.delete_if {|v| v.match(/19[\.12]/)}
-    files.delete_if {|v| v.match(/bsd/)}
+    RGPATH = RUBYENCPATH + '/Loaders'
+    Dir.mkdir(Dir.pwd + '/lib/rgloader') rescue puts("Folder lib/rgloader already exists.")
+    files = Dir[RGPATH + '/**/**']
+    # keep only the interesting files (1.9.3 windows, macos)
+    files.delete_if {|v| v.match(/bsd/i) or v.match(/linux/i)}
+    files.keep_if {|v| v.match(/193/) or v.match(/loader.rb/) }
     files.each do |f|
       FileUtils.cp(f, Dir.pwd + '/lib/rgloader')
     end
   end
+
   execute "Encrypting code" do
     # we have to change the current dir, otherwise rubyencoder
     # will recreate the lib/rcs-db structure under rcs-db-release
     Dir.chdir "lib/rcs-db/"
-    system "#{RUBYENC} -o ../rcs-db-release -r --ruby 1.9.2 *.rb */*.rb"
+    system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-db-release -r --ruby 1.9.3 *.rb */*.rb" || raise("Econding failed.")
     Dir.chdir "../rcs-worker"
-    system "#{RUBYENC} -o ../rcs-worker-release -r --ruby 1.9.2 *.rb */*.rb"
+    system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-worker-release -r --ruby 1.9.3 *.rb */*.rb" || raise("Econding failed.")
     Dir.chdir "../rcs-aggregator"
-    system "#{RUBYENC} -o ../rcs-aggregator-release -r --ruby 1.9.2 *.rb */*.rb"
+    system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-aggregator-release -r --ruby 1.9.3 *.rb */*.rb" || raise("Econding failed.")
     Dir.chdir "../rcs-intelligence"
-    system "#{RUBYENC} -o ../rcs-intelligence-release -r --ruby 1.9.2 *.rb */*.rb"
+    system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-intelligence-release -r --ruby 1.9.3 *.rb */*.rb" || raise("Econding failed.")
     Dir.chdir "../rcs-ocr"
-    system "#{RUBYENC} -o ../rcs-ocr-release -r --ruby 1.9.2 *.rb */*.rb"
+    system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-ocr-release -r --ruby 1.9.3 *.rb */*.rb" || raise("Econding failed.")
     Dir.chdir "../rcs-translate"
-    system "#{RUBYENC} -o ../rcs-translate-release -r --ruby 1.9.2 *.rb */*.rb"
+    system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-translate-release -r --ruby 1.9.3 *.rb */*.rb" || raise("Econding failed.")
     Dir.chdir "../.."
   end
   execute "Copying libs" do

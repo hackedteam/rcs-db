@@ -1,9 +1,12 @@
 
-Changelog for 8.3.3
+Changelog for 8.4.0
 
 Collector:
 
 DB:
-  - Mongodb updated to 2.2.4
-  - Fixes in the alerting system
-  - Fix to user permission when moving an agent
+  - MongoDB updated to 2.4.0
+  - Windows 2008 R2 SP1 is now the minimum requirement to install RCS
+  - Ability to create manual entities in the intelligence module
+  - Intelligence section new creates links between entities
+  - Ability to search with OR queries in info and notes
+

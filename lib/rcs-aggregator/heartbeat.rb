@@ -38,8 +38,7 @@ class HeartBeat
       ip = 'unknown'
     end
 
-    count = AggregatorQueue.where(flag: AggregatorQueue::QUEUED).count
-    msg = count > 0 ? "Aggregating #{count} evidence in queue" : 'Idle...'
+    msg = Processor.status
     message = SystemStatus.my_error_msg || msg
 
     # report our status

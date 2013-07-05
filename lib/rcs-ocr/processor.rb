@@ -35,6 +35,10 @@ class Processor
         sleep 1
       end
     end
+  rescue Exception => e
+    trace :error, "Thread error: #{e.message}"
+    trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
+    retry
   end
 
 

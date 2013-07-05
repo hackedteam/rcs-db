@@ -79,7 +79,7 @@ end
 class PushQueue < NotificationQueue
   include Mongoid::Document
 
-  SIZE = 50_000
+  SIZE = 100_000
   MAX = 1000
 
   field :type, type: String
@@ -141,20 +141,28 @@ class AggregatorQueue < NotificationQueue
 
   field :target_id, type: String
   field :evidence_id, type: String
+  field :type, type: Symbol
   field :flag, type: Integer, default: QUEUED
 
   store_in collection: 'aggregator_queue'
   index({flag: 1}, {background: true})
+  index({type: 1}, {background: true})
 
-  AGGREGATOR_TYPES = ['call', 'message', 'chat']
+  AGGREGATOR_TYPES = ['call', 'message', 'chat', 'position']
 
   def self.add(target_id, evidence_id, type)
     # skip not interesting evidence
     return unless AGGREGATOR_TYPES.include? type
 
-    trace :debug, "Adding to #{self.name}: #{target_id} #{evidence_id}"
+    trace :debug, "Adding to #{self.name}: #{target_id} #{evidence_id} (#{type})"
 
-    self.create!({target_id: target_id.to_s, evidence_id: evidence_id.to_s})
+    self.create!({target_id: target_id.to_s, evidence_id: evidence_id.to_s, type: type.to_sym})
+  end
+
+  def self.get_queued(types)
+    entry = self.where({flag: NotificationQueue::QUEUED, :type.in => types}).find_and_modify({"$set" => {flag: NotificationQueue::PROCESSED}}, new: false)
+    count = self.where({flag: NotificationQueue::QUEUED, :type.in => types}).count() if entry
+    return entry ? [entry, count] : nil
   end
 end
 
@@ -169,13 +177,30 @@ class IntelligenceQueue < NotificationQueue
   store_in collection: 'intelligence_queue'
   index({flag: 1}, {background: true})
 
-  def self.add(target_id, _id, type)
-
-    trace :debug, "Adding to #{self.name}: #{target_id} #{_id} (#{type})"
-
-    self.create!({target_id: target_id.to_s, ident: _id.to_s, type: type})
+  def related_entity
+    bson_target_id = Moped::BSON::ObjectId.from_string(target_id.to_s)
+    Entity.any_in(path: [bson_target_id]).first
   end
 
+  # Find an evidence or an aggregate related to this queue entry
+  def related_item
+    if related_item_class.respond_to? :target
+      related_item_class.target(target_id).find ident
+    else
+      # the #collection_class method has been replaced by #target in Aggregate
+      related_item_class.collection_class(target_id).find ident
+    end
+  end
+
+  # Could be Aggregate or Evidence
+  def related_item_class
+    Object.const_get "#{type}".capitalize
+  end
+
+  def self.add(target_id, _id, type)
+    trace :debug, "Adding to #{self.name}: #{target_id} #{_id} (#{type})"
+    self.create!({target_id: target_id.to_s, ident: _id.to_s, type: type})
+  end
 end
 
 #end # ::DB

@@ -33,6 +33,8 @@ class UserController < RESTController
     require_auth_level :admin
     require_auth_level :admin_users
 
+    return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :users
+
     result = User.create(name: @params['name']) do |doc|
 
       doc[:pass] = ''

