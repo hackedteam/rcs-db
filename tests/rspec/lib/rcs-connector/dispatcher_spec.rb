@@ -30,6 +30,16 @@ describe RCS::Connector::Dispatcher do
         described_class.dispatch
       end
     end
+
+    context 'when the license is invalid' do
+
+      before { described_class.stub(:can_dispatch?).and_return(false) }
+
+      it 'does nothing' do
+        described_class.should_not_receive :process
+        described_class.dispatch
+      end
+    end
   end
 
   describe '#process' do
