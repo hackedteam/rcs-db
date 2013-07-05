@@ -112,6 +112,14 @@ describe Connector do
         expect { factory_create(:connector, item: target, type: 'LOLZ') }.to raise_error(Mongoid::Errors::Validations)
       end
     end
+
+    context "when is included in the whitelist" do
+
+      it 'does not raise any validation error' do
+        expect { factory_create(:connector, item: target, type: 'JSON') }.not_to raise_error
+        expect { factory_create(:connector, item: target, type: 'XML') }.not_to raise_error
+      end
+    end
   end
 
   describe '#delete_if_item' do

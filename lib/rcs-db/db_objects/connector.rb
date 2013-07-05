@@ -20,7 +20,7 @@ class Connector
 
   index enabled: 1
 
-  validates_inclusion_of :type, in: ['JSON']
+  validates_inclusion_of :type, in: ['JSON', 'XML']
 
   # Scope: only enabled connectors
   scope :enabled, where(enabled: true)
