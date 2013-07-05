@@ -7,6 +7,9 @@ module RCS
       extend RCS::Tracer
       extend self
 
+      # Pops out an item from the connectors queue and sends it
+      # the the #process method. This method is called periodically
+      # using an EM timer.
       def dispatch
         unless can_dispatch?
           trace :warn, "Cannot dispatch connectors queue due to license limitation."
@@ -20,6 +23,9 @@ module RCS
         process(connector_queue)
       end
 
+      # Processes an item coming from the connectors queue. It dumps the
+      # related evidence following the connector(s) rules and (eventually)
+      # it destroy the evidence at the end.
       def process connector_queue
         trace :debug, "Processing ConnectorQueue item #{connector_queue.id}"
 
@@ -37,6 +43,7 @@ module RCS
         end
       end
 
+      # Checks the license
       def can_dispatch?
         LicenseManager.instance.check :connectors
       end
