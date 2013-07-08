@@ -16,11 +16,18 @@ describe PeerAggregator do
         @evidence_chat.type = :chat
       end
 
-      it 'should return [] if the chat is from twitter' do
-        @evidence_chat.data = {'peer' => '@test', 'program' => 'twitter', 'content' => 'test message'}
-        parsed = PeerAggregator.extract_chat(@evidence_chat)
-        parsed.should be_a Array
-        parsed.should be_empty
+      context 'when the program is twitter' do
+        it 'should extract the peer from the twit content' do
+          @evidence_chat.data = {'from' => '@alice', 'program' => 'twitter', 'content' => '@bob hello dear'}
+          parsed = PeerAggregator.extract_chat(@evidence_chat)
+          parsed.should be_a Array
+          aggregated = parsed.first
+          aggregated[:peer].should eq 'bob'
+          aggregated[:sender].should eq 'alice'
+          aggregated[:size].should eq @evidence_chat.data['content'].size
+          aggregated[:type].should eq :twitter
+          aggregated[:versus].should eq :out
+        end
       end
 
       it 'should parse old evidence' do
@@ -55,10 +62,17 @@ describe PeerAggregator do
         parsed.should be_a Array
         aggregated = parsed.first
         aggregated[:peer].should eq 'sender'
-        aggregated.should_not have_key :sender
+        aggregated[:sender].should eq 'receiver'
         aggregated[:size].should eq @evidence_chat.data['content'].size
         aggregated[:type].should eq :skype
         aggregated[:versus].should be :in
+
+        # "rpct" contains at least a comma (more than one word)
+        @evidence_chat.data = {'from' => ' sender ', 'rcpt' => 'receiverA, receiverB', 'incoming' => 1, 'program' => 'skype', 'content' => 'test message'}
+        parsed = PeerAggregator.extract_chat(@evidence_chat)
+        aggregated = parsed.first
+        aggregated[:peer].should eq 'sender'
+        aggregated.should_not have_key :sender
       end
 
       it 'should parse new evidence (outgoing)' do

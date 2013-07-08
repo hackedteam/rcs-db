@@ -42,6 +42,7 @@ module Evidence
     base.index({'data.position' => "2dsphere"}, {background: true})
 
     base.shard_key :type, :da, :aid
+    base.validates_presence_of :type, :da, :aid
 
     base.scope :positions, base.where(type: 'position')
 
@@ -51,25 +52,46 @@ module Evidence
   def create_callback
     return if STAT_EXCLUSION.include? self.type
     agent = Item.find self.aid
-    agent.stat.evidence ||= {}
-    agent.stat.evidence[self.type] ||= 0
-    agent.stat.evidence[self.type] += 1
-    agent.stat.dashboard ||= {}
-    agent.stat.dashboard[self.type] ||= 0
-    agent.stat.dashboard[self.type] += 1
-    agent.stat.size += self.data.to_s.length
-    agent.stat.grid_size += self.data[:_grid_size] unless self.data[:_grid].nil?
-    agent.save
+    agent.stat.inc(:"evidence.#{self.type}", 1)
+    agent.stat.inc(:"dashboard.#{self.type}", 1)
+    agent.stat.inc(:size, self.data.to_s.length)
+    agent.stat.inc(:grid_size, self.data[:_grid_size]) unless self.data[:_grid].nil?
     # update the target of this agent
-    agent.get_parent.restat
+    target = agent.get_parent
+    target.stat.inc(:"evidence.#{self.type}", 1)
+    target.stat.inc(:"dashboard.#{self.type}", 1)
+    target.stat.inc(:size, self.data.to_s.length)
+    target.stat.inc(:grid_size, self.data[:_grid_size]) unless self.data[:_grid].nil?
+    # update the operation of this agent
+    operation = target.get_parent
+    operation.stat.inc(:size, self.data.to_s.length)
+    operation.stat.inc(:grid_size, self.data[:_grid_size]) unless self.data[:_grid].nil?
+  rescue Exception => e
+    trace :error, "Cannot update statisting while creating evidence #{e.message}"
   end
 
   def destroy_callback
-    agent = Item.find self.aid
-    # drop the file (if any) in grid
     unless self.data['_grid'].nil?
       RCS::DB::GridFS.delete(self.data['_grid'], agent.path.last.to_s) rescue nil
     end
+
+    return if STAT_EXCLUSION.include? self.type
+    agent = Item.find self.aid
+    return unless agent
+    agent.stat.inc(:"evidence.#{self.type}", -1)
+    agent.stat.inc(:size, -self.data.to_s.length)
+    agent.stat.inc(:grid_size, -self.data['_grid_size']) unless self.data['_grid'].nil?
+    # update the target of this agent
+    target = agent.get_parent
+    target.stat.inc(:"evidence.#{self.type}", -1)
+    target.stat.inc(:size, -self.data.to_s.length)
+    target.stat.inc(:grid_size, -self.data[:_grid_size]) unless self.data[:_grid].nil?
+    # update the operation of this agent
+    operation = target.get_parent
+    operation.stat.inc(:size, -self.data.to_s.length)
+    operation.stat.inc(:grid_size, -self.data[:_grid_size]) unless self.data[:_grid].nil?
+  rescue Exception => e
+    trace :error, "Cannot update statisting while deleting evidence #{e.message}"
   end
 
   # #TODO: rename into self.target (just like Aggregate#target)
@@ -361,6 +383,12 @@ module Evidence
       Aggregate.target(old_target[:_id]).rebuild_summary
     end
 
+    # recalculate stats
+    old_target.restat
+    old_target.get_parent.restat
+    target.restat
+    target.get_parent.restat
+
     trace :info, "Evidence Move: completed for #{agent.name}"
   end
 
@@ -391,14 +419,14 @@ module Evidence
     trace :info, "Deleting evidence for target #{target.name} done."
 
     # recalculate the stats for each agent of this target
-    agents = Item.where(_kind: 'agent').in(path: [target._id])
-    agents.each do |a|
-      ::Evidence::TYPES.each do |type|
-        count = Evidence.collection_class(target[:_id]).where({aid: a._id.to_s, type: type}).count
-        a.stat.evidence[type] = count
-      end
-      a.save
-    end
+    agents = Item.agents.in(path: [target._id])
+    agents.each {|a| a.restat }
+
+    # recalculate for the target
+    target.restat
+
+    # recalculate for the operation
+    target.get_parent.restat
   end
 
 end

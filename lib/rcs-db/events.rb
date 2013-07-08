@@ -234,10 +234,6 @@ class Events
         # timeout for the sessions (will destroy inactive sessions)
         EM::PeriodicTimer.new(60) { EM.defer(proc{ SessionManager.instance.timeout }) }
 
-        # recalculate size statistics for operations and targets
-        EM.defer(proc{ Item.restat })
-        EM::PeriodicTimer.new(60) { EM.defer(proc{ Item.restat }) }
-
         # perform the backups
         EM::PeriodicTimer.new(60) { EM.defer(proc{ BackupManager.perform }) }
 

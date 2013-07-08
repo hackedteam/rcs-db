@@ -84,11 +84,14 @@ class Processor
         Accounts.add_handle(entity, evidence)
         # create a ghost entity and link it as :know
         Ghost.create_and_link_entity(entity, evidence) if check_intelligence_license
+        # If a person entity is created with an handle-like name (ex: wxa_d231231),
+        # wait for an adressbook ev. and update its name with human readable one.
+        Accounts.update_person_entity_name(entity, evidence)
       when 'password'
         # analyze the accounts
         Passwords.add_handle(entity, evidence)
       when 'url'
-        Virtual.process_url_evidence(entity, evidence)
+        Virtual.process_url_evidence(entity, evidence) if check_intelligence_license
     end
   end
 
@@ -112,14 +115,15 @@ class Processor
 
     # As the version 9.0.0 the aggregate has a "sender" key that contains the handle of the other peer
     # involved in a communication. The "sender" is an handle of the current entity (the one under surveillance)
-    if aggregate.data['sender']
-      entity.create_or_update_handle handle_type, aggregate.data['sender']
+    if !aggregate.data['sender'].blank? and aggregate.data['versus'] == :out
+      entity.create_or_update_handle handle_type, aggregate.data['sender'].downcase
     end
 
     # search for existing entity with that account and link it (direct link)
-    if (peer = Entity.same_path_of(entity).where("handles.handle" => aggregate.data['peer'], "handles.type" => handle_type).first)
+    if (peer = Entity.same_path_of(entity).with_handle(handle_type, aggregate.data['peer']).first)
       info = "#{aggregate.data['sender']} #{aggregate.data['peer']}".strip
-      RCS::DB::LinkManager.instance.add_link(from: entity, to: peer, level: :automatic, type: :peer, versus: aggregate.data['versus'].to_sym, info: info)
+      level = peer.level == :ghost ? :ghost : :automatic
+      RCS::DB::LinkManager.instance.add_link(from: entity, to: peer, level: level, type: :peer, versus: aggregate.data['versus'].to_sym, info: info)
       return
     end
 
@@ -135,7 +139,7 @@ class Processor
       # create the new entity
       name = Entity.name_from_handle(aggregate_type, aggregate.data['peer'], e.path.last)
       name ||= aggregate.data['peer']
-      description = "Created automatically because #{entity.name} has been in touch with #{e.name}"
+      description = "Created automatically because #{entity.name} and #{e.name} communicated with it"
       ghost = Entity.create!(name: name, type: :person, level: :automatic, path: [entity.path.first], desc: description)
 
       # the entities will be linked on callback

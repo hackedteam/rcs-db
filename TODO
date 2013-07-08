@@ -1,15 +1,4 @@
 
-TODO 8.4.0
-
-  refactor export evidence with the new erb schema
-
-  TEST:
-    migration of mongo 2.4 on real data (copy db from castore to vm and try) [OK]
-    export entity from console
-
-  [OK] If a person entity is created with an handle-like name (ex: wxa_d231231), wait for an adressbook ev. and 
-  update its name with human readable one.
-
 TODO 9.0.0
 
   FIX:
@@ -19,22 +8,25 @@ TODO 9.0.0
   IMPLEMENT:
     statistic analyzer (alor)
       automatic detection of home / office (needs timezone for each entity)
-      automatic entities from "very" most contacted
 
-    refactor the connectors to use queue and export from separate process
-      - xml export
+    refactor the connectors to use queue and export from separate process [OK]
+      - xml export [OK]
       - sync with "archive" rcs installation
 
-  TRY:
-    hash index for sharding (topac - on branch 9.0.x)
-    tailable cursor on get_queue instead of busy loop with sleep
+    entities in the recent item list (must modify the structure of recents)
+
+    dashboard in push mode
+
 
   TEST:
     flow integration with console
 
   MIGRATION:
-    and migrate old position to the new 2dsphere index
+    migrate old position to the new 2dsphere index
 
+  TRY:
+    hash index for sharding (topac - on branch 9.0.x)
+    caching slow query. try to cache already jsonized list of items and similar
 
 ======================================
 TODO FUTURE:

@@ -1,0 +1,16 @@
+<table>
+  <caption>Evidence for <%= day %></caption>
+  <thead>
+    <tr>
+      <th scope="col" class="id">id</th>
+      <th scope="col" class="agent">agent</th>
+      <th scope="col" class="acquired">acquired</th>
+      <th scope="col" class="received">received</th>
+      <th scope="col" class="rel">tag</th>
+      <th scope="col" class="type">type</th>
+      <th scope="col" class="info">info</th>
+      <%= "<th scope=\"col\" class=\"note\">note</th>" if display_notes %>
+    </tr>
+  </thead>
+
+  <tbody>

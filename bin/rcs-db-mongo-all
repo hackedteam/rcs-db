@@ -44,18 +44,18 @@ parameters = "--dbpath #{configdir} --fork --nssize 64 --logpath #{logdir}/mongo
 parameters += " --keyFile #{keyfile}" if require_auth
 `#{mongod} #{parameters}`
 
-sleep 4
-
-puts "Starting the router..."
-# the shard router
-parameters = "--logpath #{logdir}/mongos.log --fork --configdb #{rcs_config['CN']}"
-parameters += " --keyFile #{keyfile}" if require_auth
-`#{mongos} #{parameters}`
-
-sleep 2
+sleep 1
 
 puts "Starting the shard server..."
 # the shard server
 parameters = "--dbpath #{datadir} --journal --fork  --nssize 64 --logpath #{logdir}/mongod.log --shardsvr --rest"
 parameters += " --keyFile #{keyfile}" if require_auth
 `#{mongod} #{parameters}`
+
+sleep 5
+
+puts "Starting the router..."
+# the shard router
+parameters = "--logpath #{logdir}/mongos.log --fork --configdb #{rcs_config['CN']}"
+parameters += " --keyFile #{keyfile}" if require_auth
+`#{mongos} #{parameters}`

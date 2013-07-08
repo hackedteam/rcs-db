@@ -38,7 +38,7 @@ class CollectorController < RESTController
       coll[:type] = 'remote'
       coll[:address] = @params['address'].strip
       coll[:desc] = @params['desc']
-      coll[:port] = @params['port'].strip
+      coll[:port] = @params['port']
       coll[:poll] = @params['poll']
       coll[:configured] = false
       coll[:upgradable] = false

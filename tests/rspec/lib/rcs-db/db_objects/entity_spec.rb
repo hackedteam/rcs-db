@@ -25,6 +25,36 @@ describe Entity do
   end
 
 
+  describe '#with_handle' do
+
+    context "given an entity with two handles" do
+
+      let!(:entity) { factory_create(:target_entity) }
+
+      before do
+        factory_create :entity_handle, entity: entity, type: 'skype', handle: 'g.lucas'
+        factory_create :entity_handle, entity: entity, type: 'phone', handle: '342 1232981'
+        factory_create :entity_handle, entity: entity, type: 'phone', handle: '00393991242999'
+        factory_create :entity_handle, entity: entity, type: 'phone', handle: '393699801223'
+      end
+
+      it 'finds the entity that matches the given handle\'s type and value' do
+        expect(described_class.with_handle('skype', 'g.lucas').count).to eql 1
+        expect(described_class.with_handle('skype', '342 1232981').count).to eql 0
+        expect(described_class.with_handle('phone', '3421232981').count).to eql 1
+        expect(described_class.with_handle('phone', '342-1232981').count).to eql 1
+        expect(described_class.with_handle('phone', '+1111 342-1232981').count).to eql 0
+        expect(described_class.with_handle('phone', '+39 342 1232981').count).to eql 1
+        expect(described_class.with_handle('phone', '001 342 1232981').count).to eql 1
+        expect(described_class.with_handle('phone', '+39 399-1242999').count).to eql 1
+        expect(described_class.with_handle('phone', '3421232981').count).to eql 1
+        expect(described_class.with_handle('phone', '421232981').count).to eql 0
+        expect(described_class.with_handle('phone', '981').count).to eql 0
+        expect(described_class.with_handle('phone', '981').count).to eql 0
+      end
+    end
+  end
+
   context 'creating a new target' do
 
     it 'should create a new entity' do
@@ -87,7 +117,7 @@ describe Entity do
       photo_id.should be_a String
 
       @entity.del_photo(photo_id)
-      expect { RCS::DB::GridFS.get(photo_id, @entity.path.last.to_s) }.to raise_error RuntimeError, /Cannot get content from the Grid/
+      expect { RCS::DB::GridFS.get(photo_id, @entity.path.last.to_s) }.to raise_error(Mongo::GridFileNotFound)
     end
 
   end
@@ -121,7 +151,37 @@ describe Entity do
       @entity.add_photo("This_is_a_binary_photo")
       photo_id = @entity.photos.first
       @entity.destroy
-      expect { RCS::DB::GridFS.get(photo_id, @entity.path.last.to_s) }.to raise_error RuntimeError, /Cannot get content from the Grid/
+      expect { RCS::DB::GridFS.get(photo_id, @entity.path.last.to_s) }.to raise_error(Mongo::GridFileNotFound)
+    end
+  end
+
+  describe '#move_links' do
+
+    let(:operation) { factory_create :operation }
+    let(:target_a) { factory_create :target, operation: operation }
+    let(:target_b) { factory_create :target, operation: operation }
+    let(:target_entity_a) { factory_create :target_entity, target: target_a }
+    let(:target_entity_b) { factory_create :target_entity, target: target_b }
+    let(:person_entity_c) { factory_create :person_entity, operation: operation }
+    let(:person_entity_d) { factory_create :person_entity, operation: operation }
+
+    before do
+      RCS::DB::LinkManager.instance.add_link(from: person_entity_c, to: person_entity_d, level: :automatic, type: :identity)
+      RCS::DB::LinkManager.instance.add_link(from: person_entity_c, to: target_entity_a, level: :automatic, type: :peer, info: ["x"])
+      RCS::DB::LinkManager.instance.add_link(from: person_entity_d, to: target_entity_a, level: :automatic, type: :peer, info: ["y"])
+      RCS::DB::LinkManager.instance.add_link(from: person_entity_d, to: target_entity_b, level: :automatic, type: :peer, info: ["z"])
+    end
+
+    it 'preserves the value of the info array' do
+      person_entity_d.merge person_entity_c
+
+      links_from_d_to_a = person_entity_d.reload.links.connected_to(target_entity_a)
+      expect(links_from_d_to_a.count).to eql 1
+      expect(links_from_d_to_a.first.info).to eql %w[y x]
+
+      links_from_d_to_b = person_entity_d.reload.links.connected_to(target_entity_b)
+      expect(links_from_d_to_b.count).to eql 1
+      expect(links_from_d_to_b.first.info).to eql %w[z]
     end
   end
 
@@ -165,14 +225,15 @@ describe Entity do
       # we will merge 1 and 2 and it should result in:
       # 1 -> 3 (peer)
       # 1 -> 4 (position)
-      RCS::DB::LinkManager.instance.add_link(from: @first_entity, to: @second_entity, level: :manual, type: :identity)
-      RCS::DB::LinkManager.instance.add_link(from: @second_entity, to: @third_entity, level: :manual, type: :peer)
-      RCS::DB::LinkManager.instance.add_link(from: @second_entity, to: @position_entity, level: :manual, type: :position)
+      RCS::DB::LinkManager.instance.add_link(from: @first_entity, to: @second_entity, level: :manual, type: :identity, info: ["a"])
+      RCS::DB::LinkManager.instance.add_link(from: @second_entity, to: @third_entity, level: :manual, type: :peer, info: ["b"])
+      RCS::DB::LinkManager.instance.add_link(from: @second_entity, to: @position_entity, level: :manual, type: :position, info: ["c"])
 
       @first_entity.merge @second_entity
       @first_entity.reload
       @third_entity.reload
       @position_entity.reload
+      expect { @second_entity.reload }.to raise_error
 
       # total link count
       @first_entity.links.size.should be 2
@@ -227,9 +288,9 @@ describe Entity do
     context 'with intelligence enabled' do
 
       it 'should return name from handle (from entities)' do
-        @entity.handles.create!(type: 'phone', handle: 'test')
+        @entity.handles.create!(type: 'phone', handle: '123')
 
-        name = Entity.name_from_handle('sms', 'test', @target._id.to_s)
+        name = Entity.name_from_handle('sms', '123', @target._id.to_s)
 
         name.should eq @target.name
       end
@@ -286,12 +347,12 @@ describe Entity do
     end
 
     it 'should check for identity with other entities' do
-      @entity.handles.create!(type: 'phone', handle: 'test')
+      @entity.handles.create!(type: 'phone', handle: '123')
 
       @entity.links.size.should be 0
       @identity.links.size.should be 0
 
-      @identity.handles.create!(type: 'phone', handle: 'test')
+      @identity.handles.create!(type: 'phone', handle: '123')
       @entity.reload
       @identity.reload
 

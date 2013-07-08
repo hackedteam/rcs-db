@@ -41,6 +41,19 @@ factory_define :user do |params|
   ::User.create! name: "testuser_#{rand(1E10)}", enabled: true
 end
 
+factory_define :group do |params|
+  users = params.delete(:users)
+  items = params.delete(:items)
+
+  group = Group.new name: "testgroup_#{rand(1E10)}", alert: 'NO'
+
+  group.users = users if users
+  group.items = items if items
+
+  group.save!
+  group
+end
+
 factory_define :operation do |params|
   attributes = {name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new}
   attributes.deep_merge! params
@@ -57,6 +70,11 @@ factory_define :target do |params|
   ::Item.create! attributes
 end
 
+factory_define :entity_handle do |params|
+  entity = params.delete(:entity) || raise("An Entity must be supplied")
+  entity.create_or_update_handle(params[:type], params[:handle], params[:name])
+end
+
 factory_define :target_entity do |params|
   target = params.delete(:target) || factory_create(:target)
   ::Entity.where(type: :target, path: target._id).first
@@ -68,6 +86,10 @@ factory_define :person_entity do |params|
   attributes.deep_merge! params
   attributes.deep_merge! type: :person, path: [operation._id]
   ::Entity.create! attributes
+end
+
+factory_define :ghost_entity do |params|
+  factory_create(:person_entity, params.merge(level: :ghost))
 end
 
 factory_define :aggregate do |params|

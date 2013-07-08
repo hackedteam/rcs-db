@@ -99,28 +99,45 @@ module Intelligence
           expect(subject.handle_attributes(evidence)).to eql expectd_result
         end
       end
+
+      context 'when the evidence has an empty name' do
+        let(:evidence) {  factory_create :addressbook_evidence, agent: agent, data: {'name' => ''} }
+
+        it 'uses the handle value for the name' do
+          result = subject.handle_attributes(evidence)
+          expect(result[:name]).to eql result[:handle]
+        end
+      end
     end
 
     describe '#update_person_entity_name' do
 
-      let(:evidence) { factory_create :addressbook_evidence, agent: agent }
+      let(:evidence) { factory_create :addressbook_evidence, agent: agent, data: {'program' => :skype} }
 
       context 'when there is an entity person with a blank name' do
 
-        let!(:existing_entity) { factory_create :person_entity, operation: operation, name: '' }
+        let!(:existing_entity) do
+          e = factory_create :person_entity, operation: operation, name: ''
+          e.create_or_update_handle :skype, 'j.snow', ''
+          e
+        end
 
-        it 'updates the person entity name' do
-          subject.update_person_entity_name evidence
-          expect(existing_entity.reload.name).to eql 'John Snow'
+        it 'does not update the person entity name' do
+          subject.update_person_entity_name entity, evidence
+          expect(existing_entity.reload.name).to eql ''
         end
       end
 
       context 'when there is an entity person whose name is the evidence\'s handle' do
 
-        let!(:existing_entity) { factory_create :person_entity, operation: operation, name: 'j.snow' }
+        let!(:existing_entity) do
+          e = factory_create :person_entity, operation: operation, name: 'j.snow'
+          e.create_or_update_handle :skype, 'j.snow', 'John Snow'
+          e
+        end
 
         it 'updates the person entity name' do
-          subject.update_person_entity_name evidence
+          subject.update_person_entity_name entity, evidence
           expect(existing_entity.reload.name).to eql 'John Snow'
         end
 
@@ -129,7 +146,7 @@ module Intelligence
           let(:evidence) { factory_create :addressbook_evidence, agent: agent, data: {'name' => ''} }
 
           it 'does not updates the person entity name' do
-            subject.update_person_entity_name evidence
+            subject.update_person_entity_name entity, evidence
             expect(existing_entity.reload.name).to eql 'j.snow'
           end
         end
@@ -137,10 +154,14 @@ module Intelligence
 
       context 'when there is an entity person with a human readable name' do
 
-        let!(:existing_entity) { factory_create :person_entity, operation: operation, name: 'Bob' }
+        let!(:existing_entity) do
+          e = factory_create :person_entity, operation: operation, name: 'Bob'
+          factory_create :entity_handle, entity: e, type: :skype, handle: 'j.snow', name: 'John Snow'
+          e
+        end
 
         it 'does not updates the person entity name' do
-          subject.update_person_entity_name evidence
+          subject.update_person_entity_name entity, evidence
           expect(existing_entity.reload.name).to eql 'Bob'
         end
       end

@@ -76,7 +76,7 @@ class Processor
 
       # we need to find a document that is in the same day, same type and that have the same peer and versus
       # if not found, create a new entry, otherwise increment the number of occurrences
-      params = {aid: ev.aid, day: Time.at(datum[:time]).getutc.strftime('%Y%m%d'), type: type}
+      params = {aid: ev.aid, day: Time.at(datum[:time]).getutc.strftime('%Y%m%d'), type: type, ev_type: ev.type}
 
       case type
         when :position
@@ -87,7 +87,7 @@ class Processor
           agg = aggregate_virtual(datum, entry, params)
         else
           params.merge!({data: {peer: datum[:peer], versus: datum[:versus], sender: datum[:sender]}})
-          agg = aggregate_peer(datum, entry, params, type)
+          agg = aggregate_peer(datum, entry, params)
       end
 
       trace :info, "Aggregated #{target.name}: #{agg.day} #{agg.type} #{agg.count} #{agg.data.inspect}"
@@ -118,13 +118,16 @@ class Processor
     return agg
   end
 
-  def self.aggregate_peer(datum, entry, params, type)
+  def self.aggregate_peer(datum, entry, params)
+    # pass the peer to the Frequencer to check if a new suggested entity has to be created
+    PeerAggregator.create_suggested_peer(entry['target_id'], params) if check_intelligence_license
+
     # find the existing aggregate or create a new one
     agg = Aggregate.target(entry['target_id']).find_or_create_by(params)
 
     # if it's new, add the entry to the summary and notify the intelligence
     if agg.count == 0
-      Aggregate.target(entry['target_id']).add_to_summary(type, datum[:peer])
+      Aggregate.target(entry['target_id']).add_to_summary(params[:type], datum[:peer])
       IntelligenceQueue.add(entry['target_id'], agg._id, :aggregate) if check_intelligence_license
     end
 

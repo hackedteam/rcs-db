@@ -3,6 +3,7 @@ require 'lrucache'
 
 require_relative '../link_manager'
 require_relative '../position/proximity'
+require_relative '../country_calling_codes'
 
 #module RCS
 #module DB
@@ -17,7 +18,7 @@ class Entity
   # this is the type of entity: target, person, position, etc
   field :type, type: Symbol
 
-  # the level of trust of the entity (manual, automatic, ghost)
+  # the level of trust of the entity (manual, automatic, ghost, suggested)
   field :level, type: Symbol
 
   # membership of this entity (inside operation or target)
@@ -59,6 +60,22 @@ class Entity
   # for example all the entities in the same "operation" of the given one
   scope :same_path_of, lambda { |other_entity| where(:_id.ne => other_entity._id, :path => other_entity.path.first) }
   scope :path_include, lambda { |item| where('path' => {'$in' =>[item.respond_to?(:_id) ? item._id : Moped::BSON::ObjectId.from_string(item.to_s)]}) }
+  scope :with_handle, lambda { |type, value|
+    if type.to_s != 'phone'
+      elem_match(handles: {type: type, handle: value})
+    else
+      parsed = RCS::DB::CountryCallingCodes.number_without_calling_code(value)
+      if parsed == value
+        parsed = value.gsub(/[^0-9]/, '')
+        regexp = /^#{parsed.split('').join('\s{0,1}\-{0,1}')}$/
+        elem_match(handles: {type: type, handle: regexp})
+      else
+        parsed.gsub!(/[^0-9]/, '')
+        regexp = /#{parsed.split('').join('\s{0,1}\-{0,1}')}$/
+        elem_match(handles: {type: type, handle: regexp})
+      end
+    end
+  }
 
   after_create :create_callback
   before_destroy :destroy_callback
@@ -260,10 +277,9 @@ class Entity
     return name if name
 
     # find if there is an entity owning that handle (the ghosts are from addressbook as well)
-    search_query = {"handles.type" => type, "handles.handle" => handle}
-    search_query['path'] = path if path
+    path_filter = path ? {path: path} : {}
 
-    entity = Entity.where(search_query).first
+    entity = Entity.with_handle(type, handle).where(path_filter).first
     if entity
       @@acc_cache.store(search_key, entity.name)
       return entity.name
@@ -305,6 +321,7 @@ class Entity
 
     if self.links.size >= 2
       self.level = :automatic
+      self.desc = 'Represent a person known by two or more targets'
       self.save
 
       # notify the new entity
@@ -338,6 +355,7 @@ class Entity
   def linked_to? another_entity, options = {}
     filter = {}
     filter[:type] = options[:type] if options[:type]
+    filter[:level] = options[:level] if options[:level]
 
     link_to_another_entity = links.connected_to(another_entity).where(filter).first
     link_to_this_entity = another_entity.links.connected_to(self).where(filter).first
@@ -438,7 +456,7 @@ class EntityHandle
 
   def aggregate_types
     if type == :phone
-      [:call, :sms, :mms]
+      [:sms, :mms, :phone]
     elsif type == :mail
       [:mail, :gmail, :outlook]
     else
@@ -507,6 +525,8 @@ class EntityLink
   end
 
   def add_info value
+    return if value.blank?
+
     if value.kind_of? Array
       info.concat value
       info.uniq!

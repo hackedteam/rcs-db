@@ -1,11 +1,9 @@
 require 'spec_helper'
 
-require 'spec_helper'
 require_db 'db_layer'
 require_db 'grid'
 require_aggregator 'processor'
 require_intelligence 'processor'
-
 
 describe 'There are two entities in the same operation' do
 
