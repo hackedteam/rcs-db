@@ -98,7 +98,7 @@ module RCS
 
         # TODO: support XML conversion
         # convert it to json
-        exported = connector.type == 'XML' ? exported.to_xml : exported.to_json
+        exported = connector.type == 'XML' ? exported.to_xml(root: 'evidence') : exported.to_json
         file_ext = connector.type.downcase
 
         # the full exporting path will be splitted in subdir (one for each item)
