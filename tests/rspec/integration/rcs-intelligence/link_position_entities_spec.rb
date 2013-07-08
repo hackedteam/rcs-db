@@ -10,7 +10,6 @@ module Intelligence
 
 describe 'The intelligence module process some position aggregates' do
 
-  use_db
   enable_license
 
   before { Entity.create_indexes }

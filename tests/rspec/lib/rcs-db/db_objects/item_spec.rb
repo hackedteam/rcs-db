@@ -15,7 +15,6 @@ describe Stat do
 end
 
 describe Item do
-  use_db
   silence_alerts
   enable_license
 

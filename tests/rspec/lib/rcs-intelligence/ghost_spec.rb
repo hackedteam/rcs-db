@@ -9,7 +9,6 @@ module Intelligence
 
   describe Ghost do
 
-    use_db
     enable_license
     silence_alerts
 

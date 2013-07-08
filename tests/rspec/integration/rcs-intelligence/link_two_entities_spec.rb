@@ -7,7 +7,6 @@ require_intelligence 'processor'
 
 describe 'There are two entities in the same operation' do
 
-  use_db
   enable_license
   silence_alerts
 

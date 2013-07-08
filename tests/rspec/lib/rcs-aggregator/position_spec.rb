@@ -9,7 +9,6 @@ module RCS
 module Aggregator
 
 describe PositionAggregator do
-  use_db
   silence_alerts
 
   describe '#find_similar_or_create_by'do

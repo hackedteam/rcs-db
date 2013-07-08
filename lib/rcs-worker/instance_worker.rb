@@ -263,7 +263,7 @@ class InstanceWorker
   
   def put_to_sleep
     @state = :stopped
-    trace :debug, "processor #{@agent['ident']}:#{@agent['instance']} is sleeping too much, let's stop!"
+    trace :debug, "processor #{@agent['ident']}:#{@agent['instance']} is sleeping too much, let's stop!" if @agent
   end
   
   def stopped?

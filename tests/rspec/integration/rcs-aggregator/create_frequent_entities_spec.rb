@@ -7,7 +7,6 @@ require_intelligence 'processor'
 
 describe 'there is a single target communicating frequently with a peer' do
 
-  use_db
   enable_license
   silence_alerts
 

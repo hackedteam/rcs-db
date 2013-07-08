@@ -33,7 +33,6 @@ describe Alert do
 
 
   context 'given an Alert with two Logs' do
-    use_db
 
     before do
       @last_time = Time.now.to_i

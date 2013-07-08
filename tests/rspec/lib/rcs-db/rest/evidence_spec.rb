@@ -7,7 +7,6 @@ module DB
 
   describe EvidenceController do
 
-    use_db
 
     let!(:target) { factory_create(:target) }
     let!(:agent) { factory_create(:agent, target: target) }

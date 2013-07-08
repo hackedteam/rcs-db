@@ -2,7 +2,7 @@ require 'bundler'
 require 'mongo'
 require 'mongoid'
 require 'pry'
-require 'pry-nav'
+# require 'pry-nav'
 require 'fileutils'
 
 # require customer rspec matchers
@@ -11,25 +11,29 @@ require File.expand_path 'spec_matchers', File.dirname(__FILE__)
 # require factory framework
 require File.expand_path 'spec_factories', File.dirname(__FILE__)
 
-begin
-  Bundler.setup(:default, :development)
-rescue Bundler::BundlerError => e
-  $stderr.puts e.message
-  $stderr.puts "Run `bundle install` to install missing gems"
-  exit e.status_code
-end
+require_relative 'stubs/tracer'
+require_relative 'stubs/mongoid'
 
 # Define global before and each proc
 RSpec.configure do |config|
 
-  # Clean up the spec_temp_folder each time, and completely remove it
-  # at the end of all
+  # * Clean up the spec_temp_folder
+  # * Connecto to mongodb
   config.before(:all) do
     FileUtils.rm_rf(spec_temp_folder)
     FileUtils.mkdir_p(spec_temp_folder)
+    mongo_setup
+    empty_test_db
   end
 
-  config.after(:all) { FileUtils.rm_rf(spec_temp_folder) }
+  config.before(:each) do
+    turn_off_tracer
+    empty_test_db
+  end
+
+  config.after(:all) do
+    FileUtils.rm_rf(spec_temp_folder)
+  end
 end
 
 def spec_temp_folder(subpath = nil)
@@ -37,12 +41,12 @@ def spec_temp_folder(subpath = nil)
   subpath && File.join(@spec_temp_folder, subpath) || @spec_temp_folder
 end
 
-def fixtures_path subpath = nil
+def fixtures_path(subpath = nil)
   @fixtures_path ||= File.join(File.dirname(__FILE__), 'fixtures')
   subpath && File.join(@fixtures_path, subpath) || @fixtures_path
 end
 
-def rcs_require relative_path, file
+def rcs_require(relative_path, file)
   relative_path_file = File.join(Dir.pwd, relative_path, file)
   require_relative(relative_path_file)
 end
@@ -67,76 +71,29 @@ def require_connector(file)
   rcs_require('lib/rcs-connector/', file)
 end
 
-def connect_mongoid
-  ENV['MONGOID_ENV'] = 'yes'
-  ENV['MONGOID_DATABASE'] = 'rcs-test'
-  ENV['MONGOID_HOST'] = 'localhost'
-  ENV['MONGOID_PORT'] = '27017'
-
+# Setup mongoid.
+# Simulate a sharded enviroments
+def mongo_setup
   Mongoid.load!('config/mongoid.yaml', :production)
+
+  connection = Mongo::MongoClient.new(ENV['MONGOID_HOST'], ENV['MONGOID_PORT'])
+  admin_db = connection.db('admin')
+  shard_list = admin_db.command(listshards: 1)['shards']
+  admin_db.command(addshard: "#{ENV['MONGOID_HOST']}:27018") if shard_list.empty?
+  admin_db.command(enablesharding: ENV['MONGOID_DATABASE']) rescue nil
 end
 
 def empty_test_db
   Mongoid.purge!
 end
 
-def sharded_db
-  conn = Mongo::MongoClient.new(ENV['MONGOID_HOST'], ENV['MONGOID_PORT'])
-  db = conn.db('admin')
-  list = db.command({ listshards: 1 })
-  db.command({addshard: ENV['MONGOID_HOST'] + ':27018'}) if list['shards'].size == 0
-  db.command({enablesharding: ENV['MONGOID_DATABASE']}) rescue nil
-end
-
-class FakeLog4rLogger
-  def method_missing *args; end
-  # Prevent calling Kernel#warn with send
-  def warn *args; end
-
-  def raise_error msg
-    raise msg
-  end
-
-  def yellow(text)
-    "\033[30;33m#{text}\033[0m"
-  end
-
-  def print_error ex
-    file_and_line = caller.find {|line| line =~ /_spec.rb/ }.scan(/\/([^\/]+)\:in\s/).flatten.first rescue nil
-    file_and_line = " (#{file_and_line})" if file_and_line
-    ex = ex.respond_to?(:message) && ex.message || ex
-    puts yellow("trace error#{file_and_line}: #{ex[0, 100].gsub("\n", '/')+("..." if ex.size >= 100)}")
-  end
-
-  alias_method :error, :print_error
-  alias_method :fatal, :raise_error
-end
-
 # Check out RCS::Tracer module of rcs-common gem
-def turn_off_tracer
-  @fakeLog4rLogger ||= FakeLog4rLogger.new
-  Log4r::Logger.stub(:[]).and_return @fakeLog4rLogger
+def turn_off_tracer(opts = {})
+  Log4r::Logger.stub(:[]).and_return(RCS::Stubs.logger(opts))
 end
 
 def turn_on_tracer
-  Log4r::Logger.stub(:[]).and_return nil
-end
-
-# Connect to mongoid and destroy all the collection
-# before and after each example
-def use_db
-  before (:all) do
-    connect_mongoid
-    sharded_db
-    empty_test_db
-  end
-
-  before do
-    turn_off_tracer
-    empty_test_db
-  end
-
-  #after { empty_test_db }
+  Log4r::Logger.stub(:[]).and_return(nil)
 end
 
 # Stub the LicenseManager instance to simulate the presence of a valid license
@@ -159,7 +116,7 @@ end
 
 # Restore a file created with mongodump
 # Assumes that the dump file is located in the fixture folder (tests/rspec/fixtures)
-def mongorestore path
+def mongorestore(path)
   path = File.expand_path File.join(fixtures_path, path)
   return unless File.exists? path
   empty_test_db
