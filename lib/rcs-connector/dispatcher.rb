@@ -13,14 +13,32 @@ module RCS
       def dispatch
         unless can_dispatch?
           trace :warn, "Cannot dispatch connectors queue due to license limitation."
+          @status_message = "license needed"
           return
         end
+
+        @status_message = "idle"
 
         ary = ConnectorQueue.get_queued
         return if ary.blank?
 
         connector_queue, remaining_count = *ary
+
+        @status_message = "processing evidences. #{remaining_count} in queue"
+
         process(connector_queue)
+
+        @status_message = "idle"
+      rescue Exception => ex
+        @status_message = "error"
+        trace :error, ex.message
+        raise(ex)
+      end
+
+      # Attribute reader with default fallback for the @status_message
+      # variable.
+      def status_message
+        (@status_message || 'unknown').capitalize
       end
 
       # Processes an item coming from the connectors queue. It dumps the

@@ -12,7 +12,33 @@ describe RCS::Connector::Dispatcher do
   stub_temp_folder
   enable_license
 
+  describe '#status_message' do
+
+    it 'has a default value' do
+      expect(described_class.status_message).to eq 'Unknown'
+    end
+  end
+
   describe '#dispatch' do
+
+    it 'changes the stasus message to idle' do
+      expect { described_class.dispatch }.to change(described_class, :status_message).to('Idle')
+    end
+
+    context "when an error occurs" do
+
+      before { described_class.stub(:can_dispatch?).and_raise("unexpected error") }
+
+      it 'changes the stasus message to error' do
+        expect {
+          described_class.dispatch rescue nil
+        }.to change(described_class, :status_message).to('Error')
+      end
+
+      it 'raises the error' do
+        expect { described_class.dispatch }.to raise_error(/unexpected error/)
+      end
+    end
 
     context 'when the connector queue is empty' do
 
@@ -35,6 +61,10 @@ describe RCS::Connector::Dispatcher do
     context 'when the license is invalid' do
 
       before { described_class.stub(:can_dispatch?).and_return(false) }
+
+      it 'changes the stasus message to "license needed"' do
+        expect { described_class.dispatch }.to change(described_class, :status_message).to('License needed')
+      end
 
       it 'does nothing' do
         described_class.should_not_receive :process
