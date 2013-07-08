@@ -14,7 +14,7 @@ module RCS::Worker
       let!(:evidence) { factory_create :chat_evidence, target: target }
 
       def subject(instance_variables = {})
-        described_class.any_instance.stub(:initialize)
+        eval 'class InstanceWorker; def initialize; end; end;'
         described_class.new.tap do |inst|
           instance_variables.each { |k, v| inst.instance_variable_set("@#{k}", v) }
         end
