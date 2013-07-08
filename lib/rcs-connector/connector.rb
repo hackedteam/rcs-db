@@ -1,21 +1,15 @@
-# The main file of the connector
-
-def require_release path
-  lib = File.expand_path '..', File.dirname(__FILE__)
-  path = File.join(lib, path)
-  require File.exists?(path) ? path : path.gsub('-release', '')
-end
-
 require 'eventmachine'
 require 'rcs-common/trace'
 require 'rcs-common/fixnum'
+require 'rcs-common/path_utils'
 
-require_release 'rcs-worker-release/license'
-require_release 'rcs-db-release/db_layer'
-require_release 'rcs-db-release/connectors'
-require_release 'rcs-db-release/db_objects/queue'
-require_release 'rcs-db-release/grid'
+require_release 'rcs-worker/license'
+require_release 'rcs-db/db_layer'
+require_release 'rcs-db/connectors'
+require_release 'rcs-db/db_objects/queue'
+require_release 'rcs-db/grid'
 require_relative 'dispatcher'
+require_relative 'heartbeat'
 
 module RCS
 module Connector
@@ -25,7 +19,7 @@ class Runner
   extend Tracer
 
   def first_shard?
-    current_shard == 'shard00001'
+    current_shard == 'shard0000'
   end
 
   def current_shard
@@ -42,13 +36,9 @@ class Runner
         break
       end
 
-      # TODO
       # set up the heartbeat (the interval is in the config)
-      # EM.defer(proc{ HeartBeat.perform })
-      # EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
-
-      # calculate and save the stats
-      # EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }
+      EM.defer(proc{ HeartBeat.perform })
+      EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
 
       # this is the actual polling
       EM::PeriodicTimer.new(5) { Dispatcher.dispatch }
