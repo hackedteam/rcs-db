@@ -204,6 +204,9 @@ begin
     end
   end
 
+  logger.debug "C volume has #{windows_diskfree} bytes of free space"
+  logger.debug "Size on disk of the config db is #{mongo_config_db_size} bytes"
+
   if windows_diskfree < mongo_config_db_size*5
     log_and_raise "There is not enough free space for the mongoDB config database.", 3
   end
