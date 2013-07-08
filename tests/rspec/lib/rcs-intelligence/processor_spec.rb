@@ -9,7 +9,6 @@ module Intelligence
 
 describe Processor do
 
-  use_db
   enable_license
   silence_alerts
 

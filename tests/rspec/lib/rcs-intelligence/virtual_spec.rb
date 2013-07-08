@@ -8,7 +8,6 @@ module Intelligence
 
   describe Virtual do
 
-    use_db
     enable_license
     silence_alerts
 

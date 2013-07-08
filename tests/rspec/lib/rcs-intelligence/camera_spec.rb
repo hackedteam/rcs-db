@@ -8,7 +8,6 @@ module Intelligence
 
   describe Camera do
 
-    use_db
     silence_alerts
 
     let(:operation) { Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new) }

@@ -8,7 +8,6 @@ module DB
 
   describe EntityController do
 
-    use_db
 
     let!(:operation) { Item.create!(name: 'testoperation', _kind: :operation, path: [], stat: ::Stat.new) }
 

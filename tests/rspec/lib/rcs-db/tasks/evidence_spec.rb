@@ -10,7 +10,6 @@ module DB
 
   describe EvidenceTask do
 
-    use_db
     silence_alerts
     enable_license
     stub_temp_folder

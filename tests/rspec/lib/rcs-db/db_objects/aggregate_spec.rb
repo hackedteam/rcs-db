@@ -3,7 +3,6 @@ require_db 'db_layer'
 require_db 'position/point'
 
 describe Aggregate do
-  use_db
 
   let (:aggregate_class) { Aggregate.target('testtarget') }
 

@@ -8,7 +8,6 @@ module Intelligence
 
   describe Position do
 
-    use_db
     silence_alerts
 
     let!(:operation) { Item.create!(name: 'testoperation', _kind: 'operation', path: [], stat: ::Stat.new) }

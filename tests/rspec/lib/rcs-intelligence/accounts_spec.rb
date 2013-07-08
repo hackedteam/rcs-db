@@ -8,7 +8,6 @@ module Intelligence
 
   describe Accounts do
 
-    use_db
     enable_license
     silence_alerts
 

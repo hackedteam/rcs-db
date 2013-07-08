@@ -4,7 +4,6 @@ require_db 'grid'
 
 describe Evidence do
 
-  use_db
   silence_alerts
 
   describe '#common_filter' do
