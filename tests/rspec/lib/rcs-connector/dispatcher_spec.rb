@@ -27,6 +27,7 @@ describe RCS::Connector::Dispatcher do
 
     context "when an error occurs" do
 
+      before { turn_off_tracer(print_errors: false) }
       before { described_class.stub(:can_dispatch?).and_raise("unexpected error") }
 
       it 'changes the stasus message to error' do
