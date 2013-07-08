@@ -7,7 +7,6 @@ module RCS
   module DB
     describe Connectors do
 
-      use_db
       silence_alerts
       enable_license
 

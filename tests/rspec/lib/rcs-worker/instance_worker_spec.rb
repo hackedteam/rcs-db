@@ -4,7 +4,6 @@ require_worker 'instance_worker'
 module RCS::Worker
   describe InstanceWorker do
 
-    use_db
     silence_alerts
     enable_license
 

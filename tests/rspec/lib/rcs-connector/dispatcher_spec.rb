@@ -7,7 +7,6 @@ require_connector 'dispatcher'
 
 describe RCS::Connector::Dispatcher do
 
-  use_db
   silence_alerts
   stub_temp_folder
   enable_license

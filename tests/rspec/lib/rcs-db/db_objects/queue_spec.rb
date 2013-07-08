@@ -3,7 +3,7 @@ require_db 'db_layer'
 require_db 'grid'
 
 describe ConnectorQueue do
-  use_db
+
   silence_alerts
   enable_license
 
