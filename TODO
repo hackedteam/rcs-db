@@ -13,6 +13,8 @@ TODO 9.0.0
       - xml export [OK]
       - sync with "archive" rcs installation
 
+    most visited places
+
     entities in the recent item list (must modify the structure of recents)
 
     dashboard in push mode
