@@ -19,6 +19,7 @@ require 'logger'
 require 'mongoid'
 require 'yaml'
 require 'fileutils'
+require 'sys/filesystem'
 
 MONGO_SERVER_ADDR = "127.0.0.1:27017"
 MONGOS24_BINS_PATH = "C:\\RCS\\DB\\temp\\mongo24"
@@ -77,7 +78,7 @@ end
 
 def mongo_config_db_size
   config_values = mongo_session.databases["databases"].find { |db| db["name"] == "config" }
-  config_values["sizeOnDisk"]
+  config_values["sizeOnDisk"].to_i
 end
 
 def mongo_version
@@ -180,8 +181,9 @@ def windows_service service_name, action
 end
 
 def windows_diskfree
-  result = windows_execute 'fsutil volume diskfree c: | FIND "avail free"'
-  result.scan(/.*\:\s*(\d+)/).flatten.first.to_i
+  include Sys
+  stat = Filesystem.stat("C:/")
+  (stat.block_size * stat.blocks_free).to_i
 end
 
 
@@ -207,7 +209,7 @@ begin
   logger.debug "C volume has #{windows_diskfree} bytes of free space"
   logger.debug "Size on disk of the config db is #{mongo_config_db_size} bytes"
 
-  if windows_diskfree < mongo_config_db_size*5
+  if windows_diskfree < mongo_config_db_size*4
     log_and_raise "There is not enough free space for the mongoDB config database.", 3
   end
 
