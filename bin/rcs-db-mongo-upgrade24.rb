@@ -167,17 +167,17 @@ end
 
 # Windows methods: safe command execution, service ctrl, etc.
 
-def windows_execute command
+def windows_execute command, silence = false
   logger.debug "Executing \"#{command}\""
   out, err = Open3.capture3 command
-  if !err.empty? and err !~ /pipe has been ended/i
+  if !err.empty? and silence == false
     log_and_raise "Command \"#{command}\" generates error \"#{err}\""
   end
   out
 end
 
 def windows_service service_name, action
-  windows_execute "net #{action} \"#{service_name}\""
+  windows_execute "net #{action} \"#{service_name}\"", true
 end
 
 def windows_diskfree
