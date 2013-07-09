@@ -178,6 +178,7 @@ end
 
 def windows_service service_name, action
   windows_execute "net #{action} \"#{service_name}\"", true
+  sleep 2
 end
 
 def windows_diskfree
