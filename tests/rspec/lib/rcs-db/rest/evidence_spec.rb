@@ -16,13 +16,14 @@ module DB
     let!(:evidence3) { factory_create(:chat_evidence, agent: agent, kw: %w[steve jobs], note: "steve jobs") }
     let!(:evidence4) { factory_create(:position_evidence, agent: agent) }
     let!(:evidence5) { factory_create(:position_evidence, agent: agent, data:{latitude: 30, longitude: 30}, da: Time.now.to_i - 2.days) }
+    let!(:evidence6) { factory_create(:mic_evidence, target: target) }
 
     before do
       # skip check of current user privileges
       described_class.any_instance.stub :require_auth_level
 
       # stub the #ok method and then #not_found methods
-      described_class.any_instance.stub(:ok) { |query, options| query }
+      described_class.any_instance.stub(:ok) { |*args| args.respond_to?(:first) && args.size == 1 ? args.first : args }
       described_class.any_instance.stub(:not_found) { |message| message }
     end
 
@@ -32,6 +33,8 @@ module DB
     end
 
     describe '#index' do
+
+      before { described_class.any_instance.stub(:ok) { |query, options| query } }
 
       def index(params)
         instance = subject(params)
@@ -138,9 +141,63 @@ module DB
     end
 
     describe '#total' do
-      pending
+
+      def total(params={})
+        params['filter'] = params['filter'].to_json
+        subject(params).total
+      end
+
+      let(:filters) { {"from" => "0", "target" => target.id, "agent" => agent.id} }
+
+      it 'calls not_found when the target (and/or the agent) is missing' do
+        results = total('filter' => filters.merge("target" => "invalid_target_id"))
+        expect(results).to match(/target not found/i)
+
+        results = total('filter' => filters.merge("target" => "x", "agent" => "y"))
+        expect(results).to match(/target not found/i)
+      end
+
+
+      it 'calls not_found when the agent is missing' do
+        results = total('filter' => filters.merge("agent" => "z"))
+        expect(results).to match(/agent not found/i)
+      end
+
+      context 'when filter by target and agent' do
+
+        let(:results) { total('filter' => filters) }
+
+        it 'returns the count of all the evidences grouped by type' do
+          expect(results).to include(type: "chat", count: 3)
+          expect(results).to include(type: "position", count: 2)
+          expect(results).to include(type: "total", count: 5)
+
+          (::Evidence::TYPES - %w[chat position total]).each do |type|
+            expect(results).to include(type: type, count: 0)
+          end
+
+          expect(results.size).to eql ::Evidence::TYPES.size + 1
+        end
+      end
+
+      context 'when filter by target only' do
+
+        let(:results) { total('filter' => filters.merge("agent" => nil)) }
+
+        it 'returns the count of all the evidences grouped by type' do
+          expect(results).to include(type: "chat", count: 3)
+          expect(results).to include(type: "position", count: 2)
+          expect(results).to include(type: "mic", count: 1)
+          expect(results).to include(type: "total", count: 6)
+
+          (::Evidence::TYPES - %w[chat position total mic]).each do |type|
+            expect(results).to include(type: type, count: 0)
+          end
+
+          expect(results.size).to eql ::Evidence::TYPES.size + 1
+        end
+      end
     end
   end
-
 end
 end
