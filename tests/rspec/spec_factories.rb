@@ -243,3 +243,11 @@ factory_define :connector_queue do |params|
 
   ConnectorQueue.add target, evidence, connectors
 end
+
+
+factory_define :dashboard_whitelist do |params|
+  params = {dids: params} if params.kind_of?(Array)
+  params[:dids].map! { |string| Moped::BSON::ObjectId.from_string(string) }
+
+  DashboardWhitelist.create!(params)
+end
