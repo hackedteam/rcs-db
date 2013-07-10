@@ -437,7 +437,10 @@ class EvidenceController < RESTController
         condition[:aid] = filter['agent']
       end
 
-      stats = Evidence.collection_class(target).count_by_type(condition)
+      stats = []
+      Evidence.collection_class(target).count_by_type(condition).each do |type, count|
+        stats << {type: type, count: count}
+      end
 
       total = stats.collect {|b| b[:count]}.inject(:+)
       stats << {type: "total", count: total}

@@ -131,19 +131,17 @@ module Evidence
     end
 
     # Count the number of all the evidences grouped by type.
-    # Returns an array of hashes like [{type: 'chat', count: 42}]
+    # Returns an hash like {"chat" => 3, "mic" => 0, ..., "position" => 42}
     def count_by_type(where={})
       match = where
       group = {_id: '$type', count: {'$sum' => 1}}
       project = { _id: 0, type: '$_id', count: 1}
 
       results = collection.aggregate([{'$match' => match}, {'$group' => group}, {'$project' => project}])
-      results.map! &:symbolize_keys
+      results = results.inject({}) { |h, val| h[val['type']] = val['count']; h }
 
-      results_types = results.map { |h| h[:type] }
-      (TYPES - results_types).each { |type| results << {type: type, count: 0} }
-
-      results
+      defaults = TYPES.inject({}) { |h, type| h[type.to_s] = 0; h }
+      defaults.merge!(results)
     end
   end
 
