@@ -129,6 +129,22 @@ module Evidence
       # enable sharding only if not enabled
       RCS::DB::Shard.set_key(collection, {type: 1, da: 1, aid: 1}) unless collection.stats['sharded']
     end
+
+    # Count the number of all the evidences grouped by type.
+    # Returns an array of hashes like [{type: 'chat', count: 42}]
+    def count_by_type(where={})
+      match = where
+      group = {_id: '$type', count: {'$sum' => 1}}
+      project = { _id: 0, type: '$_id', count: 1}
+
+      results = collection.aggregate([{'$match' => match}, {'$group' => group}, {'$project' => project}])
+      results.map! &:symbolize_keys
+
+      results_types = results.map { |h| h[:type] }
+      (TYPES - results_types).each { |type| results << {type: type, count: 0} }
+
+      results
+    end
   end
 
   def self.dynamic_new(target)
@@ -428,7 +444,6 @@ module Evidence
     # recalculate for the operation
     target.get_parent.restat
   end
-
 end
 
 #end # ::DB
