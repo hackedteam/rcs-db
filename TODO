@@ -15,7 +15,7 @@ TODO 9.0.0
 
     most visited places
 
-    refactor evidence#total using aggregation framework instead of N count()
+    refactor evidence#total and evidence#restat using aggregation framework instead of N count()
 
     entities in the recent item list (must modify the structure of recents)
 
