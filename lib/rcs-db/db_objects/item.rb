@@ -144,12 +144,13 @@ class Item
         end
         self.save
       when 'agent'
-        self.stat.evidence = {}
-        ::Evidence::TYPES.each do |type|
-          query = {type: type, aid: self._id}
-          self.stat.evidence[type] = Evidence.collection_class(self.get_parent[:_id]).where(query).count
-        end
-        self.save
+        # self.stat.evidence = {}
+        # ::Evidence::TYPES.each do |type|
+        #   query = {type: type, aid: self._id}
+        #   self.stat.evidence[type] = Evidence.collection_class(self.get_parent[:_id]).where(query).count
+        # end
+        stat.evidence = Evidence.collection_class(get_parent).count_by_type(aid: id.to_s)
+        save
     end
     trace :debug, "Restat for #{self._kind} #{self.name} performed in #{Time.now - t} secs" if RCS::DB::Config.instance.global['PERF']
   end

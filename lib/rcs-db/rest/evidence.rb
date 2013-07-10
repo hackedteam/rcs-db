@@ -348,10 +348,10 @@ class EvidenceController < RESTController
       if @params.has_key? 'startIndex' and @params.has_key? 'numItems'
         start_index = @params['startIndex'].to_i
         num_items = @params['numItems'].to_i
-        query = filtering.where(filter_hash).without(:body, :kw).order_by([[:da, :asc]]).skip(start_index).limit(num_items)
+        query = filtering.where(filter_hash).without(:body, :kw, 'data.body').order_by([[:da, :asc]]).skip(start_index).limit(num_items)
       else
         # without paging, return everything
-        query = filtering.where(filter_hash).without(:body, :kw).order_by([[:da, :asc]])
+        query = filtering.where(filter_hash).without(:body, :kw, 'data.body').order_by([[:da, :asc]])
       end
 
       if geo_near_coordinates
@@ -438,9 +438,8 @@ class EvidenceController < RESTController
       end
 
       stats = []
-      ::Evidence::TYPES.each do |type|
-        query = {type: type}.merge(condition)
-        stats << {type: type, count: Evidence.collection_class(target[:_id]).where(query).count}
+      Evidence.collection_class(target).count_by_type(condition).each do |type, count|
+        stats << {type: type, count: count}
       end
 
       total = stats.collect {|b| b[:count]}.inject(:+)

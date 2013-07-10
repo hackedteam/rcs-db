@@ -808,7 +808,7 @@ SectionEnd
 
 Function .onInit
 
-	; check that 8.3.x is already installed
+	; check that 8.4.x is already installed
 	IfFileExists "$INSTDIR\DB\config\VERSION" isDB isCollector
   isDB:
 	  FileOpen $4 "$INSTDIR\DB\config\VERSION" r
@@ -820,9 +820,9 @@ Function .onInit
 	FileRead $4 $1
 	FileClose $4
 	${If} $1 != ""
-	   ${StrStr} $0 $1 "8.3"
+	   ${StrStr} $0 $1 "8.4"
 	   ${If} $0 == ""
-  	   MessageBox MB_OK "This version can only be installed on 8.3.x systems, you have $1"
+  	   MessageBox MB_OK "This version can only be installed on 8.4.x systems, you have $1"
   	   Quit
 	   ${EndIf}
 	${EndIf}
