@@ -19,7 +19,7 @@ class DashboardWhitelist
 
   def self.include_item?(item)
   	id = item.respond_to?(:id) ? item.id : item
-  	include?(item)
+  	include?(id)
   end
 
   def self.include?(id)

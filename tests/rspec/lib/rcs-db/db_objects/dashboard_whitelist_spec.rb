@@ -4,6 +4,8 @@ require_db 'grid'
 
 describe DashboardWhitelist do
 
+  silence_alerts
+
   it 'stores the document in the right collection' do
     expect(described_class.collection.name).to eq 'dashboard_whitelist'
   end
@@ -33,6 +35,7 @@ describe DashboardWhitelist do
 
       it 'returns true' do
         expect(described_class.include?("51dd6d3cc78783a3ba0005ab")).to be_true
+        expect(described_class.include?("51dd6d3cc78783a3ba0005ab")).to be_true
       end
     end
 
@@ -49,6 +52,26 @@ describe DashboardWhitelist do
   end
 
   describe '#include_item?' do
-    pending
+
+    let(:item) { factory_create(:target) }
+
+    context 'when the argument is an item' do
+
+      it 'calls #include? with the item id' do
+        described_class.should_receive(:include?).with(item.id)
+        described_class.include_item?(item)
+      end
+    end
+
+    context 'when the argument is an id' do
+
+      it 'calls #include? with the item id' do
+        described_class.should_receive(:include?).with(item.id)
+        described_class.include_item?(item.id)
+
+        described_class.should_receive(:include?).with('51dd6d3cc78783a3ba0005a8')
+        described_class.include_item?('51dd6d3cc78783a3ba0005a8')
+      end
+    end
   end
 end
