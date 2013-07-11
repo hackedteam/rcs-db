@@ -1,8 +1,5 @@
 require 'mongoid'
 
-#module RCS
-#module DB
-
 class Session
   include Mongoid::Document
 
@@ -19,8 +16,7 @@ class Session
   belongs_to :user, :dependent => :nullify, :autosave => true
 
   store_in collection: 'sessions'
+
+  index user: 1
+  index cookie: 1
 end
-
-
-#end # ::DB
-#end # ::RCS
