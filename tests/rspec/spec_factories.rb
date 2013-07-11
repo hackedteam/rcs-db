@@ -41,6 +41,12 @@ factory_define :user do |params|
   ::User.create! name: "testuser_#{rand(1E10)}", enabled: true
 end
 
+factory_define :session do |params|
+  raise("User must be supplied") unless params[:user]
+
+  Session.create!(params)
+end
+
 factory_define :group do |params|
   users = params.delete(:users)
   items = params.delete(:items)
