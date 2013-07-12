@@ -19,4 +19,11 @@ class Session
 
   index user: 1
   index cookie: 1
+
+  after_create :rebuild_dashboard_whitelist
+  after_destroy :rebuild_dashboard_whitelist
+
+  def rebuild_dashboard_whitelist
+    DashboardWhitelist.rebuild
+  end
 end
