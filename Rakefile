@@ -201,8 +201,20 @@ task :protect do
     system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-translate-release -r --ruby 1.9.3 *.rb */*.rb" || raise("Econding failed.")
     Dir.chdir "../.."
   end
-  execute "Copying libs" do
-    FileUtils.cp_r(Dir.pwd + '/lib/rcs-worker/libs', Dir.pwd + '/lib/rcs-worker-release')
+  execute "Copying other files" do
+    def recursive_copy_non_ruby_files_in(project_name)
+      Dir["#{Dir.pwd}/lib/rcs-#{project_name}/**/*"].each do |p|
+        next if Dir.exists?(p)
+        next if File.extname(p) =~ /\.rb/i
+        dest_folder = File.dirname(p).gsub("lib/rcs-#{project_name}", "lib/rcs-#{project_name}-release")
+        dest_file = File.join(dest_folder, File.basename(p))
+        FileUtils.mkdir_p(dest_folder)
+        FileUtils.cp_r(p, dest_file)
+      end
+    end
+
+    %w[db worker aggregator intelligence ocr translate].each do |name|
+      recursive_copy_non_ruby_files_in(name)
+    end
   end
 end
-
