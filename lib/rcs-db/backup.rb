@@ -56,6 +56,12 @@ class BackupManager
     backup.status = 'RUNNING'
     backup.save if save_status
 
+    if RbConfig::CONFIG['host_os'] =~ /mingw/
+      path_separator = "\\"
+    else
+      path_separator = "/"
+    end
+
     begin
 
       raise "invalid backup directory" unless File.directory? Config.instance.global['BACKUP_DIR']
@@ -105,7 +111,7 @@ class BackupManager
 
       # the command of the mongodump
       mongodump = Config.mongo_exec_path('mongodump')
-      mongodump += " -o #{Config.instance.global['BACKUP_DIR']}/#{backup.name}-#{now.strftime('%Y-%m-%d-%H-%M')}"
+      mongodump += " -o #{Config.instance.global['BACKUP_DIR']}#{path_separator}#{backup.name}-#{now.strftime('%Y-%m-%d-%H-%M')}"
       mongodump += " -d rcs"
 
       # create the backup of the collection (common)
@@ -150,7 +156,7 @@ class BackupManager
       # backup the config db
       if backup.what == 'metadata' or backup.what == 'full'
         mongodump = Config.mongo_exec_path('mongodump')
-        mongodump += " -o #{Config.instance.global['BACKUP_DIR']}/#{backup.name}_config-#{now.strftime('%Y-%m-%d-%H-%M')}"
+        mongodump += " -o #{Config.instance.global['BACKUP_DIR']}#{path_separator}#{backup.name}_config-#{now.strftime('%Y-%m-%d-%H-%M')}"
         mongodump += " -d config"
 
         trace :info, "Backup: #{command}"
