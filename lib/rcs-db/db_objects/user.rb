@@ -64,9 +64,11 @@ class User
 
   before_destroy :destroy_callback
 
+  scope :enabled, where(enabled: true)
+
   scope :online, lambda {
     online_user_id = Session.only(:user_id).map(&:user_id)
-    self.in(_id: online_user_id)
+    enabled.in(_id: online_user_id)
   }
 
   def create_password(password)
