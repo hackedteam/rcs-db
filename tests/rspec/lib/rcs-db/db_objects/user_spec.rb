@@ -18,7 +18,7 @@ describe User do
 
       context 'when a user is online' do
 
-        let(:online_users) { Array.new(2) { User.all.sample } }
+        let(:online_users) { User.all.to_a[0..1] }
 
         before do
           online_users.each { |u| factory_create(:session, user: u) }
