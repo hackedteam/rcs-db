@@ -1,32 +1,39 @@
 require 'mongoid'
 require 'rcs-common/trace'
 
-class DashboardWhitelist
-  include RCS::Tracer
+module DashboardWhitelist
+
+  # A Mongoid::Document class. This is to prevent
+  # direct access to mongoid methods on DashboardWhitelist
+  class Document
+    include Mongoid::Document
+    store_in collection: 'dashboard_whitelist'
+    # Dashboard ids array
+    field :dids, type: Array, default: []
+    index dids: 1
+  end
+
+  extend self
   extend RCS::Tracer
-  include Mongoid::Document
 
-  store_in collection: 'dashboard_whitelist'
-
-  # Dashboard ids array
-  field :dids, type: Array, default: []
-
-  index dids: 1
-
-  def self.bson_obj_id(string)
-  	Moped::BSON::ObjectId.from_string(string)
+  def bson_obj_id(string)
+    Moped::BSON::ObjectId.from_string(string)
   end
 
-  def self.include_item?(item)
-  	id = item.respond_to?(:id) ? item.id : item
-  	include?(id)
+  def include_item?(item)
+    id = item.respond_to?(:id) ? item.id : item
+    include?(id)
   end
 
-  def self.include?(id)
-  	where(dids: bson_obj_id(id)).count > 0
+  def include?(id)
+    Document.where(dids: bson_obj_id(id)).count > 0
   end
 
-  # TODO
-  def self.rebuild
+  def rebuild
+    dids = []
+    User.online.only(:dashboard_ids).each { |user| dids.concat(user.dashboard_ids).uniq! }
+    document = Document.first || Document.new
+    document.update_attributes(dids: dids)
+    dids
   end
 end

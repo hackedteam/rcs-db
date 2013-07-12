@@ -2,10 +2,7 @@ require 'spec_helper'
 require_db 'db_layer'
 require_db 'grid'
 
-describe DashboardWhitelist do
-
-  silence_alerts
-
+describe DashboardWhitelist::Document do
   it 'stores the document in the right collection' do
     expect(described_class.collection.name).to eq 'dashboard_whitelist'
   end
@@ -14,6 +11,11 @@ describe DashboardWhitelist do
     expect(described_class.index_options.size).to eql 1
     expect(described_class.index_options).to have_key(dids: 1)
   end
+end
+
+describe DashboardWhitelist do
+
+  silence_alerts
 
   it 'uses the trace module' do
     expect(described_class).to respond_to(:trace)
@@ -31,7 +33,7 @@ describe DashboardWhitelist do
 
     before { factory_create(:dashboard_whitelist, ["51dd6d3cc78783a3ba0005ab"]) }
 
-    context 'when the given id is fouded' do
+    context 'when the given id is founded' do
 
       it 'returns true' do
         expect(described_class.include?("51dd6d3cc78783a3ba0005ab")).to be_true
@@ -39,7 +41,7 @@ describe DashboardWhitelist do
       end
     end
 
-    context 'when the given id is not fouded' do
+    context 'when the given id is not founded' do
 
       it 'returns false' do
         expect(described_class.include?('51dd6d3cc78783a3ba0005a8')).to be_false
@@ -48,7 +50,53 @@ describe DashboardWhitelist do
   end
 
   describe '#rebuild' do
-    pending
+
+    it 'creates a DashboardWhitelist::Document' do
+      expect { described_class.rebuild }.to change(described_class::Document, :first).from(nil)
+    end
+
+    context 'when a document already exists' do
+
+      before { described_class.rebuild }
+
+      it 'does not creates another one' do
+        expect { described_class.rebuild }.not_to change(described_class::Document, :count)
+      end
+    end
+
+    context 'when no one is online' do
+
+      before { factory_create(:user) }
+
+      it('returns an empty array') { expect(described_class.rebuild).to be_empty }
+    end
+
+    context 'when there a no users' do
+
+      it('returns an empty array') { expect(described_class.rebuild).to be_empty }
+    end
+
+    context 'when some users are online' do
+
+      let!(:user0) { factory_create(:user) }
+      let!(:user1) { factory_create(:user) }
+      let!(:user2) { factory_create(:user) }
+
+      before do
+        factory_create(:session, user: user0)
+        factory_create(:session, user: user1)
+      end
+
+      it 'retuns their dashboard ids' do
+        user0.update_attributes(dashboard_ids: ['51dd6d3cc78783a3ba0005a8'])
+        user2.update_attributes(dashboard_ids: ['4f8d1bd0aef1de1140000002'])
+        expect(described_class.rebuild).to eq ['51dd6d3cc78783a3ba0005a8']
+
+        user0.update_attributes(dashboard_ids: ['51dd6d3cc78783a3ba0005a8'])
+        user1.update_attributes(dashboard_ids: ['51dd6d3cc78783a3ba0005ab', '51dd6d3cc78783a3ba0005a8'])
+        expect(described_class.rebuild).to eq ['51dd6d3cc78783a3ba0005a8', '51dd6d3cc78783a3ba0005ab']
+      end
+    end
   end
 
   describe '#include_item?' do
