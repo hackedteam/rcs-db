@@ -19,7 +19,7 @@ GIT
 PATH
   remote: ../rcs-common
   specs:
-    rcs-common (8.4.0)
+    rcs-common (8.4.1)
       ffi
       log4r (>= 1.1.9)
       mail
@@ -138,7 +138,7 @@ DEPENDENCIES
   pry
   pry-nav
   rake
-  rcs-common (>= 8.3.3)!
+  rcs-common (>= 8.4.1)!
   rest-client
   rspec
   rubyzip
