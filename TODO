@@ -4,6 +4,7 @@ TODO 9.0.0
   FIX:
     better investigation on "end of file reached" errors from mongoid (hoping for version 4.0.0 with connection pool)
     try to implement "retry" on mongoid queries
+    backup of a single target does not backup it's operation!
 
   IMPLEMENT:
     statistic analyzer (alor)
@@ -19,6 +20,8 @@ TODO 9.0.0
 
     dashboard in push mode
       - only after the dashboard as been refactored, issue a target|operation.restat on each target|operation.show
+
+    on backup restore -> restat everything!!!
 
 
   TEST:

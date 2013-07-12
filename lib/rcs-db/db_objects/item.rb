@@ -564,13 +564,13 @@ class Item
   end
 
   def self.offload_destroy(params)
-    item = ::Item.find(params[:id])
-    item.destroy
+    item = ::Item.where(_id: params[:id]).first
+    item.destroy unless item.nil?
   end
 
   def self.offload_destroy_callback(params)
-    item = ::Item.find(params[:id])
-    item.destroy_callback
+    item = ::Item.where(_id: params[:id]).first
+    item.destroy_callback unless item.nil?
   end
 
   def status_change_callback
