@@ -1,9 +1,6 @@
 require 'mongoid'
 require 'bcrypt'
 
-#module RCS
-#module DB
-
 class User
   include RCS::Tracer
   include Mongoid::Document
@@ -62,7 +59,7 @@ class User
   
   store_in collection: 'users'
 
-  before_destroy :destroy_callback
+  before_destroy :destroy_sessions
 
   scope :enabled, where(enabled: true)
 
@@ -112,11 +109,7 @@ class User
     end
   end
 
-  def destroy_callback
-    ::Session.destroy_all(user: [ self._id ])
+  def destroy_sessions
+    ::Session.destroy_all(user: [self._id])
   end
-
 end
-
-#end # ::DB
-#end # ::RCS
