@@ -43,23 +43,24 @@ class User
   field :enabled, type: Boolean
   field :locale, type: String
   field :timezone, type: Integer
-
   field :dashboard_ids, type: Array, default: []
   field :recent_ids, type: Array, default: []
-  
+
   validates_uniqueness_of :name, :message => "USER_ALREADY_EXISTS"
-  
+
   has_and_belongs_to_many :groups, :dependent => :nullify, :autosave => true
   has_many :alerts, :dependent => :destroy
-
   has_one :session, :dependent => :destroy, :autosave => true
 
   index({name: 1}, {background: true})
   index({enabled: 1}, {background: true})
-  
+
   store_in collection: 'users'
 
   before_destroy :destroy_sessions
+
+  # Runs only if dashboard_ids has been updated
+  after_save { rebuild_dashboard_whitelist if changed_attributes['dashboard_ids'] }
 
   scope :enabled, where(enabled: true)
 
@@ -67,6 +68,10 @@ class User
     online_user_id = Session.only(:user_id).map(&:user_id)
     enabled.in(_id: online_user_id)
   }
+
+  def rebuild_dashboard_whitelist
+    DashboardWhitelist.rebuild
+  end
 
   def create_password(password)
     self[:pass] = BCrypt::Password.create(password).to_s

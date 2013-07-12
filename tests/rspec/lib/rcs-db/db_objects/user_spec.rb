@@ -10,24 +10,43 @@ describe User do
       expect(described_class.online).to be_kind_of(Mongoid::Criteria)
     end
 
-    context 'given some users' do
+    let(:online_users) { User.all.to_a[0..1] }
 
-      before { 3.times { factory_create(:user) } }
+    before do
+      3.times { factory_create(:user) }
+      online_users.each { |u| factory_create(:session, user: u) }
+    end
 
-      before { expect(User.count).to eql(3) }
+    it 'returns online users' do
+      expect(described_class.online.to_a.sort).to eql(online_users.sort)
+    end
+  end
 
-      context 'when a user is online' do
+  context 'when a user updates his dashboard_ids' do
 
-        let(:online_users) { User.all.to_a[0..1] }
+    let!(:user) { factory_create(:user) }
 
-        before do
-          online_users.each { |u| factory_create(:session, user: u) }
-        end
+    it 'rebuilds the dashboard ids whitelist' do
+      described_class.any_instance.should_receive(:rebuild_dashboard_whitelist)
+      user.update_attributes(dashboard_ids: ['517552a0c78783c10d000005'], desc: 'i like trains')
+    end
+  end
 
-        it 'returns that user' do
-          expect(described_class.online.to_a.sort).to eql(online_users.sort)
-        end
-      end
+  context 'when a user updates his attributes but not the dashboard_ids' do
+
+    let!(:user) { factory_create(:user) }
+
+    it 'does not rebuild the dashboard ids whitelist' do
+      described_class.any_instance.should_not_receive(:rebuild_dashboard_whitelist)
+      user.update_attributes(desc: 'i like trains')
+    end
+  end
+
+  context 'when a user is created' do
+
+    it 'does not rebuild the dashboard ids whitelist' do
+      described_class.any_instance.should_not_receive(:rebuild_dashboard_whitelist)
+      factory_create(:user)
     end
   end
 end
