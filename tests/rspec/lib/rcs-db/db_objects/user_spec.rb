@@ -26,8 +26,8 @@ describe User do
 
     let!(:user) { factory_create(:user) }
 
-    it 'rebuilds the dashboard ids whitelist' do
-      described_class.any_instance.should_receive(:rebuild_dashboard_whitelist)
+    it 'rebuilds the watched item list' do
+      described_class.any_instance.should_receive(:rebuild_watched_items)
       user.update_attributes(dashboard_ids: ['517552a0c78783c10d000005'], desc: 'i like trains')
     end
   end
@@ -36,16 +36,16 @@ describe User do
 
     let!(:user) { factory_create(:user) }
 
-    it 'does not rebuild the dashboard ids whitelist' do
-      described_class.any_instance.should_not_receive(:rebuild_dashboard_whitelist)
+    it 'does not rebuild the watched item list' do
+      described_class.any_instance.should_not_receive(:rebuild_watched_items)
       user.update_attributes(desc: 'i like trains')
     end
   end
 
   context 'when a user is created' do
 
-    it 'does not rebuild the dashboard ids whitelist' do
-      described_class.any_instance.should_not_receive(:rebuild_dashboard_whitelist)
+    it 'does not rebuild the watched item list' do
+      described_class.any_instance.should_not_receive(:rebuild_watched_items)
       factory_create(:user)
     end
   end

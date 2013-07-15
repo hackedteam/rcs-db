@@ -2,12 +2,12 @@ require 'spec_helper'
 require_db 'db_layer'
 require_db 'grid'
 
-describe DashboardWhitelist do
+describe WatchedItem do
 
   silence_alerts
 
   it 'stores the document in the right collection' do
-    expect(described_class.collection.name).to eq 'dashboard_whitelist'
+    expect(described_class.collection.name).to eq 'watched_items'
   end
 
   it 'is correcly indexed' do
@@ -29,7 +29,7 @@ describe DashboardWhitelist do
 
       context 'and the collection was not empty' do
 
-        before { factory_create(:dashboard_whitelist, item_id: '51dd6d3cc78783a3ba0005a8', cookies: ['a_cookie']) }
+        before { factory_create(:watched_item, item_id: '51dd6d3cc78783a3ba0005a8', user_ids: ['id1']) }
 
         before { expect(described_class).not_to be_empty }
 
@@ -53,8 +53,8 @@ describe DashboardWhitelist do
     let!(:user2) { factory_create(:user, dashboard_ids: ['51dd6d3cc78783a3ba0005ab']) }
 
     before do
-      factory_create(:session, user: user0, cookie: 'cookie0')
-      factory_create(:session, user: user1, cookie: 'cookie1')
+      factory_create(:session, user: user0)
+      factory_create(:session, user: user1)
     end
 
     describe '#rebuild' do
@@ -62,20 +62,8 @@ describe DashboardWhitelist do
       it 'creates the expected documents' do
         described_class.rebuild
         expect(described_class.all.count).to eq 2
-        expect(described_class.where(item_id: '51dd6d3cc78783a3ba0005a8').first.cookies).to eq %w[cookie0 cookie1]
-        expect(described_class.where(item_id: '51dd6d3cc78783a3ba0005ab').first.cookies).to eq %w[cookie1]
-      end
-    end
-
-    describe '#inject_cookies_on' do
-
-      before { described_class.rebuild }
-
-      it 'retuns the expected hash' do
-        item = stub(id: '51dd6d3cc78783a3ba0005a8')
-        hash = described_class.inject_cookies_on(item)
-        expected_hash = {Moped::BSON::ObjectId.from_string(item.id) => %w[cookie0 cookie1]}
-        expect(hash).to eq expected_hash
+        expect(described_class.where(item_id: '51dd6d3cc78783a3ba0005a8').first.user_ids).to eq [user0.id, user1.id]
+        expect(described_class.where(item_id: '51dd6d3cc78783a3ba0005ab').first.user_ids).to eq [user1.id]
       end
     end
   end

@@ -12,8 +12,8 @@ describe Session do
 
     let(:user) { factory_create(:user) }
 
-    it 'builds the dashboard ids whitelist' do
-      described_class.any_instance.should_receive(:rebuild_dashboard_whitelist).twice
+    it 'builds the watched item list' do
+      described_class.any_instance.should_receive(:rebuild_watched_items).twice
       session = factory_create(:session, user: user)
       session.destroy
     end

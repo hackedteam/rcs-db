@@ -20,10 +20,10 @@ class Session
   index user: 1
   index cookie: 1
 
-  after_create :rebuild_dashboard_whitelist
-  after_destroy :rebuild_dashboard_whitelist
+  after_create :rebuild_watched_items
+  after_destroy :rebuild_watched_items
 
-  def rebuild_dashboard_whitelist
-    DashboardWhitelist.rebuild
+  def rebuild_watched_items
+    WatchedItem.rebuild
   end
 end

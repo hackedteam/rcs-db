@@ -253,6 +253,6 @@ factory_define :connector_queue do |params|
   ConnectorQueue.add target, evidence, connectors
 end
 
-factory_define :dashboard_whitelist do |params|
-  DashboardWhitelist.create!(params)
+factory_define :watched_item do |params|
+  WatchedItem.create!(params)
 end

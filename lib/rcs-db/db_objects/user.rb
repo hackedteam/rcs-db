@@ -60,7 +60,7 @@ class User
   before_destroy :destroy_sessions
 
   # Runs only if dashboard_ids has been updated
-  after_save { rebuild_dashboard_whitelist if changed_attributes['dashboard_ids'] }
+  after_save { rebuild_watched_items if changed_attributes['dashboard_ids'] }
 
   scope :enabled, where(enabled: true)
 
@@ -69,8 +69,8 @@ class User
     enabled.in(_id: online_user_id)
   }
 
-  def rebuild_dashboard_whitelist
-    DashboardWhitelist.rebuild
+  def rebuild_watched_items
+    WatchedItem.rebuild
   end
 
   def create_password(password)
