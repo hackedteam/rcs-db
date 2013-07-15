@@ -293,9 +293,7 @@ class Alerting
         trace :warn, "Cannot send mail since the SMTP is not configured"
         return
       end
-      
-      host, port = Config.instance.global['SMTP'].split(':')
-      
+
       trace :info, "Sending alert mail to: #{to}"
 
 msgstr = <<-END_OF_MESSAGE
@@ -307,12 +305,16 @@ Date: #{Time.now}
 #{body}
 END_OF_MESSAGE
 
+      host, port = Config.instance.global['SMTP'].split(':')
       auth = Config.instance.global['SMTP_AUTH'] ? Config.instance.global['SMTP_AUTH'].to_sym : nil
 
-      Net::SMTP.start(host, port, Config.instance.global['CN'],
-                                  Config.instance.global['SMTP_USER'],
-                                  Config.instance.global['SMTP_PASS'],
-                                  auth) do |smtp|
+      smtp = Net::SMTP.new host, port
+      smtp.enable_starttls if Config.instance.global['SMTP_STARTTLS']
+
+      smtp.start(Config.instance.global['CN'],
+                 Config.instance.global['SMTP_USER'],
+                 Config.instance.global['SMTP_PASS'],
+                 auth) do |smtp|
         # send the message
         smtp.send_message msgstr, Config.instance.global['SMTP_FROM'], to
       end
