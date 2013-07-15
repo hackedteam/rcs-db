@@ -539,11 +539,13 @@ class Item
       while offending = f.gets
         offending.chomp!
         next unless offending
-        bver, bmatch = offending.split('|')
+        bver, bbit, bmatch = offending.split('|')
         bver = bver.to_i
-        trace :debug, "Checking for #{bmatch} | #{bver} <= #{self.version.to_i}"
-        if Regexp.new(bmatch, Regexp::IGNORECASE).match(installed) != nil && (self.version.to_i <= bver || bver == 0 )
-          trace :warn, "Blacklisted software detected: #{bmatch}"
+        trace :debug, "Checking for #{bmatch} | #{bver} <= #{self.version.to_i} | bit: #{bbit}"
+        if Regexp.new(bmatch, Regexp::IGNORECASE).match(installed) != nil &&
+           (bver == 0 || self.version.to_i <= bver) &&
+           (bbit == '*' || installed.match(/Architecture: /).nil? || Regexp.new("Architecture: #{bbit}-bit", Regexp::IGNORECASE).match(installed) != nil)
+          trace :warn, "Blacklisted software detected: #{bmatch} (#{bbit})"
           raise BlacklistError.new("The target device contains a software that prevents the upgrade.")
         end
       end
