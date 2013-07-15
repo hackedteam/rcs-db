@@ -65,7 +65,8 @@ class PushManager
             # if we have specified a recepient, skip all the other online users
             next if message['rcpt'] and session.user.id != message['rcpt']
             # check for accessibility
-            next if message['user_ids'] and !message['user_ids'].include?(session.user.id)
+            user_ids = message.delete('user_ids')
+            next if user_ids and !user_ids.include?(session.user.id)
             # send the message
             WebSocketManager.instance.send(web_socket, type, message)
 
