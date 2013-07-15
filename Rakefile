@@ -153,7 +153,8 @@ end
 
 case RbConfig::CONFIG['host_os']
   when /darwin/
-    RUBYENCPATH = '/Applications/Development/RubyEncoder.app/Contents/MacOS'
+    paths = ['/Applications/Development/RubyEncoder.app/Contents/MacOS', '/Applications/RubyEncoder.app/Contents/MacOS']
+    RUBYENCPATH = File.exists?(paths.first) ? paths.first : paths.last
     RUBYENC = "#{RUBYENCPATH}/rgencoder"
   when /mingw/
     RUBYENCPATH = 'C:/Program Files (x86)/RubyEncoder15'
