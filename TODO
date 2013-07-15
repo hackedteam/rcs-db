@@ -19,6 +19,8 @@ TODO 9.0.0
 
     most visited places
 
+    method to send coordinates for the position player in console
+
     entities in the recent item list (must modify the structure of recents)
 
     dashboard in push mode
