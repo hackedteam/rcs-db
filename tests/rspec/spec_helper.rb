@@ -2,7 +2,7 @@ require 'bundler'
 require 'mongo'
 require 'mongoid'
 require 'pry'
-# require 'pry-nav'
+require 'rcs-common/path_utils'
 require 'fileutils'
 
 # require customer rspec matchers
@@ -48,7 +48,7 @@ end
 
 def rcs_require(relative_path, file)
   relative_path_file = File.join(Dir.pwd, relative_path, file)
-  require_relative(relative_path_file)
+  require_release(relative_path_file)
 end
 
 def require_db(file)
