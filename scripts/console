@@ -61,7 +61,7 @@ end
 
 def usage?
   return unless ARGV.include?('--help')
-  puts "Usage: #{File.basename(__FILE__) [--db=NAME] [--host=ADDR]}"
+  puts "Usage: #{File.basename(__FILE__)} [--db=NAME] [--host=ADDR]"
   puts "Default connection is to localhost:27017/rcs-test"
   exit
 end
