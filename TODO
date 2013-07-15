@@ -1,6 +1,9 @@
 
 TODO 9.0.0
 
+  * fix pushmanager#notify and place :user_id directly in the message field
+  * run tests on *-release folders (if any)
+
   FIX:
     better investigation on "end of file reached" errors from mongoid (hoping for version 4.0.0 with connection pool)
     try to implement "retry" on mongoid queries
