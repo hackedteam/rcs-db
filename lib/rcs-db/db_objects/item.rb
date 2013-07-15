@@ -437,7 +437,7 @@ class Item
       create_target_entity
     end
 
-    RCS::DB::PushManager.instance.notify(_kind, {id: _id, action: 'create'})
+    RCS::DB::PushManager.instance.notify(_kind, {item: self, action: 'create'})
   end
 
   def notify_callback
@@ -445,7 +445,7 @@ class Item
     interesting = ['name', 'desc', 'status', 'instance', 'version', 'deleted', 'uninstalled', 'scout']
     return if not interesting.collect {|k| changes.include? k}.inject(:|)
 
-    RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'modify'})
+    RCS::DB::PushManager.instance.notify(self._kind, {item: self, action: 'modify'})
   end
 
   def destroy_callback
@@ -502,7 +502,7 @@ class Item
         ::PublicDocument.destroy_all(factory: [self[:_id]])
     end
 
-    RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'destroy'})
+    RCS::DB::PushManager.instance.notify(self._kind, {item: self, action: 'destroy'})
   rescue Exception => e
     trace :error, "ERROR: #{e.message}"
     trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
