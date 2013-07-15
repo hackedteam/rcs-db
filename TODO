@@ -1,6 +1,7 @@
 
 TODO 9.0.0
 
+  * fix pushmanager#notify and place :user_id directly in the message field
   * run tests on *-release folders (if any)
 
   FIX:
