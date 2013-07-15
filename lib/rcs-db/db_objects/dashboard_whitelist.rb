@@ -1,39 +1,41 @@
 require 'mongoid'
 require 'rcs-common/trace'
 
-module DashboardWhitelist
-
-  # A Mongoid::Document class. This is to prevent
-  # direct access to mongoid methods on DashboardWhitelist
-  class Document
-    include Mongoid::Document
-    store_in collection: 'dashboard_whitelist'
-    # Dashboard ids array
-    field :dids, type: Array, default: []
-    index dids: 1
-  end
-
-  extend self
+class DashboardWhitelist
   extend RCS::Tracer
+  include Mongoid::Document
 
-  def bson_obj_id(string)
-    Moped::BSON::ObjectId.from_string(string)
+  store_in collection: 'dashboard_whitelist'
+
+  field :iid, as: :item_id, type: Moped::BSON::ObjectId
+  field :cks, as: :cookies, type: Array, default: []
+
+  index iid: 1
+
+  def self.inject_cookies_on(*items)
+    ids = items.map(&:id)
+    self.in(:item_id => ids).inject({}) { |h, doc| h[doc.item_id] = doc.cookies; h }
   end
 
-  def include_item?(item)
-    id = item.respond_to?(:id) ? item.id : item
-    include?(id)
+  def self.user_cookie
+    filter = {:user_id.ne => nil, :cookie.ne => nil}
+    Session.where(filter).only(:user_id, :cookie).inject({}) { |h, sess| h[sess.user_id] = sess.cookie; h }
   end
 
-  def include?(id)
-    Document.where(dids: bson_obj_id(id)).count > 0
-  end
+  def self.rebuild
+    delete_all
+    documents = {}
 
-  def rebuild
-    dids = []
-    User.online.only(:dashboard_ids).each { |user| dids.concat(user.dashboard_ids).uniq! }
-    document = Document.first || Document.new
-    document.update_attributes(dids: dids)
-    dids
+    User.online.only(:dashboard_ids).each do |user|
+      cookie = user_cookie[user.id]
+      next unless cookie
+
+      user.dashboard_ids.each do |item_id|
+        documents[item_id] ||= []
+        documents[item_id] << cookie unless documents[item_id].include?(cookie)
+      end
+    end
+
+    documents.each { |item_id, cookies| create!(item_id: item_id, cookies: cookies) }
   end
 end

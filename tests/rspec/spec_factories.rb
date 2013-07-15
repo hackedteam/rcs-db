@@ -38,7 +38,10 @@ include RCS::Factory::Helpers
 # Definitions
 
 factory_define :user do |params|
-  ::User.create! name: "testuser_#{rand(1E10)}", enabled: true
+  attributes = {name: "testuser_#{rand(1E10)}", enabled: true}
+  attributes.merge!(params)
+
+  ::User.create!(attributes)
 end
 
 factory_define :session do |params|
@@ -250,10 +253,6 @@ factory_define :connector_queue do |params|
   ConnectorQueue.add target, evidence, connectors
 end
 
-
 factory_define :dashboard_whitelist do |params|
-  params = {dids: params} if params.kind_of?(Array)
-  params[:dids].map! { |string| Moped::BSON::ObjectId.from_string(string) }
-
-  DashboardWhitelist::Document.create!(params)
+  DashboardWhitelist.create!(params)
 end
