@@ -189,6 +189,11 @@ class BackupManager
     # extract the id from the string
     id = Moped::BSON::ObjectId.from_string(params[:what][-24..-1])
 
+    # get the parent operation if the item is a target
+    if (current = ::Item.targets.where(id: id).first)
+      parent = current.get_parent
+    end
+
     # take the item and subitems contained in it
     items = ::Item.any_of({_id: id}, {path: id})
     entities = ::Entity.where({path: id})
@@ -202,6 +207,9 @@ class BackupManager
     params[:ifilter] = "{\"_id\":{\"$in\": ["
     params[:efilter] = "{\"_id\":{\"$in\": ["
     params[:gfilter] = "{\"_id\":{\"$in\": ["
+
+    # insert the parent if any
+    params[:ifilter] += "ObjectId(\"#{parent._id}\")," if parent
 
     items.each do |item|
       params[:ifilter] += "ObjectId(\"#{item._id}\"),"
