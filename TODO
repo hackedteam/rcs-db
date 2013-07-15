@@ -1,13 +1,12 @@
 
 TODO 9.0.0
 
-  * fix pushmanager#notify and place :user_id directly in the message field
+  * fix pushmanager#notify and place :user_id directly in the message field [OK]
   * run tests on *-release folders (if any)
 
   FIX:
     better investigation on "end of file reached" errors from mongoid (hoping for version 4.0.0 with connection pool)
     try to implement "retry" on mongoid queries
-    backup of a single target does not backup it's operation!
 
   IMPLEMENT:
     statistic analyzer (alor)
@@ -18,6 +17,8 @@ TODO 9.0.0
       - sync with "archive" rcs installation
 
     most visited places
+
+    method to send coordinates for the position player in console
 
     entities in the recent item list (must modify the structure of recents)
 

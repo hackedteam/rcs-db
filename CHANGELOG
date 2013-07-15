@@ -1,4 +1,13 @@
 
+Changelog for 8.4.1
+
+DB:
+  - improved mail parsing
+  - fix the missing export evidence feature
+  - fix for single target backup not backing up its operation
+  - support for STARTLS for alerting via email
+
+
 Changelog for 9.0.0
 
 Collector:

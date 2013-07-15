@@ -20,7 +20,7 @@ class Migration
   def self.up_to(version)
     puts "migrating to #{version}"
 
-    run [:drop_sessions] if version >= '8.4.1'
+    run [:recalculate_checksums, :drop_sessions] if version >= '8.4.1'
 
     return 0
   end
@@ -65,6 +65,20 @@ class Migration
       item.cs = item.calculate_checksum
       item.save
       print "\r%d items migrated" % count
+    end
+    puts
+    puts "done in #{Time.now - start} secs"
+  end
+
+  def self.mark_pre_83_as_bad
+    start = Time.now
+    count = 0
+    puts "Checking for good/bad consistency..."
+    ::Item.agents.each do |item|
+      count += 1
+      item.good = false if item.version < 2013031101
+      item.save
+      print "\r%d items checked" % count
     end
     puts
     puts "done in #{Time.now - start} secs"

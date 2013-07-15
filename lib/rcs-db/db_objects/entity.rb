@@ -139,7 +139,7 @@ class Entity
   def self.push_notify entity, action
     return if entity.type == :ghost
 
-    RCS::DB::PushManager.instance.notify('entity', {id: entity._id, action: "#{action}"})
+    RCS::DB::PushManager.instance.notify('entity', {item: entity, action: "#{action}"})
   end
 
   def push_new_entity
