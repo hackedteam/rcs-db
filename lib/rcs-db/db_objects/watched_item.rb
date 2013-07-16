@@ -25,12 +25,12 @@ class WatchedItem
   end
 
   def self.matching(*items)
-    items2id = items.inject({}) do |h, i|
-      h[i.id] = i if i.respond_to?(:id)
+    items2id = items.inject({}) do |h, item|
+      h[item.id] = item if item.respond_to?(:id)
       h
     end
 
-    self.in(item_id: hash.keys).each do |dw|
+    self.in(item_id: items2id.keys).each do |dw|
       item = items2id[dw.item_id]
       yield(item, dw.user_ids)
     end
