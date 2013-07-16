@@ -50,8 +50,12 @@ module RCS
       end
 
       def pop
+        type, message = suppressed.delete(suppressed.keys.first)
+        return [type, message] if type
+
         queued = PushQueue.get_queued
         return unless queued
+
         trace :debug, "#{queued[1]} push messages to be processed in queue"
         [queued[0].type, queued[0].message]
       end
@@ -65,13 +69,33 @@ module RCS
         trace :debug, "PUSH Event (sent): #{type} #{message}"
       end
 
+      def suppressed
+        @suppressed ||= {}
+      end
+
+      def suppress(type, message)
+        key = message['suppress']['key']
+        suppressed[key] = [type, message]
+      end
+
+      def suppress?(message)
+        return false unless message['suppress']
+        start = message['suppress']['start']
+        Time.now.getutc.to_f - start.to_f <= 1.0
+      end
+
       def dispatch(type, message)
         each_session_with_web_socket do |session, web_socket|
           # if we have specified a recepient, skip all the other online users
           next if message['rcpt'] and session.user.id != message['rcpt']
+
+          # TODO: handle message['rcpts']
+
           # check for accessibility
           user_ids = message.delete('user_ids')
           next if user_ids and !user_ids.include?(session.user.id)
+          # does not send suppress hash to the clients
+          message.delete('suppress')
           # send the message
           send(web_socket, type, message)
         end
@@ -79,7 +103,14 @@ module RCS
 
       def dispatch_or_wait
         type, message = pop
-        type ? dispatch(type, message) : wait_a_moment
+
+        if type.nil?
+          wait_a_moment
+        elsif suppress?(message)
+          suppress(type, message)
+        else
+          dispatch(type, message)
+        end
       end
 
       def heartbeat
