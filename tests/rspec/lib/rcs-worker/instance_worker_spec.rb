@@ -11,6 +11,8 @@ module RCS::Worker
 
       let!(:target) { factory_create :target }
 
+      let!(:agent) { factory_create :agent, target: target }
+
       let!(:evidence) { factory_create :chat_evidence, target: target }
 
       def subject(instance_variables = {})
@@ -27,7 +29,7 @@ module RCS::Worker
         it 'does not adds the evidence to the other queues' do
           RCS::DB::Connectors.should_receive(:add_to_queue).with(target, evidence)
           [OCRQueue, TransQueue, AggregatorQueue, IntelligenceQueue].each { |klass| klass.should_not_receive(:add) }
-          subject(target: target).save_evidence(evidence)
+          subject(target: target, agent: agent).save_evidence(evidence)
         end
       end
 
@@ -39,7 +41,7 @@ module RCS::Worker
           RCS::DB::Connectors.should_receive(:add_to_queue).with(target, evidence)
           [OCRQueue, IntelligenceQueue].each { |klass| klass.should_not_receive(:add) }
           [TransQueue, AggregatorQueue].each { |klass| klass.should_receive(:add) }
-          subject(target: target).save_evidence(evidence)
+          subject(target: target, agent: agent).save_evidence(evidence)
         end
       end
     end
