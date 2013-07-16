@@ -44,6 +44,10 @@ module RCS::Worker
           subject(target: target, agent: agent).save_evidence(evidence)
         end
       end
+
+      context 'when the evidence match a watche item' do
+        pending
+      end
     end
   end
 end
