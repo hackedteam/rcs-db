@@ -168,12 +168,12 @@ module RCS
 
         context 'when the message contains a recipient' do
 
-          it 'sends the message only to that user' do
+          it 'sends the message only to that user (one)' do
             subject.should_receive(:send)
             subject.dispatch("type", {'rcpt' => session.user.id})
           end
 
-          it 'sends the message only to that user' do
+          it 'sends the message only to that user (none)' do
             subject.should_not_receive(:send)
             subject.dispatch("type", {'rcpt' => '5183d763c78783751d000119'})
           end
@@ -181,8 +181,14 @@ module RCS
 
         context 'when the message contains user_ids' do
 
-          it 'sends the message only to the users' do
-            pending
+          it 'sends the message only to the users (one) matching user_ids' do
+            subject.should_receive(:send)
+            subject.dispatch("type", {'user_ids' => [user.id]})
+          end
+
+          it 'sends the message only to the users (none) matching user_ids' do
+            subject.should_not_receive(:send)
+            subject.dispatch("type", {'user_ids' => []})
           end
         end
       end
