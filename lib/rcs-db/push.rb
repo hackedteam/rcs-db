@@ -9,6 +9,12 @@ module RCS
       include Singleton
       include RCS::Tracer
 
+      attr_accessor :suppressed
+
+      def initialize
+        @suppressed = {}
+      end
+
       def notify(type, message={})
         trace :debug, "PUSH Event: #{type} #{message}"
 
@@ -69,19 +75,16 @@ module RCS
         trace :debug, "PUSH Event (sent): #{type} #{message}"
       end
 
-      def suppressed
-        @suppressed ||= {}
-      end
-
       def suppress(type, message)
         key = message['suppress']['key']
         suppressed[key] = [type, message]
       end
 
       def suppress?(message)
-        return false unless message['suppress']
-        start = message['suppress']['start']
-        Time.now.getutc.to_f - start.to_f <= 1.0
+        hash = message['suppress']
+        return false unless hash
+        return false unless hash['key'] and hash['start']
+        Time.now.getutc.to_f - hash['start'] <= 1.0
       end
 
       def dispatch(type, message)
