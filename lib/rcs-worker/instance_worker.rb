@@ -248,7 +248,7 @@ class InstanceWorker
 
     WatchedItem.matching(@agent, @target, @target.get_parent) do |item, user_ids|
       stats = item.stat.attributes.reject { |key| !%w[evidence dashboard].include?(key) }
-      message = {item: item, rcpts: user_ids, stats: stats, suppress: {start: Time.now.getutc.to_f, key: @target.get_parent}}
+      message = {item: item, rcpts: user_ids, stats: stats, suppress: {start: Time.now.getutc.to_f, key: item.id}}
       PushManager.instance.notify('dashboard', message)
     end
 
