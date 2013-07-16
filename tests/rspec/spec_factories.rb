@@ -38,7 +38,7 @@ include RCS::Factory::Helpers
 # Definitions
 
 factory_define :user do |params|
-  attributes = {name: "testuser_#{rand(1E10)}", enabled: true}
+  attributes = {name: "testuser_#{rand(1E10)}", enabled: true, cookie: "cookie_#{rand(1E20)}"}
   attributes.merge!(params)
 
   ::User.create!(attributes)
@@ -255,4 +255,8 @@ end
 
 factory_define :watched_item do |params|
   WatchedItem.create!(params)
+end
+
+factory_define :push_queue do |params|
+  PushQueue.create!(params)
 end
