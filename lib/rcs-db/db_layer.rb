@@ -128,8 +128,10 @@ class DB
     if mongoid_document_class.shard_key_fields.any?
       model_shard_key = mongoid_document_class.shard_key_fields.inject({}) { |h, v| h[v.to_s] = 1; h } # somehing like {"type"=>1, "da"=>1, "aid"=>1}
     end
-    config_coll = config_collections.find({'_id' => namespace}).first
-    actual_shard_key = config_coll['key'] if config_coll
+    if config_collections
+      config_coll = config_collections.find({'_id' => namespace}).first
+      actual_shard_key = config_coll['key'] if config_coll
+    end
 
     diff = {}
 
