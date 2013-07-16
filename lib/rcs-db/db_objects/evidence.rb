@@ -133,7 +133,7 @@ module Evidence
     # Count the number of all the evidences grouped by type.
     # Returns an hash like {"chat" => 3, "mic" => 0, ..., "position" => 42}
     def count_by_type(where={})
-      match = where
+      match = where.merge({type: {'$nin' => STAT_EXCLUSION}})
       group = {_id: '$type', count: {'$sum' => 1}}
       project = { _id: 0, type: '$_id', count: 1}
 

@@ -176,4 +176,28 @@ describe Evidence do
       end
     end
   end
+
+  describe '#count_by_type' do
+
+    let(:target) { factory_create(:target) }
+
+    let(:agent) { factory_create(:agent, target: target) }
+
+    before do
+      3.times { factory_create(:chat_evidence, agent: agent) }
+      2.times { factory_create(:position_evidence, agent: agent) }
+      2.times { factory_create(:evidence, agent: agent, type: 'ip') }
+    end
+
+    let(:subject) { described_class.collection_class(target) }
+
+    it 'retuns the expected hash' do
+      results = subject.count_by_type
+
+      expect(results['chat']).to eql 3
+      expect(results['position']).to eql 2
+      expect(results['file']).to eql 0
+      expect(results).not_to have_key('ip')
+    end
+  end
 end
