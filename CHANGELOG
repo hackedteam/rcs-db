@@ -6,6 +6,7 @@ DB:
   - fix the missing export evidence feature
   - fix for single target backup not backing up its operation
   - support for STARTLS for alerting via email
+  - HASP driver updated to 6.56
 
 
 Changelog for 9.0.0
