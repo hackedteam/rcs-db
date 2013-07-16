@@ -247,7 +247,9 @@ class InstanceWorker
     end
 
     WatchedItem.matching(@agent, @target, @target.get_parent) do |item, user_ids|
-      PushManager.instance.notify('dashboard', {item: item, rcpts: user_ids, stat: item.stat.evidence})
+      stats = item.stat.attributes.reject { |key| !%w[evidence dashboard].include?(key) }
+      message = {item: item, rcpts: user_ids, stats: stats, suppress: {start: Time.now.getutc.to_f, key: @target.get_parent}}
+      PushManager.instance.notify('dashboard', message)
     end
 
     # Do not check the intelligence license is enabled here. Some of the intelligence
