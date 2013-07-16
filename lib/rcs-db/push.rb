@@ -57,7 +57,6 @@ module RCS
       end
 
       def wait_a_moment
-        puts 'wait_a_moment.....'
         sleep 1
       end
 
