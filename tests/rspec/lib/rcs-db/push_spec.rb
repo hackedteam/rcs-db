@@ -48,7 +48,69 @@ module RCS
         end
       end
 
-      describe 'dispatcher_start' do
+      describe '#suppressed' do
+
+        it 'retuns an empty hash' do
+          expect(subject.suppressed).to eq({})
+        end
+      end
+
+      describe '#suppress?' do
+
+        context 'when the message has no suppress info' do
+
+          let(:message) { Hash.new }
+
+          it 'returns false' do
+            expect(subject.suppress?(message)).to be_false
+          end
+        end
+
+        context 'when the message has invalid suppress info' do
+
+          let(:message) { {'suppress' => {'key' => 'KEY'}} }
+
+          it 'returns false' do
+            expect(subject.suppress?(message)).to be_false
+          end
+        end
+
+        context 'when the suppression time is eplased' do
+
+          let(:message) { {'suppress' => {'key' => 'KEY', 'start' => Time.now.to_i - 1000}} }
+
+          it 'returns false' do
+            expect(subject.suppress?(message)).to be_false
+          end
+        end
+
+        context 'when the suppression time isnt\'t eplased' do
+
+          let(:message) { {'suppress' => {'key' => 'KEY', 'start' => Time.now.to_i + 1000}} }
+
+          it 'returns true' do
+            expect(subject.suppress?(message)).to be_true
+          end
+        end
+      end
+
+      describe '#suppress' do
+
+        let(:message) { {'suppress' => {'key' => 'KEY', 'start' => Time.now.to_f}} }
+
+        let(:type) { 'type' }
+
+        before { subject.suppressed = {} }
+
+        after { subject.suppressed = {} }
+
+        it 'adds the give args to the suppressed hash' do
+          subject.suppress(type, message)
+          expect(subject.suppressed).to eq({'KEY' => [type, message]})
+        end
+      end
+
+      describe '#dispatcher_start' do
 
         before { subject.stub(:loop_on).and_yield }
         before { subject.stub(:wait_a_moment) }
@@ -92,6 +154,23 @@ module RCS
 
           it 'returns its type and message' do
             expect(subject.pop).to eql ["type0", {'num' => 0}]
+          end
+        end
+
+        context 'when there is something is the suppression queue' do
+
+          before do
+            subject.suppressed = {'KEY' => ["typeX", {b: 1}]}
+            factory_create(:push_queue, type: "typeB", message: {c: 1})
+          end
+
+          it 'pops out the suppressed item first and than the push_queue' do
+            entry = subject.pop
+            expect(entry).to eq(["typeX", {b: 1}])
+            expect(subject.suppressed).to be_empty
+
+            entry = subject.pop
+            expect(entry).to eq(["typeB", {'c' => 1}])
           end
         end
       end
