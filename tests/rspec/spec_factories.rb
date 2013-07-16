@@ -260,3 +260,11 @@ end
 factory_define :push_queue do |params|
   PushQueue.create!(params)
 end
+
+factory_define :device_evidence do |params|
+  attributes = {data: {content: 'This is a device evidence'}}
+  attributes.deep_merge! params
+  attributes.merge! type: 'device'
+
+  factory_create(:evidence, attributes)
+end
