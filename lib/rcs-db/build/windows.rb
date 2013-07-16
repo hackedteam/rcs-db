@@ -427,7 +427,7 @@ class BuildWindows < Build
     CrossPlatform.exec path('verpatch'), "/fn /va #{path('scout')} \"#{info[:version]}\" /s pb \"\" /s desc \"#{info[:desc]}\" /s company \"#{info[:company]}\" /s (c) \"#{info[:copyright]}\" /s product \"#{info[:desc]}\" /pv \"#{info[:version]}\""
 
     # pack the scout
-    CrossPlatform.exec path('packer32'), "#{path('scout')}"
+    #CrossPlatform.exec path('packer32'), "#{path('scout')}"
 
     # sign it
     CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("digicert.cer")} #{path('scout')}" if to_be_signed?
