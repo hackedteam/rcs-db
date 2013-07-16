@@ -89,14 +89,13 @@ module RCS
 
       def dispatch(type, message)
         each_session_with_web_socket do |session, web_socket|
-          # if we have specified a recepient, skip all the other online users
-          next if message['rcpt'] and session.user.id != message['rcpt']
-
-          # TODO: handle message['rcpts']
-
+          usr_id = session.user.id
+          # if we have specified a recepient(s), skip all the other online users
+          next if message['rcpt'] and usr_id != message['rcpt']
+          next if message['rcpts'] and !message['rcpts'].include?(usr_id)
           # check for accessibility
           user_ids = message.delete('user_ids')
-          next if user_ids and !user_ids.include?(session.user.id)
+          next if user_ids and !user_ids.include?(usr_id)
           # does not send suppress hash to the clients
           message.delete('suppress')
           # send the message

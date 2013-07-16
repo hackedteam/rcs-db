@@ -245,16 +245,22 @@ module RCS
 
         before { subject.stub(:each_session_with_web_socket).and_yield(session, web_socket) }
 
-        context 'when the message contains a recipient' do
+        context 'when the message contains a recipient(s)' do
 
           it 'sends the message only to that user (one)' do
             subject.should_receive(:send)
             subject.dispatch("type", {'rcpt' => session.user.id})
+
+            subject.should_receive(:send)
+            subject.dispatch("type", {'rcpts' => [session.user.id, '5183d763c78783751d000119']})
           end
 
           it 'sends the message only to that user (none)' do
             subject.should_not_receive(:send)
             subject.dispatch("type", {'rcpt' => '5183d763c78783751d000119'})
+
+            subject.should_not_receive(:send)
+            subject.dispatch("type", {'rcpt' => ['5183d763c78783751d000119']})
           end
         end
 
