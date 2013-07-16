@@ -45,6 +45,7 @@ module Evidence
     base.validates_presence_of :type, :da, :aid
 
     base.scope :positions, base.where(type: 'position')
+    base.scope :stats_relevant, base.not_in(:type => STAT_EXCLUSION)
 
     base.extend ClassMethods
   end
@@ -133,7 +134,7 @@ module Evidence
     # Count the number of all the evidences grouped by type.
     # Returns an hash like {"chat" => 3, "mic" => 0, ..., "position" => 42}
     def count_by_type(where={})
-      match = where.merge({type: {'$nin' => STAT_EXCLUSION}})
+      match = where.merge(stats_relevant.selector)
       group = {_id: '$type', count: {'$sum' => 1}}
       project = { _id: 0, type: '$_id', count: 1}
 
@@ -199,7 +200,7 @@ module Evidence
     raise "Target not found" if filter.nil?
 
     # copy remaining filtering criteria (if any)
-    filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info', 'command', 'ip'])
+    filtering = Evidence.collection_class(target[:_id]).stats_relevant
     filter.each_key do |k|
       filtering = filtering.any_in(k.to_sym => filter[k])
     end

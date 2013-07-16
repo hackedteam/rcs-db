@@ -339,7 +339,7 @@ class EvidenceController < RESTController
       geo_near_accuracy = filter_hash.delete('geoNear_accuracy')
 
       # copy remaining filtering criteria (if any)
-      filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info', 'command', 'ip'])
+      filtering = Evidence.collection_class(target[:_id]).stats_relevant
       filter.each_key do |k|
         filtering = filtering.any_in(k.to_sym => filter[k])
       end
@@ -375,7 +375,7 @@ class EvidenceController < RESTController
       geo_near_accuracy = filter_hash.delete('geoNear_accuracy')
 
       # copy remaining filtering criteria (if any)
-      filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info', 'command', 'ip'])
+      filtering = Evidence.collection_class(target[:_id]).stats_relevant
       filter.each_key do |k|
         filtering = filtering.any_in(k.to_sym => filter[k])
       end
