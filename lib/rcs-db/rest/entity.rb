@@ -258,6 +258,23 @@ class EntityController < RESTController
     end
   end
 
+  def most_visited_places
+    require_auth_level :view
+    require_auth_level :view_profiles
+
+    return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :correlation
+
+    mongoid_query do
+      entity = Entity.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
+      return conflict('NO_AGGREGATES_FOR_ENTITY') unless entity.type.eql? :target
+
+      # extract the most contacted peers for this entity
+      contacted = Aggregate.most_visited_places(entity.path.last.to_s, @params)
+
+      return ok(contacted)
+    end
+  end
+
   def add_link
     require_auth_level :view
     require_auth_level :view_profiles
