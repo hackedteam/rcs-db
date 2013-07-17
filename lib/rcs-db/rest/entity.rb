@@ -252,7 +252,7 @@ class EntityController < RESTController
       return conflict('NO_AGGREGATES_FOR_ENTITY') unless entity.type.eql? :target
 
       # extract the most contacted peers for this entity
-      contacted = Aggregate.most_visited(entity.path.last.to_s, @params)
+      contacted = Aggregate.most_visited_urls(entity.path.last.to_s, @params)
 
       return ok(contacted)
     end

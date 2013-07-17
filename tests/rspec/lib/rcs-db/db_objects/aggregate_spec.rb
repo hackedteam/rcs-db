@@ -187,7 +187,7 @@ describe Aggregate do
     end
   end
 
-  describe '#most_visited' do
+  describe '#most_visited_urls' do
 
     def url_aggregate day, host, count
       Aggregate.target('testtarget').create!(type: :url, day: day, aid: 'test', data: {host: host}, count: count)
@@ -206,7 +206,7 @@ describe Aggregate do
 
     context 'called with no params' do
 
-      before { @result = Aggregate.most_visited('testtarget', {}) }
+      before { @result = Aggregate.most_visited_urls('testtarget', {}) }
 
       it 'returns the most visited' do
         expect(@result.size).to eql 5
@@ -217,12 +217,12 @@ describe Aggregate do
     end
 
     it 'does not raise erros if "num" is a string' do
-      expect{ Aggregate.most_visited('testtarget', {'num' => '3'}) }.not_to raise_error
+      expect{ Aggregate.most_visited_urls('testtarget', {'num' => '3'}) }.not_to raise_error
     end
 
     context 'called with "num"' do
 
-      before { @result = Aggregate.most_visited('testtarget', {'num' => 2}) }
+      before { @result = Aggregate.most_visited_urls('testtarget', {'num' => 2}) }
 
       it 'returns the most visited' do
         expect(@result.size).to eql 2
@@ -233,7 +233,7 @@ describe Aggregate do
 
     context 'called with "from" and "to"' do
 
-      before { @result = Aggregate.most_visited('testtarget', {'from' => '20130109', 'to' => '20130111'}) }
+      before { @result = Aggregate.most_visited_urls('testtarget', {'from' => '20130109', 'to' => '20130111'}) }
 
       it 'returns the most visited' do
         expect(@result.size).to eql 1

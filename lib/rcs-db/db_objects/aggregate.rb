@@ -147,8 +147,8 @@ module Aggregate
 
   # Extracts the most visited urls for a given target (within a timeframe).
   # Params accepted are "from", "to" (in the form of yyyymmdd strings) and "limit" (integer).
-  # @example Aggregate.most_visited(target._id, 'from' => '20130103', 'to' => '20140502').
-  def self.most_visited(target_id, params = {})
+  # @example Aggregate.most_visited_urls(target._id, 'from' => '20130103', 'to' => '20140502').
+  def self.most_visited_urls(target_id, params = {})
     match = {:type => :url}
     match[:day] = {'$gte' => params['from'], '$lte' => params['to']} if params['from'] and params['to']
     limit = params['num'] || 5
