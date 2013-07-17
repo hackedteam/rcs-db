@@ -28,7 +28,7 @@ class Alerting
 
         unless alert.type == 'NONE'
           alert.logs.create!(time: Time.now.getutc.to_i, path: agent.path + [agent._id])
-          PushManager.instance.notify('alert', {id: agent._id, rcpt: user[:_id]})
+          PushManager.instance.notify('alert', {item: agent, rcpt: user[:_id]})
         end
 
         if alert.type == 'MAIL'
@@ -56,7 +56,7 @@ class Alerting
 
         unless alert.type == 'NONE'
           alert.logs.create!(time: Time.now.getutc.to_i, path: agent.path + [agent._id])
-          PushManager.instance.notify('alert', {id: agent._id, rcpt: user[:_id]})
+          PushManager.instance.notify('alert', {item: agent, rcpt: user[:_id]})
         end
 
         if alert.type == 'MAIL'
@@ -148,8 +148,8 @@ class Alerting
 
         unless alert.type == 'NONE'
           alert.logs.create!(time: Time.now.getutc.to_i, path: entities.first.path, entities: [entities.first._id, entities.last._id])
-          PushManager.instance.notify('alert', {id: entities.first._id, rcpt: user[:_id]})
-          PushManager.instance.notify('alert', {id: entities.last._id, rcpt: user[:_id]})
+          PushManager.instance.notify('alert', {item: entities.first, rcpt: user[:_id]})
+          PushManager.instance.notify('alert', {item: entities.last, rcpt: user[:_id]})
         end
 
         # update the relevance of the link
@@ -177,7 +177,7 @@ class Alerting
 
         unless alert.type == 'NONE'
           alert.logs.create!(time: Time.now.getutc.to_i, path: entity.path, entities: [entity._id])
-          PushManager.instance.notify('alert', {id: entity._id, rcpt: user[:_id]})
+          PushManager.instance.notify('alert', {item: entity, rcpt: user[:_id]})
         end
 
         if alert.type == 'MAIL'
@@ -258,8 +258,11 @@ class Alerting
                 alert.logs.create!(time: Time.now.getutc.to_i, path: entry.path, evidence: entry.evidence)
                 alert.last = Time.now.getutc.to_i
                 alert.save
+
+                item = Item.find(entry.path.last)
+
                 # notify the console of the new alert
-                PushManager.instance.notify('alert', {id: entry.path.last, rcpt: user[:_id]})
+                PushManager.instance.notify('alert', {item: item, rcpt: user[:_id]})
                 send_mail(entry.to, entry.subject, entry.body) if alert.type == 'MAIL'
               else
                 trace :debug, "Triggering alert: #{alert._id} (suppressed)"
@@ -267,7 +270,7 @@ class Alerting
                 al.evidence += entry.evidence unless al.evidence.include? entry.evidence
                 al.save
                 # notify even if suppressed so the console will reload the alert log list
-                PushManager.instance.notify('alert', {id: entry.path.last, rcpt: user[:_id]})
+                PushManager.instance.notify('alert', {item: item, rcpt: user[:_id]})
               end
             else
               # for queued items without an associated alert, send the mail
@@ -290,9 +293,7 @@ class Alerting
         trace :warn, "Cannot send mail since the SMTP is not configured"
         return
       end
-      
-      host, port = Config.instance.global['SMTP'].split(':')
-      
+
       trace :info, "Sending alert mail to: #{to}"
 
 msgstr = <<-END_OF_MESSAGE
@@ -304,12 +305,16 @@ Date: #{Time.now}
 #{body}
 END_OF_MESSAGE
 
+      host, port = Config.instance.global['SMTP'].split(':')
       auth = Config.instance.global['SMTP_AUTH'] ? Config.instance.global['SMTP_AUTH'].to_sym : nil
 
-      Net::SMTP.start(host, port, Config.instance.global['CN'],
-                                  Config.instance.global['SMTP_USER'],
-                                  Config.instance.global['SMTP_PASS'],
-                                  auth) do |smtp|
+      smtp = Net::SMTP.new host, port
+      smtp.enable_starttls if Config.instance.global['SMTP_STARTTLS']
+
+      smtp.start(Config.instance.global['CN'],
+                 Config.instance.global['SMTP_USER'],
+                 Config.instance.global['SMTP_PASS'],
+                 auth) do |smtp|
         # send the message
         smtp.send_message msgstr, Config.instance.global['SMTP_FROM'], to
       end

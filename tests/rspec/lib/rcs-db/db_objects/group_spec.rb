@@ -4,7 +4,6 @@ require_db 'grid'
 
 describe Group do
 
-  use_db
   silence_alerts
   enable_license
 

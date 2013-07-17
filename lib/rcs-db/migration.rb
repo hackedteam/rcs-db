@@ -20,9 +20,7 @@ class Migration
   def self.up_to(version)
     puts "migrating to #{version}"
 
-    run [:mongoid3, :access_control, :reindex_aggregates] if version >= '8.3.2'
-    run [:reindex_queues, :drop_sessions] if version >= '8.3.3'
-    run [:gmail_to_mail, :aggregate_summary, :reindex_evidences] if version >= '8.4.0'
+    run [:recalculate_checksums, :drop_sessions] if version >= '8.4.1'
 
     return 0
   end
@@ -58,7 +56,7 @@ class Migration
     return 0
   end
 
-  def self.mongoid3
+  def self.recalculate_checksums
     start = Time.now
     count = 0
     puts "Recalculating item checksums..."
@@ -67,6 +65,20 @@ class Migration
       item.cs = item.calculate_checksum
       item.save
       print "\r%d items migrated" % count
+    end
+    puts
+    puts "done in #{Time.now - start} secs"
+  end
+
+  def self.mark_pre_83_as_bad
+    start = Time.now
+    count = 0
+    puts "Checking for good/bad consistency..."
+    ::Item.agents.each do |item|
+      count += 1
+      item.good = false if item.version < 2013031101
+      item.save
+      print "\r%d items checked" % count
     end
     puts
     puts "done in #{Time.now - start} secs"
@@ -119,21 +131,6 @@ class Migration
     puts "done in #{Time.now - start} secs"
   end
 
-  def self.reindex_queues
-    start = Time.now
-    puts "Re-indexing queues..."
-    NotificationQueue.queues.each do |queue|
-      queue.collection.drop
-    end
-    # create them
-    NotificationQueue.create_queues
-    # add index (if already created without indexes)
-    NotificationQueue.queues.each do |queue|
-      queue.create_indexes
-    end
-    puts "done in #{Time.now - start} secs"
-  end
-
   def self.aggregate_summary
     start = Time.now
     count = 0
@@ -155,33 +152,6 @@ class Migration
   def self.drop_sessions
     puts "Deleting old sessions..."
     ::Session.destroy_all
-  end
-
-  def self.gmail_to_mail
-    start = Time.now
-    count = 0
-    puts "Updating aggregates' mail tags..."
-    ::Item.targets.each do |target|
-      begin
-        next if Aggregate.target(target._id).empty?
-        Aggregate.target(target._id).where(type: :gmail).each do |agg|
-          attr = agg.attributes
-          attr['type'] = :mail
-          Aggregate.target(target._id).new(attr).save
-        end
-        Aggregate.target(target._id).where(type: :gmail).destroy_all
-
-        print "\r%d targets" % count += 1
-      rescue Exception => e
-        puts e.message
-      end
-    end
-    ::Entity.targets.each do |entity|
-      next unless entity.handles
-      entity.handles.where(type: :gmail).update_all(type: :mail)
-    end
-    puts
-    puts "done in #{Time.now - start} secs"
   end
 
   def self.cleanup_storage

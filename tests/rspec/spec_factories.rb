@@ -210,3 +210,12 @@ factory_define :addressbook_evidence do |params|
 
   factory_create(:evidence, attributes)
 end
+
+
+factory_define :device_evidence do |params|
+  attributes = {data: {content: 'This is a device evidence'}}
+  attributes.deep_merge! params
+  attributes.merge! type: 'device'
+
+  factory_create(:evidence, attributes)
+end

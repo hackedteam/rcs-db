@@ -15,7 +15,6 @@ describe Stat do
 end
 
 describe Item do
-  use_db
   silence_alerts
   enable_license
 
@@ -126,4 +125,32 @@ describe Item do
     end
   end
 
+  describe '#restat' do
+
+    context 'when the item is of type agent' do
+
+      let!(:target) { factory_create(:agent) }
+
+      let!(:agent_1) { factory_create(:agent, target: target) }
+
+      let!(:agent_2) { factory_create(:agent, target: target) }
+
+      let(:evidence_klass) { Evidence.collection_class(target) }
+
+      # Creates an evidence for the agent_1
+      before { factory_create(:chat_evidence, agent: agent_1) }
+
+      # An agent with empty stat should have been created
+      before do
+        expect(agent_1.stat.attributes.except('_id')).to eql Stat.new.attributes.except('_id')
+      end
+
+      it 'adds the count of all the evidences grouped by type' do
+        agent_1.restat
+
+        expect(agent_1.stat['evidence']['chat']).to eql 1
+        expect(agent_1.stat['evidence']).to eq evidence_klass.count_by_type(aid: agent_1.id.to_s)
+      end
+    end
+  end
 end

@@ -6,7 +6,6 @@ require_db 'position/resolver'
 
 describe Entity do
 
-  use_db
   silence_alerts
   enable_license
 
@@ -111,6 +110,8 @@ describe Entity do
       @entity.last_position[:accuracy].should eq 500
     end
 
+    before { turn_off_tracer(print_errors: false) }
+
     it 'should add and remove photos to/from grid' do
       @entity.add_photo("This_is_a_binary_photo")
       photo_id = @entity.photos.first
@@ -146,6 +147,8 @@ describe Entity do
       entity2.reload
       entity2.links.size.should be 0
     end
+
+    before { turn_off_tracer(print_errors: false) }
 
     it 'should remove photos in the grid' do
       @entity.add_photo("This_is_a_binary_photo")
@@ -299,6 +302,7 @@ describe Entity do
     context 'with intelligence disabled' do
       before do
         Entity.stub(:check_intelligence_license).and_return false
+        turn_off_tracer(print_errors: false)
       end
 
       it 'should return name from handle (from addressbook)' do
@@ -367,7 +371,6 @@ end
 
 describe EntityLink do
 
-  use_db
   silence_alerts
   enable_license
 

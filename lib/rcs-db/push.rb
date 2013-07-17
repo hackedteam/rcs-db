@@ -17,6 +17,13 @@ class PushManager
   def notify(type, message={})
     trace :debug, "PUSH Event: #{type} #{message}"
 
+    item = message.delete(:item)
+
+    if item
+      message[:id] = item.id
+      message[:user_ids] = item[:user_ids] || []
+    end
+
     # add the message to the queue, this is needed by other processes
     # to communicate (via db) to the real push manager that is connected to consoles
     PushQueue.add(type, message)
@@ -34,6 +41,15 @@ class PushManager
     end
   end
 
+  def each_session_with_web_socket(&block)
+    SessionManager.instance.all.each do |session|
+      web_socket = WebSocketManager.instance.get_ws_from_cookie(session.cookie)
+      # not connected push channel
+      next unless web_socket
+      yield(session, web_socket)
+    end
+  end
+
   def dispatcher
     loop do
       if (queued = PushQueue.get_queued)
@@ -45,21 +61,14 @@ class PushManager
 
           trace :debug, "#{count} push messages to be processed in queue"
 
-          SessionManager.instance.all.each do |session|
-            ws = WebSocketManager.instance.get_ws_from_cookie session[:cookie]
-            # not connected push channel
-            next if ws.nil?
-
-            # we have specified a specific user, skip all the others
-            next if message['rcpt'] != nil and session.user[:_id] != message['rcpt']
-
-            # check for accessibility, if we pass and id, we only want the ws that can access that id
-            item = ::Item.where(_id: message['id']).in(user_ids: [session.user[:_id]]).first
-            item = ::Entity.where(_id: message['id']).in(user_ids: [session.user[:_id]]).first if item.nil?
-            next if message['id'] != nil and item.nil?
-
+          each_session_with_web_socket do |session, web_socket|
+            # if we have specified a recepient, skip all the other online users
+            next if message['rcpt'] and session.user.id != message['rcpt']
+            # check for accessibility
+            user_ids = message.delete('user_ids')
+            next if user_ids and !user_ids.include?(session.user.id)
             # send the message
-            WebSocketManager.instance.send(ws, type, message)
+            WebSocketManager.instance.send(web_socket, type, message)
 
             trace :debug, "PUSH Event (sent): #{type} #{message}"
           end

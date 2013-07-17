@@ -9,7 +9,6 @@ module Intelligence
 
   describe Ghost do
 
-    use_db
     enable_license
     silence_alerts
 
@@ -24,9 +23,28 @@ module Intelligence
       subject.should respond_to :trace
     end
 
+    describe '#irrelevant_account_types' do
+
+      it 'contains the right values' do
+        expect(described_class.irrelevant_account_types).to eql [:twitter]
+      end
+    end
+
     describe '#create_and_link_entity' do
 
       context 'when the given addrebook evidence is invalid' do
+
+        before { described_class.stub(:irrelevant_account_types).and_return([:myspace]) }
+
+        let(:evidence) { factory_create :addressbook_evidence, target: target, data: {'program' => :myspace} }
+
+        it 'does nothing' do
+          RCS::DB::LinkManager.any_instance.should_not_receive :add_link
+          described_class.create_and_link_entity entity, evidence
+        end
+      end
+
+      context 'when the given addrebook evidence refers to an irrelevant account' do
 
         let(:evidence) { factory_create :addressbook_evidence, target: target, data:{'handle' => nil} }
 
@@ -35,7 +53,6 @@ module Intelligence
           described_class.create_and_link_entity entity, evidence
         end
       end
-
 
       context 'when the given addrebook evidence refers to the entity target' do
 

@@ -1,11 +1,19 @@
 
-Changelog for 8.4.0
+Changelog for 8.4.1
+
+DB:
+  - improved mail parsing
+  - fix the missing export evidence feature
+  - fix for single target backup not backing up its operation
+  - support for STARTLS for alerting via email
+  - HASP driver updated to 6.56
+
+
+Changelog for 9.0.0
 
 Collector:
 
 DB:
-  - MongoDB updated to 2.4.0
-  - Windows 2008 R2 SP1 is now the minimum requirement to install RCS
   - Ability to create manual entities in the intelligence module
   - Intelligence section new creates links between entities
   - Ability to search with OR queries in info and notes

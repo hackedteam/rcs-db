@@ -56,6 +56,12 @@ class BackupManager
     backup.status = 'RUNNING'
     backup.save if save_status
 
+    if RbConfig::CONFIG['host_os'] =~ /mingw/
+      path_separator = "\\"
+    else
+      path_separator = "/"
+    end
+
     begin
 
       raise "invalid backup directory" unless File.directory? Config.instance.global['BACKUP_DIR']
@@ -105,7 +111,7 @@ class BackupManager
 
       # the command of the mongodump
       mongodump = Config.mongo_exec_path('mongodump')
-      mongodump += " -o #{Config.instance.global['BACKUP_DIR']}/#{backup.name}-#{now.strftime('%Y-%m-%d-%H-%M')}"
+      mongodump += " -o #{Config.instance.global['BACKUP_DIR']}#{path_separator}#{backup.name}-#{now.strftime('%Y-%m-%d-%H-%M')}"
       mongodump += " -d rcs"
 
       # create the backup of the collection (common)
@@ -150,7 +156,7 @@ class BackupManager
       # backup the config db
       if backup.what == 'metadata' or backup.what == 'full'
         mongodump = Config.mongo_exec_path('mongodump')
-        mongodump += " -o #{Config.instance.global['BACKUP_DIR']}/#{backup.name}_config-#{now.strftime('%Y-%m-%d-%H-%M')}"
+        mongodump += " -o #{Config.instance.global['BACKUP_DIR']}#{path_separator}#{backup.name}_config-#{now.strftime('%Y-%m-%d-%H-%M')}"
         mongodump += " -d config"
 
         trace :info, "Backup: #{command}"
@@ -183,6 +189,11 @@ class BackupManager
     # extract the id from the string
     id = Moped::BSON::ObjectId.from_string(params[:what][-24..-1])
 
+    # get the parent operation if the item is a target
+    if (current = ::Item.targets.where(id: id).first)
+      parent = current.get_parent
+    end
+
     # take the item and subitems contained in it
     items = ::Item.any_of({_id: id}, {path: id})
     entities = ::Entity.where({path: id})
@@ -196,6 +207,9 @@ class BackupManager
     params[:ifilter] = "{\"_id\":{\"$in\": ["
     params[:efilter] = "{\"_id\":{\"$in\": ["
     params[:gfilter] = "{\"_id\":{\"$in\": ["
+
+    # insert the parent if any
+    params[:ifilter] += "ObjectId(\"#{parent._id}\")," if parent
 
     items.each do |item|
       params[:ifilter] += "ObjectId(\"#{item._id}\"),"

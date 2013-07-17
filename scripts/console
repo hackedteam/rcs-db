@@ -59,29 +59,60 @@ def reload!
   end
 end
 
-puts 'Loading bundle...'
-
-require 'bundler/setup'
-Bundler.setup
-Bundler.require :development
-
-reload!
-
-def colorize(text); "\033[30;42m#{text}\033[0m "; end
-
-RCS::DB::Config.instance.load_from_file
-RCS::DB::DB.instance.connect
-
-if !ARGV.include?('--rcs')
-  puts 'Using "rcs-test" database.'
-  Mongoid.override_database 'rcs-test'
+def usage?
+  return unless ARGV.include?('--help')
+  puts "Usage: #{File.basename(__FILE__)} [--db=NAME] [--host=ADDR]"
+  puts "Default connection is to localhost:27017/rcs-test"
+  exit
 end
 
-# Show moped queries
-Moped.logger = Logger.new $stdout
-Moped.logger.level = 0
-Moped.logger.formatter = proc { |sev, time, progname, str| colorize("#{str}\n") }
+def colorize(text)
+  "\033[30;42m#{text}\033[0m "
+end
 
-puts 'Use the #reload! method to reload the application without restaring the console.'
+def setup(host, db)
+  puts 'Loading bundle...'
 
+  require 'bundler/setup'
+  Bundler.setup
+  Bundler.require :development
+
+  reload!
+
+  # Load default options
+  RCS::DB::Config.instance.load_from_file
+
+  # Override options
+  host, port = host.split(':')
+  port ||= '27017'
+
+  RCS::DB::Config.instance.global['CN'] = host
+  ENV['MONGOID_DATABASE'] = db
+  ENV['MONGOID_HOST'] = host
+  ENV['MONGOID_PORT'] = port
+
+  puts colorize("Using #{host}:#{port}/#{db}")
+
+  RCS::DB::DB.instance.connect
+
+  Mongoid.override_database(db)
+
+  # Show moped queries
+  Moped.logger = Logger.new $stdout
+  Moped.logger.level = 0
+  Moped.logger.formatter = proc { |sev, time, progname, str| colorize("#{str}\n") }
+end
+
+def get_argv(prefix)
+  value = ARGV.find { |v| v =~ /#{prefix}=/ }
+  value = value.split('=').last if value
+  value unless value.to_s.strip.empty?
+end
+
+usage?
+
+host = get_argv('--host') || 'localhost:27017'
+db = get_argv('--db') || 'rcs-test'
+
+setup(host, db)
 binding.pry

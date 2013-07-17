@@ -10,7 +10,6 @@ module Aggregator
 
 describe Processor do
 
-  use_db
   silence_alerts
   enable_license
 

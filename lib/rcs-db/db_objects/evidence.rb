@@ -45,6 +45,7 @@ module Evidence
     base.validates_presence_of :type, :da, :aid
 
     base.scope :positions, base.where(type: 'position')
+    base.scope :stats_relevant, base.not_in(:type => STAT_EXCLUSION)
 
     base.extend ClassMethods
   end
@@ -129,6 +130,20 @@ module Evidence
       # enable sharding only if not enabled
       RCS::DB::Shard.set_key(collection, {type: 1, da: 1, aid: 1}) unless collection.stats['sharded']
     end
+
+    # Count the number of all the evidences grouped by type.
+    # Returns an hash like {"chat" => 3, "mic" => 0, ..., "position" => 42}
+    def count_by_type(where={})
+      match = where.merge(stats_relevant.selector)
+      group = {_id: '$type', count: {'$sum' => 1}}
+      project = { _id: 0, type: '$_id', count: 1}
+
+      results = collection.aggregate([{'$match' => match}, {'$group' => group}, {'$project' => project}])
+      results = results.inject({}) { |h, val| h[val['type']] = val['count']; h }
+
+      defaults = TYPES.inject({}) { |h, type| h[type.to_s] = 0; h }
+      defaults.merge!(results)
+    end
   end
 
   def self.dynamic_new(target)
@@ -185,7 +200,7 @@ module Evidence
     raise "Target not found" if filter.nil?
 
     # copy remaining filtering criteria (if any)
-    filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info', 'command', 'ip'])
+    filtering = Evidence.collection_class(target[:_id]).stats_relevant
     filter.each_key do |k|
       filtering = filtering.any_in(k.to_sym => filter[k])
     end
@@ -428,7 +443,6 @@ module Evidence
     # recalculate for the operation
     target.get_parent.restat
   end
-
 end
 
 #end # ::DB

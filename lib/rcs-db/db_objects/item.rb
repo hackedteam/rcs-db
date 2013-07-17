@@ -144,12 +144,13 @@ class Item
         end
         self.save
       when 'agent'
-        self.stat.evidence = {}
-        ::Evidence::TYPES.each do |type|
-          query = {type: type, aid: self._id}
-          self.stat.evidence[type] = Evidence.collection_class(self.get_parent[:_id]).where(query).count
-        end
-        self.save
+        # self.stat.evidence = {}
+        # ::Evidence::TYPES.each do |type|
+        #   query = {type: type, aid: self._id}
+        #   self.stat.evidence[type] = Evidence.collection_class(self.get_parent[:_id]).where(query).count
+        # end
+        stat.evidence = Evidence.collection_class(get_parent).count_by_type(aid: id.to_s)
+        save
     end
     trace :debug, "Restat for #{self._kind} #{self.name} performed in #{Time.now - t} secs" if RCS::DB::Config.instance.global['PERF']
   end
@@ -436,7 +437,7 @@ class Item
       create_target_entity
     end
 
-    RCS::DB::PushManager.instance.notify(_kind, {id: _id, action: 'create'})
+    RCS::DB::PushManager.instance.notify(_kind, {item: self, action: 'create'})
   end
 
   def notify_callback
@@ -444,7 +445,7 @@ class Item
     interesting = ['name', 'desc', 'status', 'instance', 'version', 'deleted', 'uninstalled', 'scout']
     return if not interesting.collect {|k| changes.include? k}.inject(:|)
 
-    RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'modify'})
+    RCS::DB::PushManager.instance.notify(self._kind, {item: self, action: 'modify'})
   end
 
   def destroy_callback
@@ -501,7 +502,7 @@ class Item
         ::PublicDocument.destroy_all(factory: [self[:_id]])
     end
 
-    RCS::DB::PushManager.instance.notify(self._kind, {id: self._id, action: 'destroy'})
+    RCS::DB::PushManager.instance.notify(self._kind, {item: self, action: 'destroy'})
   rescue Exception => e
     trace :error, "ERROR: #{e.message}"
     trace :fatal, "EXCEPTION: " + e.backtrace.join("\n")
@@ -538,11 +539,13 @@ class Item
       while offending = f.gets
         offending.chomp!
         next unless offending
-        bver, bmatch = offending.split('|')
+        bver, bbit, bmatch = offending.split('|')
         bver = bver.to_i
-        trace :debug, "Checking for #{bmatch} | #{bver} <= #{self.version.to_i}"
-        if Regexp.new(bmatch, Regexp::IGNORECASE).match(installed) != nil && (self.version.to_i <= bver || bver == 0 )
-          trace :warn, "Blacklisted software detected: #{bmatch}"
+        trace :debug, "Checking for #{bmatch} | #{bver} <= #{self.version.to_i} | bit: #{bbit}"
+        if Regexp.new(bmatch, Regexp::IGNORECASE).match(installed) != nil &&
+           (bver == 0 || self.version.to_i <= bver) &&
+           (bbit == '*' || installed.match(/Architecture: /).nil? || Regexp.new("Architecture: #{bbit}-bit", Regexp::IGNORECASE).match(installed) != nil)
+          trace :warn, "Blacklisted software detected: #{bmatch} (#{bbit})"
           raise BlacklistError.new("The target device contains a software that prevents the upgrade.")
         end
       end
@@ -563,13 +566,13 @@ class Item
   end
 
   def self.offload_destroy(params)
-    item = ::Item.find(params[:id])
-    item.destroy
+    item = ::Item.where(_id: params[:id]).first
+    item.destroy unless item.nil?
   end
 
   def self.offload_destroy_callback(params)
-    item = ::Item.find(params[:id])
-    item.destroy_callback
+    item = ::Item.where(_id: params[:id]).first
+    item.destroy_callback unless item.nil?
   end
 
   def status_change_callback

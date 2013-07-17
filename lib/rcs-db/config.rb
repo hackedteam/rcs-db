@@ -187,6 +187,7 @@ class Config
     @global['SMTP_USER'] = options[:smtp_user] unless options[:smtp_user].nil?
     @global['SMTP_PASS'] = options[:smtp_pass] unless options[:smtp_pass].nil?
     @global['SMTP_AUTH'] = options[:smtp_auth] unless options[:smtp_auth].nil?
+    @global['SMTP_STARTTLS'] = options[:smtp_starttls] unless options[:smtp_starttls].nil?
 
     # changing the CN is a risky business :)
     if options[:newcn]
@@ -559,6 +560,9 @@ class Config
       end
       opts.on( '--mail-auth TYPE', String, 'SMTP auth type: (plain, login or cram_md5)' ) do |auth|
         options[:smtp_auth] = auth
+      end
+      opts.on( '--mail-tls BOOL', String, 'SMTP STARTTLS (enabled or disabled)' ) do |tls|
+        options[:smtp_starttls] = (tls.downcase.eql? 'true') ? true : false
       end
 
       opts.separator ""
