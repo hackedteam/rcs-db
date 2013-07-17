@@ -170,6 +170,31 @@ module Aggregate
     results
   end
 
+  def self.most_visited_places(target_id, params = {})
+    match = {type: :position}
+    match[:day] = {'$gte' => params['from'], '$lte' => params['to']} if params['from'] and params['to']
+    limit = params['num'] || 5
+    group = {_id: '$data.position', count: {"$sum" => "$count"}}
+    project = {position: '$_id', _id: 0, count: 1}
+
+    pipeline = [{"$match" => match}, {"$group" => group}, {"$sort" => {count: -1}}, {"$project" => project}, {"$limit" => limit.to_i}]
+    results = Aggregate.target(target_id).collection.aggregate(pipeline)
+
+    positions = results.map { |hash| hash['position'] }
+
+    positions2names = Entity.path_include(target_id).positions.in(position: positions).only(:position, :name).inject({}) do |hash, entity|
+      hash[entity.position] = entity.name
+      hash
+    end
+
+    results.map! do |hash|
+      name = positions2names[hash['position']]
+      name = hash['position'].reverse.join(', ') if name.blank?
+      hash['name'] = name
+      hash
+    end
+  end
+
   def self.most_contacted(target_id, params)
     start = Time.now
     most_contacted_types = [:chat, :mail, :sms, :mms, :facebook,

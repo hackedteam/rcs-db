@@ -1,8 +1,12 @@
 require 'spec_helper'
 require_db 'db_layer'
+require_db 'grid'
 require_db 'position/point'
 
 describe Aggregate do
+
+  silence_alerts
+  enable_license
 
   let (:aggregate_class) { Aggregate.target('testtarget') }
 
@@ -235,6 +239,32 @@ describe Aggregate do
         expect(@result.size).to eql 1
         expect(@result[0]).to eql({"host" => 'it.wikipedia.org', "count" => 20, "percent" => 100.0})
       end
+    end
+  end
+
+  describe '#most_visited_places' do
+
+    let(:target) { factory_create(:target) }
+
+    let(:position0) { [9.1919074, 45.4768394] }
+
+    let(:position1) { [9.1911923, 45.4719923] }
+
+    let(:subject) { Aggregate }
+
+    before do
+      factory_create(:position_aggregate, target: target, count: 03, day: '20130101', data: {'position' => position0})
+      factory_create(:position_aggregate, target: target, count: 04, day: '20130102', data: {'position' => position0})
+      factory_create(:position_aggregate, target: target, count: 10, day: '20130110', data: {'position' => position1})
+      factory_create(:position_aggregate, target: target, count: 30, day: '20130120', data: {'position' => position1})
+      factory_create(:position_entity, target: target, position: position0, name: 'place0')
+    end
+
+    it 'aggregates by position and sum up the count' do
+      results = subject.most_visited_places(target.id, {'from' => '20120501', 'to' => '20130115'})
+      expect(results.size).to eq 2
+      expect(results[0]).to eq("count" => 10, "position" =>position1, "name" => "45.4719923, 9.1911923")
+      expect(results[1]).to eq("count" => 07, "position" =>position0, "name" => "place0")
     end
   end
 end

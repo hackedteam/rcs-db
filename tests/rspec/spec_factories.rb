@@ -84,6 +84,12 @@ factory_define :entity_handle do |params|
   entity.create_or_update_handle(params[:type], params[:handle], params[:name])
 end
 
+factory_define :position_entity do |params|
+  target = params.delete(:target) || factory_create(:target)
+  attributes = params.merge({type: :position, path: [target.get_parent.id, target._id]})
+  ::Entity.create!(attributes)
+end
+
 factory_define :target_entity do |params|
   target = params.delete(:target) || factory_create(:target)
   ::Entity.where(type: :target, path: target._id).first
@@ -102,10 +108,17 @@ factory_define :ghost_entity do |params|
 end
 
 factory_define :aggregate do |params|
-  target = params.delete :target
-  attributes = {day: Time.now.strftime('%Y%m%d'), aid: 'agent_id'}
+  target = params.delete(:target) || raise("A target must be supplied")
+  attributes = {day: Time.now.strftime('%Y%m%d'), aid: 'agent_id', count: 10}
   attributes.deep_merge! params
   ::Aggregate.target(target).create! attributes
+end
+
+factory_define :position_aggregate do |params|
+  attributes = {data: {'position' => [9.1919074, 45.4768394]}, type: :position}
+  attributes.deep_merge!(params)
+
+  factory_create(:aggregate, attributes)
 end
 
 factory_define :agent do |params|
