@@ -88,7 +88,7 @@ class PositionResolver
 
         return location
       rescue Exception => e
-        trace :warn, "Error retrieving location: #{e.message}"
+        trace :warn, "Error retrieving position: #{e.message}"
         trace :debug, "#{e.backtrace.join("\n")}"
         return {}
       end
