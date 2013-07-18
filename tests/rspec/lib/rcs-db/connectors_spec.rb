@@ -5,7 +5,7 @@ require_db 'connectors'
 
 module RCS
   module DB
-    describe Connectors do
+    describe ConnectorManager do
 
       silence_alerts
       enable_license
@@ -14,7 +14,12 @@ module RCS
         expect(described_class).to respond_to :trace
       end
 
-      describe '#add_to_queue' do
+      before do
+        ConnectorQueue.should respond_to(:push_evidence)
+        ::Connector.should respond_to(:matching)
+      end
+
+      describe '#process_evidence' do
 
         let(:target) { factory_create :target }
 
@@ -22,15 +27,14 @@ module RCS
 
         let(:connector) { factory_create :connector, item: target }
 
-        before { ConnectorQueue.stub(:add) }
-
         context 'when the given evidence matches at least one connector' do
 
-          before { Connector.stub(:matching).and_return([connector]) }
+          before { ::Connector.stub(:matching).and_return([connector]) }
 
           it 'creates a ConnectorQueue doc' do
-            ConnectorQueue.should_receive(:add).with(target, evidence, [connector])
-            described_class.add_to_queue target, evidence
+            expect {
+              described_class.process_evidence(target, evidence)
+            }.to change(ConnectorQueue, :size).from(0).to(1)
           end
         end
 
@@ -38,10 +42,10 @@ module RCS
 
           let(:connector) { factory_create :connector, item: target, keep: true }
 
-          before { Connector.stub(:matching).and_return([connector]) }
+          before { ::Connector.stub(:matching).and_return([connector]) }
 
           it 'returns :keep' do
-            expect(described_class.add_to_queue(target, evidence)).to eql :keep
+            expect(described_class.process_evidence(target, evidence)).to eql :keep
           end
         end
 
@@ -49,24 +53,24 @@ module RCS
 
           let(:connector) { factory_create :connector, item: target, keep: false }
 
-          before { Connector.stub(:matching).and_return([connector]) }
+          before { ::Connector.stub(:matching).and_return([connector]) }
 
           it 'returns :discard' do
-            expect(described_class.add_to_queue(target, evidence)).to eql :discard
+            expect(described_class.process_evidence(target, evidence)).to eql :discard
           end
         end
 
         context 'when the given evidence does not match any connector' do
 
-          before { Connector.stub(:matching).and_return([]) }
+          before { ::Connector.stub(:matching).and_return([]) }
 
-          it 'returns nil' do
-            expect(described_class.add_to_queue(target, evidence)).to be_nil
+          it 'returns :keep' do
+            expect(described_class.process_evidence(target, evidence)).to eql :keep
           end
 
           it 'does not create a ConnectorQueue doc' do
-            ConnectorQueue.should_not_receive(:add)
-            described_class.add_to_queue target, evidence
+            ConnectorQueue.should_not_receive(:push_evidence)
+            described_class.process_evidence target, evidence
           end
         end
       end

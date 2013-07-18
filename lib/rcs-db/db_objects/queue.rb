@@ -203,22 +203,56 @@ class IntelligenceQueue < NotificationQueue
   end
 end
 
-class ConnectorQueue < NotificationQueue
+class ConnectorQueue
   include Mongoid::Document
+  extend RCS::Tracer
 
-  field :flag, type: Integer, default: QUEUED
-
-  field :tg_id, type: Moped::BSON::ObjectId
-  field :ev_id, type: Moped::BSON::ObjectId
-  field :cn_ids, type: Array
+  field :cids,  as: :connector_ids, type: Array,    default: []
+  field :d,     as: :data,          type: Hash,     default: {}
 
   store_in collection: 'connector_queue'
-  index({flag: 1}, {background: true})
 
-  # override the inherited method
-  def self.add(target, evidence, connectors)
+  validates_presence_of :data
+
+  index connector_ids: 1
+
+  scope :with_connector, lambda { |connector| where(connector_ids: connector.id) }
+
+  def complete(connector)
+    connector_ids.reject! { |id| id == connector.id }
+    save!
+  end
+
+  def completed?
+    connector_ids.empty?
+  end
+
+  def self.size
+    all.count
+  end
+
+  def self.take
+    first
+  end
+
+  def connectors
+    Connector.any_in(id: connector_ids)
+  end
+
+  def keep?
+    connectors.where(keep: true).count > 0
+  end
+
+  def self.push_evidence(connectors, target, evidence)
+    fullpath = target.path + [evidence.aid]
+    data = {evidence_id: evidence.id, target_id: target.id, path: fullpath}
+    push(connectors, data)
+  end
+
+  def self.push(connectors, data)
     connectors = [connectors].flatten
-    trace :debug, "Adding to ConnectorQueue: #{evidence}, #{connectors}"
-    create! ev_id: evidence.id, cn_ids: connectors.map(&:id), tg_id: target.id
+    trace :debug, "Adding to ConnectorQueue: #{connectors}, #{data.inspect}"
+    attributes = {connector_ids: connectors.map(&:id), data: data}
+    create!(attributes)
   end
 end

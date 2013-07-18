@@ -11,17 +11,21 @@ describe RCS::Connector::Dispatcher do
   stub_temp_folder
   enable_license
 
+  before(:all) do
+    expect(ConnectorQueue.instance_methods).to include(:keep?)
+  end
+
   describe '#status_message' do
 
     it 'has a default value' do
-      expect(described_class.status_message).to eq 'Unknown'
+      expect(described_class.status_message).to eq 'Idle'
     end
   end
 
   describe '#dispatch' do
 
-    it 'changes the stasus message to idle' do
-      expect { described_class.dispatch }.to change(described_class, :status_message).to('Idle')
+    it 'does not change the status message' do
+      expect { described_class.dispatch }.not_to change(described_class, :status_message)
     end
 
     context "when an error occurs" do
@@ -50,7 +54,7 @@ describe RCS::Connector::Dispatcher do
 
     context 'when the connector queue is not empty' do
 
-      let!(:connector_queue) { factory_create(:connector_queue) }
+      let!(:connector_queue) { factory_create(:connector_queue_for_evidence) }
 
       it 'calls #process' do
         described_class.should_receive :process
@@ -59,6 +63,8 @@ describe RCS::Connector::Dispatcher do
     end
 
     context 'when the license is invalid' do
+
+      let!(:connector_queue) { factory_create(:connector_queue_for_evidence) }
 
       before { described_class.stub(:can_dispatch?).and_return(false) }
 
@@ -73,11 +79,19 @@ describe RCS::Connector::Dispatcher do
     end
   end
 
+  describe '#process_archive' do
+    pending
+  end
+
   describe '#process' do
 
-    let!(:connector_queue) { factory_create(:connector_queue) }
+    let(:target) { factory_create(:target) }
 
-    let(:evidence) { ::Evidence.collection_class(connector_queue.tg_id).find(connector_queue.ev_id) }
+    let(:evidence) { factory_create(:chat_evidence, target: target) }
+
+    let(:connector_queue) { factory_create(:connector_queue_for_evidence, target: target, evidence: evidence) }
+
+    before { connector_queue.reload }
 
     before { described_class.stub(:dump) }
 
@@ -88,7 +102,7 @@ describe RCS::Connector::Dispatcher do
 
     context 'when the evidence should be keeped' do
 
-      before { RCS::DB::Connectors.stub(:discard_evidence?).and_return(false) }
+      before { connector_queue.stub(:keep?).and_return(true) }
 
       it 'keeps the evidence' do
         described_class.process connector_queue
@@ -98,7 +112,7 @@ describe RCS::Connector::Dispatcher do
 
     context 'when the evidence should be deleted' do
 
-      before { RCS::DB::Connectors.stub(:discard_evidence?).and_return(true) }
+      before { connector_queue.stub(:keep?).and_return(false) }
 
       it 'deletes the evidence' do
         described_class.process connector_queue

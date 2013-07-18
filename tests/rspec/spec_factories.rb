@@ -150,10 +150,10 @@ factory_define :connector do |params|
   dest = RCS::DB::Config.instance.temp
   raise("Cannot find folder #{dest}") unless Dir.exists?(dest)
 
-  attributes = {enabled: true, name: "connector_#{rand(1E10)}", dest: dest, path: path, raw: false}
-  attributes.deep_merge! params
+  attributes = {enabled: true, name: "connector_#{rand(1E10)}", dest: dest, path: path, type: ::Connector::TYPES.first}
+  attributes.deep_merge!(params)
 
-  ::Connector.create! attributes
+  ::Connector.create!(attributes)
 end
 
 
@@ -253,17 +253,23 @@ end
 
 # Queue
 
-factory_define :connector_queue do |params|
+factory_define :connector_queue_for_evidence do |params|
   target = params.delete(:target) || factory_create(:target)
   evidence = params.delete(:evidence) || factory_create(:chat_evidence, target: target)
+  connectors = params.delete(:connectors) || [factory_create(:connector, item: target)]
 
-  connectors = []
-  connectors << params.delete(:connector)
-  connectors.concat(params.delete(:connectors) || [])
-  connectors.compact!
-  connectors << factory_create(:connector, item: target) if connectors.empty?
+  ConnectorQueue.push_evidence(connectors, target, evidence)
+end
 
-  ConnectorQueue.add target, evidence, connectors
+factory_define :connector_queue do |params|
+  connectors = params.delete(:connectors)
+  attributes = {}
+  if connectors
+    ids = connectors.map(&:id)
+    attributes.merge!(connector_ids: ids)
+  end
+  attributes.merge!(params)
+  ConnectorQueue.create!(attributes)
 end
 
 factory_define :watched_item do |params|

