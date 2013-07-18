@@ -35,8 +35,8 @@ module RCS
         raise(ex)
       end
 
-      # Attribute reader with default fallback for the @status_message
-      # variable.
+      # Attribute reader for @status_message with default fallback
+      # to "unknown"
       def status_message
         (@status_message || 'unknown').capitalize
       end
