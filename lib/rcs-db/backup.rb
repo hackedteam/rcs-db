@@ -362,6 +362,15 @@ class BackupManager
       update_status(backup, 'RESTORED')
     end
 
+    # restat the items if present in the archive
+    what, item_id = backup_what.split(':')
+    if item_id
+      trace :info, "Recalculating stat on restored items..."
+      Item.any_in(path: [Moped::BSON::ObjectId.from_string(item_id)]).each do |item|
+        item.restat
+      end
+    end
+
     trace :info, "Backup restore completed: #{params['_id']} | #{ret}"
 
     return ret
