@@ -1,17 +1,18 @@
 
 TODO 9.0.0
 
-  FIX:
-    better investigation on "end of file reached" errors from mongoid (hoping for version 4.0.0 with connection pool)
-    try to implement "retry" on mongoid queries
-
   IMPLEMENT:
     statistic analyzer (alor)
       automatic detection of home / office (needs timezone for each entity)
+      frequencer for places
 
     refactor the connectors to use queue and export from separate process [OK]
       - xml export [OK]
       - sync with "archive" rcs installation
+        - ping remote server and report status in the monitor (use ping to sync signatures)
+        - sync signatures
+        - sync items
+        - sync evidence
 
     most visited places [OK]
 
@@ -22,7 +23,9 @@ TODO 9.0.0
     dashboard in push mode
       - only after the dashboard as been refactored, issue a target|operation.restat on each target|operation.show
 
-    on backup restore -> restat everything!!!
+  FIX:
+    better investigation on "end of file reached" errors from mongoid (hoping for version 4.0.0 with connection pool)
+    try to implement "retry" on mongoid queries
 
 
   TEST:

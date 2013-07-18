@@ -203,7 +203,7 @@ class EntityController < RESTController
       e = Entity.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
       e.handles.create!(level: :manual, type: @params['type'].downcase, name: @params['name'], handle: @params['handle'].downcase)
 
-      Audit.log :actor => @session.user[:name], :action => 'entity.add_handle', :desc => "Added a new handle to #{e.name}"
+      Audit.log :actor => @session.user[:name], :action => 'entity.add_handle', :desc => "Added a the handle '#{@params['handle'].downcase}' to #{e.name}"
 
       return ok
     end
