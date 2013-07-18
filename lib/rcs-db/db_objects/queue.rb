@@ -251,8 +251,9 @@ class ConnectorQueue
 
   def self.push(connectors, data)
     connectors = [connectors].flatten
-    trace :debug, "Adding to ConnectorQueue: #{connectors}, #{data.inspect}"
-    attributes = {connector_ids: connectors.map(&:id), data: data}
+    connector_ids = connectors.map(&:id)
+    trace :debug, "Adding to ConnectorQueue: #{connector_ids}, #{data.inspect}"
+    attributes = {connector_ids: connector_ids, data: data}
     create!(attributes)
   end
 end
