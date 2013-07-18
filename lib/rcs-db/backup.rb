@@ -52,15 +52,9 @@ class BackupManager
 
     Audit.log :actor => '<system>', :action => 'backup.start', :desc => "Performing backup #{backup.name}"
 
-    backup.lastrun = Time.now.getutc.strftime('%Y-%m-%d %H:%M')
-    backup.status = 'RUNNING'
-    backup.save if save_status
+    update_status(backup, 'RUNNING') if save_status
 
-    if RbConfig::CONFIG['host_os'] =~ /mingw/
-      path_separator = "\\"
-    else
-      path_separator = "/"
-    end
+    output_dir = Config.instance.global['BACKUP_DIR'] + os_specific_path_separator + backup.name + "-" + now.strftime('%Y-%m-%d-%H-%M')
 
     begin
 
@@ -73,8 +67,9 @@ class BackupManager
       # don't backup the "volatile" collections
       collections.delete('statuses')
       collections.delete('sessions')
-      # don't backup the logs of the components
+      collections.delete('license')
       collections.delete_if {|x| x['logs.']}
+      collections.delete_if {|x| x['_queue']}
 
       grid_filter = "{}"
       item_filter = "{}"
@@ -84,34 +79,21 @@ class BackupManager
       case backup.what
         when 'metadata'
           # don't backup evidence collections
-          params[:coll].delete_if {|x| x['evidence.'] || x['aggregate.'] || x['grid.'] || x['cores'] || x['queue']}
+          params[:coll].delete_if {|x| x['evidence.'] || x['aggregate.'] || x['grid.'] || x['cores']}
         when 'full'
           # we backup everything... woah !!
         else
           # backup single item (operation or target)
-          partial_backup(params)
+          filter_for_partial_backup(params)
       end
 
       # save the last backed up objects to be used in the next run
       # do this here, so we are sure that the mongodump below will include these ids
-      if backup.incremental
-        db = DB.instance.mongo_connection
-
-        incremental_ids = {}
-
-        params[:coll].each do |coll|
-          next unless (coll['evidence.'] || coll['aggregate.'] || coll['grid.'])
-          # get the last bson object id
-          ev = db.collection(coll).find().sort({_id: -1}).limit(1).first
-          incremental_ids[coll.to_s.gsub(".", "_")] = ev['_id'].to_s unless ev.nil?
-        end
-
-        trace :debug, "Incremental ids: #{incremental_ids.inspect}"
-      end
+      incremental_ids = get_last_incremental_id(params) if backup.incremental
 
       # the command of the mongodump
       mongodump = Config.mongo_exec_path('mongodump')
-      mongodump += " -o #{Config.instance.global['BACKUP_DIR']}#{path_separator}#{backup.name}-#{now.strftime('%Y-%m-%d-%H-%M')}"
+      mongodump += " -o #{output_dir}"
       mongodump += " -d rcs"
 
       # create the backup of the collection (common)
@@ -119,72 +101,101 @@ class BackupManager
         command = mongodump + " -c #{coll}"
 
         command += " -q #{params[:ifilter]}" if coll == 'items'
-
         command += " -q #{params[:efilter]}" if coll == 'entities'
-
         command += incremental_filter(coll, backup) if backup.incremental
 
-        trace :info, "Backup: #{command}"
-        ret = system command
-        trace :info, "Backup result: #{ret}"
-
-        if ret == false
-          out = `#{command} 2>&1`
-          trace :warn, "Backup output: #{out}"
-        end
-        raise unless ret
+        system_command(command)
       end
 
-      # don't backup cores when saving metadata
+      # backup gridfs files related to items in the backup
       if backup.what != 'metadata'
         # gridfs entries linked to backed up collections
         command = mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.files -q #{params[:gfilter]}"
-        trace :info, "Backup: #{command}"
-        ret = system command
-        trace :info, "Backup result: #{ret}"
-        raise unless ret
+        system_command(command)
 
         # use the same query to retrieve the chunk list
         params[:gfilter]['_id'] = 'files_id' unless params[:gfilter]['_id'].nil?
         command = mongodump + " -c #{GridFS::DEFAULT_GRID_NAME}.chunks -q #{params[:gfilter]}"
-        trace :info, "Backup: #{command}"
-        ret = system command
-        trace :info, "Backup result: #{ret}"
-        raise unless ret
+        system_command(command)
       end
+
+      # save the infos of this backup
+      File.open(File.join(output_dir, "info"), "w") {|f| f.write "#{backup.id}\n#{backup.what}"}
 
       # backup the config db
-      if backup.what == 'metadata' or backup.what == 'full'
-        mongodump = Config.mongo_exec_path('mongodump')
-        mongodump += " -o #{Config.instance.global['BACKUP_DIR']}#{path_separator}#{backup.name}_config-#{now.strftime('%Y-%m-%d-%H-%M')}"
-        mongodump += " -d config"
-
-        trace :info, "Backup: #{command}"
-        ret = system mongodump
-        trace :info, "Backup result: #{ret}"
-        raise unless ret
-      end
+      backup_config_db(backup, now) if ['metadata', 'full'].include? backup.what
 
       Audit.log :actor => '<system>', :action => 'backup.end', :desc => "Backup #{backup.name} completed"
 
     rescue Exception => e
       Audit.log :actor => '<system>', :action => 'backup.end', :desc => "Backup #{backup.name} failed"
       trace :error, "Backup #{backup.name} failed: #{e.message}"
-      backup.lastrun = Time.now.getutc.strftime('%Y-%m-%d %H:%M')
-      backup.status = 'ERROR'
-      backup.save if save_status
+      update_status(backup, 'ERROR') if save_status
       return
     end
 
     # save the latest ids saved in backup
     backup.incremental_ids = incremental_ids if backup.incremental
 
-    backup.lastrun = Time.now.getutc.strftime('%Y-%m-%d %H:%M')
-    backup.status = 'COMPLETED'
-    backup.save if save_status
+    update_status(backup, 'COMPLETED') if save_status
   end
 
-  def self.partial_backup(params)
+  def self.get_last_incremental_id(params)
+    db = DB.instance.mongo_connection
+
+    incremental_ids = {}
+
+    params[:coll].each do |coll|
+      next unless (coll['evidence.'] || coll['aggregate.'] || coll['grid.'])
+      # get the last bson object id
+      ev = db.collection(coll).find().sort({_id: -1}).limit(1).first
+      incremental_ids[coll.to_s.gsub(".", "_")] = ev['_id'].to_s unless ev.nil?
+    end
+
+    trace :debug, "Incremental ids: #{incremental_ids.inspect}"
+    incremental_ids
+  end
+
+  def self.system_command(command)
+    trace :info, "Backup: #{command}"
+    ret = system command
+    trace :info, "Backup result: #{ret}"
+
+    if ret == false
+      out = `#{command} 2>&1`
+      trace :warn, "Backup output: #{out}"
+    end
+    raise unless ret
+  end
+
+  def self.update_status(backup, status)
+    backup.lastrun = Time.now.getutc.strftime('%Y-%m-%d %H:%M')
+    backup.status = status
+    backup.save
+  end
+
+  def self.backup_config_db(backup, now)
+    output_config_dir = Config.instance.global['BACKUP_DIR'] + os_specific_path_separator + backup.name + "_config-" + now.strftime('%Y-%m-%d-%H-%M')
+
+    mongodump = Config.mongo_exec_path('mongodump')
+    mongodump += " -o #{output_config_dir}"
+    mongodump += " -d config"
+
+    system_command(mongodump)
+
+    File.open(File.join(output_config_dir, "info"), "w") {|f| f.write "#{backup.id}\n#{backup.what}"}
+  end
+
+  def self.os_specific_path_separator
+    if RbConfig::CONFIG['host_os'] =~ /mingw/
+      path_separator = "\\"
+    else
+      path_separator = "/"
+    end
+    path_separator
+  end
+
+  def self.filter_for_partial_backup(params)
 
     # extract the id from the string
     id = Moped::BSON::ObjectId.from_string(params[:what][-24..-1])
@@ -261,6 +272,18 @@ class BackupManager
     return filter
   end
 
+  def self.shell_escape(string)
+    # insert the correct delimiter and escape characters
+    if RbConfig::CONFIG['host_os'] =~ /mingw/
+      string.gsub! "\"", "\\\""
+      string.prepend "\""
+      string << "\""
+    else
+      string.prepend "'"
+      string << "'"
+    end
+  end
+
   def self.ensure_backup
     trace :info, "Ensuring the metadata backup is present..."
     return if ::Backup.where(enabled: true, what: 'metadata').exists?
@@ -318,15 +341,25 @@ class BackupManager
     command << " --drop" if params['drop']
     command << " \"#{backup_path}\""
 
+    # make sure that the signature are restored from backup
+    # drop the current one and get the new from the backup
+    if File.exist? File.join(backup_path, 'rcs', 'signatures.bson')
+      trace :info, "Dropping current signatures since they are present in the backup"
+      Signature.collection.drop
+    end
+
     trace :debug, "Restoring backup: #{command}"
 
+    # perform the actual restore
     ret = system command
 
-    # mark the flag as restored
-    # (the flag was running since when the backup is performed the status in the db is running)
-    ::Backup.where({status: 'RUNNING'}).each do |b|
-      b.status = 'RESTORED'
-      b.save
+    # get backup info which generated this archive
+    info = File.read(File.join(backup_path, "info"))
+    backup_id, backup_what = info.split("\n")
+
+    # set the flag of the backup as restored
+    Backup.where({id: backup_id}).each do |backup|
+      update_status(backup, 'RESTORED')
     end
 
     trace :info, "Backup restore completed: #{params['_id']} | #{ret}"
@@ -335,17 +368,6 @@ class BackupManager
   end
 
 
-  def self.shell_escape(string)
-    # insert the correct delimiter and escape characters
-    if RbConfig::CONFIG['host_os'] =~ /mingw/
-      string.gsub! "\"", "\\\""
-      string.prepend "\""
-      string << "\""
-    else
-      string.prepend "'"
-      string << "'"
-    end
-  end
 
 end
 
