@@ -15,7 +15,7 @@ class PushManager
   include RCS::Tracer
 
   def notify(type, message={})
-    trace :debug, "PUSH Event: #{type} #{message}"
+    trace :debug, "PUSH Event: #{type}" #"#{message}"
 
     item = message.delete(:item)
 
