@@ -166,6 +166,7 @@ class BackupManager
       trace :warn, "Backup output: #{out}"
     end
     raise unless ret
+    ret
   end
 
   def self.update_status(backup, status)
@@ -351,7 +352,10 @@ class BackupManager
     trace :debug, "Restoring backup: #{command}"
 
     # perform the actual restore
-    ret = system command
+    ret = system_command(command)
+
+    # if invoked by a task
+    yield if block_given?
 
     # get backup info which generated this archive
     info = File.read(File.join(backup_path, "info"))
@@ -370,6 +374,9 @@ class BackupManager
         item.restat
       end
     end
+
+    # if invoked by a task
+    yield if block_given?
 
     trace :info, "Backup restore completed: #{params['_id']} | #{ret}"
 
