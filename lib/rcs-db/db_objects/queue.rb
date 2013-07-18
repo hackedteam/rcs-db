@@ -223,10 +223,6 @@ class ConnectorQueue
     save!
   end
 
-  def completed?
-    connector_ids.empty?
-  end
-
   def self.size
     all.count
   end

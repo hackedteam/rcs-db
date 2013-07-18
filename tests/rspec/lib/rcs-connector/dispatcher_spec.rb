@@ -83,6 +83,42 @@ describe RCS::Connector::Dispatcher do
     pending
   end
 
+  context 'when the evidence of the target is missing' do
+
+    let(:connector_queue) do
+      factory_create(:connector_queue_for_evidence).tap do |c|
+        c.update_attributes(data: {'evidence_id' => '51e7a8dfc7878313510000b1', 'target_id' => '51e7a8dfc7878313510000af'})
+      end
+    end
+
+    describe '#process' do
+
+      it 'does not raise any error' do
+        expect { described_class.process(connector_queue) }.not_to raise_error
+      end
+
+      it 'does not call #dump' do
+        described_class.should_not_receive(:dump)
+        described_class.process(connector_queue)
+      end
+
+      it 'logs a warn' do
+        warn_msg = "Connectors dispatcher: cannot find evidence 51e7a8dfc7878313510000b1 of target 51e7a8dfc7878313510000af"
+        described_class.stub(:trace) { |level, msg| raise(msg) if level == :warn }
+        expect { described_class.process(connector_queue) }.to raise_error(warn_msg)
+      end
+    end
+
+    describe '#dispatch' do
+
+      before { described_class.stub(:can_dispatch?).and_return(true) }
+
+      it 'does not raise any error' do
+        expect { described_class.dispatch }.not_to raise_error
+      end
+    end
+  end
+
   describe '#process' do
 
     let(:target) { factory_create(:target) }

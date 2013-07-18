@@ -32,12 +32,19 @@ module RCS
         (@status_message || "idle").capitalize
       end
 
-      def destroy_evidence(connector_queue)
-        data = connector_queue.data
+      def destroy_related_evidence(connector_queue)
+        evidence = related_evidence(connector_queue.data)
+        return unless evidence
+        evidence.destroy
+      end
+
+      def related_evidence(data)
         return unless data['target_id']
         return unless data['evidence_id']
-        evidence = ::Evidence.collection_class(data['target_id']).find(data['evidence_id'])
-        evidence.destroy
+        ::Evidence.collection_class(data['target_id']).find(data['evidence_id'])
+      rescue Mongoid::Errors::DocumentNotFound => error
+        trace :warn, "Connectors dispatcher: cannot find evidence #{data['evidence_id']} of target #{data['target_id']}"
+        nil
       end
 
       def process(connector_queue)
@@ -51,13 +58,13 @@ module RCS
           connector_queue.complete(connector)
         end
 
-        destroy_evidence(connector_queue) unless connector_queue.keep?
+        destroy_related_evidence(connector_queue) unless connector_queue.keep?
         connector_queue.destroy
       end
 
       def process_json(connector, data)
-        target = ::Item.targets.find(data['target_id'])
-        evidence = ::Evidence.collection_class(target).find(data['evidence_id'])
+        evidence = related_evidence(data)
+        return unless evidence
         dump(evidence, connector)
       end
 

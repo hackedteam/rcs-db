@@ -38,6 +38,20 @@ describe ConnectorQueue do
       it 'is a mongoid criteria' do
         expect(connector_queue.connectors).to respond_to(:where)
       end
+
+      context 'when a connector has been deleted' do
+
+        before do
+          connector_queue.connector_ids << '51e7a8dfc7878313510000af'
+          connector_queue.save!
+        end
+
+        before { expect(connector_queue.connector_ids.size).to eq 2 }
+
+        it 'does not return it' do
+          expect(connector_queue.connectors).to eq([connector])
+        end
+      end
     end
 
     describe '#complete' do
@@ -49,23 +63,6 @@ describe ConnectorQueue do
       it 'removes the given connector from the connector ids' do
         connector_queue.complete(connector)
         expect(connector_queue.reload.connector_ids).to eq([])
-      end
-    end
-
-    describe '#completed?' do
-
-      let(:connector_queue) { described_class.push_evidence([connector], target, evidence) }
-
-      context 'when connector ids array is empty' do
-
-        before { connector_queue.complete(connector) }
-
-        it('returns true') { expect(connector_queue.completed?).to be_true }
-      end
-
-      context 'when connector ids array is not empty' do
-
-        it('returns false') { expect(connector_queue.completed?).to be_false }
       end
     end
 
