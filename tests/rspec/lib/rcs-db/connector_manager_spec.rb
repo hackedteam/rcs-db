@@ -1,7 +1,7 @@
 require 'spec_helper'
 require_db 'db_layer'
 require_db 'grid'
-require_db 'connectors'
+require_db 'connector_manager'
 
 module RCS
   module DB

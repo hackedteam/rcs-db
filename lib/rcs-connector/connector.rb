@@ -5,7 +5,7 @@ require 'rcs-common/path_utils'
 
 require_release 'rcs-worker/license'
 require_release 'rcs-db/db_layer'
-require_release 'rcs-db/connectors'
+require_release 'rcs-db/connector_manager'
 require_release 'rcs-db/db_objects/connector_queue'
 require_release 'rcs-db/grid'
 require_relative 'dispatcher'

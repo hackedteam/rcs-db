@@ -7,13 +7,13 @@ if File.directory?(Dir.pwd + '/lib/rcs-worker-release')
   require 'rcs-db-release/db_layer'
   require 'rcs-db-release/grid'
   require 'rcs-db-release/alert'
-  require 'rcs-db-release/connectors'
+  require 'rcs-db-release/connector_manager'
 else
   require 'rcs-db/config'
   require 'rcs-db/db_layer'
   require 'rcs-db/grid'
   require 'rcs-db/alert'
-  require 'rcs-db/connectors'
+  require 'rcs-db/connector_manager'
 end
 
 require_relative 'call_processor'

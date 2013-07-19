@@ -6,7 +6,7 @@ require_relative '../db_layer'
 require_relative '../evidence_manager'
 require_relative '../evidence_dispatcher'
 require_relative '../position/resolver'
-require_relative '../connectors'
+require_relative '../connector_manager'
 
 # rcs-common
 require 'rcs-common/symbolize'

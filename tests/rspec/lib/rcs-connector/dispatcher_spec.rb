@@ -1,7 +1,7 @@
 require 'spec_helper'
 require 'xmlsimple'
 require_db 'db_layer'
-require_db 'connectors'
+require_db 'connector_manager'
 require_db 'grid'
 require_connector 'dispatcher'
 
