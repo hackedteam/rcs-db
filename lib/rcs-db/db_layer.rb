@@ -256,7 +256,16 @@ class DB
     end
   end
 
+  def archive_mode?
+    LicenseManager.instance.check(:archive)
+  end
+
   def ensure_signatures
+    if archive_mode?
+      trace :info, "This is an archive installation. Signatures are not created automatically."
+      return
+    end
+
     if Signature.count == 0
       trace :warn, "No Signature found, creating them..."
 
@@ -283,8 +292,15 @@ class DB
         s.value[10..-1] = "0" * (s.value.length - 10) if LicenseManager.instance.limits[:encbits]
       end
     end
-    # dump the signature for NIA, Anon etc to a file
-    File.open(Config.instance.cert('rcs-network.sig'), 'wb') {|f| f.write Signature.where(scope: 'network').first.value}
+
+    dump_network_signature
+  end
+
+  # dump the signature for NIA, Anon etc to a file
+  def dump_network_signature
+    File.open(Config.instance.cert('rcs-network.sig'), 'wb') do |f|
+      f.write Signature.where(scope: 'network').first.value
+    end
   end
 
   def ensure_cn_resolution
