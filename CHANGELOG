@@ -1,13 +1,9 @@
 
-Changelog for 8.4.1
+Changelog for 8.4.2
 
 DB:
-  - improved mail parsing
-  - fix the missing export evidence feature
-  - fix for single target backup not backing up its operation
-  - support for STARTLS for alerting via email
-  - HASP driver updated to 6.56
-
+  - fix: wifi position resolution from console
+  - fix: send the correct configuration to anonimizer even if outside the chain
 
 Changelog for 9.0.0
 

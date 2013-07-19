@@ -27,9 +27,6 @@ class TopologyTask
       # don't push to "not monitored" anon
       next unless anon.poll
 
-      #don't push elements outside topology
-      next if anon.next == [ nil ] and anon.prev == [ nil ]
-
       raise "Cannot push to #{anon.name}" unless Frontend.nc_push(anon.address)
     end
     
