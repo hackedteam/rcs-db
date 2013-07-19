@@ -150,7 +150,7 @@ factory_define :connector do |params|
   dest = RCS::DB::Config.instance.temp
   raise("Cannot find folder #{dest}") unless Dir.exists?(dest)
 
-  attributes = {enabled: true, name: "connector_#{rand(1E10)}", dest: dest, path: path, type: ::Connector::TYPES.first}
+  attributes = {enabled: true, name: "connector_#{rand(1E10)}", dest: dest, path: path, type: :dump, format: :json}
   attributes.deep_merge!(params)
 
   ::Connector.create!(attributes)

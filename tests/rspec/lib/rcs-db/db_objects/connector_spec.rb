@@ -12,18 +12,24 @@ describe Connector do
     expect(subject).to respond_to :trace
   end
 
-  it 'has "JSON" as default type' do
-    expect(subject.type).to eql 'JSON'
+  it 'has no default type' do
+    expect(subject.type).to be_nil
+  end
+
+  it 'has no default format' do
+    expect(subject.format).to be_nil
   end
 
   it 'keep is true by default' do
     expect(subject.keep).to eql true
   end
 
-  it 'has an index on "enabled"' do
+  it 'has some indexes' do
     expect(subject.index_options).to have_key({enabled: 1})
+    expect(subject.index_options).to have_key({keep: 1})
+    expect(subject.index_options).to have_key({type: 1})
+    expect(subject.index_options.keys.size).to eq 3
   end
-
 
   let(:target) { factory_create :target }
 
@@ -109,15 +115,28 @@ describe Connector do
     context 'when is not included in the whitelist' do
 
       it 'raises a validation error' do
-        expect { factory_create(:connector, item: target, type: 'LOLZ') }.to raise_error(Mongoid::Errors::Validations)
+        expect { factory_create(:connector, item: target, type: :ROFLMAO) }.to raise_error(Mongoid::Errors::Validations)
       end
     end
 
     context "when is included in the whitelist" do
 
       it 'does not raise any validation error' do
-        expect { factory_create(:connector, item: target, type: 'JSON') }.not_to raise_error
-        expect { factory_create(:connector, item: target, type: 'XML') }.not_to raise_error
+        expect { factory_create(:connector, item: target, type: :dump, format: :json) }.not_to raise_error
+      end
+    end
+
+    context "when archive and path refers to an operation" do
+
+      it 'does not raise error' do
+        expect { factory_create(:connector, type: :archive, path: [target.get_parent.id]) }.not_to raise_error
+      end
+    end
+
+    context "when archive and path refers not to an operation" do
+
+      it 'does not raise error' do
+        expect { factory_create(:connector, type: :archive, path: [target.get_parent.id, target.id]) }.to raise_error(Mongoid::Errors::Validations)
       end
     end
   end
@@ -167,5 +186,30 @@ describe Connector do
         expect(connector.reload.path).not_to eql [1, 2]
       end
     end
+  end
+
+  describe '#format' do
+
+    context 'when type is archive and format nil' do
+
+      let(:connector) { factory_create(:connector, item: target.get_parent, type: :archive, format: nil) }
+
+      it 'does not raise any validation error' do
+        expect { connector }.not_to raise_error(Mongoid::Errors::Validations)
+      end
+    end
+
+    context 'when type is dump and format is an unknow value' do
+
+      let(:connector) { factory_create(:connector, item: target, type: :dump, format: :ROFLMAO) }
+
+      it 'raises a validation error' do
+        expect { connector }.to raise_error(Mongoid::Errors::Validations)
+      end
+    end
+  end
+
+  describe '#queued_count' do
+    pending
   end
 end

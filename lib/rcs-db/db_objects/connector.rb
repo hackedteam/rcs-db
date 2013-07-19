@@ -8,13 +8,14 @@ class Connector
   include Mongoid::Document
   include Mongoid::Timestamps
 
-  TYPES = ['JSON', 'XML', 'ARCHIVE']
+  TYPES = [:dump, :archive]
+  FORMATS = [:json, :xml]
 
   field :enabled, type: Boolean
   field :name, type: String
-  field :type, type: String, default: TYPES.first
+  field :type, type: Symbol
+  field :f, as: :format, type: Symbol
   field :dest, type: String
-  field :raw, type: Boolean
   field :keep, type: Boolean, default: true
   field :path, type: Array
 
@@ -22,8 +23,10 @@ class Connector
 
   index enabled: 1
   index keep: 1
+  index type: 1
 
   validates_inclusion_of :type, in: TYPES
+  validates_inclusion_of :format, in: FORMATS, if: proc { type == :dump }
   validate :validate_operation_when_archive, on: :create
 
   before_destroy :check_used
@@ -38,7 +41,7 @@ class Connector
 
   # If the type is archive, the path should be an operation
   def validate_operation_when_archive
-    return if type != 'ARCHIVE'
+    return if type != :archive
     return if path.blank?
     if path.size != 1 or ::Item.operations.where(_id: path.first).empty?
       errors.add(:invalid, "An archive connector should match only operations")
