@@ -47,4 +47,10 @@ class ConnectorQueue
     attributes = {connector_ids: connector_ids, data: data}
     create!(attributes)
   end
+
+  def evidence
+    return unless data['evidence_id']
+    return unless data['target_id']
+    ::Evidence.collection_class(data['target_id']).find(data['evidence_id'])
+  end
 end

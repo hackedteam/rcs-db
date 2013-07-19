@@ -27,7 +27,7 @@ class ConnectorController < RESTController
       f = ::Connector.new
       f.enabled = @params['enabled'] ? true : false
       f.name = @params['name']
-      f.type = @params['type'] || 'JSON'
+      f.type = @params['type'] || raise('Connector type must be provided')
       f.raw = @params['raw']
       f.keep = @params['keep']
       f.dest = @params['dest']

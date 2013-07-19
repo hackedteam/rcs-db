@@ -212,4 +212,8 @@ describe Connector do
   describe '#queued_count' do
     pending
   end
+
+  describe '#evidence' do
+    pending
+  end
 end

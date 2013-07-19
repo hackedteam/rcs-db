@@ -28,21 +28,24 @@ module RCS
         raise(ex)
       end
 
+      def reset_status_message
+        @status_message = nil
+      end
+
       def status_message
         (@status_message || "idle").capitalize
       end
 
       def destroy_related_evidence(connector_queue)
-        evidence = related_evidence(connector_queue.data)
+        evidence = related_evidence(connector_queue)
         return unless evidence
         evidence.destroy
       end
 
-      def related_evidence(data)
-        return unless data['target_id']
-        return unless data['evidence_id']
-        ::Evidence.collection_class(data['target_id']).find(data['evidence_id'])
+      def related_evidence(connector_queue)
+        connector_queue.evidence
       rescue Mongoid::Errors::DocumentNotFound => error
+        data = connector_queue.data
         trace :warn, "Connectors dispatcher: cannot find evidence #{data['evidence_id']} of target #{data['target_id']}"
         nil
       end
@@ -53,8 +56,7 @@ module RCS
         connectors = connector_queue.connectors
 
         connectors.each do |connector|
-          method_to_call = :"process_#{connector.type}".downcase
-          send(method_to_call, connector, connector_queue.data)
+          send(:"process_#{connector.type}", connector, connector_queue)
           connector_queue.complete(connector)
         end
 
@@ -62,16 +64,14 @@ module RCS
         connector_queue.destroy
       end
 
-      def process_json(connector, data)
-        evidence = related_evidence(data)
-        return unless evidence
-        dump(evidence, connector)
+      # TODO
+      def process_archive(connector, connector_queue)
       end
 
-      alias :process_xml :process_json
-
-      # TODO
-      def process_archive(connector, data)
+      def process_dump(connector, connector_queue)
+        evidence = related_evidence(connector_queue)
+        return unless evidence
+        dump(evidence, connector)
       end
 
       # Checks the license
@@ -111,8 +111,8 @@ module RCS
 
         # TODO: support XML conversion
         # convert it to json
-        exported = connector.type == 'XML' ? exported.to_xml(root: 'evidence') : exported.to_json
-        file_ext = connector.type.downcase
+        exported = connector.format == :xml ? exported.to_xml(root: 'evidence') : exported.to_json
+        file_ext = connector.format.to_s.downcase
 
         # the full exporting path will be splitted in subdir (one for each item)
         folders = [connector.dest]

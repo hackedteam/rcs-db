@@ -13,6 +13,7 @@ describe RCS::Connector::Dispatcher do
 
   before(:all) do
     expect(ConnectorQueue.instance_methods).to include(:keep?)
+    described_class.reset_status_message
   end
 
   describe '#status_message' do
@@ -198,7 +199,7 @@ describe RCS::Connector::Dispatcher do
       context 'when the connector type is XML' do
 
         before do
-          connector.update_attributes type: 'XML'
+          connector.update_attributes format: :xml
           described_class.dump(evidence, connector)
         end
 
