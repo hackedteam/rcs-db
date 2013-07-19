@@ -144,7 +144,7 @@ class PositionResolver
         when 'WIFI'
           towers = []
           data['wifi'].each do |wifi|
-            towers << {macAddress: wifi[:mac], signalStrength: wifi[:sig]}
+            towers << {macAddress: wifi['mac'], signalStrength: wifi['sig']}
           end
           q = {map: {'wifiAccessPoints' => towers}}
         when 'GSM'
