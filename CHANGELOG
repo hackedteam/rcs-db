@@ -4,6 +4,7 @@ Changelog for 8.4.2
 DB:
   - fix: wifi position resolution from console
   - fix: send the correct configuration to anonimizer even if outside the chain
+  - Improvements in backup creation/restore
 
 Changelog for 9.0.0
 
