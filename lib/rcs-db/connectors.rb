@@ -1,5 +1,5 @@
 require 'rcs-common/trace'
-require_relative 'db_objects/queue'
+require_relative 'db_objects/connector_queue'
 
 module RCS
   module DB
