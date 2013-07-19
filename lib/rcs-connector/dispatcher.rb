@@ -36,42 +36,34 @@ module RCS
         (@status_message || "idle").capitalize
       end
 
-      def destroy_related_evidence(connector_queue)
-        evidence = related_evidence(connector_queue)
-        return unless evidence
-        evidence.destroy
-      end
-
-      def related_evidence(connector_queue)
-        connector_queue.evidence
-      rescue Mongoid::Errors::DocumentNotFound => error
-        data = connector_queue.data
-        trace :warn, "Connectors dispatcher: cannot find evidence #{data['evidence_id']} of target #{data['target_id']}"
-        nil
-      end
-
       def process(connector_queue)
-        trace :debug, "Processing ConnectorQueue #{connector_queue.id}, #{connector_queue.data.inspect}"
+        trace :debug, "Processing #{connector_queue}"
 
-        connectors = connector_queue.connectors
-
-        connectors.each do |connector|
-          send(:"process_#{connector.type}", connector, connector_queue)
-          connector_queue.complete(connector)
+        # Return if the connector has been deleted somehow
+        unless connector_queue.connector
+          trace :warn, "Was about process #{connector_queue}, but the connector is missing."
+          return
         end
 
-        destroy_related_evidence(connector_queue) unless connector_queue.keep?
+        send(:"process_#{connector_queue.connector.type}", connector_queue)
+
         connector_queue.destroy
       end
 
       # TODO
-      def process_archive(connector, connector_queue)
+      def process_archive(connector_queue)
       end
 
-      def process_dump(connector, connector_queue)
-        evidence = related_evidence(connector_queue)
-        return unless evidence
-        dump(evidence, connector)
+      def process_dump(connector_queue)
+        evidence = connector_queue.evidence
+
+        # Return if the evidence has been deleted somehow
+        unless evidence
+          trace :warn, "Was about process #{connector_queue}, but the evidence is missing."
+          return
+        end
+
+        dump(evidence, connector_queue.connector)
       end
 
       # Checks the license

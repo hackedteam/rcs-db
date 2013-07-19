@@ -1,56 +1,70 @@
+require_relative 'connector'
+
 class ConnectorQueue
   include Mongoid::Document
   extend RCS::Tracer
+  include RCS::Tracer
 
-  field :cids,  as: :connector_ids, type: Array,    default: []
-  field :d,     as: :data,          type: Hash,     default: {}
+  field :cid,   as: :connector_id,  type: Moped::BSON::ObjectId
+  field :d,     as: :data,          type: Hash, default: {}
+  field :t,     as: :thread,        type: Symbol
 
   store_in collection: 'connector_queue'
 
-  validates_presence_of :data
+  validates_presence_of  :data
+  validates_presence_of  :connector_id
+  validates_presence_of  :thread
 
-  index connector_ids: 1
+  index({connector_id: 1, thread: 1})
 
-  scope :with_connector, lambda { |connector| where(connector_ids: connector.id) }
+  scope :with_connector, lambda { |connector| where(connector_id: connector.id) }
 
-  def complete(connector)
-    connector_ids.reject! { |id| id == connector.id }
-    save!
+  after_destroy :evidence_destroy_countdown
+
+  def evidence_destroy_countdown
+    return unless evidence
+    return unless evidence['destroy_countdown']
+
+    if evidence.inc(:destroy_countdown, -1) <= 0
+      trace :debug, "Destroying evidence #{evidence.id} because of destroy countdown reached"
+      evidence.destroy
+    end
+  end
+
+  def evidence
+    @evidence ||= begin
+      return unless data['target_id']
+      ::Evidence.collection_class(data['target_id']).where(id: data['evidence_id']).first
+    end
+  end
+
+  def connector
+    @connector ||= Connector.where(id: connector_id).first
+  end
+
+  def to_s
+    "<#ConnectorQueue #{id}: connector_id=#{connector_id}, data=#{data.inspect}>"
   end
 
   def self.size
     all.count
   end
 
-  def self.take
-    first
+  def self.take(thread = nil)
+    filter = thread ? {thread: thread} : {}
+    where(filter).first
   end
 
-  def connectors
-    Connector.any_in(id: connector_ids)
-  end
-
-  def keep?
-    connectors.where(keep: true).count > 0
-  end
-
-  def self.push_evidence(connectors, target, evidence)
+  def self.push_evidence(connector, target, evidence)
     fullpath = target.path + [evidence.aid]
     data = {evidence_id: evidence.id, target_id: target.id, path: fullpath}
-    push(connectors, data)
+    push(connector, data)
   end
 
-  def self.push(connectors, data)
-    connectors = [connectors].flatten
-    connector_ids = connectors.map(&:id)
-    trace :debug, "Adding to ConnectorQueue: #{connector_ids}, #{data.inspect}"
-    attributes = {connector_ids: connector_ids, data: data}
+  def self.push(connector, data)
+    trace :debug, "Adding to ConnectorQueue: #{connector.id}, #{data.inspect}"
+    thread = connector.type == :archive ? connector.data['addr'].to_sym : :default
+    attributes = {connector_id: connector.id, data: data, thread: thread}
     create!(attributes)
-  end
-
-  def evidence
-    return unless data['evidence_id']
-    return unless data['target_id']
-    ::Evidence.collection_class(data['target_id']).find(data['evidence_id'])
   end
 end

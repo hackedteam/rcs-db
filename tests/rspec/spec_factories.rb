@@ -256,19 +256,17 @@ end
 factory_define :connector_queue_for_evidence do |params|
   target = params.delete(:target) || factory_create(:target)
   evidence = params.delete(:evidence) || factory_create(:chat_evidence, target: target)
-  connectors = params.delete(:connectors) || [factory_create(:connector, item: target)]
+  connector = params.delete(:connector) || factory_create(:connector, item: target)
 
-  ConnectorQueue.push_evidence(connectors, target, evidence)
+  ConnectorQueue.push_evidence(connector, target, evidence)
 end
 
 factory_define :connector_queue do |params|
-  connectors = params.delete(:connectors)
+  connector = params.delete(:connector)
   attributes = {}
-  if connectors
-    ids = connectors.map(&:id)
-    attributes.merge!(connector_ids: ids)
-  end
+  attributes.merge!(connector_id: connector.id) if connector
   attributes.merge!(params)
+
   ConnectorQueue.create!(attributes)
 end
 

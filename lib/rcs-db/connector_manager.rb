@@ -6,15 +6,30 @@ module RCS
     module ConnectorManager
       extend RCS::Tracer
 
-      # If the evidence match some connectors, adds that evidence and that
-      # collectors to the CollectorQueue.
       def self.process_evidence(target, evidence)
-        matched_connectors = ::Connector.matching(evidence)
-        return :keep if matched_connectors.blank?
+        connectors = ::Connector.matching(evidence)
+        return :keep if connectors.blank?
 
-        connector_queue = ConnectorQueue.push_evidence(matched_connectors, target, evidence)
+        keep = keep_evidence?(connectors)
 
-        connector_queue.keep? ? :keep : :discard
+        unless keep
+          evidence.update_attributes(destroy_countdown: connectors.size)
+        end
+
+        connectors.each do |connector|
+          ConnectorQueue.push_evidence(connector, target, evidence)
+        end
+
+        keep ? :keep : :discard
+      end
+
+      def self.keep_evidence?(connectors)
+        if connectors.respond_to?(:where)
+          connectors.where(keep: true).count > 0
+        else
+          connectors.each { |c| return true if c.keep }
+          false
+        end
       end
     end
   end

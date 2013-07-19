@@ -11,12 +11,9 @@ describe RCS::Connector::Dispatcher do
   stub_temp_folder
   enable_license
 
-  before(:all) do
-    expect(ConnectorQueue.instance_methods).to include(:keep?)
-    described_class.reset_status_message
-  end
-
   describe '#status_message' do
+
+    before { described_class.reset_status_message }
 
     it 'has a default value' do
       expect(described_class.status_message).to eq 'Idle'
@@ -102,12 +99,6 @@ describe RCS::Connector::Dispatcher do
         described_class.should_not_receive(:dump)
         described_class.process(connector_queue)
       end
-
-      it 'logs a warn' do
-        warn_msg = "Connectors dispatcher: cannot find evidence 51e7a8dfc7878313510000b1 of target 51e7a8dfc7878313510000af"
-        described_class.stub(:trace) { |level, msg| raise(msg) if level == :warn }
-        expect { described_class.process(connector_queue) }.to raise_error(warn_msg)
-      end
     end
 
     describe '#dispatch' do
@@ -137,9 +128,26 @@ describe RCS::Connector::Dispatcher do
       described_class.process connector_queue
     end
 
+    it 'deletes the connector_queue at the end' do
+      described_class.process connector_queue
+      expect{ connector_queue.reload }.to raise_error(Mongoid::Errors::DocumentNotFound)
+    end
+
+    context 'when something goes wrong' do
+
+      before do
+        described_class.stub(:dump).and_raise("cannot dump, free space on disk is 0 bytes")
+      end
+
+      it 'does not delete the connector_queue' do
+        described_class.process(connector_queue) rescue nil
+        expect{ connector_queue.reload }.not_to raise_error
+      end
+    end
+
     context 'when the evidence should be keeped' do
 
-      before { connector_queue.stub(:keep?).and_return(true) }
+      before { evidence.update_attributes destroy_countdown: 42 }
 
       it 'keeps the evidence' do
         described_class.process connector_queue
@@ -149,7 +157,7 @@ describe RCS::Connector::Dispatcher do
 
     context 'when the evidence should be deleted' do
 
-      before { connector_queue.stub(:keep?).and_return(false) }
+      before { evidence.update_attributes destroy_countdown: 1 }
 
       it 'deletes the evidence' do
         described_class.process connector_queue
