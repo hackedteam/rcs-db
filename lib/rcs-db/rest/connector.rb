@@ -28,7 +28,7 @@ class ConnectorController < RESTController
       f.enabled = @params['enabled'] ? true : false
       f.name = @params['name']
       f.type = @params['type'] || raise('Connector type must be provided')
-      f.raw = @params['raw']
+      # f.raw = @params['raw']
       f.keep = @params['keep']
       f.dest = @params['dest']
       f.path = @params['path'].collect! {|x| Moped::BSON::ObjectId(x)} if @params['path'].class == Array
