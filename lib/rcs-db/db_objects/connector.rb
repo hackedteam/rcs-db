@@ -1,6 +1,7 @@
 require 'mongoid'
 require 'rcs-common/trace'
 require_relative 'item'
+require_relative '../archive_manager'
 
 class Connector
   extend RCS::Tracer
@@ -25,11 +26,14 @@ class Connector
   index keep: 1
   index type: 1
 
+  validates_presence_of :dest
   validates_inclusion_of :type, in: TYPES
   validates_inclusion_of :format, in: FORMATS, if: proc { type == :dump }
-  validate :validate_operation_when_archive, on: :create
+  validate :validate_path_is_an_operation, on: :create, if: :archive?
 
   before_destroy :check_used
+  after_destroy :destroy_archive_node, if: :archive?
+  after_save :setup_archive_node, if: :archive?
 
   # Scope: only enabled connectors
   scope :enabled, where(enabled: true)
@@ -39,13 +43,26 @@ class Connector
     enabled.select { |connector| connector.match?(evidence) }
   end
 
-  # If the type is archive, the path should be an operation
-  def validate_operation_when_archive
-    return if type != :archive
+  def validate_path_is_an_operation
+    return unless archive?
     return if path.blank?
     if path.size != 1 or ::Item.operations.where(_id: path.first).empty?
       errors.add(:invalid, "An archive connector should match only operations")
     end
+  end
+
+  def setup_archive_node
+    return unless archive?
+    RCS::DB::ArchiveNode.new(dest).request_setup
+  end
+
+  def destroy_archive_node
+    return unless archive?
+    RCS::DB::ArchiveNode.new(dest).destroy
+  end
+
+  def archive?
+    type == :archive
   end
 
   def check_used

@@ -7,6 +7,8 @@ describe Connector do
   silence_alerts
   enable_license
 
+  before { described_class.any_instance.stub(:setup_archive_node) }
+
   it 'uses the RCS::Tracer module' do
     expect(described_class).to respond_to :trace
     expect(subject).to respond_to :trace
@@ -214,6 +216,14 @@ describe Connector do
   end
 
   describe '#evidence' do
+    pending
+  end
+
+  describe '#destroy_archive_server_status' do
+    pending
+  end
+
+  describe '#setup_archive_server' do
     pending
   end
 end
