@@ -32,7 +32,7 @@ class ConnectorController < RESTController
       f.keep = @params['keep']
       f.dest = @params['dest']
       f.path = @params['path'].collect! {|x| Moped::BSON::ObjectId(x)} if @params['path'].class == Array
-      f.save
+      f.save!
       
       Audit.log :actor => @session.user[:name], :action => 'connector.create', :desc => "Connector rule '#{f.name}' was created"
 
@@ -57,7 +57,7 @@ class ConnectorController < RESTController
         end
       end
 
-      connector.update_attributes(@params)
+      connector.update_attributes!(@params)
 
       return ok(connector)
     end
