@@ -52,7 +52,7 @@ class Connector
   end
 
   def defer(&block)
-    Thread.new(&block)
+    EM.defer(block)
   end
 
   def setup_archive_node
