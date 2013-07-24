@@ -71,7 +71,7 @@ class Connector
 
   def check_used
     if queued_count > 0
-      raise "The connector #{name} cannot be deleted now"
+      raise "The connector #{name} is currently being used thus it cannot be destroyed at the moment."
     end
   end
 
