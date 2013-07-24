@@ -13,8 +13,6 @@ describe RCS::Connector::Dispatcher do
 
   describe '#status_message' do
 
-    before { described_class.reset_status_message }
-
     it 'has a default value' do
       expect(described_class.status_message).to eq 'Idle'
     end

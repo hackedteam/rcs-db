@@ -28,10 +28,6 @@ module RCS
         raise(ex)
       end
 
-      def reset_status_message
-        @status_message = nil
-      end
-
       def status_message
         (@status_message || "idle").capitalize
       end
@@ -52,6 +48,7 @@ module RCS
 
       # TODO
       def process_archive(connector_queue)
+
       end
 
       def process_dump(connector_queue)
