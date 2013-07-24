@@ -41,7 +41,7 @@ module RCS
           trace :debug, "ArchiveNode #{address}, POST RESPONSE: #{resp.code}, #{resp.body}"
           content = JSON.parse(resp.body).symbolize_keys rescue {}
           if resp.code != 200
-            set_error_status(content[:msg] || "Got error #{code} from archive node")
+            set_error_status(content[:msg] || "Got error #{resp.code} from archive node")
           elsif block_given?
             yield(content)
           end
@@ -70,12 +70,11 @@ module RCS
       end
 
       def self.all
-        addresses = Connector.where(type: 'archive').only('dest').distinct('dest')
+        addresses = Connector.where(type: 'archive').only(:dest).distinct(:dest)
         addresses.map! { |addr| new(addr) }
       end
 
       def self.ping_all
-        trace :info, 'update all statuses...'
         all.each { |archive_node| archive_node.request_status }
       end
     end
