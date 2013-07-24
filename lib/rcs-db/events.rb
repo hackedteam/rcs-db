@@ -12,7 +12,7 @@ require_relative 'alert'
 require_relative 'parser'
 require_relative 'websocket'
 require_relative 'push'
-require_relative 'archive_manager'
+require_relative 'archive_node'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -224,7 +224,7 @@ class Events
 
         # ping for the connected clients
         EM::PeriodicTimer.new(60) { EM.defer(proc{ PushManager.instance.heartbeat }) }
-        EM::PeriodicTimer.new(120) { EM.defer(proc{ RCS::DB::ArchiveNode.ping_all }) }
+        EM::PeriodicTimer.new(100) { EM.defer(proc{ RCS::DB::ArchiveNode.ping_all }) }
 
         # send the first heartbeat to the db, we are alive and want to notify the db immediately
         # subsequent heartbeats will be sent every HB_INTERVAL

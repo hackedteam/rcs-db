@@ -1,7 +1,7 @@
 require 'mongoid'
 require 'rcs-common/trace'
 require_relative 'item'
-require_relative '../archive_manager'
+require_relative '../archive_node'
 
 class Connector
   extend RCS::Tracer
@@ -51,9 +51,13 @@ class Connector
     end
   end
 
+  def defer(&block)
+    Thread.new(&block)
+  end
+
   def setup_archive_node
     return unless archive?
-    RCS::DB::ArchiveNode.new(dest).request_setup
+    defer { RCS::DB::ArchiveNode.new(dest).request_setup }
   end
 
   def destroy_archive_node

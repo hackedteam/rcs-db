@@ -3,11 +3,9 @@ require 'rest-client'
 require 'rcs-common/trace'
 require_relative 'db_objects/status'
 require_relative 'db_objects/signature'
-require_relative 'db_objects/connector'
 
 module RCS
   module DB
-
     class ArchiveNode
       include RCS::Tracer
       extend RCS::Tracer
@@ -18,12 +16,12 @@ module RCS
         @address = address
       end
 
-      def connector
-        Connector.where(type: 'archive', dest: address).first
-      end
-
       def signature
         Signature.where(scope: 'network').first.try(:value)
+      end
+
+      def status
+        Status.where(address: address, type: 'archive').first
       end
 
       def request_setup
@@ -67,10 +65,6 @@ module RCS
         Status.status_update(*params)
       end
 
-      def status
-        Status.where(address: address, type: 'archive').first
-      end
-
       def destroy
         status.destroy if status
       end
@@ -85,12 +79,5 @@ module RCS
         all.each { |archive_node| archive_node.request_status }
       end
     end
-
-    module ArchiveManager
-      extend RCS::Tracer
-      extend self
-
-    end
-
   end
 end
