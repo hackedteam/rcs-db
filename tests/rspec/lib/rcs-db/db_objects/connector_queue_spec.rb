@@ -12,7 +12,7 @@ describe ConnectorQueue do
   end
 
   it 'has some indexes' do
-    expect(described_class.index_options).to have_key(cid: 1, t: 1)
+    expect(described_class.index_options).to have_key(cid: 1, s: 1)
     expect(described_class.index_options.keys.size).to eql 1
   end
 
@@ -62,23 +62,17 @@ describe ConnectorQueue do
     describe '#take' do
 
       before do
-        factory_create(:connector_queue, connector: connector, data: {a: 1}, thread: :t1)
-        factory_create(:connector_queue, connector: connector, data: {a: 2}, thread: :t2)
+        factory_create(:connector_queue, connector: connector, data: {a: 1}, scope: :t1)
+        factory_create(:connector_queue, connector: connector, data: {a: '1b'}, scope: :t1)
+        factory_create(:connector_queue, connector: connector, data: {a: 2}, scope: :t2)
       end
 
-      before { expect(described_class.size).to eq 2 }
+      before { expect(described_class.size).to eq 3 }
 
-      it 'returns the first element of the queue (oldest)' do
-        expect(described_class.take.data).to eq('a' => 1)
-      end
-
-      context 'when the argument is given' do
-
-        it 'returns the first element of the queue filtering by the argument' do
-          expect(described_class.take(:t1)).not_to be_nil
-          expect(described_class.take(:t2)).not_to be_nil
-          expect(described_class.take(:t3)).to be_nil
-        end
+      it 'returns the first element of the queue filtering by the argument' do
+        expect(described_class.take(:t1).data).to eq('a' => 1)
+        expect(described_class.take(:t2).data).to eq('a' => 2)
+        expect(described_class.take(:t3)).to be_nil
       end
     end
 
@@ -88,7 +82,7 @@ describe ConnectorQueue do
 
       it 'creates the expected document' do
         saved_document = described_class.first
-        expected_data = {evidence_id: evidence.id, target_id: target.id, path: target.path + [evidence.aid]}
+        expected_data = {evidence_id: evidence.id, target_id: target.id, path: [target.path.first, target.id, evidence.aid]}
         expect(saved_document.data).to eq expected_data.stringify_keys
         expect(saved_document.connector).to eql connector
       end

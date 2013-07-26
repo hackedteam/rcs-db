@@ -44,31 +44,34 @@ class Connector
   end
 
   def validate_path_is_an_operation
-    return unless archive?
     return if path.blank?
     if path.size != 1 or ::Item.operations.where(_id: path.first).empty?
       errors.add(:invalid, "An archive connector should match only operations")
     end
   end
 
+  def archive_node
+    return unless archive?
+    @archive_node ||= RCS::DB::ArchiveNode.new(dest)
+  end
+
   def defer(&block)
-    EM.defer(block)
+    EM.defer(&block)
   end
 
   def setup_archive_node
-    return unless archive?
-    defer { RCS::DB::ArchiveNode.new(dest).request_setup }
+    defer { archive_node.try(:setup!) }
   end
 
   def destroy_archive_node
-    return unless archive?
-    RCS::DB::ArchiveNode.new(dest).destroy
+    archive_node.try(:destroy)
   end
 
   def archive?
     type == :archive
   end
 
+  # TODO: do the same check when dest of type attributes are being changed
   def check_used
     if queued_count > 0
       raise "The connector #{name} is currently being used thus it cannot be destroyed at the moment."

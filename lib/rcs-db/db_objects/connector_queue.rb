@@ -7,15 +7,15 @@ class ConnectorQueue
 
   field :cid,   as: :connector_id,  type: Moped::BSON::ObjectId
   field :d,     as: :data,          type: Hash, default: {}
-  field :t,     as: :thread,        type: Symbol
+  field :s,     as: :scope,         type: Symbol
 
   store_in collection: 'connector_queue'
 
   validates_presence_of  :data
   validates_presence_of  :connector_id
-  validates_presence_of  :thread
+  validates_presence_of  :scope
 
-  index({connector_id: 1, thread: 1})
+  index({connector_id: 1, scope: 1})
 
   scope :with_connector, lambda { |connector| where(connector_id: connector.id) }
 
@@ -43,28 +43,31 @@ class ConnectorQueue
   end
 
   def to_s
-    "<#ConnectorQueue #{id}: connector_id=#{connector_id}, data=#{data.inspect}>"
+    "<#ConnectorQueue #{id}: scope={#{scope}} connector_id=#{connector_id}, data=#{data.inspect}>"
   end
 
   def self.size
     all.count
   end
 
-  def self.take(thread = nil)
-    filter = thread ? {thread: thread} : {}
-    where(filter).first
+  def self.take(scope)
+    where(scope: scope).first
   end
 
   def self.push_evidence(connector, target, evidence)
-    fullpath = target.path + [evidence.aid]
+    fullpath = [target.path.first, target.id, evidence.aid]
     data = {evidence_id: evidence.id, target_id: target.id, path: fullpath}
     push(connector, data)
   end
 
   def self.push(connector, data)
     trace :debug, "Adding to ConnectorQueue: #{connector.id}, #{data.inspect}"
-    thread = connector.type == :archive ? connector.data['addr'].to_sym : :default
-    attributes = {connector_id: connector.id, data: data, thread: thread}
+    scope = connector.archive? ? connector.dest.to_sym : :default
+    attributes = {connector_id: connector.id, data: data, scope: scope}
     create!(attributes)
+  end
+
+  def self.scopes
+    distinct(:scope)
   end
 end

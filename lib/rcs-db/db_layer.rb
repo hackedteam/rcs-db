@@ -198,7 +198,7 @@ class DB
 
   # insert here the class to be indexed
   @@classes_to_be_indexed = [::Audit, ::User, ::Group, ::Alert, ::Status, ::Core, ::Collector,
-                             ::Injector, ::Item, ::PublicDocument, ::EvidenceFilter, ::Entity, ::WatchedItem]
+                             ::Injector, ::Item, ::PublicDocument, ::EvidenceFilter, ::Entity, ::WatchedItem, ::ConnectorQueue]
 
   def create_indexes
     db = DB.instance.mongo_connection

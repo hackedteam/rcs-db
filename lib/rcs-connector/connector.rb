@@ -8,6 +8,8 @@ require_release 'rcs-db/db_layer'
 require_release 'rcs-db/connector_manager'
 require_release 'rcs-db/db_objects/connector_queue'
 require_release 'rcs-db/grid'
+require_release 'rcs-db/alert'
+require_release 'rcs-db/archive_node'
 require_relative 'dispatcher'
 require_relative 'heartbeat'
 
@@ -26,9 +28,13 @@ class Runner
     RCS::DB::Config.instance.global['SHARD']
   end
 
+  def heartbeat_interval
+    @heartbeat_interval ||= RCS::DB::Config.instance.global['HB_INTERVAL']
+  end
+
   def run
     EM.epoll
-    EM.threadpool_size = 30
+    EM.threadpool_size = 10
 
     EM::run do
       unless first_shard?
@@ -37,11 +43,10 @@ class Runner
       end
 
       # set up the heartbeat (the interval is in the config)
-      EM.defer(proc{ HeartBeat.perform })
-      EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
+      EM.defer { HeartBeat.perform }
+      EM::PeriodicTimer.new(heartbeat_interval) { HeartBeat.perform }
 
-      # this is the actual polling
-      EM::PeriodicTimer.new(5) { Dispatcher.dispatch }
+      EM::PeriodicTimer.new(40) { Dispatcher.dispatch }
 
       trace :info, "rcs-connector module ready on shard #{current_shard}"
     end

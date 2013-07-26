@@ -224,12 +224,10 @@ class Events
 
         # ping for the connected clients
         EM::PeriodicTimer.new(60) { EM.defer(proc{ PushManager.instance.heartbeat }) }
-        EM::PeriodicTimer.new(100) { EM.defer(proc{ RCS::DB::ArchiveNode.ping_all }) }
 
         # send the first heartbeat to the db, we are alive and want to notify the db immediately
         # subsequent heartbeats will be sent every HB_INTERVAL
         EM.defer(proc{ HeartBeat.perform })
-        EM.defer(proc{ RCS::DB::ArchiveNode.ping_all })
 
         # set up the heartbeat (the interval is in the config)
         EM::PeriodicTimer.new(Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }

@@ -218,8 +218,9 @@ class InstanceWorker
   end
 
   def save_evidence(evidence)
-    # Returns if the evidence matches connectors with `keep` = false
-    return if RCS::DB::ConnectorManager.process_evidence(@target, evidence) == :discard
+    if LicenseManager.instance.check(:connectors)
+      return if RCS::DB::ConnectorManager.process_evidence(@target, evidence) == :discard
+    end
 
     # check if there are matching alerts for this evidence
     RCS::DB::Alerting.new_evidence(evidence)
