@@ -70,35 +70,6 @@ module RCS
         yield(:error, "Unable to reach #{address}. #{message}") if block_given?
       end
 
-      # def request(path, body = {})
-      #   body = body.respond_to?(:to_json) ? body.to_json : body
-      #   trace :debug, "POST #{address} (archive) #{path} #{body}"
-      #   url = "https://#{address}/"
-      #   headers = {x_sync_signature: signature}
-      #   connection_options = {connect_timeout: 3, inactivity_timeout: 3}
-      #   request_options = {head: headers, body: body, keepalive: true, path: path}
-
-      #   http = EventMachine::HttpRequest.new(url, connection_options).post(request_options)
-
-      #   http.errback do
-      #     message = http.error.exception.message rescue nil
-      #     trace :warn, "POST ERROR #{address} (archive) #{path} #{message || 'error'}"
-      #     yield(:error, "Unable to reach #{address}. #{message}") if block_given?
-      #   end
-
-      #   http.callback do
-      #     code = http.response_header.status
-      #     body = http.response
-      #     trace :debug, "RESP #{code} from #{address} (archive) #{body}"
-      #     content = JSON.parse(body).symbolize_keys rescue {}
-      #     if code != 200
-      #       yield(:error, content[:msg] || "Got error #{code} from server") if block_given?
-      #     else
-      #       yield(:success, content) if block_given?
-      #     end
-      #   end
-      # end
-
       def update_status(attributes)
         current = status.try(:attributes) || {}
         attributes = current.symbolize_keys.merge(attributes.symbolize_keys)
