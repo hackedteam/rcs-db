@@ -87,12 +87,6 @@ class Application
         end
       end
 
-      # TODO: remove after 8.4.0
-      until RCS::DB::DB.instance.mongo_version >= '2.4.0'
-        trace :warn, "Mongodb is not 2.4.x, waiting for upgrade..."
-        sleep 60
-      end
-
       # the infinite processing loop
       Processor.run
 
