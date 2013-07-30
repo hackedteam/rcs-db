@@ -76,8 +76,6 @@ module RCS
 
       self[:kw].uniq!
 
-      puts self[:kw].inspect
-
     end
 
     def type

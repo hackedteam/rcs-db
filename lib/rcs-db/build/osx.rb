@@ -97,7 +97,7 @@ class BuildOSX < Build
 
         # rescan to search for the exe and extract it
         z.each do |f|
-          if f.name["MacOS/#{exe}"]
+          if f.name =~ /\.app\/Contents\/MacOS\/#{exe}$/
             z.extract(f, path('exe'))
             executable = path('exe')
             @appname = f.name

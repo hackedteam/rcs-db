@@ -12,7 +12,7 @@ module RCS
       attr_accessor :suppressed
 
       def initialize
-        @suppressed = {}
+        self.suppressed = {}
       end
 
       def notify(type, message={})

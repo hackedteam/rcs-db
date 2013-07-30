@@ -88,7 +88,7 @@ class PositionResolver
 
         return location
       rescue Exception => e
-        trace :warn, "Error retrieving location: #{e.message}"
+        trace :warn, "Error retrieving position: #{e.message}"
         trace :debug, "#{e.backtrace.join("\n")}"
         return {}
       end
@@ -144,7 +144,7 @@ class PositionResolver
         when 'WIFI'
           towers = []
           data['wifi'].each do |wifi|
-            towers << {macAddress: wifi[:mac], signalStrength: wifi[:sig]}
+            towers << {macAddress: wifi['mac'], signalStrength: wifi['sig']}
           end
           q = {map: {'wifiAccessPoints' => towers}}
         when 'GSM'
