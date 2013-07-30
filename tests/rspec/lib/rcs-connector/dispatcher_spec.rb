@@ -11,14 +11,12 @@ describe RCS::Connector::Dispatcher do
   stub_temp_folder
   enable_license
 
-  describe '#status_message' do
-
-    it 'has a default value' do
-      expect(described_class.status_message).to eq 'Idle'
-    end
+  describe '#status' do
+    pending
   end
 
   describe '#dispatch' do
+    pending
   end
 
   describe '#dump' do
