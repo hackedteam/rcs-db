@@ -42,11 +42,9 @@ class Runner
         break
       end
 
-      # set up the heartbeat (the interval is in the config)
-      EM.defer { HeartBeat.perform }
       EM::PeriodicTimer.new(heartbeat_interval) { HeartBeat.perform }
 
-      EM::PeriodicTimer.new(40) { Dispatcher.dispatch }
+      EM.defer { Dispatcher.loop_dispatch_every(40) }
 
       trace :info, "rcs-connector module ready on shard #{current_shard}"
     end

@@ -13,39 +13,49 @@ module RCS
       extend self
 
       def archive_license?
-        # TODO
-        # LicenseManager.instance.check(:archive)
-        true
+        LicenseManager.instance.check(:archive)
       end
 
       def ping_archive_nodes
         return unless archive_license?
-        RCS::DB::ArchiveNode.all.each { |node| node.ping! }
+        RCS::DB::ArchiveNode.all.each do |node|
+          trace :debug, "Updating status of archive node #{node.address}"
+          node.ping!
+        end
+      end
+
+      def status_and_message
+        SystemStatus.reset
+
+        if SystemStatus.my_status != 'OK'
+          [SystemStatus.my_status, SystemStatus.my_error_msg]
+        else
+          status = Dispatcher.status.kind == :sick ? 'ERROR' : 'OK'
+          [status, Dispatcher.status.desc]
+        end
+      end
+
+      def ip
+        Socket.gethostname rescue 'unknown'
       end
 
       def update_status
         component_name = "RCS::Connector"
-        # reset the status
-        SystemStatus.my_status = 'OK'
-        SystemStatus.my_error_msg = nil
-        # our local ip address
-        ip = Socket.gethostname rescue 'unknown'
-        message = SystemStatus.my_error_msg || Dispatcher.status_message
-        # report our status
-        status = SystemStatus.my_status
-        # create the stats hash
+        trace :debug, "Updating status of #{component_name}"
+        status, message = status_and_message
         stats = {:disk => SystemStatus.disk_free, :cpu => SystemStatus.cpu_load, :pcpu => SystemStatus.my_cpu_load(component_name)}
-        # send the status to the db
         ::Status.status_update(component_name, ip, status, message, stats, 'connector', $version)
-      rescue Exception => e
-        trace :fatal, "Cannot perform status update: #{e.message}"
-        trace :fatal, e.backtrace
       end
 
+      # @warning: Exceptions are suppressed here
+      # @note: This method runs deferred in an Eventmachine thread
       def perform
-        trace :debug, "HeartBeat#perform"
         update_status
         ping_archive_nodes
+      rescue Interrupt
+        trace :fatal, "Heartbeat was interrupted because of a term signal"
+      rescue Exception => e
+        trace :fatal, "Exception during the heartbeat tick: #{e.message}, backtrace: #{e.backtrace}"
       end
     end
   end

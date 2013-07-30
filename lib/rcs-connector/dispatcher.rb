@@ -2,6 +2,7 @@ require 'rcs-common/trace'
 require 'fileutils'
 require_relative 'extractor'
 require_relative 'pool'
+require_relative 'dispatcher_status'
 
 module RCS
   module Connector
@@ -9,14 +10,29 @@ module RCS
       extend RCS::Tracer
       extend self
 
-      def dispatch
-        return unless can_dispatch?
+      # @warning: Exceptions are suppressed here
+      def loop_dispatch_every(seconds)
+        loop do
+          dispatch if can_dispatch?
+          sleep(seconds)
+        end
+      rescue Exception => e
+        status.change_to(:sick, "Some errors occurred. Check the logfile.")
+        trace :fatal, "Exception in dispatcher tick: #{e.message}, backtrace: #{e.backtrace}"
+        retry
+      end
 
-        @status_message = "working"
+      def status
+        @status ||= DispatcherStatus.new
+      end
+
+      def dispatch
+        scopes = ConnectorQueue.scopes
+        return if scopes.empty?
+
+        status.change_to(:healthy, "Working")
 
         pool = Pool.new
-
-        scopes = ConnectorQueue.scopes
 
         scopes.each do |scope|
           pool.defer(scope) do
@@ -29,12 +45,7 @@ module RCS
         end
 
         pool.wait_done
-
-        @status_message = "idle"
-      end
-
-      def status_message
-        (@status_message || "idle").capitalize
+        status.change_to(:healthy, "Idle")
       end
 
       def process(connector_queue)
@@ -57,17 +68,17 @@ module RCS
         if connector.archive?
           archive_node = connector.archive_node
           archive_node.send_evidence(evidence, data['path'])
+          connector_queue.destroy
         else
           dump(evidence, connector)
+          connector_queue.destroy
         end
-
-        connector_queue.destroy
       end
 
       def can_dispatch?
         return true if connectors_license?
         trace :warn, "Cannot dispatch connectors queue due to license limitation."
-        @status_message = "license needed"
+        status.change_to(:sick, "license needed")
         false
       end
 

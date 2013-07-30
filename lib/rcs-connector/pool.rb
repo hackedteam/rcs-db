@@ -17,7 +17,7 @@ module RCS
       end
 
       def defer(name)
-        trace :debug, "Starting thread \"#{name}\"..."
+        trace :debug, "Starting thread '#{name}'"
 
         synchronize { @running += 1 }
 
@@ -26,10 +26,12 @@ module RCS
             Thread.current[:name] = name
             Thread.current.abort_on_exception = true
             yield
+          rescue Exception => ex
+            trace(:error, "#{ex.message}, backtrace: #{ex.backtrace}")
           ensure
-            trace :debug, "Thread \"#{name}\" ended"
             synchronize do
               @running -= 1
+              trace :debug, "Ended. Killing myself. #{@running} dispatcher threads still running."
               @done_condition.broadcast if @running.zero?
               Thread.current.kill
             end

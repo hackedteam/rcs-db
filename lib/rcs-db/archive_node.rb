@@ -26,48 +26,54 @@ module RCS
       end
 
       def setup!
-        body = {signatures: ::Signature.all.to_json}
+        body = {signatures: ::Signature.all}
         request("/sync/setup", body)
       end
 
       def ping!
-        request("/sync/status") do |result, content|
-          if result == :success
+        request("/sync/status") do |code, content|
+          if code == 200
             update_status(content[:status])
           else
-            update_status(status: ::Status::ERROR, info: content)
+            update_status(status: ::Status::ERROR, info: content[:msg])
+            setup! if content[:code] == 2 #NEED_SIGNATURES
           end
         end
       end
 
       def send_evidence(evidence, path)
         body = {evidence: evidence, path: path}
-        request("/sync/evidence")
-      end
 
-      # TODO
-      # def send_items(items) do
-      # end
-
-      def request(path, body = {})
-        url = "https://#{address}#{path}"
-        body = body.respond_to?(:to_json) ? body.to_json : body
-        trace :debug, "POST #{address} (archive) #{path} #{body}"
-        headers = {x_sync_signature: signature}
-        RestClient::Request.execute(:method => :post, :url => url, :payload => body, :headers => headers, :timeout => 3, :open_timeout => 3) do |resp|
-          trace :debug, "RESP #{resp.code} from #{address} (archive) #{resp.body}"
-          content = JSON.parse(resp.body).symbolize_keys rescue {}
-          if resp.code != 200
-            yield(:error, content[:msg] || "Got error #{resp.code} from server") if block_given?
-          else
-            yield(:success, content) if block_given?
+        request("/sync/evidence", body, on_error: :raise) do |code, content|
+          if content[:code] == 4 #NEED_ITEMS
+            send_items(content[:operation_id])
+            send_evidence(evidence, path)
           end
         end
-      rescue Exception => error
-        message = http.error.exception.message rescue nil
-        message = error.message if message.blank?
-        trace :warn, "POST ERROR #{address} (archive) #{path} #{message}"
-        yield(:error, "Unable to reach #{address}. #{message}") if block_given?
+      end
+
+      def send_items(operation_id)
+        body = {items: ::Item.operation_items_sorted_by_kind(operation_id)}
+        request("/sync/items", body, on_error: :raise)
+      end
+
+      def request(path, body = {}, opts = {})
+        url = "https://#{address}#{path}"
+        body = body.respond_to?(:to_json) ? body.to_json : body
+        trace :debug, "POST #{address} (archive) #{path} #{body[0..60]}..."
+        headers = {x_sync_signature: signature}
+        # TODO: Check if restclient has implemented the keepalive feature otherwise use net/http/persistent
+        RestClient::Request.execute(:method => :post, :url => url, :payload => body, :headers => headers, :timeout => 3, :open_timeout => 3) do |resp|
+          trace :debug, "RESP #{resp.code} from #{address} (archive) #{resp.body[0..60]}..."
+          content = JSON.parse(resp.body).symbolize_keys rescue {}
+          raise(content[:msg] || "Receive error #{resp.code} from #{address}") if resp.code != 200 and opts[:on_error] == :raise
+          yield(resp.code, content) if block_given?
+        end
+      rescue RestClient::Exception => error
+        trace :error, "POST ERROR #{address} (archive) #{path} #{error}"
+        error_msg = ["Unable to reach #{address}", error.message].join(', ')
+        raise(error_msg) if opts[:on_error] == :raise
+        yield(-1, {msg: error_msg}) if block_given?
       end
 
       def update_status(attributes)

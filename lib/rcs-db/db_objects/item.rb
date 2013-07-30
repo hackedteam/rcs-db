@@ -92,6 +92,13 @@ class Item
 
   public
 
+  def self.operation_items_sorted_by_kind(operation)
+    operation_id = operation.respond_to?(:id) ? operation.id : Moped::BSON::ObjectId.from_string(operation)
+    order = %w[operation target global factory agent]
+    items = self.or([{_id: operation_id}, {path: {'$in' => [operation_id]}}]).all
+    items.sort! { |x, y| order.index(x[:_kind]) <=> order.index(y[:_kind]) }
+  end
+
   def self.reset_dashboard
     Item.any_in(_kind: ['agent', 'target']).each {|i| i.reset_dashboard}
   end
