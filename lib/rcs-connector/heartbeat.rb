@@ -12,12 +12,7 @@ module RCS
       extend RCS::Tracer
       extend self
 
-      def archive_license?
-        LicenseManager.instance.check(:archive)
-      end
-
       def ping_archive_nodes
-        return unless archive_license?
         RCS::DB::ArchiveNode.all.each do |node|
           trace :debug, "Updating status of archive node #{node.address}"
           node.ping!
