@@ -13,5 +13,8 @@ Collector:
 
 DB:
   - Ability to create manual entities in the intelligence module
-  - Intelligence section new creates links between entities
+  - Links are created between entities communicating each other
+  - Links are created between entities that were in the same place
+  - Most visited places
   - Ability to search with OR queries in info and notes
+  - New and revamped connector system, now supports remote archiviation
