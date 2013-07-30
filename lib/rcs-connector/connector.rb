@@ -3,15 +3,16 @@ require 'rcs-common/trace'
 require 'rcs-common/fixnum'
 require 'rcs-common/path_utils'
 
-require_release 'rcs-worker/license'
 require_release 'rcs-db/db_layer'
 require_release 'rcs-db/connector_manager'
 require_release 'rcs-db/db_objects/connector_queue'
 require_release 'rcs-db/grid'
 require_release 'rcs-db/alert'
 require_release 'rcs-db/archive_node'
+
 require_relative 'dispatcher'
 require_relative 'heartbeat'
+require_relative 'license'
 
 module RCS
 module Connector
@@ -95,6 +96,14 @@ class Application
 
       # load the license from the db (saved by db)
       LicenseManager.instance.load_from_db
+
+      unless LicenseManager.instance.check :connectors
+        # do nothing...
+        trace :info, "Connector license is disabled, going to sleep..."
+        while true do
+          sleep 60
+        end
+      end
 
       # do the dirty job!
       Runner.new.run
