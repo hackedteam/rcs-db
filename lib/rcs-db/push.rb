@@ -13,6 +13,7 @@ module RCS
 
       def initialize
         self.suppressed = {}
+        @suppression_window = 1.0
       end
 
       def notify(type, message={})
@@ -84,7 +85,7 @@ module RCS
         hash = message['suppress']
         return false unless hash
         return false unless hash['key'] and hash['start']
-        Time.now.getutc.to_f - hash['start'] <= 1.0
+        Time.now.getutc.to_f - hash['start'] <= @suppression_window
       end
 
       def dispatch(type, message)
