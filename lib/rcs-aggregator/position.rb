@@ -14,6 +14,9 @@ class PositionAggregator
 
   def self.extract(target_id, ev)
 
+    # check if the position is good
+    return [] if ev.data['latitude'].nil? or ev.data['longitude'].nil?
+
     positioner_agg = Aggregate.target(target_id).find_or_create_by(type: :positioner, day: '0', aid: '0')
 
     min_time = minimum_time_in_a_position
@@ -23,7 +26,7 @@ class PositionAggregator
     # load the positioner from the db, if already saved, otherwise create a new one
     if positioner_agg.data[ev.aid.to_s]
       begin
-        trace :debug, "Reloading positioner from saved status (#{ev.aid.to_s})"
+        #trace :debug, "Reloading positioner from saved status (#{ev.aid.to_s})"
         positioner = RCS::DB::Positioner.new_from_dump(positioner_agg.data[ev.aid.to_s]['positioner'])
       rescue Exception => e
         trace :warn, "Cannot restore positioner status, creating a new one..."
@@ -46,6 +49,8 @@ class PositionAggregator
       trace :debug, "Creating a new positioner for #{ev.aid.to_s}"
       positioner = RCS::DB::Positioner.new(time: min_time)
     end
+
+    trace :debug, "lat: #{ev.data['latitude'].to_f}, lon: #{ev.data['longitude'].to_f}, r: #{ev.data['accuracy'].to_i}"
 
     # create a point from the evidence
     point = Point.new(lat: ev.data['latitude'].to_f, lon: ev.data['longitude'].to_f, r: ev.data['accuracy'].to_i, time: ev.da)
@@ -71,7 +76,12 @@ class PositionAggregator
   end
 
   def self.find_similar_or_create_by(target_id, params)
+
     position = params[:data][:position]
+
+    # extract the radius and don't save points that are too precise, enlarge it to the min similarity radius
+    params[:data][:radius] = params[:data][:position][:radius]
+    params[:data][:radius] = Point::MINIMUM_SIMILAR_RADIUS if params[:data][:radius] < Point::MINIMUM_SIMILAR_RADIUS
 
     # the idea here is:
     # search in the db for point near the current one
@@ -79,14 +89,14 @@ class PositionAggregator
     past = Aggregate.target(target_id).positions_within(position).to_a
 
     # sort the result by day in reverse order, so we get the most recent first
-    past.sort_by {|x| x.day}.reverse!
+    past.sort_by! {|x| x.day}.reverse!
 
     # search if we have the same point in the past (starting from today)
     # return if found
     past.each do |agg|
       # convert aggregate to point
       old = agg.to_point
-      new = Point.new(lat: position[:latitude], lon: position[:longitude], r: position[:radius])
+      new = Point.new(lat: position[:latitude], lon: position[:longitude], r: params[:data][:radius])
 
       # if similar, return the old point
       if old.similar_to? new
@@ -101,11 +111,8 @@ class PositionAggregator
     end
 
     # no previous match create a new one
-    params[:data][:radius] = params[:data][:position][:radius]
-    # don't save points that are too precise, enlarge it to the min similarity radius
-    params[:data][:radius] = Point::MINIMUM_SIMILAR_RADIUS if params[:data][:radius] < Point::MINIMUM_SIMILAR_RADIUS
-
     params[:data][:position] = [params[:data][:position][:longitude], params[:data][:position][:latitude]]
+
     Aggregate.target(target_id).create!(params)
   end
 
