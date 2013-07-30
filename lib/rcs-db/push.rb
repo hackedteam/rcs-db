@@ -27,20 +27,12 @@ module RCS
         PushQueue.add(type, message)
       end
 
-      def defer(&block)
-        Thread.new(&block)
-      end
-
-      def dispatcher_start
-        defer do
-          begin
-            loop_on { dispatch_or_wait }
-          rescue Exception => e
-            trace :error, "PUSH ERROR: Thread error: #{e.message}"
-            trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
-            retry
-          end
-        end
+      def run
+        loop_on { dispatch_or_wait }
+      rescue Exception => e
+        trace :error, "PUSH ERROR: Thread error: #{e.message}"
+        trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
+        retry
       end
 
       def loop_on(&block)
@@ -60,11 +52,17 @@ module RCS
         type, message = suppressed.delete(suppressed.keys.first)
         return [type, message] if type
 
-        queued = PushQueue.get_queued
-        return unless queued
+        queued = nil
+
+        loop_on do
+          queued = PushQueue.get_queued
+          return unless queued
+          type, message = queued[0].type, queued[0].message
+          suppress?(message) ? suppress(type, message) : break
+        end
 
         trace :debug, "#{queued[1]} push messages to be processed in queue"
-        [queued[0].type, queued[0].message]
+        [type, message]
       end
 
       def wait_a_moment
@@ -107,12 +105,10 @@ module RCS
       def dispatch_or_wait
         type, message = pop
 
-        if type.nil?
-          wait_a_moment
-        elsif suppress?(message)
-          suppress(type, message)
-        else
+        if type
           dispatch(type, message)
+        else
+          wait_a_moment
         end
       end
 
