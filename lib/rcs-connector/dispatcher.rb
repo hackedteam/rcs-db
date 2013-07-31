@@ -9,7 +9,6 @@ module RCS
       extend RCS::Tracer
       extend self
 
-      # @warning: Exceptions are suppressed here
       def run
         @pool = Pool.new
 
@@ -38,6 +37,7 @@ module RCS
         end
       end
 
+      # @warning: Exceptions are suppressed here
       def dispatch(scope)
         loop do
           connector_queue = ConnectorQueue.take(scope)
