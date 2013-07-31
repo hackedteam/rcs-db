@@ -110,14 +110,14 @@ module RCS
         end
       end
 
-      describe '#dispatcher_start' do
+      describe '#run' do
 
         before { subject.stub(:loop_on).and_yield }
         before { subject.stub(:wait_a_moment) }
 
         it 'calls #dispatcher' do
           subject.should_receive(:dispatch_or_wait)
-          subject.dispatcher_start
+          subject.run
         end
 
         context 'when #dispatcher raises an error' do
@@ -134,7 +134,7 @@ module RCS
 
           it 'recalls it until it does not fail anymore' do
             subject.should_receive(:dispatch_or_wait).twice
-            subject.dispatcher_start
+            subject.run
           end
         end
       end
