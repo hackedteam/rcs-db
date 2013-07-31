@@ -23,7 +23,7 @@ class PositionAggregator
 
     result = nil
 
-    if positioner_agg.data[ev.aid.to_s]['last'] > ev.da
+    if positioner_agg.data[ev.aid.to_s] and positioner_agg.data[ev.aid.to_s]['last'] > ev.da
       trace :error, "Position evidence not ordered [#{positioner_agg.data[ev.aid.to_s]['last']}, #{ev.da}], skipping..."
       return []
     end
