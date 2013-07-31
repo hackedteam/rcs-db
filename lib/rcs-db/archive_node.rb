@@ -7,30 +7,6 @@ require_relative 'db_objects/signature'
 
 module RCS
   module DB
-    class ArchiveNodeStatus
-      def initialize(address)
-        @address = address
-      end
-
-      def read
-        ::Status.where(address: @address, type: 'archive').first
-      end
-
-      def remove
-        read.try(:destroy)
-      end
-
-      def update(attributes)
-        current = read.try(:attributes) || {}
-        attributes = current.symbolize_keys.merge(attributes.symbolize_keys)
-        stats = attributes.reject { |key| ![:disk, :cpu, :pcpu].include?(key) }
-        status_code = ::Status::STATUS_CODE.find { |key, val| val == attributes[:status] }.try(:first) || attributes[:status]
-        params = ["RCS::DB (Archive)", @address, status_code, attributes[:info], stats, 'archive', attributes[:version]]
-
-        ::Status.status_update(*params)
-      end
-    end
-
     class ArchiveNode
       include RCS::Tracer
       extend RCS::Tracer
@@ -46,7 +22,7 @@ module RCS
       end
 
       def status
-        @status ||= ArchiveNodeStatus.new(address)
+        ::Status.where(address: address, type: 'archive').first
       end
 
       def setup!
@@ -57,9 +33,9 @@ module RCS
       def ping!
         request("/sync/status") do |code, content|
           if code == 200
-            status.update(content[:status])
+            update_status(content[:status])
           else
-            status.update(status: ::Status::ERROR, info: content[:msg])
+            update_status(status: ::Status::ERROR, info: content[:msg])
             setup! if content[:code] == 2 #NEED_SIGNATURES
           end
         end
@@ -100,8 +76,18 @@ module RCS
         yield(-1, {msg: error_msg}) if block_given?
       end
 
+      def update_status(attributes)
+        current = status.try(:attributes) || {}
+        attributes = current.symbolize_keys.merge(attributes.symbolize_keys)
+        stats = attributes.reject { |key| ![:disk, :cpu, :pcpu].include?(key) }
+        status_code = ::Status::STATUS_CODE.find { |key, val| val == attributes[:status] }.try(:first) || attributes[:status]
+        params = ["RCS::DB (Archive)", address, status_code, attributes[:info], stats, 'archive', attributes[:version]]
+
+        ::Status.status_update(*params)
+      end
+
       def destroy
-        status.remove
+        status.try(:destroy)
       end
 
       def self.all

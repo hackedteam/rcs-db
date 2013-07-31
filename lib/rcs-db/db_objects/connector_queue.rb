@@ -7,7 +7,7 @@ class ConnectorQueue
 
   field :cid,   as: :connector_id,  type: Moped::BSON::ObjectId
   field :d,     as: :data,          type: Hash, default: {}
-  field :s,     as: :scope,         type: Symbol
+  field :s,     as: :scope,         type: String
 
   store_in collection: 'connector_queue'
 
@@ -62,7 +62,7 @@ class ConnectorQueue
 
   def self.push(connector, data)
     trace :debug, "Adding to ConnectorQueue: #{connector.id}, #{data.inspect}"
-    scope = connector.archive? ? connector.dest.to_sym : :default
+    scope = connector.archive? ? connector.dest : 'default'
     attributes = {connector_id: connector.id, data: data, scope: scope}
     create!(attributes)
   end

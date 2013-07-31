@@ -2,7 +2,6 @@ require 'rcs-common/trace'
 require 'fileutils'
 require_relative 'extractor'
 require_relative 'pool'
-require_relative 'health'
 
 module RCS
   module Connector
@@ -12,7 +11,7 @@ module RCS
 
       # @warning: Exceptions are suppressed here
       def run
-        @pool = Pool.new(health)
+        @pool = Pool.new
 
         loop_and_wait do
           ConnectorQueue.scopes.each do |scope|
@@ -20,16 +19,16 @@ module RCS
             @pool.defer(scope) { dispatch(scope) }
           end
 
-          health.change_to(:healthy, @pool.empty? ? "Idle" : "Working") unless health.still_sick?
+          @status = @pool.empty? ? "Idle" : "Working"
         end
-      rescue Exception => e
-        health.change_to(:sick, "Some errors occurred. Check the logfile.")
-        trace :fatal, "Exception in dispatcher tick: #{e.message}, backtrace: #{e.backtrace}"
-        retry
       end
 
-      def health
-        @health ||= Health.new
+      def status
+        @status || "Idle"
+      end
+
+      def thread_with_errors
+        @thread_with_errors ||= []
       end
 
       def loop_and_wait
@@ -45,6 +44,11 @@ module RCS
           break unless connector_queue
           process(connector_queue)
         end
+        @thread_with_errors.delete(scope)
+      rescue Exception => e
+        trace :error, "Exception in dispatcher thread #{scope}: #{e.message}, #{e.backtrace}"
+        @thread_with_errors << scope
+        @thread_with_errors.uniq!
       end
 
       def process(connector_queue)

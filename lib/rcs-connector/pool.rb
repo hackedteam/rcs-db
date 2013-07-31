@@ -3,10 +3,9 @@ module RCS
     class Pool
       include RCS::Tracer
 
-      def initialize(global_health)
+      def initialize
         @running = []
         @mutex = Mutex.new
-        @global_health = global_health
       end
 
       def empty?
@@ -27,9 +26,6 @@ module RCS
             Thread.current[:name] = name
             Thread.current.abort_on_exception = true
             yield
-          rescue Exception => ex
-            trace(:error, "#{ex.message}, backtrace: #{ex.backtrace}")
-            synchronize { @global_health.change_to(:sick, "Some errors occurred. Check the logfile.") }
           ensure
             synchronize do
               @running.delete(name)

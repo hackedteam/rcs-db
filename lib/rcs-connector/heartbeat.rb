@@ -12,21 +12,15 @@ module RCS
       extend RCS::Tracer
       extend self
 
-      def ping_archive_nodes
+      def check_archive_nodes
         RCS::DB::ArchiveNode.all.each do |node|
           trace :debug, "Updating status of archive node #{node.address}"
+
           node.ping!
-        end
-      end
 
-      def status_and_message
-        SystemStatus.reset
-
-        if SystemStatus.my_status != 'OK'
-          [SystemStatus.my_status, SystemStatus.my_error_msg]
-        else
-          status = Dispatcher.health.kind == :sick ? 'ERROR' : 'OK'
-          [status, Dispatcher.health.desc]
+          if node.status.ok? and Dispatcher.thread_with_errors.include?(node.address)
+            node.update_status(status: ::Status::ERROR, info: "Some errors occured. Check the logfile.")
+          end
         end
       end
 
@@ -37,7 +31,7 @@ module RCS
       def update_status
         component_name = "RCS::Connector"
         trace :debug, "Updating status of #{component_name}"
-        status, message = status_and_message
+        status, message = ['OK', Dispatcher.status]
         stats = {:disk => SystemStatus.disk_free, :cpu => SystemStatus.cpu_load, :pcpu => SystemStatus.my_cpu_load(component_name)}
         ::Status.status_update(component_name, ip, status, message, stats, 'connector', $version)
       end
@@ -46,7 +40,7 @@ module RCS
       # @note: This method runs deferred in an Eventmachine thread
       def perform
         update_status
-        ping_archive_nodes
+        check_archive_nodes
       rescue Interrupt
         trace :fatal, "Heartbeat was interrupted because of a term signal"
       rescue Exception => e

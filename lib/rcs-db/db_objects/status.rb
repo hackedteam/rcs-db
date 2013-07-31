@@ -36,6 +36,10 @@ class Status
 
   store_in collection: 'statuses'
 
+  def ok?
+    self.status == OK
+  end
+
   class << self
 
     # updates or insert the status of a component
