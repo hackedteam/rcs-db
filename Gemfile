@@ -1,7 +1,7 @@
 source "http://rubygems.org"
 # Add dependencies required to use your gem here.
 
-gem "rcs-common", ">= 8.4.1", :path => "../rcs-common"
+gem "rcs-common", ">= 9.0.0", :path => "../rcs-common"
 
 gem 'em-http-request', "=1.0.3"
 gem 'em-websocket'
