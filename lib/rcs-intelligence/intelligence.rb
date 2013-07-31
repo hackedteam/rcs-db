@@ -2,20 +2,11 @@
 #  The main file of the Intelligence module (correlation)
 #
 
-# from RCS::DB
-if File.directory?(Dir.pwd + '/lib/rcs-intelligence-release')
-  require 'rcs-db-release/db'
-  require 'rcs-db-release/config'
-  require 'rcs-db-release/db_layer'
-  require 'rcs-db-release/grid'
-  require 'rcs-db-release/link_manager'
-else
-  require 'rcs-db/db'
-  require 'rcs-db/config'
-  require 'rcs-db/db_layer'
-  require 'rcs-db/grid'
-  require 'rcs-db/link_manager'
-end
+require_release 'rcs-db/db'
+require_release 'rcs-db/config'
+require_release 'rcs-db/db_layer'
+require_release 'rcs-db/grid'
+require_release 'rcs-db/link_manager'
 
 # from RCS::Common
 require 'rcs-common/trace'

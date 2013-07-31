@@ -2,20 +2,11 @@
 #  The main file of the translator
 #
 
-# from RCS::DB
-if File.directory?(Dir.pwd + '/lib/rcs-translate-release')
-  require 'rcs-db-release/config'
-  require 'rcs-db-release/db_layer'
-  require 'rcs-db-release/grid'
-  require 'rcs-db-release/alert'
-  require 'rcs-db-release/sessions'
-else
-  require 'rcs-db/config'
-  require 'rcs-db/db_layer'
-  require 'rcs-db/grid'
-  require 'rcs-db/alert'
-  require 'rcs-db/sessions'
-end
+require_release 'rcs-db/config'
+require_release 'rcs-db/db_layer'
+require_release 'rcs-db/grid'
+require_release 'rcs-db/alert'
+require_release 'rcs-db/sessions'
 
 # from RCS::Common
 require 'rcs-common/trace'

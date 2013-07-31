@@ -8,14 +8,8 @@ require_relative 'heartbeat'
 require_relative 'backlog'
 require_relative 'statistics'
 
-# from RCS::DB
-if File.directory?(Dir.pwd + '/lib/rcs-worker-release')
-  require 'rcs-db-release/config'
-  require 'rcs-db-release/db_layer'
-else
-  require 'rcs-db/config'
-  require 'rcs-db/db_layer'
-end
+require_release 'rcs-db/config'
+require_release 'rcs-db/db_layer'
 
 # from RCS::Common
 require 'rcs-common/trace'

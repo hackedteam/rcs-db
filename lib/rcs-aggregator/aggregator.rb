@@ -2,24 +2,13 @@
 #  The main file of the aggregator
 #
 
-# from RCS::DB
-if File.directory?(Dir.pwd + '/lib/rcs-aggregator-release')
-  require 'rcs-db-release/db'
-  require 'rcs-db-release/config'
-  require 'rcs-db-release/db_layer'
-  require 'rcs-db-release/grid'
-  require 'rcs-db-release/position/point'
-  require 'rcs-db-release/position/positioner'
-  require 'rcs-db-release/position/resolver'
-else
-  require 'rcs-db/db'
-  require 'rcs-db/config'
-  require 'rcs-db/db_layer'
-  require 'rcs-db/grid'
-  require 'rcs-db/position/point'
-  require 'rcs-db/position/positioner'
-  require 'rcs-db/position/resolver'
-end
+require_release 'rcs-db/db'
+require_release 'rcs-db/config'
+require_release 'rcs-db/db_layer'
+require_release 'rcs-db/grid'
+require_release 'rcs-db/position/point'
+require_release 'rcs-db/position/positioner'
+require_release 'rcs-db/position/resolver'
 
 # from RCS::Common
 require 'rcs-common/trace'
