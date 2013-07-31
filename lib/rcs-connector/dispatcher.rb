@@ -55,27 +55,20 @@ module RCS
         trace :debug, "Processing #{connector_queue}"
         connector = connector_queue.connector
         data = connector_queue.data
-
-        unless connector_queue
-          trace :warn, "Was about to process #{connector_queue}, but the connector is missing."
-          return
-        end
-
         evidence = connector_queue.evidence
 
-        unless evidence
+        if !connector
+          trace :warn, "Was about to process #{connector_queue}, but the connector is missing."
+        elsif !evidence
           trace :warn, "Was about to process #{connector_queue}, but the evidence is missing."
-          return
-        end
-
-        if connector.archive?
+        elsif connector.archive?
           archive_node = connector.archive_node
           archive_node.send_evidence(evidence, data['path'])
-          connector_queue.destroy
         else
           dump(evidence, connector)
-          connector_queue.destroy
         end
+
+        connector_queue.destroy
       end
 
       def dump(evidence, connector)
