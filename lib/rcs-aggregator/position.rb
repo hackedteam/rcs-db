@@ -24,7 +24,8 @@ class PositionAggregator
     result = nil
 
     if positioner_agg.data[ev.aid.to_s] and positioner_agg.data[ev.aid.to_s]['last'] > ev.da
-      trace :error, "Position evidence not ordered [#{positioner_agg.data[ev.aid.to_s]['last']}, #{ev.da}], skipping..."
+      agent = Item.agents.find(ev.aid)
+      trace :error, "Position evidence not ordered #{ev.data['type']} [#{positioner_agg.data[ev.aid.to_s]['last']}, #{ev.da}], skipping evidence for agent #{agent.name}"
       return []
     end
 
