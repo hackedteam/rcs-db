@@ -3,23 +3,24 @@ module RCS
     class Pool
       include RCS::Tracer
 
-      def initialize
-        @threads = {}
-        @running = 0
+      def initialize(global_health)
+        @running = []
         @mutex = Mutex.new
-        @done_condition = ConditionVariable.new
+        @global_health = global_health
       end
 
-      def wait_done
-        @mutex.synchronize do
-          @done_condition.wait(@mutex)
-        end
+      def empty?
+        synchronize { @running.empty? }
+      end
+
+      def has_thread?(name)
+        synchronize { @running.include?(name) }
       end
 
       def defer(name)
-        trace :debug, "Starting thread '#{name}'"
+        synchronize { @running << name }
 
-        synchronize { @running += 1 }
+        trace :debug, "Starting thread '#{name}'"
 
         Thread.new do
           begin
@@ -28,11 +29,11 @@ module RCS
             yield
           rescue Exception => ex
             trace(:error, "#{ex.message}, backtrace: #{ex.backtrace}")
+            synchronize { @global_health.change_to(:sick, "Some errors occurred. Check the logfile.") }
           ensure
             synchronize do
-              @running -= 1
-              trace :debug, "Ended. Killing myself. #{@running} dispatcher threads still running."
-              @done_condition.broadcast if @running.zero?
+              @running.delete(name)
+              trace :debug, "Ended. Killing myself. #{@running.size} dispatcher threads still running."
               Thread.current.kill
             end
           end

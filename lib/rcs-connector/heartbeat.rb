@@ -25,8 +25,8 @@ module RCS
         if SystemStatus.my_status != 'OK'
           [SystemStatus.my_status, SystemStatus.my_error_msg]
         else
-          status = Dispatcher.status.kind == :sick ? 'ERROR' : 'OK'
-          [status, Dispatcher.status.desc]
+          status = Dispatcher.health.kind == :sick ? 'ERROR' : 'OK'
+          [status, Dispatcher.health.desc]
         end
       end
 

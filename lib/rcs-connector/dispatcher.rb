@@ -2,7 +2,7 @@ require 'rcs-common/trace'
 require 'fileutils'
 require_relative 'extractor'
 require_relative 'pool'
-require_relative 'dispatcher_status'
+require_relative 'health'
 
 module RCS
   module Connector
@@ -11,41 +11,40 @@ module RCS
       extend self
 
       # @warning: Exceptions are suppressed here
-      def loop_dispatch_every(seconds)
-        loop do
-          dispatch
-          sleep(seconds)
+      def run
+        @pool = Pool.new(health)
+
+        loop_and_wait do
+          ConnectorQueue.scopes.each do |scope|
+            next if @pool.has_thread?(scope)
+            @pool.defer(scope) { dispatch(scope) }
+          end
+
+          health.change_to(:healthy, @pool.empty? ? "Idle" : "Working") unless health.still_sick?
         end
       rescue Exception => e
-        status.change_to(:sick, "Some errors occurred. Check the logfile.")
+        health.change_to(:sick, "Some errors occurred. Check the logfile.")
         trace :fatal, "Exception in dispatcher tick: #{e.message}, backtrace: #{e.backtrace}"
         retry
       end
 
-      def status
-        @status ||= DispatcherStatus.new
+      def health
+        @health ||= Health.new
       end
 
-      def dispatch
-        scopes = ConnectorQueue.scopes
-        return if scopes.empty?
-
-        status.change_to(:healthy, "Working")
-
-        pool = Pool.new
-
-        scopes.each do |scope|
-          pool.defer(scope) do
-            loop do
-              connector_queue = ConnectorQueue.take(scope)
-              break unless connector_queue
-              process(connector_queue)
-            end
-          end
+      def loop_and_wait
+        loop do
+          yield
+          sleep(30)
         end
+      end
 
-        pool.wait_done
-        status.change_to(:healthy, "Idle")
+      def dispatch(scope)
+        loop do
+          connector_queue = ConnectorQueue.take(scope)
+          break unless connector_queue
+          process(connector_queue)
+        end
       end
 
       def process(connector_queue)
