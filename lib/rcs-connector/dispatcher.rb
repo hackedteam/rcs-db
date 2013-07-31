@@ -13,7 +13,7 @@ module RCS
       # @warning: Exceptions are suppressed here
       def loop_dispatch_every(seconds)
         loop do
-          dispatch if can_dispatch?
+          dispatch
           sleep(seconds)
         end
       rescue Exception => e
@@ -73,17 +73,6 @@ module RCS
           dump(evidence, connector)
           connector_queue.destroy
         end
-      end
-
-      def can_dispatch?
-        return true if connectors_license?
-        trace :warn, "Cannot dispatch connectors queue due to license limitation."
-        status.change_to(:sick, "license needed")
-        false
-      end
-
-      def connectors_license?
-        LicenseManager.instance.check(:connectors)
       end
 
       def dump(evidence, connector)
