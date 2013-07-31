@@ -7,6 +7,7 @@ module RCS
     class SyncController < RESTController
 
       bypass_auth [:evidence, :items, :status, :setup]
+      require_license :evidence, :items, :status, :setup, license: :archive
 
       NEED_SIGNATURES = 2
       NEED_ITEMS = 4
@@ -93,6 +94,7 @@ module RCS
         evi = collection.new(attributes)
         evi._id = attributes["_id"]
         evi.save!
+        # TODO: send the evidence to #save_evidence
       end
 
       def store_items(items)
