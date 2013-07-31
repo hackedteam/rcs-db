@@ -1,6 +1,7 @@
 #
 # The main file of the worker
 #
+require 'rcs-common/path_utils'
 
 # relatives
 require_relative 'call_processor'
@@ -10,12 +11,11 @@ require_relative 'statistics'
 
 require_release 'rcs-db/config'
 require_release 'rcs-db/db_layer'
+require_release 'rcs-db/license_component'
 
 # from RCS::Common
 require 'rcs-common/trace'
 require 'rcs-common/fixnum'
-
-require_relative 'license'
 
 # form System
 require 'digest/md5'

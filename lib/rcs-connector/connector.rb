@@ -9,10 +9,10 @@ require_release 'rcs-db/db_objects/connector_queue'
 require_release 'rcs-db/grid'
 require_release 'rcs-db/alert'
 require_release 'rcs-db/archive_node'
+require_release 'rcs-db/license_component'
 
 require_relative 'dispatcher'
 require_relative 'heartbeat'
-require_relative 'license'
 
 module RCS
 module Connector

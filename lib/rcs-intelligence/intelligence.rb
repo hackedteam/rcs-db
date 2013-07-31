@@ -1,19 +1,20 @@
 #
 #  The main file of the Intelligence module (correlation)
 #
+require 'rcs-common/path_utils'
 
 require_release 'rcs-db/db'
 require_release 'rcs-db/config'
 require_release 'rcs-db/db_layer'
 require_release 'rcs-db/grid'
 require_release 'rcs-db/link_manager'
+require_release 'rcs-db/license_component'
 
 # from RCS::Common
 require 'rcs-common/trace'
 
 require_relative 'heartbeat'
 require_relative 'processor'
-require_relative 'license'
 
 require 'eventmachine'
 

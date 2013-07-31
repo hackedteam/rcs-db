@@ -1,6 +1,7 @@
 #
 #  The main file of the aggregator
 #
+require 'rcs-common/path_utils'
 
 require_release 'rcs-db/db'
 require_release 'rcs-db/config'
@@ -9,13 +10,13 @@ require_release 'rcs-db/grid'
 require_release 'rcs-db/position/point'
 require_release 'rcs-db/position/positioner'
 require_release 'rcs-db/position/resolver'
+require_release 'rcs-db/license_component'
 
 # from RCS::Common
 require 'rcs-common/trace'
 
 require_relative 'processor'
 require_relative 'heartbeat'
-require_relative 'license'
 
 module RCS
 module Aggregator

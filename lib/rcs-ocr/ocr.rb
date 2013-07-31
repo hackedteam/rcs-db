@@ -1,6 +1,7 @@
 #
 #  The main file of the ocr
 #
+require 'rcs-common/path_utils'
 
 require_release 'rcs-db/config'
 require_release 'rcs-db/db_layer'
@@ -8,12 +9,12 @@ require_release 'rcs-db/grid'
 require_release 'rcs-db/exec'
 require_release 'rcs-db/alert'
 require_release 'rcs-db/sessions'
+require_release 'rcs-db/license_component'
 
 # from RCS::Common
 require 'rcs-common/trace'
 
 require_relative 'processor'
-require_relative 'license'
 
 module RCS
 module OCR
