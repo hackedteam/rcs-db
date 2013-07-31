@@ -54,14 +54,14 @@ module RCS
         data = connector_queue.data
 
         unless connector_queue
-          trace :warn, "Was about process #{connector_queue}, but the connector is missing."
+          trace :warn, "Was about to process #{connector_queue}, but the connector is missing."
           return
         end
 
         evidence = connector_queue.evidence
 
         unless evidence
-          trace :warn, "Was about process #{connector_queue}, but the evidence is missing."
+          trace :warn, "Was about to process #{connector_queue}, but the evidence is missing."
           return
         end
 
