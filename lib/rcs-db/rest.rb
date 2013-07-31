@@ -130,7 +130,9 @@ class RESTController
   def self.require_license(*args)
     options = args.pop
     license = options[:license] || raise("Missing license option")
-    __send__(:define_method, :require_license_methods) { {methods: args, license: license} }
+    self.send(:define_method, :require_license_methods) do
+      {methods: args, license: license}
+    end
   end
 
   def request=(request)
