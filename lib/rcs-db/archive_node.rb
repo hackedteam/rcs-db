@@ -69,7 +69,7 @@ module RCS
           raise(content[:msg] || "Receive error #{resp.code} from #{address}") if resp.code != 200 and opts[:on_error] == :raise
           yield(resp.code, content) if block_given?
         end
-      rescue RestClient::Exception => error
+      rescue Exception => error
         trace :error, "POST ERROR #{address} (archive) #{path} #{error}"
         error_msg = ["Unable to reach #{address}", error.message].join(', ')
         raise(error_msg) if opts[:on_error] == :raise
