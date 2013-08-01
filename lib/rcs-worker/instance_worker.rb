@@ -1,20 +1,13 @@
 # from RCS::Common
 require 'rcs-common/trace'
 require 'rcs-common/evidence'
+require 'rcs-common/path_utils'
 
-if File.directory?(Dir.pwd + '/lib/rcs-worker-release')
-  require 'rcs-db-release/config'
-  require 'rcs-db-release/db_layer'
-  require 'rcs-db-release/grid'
-  require 'rcs-db-release/alert'
-  require 'rcs-db-release/connector_manager'
-else
-  require 'rcs-db/config'
-  require 'rcs-db/db_layer'
-  require 'rcs-db/grid'
-  require 'rcs-db/alert'
-  require 'rcs-db/connector_manager'
-end
+require_release 'rcs-db/config'
+require_release 'rcs-db/db_layer'
+require_release 'rcs-db/grid'
+require_release 'rcs-db/alert'
+require_release 'rcs-db/connector_manager'
 
 require_relative 'call_processor'
 require_relative 'mic_processor'
@@ -217,9 +210,9 @@ class InstanceWorker
     EM.defer @process
   end
 
-  def save_evidence(evidence)
+  def self.enqueue(target, agent, evidence)
     if LicenseManager.instance.check(:connectors)
-      return if RCS::DB::ConnectorManager.process_evidence(@target, evidence) == :discard
+      return if RCS::DB::ConnectorManager.process_evidence(target, evidence) == :discard
     end
 
     # check if there are matching alerts for this evidence
@@ -228,33 +221,37 @@ class InstanceWorker
     # add to the ocr processor queue
     if LicenseManager.instance.check :ocr
       if evidence.type == 'screenshot' or (evidence.type == 'file' and evidence.data[:type] == :capture)
-        OCRQueue.add(@target._id, evidence._id)
+        OCRQueue.add(target._id, evidence._id)
       end
     end
 
     # add to the translation queue
     if LicenseManager.instance.check :translation and ['keylog', 'chat', 'clipboard', 'message'].include? evidence.type
-      TransQueue.add(@target._id, evidence._id)
+      TransQueue.add(target._id, evidence._id)
       evidence.data[:tr] = "TRANS_QUEUED"
       evidence.save
     end
 
     # add to the aggregator queue
     if LicenseManager.instance.check :correlation
-      AggregatorQueue.add(@target._id, evidence._id, evidence.type)
+      AggregatorQueue.add(target._id, evidence._id, evidence.type)
     end
 
-    WatchedItem.matching(@agent, @target, @target.get_parent) do |item, user_ids|
+    WatchedItem.matching(agent, target, target.get_parent) do |item, user_ids|
       stats = item.stat.attributes.reject { |key| !%w[evidence dashboard].include?(key) }
       message = {item: item, rcpts: user_ids, stats: stats, suppress: {start: Time.now.getutc.to_f, key: item.id}}
       RCS::DB::PushManager.instance.notify('dashboard', message)
     end
 
     # Do not check the intelligence license is enabled here. Some of the intelligence
-    # features are provided WITHOUT the intelligence license.
+    # features are provided WITHOUT the intelligence license (mind=blow)
     if ['addressbook', 'password', 'position', 'camera'].include?(evidence.type)
-      IntelligenceQueue.add(@target._id, evidence._id, :evidence)
+      IntelligenceQueue.add(target._id, evidence._id, :evidence)
     end
+  end
+
+  def save_evidence(evidence)
+    self.class.enqueue(@target, @agent, evidence)
   end
 
   def resume
