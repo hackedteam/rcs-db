@@ -11,7 +11,6 @@ module RCS
 
       def run
         @pool = Pool.new
-        @thread_with_errors ||= []
 
         loop_and_wait do
           ConnectorQueue.scopes.each do |scope|
@@ -21,6 +20,10 @@ module RCS
 
           @status = @pool.empty? ? "Idle" : "Working"
         end
+      end
+
+      def thread_with_errors
+        @thread_with_errors ||= []
       end
 
       def status
@@ -41,11 +44,11 @@ module RCS
           break unless connector_queue
           process(connector_queue)
         end
-        @thread_with_errors.delete(scope)
+        thread_with_errors.delete(scope)
       rescue Exception => e
         trace :error, "Exception in dispatcher thread #{scope}: #{e.message}, #{e.backtrace}"
-        @thread_with_errors << scope
-        @thread_with_errors.uniq!
+        thread_with_errors << scope
+        thread_with_errors.uniq!
       end
 
       def process(connector_queue)
