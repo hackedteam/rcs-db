@@ -11,6 +11,7 @@ module RCS
 
       def run
         @pool = Pool.new
+        @thread_with_errors ||= []
 
         loop_and_wait do
           ConnectorQueue.scopes.each do |scope|
@@ -24,10 +25,6 @@ module RCS
 
       def status
         @status || "Idle"
-      end
-
-      def thread_with_errors
-        @thread_with_errors ||= []
       end
 
       def loop_and_wait
