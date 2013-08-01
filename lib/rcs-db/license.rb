@@ -374,6 +374,9 @@ class LicenseManager
       when :ocr
         return @limits[:ocr]
 
+      when :connectors
+        return @limits[:connectors]
+
       when :shards
         if RCS::DB::Shard.count < @limits[:shards]
           return true
