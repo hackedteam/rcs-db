@@ -124,21 +124,21 @@ describe Connector do
     context "when is included in the whitelist" do
 
       it 'does not raise any validation error' do
-        expect { factory_create(:connector, item: target, type: :dump, format: :json) }.not_to raise_error
+        expect { factory_create(:connector, item: target, type: 'LOCAL', format: 'JSON') }.not_to raise_error
       end
     end
 
-    context "when archive and path refers to an operation" do
+    context "when REMOTE and path refers to an operation" do
 
       it 'does not raise error' do
-        expect { factory_create(:connector, type: :archive, path: [target.get_parent.id]) }.not_to raise_error
+        expect { factory_create(:connector, type: 'REMOTE', path: [target.get_parent.id]) }.not_to raise_error
       end
     end
 
-    context "when archive and path refers not to an operation" do
+    context "when REMOTE and path refers not to an operation" do
 
       it 'does not raise error' do
-        expect { factory_create(:connector, type: :archive, path: [target.get_parent.id, target.id]) }.to raise_error(Mongoid::Errors::Validations)
+        expect { factory_create(:connector, type: 'REMOTE', path: [target.get_parent.id, target.id]) }.to raise_error(Mongoid::Errors::Validations)
       end
     end
   end
@@ -192,18 +192,18 @@ describe Connector do
 
   describe '#format' do
 
-    context 'when type is archive and format nil' do
+    context 'when type is REMOTE and format nil' do
 
-      let(:connector) { factory_create(:connector, item: target.get_parent, type: :archive, format: nil) }
+      let(:connector) { factory_create(:connector, item: target.get_parent, type: 'REMOTE', format: nil) }
 
       it 'does not raise any validation error' do
         expect { connector }.not_to raise_error(Mongoid::Errors::Validations)
       end
     end
 
-    context 'when type is dump and format is an unknow value' do
+    context 'when type is LOCAL and format is an unknow value' do
 
-      let(:connector) { factory_create(:connector, item: target, type: :dump, format: :ROFLMAO) }
+      let(:connector) { factory_create(:connector, item: target, type: 'LOCAL', format: :ROFLMAO) }
 
       it 'raises a validation error' do
         expect { connector }.to raise_error(Mongoid::Errors::Validations)

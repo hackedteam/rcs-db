@@ -60,7 +60,7 @@ describe RCS::Connector::Dispatcher do
       context 'when the connector type is XML' do
 
         before do
-          connector.update_attributes format: :xml
+          connector.update_attributes format: 'XML'
           described_class.dump(evidence, connector)
         end
 
