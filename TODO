@@ -8,11 +8,11 @@ TODO 9.0.0
 
     refactor the connectors to use queue and export from separate process [OK]
       - xml export [OK]
-      - sync with "archive" rcs installation
-        - ping remote server and report status in the monitor (use ping to sync signatures)
-        - sync signatures
-        - sync items
-        - sync evidence
+      - sync with "archive" rcs installation [OK]
+        - ping remote server and report status in the monitor (use ping to sync signatures) [OK]
+        - sync signatures [OK]
+        - sync items [OK]
+        - sync evidence [OK]
 
     most visited places [OK]
 
