@@ -365,6 +365,9 @@ Section "Install Section" SecInstall
       DetailPrint "Installing VC redistributable 2010 (x64).."
       nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_2010_x64 /q"
 
+      DetailPrint "Installing Silverlight runtime (x64).."
+      nsExec::ExecToLog "$INSTDIR\DB\bin\Silverlight_x64 /q"
+
       DetailPrint "Installing HASP drivers.."
       nsExec::ExecToLog "$INSTDIR\DB\bin\haspdinst -i -cm -kp -fi"
       SimpleSC::SetServiceFailure "hasplms" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
