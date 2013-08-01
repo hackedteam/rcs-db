@@ -22,6 +22,7 @@ gem 'mail'
 gem 'activesupport'
 gem 'rest-client'
 gem 'xml-simple'
+gem 'persistent_http'
 
 # databases
 gem 'mongo', "= 1.8.6", :git => "git://github.com/alor/mongo-ruby-driver.git", :branch => "1.8.6_append"
