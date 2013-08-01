@@ -1,18 +1,14 @@
 require 'mongoid'
-
 require_relative 'alert'
 require_relative '../audit'
-
 require_relative '../push'
-
-#module RCS
-#module DB
 
 class Status
   include Mongoid::Document
   include Mongoid::Timestamps
   extend RCS::Tracer
-  
+  include RCS::Tracer
+
   OK = '0'
   WARN = '1'
   ERROR = '2'
@@ -36,91 +32,94 @@ class Status
 
   store_in collection: 'statuses'
 
+  after_save :notify, if: :status_changed?
+
   def ok?
-    self.status == OK
+    status == OK
   end
 
-  class << self
+  def error?
+    status == ERROR
+  end
 
-    # updates or insert the status of a component
-    def status_update(name, address, status, info, stats, type, version)
+  def stats?
+    cpu and pcpu and disk
+  end
 
-      #trace :debug, "#{name}, #{address}, #{status}, #{info}, #{stats}"
+  def status_changed?
+    changed_attributes.has_key?('status')
+  end
 
-      monitor = ::Status.find_or_create_by(name: name, address: address)
+  def low_resources?
+    return false unless stats?
+    disk <= 15 or cpu >= 85 or pcpu >= 85
+  end
 
-      monitor[:info] = info
-      monitor[:pcpu] = stats[:pcpu]
-      monitor[:cpu] = stats[:cpu]
-      monitor[:disk] = stats[:disk]
-      monitor[:time] = Time.now.getutc.to_i
-      monitor[:type] = type
-      monitor[:version] = version
+  def unupdated?
+    Time.now.getutc.to_i - time > 120
+  end
 
-      # check the low resource conditions
-      if status == 'OK' and (monitor[:disk] <= 15 or monitor[:cpu] >= 85 or monitor[:pcpu] >= 85)
-        status = 'WARN'
-      end
+  def old_component?
+    return false unless %w[worker collector nc intelligence connector].include?(type)
+    version != $version
+  end
 
-      # notify all that the monitor has changed only if the status has changed
-      RCS::DB::PushManager.instance.notify('monitor') if monitor[:status] != STATUS_CODE[status]
+  def notify
+    RCS::DB::PushManager.instance.notify('monitor')
+  end
 
-      case(status)
-        when 'OK'
-          # notify the restoration of a component
-          if monitor[:status] == ERROR
-            RCS::DB::Alerting.restored_component(monitor)
-            RCS::DB::Audit.log :actor => '<system>', :action => 'alert', :desc => "Component #{monitor[:name]} was restored to normal status"
-          end
-          monitor[:status] = OK
-        when 'WARN'
-          monitor[:status] = WARN
-        when 'ERROR'
-          monitor[:status] = ERROR
-      end
+  def alert_restored
+    RCS::DB::Audit.log(actor: '<system>', action: 'alert', desc: "Component #{name} was restored to normal status")
+    RCS::DB::Alerting.restored_component(self)
+  end
 
-      monitor.save
-    end
+  def alert_failed
+    RCS::DB::Audit.log(actor: '<system>', action: 'alert', desc: "Component #{name} is not responding, marking failed...")
+    RCS::DB::Alerting.failed_component(self)
+  end
 
-    def status_check
-      monitors = ::Status.all
-
-      monitors.each do |m|
-        # a component is marked failed after 2 minutes (if not already marked)
-        if Time.now.getutc.to_i - m[:time] > 120 and m[:status] != ERROR
-          m[:status] = ERROR
-          trace :warn, "Component #{m[:name]} (#{m[:address]}) is not responding, marking failed..."
-          RCS::DB::Audit.log :actor => '<system>', :action => 'alert', :desc => "Component #{m[:name]} is not responding, marking failed..."
-          m.info = 'Not sending status update for more than 2 minutes'
-          m.save
-          # notify the alerting system
-          RCS::DB::Alerting.failed_component(m)
-          # notify all that the monitor has changed
-          RCS::DB::PushManager.instance.notify('monitor')
-        end
-
-        # check disk and CPU usage
-        if m[:status] == OK and (m[:disk] <= 15 or m[:cpu] >= 85 or m[:pcpu] >= 85)
-          m[:status] = WARN
-          trace :warn, "Component #{m[:name]} has low resources, raising a warning..."
-          m.save
-          # notify all that the monitor has changed
-          RCS::DB::PushManager.instance.notify('monitor')
-        end
-
-        # check worker version
-        if ['worker', 'collector', 'nc', 'intelligence'].include? m[:type] and m[:version] != $version
-          m[:status] = ERROR
-          trace :warn, "Component #{m[:name]} has version #{m[:version]}, should be #{$version}"
-          m[:info] = "Component version is #{m[:version]}, should be #{$version}"
-          m.save
-        end
-
-      end
+  def check
+    if !error? and unupdated?
+      trace :warn, "Component #{name} (#{address}) is not responding, marking failed..."
+      alert_failed
+      update_attributes(status: ERROR, info: 'Not sending status update for more than 2 minutes')
+    elsif ok? and low_resources?
+      trace :warn, "Component #{name} has low resources, raising a warning..."
+      update_attributes(status: WARN)
+    elsif old_component?
+      trace :warn, "Component #{name} has version #{version}, should be #{$version}"
+      update_attributes(status: ERROR, info: "Component version is #{version}, should be #{$version}")
     end
   end
 
+  def self.status_update(name, address, status, info, stats, type, version)
+    monitor = find_or_create_by(name: name, address: address)
+
+    monitor[:info] = info
+    monitor[:pcpu] = stats[:pcpu]
+    monitor[:cpu] = stats[:cpu]
+    monitor[:disk] = stats[:disk]
+    monitor[:time] = Time.now.getutc.to_i
+    monitor[:type] = type
+    monitor[:version] = version
+
+    if (Integer(status) rescue nil)
+      status = status.to_s
+    else
+      status = STATUS_CODE[status]
+    end
+
+    # check the low resource conditions
+    status = WARN if status == OK and monitor.low_resources?
+
+    # notify the restoration of a component
+    monitor.alert_restored if monitor[:status] == ERROR and status == OK
+
+    monitor[:status] = status
+    monitor.save
+  end
+
+  def self.status_check
+    all.each { |status| status.check }
+  end
 end
-
-#end # ::DB
-#end # ::RCS
