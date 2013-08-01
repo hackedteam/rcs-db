@@ -98,23 +98,24 @@ module RCS
       end
 
       def request(path, body = {}, opts = {})
-        body = body.respond_to?(:to_json) ? body.to_json : body
-        trace :debug, "POST #{address} (archive) #{path} #{body[0..60]}..."
+        trace :info, "Request #{path} on archive node #{address}"
+
         request = Net::HTTP::Post.new(path, 'x_sync_signature' => signature)
-        request.body = body
+        request.body = body.respond_to?(:to_json) ? body.to_json : body
         resp = connection.request(request)
 
-        trace :debug, "RESP #{resp.code} from #{address} (archive) #{resp.body[0..60]}..."
-
+        code = resp.code.to_i
         content = JSON.parse(resp.body).symbolize_keys rescue {}
 
-        if resp.code.to_i != 200 and opts[:on_error] == :raise
-          raise(content[:msg] || "Receive error #{resp.code} from archive node #{address}")
+        trace :info, "Archive node #{address} respond #{code == 200 ? 'OK' : 'ERROR'} #{content[:msg].to_s}".strip
+
+        if code != 200 and opts[:on_error] == :raise
+          raise(content[:msg] || "Receive error #{code} from archive node #{address}")
         end
 
-        yield(resp.code.to_i, content) if block_given?
+        yield(code, content) if block_given?
       rescue PersistentHTTP::Error => error
-        trace :error, "POST ERROR #{address} (archive) #{path} #{error}"
+        trace :error, "Unable to reach archive node #{address}, #{error.message}"
         raise(error.message) if opts[:on_error] == :raise
         yield(-1, {msg: error.message}) if block_given?
       end
