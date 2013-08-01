@@ -43,6 +43,7 @@ class Runner
         break
       end
 
+      EM.defer { HeartBeat.perform }
       EM::PeriodicTimer.new(heartbeat_interval) { HeartBeat.perform }
 
       EM.defer { Dispatcher.run }

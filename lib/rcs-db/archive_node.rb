@@ -91,7 +91,7 @@ module RCS
       end
 
       def self.all
-        addresses = ::Connector.where(type: 'archive').only(:dest).distinct(:dest)
+        addresses = ::Connector.where(type: 'REMOTE').only(:dest).distinct(:dest)
         addresses.map! { |addr| new(addr) }
       end
     end

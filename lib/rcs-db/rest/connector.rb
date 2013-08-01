@@ -23,11 +23,14 @@ class ConnectorController < RESTController
 
     return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.limits[:connectors]
 
+    puts @params.inspect
+
     mongoid_query do
       f = ::Connector.new
       f.enabled = @params['enabled'] ? true : false
       f.name = @params['name']
       f.type = @params['type'] || raise('Connector type must be provided')
+      f.format = @params['format'] || raise('Connector format must be provided')
       # f.raw = @params['raw']
       f.keep = @params['keep']
       f.dest = @params['dest']

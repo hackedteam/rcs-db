@@ -62,7 +62,7 @@ class ConnectorQueue
 
   def self.push(connector, data)
     trace :debug, "Adding to ConnectorQueue: #{connector.id}, #{data.inspect}"
-    scope = connector.archive? ? connector.dest : 'default'
+    scope = connector.remote? ? connector.dest : 'default'
     attributes = {connector_id: connector.id, data: data, scope: scope}
     create!(attributes)
   end

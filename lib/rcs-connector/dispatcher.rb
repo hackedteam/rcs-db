@@ -61,7 +61,7 @@ module RCS
           trace :warn, "Was about to process #{connector_queue}, but the connector is missing."
         elsif !evidence
           trace :warn, "Was about to process #{connector_queue}, but the evidence is missing."
-        elsif connector.archive?
+        elsif connector.remote?
           archive_node = connector.archive_node
           archive_node.send_evidence(evidence, data['path'])
         else

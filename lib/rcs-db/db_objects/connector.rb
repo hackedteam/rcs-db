@@ -9,13 +9,13 @@ class Connector
   include Mongoid::Document
   include Mongoid::Timestamps
 
-  TYPES = [:dump, :archive]
-  FORMATS = [:json, :xml]
+  TYPES = ['LOCAL', 'REMOTE']
+  FORMATS = ['JSON', 'XML', 'RCS']
 
   field :enabled, type: Boolean
   field :name, type: String
-  field :type, type: Symbol
-  field :f, as: :format, type: Symbol
+  field :type, type: String
+  field :format, type: String
   field :dest, type: String
   field :keep, type: Boolean, default: true
   field :path, type: Array
@@ -28,12 +28,12 @@ class Connector
 
   validates_presence_of :dest
   validates_inclusion_of :type, in: TYPES
-  validates_inclusion_of :format, in: FORMATS, if: proc { type == :dump }
-  validate :validate_path_is_an_operation, on: :create, if: :archive?
+  validates_inclusion_of :format, in: FORMATS, if: proc { type == 'LOCAL' }
+  validate :validate_path_is_an_operation, on: :create, if: :remote?
 
   before_destroy :check_used
-  after_destroy :destroy_archive_node, if: :archive?
-  after_save :setup_archive_node, if: :archive?
+  after_destroy :destroy_archive_node, if: :remote?
+  after_save :setup_archive_node, if: :remote?
 
   # Scope: only enabled connectors
   scope :enabled, where(enabled: true)
@@ -51,7 +51,7 @@ class Connector
   end
 
   def archive_node
-    return unless archive?
+    return unless remote?
     @archive_node ||= RCS::DB::ArchiveNode.new(dest)
   end
 
@@ -67,8 +67,8 @@ class Connector
     archive_node.try(:destroy)
   end
 
-  def archive?
-    type == :archive
+  def remote?
+    type == 'REMOTE'
   end
 
   # TODO: do the same check when dest of type attributes are being changed

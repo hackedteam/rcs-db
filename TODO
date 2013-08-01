@@ -23,6 +23,10 @@ TODO 9.0.0
     dashboard in push mode
       - only after the dashboard as been refactored, issue a target|operation.restat on each target|operation.show
 
+  MIGRATION:
+    migrate old position to the new 2dsphere index
+    migrate old connector to new format
+
   FIX:
     better investigation on "end of file reached" errors from mongoid (hoping for version 4.0.0 with connection pool)
     try to implement "retry" on mongoid queries
@@ -31,8 +35,6 @@ TODO 9.0.0
   TEST:
     flow integration with console
 
-  MIGRATION:
-    migrate old position to the new 2dsphere index
 
   TRY:
     hash index for sharding (topac - on branch 9.0.x)

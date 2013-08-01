@@ -51,7 +51,7 @@ module RCS
           exported['data']['_bin_size'] = exported['data'].delete('_grid_size')
         end
 
-        format == :xml ? exported.to_xml(root: 'evidence') : exported.to_json
+        format == 'XML' ? exported.to_xml(root: 'evidence') : exported.to_json
       end
 
       def grid_content
