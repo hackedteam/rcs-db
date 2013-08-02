@@ -107,6 +107,8 @@ module RCS
         items.each do |attributes|
           next unless ::Item.where(id: attributes["_id"]).count.zero?
           item = ::Item.new(attributes)
+          item[:user_ids] = []
+          item.path = item.path.map { |id| Moped::BSON::ObjectId.from_string(id) }
           item._id = attributes['_id']
           item.save!
         end
