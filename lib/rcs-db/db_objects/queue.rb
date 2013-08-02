@@ -90,7 +90,7 @@ class PushQueue < NotificationQueue
   index({flag: 1}, {background: true})
 
   def self.add(type, message)
-    trace :debug, "Adding to #{self.name}: #{type} #{message}"
+    trace :debug, "Adding to #{self.name}: #{type}" # #{message}"
 
     # insert it in the queue
     self.create!({type: type, message: message})

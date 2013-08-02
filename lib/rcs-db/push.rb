@@ -17,7 +17,7 @@ module RCS
       end
 
       def notify(type, message={})
-        trace :debug, "PUSH Event: #{type} #{message}"
+        trace :debug, "PUSH Event: #{type}" ##{message}"
 
         if (item = message.delete(:item))
           message[:id] = item.id
@@ -71,7 +71,7 @@ module RCS
 
       def send(web_socket, type, message)
         WebSocketManager.instance.send(web_socket, type, message)
-        trace :debug, "PUSH Event (sent): #{type} #{message}"
+        trace :debug, "PUSH Event (sent): #{type}" # #{message}"
       end
 
       def suppress(type, message)
