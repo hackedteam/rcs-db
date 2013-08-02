@@ -11,6 +11,7 @@ module RCS
 
       def run
         @pool = Pool.new
+        @known_agents = []
 
         loop_and_wait do
           ConnectorQueue.scopes.each do |scope|
@@ -63,7 +64,15 @@ module RCS
           trace :warn, "Was about to process #{connector_queue}, but the evidence is missing."
         elsif connector.remote?
           archive_node = connector.archive_node
-          archive_node.send_evidence(evidence, data['path'])
+          operation_id = data['path'].first
+          agent_id = data['path'].last
+
+          unless @known_agents.include?(agent_id)
+            archive_node.send_agent(operation_id, agent_id)
+            @known_agents << agent_id
+          end
+
+          archive_node.send_evidence(evidence, path: data['path'])
         else
           dump(evidence, connector)
         end

@@ -42,25 +42,26 @@ module RCS
             update_status(content[:status])
           else
             update_status(status: ::Status::ERROR, info: content[:msg])
-            setup! if content[:code] == 2 #NEED_SIGNATURES
+            setup! if content[:result] == 'NEED_SIGNATURES'
           end
         end
       end
 
-      def send_evidence(evidence, path)
-        body = {evidence: evidence, path: path}
-
-        request("/sync/evidence", body, on_error: :raise) do |code, content|
-          if content[:code] == 4 #NEED_ITEMS
-            send_items(content[:operation_id])
-            send_evidence(evidence, path)
-          end
-        end
+      def send_evidence(evidence, other_attributes)
+        body = {evidence: evidence}.merge(other_attributes)
+        request("/sync/evidence", body, on_error: :raise)
       end
 
       def send_items(operation_id)
         body = {items: ::Item.operation_items_sorted_by_kind(operation_id)}
         request("/sync/items", body, on_error: :raise)
+      end
+
+      def send_agent(operation_id, agent_id)
+        body = {agent_id: agent_id}
+        request("/sync/agent", body, on_error: :raise) do |code, content|
+          send_items(operation_id) if content[:result] == 'MISSING'
+        end
       end
 
       def uri
@@ -111,7 +112,7 @@ module RCS
         code = resp.code.to_i
         content = JSON.parse(resp.body).symbolize_keys rescue {}
 
-        trace :info, "Archive node #{address} respond #{code == 200 ? 'OK' : 'ERROR'} #{content[:msg].to_s}".strip
+        trace :info, "Archive node #{address} respond #{code == 200 ? 'OK' : 'ERROR'} #{content[:msg].to_s} #{content[:result].to_s}".strip
 
         if code != 200 and opts[:on_error] == :raise
           raise(content[:msg] || "Receive error #{code} from archive node #{address}")

