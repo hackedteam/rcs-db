@@ -236,7 +236,7 @@ class EvidenceController < RESTController
     position = PositionResolver.get({'ipAddress' => {'ipv4' => address}})
 
     # add the evidence to the target
-    ev = Evidence.dynamic_new(target[:_id])
+    ev = ::Evidence.dynamic_new(target[:_id])
     ev.type = 'ip'
     ev.da = Time.now.getutc.to_i
     ev.dr = Time.now.getutc.to_i
