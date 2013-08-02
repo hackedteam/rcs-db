@@ -3,7 +3,6 @@ require 'rcs-common/path_utils'
 require_relative '../rest'
 require_relative '../db_objects/signature'
 require_relative '../db_objects/status'
-require_release 'rcs-worker/instance_worker'
 
 module RCS
   module DB
@@ -98,9 +97,7 @@ module RCS
         evi._id = attributes["_id"]
         evi.save!
 
-        target = Item.find(target_id)
-        agent = Item.find(evi.aid)
-        RCS::Worker::InstanceWorker.enqueue(target, agent, evi)
+        evi.enqueue
       end
 
       def store_items(items)
