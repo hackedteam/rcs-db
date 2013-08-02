@@ -96,11 +96,15 @@ module Evidence
   end
 
   def target
-    @target ||= Item.find(@target_id)
+    @target ||= Item.find(target_id)
   end
 
   def agent
     @agent ||= Item.find(aid)
+  end
+
+  def target_id
+    self.class.instance_variable_get '@target_id'
   end
 
   def may_have_readable_text?
