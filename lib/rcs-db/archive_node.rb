@@ -75,6 +75,10 @@ module RCS
         @@persistent_http ||= {}
       end
 
+      def reset_connection
+        self.class.connections[address] = nil
+      end
+
       def connection
         self.class.connections[address] ||= begin
           verify_mode = Config.instance.global['SSL_VERIFY'] ? OpenSSL::SSL::VERIFY_PEER : OpenSSL::SSL::VERIFY_NONE
@@ -100,7 +104,7 @@ module RCS
       def request(path, body = {}, opts = {})
         trace :info, "Request #{path} on archive node #{address}"
 
-        request = Net::HTTP::Post.new(path, 'x_sync_signature' => signature)
+        request = Net::HTTP::Post.new(path, {'x_sync_signature' => signature, 'Connection' => 'keep-alive'})
         request.body = body.respond_to?(:to_json) ? body.to_json : body
         resp = connection.request(request)
 
@@ -116,6 +120,7 @@ module RCS
         yield(code, content) if block_given?
       rescue PersistentHTTP::Error => error
         trace :error, "Unable to reach archive node #{address}, #{error.message}"
+        reset_connection
         raise(error.message) if opts[:on_error] == :raise
         yield(-1, {msg: error.message}) if block_given?
       end
