@@ -134,7 +134,7 @@ module RCS
       end
 
       def self.all
-        addresses = ::Connector.where(type: 'REMOTE').only(:dest).distinct(:dest)
+        addresses = ::Connector.enabled.where(type: 'REMOTE').only(:dest).distinct(:dest)
         addresses.map! { |addr| new(addr) }
       end
     end

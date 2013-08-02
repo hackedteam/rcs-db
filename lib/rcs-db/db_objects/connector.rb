@@ -33,7 +33,7 @@ class Connector
 
   before_destroy :check_used
   after_destroy :destroy_archive_node, if: :remote?
-  after_save :setup_archive_node, if: :remote?
+  after_save :setup_archive_node, if: lambda { remote? and enabled }
 
   # Scope: only enabled connectors
   scope :enabled, where(enabled: true)
