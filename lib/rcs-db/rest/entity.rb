@@ -241,7 +241,7 @@ class EntityController < RESTController
     end
   end
 
-  def most_visited
+  def most_visited_urls
     require_auth_level :view
     require_auth_level :view_profiles
 
