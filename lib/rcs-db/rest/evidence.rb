@@ -542,7 +542,7 @@ class EvidenceController < RESTController
     end
   end
 
-
+  private :insert_sync_address
 end
 
 end #DB::

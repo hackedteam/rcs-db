@@ -191,8 +191,10 @@ class RESTController
         @params['_id'] = @request[:uri_params].first unless @request[:uri_params].first.nil?
       end
 
-      # GO!
-      response = send(@request[:action])
+      return not_authorized("INVALID_ACTION") if private_methods.include?(@request[:action])
+
+      # Execute the action
+      response = __send__(@request[:action])
 
       return server_error('CONTROLLER_ERROR') if response.nil?
       return response
