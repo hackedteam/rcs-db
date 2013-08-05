@@ -13,6 +13,7 @@ TODO 9.0.0
         - sync signatures [OK]
         - sync items [OK]
         - sync evidence [OK]
+        - sync start/end/timeout events
 
     most visited places [OK]
 
@@ -30,7 +31,7 @@ TODO 9.0.0
   FIX:
     better investigation on "end of file reached" errors from mongoid (hoping for version 4.0.0 with connection pool)
     try to implement "retry" on mongoid queries
-
+    rest/sync#store_evidence: how to store the grid file with a custom id?
 
   TEST:
     flow integration with console

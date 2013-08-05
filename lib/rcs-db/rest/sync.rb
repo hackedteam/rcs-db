@@ -22,7 +22,7 @@ module RCS
         end
 
         trace :info, "Storing evidence #{evidence_attributes['_id']}"
-        result = store_evidence(evidence_path[1], evidence_attributes)
+        result = store_evidence(evidence_path[1], evidence_attributes, @params['grid'])
 
         ok(msg: "Stored")
       end
@@ -96,9 +96,22 @@ module RCS
         Signature.all.count > 0
       end
 
-      def store_evidence(target_id, attributes)
+      def store_evidence(target_id, attributes, grid_attributes = nil)
         collection = ::Evidence.collection_class(target_id)
         return unless collection.where(id: attributes["_id"]).count.zero?
+
+        unless grid_attributes.blank?
+          grid_attributes.symbolize_keys!
+          content = grid_attributes.delete(:content)
+
+          # TODO: how to store the grid file with a custom id?
+          # grid_attributes[:_id] = Moped::BSON::ObjectId.from_string(grid_attributes[:_id])
+          grid_attributes.delete(:_id)
+
+          id = RCS::DB::GridFS.put(content, grid_attributes, target_id)
+          attributes['data']['_grid'] = Moped::BSON::ObjectId.from_string(id)
+        end
+
         evi = collection.new(attributes)
         evi._id = attributes["_id"]
         evi.save!

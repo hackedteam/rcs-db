@@ -49,6 +49,14 @@ module RCS
 
       def send_evidence(evidence, other_attributes)
         body = {evidence: evidence}.merge(other_attributes)
+        grid_id = evidence.data['_grid']
+
+        if grid_id
+          target_id = body[:path][1]
+          grid = RCS::DB::GridFS.get(grid_id, target_id)
+          body[:grid] = {content: grid.read, filename: grid.filename, content_type: grid.content_type, _id: grid_id}
+        end
+
         request("/sync/evidence", body, on_error: :raise)
       end
 
@@ -112,10 +120,10 @@ module RCS
         code = resp.code.to_i
         content = JSON.parse(resp.body).symbolize_keys rescue {}
 
-        trace :info, "Archive node #{address} respond #{code == 200 ? 'OK' : 'ERROR'} #{content[:msg].to_s} #{content[:result].to_s}".strip
+        trace :info, "Archive node #{address} returns #{code == 200 ? 'OK' : 'ERROR'} #{content[:result]} #{content[:msg]}".strip
 
         if code != 200 and opts[:on_error] == :raise
-          raise(content[:msg] || "Receive error #{code} from archive node #{address}")
+          raise(content[:msg] || "Received error #{code} from archive node #{address}")
         end
 
         yield(code, content) if block_given?
