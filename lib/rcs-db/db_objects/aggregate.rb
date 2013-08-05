@@ -174,23 +174,26 @@ module Aggregate
     match = {type: :position}
     match[:day] = {'$gte' => params['from'], '$lte' => params['to']} if params['from'] and params['to']
     limit = params['num'] || 5
-    group = {_id: '$data.position', count: {"$sum" => "$count"}}
-    project = {position: '$_id', _id: 0, count: 1}
+    group = {_id: '$data.position', count: {"$sum" => "$count"}, radius: {"$min" => "$data.radius"}}
+    project = {position: '$_id', _id: 0, count: 1, radius: 1}
 
     pipeline = [{"$match" => match}, {"$group" => group}, {"$sort" => {count: -1}}, {"$project" => project}, {"$limit" => limit.to_i}]
     results = Aggregate.target(target_id).collection.aggregate(pipeline)
 
+    return results if results.empty?
+
     positions = results.map { |hash| hash['position'] }
 
-    positions2names = Entity.path_include(target_id).positions.in(position: positions).only(:position, :name).inject({}) do |hash, entity|
-      hash[entity.position] = entity.name
+    operation_id = ::Item.find(target_id).path.first
+
+    positions2entities = Entity.path_include(operation_id).positions.in(position: positions).only(:position, :name).inject({}) do |hash, entity|
+      hash[entity.position] = {'id' => entity.id, 'name' => entity.name}
       hash
     end
 
     results.map! do |hash|
-      name = positions2names[hash['position']]
-      name = hash['position'].reverse.join(', ') if name.blank?
-      hash['name'] = name
+      entity = positions2entities[hash['position']]
+      hash['entity'] = entity if entity
       hash
     end
   end
