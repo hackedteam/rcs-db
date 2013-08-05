@@ -320,6 +320,8 @@ class EvidenceController < RESTController
     agent = Item.where({_id: session[:bid]}).first
     return not_found("Agent not found: #{session[:bid]}") if agent.nil?
 
+    trace :info, "#{agent[:name]} sync timeouted [#{agent[:ident]}:#{agent[:instance]}]"
+
     agent.stat[:last_sync] = Time.now.getutc.to_i
     agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_TIMEOUTED
     agent.save
