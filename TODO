@@ -13,7 +13,7 @@ TODO 9.0.0
         - sync signatures [OK]
         - sync items [OK]
         - sync evidence [OK]
-        - sync start/end/timeout events
+        - sync start/end/timeout events [OK]
 
     most visited places [OK]
 
