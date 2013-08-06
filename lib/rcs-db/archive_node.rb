@@ -48,7 +48,7 @@ module RCS
       end
 
       def send_evidence(evidence, other_attributes)
-        body = {evidence: evidence}.merge(other_attributes)
+        body = {evidence: evidence.attributes}.merge(other_attributes)
         grid_id = evidence.data['_grid']
 
         if grid_id
@@ -57,7 +57,7 @@ module RCS
           body[:grid] = {content: grid.read, filename: grid.filename, content_type: grid.content_type, _id: grid_id}
         end
 
-        request("/sync/evidence", body, on_error: :raise)
+        request("/sync/evidence", body, on_error: :raise, marshal: true)
       end
 
       def send_items(operation_id)
@@ -117,8 +117,19 @@ module RCS
       def request(path, body = {}, opts = {})
         trace :info, "Request #{path} on archive node #{address}"
 
-        request = Net::HTTP::Post.new(path, {'x_sync_signature' => signature, 'Connection' => 'keep-alive'})
-        request.body = body.respond_to?(:to_json) ? body.to_json : body
+        headers = {'x_sync_signature' => signature, 'Connection' => 'keep-alive'}
+
+        rbody = if opts[:marshal] == true
+                  headers['Content-Type'] = 'ruby/marshal'
+                  Marshal.dump(body)
+                else
+                  headers['Content-Type'] = 'application/json'
+                  body.to_json
+                end
+
+        request = Net::HTTP::Post.new(path, headers)
+        request.body = rbody
+
         resp = connection.request(request)
 
         code = resp.code.to_i

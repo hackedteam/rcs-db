@@ -82,21 +82,17 @@ module Parser
   # - multipart POST will be parsed correctly and :content contains all the parts
   #
   def prepare_request(method, uri, query, content, http, peer)
-    controller, uri_params = parse_uri uri
-    
+    controller, uri_params = parse_uri(uri)
+
     params = Hash.new
     params.merge! parse_query_parameters(query)
 
-    json_content = parse_json_content content
-    params.merge! json_content unless json_content.empty?
-    
     request = Hash.new
     request[:controller] = controller
     request[:method] = method
     request[:query] = query
     request[:uri] = uri
     request[:uri_params] = uri_params
-    request[:params] = params
     request[:cookie] = guid_from_cookie(http[:cookie])
     # if not content_type is provided, default to urlencoded
     request[:content_type] = http[:content_type] || 'application/x-www-form-urlencoded'
@@ -104,16 +100,27 @@ module Parser
     if request[:content_type]['multipart/form-data']
       request[:content] = parse_multipart_content(content, http[:content_type])
       request[:content][:type] = 'multipart'
+    elsif request[:content_type]['ruby/marshal']
+      object = Marshal.load(content) rescue nil
+      request[:content] = object
+      request[:content][:type] = 'object'
+      params.merge!(object.stringify_keys) if object.kind_of?(Hash)
     else
-      # use 'content' as a string instead of symbol because it is a string in the multipart decoding
+      json_content = parse_json_content(content)
       request[:content] = {'content' => content}
-      request[:content][:type] = json_content.empty? ? 'binary' : 'json'
+
+      if json_content.blank?
+        request[:content][:type] = 'binary'
+      else
+        params.merge!(json_content)
+        request[:content][:type] = 'json'
+      end
     end
 
+    request[:params] = params
     request[:headers] = http
     request[:peer] = peer
-
-    return request
+    request
   end
 end # Parser
 
