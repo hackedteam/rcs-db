@@ -238,7 +238,6 @@ class EvidenceController < RESTController
     # check for alerts on this agent
     Alerting.new_sync agent
 
-    # remember the address of each sync
     insert_sync_address(target, agent, params['source'])
   end
 
@@ -256,8 +255,6 @@ class EvidenceController < RESTController
     ev[:data] = {content: address}
     ev[:data] = ev[:data].merge(position)
     ev.save
-
-    ConnectorManager.process_evidence(target, ev)
   end
 
   # used by the collector to update the synctime during evidence transfer
