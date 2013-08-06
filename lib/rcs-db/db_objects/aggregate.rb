@@ -187,7 +187,7 @@ module Aggregate
     operation_id = ::Item.find(target_id).path.first
 
     positions2entities = Entity.path_include(operation_id).positions.in(position: positions).only(:position, :name).inject({}) do |hash, entity|
-      hash[entity.position] = {'id' => entity.id, 'name' => entity.name}
+      hash[entity.position] = {'_id' => entity.id, 'name' => entity.name}
       hash
     end
 
