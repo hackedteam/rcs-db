@@ -618,6 +618,20 @@ class Item
     aes_encrypt(Digest::SHA1.digest(hash.inspect), Digest::SHA1.digest("∫∑x=1 ∆t")).unpack('H*').first
   end
 
+  def positions(from = nil, to = nil)
+    return [] if _kind != 'target'
+
+    filter = {'data.position' => {'$ne' => nil}}
+    filter.merge!('$gte' => from) if from
+    filter.merge!('$lte' => to) if to
+
+    project = {'_id' => 0, 'da' => 1, 'data.position' => 1, 'data.accuracy' => 1}
+
+    moped_coll = ::Evidence.collection_class(id).collection
+    moped_coll.where(filter).select(project).map do |h|
+      {da: h['da'], position: h['data']['position'], radius: h['data']['accuracy']}
+    end
+  end
 end
 
 class FilesystemRequest

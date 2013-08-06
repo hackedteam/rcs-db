@@ -129,6 +129,17 @@ class TargetController < RESTController
     end
   end
 
+  def positions
+    require_auth_level :view
+
+    mongoid_query do
+      target_id = @params['_id']
+      from = @params['from']
+      to = @params['to']
+
+      ok Item.find(target_id).positions(from, to)
+    end
+  end
 end
 
 end
