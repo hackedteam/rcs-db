@@ -120,12 +120,9 @@ module RCS
           grid_attributes.symbolize_keys!
           content = grid_attributes.delete(:content)
 
-          # TODO: how to store the grid file with a custom id?
-          # grid_attributes[:_id] = Moped::BSON::ObjectId.from_string(grid_attributes[:_id])
-          grid_attributes.delete(:_id)
+          grid_attributes[:_id] = ::BSON::ObjectId.from_string(grid_attributes[:_id].to_s)
 
-          id = RCS::DB::GridFS.put(content, grid_attributes, target_id)
-          attributes['data']['_grid'] = Moped::BSON::ObjectId.from_string(id)
+          attributes['data']['_grid'] = RCS::DB::GridFS.put(content, grid_attributes, target_id)
         end
 
         evi = collection.new(attributes)
