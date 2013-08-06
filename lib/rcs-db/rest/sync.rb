@@ -8,8 +8,8 @@ module RCS
   module DB
     class SyncController < RESTController
 
-      bypass_auth [:evidence, :items, :status, :setup, :agent]
-      require_license :evidence, :items, :status, :setup, :agent, license: :archive
+      bypass_auth [:evidence, :items, :status, :setup, :agent, :sync_event]
+      require_license :evidence, :items, :status, :setup, :agent, :sync_event, license: :archive
 
       def evidence
         return not_authorized(msg: 'Invalid signature') unless valid_signature?
@@ -82,6 +82,22 @@ module RCS
         exist = ::Item.agents.where(id: agent_id).count != 0
 
         ok(result: (exist ? 'EXISTS' : 'MISSING'))
+      end
+
+      def sync_event
+        return not_authorized(msg: 'Invalid signature') unless valid_signature?
+
+        agent_id = Moped::BSON::ObjectId.from_string(@params['agent_id'])
+        event = @params['event'].to_sym
+        sync_params = @params['params']
+
+        valid_event = [:sync_start, :sync_stop, :sync_timeout].include?(event)
+        return bad_request(msg: 'Invalid parameters') unless valid_event
+
+        agent = Item.find(agent_id)
+        EvidenceController.new.__send__(event, agent, sync_params)
+
+        ok(msg: "#{event} event triggered")
       end
 
       private

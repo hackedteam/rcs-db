@@ -44,6 +44,7 @@ module RCS
           connector_queue = ConnectorQueue.take(scope)
           break unless connector_queue
           process(connector_queue)
+          connector_queue.destroy
         end
         thread_with_errors.delete(scope)
       rescue Exception => e
@@ -56,14 +57,15 @@ module RCS
         trace :debug, "Processing #{connector_queue}"
         connector = connector_queue.connector
         data = connector_queue.data
-        evidence = connector_queue.evidence
+        type = connector_queue.type
+        archive_node = connector.archive_node
 
         if !connector
           trace :warn, "Was about to process #{connector_queue}, but the connector is missing."
-        elsif !evidence
-          trace :warn, "Was about to process #{connector_queue}, but the evidence is missing."
-        elsif connector.remote?
-          archive_node = connector.archive_node
+          return
+        end
+
+        if data['path'] and connector.remote?
           operation_id = data['path'].first
           agent_id = data['path'].last
 
@@ -71,13 +73,25 @@ module RCS
             archive_node.send_agent(operation_id, agent_id)
             @known_agents << agent_id
           end
-
-          archive_node.send_evidence(evidence, path: data['path'])
-        else
-          dump(evidence, connector)
         end
 
-        connector_queue.destroy
+        if type == :send_sync_event
+          archive_node.send_sync_event(event: data['event'], params: data['params'], agent_id: data['path'].last)
+          return
+        end
+
+        evidence = connector_queue.evidence
+
+        if !evidence
+          trace :warn, "Was about to process #{connector_queue}, but the evidence is missing."
+          return
+        end
+
+        if type == :send_evidence
+          archive_node.send_evidence(evidence, path: data['path'])
+        elsif type == :dump_evidence
+          dump(evidence, connector)
+        end
       end
 
       def dump(evidence, connector)

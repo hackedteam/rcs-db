@@ -72,6 +72,10 @@ module RCS
         end
       end
 
+      def send_sync_event(params)
+        request("/sync/sync_event", params, on_error: :raise)
+      end
+
       def uri
         @uri ||= begin
           valid_address = address

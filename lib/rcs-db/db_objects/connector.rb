@@ -25,6 +25,7 @@ class Connector
   index enabled: 1
   index keep: 1
   index type: 1
+  index path: 1
 
   validates_presence_of :dest
   validates_inclusion_of :type, in: TYPES
@@ -43,6 +44,11 @@ class Connector
     enabled.select { |connector| connector.match?(evidence) }
   end
 
+  def self.matching_sync_event_of(agent)
+    operation_id = agent.path.first
+    enabled.where(type: 'REMOTE', path: [operation_id]).all
+  end
+
   def validate_path_is_an_operation
     return if path.blank?
     if path.size != 1 or ::Item.operations.where(_id: path.first).empty?
@@ -56,7 +62,10 @@ class Connector
   end
 
   def defer(&block)
-    Thread.new(&block)
+    Thread.new do
+      Thread.current.abort_on_exception = true
+      yield
+    end
   end
 
   def setup_archive_node

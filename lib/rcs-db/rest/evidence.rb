@@ -181,31 +181,45 @@ class EvidenceController < RESTController
   # used to report that the activity of an instance is starting
   def start
     require_auth_level :server, :tech_import
-    
+
     # create a phony session
     session = @params.symbolize
-    
+
     # retrieve the agent from the db
     agent = Item.where({_id: session[:bid]}).first
     return not_found("Agent not found: #{session[:bid]}") if agent.nil?
-    
-    # convert the string time to a time object to be passed to 'sync_start'
-    time = Time.at(@params['sync_time']).getutc
 
+    dispatch_sync_event(agent, :sync_start, @params)
+
+    sync_start(agent, @params)
+
+    return ok
+  end
+
+  def dispatch_sync_event(agent, event, params = {})
+    Connector.matching_sync_event_of(agent).each do |connector|
+      ConnectorQueue.push_sync_event(connector, event, agent, params)
+    end
+  end
+
+  def sync_start(agent, params)
+    time = Time.at(params['sync_time']).getutc
+
+    # convert the string time to a time object to be passed to 'sync_start'
     trace :info, "#{agent[:name]} sync started [#{agent[:ident]}:#{agent[:instance]}]"
 
     # update the agent version
-    agent.version = @params['version']
+    agent.version = params['version']
 
     # reset the counter for the dashboard
     agent.reset_dashboard
-    
+
     # update the stats
     agent.stat[:last_sync] = time
     agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_IN_PROGRESS
-    agent.stat[:source] = @params['source']
-    agent.stat[:user] = @params['user']
-    agent.stat[:device] = @params['device']
+    agent.stat[:source] = params['source']
+    agent.stat[:user] = params['user']
+    agent.stat[:device] = params['device']
     agent.save
 
     # update the stat of the target
@@ -225,9 +239,7 @@ class EvidenceController < RESTController
     Alerting.new_sync agent
 
     # remember the address of each sync
-    insert_sync_address(target, agent, @params['source'])
-
-    return ok
+    insert_sync_address(target, agent, params['source'])
   end
 
   def insert_sync_address(target, agent, address)
@@ -300,13 +312,19 @@ class EvidenceController < RESTController
     agent = Item.where({_id: session[:bid]}).first
     return not_found("Agent not found: #{session[:bid]}") if agent.nil?
 
+    dispatch_sync_event(agent, :sync_stop)
+
+    sync_stop(agent)
+
+    return ok
+  end
+
+  def sync_stop(agent, params = {})
     trace :info, "#{agent[:name]} sync end [#{agent[:ident]}:#{agent[:instance]}]"
 
     agent.stat[:last_sync] = Time.now.getutc.to_i
     agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_IDLE
     agent.save
-
-    return ok
   end
 
   # used to report that the activity on an instance has timed out
@@ -320,13 +338,19 @@ class EvidenceController < RESTController
     agent = Item.where({_id: session[:bid]}).first
     return not_found("Agent not found: #{session[:bid]}") if agent.nil?
 
+    dispatch_sync_event(agent, :sync_timeout)
+
+    sync_timeout(agent)
+
+    return ok
+  end
+
+  def sync_timeout(agent, params = {})
     trace :info, "#{agent[:name]} sync timeouted [#{agent[:ident]}:#{agent[:instance]}]"
 
     agent.stat[:last_sync] = Time.now.getutc.to_i
     agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_TIMEOUTED
     agent.save
-
-    return ok
   end
 
   def index
@@ -542,7 +566,7 @@ class EvidenceController < RESTController
     end
   end
 
-  private :insert_sync_address
+  private :insert_sync_address, :sync_start, :sync_stop, :sync_timeout
 end
 
 end #DB::
