@@ -79,11 +79,23 @@ task :clean do
   end
 end
 
+desc "Install rcs-common gem system wide"
+task :rcs_common_gem do
+  execute "Installing rcs-common gem system wide" do
+    current_path = File.dirname(__FILE__)
+    gem_path = File.expand_path(File.join(current_path, '../rcs-common'))
+    Dir.chdir(gem_path)
+    system("rake install")
+    Dir.chdir(current_path)
+  end
+end
+
 desc "Create the NSIS installer for windows"
 task :nsis do
   puts "Housekeeping..."
   Rake::Task[:clean].invoke
   Rake::Task[:protect].invoke
+  Rake::Task[:rcs_common_gem].invoke
 
   puts "Protecting collector code..."
   invoke_collector_task :protect
