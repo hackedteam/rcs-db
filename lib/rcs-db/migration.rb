@@ -15,9 +15,10 @@ require_relative 'db_layer'
 module RCS
 module DB
 
-class Migration
+module Migration
+  extend self
 
-  def self.up_to(version)
+  def up_to(version)
     puts "migrating to #{version}"
 
     run [:fix_connectors, :recalculate_checksums, :drop_sessions] if version >= '8.4.1'
@@ -25,7 +26,7 @@ class Migration
     return 0
   end
 
-  def self.run(params)
+  def run(params)
     puts "Migration procedure started..."
 
     ENV['no_trace'] = '1'
@@ -58,7 +59,7 @@ class Migration
     return 0
   end
 
-  def self.fix_connectors
+  def fix_connectors
     count = 0
     moped_collection = Connector.collection
 
@@ -69,7 +70,7 @@ class Migration
     end
   end
 
-  def self.recalculate_checksums
+  def recalculate_checksums
     count = 0
     ::Item.each do |item|
       count += 1
@@ -79,7 +80,7 @@ class Migration
     end
   end
 
-  def self.mark_pre_83_as_bad
+  def mark_pre_83_as_bad
     count = 0
     ::Item.agents.each do |item|
       count += 1
@@ -89,7 +90,7 @@ class Migration
     end
   end
 
-  def self.access_control
+  def access_control
     count = 0
     ::Item.operations.each do |operation|
       count += 1
@@ -98,7 +99,7 @@ class Migration
     end
   end
 
-  def self.reindex_aggregates
+  def reindex_aggregates
     count = 0
     ::Item.targets.each do |target|
       begin
@@ -111,7 +112,7 @@ class Migration
     end
   end
 
-  def self.reindex_evidences
+  def reindex_evidences
     count = 0
     ::Item.targets.each do |target|
       begin
@@ -124,7 +125,7 @@ class Migration
     end
   end
 
-  def self.aggregate_summary
+  def aggregate_summary
     count = 0
     ::Item.targets.each do |target|
       begin
@@ -138,11 +139,11 @@ class Migration
     end
   end
 
-  def self.drop_sessions
+  def drop_sessions
     ::Session.destroy_all
   end
 
-  def self.cleanup_storage
+  def cleanup_storage
     count = 0
     db = DB.instance.mongo_connection
 
