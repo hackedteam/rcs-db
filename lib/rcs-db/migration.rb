@@ -21,7 +21,7 @@ module Migration
   def up_to(version)
     puts "migrating to #{version}"
 
-    run [:fix_connectors, :recalculate_checksums, :drop_sessions] if version >= '8.4.1'
+    run [:fix_connectors, :fix_position_evidences, :recalculate_checksums, :drop_sessions] if version >= '8.4.1'
 
     return 0
   end
@@ -67,6 +67,28 @@ module Migration
       result = moped_collection.find({type: old_type}).update_all('$set' => {format: old_type, type: 'LOCAL'})
       count += result['n']
       print "\r%d connectors migrated" % count
+    end
+  end
+
+  def fix_position_evidences
+    count = 0
+    target_ids = Item.targets.only(:_id).map(&:_id)
+
+    filter = {'type' => 'position', 'data.position' => {'$exists' => false}}
+
+    target_ids.each do |target_id|
+      ::Evidence.collection_class(target_id).where(filter).each do |evidence|
+        lon = evidence.data['longitude']
+        lat = evidence.data['latitude']
+        next if lat.nil? or lon.nil?
+        next if lat.to_i.zero? or lon.to_i.zero?
+        lat = lat.to_f if lat.kind_of?(String)
+        lon = lon.to_f if lon.kind_of?(String)
+        evidence.data['position'] = [lon, lat]
+        evidence.save
+        count += 1
+        print "\r%d evidence migrated" % count
+      end
     end
   end
 
