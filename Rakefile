@@ -194,7 +194,7 @@ task :protect do
   end
 
   execute "Copying other files" do
-    $modules.each do |name|
+    $modules.each do |project_name|
       Dir["#{Dir.pwd}/lib/rcs-#{project_name}/**/*"].each do |p|
         next if Dir.exists?(p)
         next if File.extname(p) =~ /\.rb/i
