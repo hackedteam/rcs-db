@@ -189,9 +189,8 @@ task :protect do
     $modules.each do |name|
       Dir.chdir "lib/rcs-#{name}/"
       system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-#{name}-release -r --ruby 1.9.3 *.rb */*.rb" || raise("Econding failed.")
+      Dir.chdir "../.."
     end
-
-    Dir.chdir "../.."
   end
 
   execute "Copying other files" do
