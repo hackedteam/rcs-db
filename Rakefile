@@ -138,16 +138,16 @@ task :nsis do
   end
 end
 
+$modules = %w[db worker aggregator intelligence ocr translate connector]
+
 desc "Remove the protected release code"
 task :unprotect do
   execute "Deleting the protected release folder" do
     FileUtils.rm_rf(Dir.pwd + '/lib/rgloader') if File.exist?(Dir.pwd + '/lib/rgloader')
-    FileUtils.rm_rf(Dir.pwd + '/lib/rcs-db-release') if File.exist?(Dir.pwd + '/lib/rcs-db-release')
-    FileUtils.rm_rf(Dir.pwd + '/lib/rcs-worker-release') if File.exist?(Dir.pwd + '/lib/rcs-worker-release')
-    FileUtils.rm_rf(Dir.pwd + '/lib/rcs-aggregator-release') if File.exist?(Dir.pwd + '/lib/rcs-aggregator-release')
-    FileUtils.rm_rf(Dir.pwd + '/lib/rcs-intelligence-release') if File.exist?(Dir.pwd + '/lib/rcs-intelligence-release')
-    FileUtils.rm_rf(Dir.pwd + '/lib/rcs-ocr-release') if File.exist?(Dir.pwd + '/lib/rcs-ocr-release')
-    FileUtils.rm_rf(Dir.pwd + '/lib/rcs-translate-release') if File.exist?(Dir.pwd + '/lib/rcs-translate-release')
+
+    $modules.each do |name|
+      FileUtils.rm_rf(Dir.pwd + "/lib/rcs-#{name}-release") if File.exist?(Dir.pwd + "/lib/rcs-#{name}-release")
+    end
   end
 end
 
@@ -164,13 +164,11 @@ end
 desc "Create the encrypted code for release"
 task :protect do
   Rake::Task[:unprotect].invoke
+
   execute "Creating release folder" do
-    Dir.mkdir(Dir.pwd + '/lib/rcs-db-release') if not File.directory?(Dir.pwd + '/lib/rcs-db-release')
-    Dir.mkdir(Dir.pwd + '/lib/rcs-worker-release') if not File.directory?(Dir.pwd + '/lib/rcs-worker-release')
-    Dir.mkdir(Dir.pwd + '/lib/rcs-aggregator-release') if not File.directory?(Dir.pwd + '/lib/rcs-aggregator-release')
-    Dir.mkdir(Dir.pwd + '/lib/rcs-intelligence-release') if not File.directory?(Dir.pwd + '/lib/rcs-intelligence-release')
-    Dir.mkdir(Dir.pwd + '/lib/rcs-ocr-release') if not File.directory?(Dir.pwd + '/lib/rcs-ocr-release')
-    Dir.mkdir(Dir.pwd + '/lib/rcs-translate-release') if not File.directory?(Dir.pwd + '/lib/rcs-translate-release')
+    $modules.each do |name|
+      Dir.mkdir(Dir.pwd + "/lib/rcs-#{name}-release") if not File.directory?(Dir.pwd + "/lib/rcs-#{name}-release")
+    end
   end
 
   execute "Copying the rgloader" do
@@ -188,22 +186,16 @@ task :protect do
   execute "Encrypting code" do
     # we have to change the current dir, otherwise rubyencoder
     # will recreate the lib/rcs-db structure under rcs-db-release
-    Dir.chdir "lib/rcs-db/"
-    system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-db-release -r --ruby 1.9.3 *.rb */*.rb" || raise("Econding failed.")
-    Dir.chdir "../rcs-worker"
-    system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-worker-release -r --ruby 1.9.3 *.rb */*.rb" || raise("Econding failed.")
-    Dir.chdir "../rcs-aggregator"
-    system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-aggregator-release -r --ruby 1.9.3 *.rb */*.rb" || raise("Econding failed.")
-    Dir.chdir "../rcs-intelligence"
-    system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-intelligence-release -r --ruby 1.9.3 *.rb */*.rb" || raise("Econding failed.")
-    Dir.chdir "../rcs-ocr"
-    system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-ocr-release -r --ruby 1.9.3 *.rb */*.rb" || raise("Econding failed.")
-    Dir.chdir "../rcs-translate"
-    system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-translate-release -r --ruby 1.9.3 *.rb */*.rb" || raise("Econding failed.")
+    $modules.each do |name|
+      Dir.chdir "lib/rcs-#{name}/"
+      system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-#{name}-release -r --ruby 1.9.3 *.rb */*.rb" || raise("Econding failed.")
+    end
+
     Dir.chdir "../.."
   end
+
   execute "Copying other files" do
-    def recursive_copy_non_ruby_files_in(project_name)
+    $modules.each do |name|
       Dir["#{Dir.pwd}/lib/rcs-#{project_name}/**/*"].each do |p|
         next if Dir.exists?(p)
         next if File.extname(p) =~ /\.rb/i
@@ -212,10 +204,6 @@ task :protect do
         FileUtils.mkdir_p(dest_folder)
         FileUtils.cp_r(p, dest_file)
       end
-    end
-
-    %w[db worker aggregator intelligence ocr translate].each do |name|
-      recursive_copy_non_ruby_files_in(name)
     end
   end
 end
