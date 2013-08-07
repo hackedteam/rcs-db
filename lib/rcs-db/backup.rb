@@ -120,7 +120,7 @@ class BackupManager
       end
 
       # save the infos of this backup
-      File.open(File.join(output_dir, "info"), "w") {|f| f.write "#{backup.id}\n#{backup.what}"}
+      File.open(File.join(output_dir, "info"), "w") {|f| f.write "#{backup.id}\n#{backup.what}\n#{backup.incremental}"}
 
       # backup the config db
       backup_config_db(backup, now) if ['metadata', 'full'].include? backup.what
@@ -184,7 +184,7 @@ class BackupManager
 
     system_command(mongodump)
 
-    File.open(File.join(output_config_dir, "info"), "w") {|f| f.write "#{backup.id}\n#{backup.what}"}
+    File.open(File.join(output_config_dir, "info"), "w") {|f| f.write "#{backup.id}\n#{backup.what}\n#{backup.incremental}"}
   end
 
   def self.os_specific_path_separator
@@ -327,7 +327,15 @@ class BackupManager
       name = File.basename(dir).split('-')[0]
       time = File.stat(dir).ctime.getutc
 
-      index << {_id: File.basename(dir), name: name, when: time.strftime('%Y-%m-%d %H:%M'), size: folder_size(dir)}
+      # get backup info which generated this archive
+      if File.exist? File.join(dir, "info")
+        info = File.read(File.join(dir, "info"))
+        backup_id, backup_what, backup_incremental = info.split("\n")
+      else
+        backup_what = "unknown"
+      end
+
+      index << {_id: File.basename(dir), name: name, what: backup_what, incremental: backup_incremental, when: time.strftime('%Y-%m-%d %H:%M'), size: folder_size(dir)}
     end
 
     index

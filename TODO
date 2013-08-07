@@ -6,16 +6,7 @@ TODO 9.0.0
       automatic detection of home / office (needs timezone for each entity)
       frequencer for places
 
-    refactor the connectors to use queue and export from separate process [OK]
-      - xml export [OK]
-      - sync with "archive" rcs installation [OK]
-        - ping remote server and report status in the monitor (use ping to sync signatures) [OK]
-        - sync signatures [OK]
-        - sync items [OK]
-        - sync evidence [OK]
-        - sync start/end/timeout events [OK]
-
-    most visited places [OK]
+    keep same id for grid objects during connectors sync
 
     method to send coordinates for the position player in console [OK]
 
