@@ -87,6 +87,11 @@ def setup(host, db)
   port ||= '27017'
 
   RCS::DB::Config.instance.global['CN'] = host
+
+  if RCS::DB::Config.instance.global['DB']
+    RCS::DB::Config.instance.global['DB'] = db
+  end
+
   ENV['MONGOID_DATABASE'] = db
   ENV['MONGOID_HOST'] = host
   ENV['MONGOID_PORT'] = port
@@ -96,6 +101,7 @@ def setup(host, db)
   RCS::DB::DB.instance.connect
 
   Mongoid.override_database(db)
+  Mongoid.default_session.use(db)
 
   # Show moped queries
   Moped.logger = Logger.new $stdout
@@ -115,4 +121,5 @@ host = get_argv('--host') || 'localhost:27017'
 db = get_argv('--db') || 'rcs-test'
 
 setup(host, db)
+
 binding.pry
