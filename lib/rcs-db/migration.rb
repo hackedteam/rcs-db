@@ -20,7 +20,7 @@ class Migration
   def self.up_to(version)
     puts "migrating to #{version}"
 
-    run [:recalculate_checksums, :drop_sessions] if version >= '8.4.1'
+    run [:fix_connectors, :recalculate_checksums, :drop_sessions] if version >= '8.4.1'
 
     return 0
   end
@@ -56,6 +56,17 @@ class Migration
     end
 
     return 0
+  end
+
+  def self.fix_connectors
+    count = 0
+    moped_collection = Connector.collection
+
+    %w[JSON XML].each do |old_type|
+      result = moped_collection.find({type: old_type}).update_all('$set' => {format: old_type, type: 'LOCAL'})
+      count += result['n']
+      print "\r%d connectors migrated" % count
+    end
   end
 
   def self.recalculate_checksums
