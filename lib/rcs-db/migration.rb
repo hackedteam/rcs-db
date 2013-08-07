@@ -49,58 +49,46 @@ class Migration
     puts "Connected to MongoDB at #{ENV['MONGOID_HOST']}:#{ENV['MONGOID_PORT']}"
 
     params.each do |step|
-      puts "\n+ #{step}"
-      self.send(step)
+      start = Time.now
+      puts "Running #{step}"
+      __send__(step)
+      puts "\n#{step} completed in #{Time.now - start} sec"
     end
 
     return 0
   end
 
   def self.recalculate_checksums
-    start = Time.now
     count = 0
-    puts "Recalculating item checksums..."
     ::Item.each do |item|
       count += 1
       item.cs = item.calculate_checksum
       item.save
       print "\r%d items migrated" % count
     end
-    puts
-    puts "done in #{Time.now - start} secs"
   end
 
   def self.mark_pre_83_as_bad
-    start = Time.now
     count = 0
-    puts "Checking for good/bad consistency..."
     ::Item.agents.each do |item|
       count += 1
       item.good = false if item.version < 2013031101
       item.save
       print "\r%d items checked" % count
     end
-    puts
-    puts "done in #{Time.now - start} secs"
   end
 
   def self.access_control
-    start = Time.now
     count = 0
-    puts "Rebuilding access control..."
     ::Item.operations.each do |operation|
       count += 1
       Group.rebuild_access_control(operation)
       print "\r%d operations rebuilt" % count
     end
-    puts
-    puts "done in #{Time.now - start} secs"
   end
 
   def self.reindex_aggregates
-    start = Time.now
     count = 0
-    puts "Re-indexing aggregates..."
     ::Item.targets.each do |target|
       begin
         klass = Aggregate.target(target._id)
@@ -110,14 +98,10 @@ class Migration
         puts e.message
       end
     end
-    puts
-    puts "done in #{Time.now - start} secs"
   end
 
   def self.reindex_evidences
-    start = Time.now
     count = 0
-    puts "Re-indexing evidences..."
     ::Item.targets.each do |target|
       begin
         klass = Evidence.collection_class(target._id)
@@ -127,14 +111,10 @@ class Migration
         puts e.message
       end
     end
-    puts
-    puts "done in #{Time.now - start} secs"
   end
 
   def self.aggregate_summary
-    start = Time.now
     count = 0
-    puts "Creating aggregates summaries..."
     ::Item.targets.each do |target|
       begin
         next if Aggregate.target(target._id).empty?
@@ -145,19 +125,14 @@ class Migration
         puts e.message
       end
     end
-    puts
-    puts "done in #{Time.now - start} secs"
   end
 
   def self.drop_sessions
-    puts "Deleting old sessions..."
     ::Session.destroy_all
   end
 
   def self.cleanup_storage
-    start = Time.now
     count = 0
-    puts "Dropping orphaned collections..."
     db = DB.instance.mongo_connection
 
     total_size =  db.stats['dataSize']
@@ -236,7 +211,6 @@ class Migration
     current_size = total_size - db.stats['dataSize']
 
     puts "#{current_size.to_s_bytes} saved"
-    puts "done in #{Time.now - start} secs"
   end
 
 end
