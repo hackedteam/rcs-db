@@ -6,18 +6,11 @@ TODO 9.0.0
       automatic detection of home / office (needs timezone for each entity)
       frequencer for places
 
-    keep same id for grid objects during connectors sync [OK]
-
-    method to send coordinates for the position player in console [OK]
-
     entities in the recent item list (must modify the structure of recents)
 
     dashboard in push mode
       - only after the dashboard as been refactored, issue a target|operation.restat on each target|operation.show
 
-  MIGRATION:
-    migrate old position to the new 2dsphere index [OK]
-    migrate old connector to new format [OK]
 
   FIX:
     better investigation on "end of file reached" errors from mongoid (hoping for version 4.0.0 with connection pool)
