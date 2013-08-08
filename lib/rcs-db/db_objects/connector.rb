@@ -39,16 +39,6 @@ class Connector
   # Scope: only enabled connectors
   scope :enabled, where(enabled: true)
 
-  # Scope: only enabled and matching collectors
-  def self.matching(evidence)
-    enabled.select { |connector| connector.match?(evidence) }
-  end
-
-  def self.matching_sync_event_of(agent)
-    operation_id = agent.path.first
-    enabled.where(type: 'REMOTE', path: [operation_id]).all
-  end
-
   def validate_path_is_an_operation
     return if path.blank?
     if path.size != 1 or ::Item.operations.where(_id: path.first).empty?

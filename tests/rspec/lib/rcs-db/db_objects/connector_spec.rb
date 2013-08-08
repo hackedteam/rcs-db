@@ -52,21 +52,6 @@ describe Connector do
     end
   end
 
-  describe '#matching' do
-
-    let(:evidence) { factory_create :addressbook_evidence, target: target }
-
-    let!(:matching_connector) { factory_create :connector, item: target }
-
-    let!(:nonmatching_connector) { factory_create :connector, item: factory_create(:target) }
-
-    before { expect(described_class.all.count).to eql 2 }
-
-    it 'returns all the connectors that match the given evidence' do
-      expect(described_class.matching(evidence).size).to eql 1
-    end
-  end
-
   describe '#match' do
 
     context 'when the path in blank' do

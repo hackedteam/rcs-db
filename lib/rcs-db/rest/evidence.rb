@@ -189,17 +189,11 @@ class EvidenceController < RESTController
     agent = Item.where({_id: session[:bid]}).first
     return not_found("Agent not found: #{session[:bid]}") if agent.nil?
 
-    dispatch_sync_event(agent, :sync_start, @params)
+    ConnectorManager.process_sync_event(agent, :sync_start, @params)
 
     sync_start(agent, @params)
 
     return ok
-  end
-
-  def dispatch_sync_event(agent, event, params = {})
-    Connector.matching_sync_event_of(agent).each do |connector|
-      ConnectorQueue.push_sync_event(connector, event, agent, params)
-    end
   end
 
   def sync_start(agent, params)
@@ -309,7 +303,7 @@ class EvidenceController < RESTController
     agent = Item.where({_id: session[:bid]}).first
     return not_found("Agent not found: #{session[:bid]}") if agent.nil?
 
-    dispatch_sync_event(agent, :sync_stop)
+    ConnectorManager.process_sync_event(agent, :sync_stop)
 
     sync_stop(agent)
 
@@ -335,7 +329,7 @@ class EvidenceController < RESTController
     agent = Item.where({_id: session[:bid]}).first
     return not_found("Agent not found: #{session[:bid]}") if agent.nil?
 
-    dispatch_sync_event(agent, :sync_timeout)
+    ConnectorManager.process_sync_event(agent, :sync_timeout)
 
     sync_timeout(agent)
 

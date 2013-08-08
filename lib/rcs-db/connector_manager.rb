@@ -8,7 +8,7 @@ module RCS
       extend self
 
       def process_evidence(target, evidence)
-        connectors = ::Connector.matching(evidence)
+        connectors = ::Connector.enabled.select { |connector| connector.match?(evidence) }
         return :keep if connectors.blank?
 
         keep = keep_evidence?(connectors)
@@ -22,6 +22,14 @@ module RCS
         end
 
         keep ? :keep : :discard
+      end
+
+      def process_sync_event(agent, event, params = {})
+        operation_id = agent.path.first
+
+        ::Connector.enabled.where(type: 'REMOTE', path: [operation_id]).each do |connector|
+          ConnectorQueue.push_sync_event(connector, event, agent, params)
+        end
       end
 
       def keep_evidence?(connectors)
