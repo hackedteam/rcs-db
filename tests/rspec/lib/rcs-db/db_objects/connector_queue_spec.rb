@@ -12,8 +12,9 @@ describe ConnectorQueue do
   end
 
   it 'has some indexes' do
-    expect(described_class.index_options).to have_key(cid: 1, s: 1)
-    expect(described_class.index_options.keys.size).to eql 1
+    expect(described_class.index_options).to have_key(cid: 1)
+    expect(described_class.index_options).to have_key(s: 1)
+    expect(described_class.index_options.keys.size).to eql 2
   end
 
   it 'has a specific collection name' do

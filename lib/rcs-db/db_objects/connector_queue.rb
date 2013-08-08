@@ -17,7 +17,8 @@ class ConnectorQueue
   validates_presence_of  :scope
   validates_presence_of  :type
 
-  index({connector_id: 1, scope: 1})
+  index(connector_id: 1)
+  index(scope: 1)
 
   scope :with_connector, lambda { |connector| where(connector_id: connector.id) }
 

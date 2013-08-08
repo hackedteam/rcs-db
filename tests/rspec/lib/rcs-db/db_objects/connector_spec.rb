@@ -27,8 +27,7 @@ describe Connector do
   end
 
   it 'has some indexes' do
-    expect(subject.index_options).to have_key({enabled: 1, keep: 1, type: 1, path: 1})
-    expect(subject.index_options.keys.size).to eq 1
+    expect(subject.index_options.keys.size).to eq 5
   end
 
   let(:target) { factory_create :target }
