@@ -188,6 +188,7 @@ class IntelligenceQueue < NotificationQueue
       related_item_class.target(target_id).find ident
     else
       # the #collection_class method has been replaced by #target in Aggregate
+      # TODO: remove
       related_item_class.collection_class(target_id).find ident
     end
   end

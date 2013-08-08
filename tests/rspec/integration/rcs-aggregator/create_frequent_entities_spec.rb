@@ -26,10 +26,10 @@ describe 'there is a single target communicating frequently with a peer' do
       when :chat
         15.times do |day|
           data_in = {'from' => handle, 'rcpt' => 'sender', 'incoming' => 1, 'program' => 'skype', 'content' => 'test message'}
-          evidence_in = Evidence.collection_class(target.id).create!(da: Time.now.to_i + day*86400, aid: agent.id, type: :chat, data: data_in)
+          evidence_in = Evidence.target(target.id).create!(da: Time.now.to_i + day*86400, aid: agent.id, type: :chat, data: data_in)
 
           data_out = {'from' => 'sender', 'rcpt' => handle, 'incoming' => 0, 'program' => 'skype', 'content' => 'test message'}
-          evidence_out = Evidence.collection_class(target.id).create!(da: Time.now.to_i + day*86400, aid: agent.id, type: :chat, data: data_out)
+          evidence_out = Evidence.target(target.id).create!(da: Time.now.to_i + day*86400, aid: agent.id, type: :chat, data: data_out)
 
           AggregatorQueue.add target.id, evidence_in.id, evidence_in.type
           AggregatorQueue.add target.id, evidence_out.id, evidence_out.type
@@ -37,7 +37,7 @@ describe 'there is a single target communicating frequently with a peer' do
       when :call
         15.times do |day|
           data_in = {'from' => handle, 'rcpt' => 'sender', 'incoming' => 1, 'program' => 'skype', 'content' => 'test message'}
-          evidence_in = Evidence.collection_class(target.id).create!(da: Time.now.to_i + day*86400, aid: agent.id, type: :call, data: data_in)
+          evidence_in = Evidence.target(target.id).create!(da: Time.now.to_i + day*86400, aid: agent.id, type: :call, data: data_in)
 
           AggregatorQueue.add target.id, evidence_in.id, evidence_in.type
         end

@@ -22,7 +22,7 @@ class FilesystemTask
     end
 
     # copy remaining filtering criteria (if any)
-    filtering = Evidence.collection_class(target[:_id]).where({:type => 'filesystem'})
+    filtering = Evidence.target(target[:_id]).where({:type => 'filesystem'})
     filtering = filtering.any_in(:aid => [agent[:_id]]) unless agent.nil?
 
     return filtering.count
@@ -42,7 +42,7 @@ class FilesystemTask
     end
 
     # copy remaining filtering criteria (if any)
-    filtering = Evidence.collection_class(target[:_id]).where({:type => 'filesystem'})
+    filtering = Evidence.target(target[:_id]).where({:type => 'filesystem'})
     filtering = filtering.any_in(:aid => [agent[:_id]]) unless agent.nil?
 
     # header

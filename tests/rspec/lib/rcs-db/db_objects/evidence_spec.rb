@@ -189,7 +189,7 @@ describe Evidence do
       2.times { factory_create(:evidence, agent: agent, type: 'ip') }
     end
 
-    let(:subject) { described_class.collection_class(target) }
+    let(:subject) { described_class.target(target) }
 
     it 'retuns the expected hash' do
       results = subject.count_by_type

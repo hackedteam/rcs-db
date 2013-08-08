@@ -23,7 +23,7 @@ module Intelligence
 
     def password_evidence data
       attributes = {da: Time.now.to_i, aid: agent._id, type: 'password', data: data}
-      Evidence.collection_class(entity.target_id).create! attributes
+      Evidence.target(entity.target_id).create! attributes
     end
 
     it 'should use the Tracer module' do

@@ -56,7 +56,7 @@ class Processor
 
 
   def self.process(entry)
-    ev = Evidence.collection_class(entry['target_id']).find(entry['evidence_id'])
+    ev = Evidence.target(entry['target_id']).find(entry['evidence_id'])
     target = Item.find(entry['target_id'])
 
     trace :info, "Processing #{ev.type} for target #{target.name}"

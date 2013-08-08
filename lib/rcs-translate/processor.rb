@@ -43,7 +43,7 @@ class Processor
 
 
   def self.process(entry)
-    ev = Evidence.collection_class(entry['target_id']).find(entry['evidence_id'])
+    ev = Evidence.target(entry['target_id']).find(entry['evidence_id'])
 
     ev.data[:tr] = "TRANS_IN_PROGRESS"
     ev.save

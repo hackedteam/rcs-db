@@ -135,7 +135,7 @@ describe Item do
 
       let!(:agent_2) { factory_create(:agent, target: target) }
 
-      let(:evidence_klass) { Evidence.collection_class(target) }
+      let(:evidence_klass) { Evidence.target(target) }
 
       # Creates an evidence for the agent_1
       before { factory_create(:chat_evidence, agent: agent_1) }

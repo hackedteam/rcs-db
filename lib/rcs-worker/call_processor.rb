@@ -318,7 +318,7 @@ class Call
 
   def store(peer, program, incoming, start_time, agent, target)
 
-    coll = ::Evidence.collection_class(target[:_id].to_s)
+    coll = ::Evidence.target(target[:_id].to_s)
     coll.create do |ev|
       ev._id = @bid
       ev.aid = agent[:_id].to_s

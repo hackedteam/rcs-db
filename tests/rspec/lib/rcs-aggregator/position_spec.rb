@@ -107,7 +107,7 @@ describe PositionAggregator do
     end
 
     def new_position(device, time, data)
-      Evidence.collection_class(@target.id).new(da: time.to_i, aid: device.id, type: :position, data: data)
+      Evidence.target(@target.id).new(da: time.to_i, aid: device.id, type: :position, data: data)
     end
 
     def parse_data(entry)

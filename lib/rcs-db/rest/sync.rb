@@ -113,7 +113,7 @@ module RCS
       end
 
       def store_evidence(target_id, attributes, grid_attributes = nil)
-        collection = ::Evidence.collection_class(target_id)
+        collection = ::Evidence.target(target_id)
         return unless collection.where(id: attributes["_id"]).count.zero?
 
         unless grid_attributes.blank?

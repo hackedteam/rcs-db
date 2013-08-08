@@ -23,7 +23,7 @@ module FilesystemProcessing
       # remove the sub-tree of this element
       # we match all the entries that have the baseline path in common and
       # the received date less than the current one (to avoid deleting other evidence received in this session)
-      ::Evidence.collection_class(target[:_id])
+      ::Evidence.target(target[:_id])
         .where(:type => 'filesystem',
                :aid => agent._id,
                :dr.lt => self[:dr].to_i,

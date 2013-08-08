@@ -77,7 +77,7 @@ module Migration
     filter = {'type' => 'position', 'data.position' => {'$exists' => false}}
 
     target_ids.each do |target_id|
-      ::Evidence.collection_class(target_id).where(filter).each do |evidence|
+      ::Evidence.target(target_id).where(filter).each do |evidence|
         lon = evidence.data['longitude']
         lat = evidence.data['latitude']
         next if lat.nil? or lon.nil?
@@ -138,7 +138,7 @@ module Migration
     count = 0
     ::Item.targets.each do |target|
       begin
-        klass = Evidence.collection_class(target._id)
+        klass = Evidence.target(target._id)
         DB.instance.sync_indexes(klass)
         print "\r%d evidences collection reindexed" % count += 1
       rescue Exception => e
@@ -195,7 +195,7 @@ module Migration
       # calculate the agents of the target (not deleted), the evidence in the collection
       # and subtract the first from the second
       agents = Item.agents.where(deleted: false, path: target.id).collect {|a| a.id.to_s}
-      grouped = Evidence.collection_class(tid).collection.aggregate([{ "$group" => { _id: "$aid" }}]).collect {|x| x['_id']}
+      grouped = Evidence.target(tid).collection.aggregate([{ "$group" => { _id: "$aid" }}]).collect {|x| x['_id']}
       deleted_aid_evidence = grouped - agents
 
       next if deleted_aid_evidence.empty?
@@ -205,8 +205,8 @@ module Migration
 
       pre_size = db[coll].stats['size']
       deleted_aid_evidence.each do |aid|
-        count = Evidence.collection_class(tid).where(aid: aid).count
-        Evidence.collection_class(tid).where(aid: aid).delete_all
+        count = Evidence.target(tid).where(aid: aid).count
+        Evidence.target(tid).where(aid: aid).delete_all
         puts "#{count} evidence deleted"
       end
       post_size = db[coll].stats['size']

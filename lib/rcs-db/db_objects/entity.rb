@@ -290,7 +290,7 @@ class Entity
     return nil if check_intelligence_license
 
     # use the fulltext (kw) search to be fast
-    Evidence.collection_class(target_id).where({type: 'addressbook', :kw.all => handle.keywords }).each do |e|
+    Evidence.target(target_id).where({type: 'addressbook', :kw.all => handle.keywords }).each do |e|
       @@acc_cache.store(search_key, e[:data]['name'])
       return e[:data]['name']
     end

@@ -16,7 +16,7 @@ class MoveagentTask
 
     # factories don't have evidence to be moved
     if @agent._kind == 'agent'
-      evidences = Evidence.collection_class(@old_target[:_id]).where(:aid => @agent[:_id])
+      evidences = Evidence.target(@old_target[:_id]).where(:aid => @agent[:_id])
       evidence_count = evidences.count
     end
 

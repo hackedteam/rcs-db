@@ -307,7 +307,7 @@ describe Entity do
 
       it 'should return name from handle (from addressbook)' do
         agent = Item.create(name: 'test-agent', _kind: 'agent', path: [@target._id], stat: ::Stat.new)
-        Evidence.collection_class(@target._id.to_s).create!(da: Time.now.to_i, aid: agent._id, type: 'addressbook', data: {name: 'test-addressbook', handle: 'test-a'}, kw: ['phone', 'test', 'a'])
+        Evidence.target(@target._id.to_s).create!(da: Time.now.to_i, aid: agent._id, type: 'addressbook', data: {name: 'test-addressbook', handle: 'test-a'}, kw: ['phone', 'test', 'a'])
 
         name = Entity.name_from_handle('sms', 'test-a', @target._id.to_s)
 

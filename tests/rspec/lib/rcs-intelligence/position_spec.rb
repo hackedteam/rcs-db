@@ -14,7 +14,7 @@ module Intelligence
     let!(:target) { Item.create!(name: 'testtarget', _kind: 'target', path: [operation._id], stat: ::Stat.new) }
     let!(:entity) { Entity.any_in({path: [target.id]}).first }
     let!(:agent) { Item.create!(name: 'testagent', _kind: 'agent', path: target.path+[target._id], stat: ::Stat.new) }
-    let!(:evidence_class) { Evidence.collection_class(target.id) }
+    let!(:evidence_class) { Evidence.target(target.id) }
 
     def create_position_evidence data
       evidence_class.create! da: Time.now.to_i, aid: agent.id, type: :position, data: data

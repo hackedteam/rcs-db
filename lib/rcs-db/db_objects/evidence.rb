@@ -155,8 +155,7 @@ module Evidence
     IntelligenceQueue.add(target.id, id, :evidence) if intelligence_relevant?
   end
 
-  # #TODO: rename into self.target (just like Aggregate#target)
-  def self.collection_class(target)
+  def self.target(target)
     target_id = target.respond_to?(:id) ? target.id : target
     dynamic_classname = "Evidence#{target_id}"
 
@@ -207,7 +206,7 @@ module Evidence
   end
 
   def self.dynamic_new(target)
-    collection_class(target).new
+    target(target).new
   end
 
   def self.deep_copy(src, dst)
@@ -228,7 +227,7 @@ module Evidence
     raise "Target not found" if filter.nil?
 
     # copy remaining filtering criteria (if any)
-    filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info'])
+    filtering = Evidence.target(target[:_id]).not_in(:type => ['filesystem', 'info'])
     filter.each_key do |k|
       filtering = filtering.any_in(k.to_sym => filter[k])
     end
@@ -244,7 +243,7 @@ module Evidence
     raise "Target not found" if filter.nil?
 
     # copy remaining filtering criteria (if any)
-    filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info'])
+    filtering = Evidence.target(target[:_id]).not_in(:type => ['filesystem', 'info'])
     filter.each_key do |k|
       filtering = filtering.any_in(k.to_sym => filter[k])
     end
@@ -260,7 +259,7 @@ module Evidence
     raise "Target not found" if filter.nil?
 
     # copy remaining filtering criteria (if any)
-    filtering = Evidence.collection_class(target[:_id]).stats_relevant
+    filtering = Evidence.target(target[:_id]).stats_relevant
     filter.each_key do |k|
       filtering = filtering.any_in(k.to_sym => filter[k])
     end
@@ -403,7 +402,7 @@ module Evidence
     # we have to remove all the aggregates created from those evidence on the old target
     Aggregate.target(old_target[:_id]).destroy_all(aid: agent[:_id].to_s)
 
-    evidences = Evidence.collection_class(old_target[:_id]).where(:aid => agent[:_id])
+    evidences = Evidence.target(old_target[:_id]).where(:aid => agent[:_id])
 
     total = evidences.count
     chunk_size = 500
@@ -412,7 +411,7 @@ module Evidence
     # move the evidence in chunks to prevent cursor expiration on mongodb
     until evidences.count == 0 do
 
-      evidences = Evidence.collection_class(old_target[:_id]).where(:aid => agent[:_id]).limit(chunk_size)
+      evidences = Evidence.target(old_target[:_id]).where(:aid => agent[:_id]).limit(chunk_size)
 
       # copy the new evidence
       evidences.each do |old_ev|
@@ -489,7 +488,7 @@ module Evidence
 
     trace :info, "Deleting evidence for target #{target.name} #{params}"
 
-    Evidence.collection_class(target._id.to_s).where(conditions).any_in(:rel => params['rel']).destroy_all
+    Evidence.target(target._id.to_s).where(conditions).any_in(:rel => params['rel']).destroy_all
 
     trace :info, "Deleting evidence for target #{target.name} done."
 

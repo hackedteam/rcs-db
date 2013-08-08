@@ -190,7 +190,7 @@ factory_define :evidence do |params|
 
   attributes = {dr: Time.now.to_i, da: Time.now.to_i, aid: agent._id, data: {}}
   attributes.deep_merge! params
-  ::Evidence.collection_class(target._id).create! attributes
+  ::Evidence.target(target._id).create! attributes
 end
 
 factory_define :screenshot_evidence do |params|

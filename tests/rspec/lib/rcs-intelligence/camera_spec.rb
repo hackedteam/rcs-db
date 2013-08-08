@@ -18,7 +18,7 @@ module Intelligence
     let :camera_evidence do
       id = RCS::DB::GridFS.put("photo_binary_data", {filename: 'photo_filename'}, target._id.to_s)
       data = {'_grid' => id, '_grid_size' => 6}
-      Evidence.collection_class(target._id).create!(da: Time.now.to_i, aid: agent._id, type: 'camera', data: data)
+      Evidence.target(target._id).create!(da: Time.now.to_i, aid: agent._id, type: 'camera', data: data)
     end
     # This entity is automatically created when an Item of kind TARGET is saved
     let(:entity_without_photos) { Entity.any_in({path: [target._id]}).first }

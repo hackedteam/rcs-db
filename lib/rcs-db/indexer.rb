@@ -44,7 +44,7 @@ class Indexer
     targets.each_with_index do |target, index|
       puts
       puts "Indexing #{target.name} - %.0f %%" % ((index + 1) * 100 / targets.count)
-      current = Evidence.collection_class(target[:_id].to_s)
+      current = Evidence.target(target[:_id].to_s)
       index_collection(current)
     end
 

@@ -154,9 +154,9 @@ class Item
         # self.stat.evidence = {}
         # ::Evidence::TYPES.each do |type|
         #   query = {type: type, aid: self._id}
-        #   self.stat.evidence[type] = Evidence.collection_class(self.get_parent[:_id]).where(query).count
+        #   self.stat.evidence[type] = Evidence.target(self.get_parent[:_id]).where(query).count
         # end
-        stat.evidence = Evidence.collection_class(get_parent).count_by_type(aid: id.to_s)
+        stat.evidence = Evidence.target(get_parent).count_by_type(aid: id.to_s)
         save
     end
     trace :debug, "Restat for #{self._kind} #{self.name} performed in #{Time.now - t} secs" if RCS::DB::Config.instance.global['PERF']
@@ -495,7 +495,7 @@ class Item
         # dropping flag is set only by cascading from target
         unless self[:dropping]
           trace :info, "Deleting evidence for agent #{self.name}..."
-          Evidence.collection_class(self.path.last).destroy_all(aid: self._id.to_s)
+          Evidence.target(self.path.last).destroy_all(aid: self._id.to_s)
           trace :info, "Deleting aggregates for agent #{self.name}..."
           Aggregate.target(self.path.last).destroy_all(aid: self._id.to_s)
           trace :info, "Rebuilding summary for target #{self.get_parent.name}..."
@@ -520,7 +520,7 @@ class Item
     return if self._kind != 'target'
 
     # drop the evidence collection of this target
-    Evidence.collection_class(self._id.to_s).collection.drop
+    Evidence.target(self._id.to_s).collection.drop
     Aggregate.target(self._id.to_s).collection.drop
     RCS::DB::GridFS.drop_collection(self._id.to_s)
   end
@@ -528,7 +528,7 @@ class Item
   def create_target_collections
     return if self._kind != 'target'
 
-    Evidence.collection_class(self._id).create_collection
+    Evidence.target(self._id).create_collection
     Aggregate.target(self._id).create_collection
     RCS::DB::GridFS.create_collection(self._id)
   end
@@ -536,7 +536,7 @@ class Item
   def blacklisted_software?
     raise BlacklistError.new("Cannot determine blacklist") if self._kind != 'agent'
 
-    device = Evidence.collection_class(self.path.last).where({type: 'device', aid: self._id.to_s}).last
+    device = Evidence.target(self.path.last).where({type: 'device', aid: self._id.to_s}).last
     raise BlacklistError.new("Cannot determine installed software") unless device
 
     installed = device[:data]['content']
@@ -627,7 +627,7 @@ class Item
 
     project = {'_id' => 0, 'da' => 1, 'data.position' => 1, 'data.accuracy' => 1}
 
-    moped_coll = ::Evidence.collection_class(id).collection
+    moped_coll = ::Evidence.target(id).collection
     moped_coll.where(filter).select(project).map do |h|
       {da: h['da'], position: h['data']['position'], radius: h['data']['accuracy']}
     end

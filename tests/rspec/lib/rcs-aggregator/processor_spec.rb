@@ -97,11 +97,11 @@ describe Processor do
       it 'should create suggested entity if the communication score is higher enough' do
         15.times do |day|
           data_in = {'from' => ' receiver ', 'rcpt' => 'sender', 'incoming' => 1, 'program' => 'skype', 'content' => 'test message'}
-          evidence_in = Evidence.collection_class(@target._id).create!(da: Time.now.to_i + day*86400, aid: @agent._id, type: :chat, data: data_in)
+          evidence_in = Evidence.target(@target._id).create!(da: Time.now.to_i + day*86400, aid: @agent._id, type: :chat, data: data_in)
           entry_in = {'target_id' => @target._id, 'evidence_id' => evidence_in._id}
 
           data_out = {'from' => ' sender ', 'rcpt' => 'receiver', 'incoming' => 0, 'program' => 'skype', 'content' => 'test message'}
-          evidence_out = Evidence.collection_class(@target._id).create!(da: Time.now.to_i + day*86400, aid: @agent._id, type: :chat, data: data_out)
+          evidence_out = Evidence.target(@target._id).create!(da: Time.now.to_i + day*86400, aid: @agent._id, type: :chat, data: data_out)
           entry_out = {'target_id' => @target._id, 'evidence_id' => evidence_out._id}
 
           Processor.process entry_out
@@ -128,11 +128,11 @@ describe Processor do
 
         15.times do |day|
           data_in = {'from' => ' receiver ', 'rcpt' => 'sender', 'incoming' => 1, 'program' => 'skype', 'content' => 'test message'}
-          evidence_in = Evidence.collection_class(@target._id).create!(da: Time.now.to_i + day*86400, aid: @agent._id, type: :chat, data: data_in)
+          evidence_in = Evidence.target(@target._id).create!(da: Time.now.to_i + day*86400, aid: @agent._id, type: :chat, data: data_in)
           entry_in = {'target_id' => @target._id, 'evidence_id' => evidence_in._id}
 
           data_out = {'from' => ' sender ', 'rcpt' => 'receiver', 'incoming' => 0, 'program' => 'skype', 'content' => 'test message'}
-          evidence_out = Evidence.collection_class(@target._id).create!(da: Time.now.to_i + day*86400, aid: @agent._id, type: :chat, data: data_out)
+          evidence_out = Evidence.target(@target._id).create!(da: Time.now.to_i + day*86400, aid: @agent._id, type: :chat, data: data_out)
           entry_out = {'target_id' => @target._id, 'evidence_id' => evidence_out._id}
 
           Processor.process entry_out
@@ -150,7 +150,7 @@ describe Processor do
         @target = factory_create :target, name: 'testtarget'
         @agent = factory_create :agent, target: @target, name: 'test-agent'
         data = {'latitude' => 45.5353563, 'longitude' => 9.5939346, 'accuracy' => 50}
-        # @evidence = Evidence.collection_class(@target._id).create!(da: Time.now.to_i, aid: @agent._id, type: :position, data: data)
+        # @evidence = Evidence.target(@target._id).create!(da: Time.now.to_i, aid: @agent._id, type: :position, data: data)
         @evidence = factory_create :position_evidence, agent: @agent, data: data
         @entry = {'target_id' => @target._id, 'evidence_id' => @evidence._id}
         PositionAggregator.stub(:extract) do |target, ev|
@@ -468,7 +468,7 @@ describe Processor do
 
     def url_evidence(url)
       params = {da: Time.now.to_i, aid: agent._id, type: 'url', data: {url: url}}
-      Evidence.collection_class(target._id).create!(params)
+      Evidence.target(target._id).create!(params)
     end
 
     let(:operation) { Item.create!(name: 'op', _kind: 'operation', path: [], stat: ::Stat.new) }

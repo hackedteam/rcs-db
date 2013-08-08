@@ -57,7 +57,7 @@ class EvidenceController < RESTController
       target = Item.where({_id: @params['target']}).first
       return not_found("Target not found: #{@params['target']}") if target.nil?
 
-      evidence = Evidence.collection_class(target[:_id]).find(@params['_id'])
+      evidence = Evidence.target(target[:_id]).find(@params['_id'])
       @params.delete('_id')
       @params.delete('target')
 
@@ -89,7 +89,7 @@ class EvidenceController < RESTController
       target = Item.where({_id: @params['target']}).first
       return not_found("Target not found: #{@params['target']}") if target.nil?
 
-      evidence = Evidence.collection_class(target[:_id]).where({_id: @params['_id']}).without(:kw).first
+      evidence = Evidence.target(target[:_id]).where({_id: @params['_id']}).without(:kw).first
 
       # get a fresh decoding of the position
       if evidence[:type] == 'position'
@@ -111,7 +111,7 @@ class EvidenceController < RESTController
       target = Item.where({_id: @params['target']}).first
       return not_found("Target not found: #{@params['target']}") if target.nil?
 
-      evidence = Evidence.collection_class(target[:_id]).find(@params['_id'])
+      evidence = Evidence.target(target[:_id]).find(@params['_id'])
       agent = Item.find(evidence[:aid])
       agent.stat.evidence[evidence.type] -= 1 if agent.stat.evidence[evidence.type]
       agent.stat.size -= evidence.data.to_s.length
@@ -152,7 +152,7 @@ class EvidenceController < RESTController
       target = Item.where({_id: @params['target']}).first
       return not_found("Target not found: #{@params['target']}") if target.nil?
 
-      evidence = Evidence.collection_class(target[:_id]).where({_id: @params['_id']}).without(:kw).first
+      evidence = Evidence.target(target[:_id]).where({_id: @params['_id']}).without(:kw).first
 
       # add to the translation queue
       if LicenseManager.instance.check(:translation) and ['keylog', 'chat', 'clipboard', 'message'].include? evidence.type
@@ -172,7 +172,7 @@ class EvidenceController < RESTController
       target = Item.where({_id: @params['target']}).first
       return not_found("Target not found: #{@params['target']}") if target.nil?
 
-      evidence = Evidence.collection_class(target[:_id]).find(@params['_id'])
+      evidence = Evidence.target(target[:_id]).find(@params['_id'])
 
       return ok(evidence.data['body'], {content_type: 'text/html'})
     end
@@ -356,7 +356,7 @@ class EvidenceController < RESTController
       geo_near_accuracy = filter_hash.delete('geoNear_accuracy')
 
       # copy remaining filtering criteria (if any)
-      filtering = Evidence.collection_class(target[:_id]).stats_relevant
+      filtering = Evidence.target(target[:_id]).stats_relevant
       filter.each_key do |k|
         filtering = filtering.any_in(k.to_sym => filter[k])
       end
@@ -392,7 +392,7 @@ class EvidenceController < RESTController
       geo_near_accuracy = filter_hash.delete('geoNear_accuracy')
 
       # copy remaining filtering criteria (if any)
-      filtering = Evidence.collection_class(target[:_id]).stats_relevant
+      filtering = Evidence.target(target[:_id]).stats_relevant
       filter.each_key do |k|
         filtering = filtering.any_in(k.to_sym => filter[k])
       end
@@ -420,7 +420,7 @@ class EvidenceController < RESTController
       return not_found("Target or Agent not found") if filter.nil?
 
       # copy remaining filtering criteria (if any)
-      filtering = Evidence.collection_class(target[:_id]).where({:type => 'info'})
+      filtering = Evidence.target(target[:_id]).where({:type => 'info'})
       filter.each_key do |k|
         filtering = filtering.any_in(k.to_sym => filter[k])
       end
@@ -455,7 +455,7 @@ class EvidenceController < RESTController
       end
 
       stats = []
-      Evidence.collection_class(target).count_by_type(condition).each do |type, count|
+      Evidence.target(target).count_by_type(condition).each do |type, count|
         stats << {type: type, count: count}
       end
 
@@ -485,7 +485,7 @@ class EvidenceController < RESTController
       end
 
       # copy remaining filtering criteria (if any)
-      filtering = Evidence.collection_class(target[:_id]).where({:type => 'filesystem'})
+      filtering = Evidence.target(target[:_id]).where({:type => 'filesystem'})
       filtering = filtering.any_in(:aid => [agent[:_id]]) unless agent.nil?
 
       if @params['filter']
@@ -523,7 +523,7 @@ class EvidenceController < RESTController
       return not_found("Target or Agent not found") if filter.nil?
 
       # copy remaining filtering criteria (if any)
-      filtering = Evidence.collection_class(target[:_id]).where({:type => 'command'})
+      filtering = Evidence.target(target[:_id]).where({:type => 'command'})
       filter.each_key do |k|
         filtering = filtering.any_in(k.to_sym => filter[k])
       end
@@ -545,7 +545,7 @@ class EvidenceController < RESTController
       return not_found("Target or Agent not found") if filter.nil?
 
       # copy remaining filtering criteria (if any)
-      filtering = Evidence.collection_class(target[:_id]).where({:type => 'ip'})
+      filtering = Evidence.target(target[:_id]).where({:type => 'ip'})
       filter.each_key do |k|
         filtering = filtering.any_in(k.to_sym => filter[k])
       end
