@@ -22,10 +22,7 @@ class Connector
 
   store_in collection: 'connectors'
 
-  index enabled: 1
-  index keep: 1
-  index type: 1
-  index path: 1
+  index(enabled: 1, keep: 1, type: 1, path: 1)
 
   validates_presence_of :dest
   validates_inclusion_of :type, in: TYPES
