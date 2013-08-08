@@ -120,7 +120,7 @@ class BackupManager
       end
 
       # save the infos of this backup
-      File.open(File.join(output_dir, "info"), "w") {|f| f.write "#{backup.id}\n#{backup.what}\n#{backup.incremental}"}
+      File.open(File.join(output_dir, "info"), "wb") {|f| f.write "#{backup.id}\n#{backup.what}\n#{backup.incremental}"}
 
       # backup the config db
       backup_config_db(backup, now) if ['metadata', 'full'].include? backup.what
@@ -184,7 +184,7 @@ class BackupManager
 
     system_command(mongodump)
 
-    File.open(File.join(output_config_dir, "info"), "w") {|f| f.write "#{backup.id}\n#{backup.what}\n#{backup.incremental}"}
+    File.open(File.join(output_config_dir, "info"), "wb") {|f| f.write "#{backup.id}\n#{backup.what}\n#{backup.incremental}"}
   end
 
   def self.os_specific_path_separator
@@ -330,7 +330,7 @@ class BackupManager
       # get backup info which generated this archive
       if File.exist? File.join(dir, "info")
         info = File.read(File.join(dir, "info"))
-        backup_id, backup_what, backup_incremental = info.split("\n")
+        backup_id, backup_what, backup_incremental = info.split("\n").map(&:strip)
       else
         backup_what = "unknown"
       end
@@ -375,7 +375,7 @@ class BackupManager
     end
 
     # restat the items if present in the archive
-    what, item_id = backup_what.split(':')
+    what, item_id = backup_what.split(':').map(&:strip)
     if item_id
       trace :info, "Recalculating stat on restored items..."
       Item.any_in(path: [Moped::BSON::ObjectId.from_string(item_id)]).each do |item|
