@@ -234,15 +234,27 @@ describe Connector do
     end
   end
 
-  describe '#evidence' do
-    pending
-  end
+  describe '#path' do
 
-  describe '#destroy_archive_server_status' do
-    pending
-  end
+    let(:operation) { factory_create(:operation) }
 
-  describe '#setup_archive_server' do
-    pending
+    let(:target) { factory_create(:target, operation: operation) }
+
+    context 'when the type is REMOTE' do
+
+      context 'when contains only an operation id' do
+
+        it 'does not raise any validation error' do
+          expect { factory_create(:remote_connector, path: [operation.id]) }.not_to raise_error
+        end
+      end
+
+      context 'when contains other than only an operation id' do
+
+        it 'raises a validation error' do
+          expect { factory_create(:remote_connector, path: [operation.id, target.id]) }.to raise_error(Mongoid::Errors::Validations)
+        end
+      end
+    end
   end
 end
