@@ -21,7 +21,8 @@ module Migration
   def up_to(version)
     puts "migrating to #{version}"
 
-    run [:fix_connectors, :fix_position_evidences, :recalculate_checksums, :drop_sessions] if version >= '8.4.1'
+    run [:recalculate_checksums, :drop_sessions] if version >= '8.4.1'
+    run [:fix_connectors, :fix_position_evidences] if version >= '9.0.0'
 
     return 0
   end
