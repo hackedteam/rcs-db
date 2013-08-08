@@ -5,8 +5,9 @@ module RCS
   module DB
     module ConnectorManager
       extend RCS::Tracer
+      extend self
 
-      def self.process_evidence(target, evidence)
+      def process_evidence(target, evidence)
         connectors = ::Connector.matching(evidence)
         return :keep if connectors.blank?
 
@@ -23,7 +24,7 @@ module RCS
         keep ? :keep : :discard
       end
 
-      def self.keep_evidence?(connectors)
+      def keep_evidence?(connectors)
         if connectors.respond_to?(:where)
           connectors.where(keep: true).count > 0
         else
