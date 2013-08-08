@@ -15,6 +15,7 @@ class ConnectorQueue
   validates_presence_of  :data
   validates_presence_of  :connector_id
   validates_presence_of  :scope
+  validates_presence_of  :type
 
   index({connector_id: 1, scope: 1})
 
