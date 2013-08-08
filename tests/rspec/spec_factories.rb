@@ -156,6 +156,16 @@ factory_define :connector do |params|
   ::Connector.create!(attributes)
 end
 
+factory_define :remote_connector do |params|
+  if params.keys.include?(:operation)
+    params[:path] = [params.delete(:operation).id]
+  end
+  raise "path attributes is required" unless params[:path]
+  attributes = {enabled: true, name: "connector_#{rand(1E10)}", type: 'REMOTE', format: 'RCS', dest: 'localhost:4449'}
+  attributes.merge!(params)
+
+  ::Connector.create!(attributes)
+end
 
 # Evidence factories
 

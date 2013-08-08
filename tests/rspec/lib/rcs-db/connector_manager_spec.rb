@@ -14,9 +14,54 @@ module RCS
         expect(described_class).to respond_to :trace
       end
 
+      let(:subject) { described_class }
+
       before do
         ConnectorQueue.should respond_to(:push_evidence)
-        ::Connector.should respond_to(:matching)
+        ::Connector.should respond_to(:enabled)
+
+        # Prevent making an http request when the connector is created
+        # to ensure the status of the archive node
+        ::Connector.any_instance.stub(:setup_archive_node)
+      end
+
+      describe '#process_sync_event' do
+
+        let(:target) { factory_create :target }
+
+        let(:agent) { factory_create :agent, target: target }
+
+        context 'when the given agent matches the connector path' do
+
+          let!(:connector) { factory_create :remote_connector, path: [target.path.first] }
+
+          it 'puts the connector in the connector queue' do
+            ConnectorQueue.should_receive(:push_sync_event).with(connector, :sync_start, agent, {})
+            subject.process_sync_event(agent, :sync_start)
+          end
+
+          context 'but the connector is not enabled' do
+
+            before { connector.update_attributes(enabled: false) }
+
+            it 'does not puts the connector in the connector queue' do
+              ConnectorQueue.should_not_receive(:push_sync_event)
+              subject.process_sync_event(agent, :sync_start)
+            end
+          end
+        end
+
+        context 'when the given agent does not match the connector path' do
+
+          let(:another_operation) { factory_create(:operation) }
+
+          let!(:connector) { factory_create :remote_connector, path: [another_operation.id] }
+
+          it 'does not puts the connector in the connector queue' do
+            ConnectorQueue.should_not_receive(:push_sync_event)
+            subject.process_sync_event(agent, :sync_start)
+          end
+        end
       end
 
       describe '#process_evidence' do
