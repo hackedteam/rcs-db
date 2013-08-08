@@ -26,7 +26,7 @@ class Connector
 
   validates_presence_of :dest
   validates_inclusion_of :type, in: TYPES
-  validates_inclusion_of :format, in: FORMATS, if: proc { type == 'LOCAL' }
+  validates_inclusion_of :format, in: FORMATS, if: :local?
   validate :validate_path_is_an_operation, on: :create, if: :remote?
 
   before_destroy :check_used
@@ -61,6 +61,10 @@ class Connector
 
   def destroy_archive_node
     archive_node.try(:destroy)
+  end
+
+  def local?
+    type == 'LOCAL'
   end
 
   def remote?
