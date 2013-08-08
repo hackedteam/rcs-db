@@ -20,7 +20,8 @@ module DB
 
         criteria = respond_to?(:positions) && positions || self
 
-        criteria.geo_near(location_ary).
+        criteria.limit(2**16).
+                 geo_near(location_ary).
                  spherical.
                  max_distance(distance).
                  distance_multiplier(EARTH_RADIUS_IN_METERS)
