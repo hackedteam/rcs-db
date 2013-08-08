@@ -195,7 +195,43 @@ describe Connector do
   end
 
   describe '#queued_count' do
-    pending
+
+    let!(:connector) { factory_create :connector }
+
+    let!(:other_connector) { factory_create :connector }
+
+    context 'when there are some element in the queue related to that connector' do
+
+      before do
+        2.times { factory_create(:connector_queue, connector: connector, data: {something: true}) }
+        other_connector = factory_create(:connector)
+        factory_create(:connector_queue, connector: other_connector, data: {something: false})
+      end
+
+      it 'returns the number of those elements' do
+        expect(connector.queued_count).to eq 2
+      end
+    end
+
+    context 'when there aren\'t any element in the queue related to that connector' do
+
+      before do
+        factory_create(:connector_queue, connector: other_connector, data: {something: false})
+      end
+
+      it 'returns zero' do
+        expect(connector.queued_count).to eq 0
+      end
+    end
+
+    context 'when the connector queue is empty' do
+
+      before { expect(ConnectorQueue.all.count).to eq 0 }
+
+      it 'returns zero' do
+        expect(connector.queued_count).to eq 0
+      end
+    end
   end
 
   describe '#evidence' do

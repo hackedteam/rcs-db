@@ -142,9 +142,12 @@ end
 factory_define :connector do |params|
   if params.keys.include?(:path)
     path = params[:path]
-  else
-    item = params.delete(:item) || raise("An item (like operation, target, agent, etc.) must be supplied")
+  elsif params[:item]
+    item = params.delete(:item)
     path = item.path + [item._id]
+  else
+    random_target = factory_create(:target)
+    path = [random_target.path.first, random_target.id]
   end
 
   dest = RCS::DB::Config.instance.temp
@@ -273,7 +276,7 @@ end
 
 factory_define :connector_queue do |params|
   connector = params.delete(:connector)
-  attributes = {}
+  attributes = {type: :dump_evidence, scope: :default}
   attributes.merge!(connector_id: connector.id) if connector
   attributes.merge!(params)
 
