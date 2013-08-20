@@ -16,6 +16,7 @@ TODO 9.0.0
     better investigation on "end of file reached" errors from mongoid (hoping for version 4.0.0 with connection pool)
     try to implement "retry" on mongoid queries
     rest/sync#store_evidence: how to store the grid file with a custom id?
+    change entity#flow result format + speed up
 
   TEST:
     flow integration with console
