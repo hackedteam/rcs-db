@@ -218,3 +218,5 @@ task :protect do
     end
   end
 end
+
+import 'scripts/deploy.rake'
