@@ -371,20 +371,20 @@ class Entity
     true
   end
 
-  def self.flow params
+  def self.flow(params)
     start_time = Time.now # for debugging
 
     # aggregate all the entities by their handles' handle
     # so if 2 entities share the same handle you'll get {'foo.bar@gmail.com' => ['entity1_id', 'entity2_id']}
     # TODO: the type should be also considered as a key with "$handles.handle"
-    match = {:_id => {'$in' => params[:entities]}}
+    match = {:_id => {'$in' => params['entities']}}
     group = {:_id=>"$handles.handle", :entities=>{"$addToSet"=>"$_id"}}
     handles_and_entities = Entity.collection.aggregate [{'$match' => match}, {'$unwind' => '$handles' }, {'$group' => group}]
     handles_and_entities = handles_and_entities.inject({}) { |hash, h| hash[h["_id"]] = h["entities"]; hash }
 
     # take all the tagerts of the given entities:
     # take all the entities of type "target" and for each of these take the second id in the "path" (the "target" id)
-    or_filter = params[:entities].map { |id| {id: id} }
+    or_filter = params['entities'].map { |id| {id: id} }
     target_entities = Entity.targets.any_of(or_filter)
     targets = target_entities.map { |e| e.path[1] }
 
@@ -393,7 +393,7 @@ class Entity
       # take all the aggregates of the selected targets
       # only the aggregates within the given time frame
       # only the aggregates with sender and peer, discard the others (with only the peer information)
-      match = {'data.sender' => {'$exists' => true}, 'data.peer' => {'$exists' => true}, 'day' => {"$gte" => params[:from].to_s, "$lte" => params[:to].to_s}}
+      match = {'data.sender' => {'$exists' => true}, 'data.peer' => {'$exists' => true}, 'day' => {"$gte" => params['from'].to_s, "$lte" => params['to'].to_s}}
       group = {_id: {day: '$day', sender: "$data.sender", peer: "$data.peer", versus: "$data.versus"}, count: {'$sum' => "$count"}}
       aggregates = Aggregate.target(target_id).collection.aggregate [{'$match' => match}, {'$group' => group}]
 
@@ -420,7 +420,18 @@ class Entity
 
     trace :debug, "Entity#flow excecution time: #{Time.now - start_time}" if RCS::DB::Config.instance.global['PERF']
 
-    days
+    # TODO: covert to a format like:
+    new_format = []
+    days.each do |key, values|
+      entry = {date: key, flows: []}
+      values.each do |k, v|
+        entry[:flows] << {from: k[0], rcpt: k[1], count: v}
+      end
+
+      new_format << entry
+    end
+
+    new_format
   end
 
   def to_point
