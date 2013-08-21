@@ -63,6 +63,11 @@ namespace :castore do
 
   desc 'Deploy all the code in the lib folder'
   task :deploy do
+    if machine.system("cd \"#{root}\" && git status", trap: true) !~ /nothing to commit, working directory clean/
+      print 'You have pending changes, continue (y/n)? '
+      exit if STDIN.getc != 'y'
+    end
+
     Rake::Task['castore:backup'].invoke
 
     services_to_restart = []
