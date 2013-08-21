@@ -17,6 +17,8 @@ TODO 9.0.0
     try to implement "retry" on mongoid queries
     rest/sync#store_evidence: how to store the grid file with a custom id?
     change entity#flow result format + speed up
+    controllo sul numero degli anonymizer dovrebbe essere fatto quando applichi la conf (valutanto in numero di anonymizer in catena)
+    anonymizer di fallback
 
   TEST:
     flow integration with console
