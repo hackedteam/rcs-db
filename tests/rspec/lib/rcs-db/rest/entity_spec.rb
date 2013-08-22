@@ -40,14 +40,14 @@ module DB
       subject.stub :require_auth_level
 
       # stub the #ok method and then #not_found methods
-      subject.stub(:ok) { |query, options| query }
+      subject.stub(:ok) { |*args| args.first }
       subject.stub(:not_found) { |message| message }
     end
 
     describe '#flow' do
 
       def flow_with_params from, to, entities
-        subject.instance_variable_set '@params', entities: entities, from: from, to: to
+        subject.instance_variable_set '@params', 'entities' => entities, 'from' => from, 'to' => to
         subject.flow
       end
 
@@ -67,21 +67,27 @@ module DB
         end
 
         it 'works when the other entity is not passed' do
-          result = flow_with_params '20130501', '20131201', [@alice.id]
-          expect(result['20130501']).to be_blank
-          expect(result['20130510']).to be_blank
+          results = flow_with_params '20130501', '20131201', [@alice.id]
+
+          expect(results).to be_empty
         end
 
         it 'works when all the entities are passed' do
-          result = flow_with_params '20130501', '20131201', [@alice.id, @bob.id]
-          expect(result['20130501']).to eql [@alice.id, @bob.id]=>42, [@bob.id, @alice.id]=>4
-          expect(result['20130510']).to eql [@alice.id, @bob.id]=>7
+          results = flow_with_params '20130501', '20131201', [@alice.id, @bob.id]
+
+          expect(results.size).to eq(2)
+          expect(results[0]).to eq({:date => "20130501", :flows => [
+            {:from => @alice.id, :rcpt => @bob.id, :count => 42},
+            {:from => @bob.id, :rcpt => @alice.id, :count => 4}
+          ]})
+          expect(results[1]).to eq({:date => "20130510", :flows => [{:from => @alice.id, :rcpt => @bob.id, :count => 7}]})
         end
 
         it 'works when the timeframe is restricted' do
-          result = flow_with_params '20130509', '20130510', [@alice.id, @bob.id]
-          expect(result['20130501']).to be_blank
-          expect(result['20130510']).to eql [@alice.id, @bob.id]=>7
+          results = flow_with_params '20130509', '20130510', [@alice.id, @bob.id]
+
+          expect(results.size).to eq(1)
+          expect(results[0]).to eq({:date => "20130510", :flows => [{:from => @alice.id, :rcpt => @bob.id, :count => 7}]})
         end
       end
 
@@ -112,26 +118,36 @@ module DB
         end
 
         it 'works when the other entity is not passed' do
-          result = flow_with_params '20130501', '20131201', [@alice.id]
-          expect(result['20130501']).to be_blank
-          expect(result['20130510']).to be_blank
+          results = flow_with_params '20130501', '20131201', [@alice.id]
+          expect(results).to be_empty
+          # expect(results['20130501']).to be_blank
+          # expect(results['20130510']).to be_blank
         end
 
         it 'does a SUM of the counters grouping by entities couple' do
-          result = flow_with_params '20130501', '20131201', [@alice.id, @bob.id]
-          expect(result['20130501']).to eql [@alice.id, @bob.id]=>42+80, [@bob.id, @alice.id]=>4+30+77
-          expect(result['20130510']).to eql [@alice.id, @bob.id]=>99
+          results = flow_with_params '20130501', '20131201', [@alice.id, @bob.id]
+
+          expect(results.size).to eq(2)
+          expect(results[0]).to eq({:date => "20130501", :flows => [
+            {:from => @alice.id, :rcpt => @bob.id, :count => 42+80},
+            {:from => @bob.id, :rcpt => @alice.id, :count => 4+30+77}
+          ]})
+          expect(results[1]).to eq({:date => "20130510", :flows => [{:from => @alice.id, :rcpt => @bob.id, :count => 99}]})
         end
 
         it 'discards aggregates only the "sender" or only the "peer" handle' do
-          result = flow_with_params '20130501', '20131201', [@alice.id, @bob.id]
-          expect(result['20130511']).to be_blank
+          results = flow_with_params '20130501', '20131201', [@alice.id, @bob.id]
+          entry = results.find { |hash| hash[:date] == '20130511' }
+          expect(entry).to be_nil
         end
 
         it 'works when the timeframe is restricted' do
-          result = flow_with_params '20130509', '20130510', [@alice.id, @bob.id]
-          expect(result['20130501']).to be_blank
-          expect(result['20130510']).to eql [@alice.id, @bob.id]=>99
+          results = flow_with_params '20130509', '20130510', [@alice.id, @bob.id]
+          entry = results.find { |hash| hash[:date] == '20130501' }
+          expect(entry).to be_nil
+          entry = results.find { |hash| hash[:date] == '20130510' }
+          expect(entry).to eq({:date => "20130510", :flows => [{:from => @alice.id, :rcpt => @bob.id, :count => 99}]})
+          # expect(results['20130510']).to eql [@alice.id, @bob.id]=>99
         end
       end
 
@@ -170,7 +186,7 @@ module DB
 
         it 'reports that #flow is fast' do
           start_time = Time.now
-          result = flow_with_params '20000101', '20990101', [@alice.id, @bob.id, @eve.id]
+          results = flow_with_params '20000101', '20990101', [@alice.id, @bob.id, @eve.id]
           execution_time = Time.now - start_time
           expect(execution_time).to satisfy { |value| value < 5 }
         end
