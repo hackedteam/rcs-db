@@ -12,13 +12,16 @@ TODO 9.0.0
       - only after the dashboard as been refactored, issue a target|operation.restat on each target|operation.show
 
 
+    la console consenta di inserire una data in localtime e venga convertita in UTC prima dell'inoltro al target (vedi mail di zeno)
+
+    anonymizer di fallback
+
   FIX:
     better investigation on "end of file reached" errors from mongoid (hoping for version 4.0.0 with connection pool)
     try to implement "retry" on mongoid queries
     rest/sync#store_evidence: how to store the grid file with a custom id?
     change entity#flow result format + speed up
     controllo sul numero degli anonymizer dovrebbe essere fatto quando applichi la conf (valutanto in numero di anonymizer in catena)
-    anonymizer di fallback
 
   TEST:
     flow integration with console
