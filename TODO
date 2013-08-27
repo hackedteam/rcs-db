@@ -12,9 +12,7 @@ TODO 9.0.0
       - only after the dashboard as been refactored, issue a target|operation.restat on each target|operation.show
 
 
-    la console consenta di inserire una data in localtime e venga convertita in UTC prima dell'inoltro al target (vedi mail di zeno)
-
-    anonymizer di fallback
+  PROBLEMA ALERTING IN PUSH !!!!
 
   FIX:
     better investigation on "end of file reached" errors from mongoid (hoping for version 4.0.0 with connection pool)
