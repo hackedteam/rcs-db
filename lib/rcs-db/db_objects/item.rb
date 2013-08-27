@@ -618,10 +618,10 @@ class Item
     aes_encrypt(Digest::SHA1.digest(hash.inspect), Digest::SHA1.digest("∫∑x=1 ∆t")).unpack('H*').first
   end
 
-  def self.positions(target_ids, from = nil, to = nil)
+  def self.positions(target_ids, from, to)
     filter = {'data.position' => {'$ne' => nil}}
-    filter.merge!('$gte' => from) if from
-    filter.merge!('$lte' => to) if to
+    filter.merge!('da' => {'$gte' => from}) if from
+    filter.merge!('da' => {'$lte' => to}) if to
 
     project = {'_id' => 0, 'da' => 1, 'data.position' => 1, 'data.accuracy' => 1}
 

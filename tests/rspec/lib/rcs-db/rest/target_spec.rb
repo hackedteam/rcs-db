@@ -23,9 +23,10 @@ module RCS::DB
 
       let(:target2) { factory_create(:target) }
 
-      before do
-        t = Time.new(2000, 01, 01, 13, 42)
+      let(:t) { Time.new(2000, 01, 01, 13, 42) }
 
+      before do
+        factory_create(:position_evidence, target: target1, da: (t - 100).to_i, lat: 19, lon: 21)
         factory_create(:position_evidence, target: target1, da: t.to_i, lat: 10, lon: 2)
         factory_create(:position_evidence, target: target2, da: (t + 5).to_i, lat: 12, lon: 2)
         factory_create(:position_evidence, target: target2, da: (t + 10).to_i, lat: 13, lon: 4)
@@ -34,7 +35,7 @@ module RCS::DB
 
       it 'returns the expected result' do
         target_ids = [target1.id, target2.id]
-        subject.instance_variable_set('@params', {'ids' => target_ids})
+        subject.instance_variable_set('@params', {'ids' => target_ids, 'from' => t.to_i})
         result = subject.positions
 
         expect(result.keys.count).to eq(2)
