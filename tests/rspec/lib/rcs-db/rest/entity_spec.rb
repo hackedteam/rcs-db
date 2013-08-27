@@ -39,9 +39,43 @@ module DB
       # skip check of current user privileges
       subject.stub :require_auth_level
 
+      subject.stub(:mongoid_query).and_yield
+
       # stub the #ok method and then #not_found methods
       subject.stub(:ok) { |*args| args.first }
       subject.stub(:not_found) { |message| message }
+    end
+
+    describe '#positions' do
+
+      let(:target1) { factory_create(:target) }
+
+      let(:target2) { factory_create(:target) }
+
+      let!(:entity1) { factory_create(:target_entity, target: target1) }
+
+      let!(:entity2) { factory_create(:target_entity, target: target2) }
+
+      let(:t) { Time.new(2000, 01, 01, 13, 42) }
+
+      before do
+        factory_create(:position_evidence, target: target1, da: (t - 100).to_i, lat: 19, lon: 21)
+        factory_create(:position_evidence, target: target1, da: t.to_i, lat: 10, lon: 2)
+        factory_create(:position_evidence, target: target2, da: (t + 5).to_i, lat: 12, lon: 2)
+        factory_create(:position_evidence, target: target2, da: (t + 10).to_i, lat: 13, lon: 4)
+        factory_create(:position_evidence, target: target1, da: (t + 60).to_i, lat: 11, lon: 2)
+      end
+
+      it 'returns the expected result' do
+        ids = [entity1.id, entity2.id]
+        subject.instance_variable_set('@params', {'ids' => ids, 'from' => t.to_i})
+        result = subject.positions
+
+        # binding.pry
+        expect(result.keys.count).to eq(2)
+        expect(result[946730520]).to eq({entity1.id => {:lat=>10, :lon=>2, :rad=>25}, entity2.id => {:lat=>13, :lon=>4, :rad=>25}})
+        expect(result[946730580]).to eq({entity1.id => {:lat=>11, :lon=>2, :rad=>25}})
+      end
     end
 
     describe '#flow' do

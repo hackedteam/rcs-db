@@ -443,6 +443,30 @@ class Entity
     result = RCS::DB::PositionResolver.get request
     update_attributes(name: result["address"]["text"]) unless result.empty?
   end
+
+  def self.positions(ids, from, to)
+    filter = {'data.position' => {'$ne' => nil}}
+    filter.merge!('da' => {'$gte' => from}) if from
+    filter.merge!('da' => {'$lte' => to}) if to
+
+    project = {'_id' => 0, 'da' => 1, 'data.position' => 1, 'data.accuracy' => 1}
+
+    results = {}
+
+    targets.in(:_id => ids).each do |entity|
+      target_id = entity.path[1]
+      moped_coll = ::Evidence.target(target_id).collection
+      moped_coll.where(filter).select(project).each do |h|
+        t = Time.at(h['da'])
+        minute = Time.new(t.year, t.month, t.day, t.hour, t.min, 0).to_i
+
+        results[minute] ||= {}
+        results[minute][entity.id] = {lat: h['data']['position'][1], lon: h['data']['position'][0], rad: h['data']['accuracy']}
+      end
+    end
+
+    results
+  end
 end
 
 

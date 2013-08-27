@@ -128,18 +128,6 @@ class TargetController < RESTController
       return ok
     end
   end
-
-  def positions
-    require_auth_level :view
-
-    mongoid_query do
-      target_ids = [@params['ids']].flatten
-      from = @params['from']
-      to = @params['to']
-
-      ok Item.positions(target_ids, from, to)
-    end
-  end
 end
 
 end

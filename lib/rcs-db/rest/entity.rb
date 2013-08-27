@@ -43,6 +43,18 @@ class EntityController < RESTController
     end
   end
 
+  def positions
+    require_auth_level :view
+
+    mongoid_query do
+      ids = [@params['ids']].flatten
+      from = @params['from']
+      to = @params['to']
+
+      ok Entity.positions(ids, from, to)
+    end
+  end
+
   def show
     require_auth_level :view
     require_auth_level :view_profiles
