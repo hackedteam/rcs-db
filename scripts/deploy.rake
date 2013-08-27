@@ -41,6 +41,14 @@ namespace :castore do
     @root ||= File.expand_path File.join(File.dirname(__FILE__), '..')
   end
 
+  desc "Tail a log file (default to rcs-db)"
+  task :log, [:service_name] do |task, args|
+    name = args.service_name.to_s.downcase.strip
+    name = 'db' if name.empty?
+    filename = "rcs-#{name}_#{Time.now.strftime('%Y-%m-%d')}.log"
+    machine.send_command("tail -F \"C:\\RCS\\DB\\log\\#{filename}\"")
+  end
+
   namespace :sc do
 
     desc "Show the status of all the rcs-related services"
@@ -56,9 +64,9 @@ namespace :castore do
       end
     end
 
-    desc "Restart a Windows service"
+    desc "Restart a Windows service (default to RCS DB)"
     task :restart, [:service_name] do |task, args|
-      machine.restart_service(args.service_name)
+      machine.restart_service(args.service_name || 'db')
     end
   end
 
