@@ -49,6 +49,7 @@ namespace :castore do
       result.split("SERVICE_NAME:")[1..-1].each do |text|
         name = text.lines.first.strip
         next if name !~ /RCS/i and name !~ /mongo/i
+        next if name =~ /RCSDB\-/
         state = text.lines.find{ |l| l =~ /STATE/ }.split(':').last.gsub(/\d/, '').strip
         state.downcase! if state == 'RUNNING'
         puts "#{name.ljust(20)} #{state}"
