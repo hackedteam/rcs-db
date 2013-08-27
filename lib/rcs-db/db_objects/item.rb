@@ -618,19 +618,27 @@ class Item
     aes_encrypt(Digest::SHA1.digest(hash.inspect), Digest::SHA1.digest("∫∑x=1 ∆t")).unpack('H*').first
   end
 
-  def positions(from = nil, to = nil)
-    return [] if _kind != 'target'
-
+  def self.positions(target_ids, from = nil, to = nil)
     filter = {'data.position' => {'$ne' => nil}}
     filter.merge!('$gte' => from) if from
     filter.merge!('$lte' => to) if to
 
     project = {'_id' => 0, 'da' => 1, 'data.position' => 1, 'data.accuracy' => 1}
 
-    moped_coll = ::Evidence.target(id).collection
-    moped_coll.where(filter).select(project).map do |h|
-      {da: h['da'], position: h['data']['position'], radius: h['data']['accuracy']}
+    results = {}
+
+    targets.in(:_id => target_ids).each do |target|
+      moped_coll = ::Evidence.target(target).collection
+      moped_coll.where(filter).select(project).each do |h|
+        t = Time.at(h['da'])
+        minute = Time.new(t.year, t.month, t.day, t.hour, t.min, 0).to_i
+
+        results[minute] ||= {}
+        results[minute][target.id] = {lat: h['data']['position'][1], lon: h['data']['position'][0], rad: h['data']['accuracy']}
+      end
     end
+
+    results
   end
 end
 

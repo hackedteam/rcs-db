@@ -133,11 +133,11 @@ class TargetController < RESTController
     require_auth_level :view
 
     mongoid_query do
-      target_id = @params['_id']
+      target_ids = [@params['ids']].flatten
       from = @params['from']
       to = @params['to']
 
-      ok Item.find(target_id).positions(from, to)
+      ok Item.positions(target_ids, from, to)
     end
   end
 end

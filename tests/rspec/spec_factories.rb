@@ -219,7 +219,9 @@ factory_define :mic_evidence do |params|
 end
 
 factory_define :position_evidence do |params|
-  lat, lon, acc = params[:latitude], params[:longitude], params[:accuracy]
+  lat = params[:latitude] || params[:lat]
+  lon = params[:longitude] || params[:lon]
+  acc = params[:accuracy] || params[:acc]
 
   if (!lat and lon) or (lon and !lat)
     raise "Latitude and longitude must be both specified"
