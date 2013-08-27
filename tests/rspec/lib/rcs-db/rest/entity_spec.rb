@@ -69,12 +69,14 @@ module DB
       it 'returns the expected result' do
         ids = [entity1.id, entity2.id]
         subject.instance_variable_set('@params', {'ids' => ids, 'from' => t.to_i})
-        result = subject.positions
+        results = subject.positions
 
-        # binding.pry
-        expect(result.keys.count).to eq(2)
-        expect(result[946730520]).to eq({entity1.id => {:lat=>10, :lon=>2, :rad=>25}, entity2.id => {:lat=>13, :lon=>4, :rad=>25}})
-        expect(result[946730580]).to eq({entity1.id => {:lat=>11, :lon=>2, :rad=>25}})
+        expect(results.size).to eq(2)
+        expect(results).to include({:time=>946730580, :positions => [{:_id=>entity1.id, :position=>{:lat=>11, :lon=>2, :rad=>25}}]})
+        expect(results).to include({:time=>946730520, :positions=> [
+          {:_id=>entity1.id, :position=>{:lat=>10, :lon=>2, :rad=>25}},
+          {:_id=>entity2.id, :position=>{:lat=>13, :lon=>4, :rad=>25}}
+        ]})
       end
     end
 

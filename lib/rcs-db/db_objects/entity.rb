@@ -465,7 +465,7 @@ class Entity
       end
     end
 
-    results
+    results.map { |t, ps| {time: t, positions: ps.map { |id, p| {_id: id, position: p} } } }
   end
 end
 
