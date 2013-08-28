@@ -219,4 +219,7 @@ task :protect do
   end
 end
 
-import 'scripts/deploy.rake'
+require 'rcs-common/deploy'
+ENV['DEPLOY_USER'] = 'Administrator'
+ENV['DEPLOY_ADDRESS'] = '192.168.100.100'
+RCS::Deploy::Task.import
