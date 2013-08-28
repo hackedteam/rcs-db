@@ -29,7 +29,7 @@ module Migration
   end
 
   def run(params)
-    puts "Migration procedure started..."
+    puts "\nMigration procedure started..."
 
     ENV['no_trace'] = '1'
 

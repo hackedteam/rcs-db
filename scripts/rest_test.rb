@@ -57,37 +57,37 @@ if false
 end
 
 # user
-if false 
+if true 
 # user.create
 # {'name': 'admin', 'pass': '6104a8be02be972bedf8c8bf107370fc517e2606', 'desc': 'Deus Ex Machina', 'contact': '', 'privs': ['ADMIN', 'TECH', 'VIEW'], 'enabled': true, 'locale': 'en_US', 'timezone': 0, 'group_ids':[]}
-user = {'name' => 'testina', 'pass' => 'test', 'desc' => 'Deus Ex Machina', 'contact' => '', 'privs' => ['ADMIN', 'TECH', 'VIEW'], 'enabled' => true, 'locale' => 'en_US', 'timezone' => 0}
-res = http.request_post('/user', user.to_json, {'Cookie' => cookie}) 
-puts "user.create "
-puts res
-puts
+#user = {'name' => 'testina', 'pass' => 'test', 'desc' => 'Deus Ex Machina', 'contact' => '', 'privs' => ['ADMIN', 'TECH', 'VIEW'], 'enabled' => true, 'locale' => 'en_US', 'timezone' => 0}
+#res = http.request_post('/user', user.to_json, {'Cookie' => cookie}) 
+#puts "user.create "
+#puts res
+#puts
 
-exit unless res.kind_of? Net::HTTPOK
+#exit unless res.kind_of? Net::HTTPOK
 
-test_user = JSON.parse(res.body)
+#test_user = JSON.parse(res.body)
 
 #user.index
 res = http.request_get('/user', {'Cookie' => cookie})
 puts "user.index"
-puts res
+puts res.body
 puts
 
 # user.update
-user = {'desc' => 'Fallen angel', 'contact' => 'billg@microsoft.com', 'not_exist' => 'invalid field'}
-res = http.request_put("/user/#{test_user['_id']}", user.to_json, {'Cookie' => cookie}) 
-puts "user.update "
-puts res
-puts
+#user = {'desc' => 'Fallen angel', 'contact' => 'billg@microsoft.com', 'not_exist' => 'invalid field'}
+#res = http.request_put("/user/#{test_user['_id']}", user.to_json, {'Cookie' => cookie}) 
+#puts "user.update "
+#puts res
+#puts
 
 #user.show
-res = http.request_get("/user/#{test_user['_id']}", {'Cookie' => cookie})
-puts "user.show"
-puts res
-puts
+#res = http.request_get("/user/#{test_user['_id']}", {'Cookie' => cookie})
+#puts "user.show"
+#puts res
+#puts
 
 # user.destroy
 #res = http.delete("/user/#{test_user['_id']}", {'Cookie' => cookie}) 
