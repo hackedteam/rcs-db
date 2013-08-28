@@ -69,6 +69,8 @@ lib/rcs-ocr-release
 # temporary wav/mp3 files
 *.wav
 *.mp3
+!tests/rspec/fixtures/*.mp3
+!tests/rspec/fixtures/*.wav
 
 # data dir for mongo
 data/
