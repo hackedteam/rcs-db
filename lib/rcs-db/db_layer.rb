@@ -37,7 +37,7 @@ class DB
       ENV['MONGOID_ENV'] = 'yes'
 
       # set the parameters for the mongoid.yaml
-      ENV['MONGOID_DATABASE'] = 'rcs'
+      ENV['MONGOID_DATABASE'] = Config.instance.global['DB_NAME'] || 'rcs'
       ENV['MONGOID_HOST'] = "#{Config.instance.global['CN']}"
       ENV['MONGOID_PORT'] = "27017"
 
