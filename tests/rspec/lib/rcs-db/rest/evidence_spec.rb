@@ -27,7 +27,7 @@ module DB
       described_class.any_instance.stub(:not_found) { |message| message }
     end
 
-    # Make @params args of the contructor for test purposes.
+    # Make @params args of the constructor for test purposes.
     def subject(params = {})
       described_class.new.tap { |inst| inst.instance_variable_set('@params', params) }
     end

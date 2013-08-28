@@ -100,6 +100,13 @@ class User
     return false
   end
 
+  def add_recent(item)
+    self.recent_ids.insert(0, {section: item[:section], type: item[:type], id: item[:id]})
+    self.recent_ids.uniq!
+    self.recent_ids = self.recent_ids[0..4]
+    self.save
+  end
+
   def delete_item(id)
     if self.dashboard_ids.include? id
       trace :debug, "Deleting Item #{id} from #{self.name} dashboard"
@@ -107,9 +114,10 @@ class User
       self.save
     end
 
-    if self.recent_ids.include? id
+    self.recent_ids.each do |recent|
+      next unless recent['id'] == id or recent[:id] == id
       trace :debug, "Deleting Item #{id} from #{self.name} recents"
-      self.recent_ids.delete(id)
+      self.recent_ids.delete(recent)
       self.save
     end
   end

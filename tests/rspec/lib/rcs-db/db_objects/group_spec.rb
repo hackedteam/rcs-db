@@ -45,7 +45,7 @@ describe Group do
 
         before { group.items << operation }
 
-        before { user.recent_ids << target.id }
+        before { user.recent_ids << {section: 'operation', type: 'target', id: target.id} }
 
         it 'rebuilds access control' do
           described_class.should_receive(:rebuild_access_control).once
@@ -53,7 +53,7 @@ describe Group do
         end
 
         it 'removes the item id from the user recent_ids' do
-          expect{ group.users.delete(user) }.to change(user, :recent_ids).from([target.id]).to([])
+          expect{ group.users.delete(user) }.to change(user, :recent_ids).from([{section: 'operation', type: 'target', id: target.id}]).to([])
         end
       end
     end

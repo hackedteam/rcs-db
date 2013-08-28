@@ -109,26 +109,36 @@ class UserController < RESTController
     require_auth_level :admin, :sys, :tech, :view
 
     mongoid_query do
-      user = User.find(@params['_id'])
-      
-      user.recent_ids.insert(0, Moped::BSON::ObjectId(@params['item_id']))
-      user.recent_ids.uniq!
-      user.recent_ids = user.recent_ids[0..4]
-      user.save
-
-      item = ::Item.find(@params['item_id'])
-      case item._kind
-        when 'operation'
-          Audit.log :actor => @session.user[:name], :action => 'operation.view', :operation_name => item['name'], :desc => "Has accessed the operation: #{item.name}"
-        when 'target'
-          Audit.log :actor => @session.user[:name], :action => 'target,view', :target_name => item['name'], :desc => "Has accessed the target: #{item.name}"
-        when 'factory'
-          Audit.log :actor => @session.user[:name], :action => 'factory.view', :agent_name => item['name'], :desc => "Has accessed the factory: #{item.name}"
-        when 'agent'
-          Audit.log :actor => @session.user[:name], :action => 'agent.view', :agent_name => item['name'], :desc => "Has accessed the agent: #{item.name}"
+      case @params['section']
+        when 'operations'
+          item = ::Item.find(@params['id'])
+          case item._kind
+            when 'operation'
+              Audit.log :actor => @session.user[:name], :action => 'operation.view', :operation_name => item['name'], :desc => "Has accessed the operation: #{item.name}"
+            when 'target'
+              Audit.log :actor => @session.user[:name], :action => 'target,view', :target_name => item['name'], :desc => "Has accessed the target: #{item.name}"
+            when 'factory'
+              Audit.log :actor => @session.user[:name], :action => 'factory.view', :agent_name => item['name'], :desc => "Has accessed the factory: #{item.name}"
+            when 'agent'
+              Audit.log :actor => @session.user[:name], :action => 'agent.view', :agent_name => item['name'], :desc => "Has accessed the agent: #{item.name}"
+          end
+          recent = {section: 'operations', type: item._kind, id: item.id}
+        when 'intelligence'
+          case @params['type']
+            when 'entity'
+              entity = ::Entity.find(@params['id'])
+              Audit.log :actor => @session.user[:name], :action => 'entity.view', :entity_name => entity['name'], :desc => "Has accessed the entity: #{entity.name}"
+              recent = {section: 'intelligence', type: 'entity', id: entity.id}
+            when 'operation'
+              item = ::Item.find(@params['id'])
+              Audit.log :actor => @session.user[:name], :action => 'operation.view', :operation_name => item['name'], :desc => "Has accessed the operation: #{item.name}"
+              recent = {section: 'intelligence', type: 'operation', id: item.id}
+          end
       end
 
-      return ok(user)
+      @session.user.add_recent(recent)
+
+      return ok(@session.user)
     end
   end
 
