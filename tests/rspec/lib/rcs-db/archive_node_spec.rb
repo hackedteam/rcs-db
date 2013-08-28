@@ -83,6 +83,18 @@ module RCS
             end
           end
         end
+
+        context 'when the response is not 200 ok' do
+          before do
+            expect(subject.status).to be_nil
+            subject.stub(:request).and_yield(500, {msg: 'foobar'})
+          end
+
+          it 'updates the status (to error)' do
+            subject.setup!
+            expect(subject.status.status).to eq(::Status::ERROR)
+          end
+        end
       end
     end
   end
