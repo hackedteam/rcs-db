@@ -51,7 +51,7 @@ class EntityController < RESTController
       from = @params['from']
       to = @params['to']
 
-      ok Entity.positions(ids, from, to)
+      ok Entity.positions_flow(ids, from, to)
     end
   end
 

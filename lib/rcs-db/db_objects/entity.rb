@@ -444,7 +444,7 @@ class Entity
     update_attributes(name: result["address"]["text"]) unless result.empty?
   end
 
-  def self.positions(ids, from, to)
+  def self.positions_flow(ids, from, to)
     filter = {'data.position' => {'$ne' => nil}}
     filter.merge!('da' => {'$gte' => from}) if from
     filter.merge!('da' => {'$lte' => to}) if to
