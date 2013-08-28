@@ -31,6 +31,23 @@ class DB
     @auth_required = false
   end
 
+  def change_mongo_profiler_level
+    result = Mongoid.default_session.command('$eval' => "db.getProfilingStatus()")
+    profiler_level = result['retval']['was']
+
+    trace(:warn, "MongoDB profiler is active") unless profiler_level.zero?
+
+    new_level = RCS::DB::Config.instance.global['MONGO_PROFILER_LEVEL'] || 0
+    new_level = 0 unless [0, 1, 2].include?(new_level)
+
+    if new_level != profiler_level
+      trace(:warn, "Changing mongoDB profiler level to #{new_level}")
+      Mongoid.default_session.command('$eval' => "db.setProfilingLevel(#{new_level})")
+    end
+  rescue Exception => ex
+    trace(:error, "Cannot enable mongoDB profiler: #{ex.message}")
+  end
+
   def connect
     begin
       # we are standalone (no rails or rack)
@@ -51,6 +68,7 @@ class DB
 
       trace :info, "Connected to MongoDB at #{ENV['MONGOID_HOST']}:#{ENV['MONGOID_PORT']} version #{mongo_version}"
 
+      change_mongo_profiler_level
     rescue Exception => e
       trace :fatal, e
       return false
