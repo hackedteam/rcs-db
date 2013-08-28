@@ -6,8 +6,6 @@ TODO 9.0.0
       automatic detection of home / office (needs timezone for each entity)
       frequencer for places
 
-    entities in the recent item list (must modify the structure of recents)
-
     dashboard in push mode
       - only after the dashboard as been refactored, issue a target|operation.restat on each target|operation.show
 
