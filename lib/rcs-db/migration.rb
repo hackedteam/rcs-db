@@ -23,6 +23,7 @@ module Migration
 
     run [:recalculate_checksums, :drop_sessions] if version >= '8.4.1'
     run [:fix_connectors, :fix_position_evidences] if version >= '9.0.0'
+    run [:fix_recents] if version >= '9.0.0'
 
     return 0
   end
@@ -164,6 +165,21 @@ module Migration
 
   def drop_sessions
     ::Session.destroy_all
+  end
+
+  def fix_recents
+    count = 0
+    ::User.each do |user|
+      next if user.recent_ids.all? {|x| x.class.eql? Hash}
+
+      user.recent_ids.map! do |x|
+        item = Item.find(x)
+        {section: 'operations', type: item._kind, id: item.id}
+      end
+      user.update_attributes(recent_ids: user.recent_ids)
+
+      print "\r%d users" % count += 1
+    end
   end
 
   def cleanup_storage
