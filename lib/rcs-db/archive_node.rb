@@ -135,7 +135,10 @@ module RCS
         code = resp.code.to_i
         content = JSON.parse(resp.body).symbolize_keys rescue {}
 
-        trace :info, "Archive node #{address} returns #{code == 200 ? 'OK' : 'ERROR'} #{content[:result]} #{content[:msg]}".strip
+        msg = "#{content[:result]} #{content[:msg]}".strip
+        msg = resp.body if msg.empty?
+
+        trace :info, "Archive node #{address} says #{code == 200 ? 'OK' : 'ERROR'} #{msg}"
 
         if code != 200 and opts[:on_error] == :raise
           raise(content[:msg] || "Received error #{code} from archive node #{address}")
