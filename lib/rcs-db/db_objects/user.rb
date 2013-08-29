@@ -101,7 +101,7 @@ class User
   end
 
   def add_recent(item)
-    self.recent_ids.insert(0, {section: item[:section], type: item[:type], id: item[:id]})
+    self.recent_ids.insert(0, {'section' => item[:section], 'type' => item[:type], 'id' => item[:id]})
     self.recent_ids.uniq!
     self.recent_ids = self.recent_ids[0..4]
     self.save
