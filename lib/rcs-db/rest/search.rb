@@ -16,7 +16,12 @@ class SearchController < RESTController
     mongoid_query do
       fields = ["name", "desc", "status", "_kind", "path", "type", "platform", "instance", "version", "demo", "scout", "ident"]
       items = ::Item.in(deleted: [false, nil]).in(user_ids: [@session.user[:_id]]).only(fields)
-      ok(items)
+      items = items.to_a
+
+      entities = ::Entity.in(level: [:automatic, :manual]).in(user_ids: [@session.user[:_id]]).only(["name", "desc", "path", "type"]).to_a
+      entities.map! {|x| x.as_document.merge({_kind: 'entity'})}
+
+      ok(items + entities)
     end
   end
   
@@ -24,10 +29,11 @@ class SearchController < RESTController
     require_auth_level :admin, :tech, :view
 
     mongoid_query do
-      it = ::Item.where(_id: @params['_id'], deleted: false).in(user_ids: [@session.user[:_id]]).only("name", "desc", "status", "_kind", "path", "stat", "type", "ident", "platform", "instance", "version", "demo", "scout", "deleted")
-      item = it.first
-      return not_found if item.nil?
-      ok(item)
+      item = ::Item.where(_id: @params['_id'], deleted: false).in(user_ids: [@session.user[:_id]]).only("name", "desc", "status", "_kind", "path", "stat", "type", "ident", "platform", "instance", "version", "demo", "scout", "deleted").first
+      return ok(item) unless item.nil?
+
+      entity = ::Entity.where(_id: @params['_id']).in(user_ids: [@session.user[:_id]]).only("name", "desc", "path", "type").first
+      return ok(entity)
     end
   end
   
