@@ -50,6 +50,13 @@ factory_define :session do |params|
   Session.create!(params)
 end
 
+factory_define :signature do |params|
+  params[:scope] ||= "scope_#{rand(1E4)}"
+  params[:value] ||= "value_#{rand(1E4)}"
+
+  Signature.create!(params)
+end
+
 factory_define :group do |params|
   users = params.delete(:users)
   items = params.delete(:items)
