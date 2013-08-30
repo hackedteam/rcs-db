@@ -10,12 +10,10 @@ TODO 9.0.0
       - only after the dashboard as been refactored, issue a target|operation.restat on each target|operation.show
 
   FIX:
-    rest/sync#store_evidence: how to store the grid file with a custom id?
     change entity#flow result format + speed up
 
   TEST:
     flow integration with console
-
 
   TRY:
     hash index for sharding (topac - on branch 9.0.x)
