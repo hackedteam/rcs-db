@@ -33,7 +33,9 @@ class SearchController < RESTController
       return ok(item) unless item.nil?
 
       entity = ::Entity.where(_id: @params['_id']).in(user_ids: [@session.user[:_id]]).only("name", "desc", "path", "type").first
-      return ok(entity)
+      return ok(entity) unless entity.nil?
+
+      return not_found
     end
   end
   
