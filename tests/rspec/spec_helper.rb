@@ -13,7 +13,7 @@ require File.expand_path 'spec_factories', File.dirname(__FILE__)
 
 require_relative 'stubs/tracer'
 require_relative 'stubs/mongoid'
-require_relative 'stubs/archive_node'
+require_relative 'stubs/archive_server'
 
 # Define global before and each proc
 RSpec.configure do |config|
