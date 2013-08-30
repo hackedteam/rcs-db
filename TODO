@@ -7,7 +7,6 @@ TODO 9.0.0
       frequencer for places
 
     dashboard in push mode
-      - only after the dashboard as been refactored, issue a target|operation.restat on each target|operation.show
 
   FIX:
     change entity#flow result format + speed up
@@ -18,6 +17,10 @@ TODO 9.0.0
   TRY:
     hash index for sharding (topac - on branch 9.0.x)
     caching slow query. try to cache already jsonized list of items and similar
+
+TODO 9.1.x
+
+  scout++ (with simplified config)
 
 ======================================
 TODO FUTURE:

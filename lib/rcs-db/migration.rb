@@ -67,6 +67,7 @@ module Migration
 
     %w[JSON XML].each do |old_type|
       result = moped_collection.find({type: old_type}).update_all('$set' => {format: old_type, type: 'LOCAL'})
+      next unless result
       count += result['n']
       print "\r%d connectors migrated" % count
     end
@@ -173,9 +174,11 @@ module Migration
       next if user.recent_ids.all? {|x| x.class.eql? Hash}
 
       user.recent_ids.map! do |x|
-        item = Item.find(x)
-        {section: 'operations', type: item._kind, id: item.id}
+        next if x.class.eql? Hash
+        item = Item.where(id: x).first
+        item.nil? ? {section: 'operations', type: item._kind, id: item.id} : nil
       end
+      user.recent_ids.compact!
       user.update_attributes(recent_ids: user.recent_ids)
 
       print "\r%d users" % count += 1
