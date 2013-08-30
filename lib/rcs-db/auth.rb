@@ -18,7 +18,10 @@ class AuthManager
 
   def auth_server(username, pass, version, peer)
     # if we are in archive mode, no collector is allowed to login
-    return nil if LicenseManager.instance.check :archive
+
+    if LicenseManager.instance.check :archive
+      raise "Collector cannot login on archive server"
+    end
 
     server_sig = ::Signature.where({scope: 'server'}).first
 
