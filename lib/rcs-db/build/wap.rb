@@ -103,7 +103,9 @@ class BuildWap < Build
     begin
       case params['type']
         when 'sms'
-          CrossPlatform.exec path('wps'), "-s sms -n #{number} -t \"#{params['text']} #{params['link']}\""
+          utf16_content = "#{params['text']} #{params['link']}".to_utf16le
+          File.open(path('sms.txt'), "wb") {|f| f.write utf16_content}
+          CrossPlatform.exec path('wps'), "-s sms -n #{number} -T #{path('sms.txt')}"
         when 'sl'
           CrossPlatform.exec path('wps'), "-s sl -r execute-high -n #{number} -l #{params['link']}"
         when 'si'
