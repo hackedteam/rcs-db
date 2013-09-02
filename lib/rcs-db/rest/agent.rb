@@ -12,13 +12,7 @@ module DB
 
 class AgentController < RESTController
   include RCS::Crypt
-    def _pref
-      t = Time.now
-      yield
-      e = Time.now - t
-      puts e
-    end
-  
+
   def index
     require_auth_level :tech, :view
 
