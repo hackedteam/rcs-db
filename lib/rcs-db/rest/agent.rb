@@ -12,13 +12,25 @@ module DB
 
 class AgentController < RESTController
   include RCS::Crypt
+    def _pref
+      t = Time.now
+      yield
+      e = Time.now - t
+      puts e
+    end
   
   def index
     require_auth_level :tech, :view
 
     mongoid_query do
-      fields = ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "upgradable", "demo", "scout", "good", "stat.last_sync", "stat.last_sync_status", "stat.user", "stat.device", "stat.source", "stat.size", "stat.grid_size"]
-      agents = ::Item.in(_kind: ['agent', 'factory']).in(deleted: [false, nil]).in(user_ids: [@session.user[:_id]]).only(fields)
+      fields = ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled",
+                "upgradable", "demo", "scout", "good", "stat.last_sync", "stat.last_sync_status", "stat.user", "stat.device",
+                "stat.source", "stat.size", "stat.grid_size"]
+
+      fields = fields.inject({}) { |h, f| h[f] = 1; h }
+      selector = {'deleted' => {'$in' => [false, nil]}, 'user_ids' => @session.user[:_id], '_kind' => {'$in' => ['agent', 'factory']}}
+      agents = Item.collection.find(selector).select(fields)
+
       ok(agents)
     end
   end
