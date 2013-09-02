@@ -15,15 +15,15 @@ class EntityController < RESTController
 
     mongoid_query do
       fields = ["type", "level", "name", "desc", "path", "photos", 'position', 'position_attr', 'links']
-      entities = []
+      filter = {'user_ids' => @session.user[:_id], 'level' => {'$ne' => :ghost}}
+      fields = fields.inject({}) { |h, f| h[f] = 1; h }
 
-      ::Entity.in(user_ids: [@session.user[:_id]]).ne(level: :ghost).only(fields).each do |ent|
-        ent = ent.as_document
+      entities = ::Entity.collection.find(filter).select(fields).entries.map! do |ent|
         link_size = ent['links'] ? ent['links'].keep_if {|x| x['level'] != :ghost}.size : 0
         ent.delete('links')
         ent['num_links'] = link_size
         ent['position'] = {longitude: ent['position'][0], latitude: ent['position'][1]} if ent['position'].is_a? Array
-        entities << ent
+        ent
       end
 
       ok(entities)
