@@ -203,6 +203,8 @@ class Config
     generate_keystores if options[:gen_keystores]
 
     use_pfx_cert(options[:pfx_cert]) if options[:pfx_cert]
+    use_pfx_winphone(options[:pfx_winphone]) if options[:pfx_winphone]
+    use_aetx_winphone(options[:aetx_winphone]) if options[:aetx_winphone]
 
     if options[:shard_failure_add]
       shard, host = options[:shard_failure_add].split(':')
@@ -439,6 +441,16 @@ class Config
     end
   end
 
+  def use_pfx_winphone(pfx)
+    trace :info, "Using pfx cert for windows phone code signing..."
+    FileUtils.cp pfx, Config.instance.cert("winphone.pfx")
+  end
+
+  def use_aetx_winphone(aetx)
+    trace :info, "Using aetx cert for windows phone code signing..."
+    FileUtils.cp aetx, Config.instance.cert("winphone.aetx")
+  end
+
   def change_router_service_parameter
     return unless RbConfig::CONFIG['host_os'] =~ /mingw/
     trace :info, "Changing the startup option of the Router Master"
@@ -536,11 +548,17 @@ class Config
       opts.on( '-K', '--generate-keystores', 'Generate new self-signed key stores used for building vectors' ) do
         options[:gen_keystores] = true
       end
-      opts.on('--sign-cert FILE', String, 'Use this certificate (pfx) to sign the executables' ) do |file|
+      opts.on('--sign-pass PASSWORD', String, 'Password for all pfx certificate(s)' ) do |pass|
+        options[:pfx_pass] = pass
+      end
+      opts.on('--sign-pfx FILE', String, 'Use this certificate (pfx) to sign the windows and android agents' ) do |file|
         options[:pfx_cert] = file_path(file)
       end
-      opts.on('--sign-pass PASSWORD', String, 'Password for the pfx certificate' ) do |pass|
-        options[:pfx_pass] = pass
+      opts.on('--sign-pfx-winphone FILE', String, 'Use this certificate (pfx) to sign the winphone agent' ) do |file|
+        options[:pfx_winphone] = file_path(file)
+      end
+      opts.on('--sign-aetx-winphone FILE', String, 'Use this certificate (aetx) for winphone agent' ) do |file|
+        options[:aetx_winphone] = file_path(file)
       end
 
 
