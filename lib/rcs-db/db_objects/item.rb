@@ -74,6 +74,7 @@ class Item
   index({name: 1}, {background: true})
   index({status: 1}, {background: true})
   index({_kind: 1}, {background: true})
+  index({_kind: 1, user_ids: 1, deleted: 1}, {background: true})
   index({ident: 1}, {background: true})
   index({instance: 1}, {background: true})
   index({path: 1}, {background: true})
