@@ -115,6 +115,30 @@ def get_argv(prefix)
   value unless value.to_s.strip.empty?
 end
 
+def _bm(times = 1, &block)
+  es = []
+  times.times do
+    t = Time.now
+    yield
+    es << (Time.now - t)
+  end
+  total = es.inject(0) { |t,n| t += n; t }
+  avg = total.to_f / times.to_f
+
+  msg = "Avg on #{times} executions is #{avg} sec."
+
+  if @_bm_last_result
+    if avg >= @_bm_last_result
+      msg << " #{((100 * (avg - @_bm_last_result)) / avg).round(2)}% loss."
+    else
+      msg << " #{((100 * (@_bm_last_result - avg)) / @_bm_last_result).round(2)}% gain."
+    end
+  end
+
+  puts msg
+  @_bm_last_result = avg
+end
+
 usage?
 
 host = get_argv('--host') || 'localhost:27017'
