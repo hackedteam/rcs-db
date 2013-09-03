@@ -207,7 +207,7 @@ class InjectorController < RESTController
       Audit.log :actor => @session.user[:name], :action => 'injector.del_rule', :target_name => target.name,
                 :desc => "Deleted a rule from the injector '#{injector.name}'\n#{rule.ident} #{rule.ident_param} #{rule.resource} #{rule.action} #{rule.action_param}"
 
-      injector.rules.delete_all(conditions: { _id: rule[:_id]})
+      injector.rules.where(_id: rule[:_id]).delete_all
       injector.save
 
       return ok
