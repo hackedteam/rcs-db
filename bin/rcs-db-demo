@@ -1,0 +1,62 @@
+#!/usr/bin/env ruby
+
+require 'fileutils'
+require 'optparse'
+
+module BackupManager
+  extend self
+
+  PATH = File.expand_path('../..', __FILE__)
+  DATAPATH = File.join(PATH, 'data')
+  BACKUPPATH = File.join(PATH, '_data_backup')
+
+  def tmfolder
+    File.join(BACKUPPATH, Time.now.strftime('%Y%m%d_%H%M%S'))
+  end
+
+  def without_mongo
+    list = %w[RCSMasterRouter RCSMasterConfig RCSShard]
+    list.each { |name| system("NET STOP #{name}"); sleep(2) }
+    puts "Copying files. Please wait."
+    yield
+  ensure
+    list.reverse.each { |name| system("NET START #{name}"); sleep(2) }
+  end
+  
+  def backup
+    without_mongo { FileUtils.cp_r(DATAPATH, tmfolder) }
+  end
+
+  def list
+    dir = Dir[File.join(BACKUPPATH, '*')]
+    puts "There are #{dir.size} restore points"
+    dir.each { |n| puts(File.basename(n)) }
+  end
+  
+  def restore(folder)
+    folder = File.join(BACKUPPATH, folder)
+    raise "Cannot find folder #{folder}" unless Dir.exists?(folder)
+    without_mongo { FileUtils.rm_rf(DATAPATH); FileUtils.cp_r(folder, DATAPATH) }
+  end
+end
+
+options = {}
+
+optparse = OptionParser.new do |opts|
+  opts.banner = "Usage: rcs-db-demo [options]"
+  opts.on( '-b', '--backup', 'Backup "data" folder') { options[:backup] = true }
+  opts.on( '-l', '--list', 'List available restore points') { options[:list] = true }
+  opts.on( '-r', '--restore RESTORE_POINT', String, 'Restore "data" folder') { |point| options[:restore] = point }
+end
+
+optparse.parse(ARGV)
+
+raise "Cannot find folder #{BackupManager::DATAPATH}" unless Dir.exists?(BackupManager::DATAPATH)
+
+if options[:list]
+  BackupManager.list
+elsif options[:backup]
+  BackupManager.backup
+elsif options[:restore]
+  BackupManager.restore(options[:restore])
+end
