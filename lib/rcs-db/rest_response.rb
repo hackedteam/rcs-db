@@ -52,7 +52,13 @@ class RESTResponse
     
     begin
       start = Time.now
-      final_content = (@content_type == 'application/json') ? @content.to_json : @content
+
+      final_content = if @content_type == 'application/json'
+        Cache::Manager.instance.process(@content)
+      else
+        @content
+      end
+
       @request[:time][:json] = Time.now - start
 
       if @opts[:gzip]

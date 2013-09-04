@@ -19,6 +19,12 @@ Dir[File.dirname(__FILE__) + '/db_objects/*.rb'].each do |file|
   require file
 end
 
+require_relative 'cache'
+
+if RCS::DB::Config.instance.global['JSON_CACHE']
+  RCS::DB::Cache.observe :item, :core, :status, :injector, :collector, :user
+end
+
 module RCS
 module DB
 
