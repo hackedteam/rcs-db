@@ -33,10 +33,17 @@ module RCS
       end
 
       def self.observe(*klasses)
+        klasses.map! { |klass| Object.const_get("#{klass}".titleize) }
+
         klasses.each do |klass|
-          klass = Object.const_get("#{klass}".titleize)
           klass.__send__(:include, CachableDocument)
         end
+
+        @observed_classes = klasses
+      end
+
+      def self.observed_classes
+        @observed_classes
       end
 
       class Manager
@@ -46,22 +53,20 @@ module RCS
         MAX = 104_857_600 #100mb
 
         def initialize
+          @lock = Mutex.new
           clear
-
-          trace :debug, "Cache manager: inizialized"
         end
 
-        def create_key(query)
-          k = [query.klass, query.selector, query.options]
-          Digest::MD5.hexdigest(k.inspect)
+        def observed_classes
+          RCS::DB::Cache.observed_classes
         end
 
         def remove(collection)
           return unless @docs[collection]
 
-          @docs[collection].each { |key| @json.delete(key) }
-          @size -= @sizes[collection]
-          @sizes.delete(collection)
+          @docs[collection].each do |key|
+            @size -= @json.delete(key)[2]
+          end
           @docs.delete(collection)
 
           trace :debug, "Cache manager: removed all cache for #{collection}. Size is now #{@size} bytes"
@@ -70,27 +75,26 @@ module RCS
         def clear
           @docs = {}
           @json = {}
-          @sizes = {}
           @size = 0
         end
 
-        def cache(collection, key, data)
+        def cache(key, data, collection)
           if @size >= MAX
             trace :warn, "Cache manager: size limit reached"
             clear
           end
 
-          @json[key] = [Time.now, data]
+          size = data.size
+          @json[key] = [Time.now, data, size]
           
-          @docs[collection] ||= []
-          @docs[collection] << key
+          if collection
+            @docs[collection] ||= []
+            @docs[collection] << key
+          end
           
-          @sizes[collection] ||= 0
-          @sizes[collection] += data.size
-
-          @size += data.size
+          @size += size
           
-          trace :debug, "Cache manager: cached #{collection} #{key}. Size is now: #{@size} bytes"
+          trace :debug, "Cache manager: cached #{collection || "Array"} #{key}. Size is now: #{@size} bytes"
           data
         end
 
@@ -98,25 +102,50 @@ module RCS
           @json[key]
         end
 
-        def process(query)
-          if !query.kind_of?(Mongoid::Criteria)
-            return query.to_json
-          end
+        def fetch_or_cache(key, query, collection)
 
-          collection = query.klass
-
-          if !collection.included_modules.include?(CachableDocument)
-            return query.to_json
-          end
-
-          key = create_key(query)
           data = fetch(key)
 
           if data
-            trace :debug, "Cache manager: hit! #{collection} #{key}"
+            trace :debug, "Cache manager: hit! #{collection || "Array"} #{key}"
             data[1]
           else
-            cache(collection, key, query.to_json)
+            cache(key, query.to_json, collection)
+          end
+        end
+
+        def unsupported(query)
+          query.to_json
+        end
+
+        def process_mongoid_criteria(query)
+          collection = query.klass
+          key = Digest::MD5.hexdigest([query.klass, query.selector, query.options].inspect)
+
+          if observed_classes.include?(collection)
+            fetch_or_cache(key, query, collection)
+          else
+            unsupported(query)
+          end
+        end
+
+        def process_array(array)
+          key = Digest::MD5.hexdigest(array.inspect)
+          fetch_or_cache(key, array, nil)
+        end
+
+        def process(query)
+          # @lock.synchronize { process_thread_unsafe(query) }
+          process_thread_unsafe(query)
+        end
+
+        def process_thread_unsafe(query)
+          if query.kind_of?(Array)
+            process_array(query)
+          elsif query.kind_of?(Mongoid::Criteria)
+            process_mongoid_criteria(query)
+          else
+            unsupported(query)
           end
         end
       end

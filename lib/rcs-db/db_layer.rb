@@ -21,10 +21,6 @@ end
 
 require_relative 'cache'
 
-if RCS::DB::Config.instance.global['JSON_CACHE']
-  RCS::DB::Cache.observe :item, :core, :status, :injector, :collector, :user
-end
-
 module RCS
 module DB
 
@@ -71,6 +67,10 @@ class DB
       #Moped.logger.level = ::Logger::DEBUG
 
       Mongoid.load!(Config.instance.file('mongoid.yaml'), :production)
+
+      if Config.instance.global['JSON_CACHE']
+        RCS::DB::Cache.observe :item, :core, :status, :injector, :collector, :user, :entity
+      end
 
       trace :info, "Connected to MongoDB at #{ENV['MONGOID_HOST']}:#{ENV['MONGOID_PORT']} version #{mongo_version}"
 
