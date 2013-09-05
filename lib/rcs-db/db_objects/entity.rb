@@ -377,14 +377,15 @@ class Entity
     # aggregate all the entities by their handles' handle
     # so if 2 entities share the same handle you'll get {'foo.bar@gmail.com' => ['entity1_id', 'entity2_id']}
     # TODO: the type should be also considered as a key with "$handles.handle"
-    match = {:_id => {'$in' => params['ids']}}
+    ids = params['ids'].map { |id| Moped::BSON::ObjectId(id) }
+    match = {:_id => {'$in' => ids}, :type => {'$in' => %w[person target]}}
     group = {:_id=>"$handles.handle", :entities=>{"$addToSet"=>"$_id"}}
     handles_and_entities = Entity.collection.aggregate [{'$match' => match}, {'$unwind' => '$handles' }, {'$group' => group}]
     handles_and_entities = handles_and_entities.inject({}) { |hash, h| hash[h["_id"]] = h["entities"]; hash }
 
     # take all the tagerts of the given entities:
     # take all the entities of type "target" and for each of these take the second id in the "path" (the "target" id)
-    or_filter = params['ids'].map { |id| {id: id} }
+    or_filter = ids.map { |id| {id: id} }
     target_entities = Entity.targets.any_of(or_filter)
     targets = target_entities.map { |e| e.path[1] }
 
@@ -418,9 +419,6 @@ class Entity
       end
     end
 
-    trace :debug, "Entity#flow excecution time: #{Time.now - start_time}" if RCS::DB::Config.instance.global['PERF']
-
-    # TODO: covert to a format like:
     new_format = []
     days.each do |key, values|
       entry = {date: key, flows: []}
@@ -430,6 +428,8 @@ class Entity
 
       new_format << entry
     end
+
+    trace :debug, "Entity#flow excecution time: #{Time.now - start_time}" if RCS::DB::Config.instance.global['PERF']
 
     new_format
   end
