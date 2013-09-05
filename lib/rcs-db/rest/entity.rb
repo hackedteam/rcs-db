@@ -35,7 +35,7 @@ class EntityController < RESTController
 
     mongoid_query do
       # Check the presence of the required params
-      %w[entities from to].each do |param_name|
+      %w[ids from to].each do |param_name|
         return bad_request('INVALID_OPERATION') if @params[param_name].blank?
       end
 
