@@ -62,11 +62,13 @@ module RCS
         end
 
         def remove(collection)
-          return unless @docs[collection]
+          colls = @docs[collection] || []
 
-          @docs[collection].each do |key|
-            @size -= @json.delete(key)[2]
+          colls.each do |key|
+            elem = @json.delete(key)
+            @size -= elem[2] if elem
           end
+
           @docs.delete(collection)
 
           trace :debug, "Cache manager: removed all cache for #{collection}. Size is now #{@size} bytes"
@@ -110,7 +112,13 @@ module RCS
             trace :debug, "Cache manager: hit! #{collection || "Array"} #{key}"
             data[1]
           else
-            cache(key, query.to_json, collection)
+            t = Time.now
+            json = query.to_json
+            el = Time.now - t
+            unless collection
+              trace :debug, "Cache manager: json generation for array of size #{query.size} took #{el} sec."
+            end
+            cache(key, json, collection)
           end
         end
 
@@ -130,7 +138,10 @@ module RCS
         end
 
         def process_array(array)
+          t = Time.now
           key = Digest::MD5.hexdigest(array.inspect)
+          el = Time.now - t
+          trace :debug, "Cache manager: key generation for array of size #{array.size} took #{el} sec."
           fetch_or_cache(key, array, nil)
         end
 
