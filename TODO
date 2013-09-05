@@ -8,7 +8,9 @@ TODO 9.0.0
 
     dashboard in push mode
 
-  winphone certificate
+    winphone certificate
+
+    cache the good status in the collector
 
   FIX:
     change entity#flow result format + speed up
