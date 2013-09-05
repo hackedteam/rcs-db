@@ -447,8 +447,9 @@ class Entity
   def self.positions_flow(ids, from, to)
     filter = {'data.position' => {'$ne' => nil}}
 
-    filter.merge!('da' => {'$gte' => from.to_i}) if from
-    filter.merge!('da' => {'$lte' => to.to_i}) if to
+    if from && to
+      filter.merge!('da' => {'$gt' => from.to_i, '$lt' => to.to_i})
+    end
 
     project = {'_id' => 0, 'da' => 1, 'data.position' => 1, 'data.accuracy' => 1}
 
