@@ -137,10 +137,11 @@ class Call
   attr_writer :start_time
   attr_reader :bid, :id, :peer, :duration, :sample_rate, :raw_ids, :evidence, :raw_counter
 
-  def initialize(peer, program, incoming, start_time, agent, target)
+  def initialize(peer, caller, program, incoming, start_time, agent, target)
     @bid = Moped::BSON::ObjectId.new
     @id = "#{agent[:ident]}_#{agent[:instance]}_#{@bid}"
     @peer = peer
+    @caller = caller
     @start_time = start_time
     @status = :queueing
     @channels = {}
@@ -254,7 +255,7 @@ class Call
 
     unless queueing?
       if dual_channel?
-        @evidence ||= store(@peer, @program, @incoming, @start_time, @agent, @target)
+        @evidence ||= store(@peer, @caller, @program, @incoming, @start_time, @agent, @target)
 
         num_samples = [@channels[:outgoing].wav_data.size, @channels[:incoming].wav_data.size].min
         @duration += (1.0 * num_samples) / @sample_rate
@@ -264,7 +265,7 @@ class Call
 
         yield @sample_rate, left_pcm, right_pcm
       elsif single_channel?
-        @evidence ||= store(@peer, @program, @incoming, @start_time, @agent, @target)
+        @evidence ||= store(@peer, @caller, @program, @incoming, @start_time, @agent, @target)
 
         channel = @channels.values[0]
         num_samples = channel.wav_data.size
@@ -288,7 +289,7 @@ class Call
     end
     
     if dual_channel?
-      @evidence ||= store(@peer, @program, @incoming, @start_time, @agent, @target)
+      @evidence ||= store(@peer, @caller, @program, @incoming, @start_time, @agent, @target)
 
       num_samples = [@channels[:outgoing].wav_data.size, @channels[:incoming].wav_data.size].min
 
@@ -299,7 +300,7 @@ class Call
 
       yield @sample_rate, left_pcm, right_pcm
     elsif single_channel?
-      @evidence ||= store(@peer, @program, @incoming, @start_time, @agent, @target)
+      @evidence ||= store(@peer, @caller, @program, @incoming, @start_time, @agent, @target)
 
       channel = @channels.values[0]
 
@@ -313,10 +314,10 @@ class Call
   end
 
   def update_data(hash)
-    @evidence.update_attributes(@evidence.data.merge!(hash)) unless @evidence.nil?
+    @evidence.update_attributes(data: @evidence.data.merge!(hash)) unless @evidence.nil?
   end
 
-  def store(peer, program, incoming, start_time, agent, target)
+  def store(peer, caller, program, incoming, start_time, agent, target)
 
     coll = ::Evidence.target(target[:_id].to_s)
     coll.create do |ev|
@@ -332,6 +333,7 @@ class Call
       
       ev.data ||= Hash.new
       ev.data[:peer] = peer
+      ev.data[:caller] = caller
       ev.data[:program] = program
       ev.data[:incoming] = incoming
       ev.data[:duration] = 0
@@ -415,7 +417,7 @@ class CallProcessor
   end
 
   def create_call(evidence)
-    Call.new(evidence[:data][:peer], evidence[:data][:program], evidence[:data][:incoming], evidence[:data][:start_time], @agent, @target)
+    Call.new(evidence[:data][:peer], evidence[:data][:caller], evidence[:data][:program], evidence[:data][:incoming], evidence[:data][:start_time], @agent, @target)
   end
 
   def end_call?(evidence)
