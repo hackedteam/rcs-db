@@ -23,7 +23,7 @@ module CallProcessing
 
     data = self[:data][:grid_content]
     case self[:data][:program]
-      when "Mobile"
+      when :phone
         self[:wav] = Speex.get_wav_frames(data, Speex::MODEID_NB) if codec == :speex
         self[:wav] = AMR.get_wav_frames data if codec == :amr # AMR.get_wav_frames data if codec == :amr
       else

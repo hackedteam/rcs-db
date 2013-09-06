@@ -110,7 +110,7 @@ class Channel
 
     gap = time_gap(evidence)
     if gap >= 5.0
-      trace :debug, "[channel #{to_s}] time gap is more than 5 seconds (#{gap}), refusing ..."
+      trace :warn, "[channel #{to_s}] time gap is more than 5 seconds (#{gap}), refusing ..."
       return false
     end
     return true
@@ -148,7 +148,7 @@ class Call
     @program = program
     @incoming = incoming
     @duration = 0
-    trace :info, "[CALL #{@id}] created new call for #{@peer}, starting at #{@start_time}"
+    trace :info, "[CALL #{@id}] created new call for #{@peer} - #{@caller}, starting at #{@start_time}"
     @raw_counter = 0
     @sample_rate = nil
 
@@ -371,8 +371,8 @@ class Call
       when 1
         channel = @channels.values[0]
         gap = (1.0 * channel.written_samples) / channel.sample_rate
-        @status = :single_channel if gap > 15
-        trace :debug, "[CALL #{@id}] call status is #{@status}, channel #{channel.name} gap is #{gap}"
+        @status = :single_channel if (gap > 15 or @program == :phone)
+        trace :debug, "[CALL #{@id}] call status is #{@status}, channel #{channel.name} gap is #{gap} and program is #{@program}"
       when 2
         @status = :dual_channel
         trace :debug, "[CALL #{@id}] call status is #{@status}"
