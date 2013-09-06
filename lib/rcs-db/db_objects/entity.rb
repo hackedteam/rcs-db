@@ -412,6 +412,9 @@ class Entity
 
         entities_ids = handles_and_entities[handles.first].product handles_and_entities[handles.last]
         entities_ids.each do |entity_ids|
+          # TODO: the #product method sometimes creates couples of the same entity. This happens when an entity
+          # has two or more handles like "'3912345" and "12345" (without 39)
+          next if entity_ids.uniq.size != 2
           days[data['day']] ||= {}
           days[data['day']][entity_ids] ||= 0
           days[data['day']][entity_ids] += count
