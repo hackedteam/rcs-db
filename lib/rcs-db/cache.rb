@@ -36,10 +36,14 @@ module RCS
         klasses.map! { |klass| Object.const_get("#{klass}".titleize) }
 
         klasses.each do |klass|
-          if klass.ancestors.include?(Mongoid::Document)
+          if klass.class == Class
             klass.__send__(:include, CachableDocument)
-          elsif klass.respond_to(:target)
-            # todo
+          elsif klass.class == Module
+            old_included_method = klass.method(:included)
+            klass.define_singleton_method(:included) do |base|
+              old_included_method.call(base)
+              base.__send__(:include, RCS::DB::Cache::CachableDocument)
+            end
           end
         end
 
@@ -62,12 +66,9 @@ module RCS
           clear
         end
 
-        def observed_classes
-          RCS::DB::Cache.observed_classes
-        end
-
-        def remove(collection)
-          keys = @docs[collection]
+        def remove(document)
+          document = mongoid_document(document)
+          keys = @docs[document]
 
           return unless keys
 
@@ -76,9 +77,9 @@ module RCS
             @size -= elem[2] if elem
           end
 
-          @docs[collection] = []
+          @docs[document] = []
 
-          trace :debug, "Cache manager: removed all cache for #{collection}. Size is now #{@size} bytes."
+          trace :debug, "Cache manager: removed all cache for #{document}. Size is now #{@size} bytes."
         end
 
         def clear
@@ -98,9 +99,9 @@ module RCS
           @size += size
 
           if options[:bounded_to]
-            collection = options[:bounded_to]
-            @docs[collection] ||= []
-            @docs[collection] << key
+            document = options[:bounded_to]
+            @docs[document] ||= []
+            @docs[document] << key
           end
 
           trace :debug, "Cache manager: cached | #{size} bytes | #{options[:bounded_to] || "Array"} | #{options[:uri]} | Total size is now #{@size} bytes"
@@ -111,11 +112,16 @@ module RCS
           @json[key]
         end
 
-        def fetch_or_cache(key, object, options = {})
-          if options[:bounded_to] && !observed_classes.include?(options[:bounded_to])
-            return unsupported(object)
-          end
+        def observed_classes
+          RCS::DB::Cache.observed_classes
+        end
 
+        def observed_class?(klass)
+          list = observed_classes
+          list.include?(klass) || (klass.respond_to?(:included) && (klass.ancestors & list).size == 1)
+        end
+
+        def fetch_or_cache(key, object, options = {})
           data = fetch(key)
 
           if data
@@ -130,15 +136,26 @@ module RCS
           query.to_json
         end
 
+        def mongoid_document(klass)
+          return klass if observed_classes.include?(klass)
+          mod = (observed_classes & klass.ancestors).first
+          return mod if mod
+        end
+
         def process_moped_query(query, options = {})
           document = Object.const_get(query.collection.name.classify)
+          document = mongoid_document(document)
+          return unsupported(query) unless document
           key = Digest::MD5.hexdigest(query.operation.inspect)
+
           fetch_or_cache(key, query, options.merge(bounded_to: document))
         end
 
         def process_mongoid_criteria(criteria, options = {})
-          document = criteria.klass
+          document = mongoid_document(criteria.klass)
+          return unsupported(criteria) unless document
           key = Digest::MD5.hexdigest(criteria.query.operation.inspect)
+
           fetch_or_cache(key, criteria, options.merge(bounded_to: document))
         end
 
@@ -155,7 +172,7 @@ module RCS
         def process(object, options = {})
           if object.kind_of?(Array)
             process_array(object, options)
-          elsif object.kind_of?(Mongoid::Criteria)
+          elsif object.respond_to?(:query)
             process_mongoid_criteria(object, options)
           elsif object.kind_of?(Moped::Query)
             process_moped_query(object, options)

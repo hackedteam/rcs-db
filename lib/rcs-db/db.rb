@@ -84,7 +84,7 @@ class Application
       end
 
       if Config.instance.global['JSON_CACHE']
-        RCS::DB::Cache.observe :item, :core, :injector, :entity
+        RCS::DB::Cache.observe :item, :core, :injector, :entity, :evidence, :aggregate
       end
 
       # ensure the temp dir is present
