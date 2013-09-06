@@ -167,7 +167,6 @@ module Evidence
         include RCS::Tracer
         include Mongoid::Document
         include RCS::DB::Proximity
-        include RCS::DB::Cache::CachableDocument if RCS::DB::Config.instance.global['JSON_CACHE']
         include Evidence
       end
       c.instance_variable_set '@target_id', target_id
