@@ -10,8 +10,8 @@ module RCS
         include RCS::Tracer
 
         def self.included(base)
-          valid_relations = [Mongoid::Relations::Referenced::Many, 
-                             Mongoid::Relations::Embedded::Many, 
+          valid_relations = [Mongoid::Relations::Referenced::Many,
+                             Mongoid::Relations::Embedded::Many,
                              Mongoid::Relations::Referenced::ManyToMany]
 
           base.relations.each do |name, definition|
@@ -51,6 +51,7 @@ module RCS
         include RCS::Tracer
 
         MAX = 104_857_600 #100mb
+        SMALL_ARRAY_SIZE = 8
 
         def initialize
           @lock = Mutex.new
@@ -62,16 +63,18 @@ module RCS
         end
 
         def remove(collection)
-          colls = @docs[collection] || []
+          keys = @docs[collection]
 
-          colls.each do |key|
+          return unless keys
+
+          keys.each do |key|
             elem = @json.delete(key)
             @size -= elem[2] if elem
           end
 
-          @docs.delete(collection)
+          @docs[collection] = []
 
-          trace :debug, "Cache manager: removed all cache for #{collection}. Size is now #{@size} bytes"
+          trace :debug, "Cache manager: removed all cache for #{collection}. Size is now #{@size} bytes."
         end
 
         def clear
@@ -82,21 +85,20 @@ module RCS
 
         def cache(key, data, collection)
           if @size >= MAX
-            trace :warn, "Cache manager: size limit reached"
+            trace :warn, "Cache manager: size limit reached."
             clear
           end
 
           size = data.size
           @json[key] = [Time.now, data, size]
-          
+          @size += size
+
           if collection
             @docs[collection] ||= []
             @docs[collection] << key
           end
-          
-          @size += size
-          
-          trace :debug, "Cache manager: cached #{collection || "Array"} #{key}. Size is now: #{@size} bytes"
+
+          trace :debug, "Cache manager: cached #{size} bytes [#{collection || "Array"}]. Total size is now #{@size} bytes."
           data
         end
 
@@ -104,21 +106,14 @@ module RCS
           @json[key]
         end
 
-        def fetch_or_cache(key, query, collection)
-
+        def fetch_or_cache(key, object, collection)
           data = fetch(key)
 
           if data
-            trace :debug, "Cache manager: hit! #{collection || "Array"} #{key}"
+            trace :debug, "Cache manager: hit!, #{data[2]} bytes [#{collection || "Array"}]."
             data[1]
           else
-            t = Time.now
-            json = query.to_json
-            el = Time.now - t
-            unless collection
-              trace :debug, "Cache manager: json generation for array of size #{query.size} took #{el} sec."
-            end
-            cache(key, json, collection)
+            cache(key, object.to_json, collection)
           end
         end
 
@@ -126,37 +121,47 @@ module RCS
           query.to_json
         end
 
-        def process_mongoid_criteria(query)
-          collection = query.klass
-          key = Digest::MD5.hexdigest([query.klass, query.selector, query.options].inspect)
+        def process_moped_query(query)
+          document = Object.const_get(query.collection.name.classify)
+          key = Digest::MD5.hexdigest(query.operation.inspect)
 
-          if observed_classes.include?(collection)
-            fetch_or_cache(key, query, collection)
+          if observed_classes.include?(document)
+            fetch_or_cache(key, query, document)
           else
             unsupported(query)
           end
         end
 
-        def process_array(array)
-          t = Time.now
-          key = Digest::MD5.hexdigest(array.inspect)
-          el = Time.now - t
-          trace :debug, "Cache manager: key generation for array of size #{array.size} took #{el} sec."
-          fetch_or_cache(key, array, nil)
-        end
+        def process_mongoid_criteria(criteria)
+          document = criteria.klass
+          key = Digest::MD5.hexdigest(criteria.query.operation.inspect)
 
-        def process(query)
-          # @lock.synchronize { process_thread_unsafe(query) }
-          process_thread_unsafe(query)
-        end
-
-        def process_thread_unsafe(query)
-          if query.kind_of?(Array)
-            process_array(query)
-          elsif query.kind_of?(Mongoid::Criteria)
-            process_mongoid_criteria(query)
+          if observed_classes.include?(document)
+            fetch_or_cache(key, criteria, document)
           else
-            unsupported(query)
+            unsupported(criteria)
+          end
+        end
+
+        def process_array(array)
+          if array.size <= SMALL_ARRAY_SIZE
+            unsupported(array)
+          else
+            key = Digest::MD5.hexdigest(array.inspect)
+            fetch_or_cache(key, array, nil)
+          end
+        end
+
+        # @note: thread unsafe!
+        def process(object)
+          if object.kind_of?(Array)
+            process_array(object)
+          elsif object.kind_of?(Mongoid::Criteria)
+            process_mongoid_criteria(object)
+          elsif object.kind_of?(Moped::Query)
+            process_moped_query(object)
+          else
+            unsupported(object)
           end
         end
       end
