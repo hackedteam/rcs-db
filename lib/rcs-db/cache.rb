@@ -36,7 +36,11 @@ module RCS
         klasses.map! { |klass| Object.const_get("#{klass}".titleize) }
 
         klasses.each do |klass|
-          klass.__send__(:include, CachableDocument)
+          if klass.ancestors.include?(Mongoid::Document)
+            klass.__send__(:include, CachableDocument)
+          elsif klass.respond_to(:target)
+            # todo
+          end
         end
 
         @observed_classes = klasses
