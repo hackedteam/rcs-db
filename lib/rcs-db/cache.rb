@@ -83,7 +83,7 @@ module RCS
           @size = 0
         end
 
-        def cache(key, data, collection)
+        def cache(key, data, options = {})
           if @size >= MAX
             trace :warn, "Cache manager: size limit reached."
             clear
@@ -93,12 +93,13 @@ module RCS
           @json[key] = [Time.now, data, size]
           @size += size
 
-          if collection
+          if options[:bounded_to]
+            collection = options[:bounded_to]
             @docs[collection] ||= []
             @docs[collection] << key
           end
 
-          trace :debug, "Cache manager: cached #{size} bytes [#{collection || "Array"}]. Total size is now #{@size} bytes."
+          trace :debug, "Cache manager: cached | #{size} bytes | #{options[:bounded_to] || "Array"} | #{options[:uri]} | Total size is now #{@size} bytes"
           data
         end
 
@@ -106,14 +107,18 @@ module RCS
           @json[key]
         end
 
-        def fetch_or_cache(key, object, collection)
+        def fetch_or_cache(key, object, options = {})
+          if options[:bounded_to] && !observed_classes.include?(options[:bounded_to])
+            return unsupported(object)
+          end
+
           data = fetch(key)
 
           if data
-            trace :debug, "Cache manager: hit!, #{data[2]} bytes [#{collection || "Array"}]."
+            trace :debug, "Cache manager: hit | #{data[2]} bytes | #{options[:bounded_to] || "Array"} | #{options[:uri]}"
             data[1]
           else
-            cache(key, object.to_json, collection)
+            cache(key, object.to_json, options)
           end
         end
 
@@ -121,45 +126,35 @@ module RCS
           query.to_json
         end
 
-        def process_moped_query(query)
+        def process_moped_query(query, options = {})
           document = Object.const_get(query.collection.name.classify)
           key = Digest::MD5.hexdigest(query.operation.inspect)
-
-          if observed_classes.include?(document)
-            fetch_or_cache(key, query, document)
-          else
-            unsupported(query)
-          end
+          fetch_or_cache(key, query, options.merge(bounded_to: document))
         end
 
-        def process_mongoid_criteria(criteria)
+        def process_mongoid_criteria(criteria, options = {})
           document = criteria.klass
           key = Digest::MD5.hexdigest(criteria.query.operation.inspect)
-
-          if observed_classes.include?(document)
-            fetch_or_cache(key, criteria, document)
-          else
-            unsupported(criteria)
-          end
+          fetch_or_cache(key, criteria, options.merge(bounded_to: document))
         end
 
-        def process_array(array)
+        def process_array(array, options = {})
           if array.size <= SMALL_ARRAY_SIZE
             unsupported(array)
           else
             key = Digest::MD5.hexdigest(array.inspect)
-            fetch_or_cache(key, array, nil)
+            fetch_or_cache(key, array, options)
           end
         end
 
         # @note: thread unsafe!
-        def process(object)
+        def process(object, options = {})
           if object.kind_of?(Array)
-            process_array(object)
+            process_array(object, options)
           elsif object.kind_of?(Mongoid::Criteria)
-            process_mongoid_criteria(object)
+            process_mongoid_criteria(object, options)
           elsif object.kind_of?(Moped::Query)
-            process_moped_query(object)
+            process_moped_query(object, options)
           else
             unsupported(object)
           end

@@ -54,7 +54,7 @@ class RESTResponse
       start = Time.now
 
       final_content = if @content_type == 'application/json'
-        Cache::Manager.instance.process(@content)
+        Cache::Manager.instance.process(@content, {uri: @request[:uri]})
       else
         @content
       end
