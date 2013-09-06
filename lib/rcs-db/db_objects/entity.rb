@@ -444,7 +444,7 @@ class Entity
     update_attributes(name: result["address"]["text"]) unless result.empty?
   end
 
-  def self.positions_flow(ids, from, to)
+  def self.positions_flow(ids, from, to, options = {})
     filter = {'data.position' => {'$ne' => nil}}
 
     if from && to
@@ -457,17 +457,35 @@ class Entity
 
     targets.in(:_id => ids).each do |entity|
       target_id = entity.path[1]
+
       moped_coll = ::Evidence.target(target_id).collection
+
       moped_coll.where(filter).select(project).each do |h|
         t = Time.at(h['da'])
-        minute = Time.new(t.year, t.month, t.day, t.hour, t.min, 0).to_i
 
-        results[minute] ||= {}
-        results[minute][entity.id] = {lat: h['data']['position'][1], lon: h['data']['position'][0], rad: h['data']['accuracy']}
+        if options[:summary]
+          prev_hour = Time.new(t.year, t.month, t.day, t.hour, 0, 0).to_i - 3600
+
+          results[prev_hour] ||= {positions: {}, cnt: []}
+          results[prev_hour][:positions][entity.id] = {lat: h['data']['position'][1], lon: h['data']['position'][0], rad: h['data']['accuracy']}
+          results[prev_hour][:cnt] << t.min
+        else
+          minute = Time.new(t.year, t.month, t.day, t.hour, t.min, 0).to_i
+
+          results[minute] ||= {}
+          results[minute][entity.id] = {lat: h['data']['position'][1], lon: h['data']['position'][0], rad: h['data']['accuracy']}
+        end
       end
     end
 
-    results.map { |t, ps| {time: t, positions: ps.map { |id, p| {_id: id, position: p} } } }
+    if options[:summary]
+      results.map do |t, h|
+        alpha = (h[:cnt].uniq.size * 100) / 60
+        {time: t, positions: h[:positions].map { |id, p| {_id: id, position: p} }, alpha: alpha }
+      end
+    else
+      results.map { |t, ps| {time: t, positions: ps.map { |id, p| {_id: id, position: p} } } }
+    end
   end
 end
 

@@ -50,8 +50,9 @@ class EntityController < RESTController
       ids = [@params['ids']].flatten
       from = @params['from']
       to = @params['to']
+      options = {summary: @params['summary']}
 
-      ok Entity.positions_flow(ids, from, to)
+      ok Entity.positions_flow(ids, from, to, options)
     end
   end
 
