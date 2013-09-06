@@ -83,6 +83,10 @@ class Application
         sleep 5
       end
 
+      if Config.instance.global['JSON_CACHE']
+        RCS::DB::Cache.observe :item, :core, :injector, :entity
+      end
+
       # ensure the temp dir is present
       Dir::mkdir(Config.instance.temp) if not File.directory?(Config.instance.temp)
 

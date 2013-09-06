@@ -68,10 +68,6 @@ class DB
 
       Mongoid.load!(Config.instance.file('mongoid.yaml'), :production)
 
-      if Config.instance.global['JSON_CACHE']
-        RCS::DB::Cache.observe :item, :core, :injector, :entity
-      end
-
       trace :info, "Connected to MongoDB at #{ENV['MONGOID_HOST']}:#{ENV['MONGOID_PORT']} version #{mongo_version}"
 
       change_mongo_profiler_level
