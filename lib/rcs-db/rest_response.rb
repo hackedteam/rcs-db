@@ -49,12 +49,13 @@ class RESTResponse
 
     @response.status = @status
     @response.status_string = ::Net::HTTPResponse::CODE_TO_OBJ["#{@response.status}"].name.gsub(/Net::HTTP/, '')
-    
+    @cache_json ||= Config.instance.global['JSON_CACHE']
+
     begin
       start = Time.now
 
       final_content = if @content_type == 'application/json'
-        Cache::Manager.instance.process(@content, {uri: @request[:uri]})
+        @cache_json ? Cache::Manager.instance.process(@content, {uri: @request[:uri]}) : @content.to_json
       else
         @content
       end
