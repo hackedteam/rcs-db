@@ -10,19 +10,16 @@ TODO 9.0.0
 
     winphone certificate
 
-    cache the good status in the collector
-
   FIX:
     change entity#flow result format + speed up
-
-  TEST:
-    flow integration with console
 
   TRY:
     hash index for sharding (topac - on branch 9.0.x)
     caching slow query. try to cache already jsonized list of items and similar
 
 TODO 9.1.x
+
+  create as target (from automatic entities)
 
   scout++ (with simplified config)
 
