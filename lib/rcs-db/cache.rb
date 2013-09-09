@@ -136,6 +136,11 @@ module RCS
           query.to_json
         end
 
+        def query_op?(query)
+          c = query.operation.op_code
+          c == 2004 || c == 2005
+        end
+
         def mongoid_document(klass)
           return klass if observed_classes.include?(klass)
           mod = (observed_classes & klass.ancestors).first
@@ -143,6 +148,7 @@ module RCS
         end
 
         def process_moped_query(query, options = {})
+          return unsupported(query) unless query_op?(query)
           document = Object.const_get(query.collection.name.classify)
           document = mongoid_document(document)
           return unsupported(query) unless document
@@ -152,6 +158,7 @@ module RCS
         end
 
         def process_mongoid_criteria(criteria, options = {})
+          return unsupported(criteria) unless query_op?(criteria.query)
           document = mongoid_document(criteria.klass)
           return unsupported(criteria) unless document
           key = Digest::MD5.hexdigest(criteria.query.operation.inspect)
