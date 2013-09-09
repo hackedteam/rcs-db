@@ -467,11 +467,11 @@ class Entity
         t = Time.at(h['da'])
 
         if options[:summary]
-          prev_hour = Time.new(t.year, t.month, t.day, t.hour, 0, 0).to_i - 3600
+          hour = Time.new(t.year, t.month, t.day, t.hour, 0, 0).to_i
 
-          results[prev_hour] ||= {positions: {}, cnt: []}
-          results[prev_hour][:positions][entity.id] = {lat: h['data']['position'][1], lon: h['data']['position'][0], rad: h['data']['accuracy']}
-          results[prev_hour][:cnt] << t.min
+          results[hour] ||= {positions: {}, cnt: []}
+          results[hour][:positions][entity.id] ||= {lat: h['data']['position'][1], lon: h['data']['position'][0], rad: h['data']['accuracy']}
+          results[hour][:cnt] << t.min
         else
           minute = Time.new(t.year, t.month, t.day, t.hour, t.min, 0).to_i
 
