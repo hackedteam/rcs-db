@@ -105,3 +105,6 @@ exploits
 
 # this folder is compressed into config/export.zip
 config/export.zip.src
+
+# rcs-db-demo script folder
+_data_backup/*
