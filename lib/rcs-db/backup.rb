@@ -331,6 +331,7 @@ class BackupManager
       if File.exist? File.join(dir, "info")
         info = File.read(File.join(dir, "info"))
         backup_id, backup_what, backup_incremental = info.split("\n").map(&:strip)
+        backup_incremental = (backup_incremental.eql? 'true') ? true : false
       else
         backup_what = "unknown"
       end
