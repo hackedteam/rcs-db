@@ -38,6 +38,11 @@ module BackupManager
     raise "Cannot find folder #{folder}" unless Dir.exists?(folder)
     without_mongo { FileUtils.rm_rf(DATAPATH); FileUtils.cp_r(folder, DATAPATH) }
   end
+
+  def ensure_paths
+    raise "Cannot find folder #{DATAPATH}" unless Dir.exists?(DATAPATH)
+    FileUtils.mkdir(BACKUPPATH) unless Dir.exists?(BACKUPPATH)
+  end
 end
 
 options = {}
@@ -51,7 +56,7 @@ end
 
 optparse.parse(ARGV)
 
-raise "Cannot find folder #{BackupManager::DATAPATH}" unless Dir.exists?(BackupManager::DATAPATH)
+BackupManager.ensure_paths
 
 if options[:list]
   BackupManager.list
