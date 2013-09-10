@@ -10,21 +10,21 @@ module BackupManager
   DATAPATH = File.join(PATH, 'data')
   BACKUPPATH = File.join(PATH, '_data_backup')
 
-  def tmfolder
-    File.join(BACKUPPATH, Time.now.strftime('%Y%m%d_%H%M%S'))
-  end
-
   def without_mongo
     list = %w[RCSMasterRouter RCSMasterConfig RCSShard]
-    list.each { |name| system("NET STOP #{name}"); sleep(2) }
+    # list.each { |name| system("NET STOP #{name}"); sleep(2) }
     puts "Copying files. Please wait."
     yield
   ensure
     list.reverse.each { |name| system("NET START #{name}"); sleep(2) }
   end
   
-  def backup
-    without_mongo { FileUtils.cp_r(DATAPATH, tmfolder) }
+  def backup(restore_point_name = nil)
+    bfolder = restore_point_name || Time.now.strftime('%Y%m%d_%H%M%S')
+    bfolder = File.join(BACKUPPATH, bfolder)
+    raise "Unable to backup. Folder #{folder} already exists." if Dir.exists?(bfolder)
+    FileUtils.mkdir(bfolder)
+    without_mongo { FileUtils.cp_r(DATAPATH, bfolder) }
   end
 
   def list
@@ -49,19 +49,25 @@ options = {}
 
 optparse = OptionParser.new do |opts|
   opts.banner = "Usage: rcs-db-demo [options]"
-  opts.on( '-b', '--backup', 'Backup "data" folder') { options[:backup] = true }
+  opts.on( '-b [RESTORE_POINT_NAME]', '--backup [RESTORE_POINT_NAME]', 'Backup "data" folder') { |name| options[:backup] = name || true }
   opts.on( '-l', '--list', 'List available restore points') { options[:list] = true }
-  opts.on( '-r', '--restore RESTORE_POINT', String, 'Restore "data" folder') { |point| options[:restore] = point }
+  opts.on( '-r RESTORE_POINT', '--restore RESTORE_POINT', String, 'Restore "data" folder') { |point| options[:restore] = point }
 end
 
 optparse.parse(ARGV)
 
 BackupManager.ensure_paths
 
+if options.empty?
+  puts "Use --help"
+  exit
+end
+
 if options[:list]
   BackupManager.list
 elsif options[:backup]
-  BackupManager.backup
+  restore_point_name = options[:backup] == true ? nil : options[:backup]
+  BackupManager.backup(restore_point_name)
 elsif options[:restore]
   BackupManager.restore(options[:restore])
 end
