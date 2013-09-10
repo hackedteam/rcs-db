@@ -273,12 +273,12 @@ class AgentController < RESTController
     # request for a specific instance
     if @params['_id']
       Item.where({_kind: 'factory', ident: @params['_id']}).each do |entry|
-        classes[entry[:ident]] = entry[:confkey]
+        classes[entry[:ident]] = {key: entry[:confkey], good: entry[:good]}
       end
     # all of them
     else
       Item.where({_kind: 'factory'}).each do |entry|
-        classes[entry[:ident]] = entry[:confkey]
+        classes[entry[:ident]] = {key: entry[:confkey], good: entry[:good]}
       end
     end
     
