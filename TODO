@@ -2,9 +2,8 @@
 TODO 9.0.0
 
   IMPLEMENT:
-    statistic analyzer (alor)
-      automatic detection of home / office (needs timezone for each entity)
-      frequencer for places
+
+    support for timezone of entities
 
     dashboard in push mode
 
@@ -19,9 +18,28 @@ TODO 9.0.0
 
 TODO 9.1.x
 
-  create as target (from automatic entities)
+  IMPLEMENT:
 
-  scout++ (with simplified config)
+    create as target (from automatic entities)
+
+    scout++ (with simplified config)
+
+    ability to group entities together (better visualization)
+
+    statistic analyzer (alor)
+      automatic detection of home / office (needs timezone for each entity)
+      frequencer for places
+
+  IDEAS:
+    message quque on entities
+      - sort of "inbox" for each entity on what the system performs on it
+        the customer can review the messages and acknowledge them
+
+    placeholder targets (linked from other operations)
+
+    intra operation correlation (visualize like a link to a group that actually is the other operation)
+
+    advanced multi operation search
 
 ======================================
 TODO FUTURE:
