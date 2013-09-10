@@ -56,19 +56,19 @@ module DB
 
       let!(:entity2) { factory_create(:target_entity, target: target2) }
 
-      let(:t) { Time.new(2000, 01, 01, 13, 42) }
+      let(:t) { Time.new(2000, 01, 01, 13, 42).to_i }
 
       before do
-        factory_create(:position_evidence, target: target1, da: (t - 100).to_i, lat: 19, lon: 21)
-        factory_create(:position_evidence, target: target1, da: t.to_i, lat: 10, lon: 2)
-        factory_create(:position_evidence, target: target2, da: (t + 5).to_i, lat: 12, lon: 2)
-        factory_create(:position_evidence, target: target2, da: (t + 10).to_i, lat: 13, lon: 4)
-        factory_create(:position_evidence, target: target1, da: (t + 60).to_i, lat: 11, lon: 2)
+        factory_create(:position_evidence, target: target1, da: t - 100,  lat: 19, lon: 21)
+        factory_create(:position_evidence, target: target1, da: t + 0,    lat: 10, lon: 2)
+        factory_create(:position_evidence, target: target2, da: t + 5,    lat: 12, lon: 2)
+        factory_create(:position_evidence, target: target2, da: t + 10,   lat: 13, lon: 4)
+        factory_create(:position_evidence, target: target1, da: t + 60,   lat: 11, lon: 2)
       end
 
       it 'returns the expected result' do
         ids = [entity1.id, entity2.id]
-        subject.instance_variable_set('@params', {'ids' => ids, 'from' => t.to_i})
+        subject.instance_variable_set('@params', {'ids' => ids, 'from' => t})
         results = subject.positions
 
         expect(results.size).to eq(2)
@@ -83,7 +83,7 @@ module DB
     describe '#flow' do
 
       def flow_with_params from, to, entities
-        subject.instance_variable_set '@params', 'entities' => entities, 'from' => from, 'to' => to
+        subject.instance_variable_set '@params', 'ids' => entities, 'from' => from, 'to' => to
         subject.flow
       end
 
