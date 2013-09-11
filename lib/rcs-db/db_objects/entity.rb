@@ -482,12 +482,16 @@ class Entity
     end
 
     if options[:summary]
-      results.map do |t, h|
-        alpha = (h[:cnt].uniq.size * 100) / 60
-        {time: t, positions: h[:positions].map { |id, p| {_id: id, position: p} }, alpha: alpha }
-      end
+      results
+        .map { |t, h|
+          alpha = (h[:cnt].uniq.size * 100) / 60
+          {time: t, positions: h[:positions].map { |id, p| {_id: id, position: p} }, alpha: alpha }
+        }
+        .sort { |x,y| x[:time] <=> y[:time] }
     else
-      results.map { |t, ps| {time: t, positions: ps.map { |id, p| {_id: id, position: p} } } }
+      results
+        .map { |t, ps| {time: t, positions: ps.map { |id, p| {_id: id, position: p} } } }
+        .sort { |x,y| x[:time] <=> y[:time] }
     end
   end
 end
