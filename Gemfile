@@ -3,7 +3,7 @@ source "http://rubygems.org"
 
 gem "rcs-common", ">= 9.0.0", :path => "../rcs-common"
 
-gem 'em-http-request', "=1.0.3"
+gem 'em-http-request', ">= 1.0.3"
 gem 'em-websocket'
 gem 'em-http-server', ">= 0.1.3"
 
