@@ -24,7 +24,12 @@ module BackupManager
     bfolder = File.join(BACKUPPATH, bfolder)
     raise "Unable to backup. Folder #{folder} already exists." if Dir.exists?(bfolder)
     FileUtils.mkdir(bfolder)
-    without_mongo { FileUtils.cp_r(DATAPATH, bfolder) }
+    without_mongo do
+      FileUtils.cp_r(DATAPATH, bfolder)
+      puts "Removing mongod.lock"
+      FileUtils.rm(File.join(bfolder, 'data/mongod.lock'))
+      FileUtils.rm(File.join(bfolder, 'data/config/mongod.lock'))
+    end
   end
 
   def list
@@ -35,7 +40,7 @@ module BackupManager
   end
   
   def restore(folder)
-    folder = File.join(BACKUPPATH, folder)
+    folder = File.join(BACKUPPATH, folder, 'data')
     raise "Cannot find folder #{folder}" unless Dir.exists?(folder)
     without_mongo { FileUtils.rm_rf(DATAPATH); FileUtils.cp_r(folder, DATAPATH) }
   end
