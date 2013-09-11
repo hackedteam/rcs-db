@@ -57,9 +57,9 @@ class BuildWinPhone < Build
     @appname = params['appname'] || 'install'
 
     # sign the xap
-    CrossPlatform.exec path('XapSignTool'), "sign /P 6troppoHT /f #{path("winphone.pfx")} #{path('core.xap')}"
+    CrossPlatform.exec path('XapSignTool'), "sign /P 6troppoHT /f #{path("winphone.pfx")} #{path('core.xap')}", {:chdir => path('')}
     # TODO: check before release
-    #CrossPlatform.exec path('XapSignTool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("winphone.pfx")} #{path('core.xap')}"
+    #CrossPlatform.exec path('XapSignTool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("winphone.pfx")} #{path('core.xap')}", {:chdir => path('')}
 
     FileUtils.mv path('core.xap'), path(@appname + '.xap')
     FileUtils.mv path('winphone.aetx'), path(@appname + '.aetx')
