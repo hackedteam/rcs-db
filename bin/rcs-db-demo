@@ -12,7 +12,7 @@ module BackupManager
 
   def without_mongo
     list = %w[RCSMasterRouter RCSMasterConfig RCSShard]
-    # list.each { |name| system("NET STOP #{name}"); sleep(2) }
+    list.each { |name| system("NET STOP #{name}"); sleep(2) }
     puts "Copying files. Please wait."
     yield
   ensure
