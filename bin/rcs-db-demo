@@ -29,8 +29,8 @@ module BackupManager
 
   def list
     dir = Dir[File.join(BACKUPPATH, '*')]
-    puts "\nThere are #{dir.size} restore points"
-    dir.each { |n| puts(File.basename(n)) }
+    puts "\n#{dir.size} restore points available:"
+    dir.each { |n| puts " - #{File.basename(n).ljust(30)} #{File.ctime(n)}" }
     puts
   end
   
