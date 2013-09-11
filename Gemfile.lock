@@ -1,6 +1,6 @@
 GIT
   remote: git://github.com/alor/mongo-ruby-driver.git
-  revision: 752c6f313397fd1864a47060d58f2070effb721d
+  revision: b1d59bfe1700b88b1550b4fc6de1ae8778923ddf
   branch: 1.9.2_append
   specs:
     bson (1.9.2)
