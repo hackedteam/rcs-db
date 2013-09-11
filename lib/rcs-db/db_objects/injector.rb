@@ -1,7 +1,7 @@
 require 'mongoid'
 require 'tempfile'
-require 'zip/zip'
-require 'zip/zipfilesystem'
+require 'zip'
+require 'zip/filesystem'
 
 #module RCS
 #module DB

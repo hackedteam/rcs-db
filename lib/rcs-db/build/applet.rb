@@ -119,7 +119,7 @@ class BuildApplet < Build
   def pack(params)
     trace :debug, "Build: pack: #{params}"
 
-    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+    Zip::File.open(path('output.zip'), Zip::File::CREATE) do |z|
       @outputs.each do |out|
         z.file.open(out, "wb") { |f| f.write File.open(path(out), 'rb') {|f| f.read} }
       end

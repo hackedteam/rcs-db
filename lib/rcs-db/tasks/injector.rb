@@ -75,7 +75,7 @@ class InjectorTask
 
     bin_config_file = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
 
-    Zip::ZipOutputStream.open(bin_config_file) do |z|
+    Zip::OutputStream.open(bin_config_file) do |z|
       z.put_next_entry("redirect_user.txt")
       redirect_user.each_pair do |key, value|
         z.puts "#{key} #{value}"
@@ -141,7 +141,7 @@ class InjectorTask
     build.clean
 
     # extract the zip and take the applet files
-    Zip::ZipFile.open(temp_zip) do |z|
+    Zip::File.open(temp_zip) do |z|
       z.each do |f|
         f_path = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
         z.extract(f, f_path) unless File.exist?(f_path)
@@ -170,7 +170,7 @@ class InjectorTask
     build.clean
 
     # extract the zip and take the applet files
-    Zip::ZipFile.open(temp_zip) do |z|
+    Zip::File.open(temp_zip) do |z|
       z.each do |f|
         f_path = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
         z.extract(f, f_path) unless File.exist?(f_path)
@@ -197,7 +197,7 @@ class InjectorTask
     build.clean
 
     # extract the zip
-    Zip::ZipFile.open(temp_zip) do |z|
+    Zip::File.open(temp_zip) do |z|
       z.each do |f|
         f_path = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
         z.extract(f, f_path) unless File.exist?(f_path)
@@ -219,7 +219,7 @@ class InjectorTask
     build.clean
 
     # extract the zip
-    Zip::ZipFile.open(temp_zip) do |z|
+    Zip::File.open(temp_zip) do |z|
       z.each do |f|
         f_path = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
         z.extract(f, f_path) unless File.exist?(f_path)
@@ -241,7 +241,7 @@ class InjectorTask
     build.clean
 
     # extract the zip
-    Zip::ZipFile.open(temp_zip) do |z|
+    Zip::File.open(temp_zip) do |z|
       z.each do |f|
         f_path = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
         z.extract(f, f_path) unless File.exist?(f_path)
@@ -268,7 +268,7 @@ class InjectorTask
     build.clean
 
     # extract the zip
-    Zip::ZipFile.open(temp_zip) do |z|
+    Zip::File.open(temp_zip) do |z|
       z.each do |f|
         f_path = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
         z.extract(f, f_path) unless File.exist?(f_path)

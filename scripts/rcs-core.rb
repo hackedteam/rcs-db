@@ -6,8 +6,8 @@ require 'open-uri'
 require 'pp'
 require 'cgi'
 require 'optparse'
-require 'zip/zip'
-require 'zip/zipfilesystem'
+require 'zip'
+require 'zip/filesystem'
 require 'securerandom'
 
 class CoreDeveloper
@@ -222,7 +222,7 @@ class CoreDeveloper
     puts "#{resp.body.bytesize} bytes saved to #{@output}"
     puts
 
-    #Zip::ZipFile.open(@output) do |z|
+    #Zip::File.open(@output) do |z|
     #  z.each do |f|
     #    puts "#{f.name.ljust(40)} #{f.size.to_s.rjust(10)} #{f.time}"
     #  end

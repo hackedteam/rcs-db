@@ -84,7 +84,7 @@ class BuildQrcode < Build
   def pack(params)
     trace :debug, "Build: pack: #{params}"
 
-    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+    Zip::File.open(path('output.zip'), Zip::File::CREATE) do |z|
       z.file.open('url.png', "wb") { |f| f.write File.open(path('output.png'), 'rb') {|f| f.read} }
       z.file.open('url.txt', "wb") { |f| f.write File.open(path('output.txt'), 'rb') {|f| f.read} }
     end
@@ -95,7 +95,7 @@ class BuildQrcode < Build
 
     # zip all the outputs and send them to the collector
     # it will create a subdir automatically
-    Zip::ZipFile.open(path("#{@appname}.zip"), Zip::ZipFile::CREATE) do |z|
+    Zip::File.open(path("#{@appname}.zip"), Zip::File::CREATE) do |z|
       @outputs.each do |o|
         z.file.open("#{o}", "wb") { |f| f.write File.open(path(o), 'rb') {|f| f.read} }
       end

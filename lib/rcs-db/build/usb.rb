@@ -88,7 +88,7 @@ class BuildUSB < Build
   def pack(params)
     trace :debug, "Build: pack: #{params}"
 
-    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+    Zip::File.open(path('output.zip'), Zip::File::CREATE) do |z|
       @outputs.keep_if {|x| x['winpe'] or x['installer'] or x['usb_bootable']}.each do |out|
         next unless File.file?(path(out))
         name = out.gsub("winpe/", '')

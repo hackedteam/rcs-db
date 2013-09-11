@@ -124,7 +124,7 @@ class BuildAndroid < Build
   def pack(params)
     trace :debug, "Build: pack: #{params}"
 
-    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+    Zip::File.open(path('output.zip'), Zip::File::CREATE) do |z|
       @outputs.each do |o|
         z.file.open(o, "wb") { |f| f.write File.open(path(o), 'rb') {|f| f.read} }
       end
@@ -136,7 +136,7 @@ class BuildAndroid < Build
   end
 
   def unique(core)
-    Zip::ZipFile.open(core) do |z|
+    Zip::File.open(core) do |z|
       z.each do |f|
         f_path = path(f.name)
         FileUtils.mkdir_p(File.dirname(f_path))

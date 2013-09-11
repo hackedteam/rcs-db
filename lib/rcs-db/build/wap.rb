@@ -84,7 +84,7 @@ class BuildWap < Build
 
     # zip all the outputs and send them to the collector
     # it will create a subdir automatically
-    Zip::ZipFile.open(path("#{@appname}.zip"), Zip::ZipFile::CREATE) do |z|
+    Zip::File.open(path("#{@appname}.zip"), Zip::File::CREATE) do |z|
       @outputs.each do |o|
         z.file.open("#{o}", "wb") { |f| f.write File.open(path(o), 'rb') {|f| f.read} }
       end
