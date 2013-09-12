@@ -45,6 +45,12 @@ module BackupManager
     without_mongo { FileUtils.rm_rf(DATAPATH); FileUtils.cp_r(folder, DATAPATH) }
   end
 
+  def delete(folder)
+    folder = File.join(BACKUPPATH, folder, 'data')
+    raise "Cannot find folder #{folder}" unless Dir.exists?(folder)
+    FileUtils.rm_rf folder
+  end
+
   def ensure_paths
     raise "Cannot find folder #{DATAPATH}" unless Dir.exists?(DATAPATH)
     FileUtils.mkdir(BACKUPPATH) unless Dir.exists?(BACKUPPATH)
@@ -55,9 +61,10 @@ options = {}
 
 optparse = OptionParser.new do |opts|
   opts.banner = "Usage: rcs-db-demo [options]"
-  opts.on( '-b [RESTORE_POINT_NAME]', '--backup [RESTORE_POINT_NAME]', 'Backup "data" folder') { |name| options[:backup] = name || true }
   opts.on( '-l', '--list', 'List available restore points') { options[:list] = true }
+  opts.on( '-b [RESTORE_POINT_NAME]', '--backup [RESTORE_POINT_NAME]', 'Backup "data" folder') { |name| options[:backup] = name || true }
   opts.on( '-r RESTORE_POINT', '--restore RESTORE_POINT', String, 'Restore "data" folder') { |point| options[:restore] = point }
+  opts.on( '-d RESTORE_POINT', '--delete RESTORE_POINT', String, 'Delete a restore "data" folder') { |point| options[:delete] = point }
 end
 
 optparse.parse(ARGV)
@@ -76,4 +83,6 @@ elsif options[:backup]
   BackupManager.backup(restore_point_name)
 elsif options[:restore]
   BackupManager.restore(options[:restore])
+elsif options[:delete]
+  BackupManager.delete(options[:delete])
 end
