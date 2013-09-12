@@ -9,6 +9,7 @@ TODO 9.0.0
 
   FIX:
     change entity#flow result format + speed up
+    peer/sender fix skype call
 
   TRY:
     hash index for sharding (topac - on branch 9.0.x)
