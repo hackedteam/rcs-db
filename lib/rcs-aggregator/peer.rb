@@ -96,7 +96,7 @@ class PeerAggregator
     if bidirectional
       ev.data['rcpt'].split(',').each do |rcpt|
         data << hash.merge(peer: rcpt.strip.downcase, sender: ev.data['from'].strip.downcase, versus: :in)
-        data << hash.merge(peer: ev.data['from'].strip.downcase, sender: rcpt.strip.downcase, versus: :out)
+        data << hash.merge(peer: rcpt.strip.downcase, sender: ev.data['from'].strip.downcase, versus: :out)
       end
     elsif versus == :in
       data << hash.merge(peer: ev.data['from'].strip.downcase, sender: ev.data['rcpt'].strip.downcase)
