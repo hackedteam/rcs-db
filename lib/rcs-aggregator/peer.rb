@@ -79,6 +79,7 @@ class PeerAggregator
     data = []
     versus = ev.data['incoming'] == 1 ? :in : :out
     hash = {:time => ev.da, :versus => versus, :type => ev.data['program'].downcase.to_sym, :size => ev.data['duration'].to_i}
+    bidirectional = hash[:type] == :skype
 
     # TODO: remove old call format (after 9.0.0)
     if ev.data['peer']
@@ -92,7 +93,12 @@ class PeerAggregator
     end
 
     # new call format
-    if versus == :in
+    if bidirectional
+      ev.data['rcpt'].split(',').each do |rcpt|
+        data << hash.merge(peer: rcpt.strip.downcase, sender: ev.data['from'].strip.downcase, versus: :in)
+        data << hash.merge(peer: ev.data['from'].strip.downcase, sender: rcpt.strip.downcase, versus: :out)
+      end
+    elsif versus == :in
       data << hash.merge(peer: ev.data['from'].strip.downcase, sender: ev.data['rcpt'].strip.downcase)
     else
       # multiple rcpts creates multiple entries
