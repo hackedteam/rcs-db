@@ -37,12 +37,20 @@ class NotificationQueue
     end
   end
 
-  def self.get_queued
-    entry = self.where(flag: NotificationQueue::QUEUED).find_and_modify({"$set" => {flag: NotificationQueue::PROCESSED}}, new: false)
-    count = self.where({flag: NotificationQueue::QUEUED}).count() if entry
-    return entry ? [entry, count] : nil
+  def self.retry_on_timeout
+    Timeout::timeout(5) { yield }
+  rescue Timeout::Error
+    trace :warn, "#get_queue was stuck, retrying..."
+    retry
   end
 
+  def self.get_queued
+    retry_on_timeout do
+      entry = self.where(flag: NotificationQueue::QUEUED).find_and_modify({"$set" => {flag: NotificationQueue::PROCESSED}}, new: false)
+      count = self.where({flag: NotificationQueue::QUEUED}).count() if entry
+      entry ? [entry, count] : nil
+    end
+  end
 end
 
 class AlertQueue < NotificationQueue
@@ -160,9 +168,11 @@ class AggregatorQueue < NotificationQueue
   end
 
   def self.get_queued(types)
-    entry = self.where({flag: NotificationQueue::QUEUED, :type.in => types}).find_and_modify({"$set" => {flag: NotificationQueue::PROCESSED}}, new: false)
-    count = self.where({flag: NotificationQueue::QUEUED, :type.in => types}).count() if entry
-    return entry ? [entry, count] : nil
+    retry_on_timeout do
+      entry = self.where({flag: NotificationQueue::QUEUED, :type.in => types}).find_and_modify({"$set" => {flag: NotificationQueue::PROCESSED}}, new: false)
+      count = self.where({flag: NotificationQueue::QUEUED, :type.in => types}).count() if entry
+      entry ? [entry, count] : nil
+    end
   end
 end
 

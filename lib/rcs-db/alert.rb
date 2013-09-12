@@ -240,22 +240,8 @@ class Alerting
 
     def dispatch
       loop do
-        begin
-          queued = nil
-
-          Timeout::timeout(5) do
-            queued = AlertQueue.get_queued
-          end
-
-          if queued
-            process_queued(queued)
-          else
-            sleep 1
-          end
-        rescue Timeout::Error
-          trace :warn, "Alerting get_queue was stuck, restarting..."
-          retry
-        end
+        queued = AlertQueue.get_queued
+        queued ? process_queued(queued) : sleep(1)
       end
     end
 

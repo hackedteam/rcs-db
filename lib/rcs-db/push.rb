@@ -55,9 +55,7 @@ module RCS
         queued = nil
 
         loop_on do
-          Timeout::timeout(5) do
-            queued = PushQueue.get_queued
-          end
+          queued = PushQueue.get_queued
           return unless queued
           type, message = queued[0].type, queued[0].message
           suppress?(message) ? suppress(type, message) : break
@@ -65,10 +63,6 @@ module RCS
 
         trace :debug, "#{queued[1]} push messages to be processed in queue"
         [type, message]
-
-      rescue Timeout::Error
-        trace :warn, "PushManager get_queue was stuck, restarting..."
-        retry
       end
 
       def wait_a_moment
