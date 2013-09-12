@@ -86,19 +86,19 @@ class PeerAggregator
       # multiple peers creates multiple entries
       ev.data['peer'].split(',').each do |peer|
         hash.merge!(sender: ev.data['caller'].strip.downcase) if ev.data['caller']
-        data << hash.merge(peer: peer.strip.downcase)
+        if bidirectional
+          data << hash.merge(peer: peer.strip.downcase, versus: :in)
+          data << hash.merge(peer: peer.strip.downcase, versus: :out)
+        else
+          data << hash.merge(peer: peer.strip.downcase)
+        end
       end
 
       return data
     end
 
     # new call format
-    if bidirectional
-      ev.data['rcpt'].split(',').each do |rcpt|
-        data << hash.merge(peer: rcpt.strip.downcase, sender: ev.data['from'].strip.downcase, versus: :in)
-        data << hash.merge(peer: rcpt.strip.downcase, sender: ev.data['from'].strip.downcase, versus: :out)
-      end
-    elsif versus == :in
+    if versus == :in
       data << hash.merge(peer: ev.data['from'].strip.downcase, sender: ev.data['rcpt'].strip.downcase)
     else
       # multiple rcpts creates multiple entries
