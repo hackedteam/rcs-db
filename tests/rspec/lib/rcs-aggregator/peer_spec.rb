@@ -143,7 +143,7 @@ describe PeerAggregator do
       end
 
       it 'should parse multiple old evidence' do
-        @evidence_call.data = {'peer' => 'Peer1, peer2, Peer3', 'program' => 'skype', 'incoming' => 0, 'duration' => 30}
+        @evidence_call.data = {'peer' => 'Peer1, peer2, Peer3', 'program' => 'line', 'incoming' => 0, 'duration' => 30}
         parsed = PeerAggregator.extract_call(@evidence_call)
         parsed.should be_a Array
         parsed.size.should be 3
@@ -151,8 +151,15 @@ describe PeerAggregator do
         aggregated = parsed.first
         aggregated[:peer].should eq 'peer1'
         aggregated[:size].should eq @evidence_call.data['duration']
-        aggregated[:type].should eq :skype
+        aggregated[:type].should eq :line
         aggregated[:versus].should be :out
+      end
+
+      it 'should generate bidirectional aggregates when the program is skype' do
+        @evidence_call.data = {'peer' => 'Peer1, peer2, Peer3', 'program' => 'skype', 'incoming' => 0, 'duration' => 30}
+        parsed = PeerAggregator.extract_call(@evidence_call)
+        parsed.should be_a Array
+        parsed.size.should be 6
       end
 
       it 'should parse new evidence (incoming)' do
