@@ -101,7 +101,7 @@ end
 def enable_license
   before do
     eval 'class LicenseManager; end' unless defined? LicenseManager
-    LicenseManager.stub(:instance).and_return mock()
+    LicenseManager.stub(:instance).and_return double()
     LicenseManager.instance.stub(:check).and_return true
   end
 end

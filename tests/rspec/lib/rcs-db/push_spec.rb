@@ -199,7 +199,7 @@ module RCS
 
       describe '#each_session_with_web_socket' do
 
-        let(:web_socket) { mock() }
+        let(:web_socket) { double() }
 
         let!(:user0) { factory_create(:user) }
         let!(:user1) { factory_create(:user) }
@@ -237,7 +237,7 @@ module RCS
 
       describe '#dispatch' do
 
-        let(:web_socket) { mock() }
+        let(:web_socket) { double() }
 
         let!(:user) { factory_create(:user) }
 

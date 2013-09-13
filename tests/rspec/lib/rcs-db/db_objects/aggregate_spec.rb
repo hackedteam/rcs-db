@@ -26,7 +26,7 @@ describe Aggregate do
     end
 
     it 'accepts a mongoid document instance (not only a string)' do
-      target = mock(id: 'an_id')
+      target = double(id: 'an_id')
       expect(Aggregate.target(target).collection.name).to eql 'aggregate.an_id'
     end
   end

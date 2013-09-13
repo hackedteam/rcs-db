@@ -53,8 +53,8 @@ describe Processor do
   describe '#run' do
     let(:queue_entry) { [:first_item, :second_item] }
 
-    before { described_class.stub!(:sleep).and_return :sleeping }
-    before { described_class.stub!(:loop).and_yield }
+    before { described_class.stub(:sleep).and_return :sleeping }
+    before { described_class.stub(:loop).and_yield }
 
     context 'the IntelligenceQueue is not empty' do
       before { IntelligenceQueue.stub(:get_queued).and_return queue_entry }
@@ -119,7 +119,7 @@ describe Processor do
 
       it 'calls #process_position_aggregate' do
         described_class.should_receive :process_position_aggregate
-        entity = mock()
+        entity = double()
         described_class.process_aggregate entity, position_aggregate_of_bob
       end
     end

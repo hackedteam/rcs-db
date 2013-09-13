@@ -179,7 +179,7 @@ describe Connector do
       let(:connector) { factory_create(:connector, item: target.get_parent, type: 'REMOTE', format: nil) }
 
       it 'does not raise any validation error' do
-        expect { connector }.not_to raise_error(Mongoid::Errors::Validations)
+        expect { connector }.not_to raise_error
       end
     end
 
