@@ -291,9 +291,9 @@ describe Entity do
     context 'with intelligence enabled' do
 
       it 'should return name from handle (from entities)' do
-        @entity.handles.create!(type: 'phone', handle: '123')
+        @entity.handles.create!(type: :phone, handle: '123')
 
-        name = Entity.name_from_handle('sms', '123', @target._id.to_s)
+        name = Entity.name_from_handle(:sms, '123', @target._id.to_s)
 
         name.should eq @target.name
       end

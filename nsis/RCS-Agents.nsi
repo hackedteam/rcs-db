@@ -75,6 +75,9 @@ Section "Install Section" SecInstall
 
   SetOutPath "$INSTDIR\DB\config"
   File "config\blacklist"
+  File "config\blacklist_analysis"
+  File "config\VERSION_BUILD"
+  File "config\VERSION"
 
   SetDetailsPrint "both"
   DetailPrint "done"
@@ -100,9 +103,9 @@ Function .onInit
 	FileRead $4 $1
 	FileClose $4
 	${If} $1 != ""
-	   ${StrStr} $0 $1 "8.4"
+	   ${StrStr} $0 $1 "8.4.1"
 	   ${If} $0 == ""
-  	   MessageBox MB_OK "This version can only be installed on 8.4.x systems, you have $1"
+  	   MessageBox MB_OK "This version can only be installed on 8.4.1 systems, you have $1"
   	   Quit
 	   ${EndIf}
 	${EndIf}

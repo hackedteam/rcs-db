@@ -264,7 +264,7 @@ class Entity
 
     return nil unless handle
 
-    type = 'phone' if ['call', 'sms', 'mms'].include? type
+    type = :phone if [:call, :sms, :mms].include? type
 
     target = ::Item.find(target_id)
 
