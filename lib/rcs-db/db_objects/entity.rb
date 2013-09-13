@@ -448,12 +448,12 @@ class Entity
   end
 
   def self.positions_flow(ids, from, to, options = {})
-    ext = 70.minutes
+    ext = 70*60
 
-    t = Time.at(from)
+    t = Time.at(from.to_i)
     from = Time.new(t.year, t.month, t.day, t.hour, t.min, 0).to_i
 
-    t = Time.at(to)
+    t = Time.at(to.to_i)
     to = Time.new(t.year, t.month, t.day, t.hour, t.min, 0).to_i
 
     ext_from, ext_to = from - ext, to + ext
@@ -463,7 +463,8 @@ class Entity
 
     results = {}
     entities = []
-    range = (ext_from..ext_to).step(1.minute).to_a
+    range = (ext_from..ext_to).step(60).to_a
+
 
     targets.in(:_id => ids).each do |entity|
       entity_id = entity.id
@@ -474,6 +475,7 @@ class Entity
 
       moped_coll.where(filter).select(project).each do |h|
         da = Time.at(h['da'])
+
         minute = Time.new(da.year, da.month, da.day, da.hour, da.min, 0).to_i
         hour = Time.new(da.year, da.month, da.day, da.hour, 0, 0).to_i
 
@@ -491,6 +493,7 @@ class Entity
       last = {alpha: 0}
 
       range.each do |minute|
+        minute = minute.to_i
         curr = (results[minute] && results[minute][:pos][entity_id]) ? results[minute][:pos][entity_id] : nil
 
         next if curr.nil? && last[:alpha] == 0
@@ -508,6 +511,7 @@ class Entity
       last = {alpha: 0}
 
       range.reverse.each do |minute|
+        minute = minute.to_i
         curr = results[minute] && results[minute][:pos][entity_id] ? results[minute][:pos][entity_id] : nil
         next if curr.nil? && last[:alpha] == 0
 
@@ -525,12 +529,12 @@ class Entity
     if options[:summary]
       results
         .select { |t, h| h[:density] && t >= from && t <= to }
-        .map { |t, h| {time: t, positions: h[:pos].map { |ent_id, p| {_id: ent_id, position: p} }, alpha: h[:density].uniq.size } }
+        .map { |t, h| {time: t, positions: h[:pos].map { |ent_id, p| {_id: ent_id, position: p, alpha: p[:alpha]} }, alpha: h[:density].uniq.size } }
         .sort { |x,y| x[:time] <=> y[:time] }
     else
       results
         .select { |t, h| t >= from && t <= to }
-        .map { |t, h| {time: t, positions: h[:pos].map { |ent_id, p| {_id: ent_id, position: p} } } }
+        .map { |t, h| {time: t, positions: h[:pos].map { |ent_id, p| {_id: ent_id, position: p, alpha: p[:alpha]} } } }
         .sort { |x,y| x[:time] <=> y[:time] }
     end
   end
