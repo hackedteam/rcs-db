@@ -524,11 +524,12 @@ class Entity
 
     if options[:summary]
       results
-        .select { |k, v| v[:density] }
+        .select { |t, h| h[:density] && t >= from && t <= to }
         .map { |t, h| {time: t, positions: h[:pos].map { |ent_id, p| {_id: ent_id, position: p} }, alpha: h[:density].uniq.size } }
         .sort { |x,y| x[:time] <=> y[:time] }
     else
       results
+        .select { |t, h| t >= from && t <= to }
         .map { |t, h| {time: t, positions: h[:pos].map { |ent_id, p| {_id: ent_id, position: p} } } }
         .sort { |x,y| x[:time] <=> y[:time] }
     end
