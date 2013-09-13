@@ -22,7 +22,7 @@ module BackupManager
   def backup(restore_point_name = nil)
     bfolder = restore_point_name || Time.now.strftime('%Y%m%d_%H%M%S')
     bfolder = File.join(BACKUPPATH, bfolder)
-    raise "Unable to backup. Folder #{folder} already exists." if Dir.exists?(bfolder)
+    raise "Unable to backup. Folder #{bfolder} already exists." if Dir.exists?(bfolder)
     FileUtils.mkdir(bfolder)
     without_mongo do
       FileUtils.cp_r(DATAPATH, bfolder)
