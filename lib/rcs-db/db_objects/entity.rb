@@ -448,49 +448,88 @@ class Entity
   end
 
   def self.positions_flow(ids, from, to, options = {})
-    filter = {'data.position' => {'$ne' => nil}}
+    ext = 70.minutes
 
-    from ||= 0
-    to ||= (Time.now.to_i * 2)
-    filter.merge!('da' => {'$gte' => from.to_i, '$lte' => to.to_i})
+    t = Time.at(from)
+    from = Time.new(t.year, t.month, t.day, t.hour, t.min, 0).to_i
 
+    t = Time.at(to)
+    to = Time.new(t.year, t.month, t.day, t.hour, t.min, 0).to_i
+
+    ext_from, ext_to = from - ext, to + ext
+
+    filter = {'data.position' => {'$ne' => nil}, 'da' => {'$gte' => ext_from, '$lte' => ext_to}}
     project = {'_id' => 0, 'da' => 1, 'data.position' => 1, 'data.accuracy' => 1}
 
     results = {}
+    entities = []
+    range = (ext_from..ext_to).step(1.minute).to_a
 
     targets.in(:_id => ids).each do |entity|
+      entity_id = entity.id
       target_id = entity.path[1]
 
+      positions_cnt = 0
       moped_coll = ::Evidence.target(target_id).collection
 
       moped_coll.where(filter).select(project).each do |h|
-        t = Time.at(h['da'])
+        da = Time.at(h['da'])
+        minute = Time.new(da.year, da.month, da.day, da.hour, da.min, 0).to_i
+        hour = Time.new(da.year, da.month, da.day, da.hour, 0, 0).to_i
 
-        if options[:summary]
-          hour = Time.new(t.year, t.month, t.day, t.hour, 0, 0).to_i
+        positions_cnt += 1
+        results[minute] ||= {pos: {}}
+        results[minute][:pos][entity_id] = {lat: h['data']['position'][1], lon: h['data']['position'][0], rad: h['data']['accuracy'], alpha: 60}
 
-          results[hour] ||= {positions: {}, cnt: []}
-          results[hour][:positions][entity.id] ||= {lat: h['data']['position'][1], lon: h['data']['position'][0], rad: h['data']['accuracy']}
-          results[hour][:cnt] << t.min
+        results[hour] ||= {pos: {}}
+        results[hour][:density] ||= [0]
+        results[hour][:density] << minute
+      end
+
+      next if positions_cnt.zero?
+
+      last = {alpha: 0}
+
+      range.each do |minute|
+        curr = (results[minute] && results[minute][:pos][entity_id]) ? results[minute][:pos][entity_id] : nil
+
+        next if curr.nil? && last[:alpha] == 0
+
+        if curr
+          last = curr.dup
         else
-          minute = Time.new(t.year, t.month, t.day, t.hour, t.min, 0).to_i
+          results[minute] ||= {pos: {}}
+          decresed_alpha = last[:alpha] - 1 >= 0 ? last[:alpha] - 1 : 0
+          last.merge!(alpha: decresed_alpha)
+          results[minute][:pos][entity_id] = last.dup
+        end
+      end
 
-          results[minute] ||= {}
-          results[minute][entity.id] = {lat: h['data']['position'][1], lon: h['data']['position'][0], rad: h['data']['accuracy']}
+      last = {alpha: 0}
+
+      range.reverse.each do |minute|
+        curr = results[minute] && results[minute][:pos][entity_id] ? results[minute][:pos][entity_id] : nil
+        next if curr.nil? && last[:alpha] == 0
+
+        if curr.nil? || curr[:alpha] < last[:alpha]
+          decresed_alpha = last[:alpha] - 1 >= 0 ? last[:alpha] - 1 : 0
+          last.merge!(alpha: decresed_alpha)
+          results[minute] ||= {pos: {}}
+          results[minute][:pos][entity_id] = last.dup
+        elsif curr && curr[:alpha] >= last[:alpha]
+          last = curr.dup
         end
       end
     end
 
     if options[:summary]
       results
-        .map { |t, h|
-          alpha = (h[:cnt].uniq.size * 100) / 60
-          {time: t, positions: h[:positions].map { |id, p| {_id: id, position: p} }, alpha: alpha }
-        }
+        .select { |k, v| v[:density] }
+        .map { |t, h| {time: t, positions: h[:pos].map { |ent_id, p| {_id: ent_id, position: p} }, alpha: h[:density].uniq.size } }
         .sort { |x,y| x[:time] <=> y[:time] }
     else
       results
-        .map { |t, ps| {time: t, positions: ps.map { |id, p| {_id: id, position: p} } } }
+        .map { |t, h| {time: t, positions: h[:pos].map { |ent_id, p| {_id: ent_id, position: p} } } }
         .sort { |x,y| x[:time] <=> y[:time] }
     end
   end

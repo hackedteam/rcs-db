@@ -48,8 +48,14 @@ class EntityController < RESTController
 
     mongoid_query do
       ids = [@params['ids']].flatten
-      from = @params['from']
-      to = @params['to']
+      from = @params['from'].to_i
+      to = @params['to'].to_i
+
+      if ids.blank? || from <= 0 || to <= 0 || to < from || to - from >= 1.year
+        trace :error, "Cannot retreive positions flow of #{ids.size} entities from \"#{from.inspect}\" to \"#{to.inspect}\". Invalid parameters."
+        return bad_request('INVALID_OPERATION')
+      end
+
       options = {summary: @params['summary']}
 
       ok Entity.positions_flow(ids, from, to, options)
