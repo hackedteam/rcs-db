@@ -7,6 +7,9 @@ TODO 9.0.0
 
     winphone certificate
 
+    fix the target move -> move entity -> remove old links and check for new one
+
+
   TRY:
 
     hash index for sharding (topac - on branch 9.0.x)
