@@ -161,7 +161,7 @@ class HTTPHandler < EM::HttpServer::Server
         if Config.instance.global['PERF'] and Config.instance.global['STORE_PERF']
           pool = {busy: EventMachine.busy_threads, avail: EventMachine.avail_threads, queue: EventMachine.queued_defers}
           uriwp = request[:uri].split('/').map {|p| (('0'..'9').to_a & p.split('')).any? ? ':param' : p }.join('/')
-          attribs = {method: request[:method], uri: request[:uri], uriwp: uriwp, size: @response_size.to_s_bytes, time: request[:time], pool: pool}
+          attribs = {method: request[:method], uri: request[:uri], uriwp: uriwp, size: @response_size, time: request[:time], pool: pool}
           Mongoid.default_session[:profile].insert(attribs)
         end
 
