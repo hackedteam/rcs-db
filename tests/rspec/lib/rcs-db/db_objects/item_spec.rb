@@ -153,4 +153,56 @@ describe Item do
       end
     end
   end
+
+  describe '#move_target' do
+
+    let!(:operation) { factory_create(:operation) }
+    let!(:target) { factory_create(:target, operation: operation) }
+
+    let!(:other_operation) { factory_create(:operation) }
+
+    before do
+      @agent1 = factory_create(:agent, target: target)
+
+      @connector1 = factory_create(:connector, item: target)
+      @connector2 = factory_create(:connector, item: operation)
+      @connector3 = factory_create(:connector, item: @agent1)
+
+      target.move_target(other_operation)
+
+      [target, @agent1, @connector1, @connector2, @connector3].map(&:reload)
+    end
+
+    context 'the original operation' do
+
+      it 'is empty' do
+        expect(Item.targets.path_include(operation)).to be_empty
+        expect(Item.agents.path_include(operation)).to be_empty
+        expect(Item.factories.path_include(operation)).to be_empty
+      end
+    end
+
+    context 'the other operation' do
+
+      it 'contains the moved target and its agents and/or factories' do
+        expect(Item.targets.path_include(other_operation).first).to eq(target)
+        expect(Item.agents.path_include(other_operation)).not_to be_empty
+      end
+    end
+
+    context 'the connectors on the target, agents and factories' do
+
+      it 'are updated' do
+        expect(@connector1.path).to eq([other_operation.id, target.id])
+        expect(@connector3.path).to eq([other_operation.id, target.id, @agent1.id])
+      end
+    end
+
+    context 'the other connectors' do
+
+      it 'are not updated' do
+        expect(@connector2.path).to eq([operation.id])
+      end
+    end
+  end
 end
