@@ -121,14 +121,38 @@ class LinkManager
 
     trace :info, "Deleting links between '#{first_entity.name}' and '#{second_entity.name}'"
 
-    first_entity.links.connected_to(second_entity).destroy_all
-    second_entity.links.connected_to(first_entity).destroy_all
+    destroyed = first_entity.links.connected_to(second_entity).destroy_all
+    destroyed += second_entity.links.connected_to(first_entity).destroy_all
 
     # notify the links
-    first_entity.push_modify_entity
-    second_entity.push_modify_entity
+    if destroyed > 0
+      first_entity.push_modify_entity
+      second_entity.push_modify_entity
+    end
 
-    return nil
+    nil
+  end
+
+  def del_all_links(entity)
+    trace :info, "Deleting all links attached to '#{entity.name}'"
+
+    connected_entities = entity
+      .links
+      .map { |link| link.linked_entity }
+      .compact
+      .uniq
+
+    connected_entities.each do |connected_entity|
+      if connected_entity.links.connected_to(entity).destroy_all > 0
+        connected_entity.push_modify_entity
+      end
+    end
+
+    if entity.links.destroy_all > 0
+      entity.push_modify_entity
+    end
+
+    nil
   end
 
   def move_links(params)
