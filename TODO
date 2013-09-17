@@ -17,13 +17,16 @@ TODO 9.1.x
 
   IMPLEMENT:
 
-    create as target (from automatic entities)
-
     scout++ (with simplified config)
 
-    ability to group entities together (better visualization)
+    create as target (from automatic entities)
 
-    statistic analyzer (alor)
+    ability to group entities together (better visualization)
+      - new entity type: :group
+      - the group contains a list of entities
+      - the rendering of the links is demanded to the console (underlying links are created normally)
+
+    statistic analyzer
       automatic detection of home / office (needs timezone for each entity)
       frequencer for places
 
