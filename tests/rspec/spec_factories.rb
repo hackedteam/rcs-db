@@ -110,7 +110,9 @@ end
 
 factory_define :target_entity do |params|
   target = params.delete(:target) || factory_create(:target)
-  ::Entity.where(type: :target, path: target._id).first
+  entity = ::Entity.where(type: :target, path: target._id).first
+  entity.update_attributes(params) if params.any?
+  entity
 end
 
 factory_define :person_entity do |params|
