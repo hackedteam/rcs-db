@@ -579,14 +579,16 @@ class EntityHandle
   end
 
   def create_callback
-    return unless check_intelligence_license
+    link! if check_intelligence_license
+  end
 
+  def link!
     # check if other entities have the same handle (it could be an identity relation)
     RCS::DB::LinkManager.instance.check_identity(self._parent, self)
+
     # link any other entity to this new handle (based on aggregates)
     RCS::DB::LinkManager.instance.link_handle(self._parent, self)
   end
-
 end
 
 
