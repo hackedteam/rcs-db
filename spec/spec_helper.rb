@@ -116,7 +116,7 @@ def silence_alerts
 end
 
 # Restore a file created with mongodump
-# Assumes that the dump file is located in the fixture folder (tests/rspec/fixtures)
+# Assumes that the dump file is located in the fixture folder (spec/fixtures)
 def mongorestore(path)
   path = File.expand_path File.join(fixtures_path, path)
   return unless File.exists? path

@@ -6,20 +6,20 @@ require 'rbconfig'
 require 'rspec/core/rake_task'
 
 def default_rspec_opts
-  "-I tests/rspec --color --tag ~speed:slow --order rand"
+  "--color --tag ~speed:slow --order rand"
 end
 
 def default_rspec_opts_slow
-  "-I tests/rspec --color --order rand"
+  "--color --order rand"
 end
 
 def rspec_tasks
   {
-    all: 'tests/rspec/**/*_spec.rb',
-    db: 'tests/rspec/**/rcs-db/**/*_spec.rb',
-    rest: 'tests/rspec/**/rcs-db/rest/*_spec.rb',
-    aggregator: '{tests/rspec/**/rcs-aggregator/**/*_spec.rb,tests/rspec/lib/rcs-db/db_objects/aggregate_spec.rb,tests/rspec/lib/rcs-db/position/po*_spec.rb}',
-    intelligence: '{tests/rspec/**/rcs-intelligence/**/*_spec.rb,tests/rspec/lib/rcs-db/db_objects/entity_spec.rb,tests/rspec/lib/rcs-db/link_manager_spec.rb}'
+    all: 'spec/**/*_spec.rb',
+    db: 'spec/**/rcs-db/**/*_spec.rb',
+    rest: 'spec/**/rcs-db/rest/*_spec.rb',
+    aggregator: '{spec/**/rcs-aggregator/**/*_spec.rb,spec/lib/rcs-db/db_objects/aggregate_spec.rb,spec/lib/rcs-db/position/po*_spec.rb}',
+    intelligence: '{spec/**/rcs-intelligence/**/*_spec.rb,spec/lib/rcs-db/db_objects/entity_spec.rb,spec/lib/rcs-db/link_manager_spec.rb}'
   }
 end
 
