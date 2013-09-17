@@ -131,7 +131,14 @@ factory_define :aggregate do |params|
   target = params.delete(:target) || raise("A target must be supplied")
   attributes = {day: Time.now.strftime('%Y%m%d'), aid: 'agent_id', count: 10}
   attributes.deep_merge! params
-  ::Aggregate.target(target).create! attributes
+
+  summary = ::Aggregate.target(target).find_or_create_by(day: 0, type: :summary)
+  summary[:info] = [] unless summary[:info]
+  summary[:info] << "#{attributes[:type]}_#{attributes[:data][:peer]}"
+  summary[:aid] = 'an_agent_id'
+  summary.save!
+
+  ::Aggregate.target(target).create!(attributes)
 end
 
 factory_define :position_aggregate do |params|
