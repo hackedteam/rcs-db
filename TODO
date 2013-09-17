@@ -7,8 +7,9 @@ TODO 9.0.0
 
     winphone certificate
 
-    fix the target move -> move entity -> remove old links and check for new one
+    [OK] fix the target move -> move entity -> remove old links and check for new one
 
+    fix the target move -> move entity -> resubmit position aggregates to the intelligence queue
 
   TRY:
 
