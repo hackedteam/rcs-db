@@ -65,6 +65,9 @@ class PositionResolver
         elsif request['gpsPosition']
           # GPS to address
           location = get_google_geocoding(request['gpsPosition'])
+        elsif request['gpsTimezone']
+          # GPS to timezone
+          location = get_google_timezone(request['gpsTimezone'])
         elsif request['wifiAccessPoints'] or request['cellTowers']
           # wireless to GPS
           location = get_google_geoposition(request)
@@ -113,6 +116,17 @@ class PositionResolver
         resp = JSON.parse(response.body)
         raise('invalid response') unless resp['results']
         {'address' => {'text' => resp['results'].first['formatted_address']}}
+      end
+    end
+
+    def get_google_timezone(request)
+      # https://developers.google.com/maps/documentation/timezone/
+      Timeout::timeout(5) do
+        response = Frontend.proxy('GET', 'https', 'maps.googleapis.com', "/maps/api/timezone/json?location=#{request['latitude']},#{request['longitude']}&timestamp=#{Time.now.getutc.to_i}&sensor=false")
+        response.kind_of? Net::HTTPSuccess or raise(response.body)
+        resp = JSON.parse(response.body)
+        raise('invalid response') unless resp['status'] == 'OK'
+        {'timezone' => resp }
       end
     end
 

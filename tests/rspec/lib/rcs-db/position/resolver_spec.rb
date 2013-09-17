@@ -90,7 +90,7 @@ describe PositionResolver do
   end
 
   it 'should resolve geoip location' do
-    request = {'ipAddress' => {'ipv4' => '93.62.139.46'}}
+    request = {'ipAddress' => {'ipv4' => '88.50.246.138'}}
     position = PositionResolver.get(request)
     expected = {"latitude" => 45.4667, "longitude" => 9.2, "accuracy" => 20000, "address" => {"text"=>"Via Anselmo Ronchetti, 2-6, 20122 Milan, Italy"}}
 
@@ -110,6 +110,14 @@ describe PositionResolver do
     expected = {"address"=>{"text"=>"Via Fatebenesorelle, 2-14, 20121 Milan, Italy"}}
 
     position.should eq expected
+  end
+
+  it 'should use google to resolve gps coords into timezone offsets' do
+    request = {'gpsTimezone' => {"latitude" => 45.4774536, "longitude" => 9.1906932}}
+    position = PositionResolver.get(request)
+
+    position['timezone']['timeZoneId'].should eq 'Europe/Rome'
+    position['timezone']['rawOffset'].should eq 3600
   end
 
   it 'should use google to resolve gsm cell into gps coords (geolocation)' do
