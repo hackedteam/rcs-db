@@ -156,29 +156,48 @@ describe Item do
 
   describe '#move_target' do
 
+    # First operation
+
     let!(:operation) { factory_create(:operation) }
     let!(:target) { factory_create(:target, operation: operation) }
+    let!(:target2) { factory_create(:target, operation: operation) }
+
+    let!(:agent1) { factory_create(:agent, target: target) }
+
+    let!(:connector1) { factory_create(:connector, item: target) }
+    let!(:connector2) { factory_create(:connector, item: operation) }
+    let!(:connector3) { factory_create(:connector, item: agent1) }
+
+    let!(:entity1) { factory_create(:target_entity, target: target, name: 'bob') }
+    let!(:entity2) { factory_create(:target_entity, target: target2, name: 'eve') }
+
+
+    # Other operation
 
     let!(:other_operation) { factory_create(:operation) }
+    let!(:other_target) { factory_create(:target, operation: other_operation) }
+    let!(:other_entity) { factory_create(:target_entity, target: other_target, name: 'alice') }
 
     before do
-      @agent1 = factory_create(:agent, target: target)
-
-      @connector1 = factory_create(:connector, item: target)
-      @connector2 = factory_create(:connector, item: operation)
-      @connector3 = factory_create(:connector, item: @agent1)
-
+      factory_create(:entity_handle, entity: entity1, name: 'bob', type: 'skype', handle: 'call-bob')
+      factory_create(:entity_handle, entity: other_entity, name: 'alice', type: 'skype', handle: 'call-alice')
+      factory_create(:aggregate, target: other_target, type: 'skype', data: {peer: 'call-bob', versus: :out, sender: 'call-alice'} )
+      factory_create(:entity_link, from: entity1, to: entity2)
       target.move_target(other_operation)
 
-      [target, @agent1, @connector1, @connector2, @connector3].map(&:reload)
+      [target, target2, agent1, connector1, connector2, connector3, entity1, entity2, other_entity].each(&:reload)
     end
 
     context 'the original operation' do
 
-      it 'is empty' do
-        expect(Item.targets.path_include(operation)).to be_empty
+      it 'does not contains the target and its factories and agents' do
+        expect(Item.targets.path_include(operation).to_a).to eq([target2])
         expect(Item.agents.path_include(operation)).to be_empty
         expect(Item.factories.path_include(operation)).to be_empty
+      end
+
+      it 'does not contains the target entity anymore' do
+        expect(Entity.path_include(operation).to_a).to eq([entity2])
       end
     end
 
@@ -192,16 +211,31 @@ describe Item do
 
     context 'the connectors on the target, agents and factories' do
 
-      it 'are updated' do
-        expect(@connector1.path).to eq([other_operation.id, target.id])
-        expect(@connector3.path).to eq([other_operation.id, target.id, @agent1.id])
+      it 'are moved (path updated)' do
+        expect(connector1.path).to eq([other_operation.id, target.id])
+        expect(connector3.path).to eq([other_operation.id, target.id, agent1.id])
       end
     end
 
     context 'the other connectors' do
 
-      it 'are not updated' do
-        expect(@connector2.path).to eq([operation.id])
+      it 'are not moved (path is not updated)' do
+        expect(connector2.path).to eq([operation.id])
+      end
+    end
+
+    context 'target entities' do
+
+      it 'are moved (path updated)' do
+        expect(Entity.targets.path_include(other_operation)).not_to be_empty
+      end
+
+      describe 'links' do
+
+        it 'are recreated to match the new entities' do
+          expect(entity1).not_to be_linked_to(entity2)
+          expect(entity1).to be_linked_to(other_entity)
+        end
       end
     end
   end

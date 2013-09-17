@@ -183,9 +183,17 @@ class Item
     end
 
     # also move the linked entity
+    entities = []
+
     Entity.any_in({type: :target}).in({path: [ self._id ]}).each do |entity|
-      entity.path = self.path + [self._id]
+      entity.update_attributes(path: self.path + [self._id])
+      RCS::DB::LinkManager.instance.del_all_links(entity)
       entity.save
+      entities << entity
+    end
+
+    entities.each do |entity|
+      entity.handles.each { |handle| handle.link! }
     end
   end
 
