@@ -118,6 +118,7 @@ describe PositionResolver do
 
     position['timezone']['timeZoneId'].should eq 'Europe/Rome'
     position['timezone']['rawOffset'].should eq 3600
+    position['timezone']['dstOffset'].should be_between(0, 3600)
   end
 
   it 'should use google to resolve gsm cell into gps coords (geolocation)' do
