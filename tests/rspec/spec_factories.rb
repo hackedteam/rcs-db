@@ -91,6 +91,17 @@ factory_define :entity_handle do |params|
   entity.create_or_update_handle(params[:type], params[:handle], params[:name])
 end
 
+factory_define :entity_link do |params|
+  from = params.delete(:from) || raise("Source entity must be supplied")
+  to = params.delete(:to) || raise("Destination entity must be supplied")
+
+  attributes = {level: :automatic, type: :peer, versus: :out}
+               .merge(params)
+               .merge(from: from, to: to)
+
+  RCS::DB::LinkManager.instance.add_link(attributes)
+end
+
 factory_define :position_entity do |params|
   target = params.delete(:target) || factory_create(:target)
   attributes = params.merge({type: :position, path: [target.get_parent.id, target._id]})
