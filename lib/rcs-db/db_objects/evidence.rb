@@ -150,6 +150,10 @@ module Evidence
       RCS::DB::PushManager.instance.notify('dashboard', message)
     end
 
+    add_to_intelligence_queue
+  end
+
+  def add_to_intelligence_queue
     # Do not check the intelligence license is enabled here. Some of the intelligence
     # features are provided WITHOUT the intelligence license (mind=blow)
     IntelligenceQueue.add(target.id, id, :evidence) if intelligence_relevant?
@@ -437,6 +441,8 @@ module Evidence
         if LicenseManager.instance.check :correlation
           AggregatorQueue.add(target[:_id], new_ev._id, new_ev.type)
         end
+
+        new_ev.add_to_intelligence_queue if LicenseManager.instance.check(:intelligence)
 
         # delete the old one. NOTE CAREFULLY:
         # we use delete + explicit grid, since the callback in the destroy will fail
