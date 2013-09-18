@@ -72,6 +72,11 @@ class ConnectorController < RESTController
 
     mongoid_query do
       connector = ::Connector.find(@params['_id'])
+
+      if connector.in_use?
+        raise("The connector is currently being used thus it cannot be deleted at the moment")
+      end
+
       Audit.log :actor => @session.user[:name], :action => 'connector.destroy', :desc => "Deleted the connector rule [#{connector[:name]}]"
       connector.destroy
 

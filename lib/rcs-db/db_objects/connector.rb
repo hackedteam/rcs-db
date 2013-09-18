@@ -33,7 +33,6 @@ class Connector
   validates_inclusion_of :format, in: FORMATS, if: :local?
   validate :validate_path_is_an_operation, on: :create, if: :remote?
 
-  before_destroy :check_used
   after_destroy :destroy_archive_node, if: :remote?
   after_save :setup_archive_node, if: lambda { remote? and enabled }
 
@@ -75,13 +74,6 @@ class Connector
     type == 'REMOTE'
   end
 
-  # TODO: do the same check when dest of type attributes are being changed
-  def check_used
-    if queued_count > 0
-      raise "The connector #{name} is currently being used thus it cannot be destroyed at the moment."
-    end
-  end
-
   def delete_if_item(id)
     return unless path.include?(id)
     trace :debug, "Deleting Connector because it contains #{id}"
@@ -103,6 +95,10 @@ class Connector
     agent_path = agent.path + [agent._id]
     # Check if the agent path is included in the path
     (agent_path & path) == path
+  end
+
+  def in_use?
+    queued_count > 0
   end
 
   def queued_count
