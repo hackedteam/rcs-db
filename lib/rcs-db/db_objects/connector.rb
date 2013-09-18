@@ -88,10 +88,10 @@ class Connector
     destroy
   end
 
-  def update_path(id, path)
-    return if self.path.last != id
-    trace :debug, "Updating Connector because it contains #{id}"
-    update_attributes! path: path
+  def update_path(replace)
+    trace :debug, "Updating connector #{id} path: #{replace.inspect}"
+    replace.each { |position, value| path[position] = value }
+    save
   end
 
   def match?(evidence)

@@ -35,13 +35,15 @@ class Alert
     end
   end
 
-  def update_path(id, path)
-    if self.path.last == id
-      trace :debug, "Updating Alert because it contains #{id}"
-      self.path = path
-      self.logs.destroy_all
-      self.save
-    end
+  def update_path(replace)
+    trace :debug, "Updating alert #{id} path: #{replace.inspect}"
+
+    replace.each { |position, value| self.path[position] = value }
+
+    self.logs.destroy_all
+    self.last = nil
+
+    save
   end
 
   def self.destroy_old_logs

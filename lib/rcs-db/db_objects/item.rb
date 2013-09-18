@@ -163,36 +163,32 @@ class Item
     trace :debug, "Restat for #{self._kind} #{self.name} performed in #{Time.now - t} secs" if RCS::DB::Config.instance.global['PERF']
   end
 
-  def move_target(operation)
-    self.path = [operation._id]
-    self.users = operation.users
-    self.save
+  def move_target(other_operation)
+    update_attributes(path: [other_operation.id], users: other_operation.users)
 
-    # update the path in alerts and connectors
-    ::Alert.all.each {|a| a.update_path(self._id, self.path + [self._id])}
-    ::Connector.all.each {|a| a.update_path(self._id, self.path + [self._id])}
+    new_target_path = self.path + [self.id]
 
     # move every agent and factory belonging to this target
-    Item.any_in({_kind: ['agent', 'factory']}).in({path: [ self._id ]}).each do |agent|
-      agent.path = self.path + [self._id]
-      agent.save
+    Item
+      .any_in(_kind: ['agent', 'factory'])
+      .where(path: self.id)
+      .update_all(path: new_target_path)
 
-      # update the path in alerts and connectors
-      ::Alert.all.each {|a| a.update_path(agent._id, agent.path + [agent._id])}
-      ::Connector.all.each {|a| a.update_path(agent._id, agent.path + [agent._id])}
-    end
+    # update the path in alerts and connectors (change the operation id)
+    ::Alert.where(path: self.id).each { |c| c.update_path(0 => other_operation.id) }
+    ::Connector.where(path: self.id).each { |c| c.update_path(0 => other_operation.id) }
 
     # also move the linked entity
-    entities = []
+    moved_entities = []
 
-    Entity.any_in({type: :target}).in({path: [ self._id ]}).each do |entity|
-      entity.update_attributes(path: self.path + [self._id])
+    Entity.targets.where(path: self.id).each do |entity|
+      entity.update_attributes(path: new_target_path)
       RCS::DB::LinkManager.instance.del_all_links(entity)
       entity.save
-      entities << entity
+      moved_entities << entity
     end
 
-    entities.each do |entity|
+    moved_entities.each do |entity|
       entity.handles.each { |handle| handle.link! }
     end
   end

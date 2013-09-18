@@ -32,8 +32,9 @@ class MoveagentTask
     @agent.save
 
     # update the path in alerts and connectors
-    ::Alert.all.each {|a| a.update_path(@agent._id, @agent.path + [@agent._id])}
-    ::Connector.all.each {|a| a.update_path(@agent._id, @agent.path + [@agent._id])}
+    replace = {0 => @target.path[0], 1 => @target.path[1]}
+    ::Connector.where(path: @agent.id).each { |c| c.update_path(replace) }
+    ::Alert.where(path: @agent.id).each { |a| a.update_path(replace) }
 
     Audit.log :actor => @params[:user][:name],
               :action => "#{@agent._kind}.move",

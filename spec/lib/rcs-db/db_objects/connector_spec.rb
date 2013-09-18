@@ -145,30 +145,15 @@ describe Connector do
   end
 
   describe '#update_path' do
+    it 'changes the connector\'s path' do
+      connector.update_path(0 => 42)
+      expect(connector.reload.path).to eql [42, target.id]
 
-    context 'when the given id is the last id of connector\'s path' do
+      connector.update_path(1 => 43)
+      expect(connector.reload.path).to eql [42, 43]
 
-      it 'changes the connector\'s path with the given one' do
-        connector.update_path target.id, [1, 2]
-        expect(connector.reload.path).to eql [1, 2]
-      end
-    end
-
-    context 'when the given id isn\'t the last id of the connector\'s path' do
-
-      it 'does not change the connector\'s path' do
-        operation_id = target.path.first
-        connector.update_path operation_id, [1, 2]
-        expect(connector.reload.path).not_to eql [1, 2]
-      end
-    end
-
-    context 'when the given id isn\'t in the connector\'s path' do
-
-      it 'does not change the connector\'s path' do
-        connector.update_path "randomid", [1, 2]
-        expect(connector.reload.path).not_to eql [1, 2]
-      end
+      connector.update_path(0 => 8, 1 => 9)
+      expect(connector.reload.path).to eql [8, 9]
     end
   end
 
