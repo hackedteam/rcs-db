@@ -107,8 +107,8 @@ module Evidence
     self.class.instance_variable_get '@target_id'
   end
 
-  def may_have_readable_text?
-    type == 'screenshot' or (type == 'file' and data[:type] == :capture)
+  def may_have_readable_text_or_face?
+    type == 'screenshot' or (type == 'file' and data[:type] == :capture) or type == 'camera'
   end
 
   def translatable?
@@ -116,7 +116,7 @@ module Evidence
   end
 
   def intelligence_relevant?
-    ['addressbook', 'password', 'position', 'camera'].include?(type)
+    ['addressbook', 'password', 'position'].include?(type)
   end
 
   def enqueue
@@ -128,7 +128,7 @@ module Evidence
     RCS::DB::Alerting.new_evidence(self)
 
     # add to the ocr processor queue
-    if LicenseManager.instance.check(:ocr) and may_have_readable_text?
+    if LicenseManager.instance.check(:ocr) and may_have_readable_text_or_face?
       OCRQueue.add(target.id, id)
     end
 

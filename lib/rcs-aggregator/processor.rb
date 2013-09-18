@@ -48,6 +48,9 @@ class Processor
         sleep 1
       end
     end
+  rescue Interrupt
+    trace :info, "System shutdown. Bye bye!"
+    return 0
   rescue Exception => e
     trace :error, "Thread error: #{e.message}"
     trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")

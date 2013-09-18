@@ -32,7 +32,7 @@ module Intelligence
       context 'when a photo has been associated to the entity' do
         it 'should return without adding the new photo' do
           entity_with_photos.should_not_receive :add_photo
-          described_class.save_first_camera entity_with_photos, empty_evidence
+          described_class.save_picture entity_with_photos, empty_evidence
         end
       end
 
@@ -43,7 +43,7 @@ module Intelligence
         end
 
         it 'should save the new photo' do
-          described_class.save_first_camera entity_without_photos, camera_evidence
+          described_class.save_picture entity_without_photos, camera_evidence
           entity_without_photos.photos.should_not be_empty
         end
       end

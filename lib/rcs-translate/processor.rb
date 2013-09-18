@@ -57,7 +57,7 @@ class Processor
     dump_to_file(entry['target_id'], ev, temp)
     size = File.size(temp)
 
-    # invoke the ocr on the temp file and get the result
+    # invoke the translation on the temp file and get the result
     if SDL.translate(temp, output)
       raise "output file not found" unless File.exist?(output)
     else
@@ -139,5 +139,5 @@ class Processor
 
 end
 
-end #OCR::
+end #Translate::
 end #RCS::

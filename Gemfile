@@ -32,6 +32,8 @@ gem 'bson_ext', "= 1.9.2"
 gem 'mongoid', ">= 3.0.0"
 gem 'rvincenty'
 
+gem 'ruby-opencv'
+
 platforms :jruby do
   gem 'json'
   gem 'jruby-openssl'
