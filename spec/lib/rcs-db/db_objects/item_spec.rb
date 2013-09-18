@@ -209,6 +209,14 @@ describe Item do
       end
     end
 
+    context 'the moved items' do
+
+      it 'has a valid checksum' do
+        expect(target.cs).to eq(target.calculate_checksum)
+        expect(agent1.cs).to eq(agent1.calculate_checksum)
+      end
+    end
+
     context 'the connectors on the target, agents and factories' do
 
       it 'are moved (path updated)' do

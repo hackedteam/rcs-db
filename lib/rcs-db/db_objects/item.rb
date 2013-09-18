@@ -172,7 +172,7 @@ class Item
     Item
       .any_in(_kind: ['agent', 'factory'])
       .where(path: self.id)
-      .update_all(path: new_target_path)
+      .each { |item| item.update_attributes!(path: new_target_path) }
 
     # update the path in alerts and connectors (change the operation id)
     ::Alert.where(path: self.id).each { |c| c.update_path(0 => other_operation.id) }
