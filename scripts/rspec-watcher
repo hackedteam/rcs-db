@@ -4,7 +4,7 @@ require 'fssm'
 require 'colorize'
 
 $root_path = File.expand_path File.join(File.dirname(__FILE__), '..')
-$spec_path = File.join $root_path, 'tests/rspec'
+$spec_path = File.join $root_path, 'spec'
 
 def send_system_notification result, msg, interval
   bin_name = result && 'success' || 'failed'
@@ -18,28 +18,35 @@ end
 
 def spec filepath
   spec_filepath = File.join $root_path, filepath
-  cmd = "cd \"#{$root_path}\"; rspec -I tests/rspec --color --format doc \"#{spec_filepath}\" --tag ~speed:slow"
+  cmd = "cd \"#{$root_path}\"; rspec -I spec --color --format doc \"#{spec_filepath}\" --tag ~speed:slow"
+  cmd << " --example \"#{$opts[:example]}\"" if $opts[:example]
   start = Time.now
   result = system(cmd)
   send_system_notification(result, filepath, Time.now - start) rescue nil
 end
 
 def changed filepath
+  can_run = !$opts[:regexp] || ($opts[:regexp] && Regexp.new($opts[:regexp]).match(filepath))
+
+  return unless can_run
+
   log "The file #{filepath} has changed!"
 
   if filepath =~ /.*_spec.rb/
     spec filepath
   else
-    spec_filepath = "tests/rspec/" + filepath.gsub('.rb', '_spec.rb')
+    spec_filepath = "spec/" + filepath.gsub('.rb', '_spec.rb')
     spec spec_filepath if File.exists?(spec_filepath)
   end
 end
 
-def monitor path
+def monitor path, opts = {}
   log "Watching for changes #{path}..."
-  FSSM.monitor(path, '*.rb') do
+  FSSM.monitor(path, '**/*.rb') do
     update { |f, r| changed(r) }
   end
 end
 
-monitor $root_path
+$opts = {:regexp => ARGV[0], :example => ARGV[1]}
+puts "Options: " + $opts.inspect
+monitor($root_path)
