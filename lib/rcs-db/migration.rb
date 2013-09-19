@@ -23,7 +23,7 @@ module Migration
 
     run [:recalculate_checksums, :drop_sessions] if version >= '8.4.1'
     run [:fix_connectors, :fix_position_evidences] if version >= '9.0.0'
-    run [:fix_recents] if version >= '9.0.0'
+    run [:fix_recents, :fix_redirection_tag] if version >= '9.0.0'
 
     return 0
   end
@@ -59,6 +59,17 @@ module Migration
     end
 
     return 0
+  end
+
+  def fix_redirection_tag
+    count = 0
+
+    Injector.where(redirection_tag: 'ww').each do |injector|
+      injector.update_attributes(redirection_tag: 'cdn')
+
+      count += 1
+      print "\r%d injectors migrated" % count
+    end
   end
 
   def fix_connectors

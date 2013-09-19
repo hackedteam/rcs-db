@@ -40,7 +40,7 @@ class InjectorController < RESTController
                              poll: @params['poll'],
                              configured: false,
                              redirect: 'auto',
-                             redirection_tag: 'ww')
+                             redirection_tag: 'cdn')
 
     Audit.log :actor => @session.user[:name], :action => 'injector.create', :desc => "Created the injector '#{@params['name']}'"
 
