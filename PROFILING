@@ -22,6 +22,13 @@ Rcs profiling
       { $limit: 10 }
     )
 
+  * 10 most requested rest path with average resp time
+
+    db.profile.aggregate(
+      { $group: {_id: '$uriwp', cnt: {$sum: 1}, avg_resp_time: {$avg: '$time.total'}} },
+      { $sort: {cnt: -1} },
+      { $limit: 20 }
+    )
 
   * 10 rest call with the highest rate of em-thread-queue busy
 
