@@ -2,7 +2,6 @@ Profiling
 
   Mongo profiling
 
-
     * Slow queries aggregated by operation
 
       db.system.profile.aggregate(
@@ -10,6 +9,13 @@ Profiling
         { $group: {_id: '$op', cnt: {$sum: 1}} }
       )
 
+    * Queries that scans the most
+
+      db.system.profile.aggregate(
+        { $match: {op: 'query', 'ns': {$nin: ['rcs.profile', 'rcs.system.profile'] }} },
+        { $group: {_id: '$ns', avg_scans: {$avg: '$nscanned'}, cnt: {$sum: 1}} },
+        { $sort: {avg_scans: -1} }
+      )
 
 Rcs profiling
 
