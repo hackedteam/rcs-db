@@ -19,7 +19,8 @@ def rspec_tasks
     db: 'spec/**/rcs-db/**/*_spec.rb',
     rest: 'spec/**/rcs-db/rest/*_spec.rb',
     aggregator: '{spec/**/rcs-aggregator/**/*_spec.rb,spec/lib/rcs-db/db_objects/aggregate_spec.rb,spec/lib/rcs-db/position/po*_spec.rb}',
-    intelligence: '{spec/**/rcs-intelligence/**/*_spec.rb,spec/lib/rcs-db/db_objects/entity_spec.rb,spec/lib/rcs-db/link_manager_spec.rb}'
+    intelligence: '{spec/**/rcs-intelligence/**/*_spec.rb,spec/lib/rcs-db/db_objects/entity_spec.rb,spec/lib/rcs-db/link_manager_spec.rb}',
+    ocr: 'spec/**/rcs-ocr/**/*_spec.rb'
   }
 end
 

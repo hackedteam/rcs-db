@@ -36,30 +36,22 @@ int detect_and_draw_faces( IplImage* image, CvHaarClassifierCascade* cascade)
 	return faces->total;
 }
 
-CvHaarClassifierCascade *load_classifier(char *file) 
-{
-	CvHaarClassifierCascade *classifier = NULL;
-	classifier = (CvHaarClassifierCascade*)cvLoad(file, 0, 0, 0);
-
-	if (!CV_IS_HAAR_CLASSIFIER(classifier)) {
-		printf("Cannot load haar classifier file: %s\n", file);
-		exit(1);
-	}
-	return classifier;
-}
-
 FACE_API int detect_faces(char* input_file, char *xml, int display) 
 {
 	CvHaarClassifierCascade *classifier = NULL;
 	IplImage* image = NULL;
 	int faces;
 
-	classifier = load_classifier(xml);
+	classifier = (CvHaarClassifierCascade*)cvLoad(xml, 0, 0, 0);
+	if (!CV_IS_HAAR_CLASSIFIER(classifier)) {
+		printf("Cannot load haar classifier file: %s\n", xml);
+		return -1;
+	}
 
 	image = cvLoadImage( input_file );
 	if (image == NULL) {
 		printf("Cannot load image: %s\n", input_file);
-		exit(2);
+		return -2;
 	}
 
 	faces = detect_and_draw_faces( image, classifier);

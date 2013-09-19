@@ -64,6 +64,10 @@ def require_intelligence(file)
   rcs_require('lib/rcs-intelligence/', file)
 end
 
+def require_ocr(file)
+  rcs_require('lib/rcs-ocr/', file)
+end
+
 def require_worker(file)
   rcs_require('lib/rcs-worker/', file)
 end
