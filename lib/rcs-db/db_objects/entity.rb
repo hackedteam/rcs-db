@@ -45,6 +45,8 @@ class Entity
   index({name: 1}, {background: true})
   index({type: 1}, {background: true})
   index({path: 1}, {background: true})
+  index({level: 1}, {background: true})
+  index({user_ids: 1}, {background: true})
   index({"handles.type" => 1}, {background: true})
   index({"handles.handle" => 1}, {background: true})
   index({position: "2dsphere"}, {background: true})
