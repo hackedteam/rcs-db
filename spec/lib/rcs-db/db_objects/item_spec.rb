@@ -182,6 +182,9 @@ describe Item do
       factory_create(:entity_handle, entity: entity1, name: 'bob', type: 'skype', handle: 'call-bob')
       factory_create(:entity_handle, entity: other_entity, name: 'alice', type: 'skype', handle: 'call-alice')
       factory_create(:aggregate, target: other_target, type: 'skype', data: {peer: 'call-bob', versus: :out, sender: 'call-alice'} )
+
+      2.times { factory_create(:position_aggregate, target: target) }
+
       factory_create(:entity_link, from: entity1, to: entity2)
       target.move_target(other_operation)
 
@@ -243,6 +246,13 @@ describe Item do
         it 'are recreated to match the new entities' do
           expect(entity1).not_to be_linked_to(entity2)
           expect(entity1).to be_linked_to(other_entity)
+        end
+      end
+
+      describe 'postion aggregates' do
+
+        it 'are resubmitted to the intelligence queue' do
+          expect(IntelligenceQueue.count).to eq(2)
         end
       end
     end

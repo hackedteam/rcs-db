@@ -190,6 +190,8 @@ class Item
 
     moved_entities.each do |entity|
       entity.handles.each { |handle| handle.link! }
+
+      Aggregate.target(entity.target_id).positions.each(&:add_to_intelligence_queue)
     end
   end
 

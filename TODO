@@ -7,12 +7,6 @@ TODO 9.0.0
 
     winphone certificate
 
-    [OK] fix the target move -> move entity -> remove old links and check for new one
-
-    fix the target move -> move entity -> resubmit position aggregates to the intelligence queue
-
-    [OK] fix #offload_move_agent / add the evidence to the intelligence queue if proper type
-
   TRY:
 
     hash index for sharding (topac - on branch 9.0.x)
