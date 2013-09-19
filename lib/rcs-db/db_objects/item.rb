@@ -50,12 +50,18 @@ class Item
 
   # checksum
   field :cs, type: String
-  
+
+  CHECKSUM_ARGUMENTS = [:_id, :name, :counter, :status, :_kind, :path]
+  AGENT_CHECKSUM_ARGUMENTS = [:instance, :type, :platform, :deleted, :uninstalled, :demo, :upgradable, :scout, :good]
+
+  # scopes
+  scope :only_checksum_arguments, only(CHECKSUM_ARGUMENTS + AGENT_CHECKSUM_ARGUMENTS + [:cs])
   scope :operations, where(_kind: 'operation')
   scope :targets, where(_kind: 'target')
   scope :agents, where(_kind: 'agent')
   scope :factories, where(_kind: 'factory')
   scope :path_include, lambda { |item| where('path' => {'$in' =>[item.kind_of?(Item) ? item._id : Moped::BSON::ObjectId.from_string(item.to_s)]}) }
+
 
   # for the access control
   has_and_belongs_to_many :users, :dependent => :nullify, :autosave => true, inverse_of: nil, index: true
@@ -623,13 +629,13 @@ class Item
 
   def calculate_checksum
     # take the fields that are relevant and calculate the checksum on it
-    hash = [self._id, self.name, self.counter, self.status, self._kind, self.path]
+    args = CHECKSUM_ARGUMENTS.map { |name| attributes[name.to_s] }
 
     if self._kind == 'agent'
-      hash << [self.instance, self.type, self.platform, self.deleted, self.uninstalled, self.demo, self.upgradable, self.scout, self.good]
+      args << AGENT_CHECKSUM_ARGUMENTS.map { |name| attributes[name.to_s] }
     end
 
-    aes_encrypt(Digest::SHA1.digest(hash.inspect), Digest::SHA1.digest("∫∑x=1 ∆t")).unpack('H*').first
+    aes_encrypt(Digest::SHA1.digest(args.inspect), Digest::SHA1.digest("∫∑x=1 ∆t")).unpack('H*').first
   end
 end
 
