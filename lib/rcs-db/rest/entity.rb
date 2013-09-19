@@ -20,7 +20,8 @@ class EntityController < RESTController
 
       entities = ::Entity.collection.find(filter).select(fields).entries.map! do |ent|
         link_size = ent['links'] ? ent['links'].keep_if {|x| x['level'] != :ghost}.size : 0
-        ent.delete('links')
+        # don't send ghost links
+        ent['links'].keep_if {|l| l['level'] != :ghost} if ent['links']
         ent['num_links'] = link_size
         ent['position'] = {longitude: ent['position'][0], latitude: ent['position'][1]} if ent['position'].is_a? Array
         ent
