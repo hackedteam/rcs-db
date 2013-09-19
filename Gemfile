@@ -45,5 +45,4 @@ group :development do
   gem 'simplecov'
   gem 'rspec'
   gem 'pry'
-  gem 'pry-nav'
 end

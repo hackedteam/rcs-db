@@ -1,149 +1,172 @@
 #!/usr/bin/env ruby
+require 'optparse'
 
-def verbose?
-  ARGV.include? '--verbose'
-end
+module RCSConsole
+  extend self
 
-def root_path
-  @root_path ||= begin
-    current_path = File.dirname __FILE__
-    root_path = File.expand_path File.join(current_path, '..')
+  def verbose?
+    ARGV.include? '--verbose'
   end
-end
 
-def _require path
-  full_path = File.join root_path, 'lib/rcs-db', path
-
-  if File.exists? "#{full_path}.rb"
-    puts "#{full_path}.rb" if verbose?
-    load "#{full_path}.rb"
-  else
-    if Dir.exists? full_path
-      Dir[File.join(full_path, "*.rb")].each { |p| _require(p) }
+  def root_path
+    @root_path ||= begin
+      current_path = File.dirname __FILE__
+      root_path = File.expand_path File.join(current_path, '..')
     end
   end
-end
 
-def ignoring_warnings
-  v, $VERBOSE = $VERBOSE, nil
-  yield if block_given?
-ensure
-  $VERBOSE = v
-end
+  def _require path
+    full_path = File.join root_path, 'lib/rcs-db', path
 
-def reload!
-  puts 'Loading application...'
-
-  ignoring_warnings do
-    $: << File.expand_path(File.join(root_path, '../rcs-common/lib'))
-
-    _require 'heartbeat'
-    _require 'parser'
-    _require 'sessions'
-    _require 'backup'
-    _require 'websocket'
-    _require 'push'
-    _require 'events'
-    _require 'config'
-    _require 'core'
-    _require 'license'
-    _require 'tasks'
-    _require 'offload_manager'
-    _require 'statistics'
-    _require 'backup'
-    _require 'sessions'
-    _require 'audit'
-
-    # require all the DB objects
-    _require 'db_layer'
-  end
-end
-
-def usage?
-  return unless ARGV.include?('--help')
-  puts "Usage: #{File.basename(__FILE__)} [--db=NAME] [--host=ADDR]"
-  puts "Default connection is to localhost:27017/rcs-test"
-  exit
-end
-
-def colorize(text)
-  "\033[30;42m#{text}\033[0m "
-end
-
-def setup(host, db)
-  puts 'Loading bundle...'
-
-  require 'bundler/setup'
-  Bundler.setup
-  Bundler.require :development
-
-  reload!
-
-  # Load default options
-  RCS::DB::Config.instance.load_from_file
-
-  # Override options
-  host, port = host.split(':')
-  port ||= '27017'
-
-  RCS::DB::Config.instance.global['CN'] = host
-
-  if RCS::DB::Config.instance.global['DB']
-    RCS::DB::Config.instance.global['DB'] = db
-  end
-
-  ENV['MONGOID_DATABASE'] = db
-  ENV['MONGOID_HOST'] = host
-  ENV['MONGOID_PORT'] = port
-
-  puts colorize("Using #{host}:#{port}/#{db}")
-
-  RCS::DB::DB.instance.connect
-
-  Mongoid.override_database(db)
-  Mongoid.default_session.use(db)
-
-  # Show moped queries
-  Moped.logger = Logger.new $stdout
-  Moped.logger.level = 0
-  Moped.logger.formatter = proc { |sev, time, progname, str| colorize("#{str}\n") }
-end
-
-def get_argv(prefix)
-  value = ARGV.find { |v| v =~ /#{prefix}=/ }
-  value = value.split('=').last if value
-  value unless value.to_s.strip.empty?
-end
-
-def _bm(times = 1, &block)
-  es = []
-  times.times do
-    t = Time.now
-    yield
-    es << (Time.now - t)
-  end
-  total = es.inject(0) { |t,n| t += n; t }
-  avg = total.to_f / times.to_f
-
-  msg = "Avg on #{times} executions is #{avg} sec."
-
-  if @_bm_last_result
-    if avg >= @_bm_last_result
-      msg << " #{((100 * (avg - @_bm_last_result)) / avg).round(2)}% loss."
+    if File.exists? "#{full_path}.rb"
+      puts "#{full_path}.rb" if verbose?
+      load "#{full_path}.rb"
     else
-      msg << " #{((100 * (@_bm_last_result - avg)) / @_bm_last_result).round(2)}% gain."
+      if Dir.exists? full_path
+        Dir[File.join(full_path, "*.rb")].each { |p| _require(p) }
+      end
     end
   end
 
-  puts msg
-  @_bm_last_result = avg
+  def ignoring_warnings
+    v, $VERBOSE = $VERBOSE, nil
+    yield if block_given?
+  ensure
+    $VERBOSE = v
+  end
+
+  def colorize(text)
+    "\033[30;42m#{text}\033[0m "
+  end
+
+  def reload!
+    puts 'Loading application...'
+
+    ignoring_warnings do
+      $: << File.expand_path(File.join(root_path, '../rcs-common/lib'))
+
+      _require 'heartbeat'
+      _require 'parser'
+      _require 'sessions'
+      _require 'backup'
+      _require 'websocket'
+      _require 'push'
+      _require 'events'
+      _require 'config'
+      _require 'core'
+      _require 'license'
+      _require 'tasks'
+      _require 'offload_manager'
+      _require 'statistics'
+      _require 'backup'
+      _require 'sessions'
+      _require 'audit'
+
+      # require all the DB objects
+      _require 'db_layer'
+    end
+  end
+
+  def setup(host, db)
+    puts 'Loading bundle...'
+
+    require 'bundler/setup'
+    Bundler.setup
+    Bundler.require :development
+
+    reload!
+
+    # Load default options
+    RCS::DB::Config.instance.load_from_file
+
+    # Override options
+    host, port = host.split(':')
+    port ||= '27017'
+
+    RCS::DB::Config.instance.global['CN'] = host
+
+    if RCS::DB::Config.instance.global['DB']
+      RCS::DB::Config.instance.global['DB'] = db
+    end
+
+    ENV['MONGOID_DATABASE'] = db
+    ENV['MONGOID_HOST'] = host
+    ENV['MONGOID_PORT'] = port
+
+    puts colorize("Using #{host}:#{port}/#{db}")
+
+    RCS::DB::DB.instance.connect
+
+    Mongoid.override_database(db)
+    Mongoid.default_session.use(db)
+
+    # Show moped queries
+    Moped.logger = Logger.new $stdout
+    Moped.logger.level = 0
+    Moped.logger.formatter = proc { |sev, time, progname, str| colorize("#{str}\n") }
+  end
+
+  def bm(times = 1, &block)
+    es = []
+    times.times do
+      t = Time.now
+      yield
+      es << (Time.now - t)
+    end
+    total = es.inject(0) { |t,n| t += n; t }
+    avg = total.to_f / times.to_f
+
+    msg = "Avg on #{times} executions is #{avg} sec."
+
+    if @_bm_last_result
+      if avg >= @_bm_last_result
+        msg << " #{((100 * (avg - @_bm_last_result)) / avg).round(2)}% loss."
+      else
+        msg << " #{((100 * (@_bm_last_result - avg)) / @_bm_last_result).round(2)}% gain."
+      end
+    end
+
+    puts msg
+    @_bm_last_result = avg
+  end
+
+  def run
+    options = {}
+
+    optparse = OptionParser.new do |opts|
+      opts.banner = "Usage: console [options]"
+      opts.on( '-h HOST', '--host HOST:PORT', String, 'Ip addr (and port), default is 127.0.0.1:27017') { |value| options[:host] = value }
+      opts.on( '-d DB', '--db DB', String, 'Database name, default is rcs-test') { |value| options[:db] = value }
+      opts.on( '-s SSH_CONFIG', '--ssh-config PORT', String, 'Read ip and port from the given ssh config, ignores -h and -d') { |value| options[:ssh_config] = value }
+    end
+
+    optparse.parse(ARGV)
+
+    if options[:ssh_config]
+      host = host_from_ssh_config(options[:ssh_config])
+      if host
+        options[:host] = host
+        options[:db] = 'rcs'
+      else
+        puts "Cannot find a configuratio named #{ssh_config}"
+      end
+    end
+
+    setup(options[:host] || '127.0.0.1:27017', options[:db] || 'rcs-test')
+  end
+
+  def host_from_ssh_config(config_name)
+    path = File.expand_path('~/.ssh/config')
+    return unless File.exists?(path)
+    File.open(path) do |f|
+      segment = false
+      f.lines do |line|
+        segment = true if line =~ /Host\s+#{config_name}/
+        return line.gsub('HostName', '').strip if segment && line =~ /^\s*HostName.+/
+      end
+    end
+  end
 end
 
-usage?
-
-host = get_argv('--host') || 'localhost:27017'
-db = get_argv('--db') || 'rcs-test'
-
-setup(host, db)
-
+RCSConsole.run
 binding.pry

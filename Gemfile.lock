@@ -85,8 +85,6 @@ GEM
       coderay (~> 1.0.5)
       method_source (~> 0.8)
       slop (~> 3.4)
-    pry-nav (0.2.3)
-      pry (~> 0.9.10)
     rake (10.1.0)
     rest-client (1.6.7)
       mime-types (>= 1.16)
@@ -140,7 +138,6 @@ DEPENDENCIES
   persistent_http
   plist
   pry
-  pry-nav
   rake
   rcs-common (>= 9.0.0)!
   rest-client
