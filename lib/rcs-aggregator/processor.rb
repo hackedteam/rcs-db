@@ -111,11 +111,11 @@ class Processor
     agg.add_to_set(:info, datum[:timeframe])
 
     # we have to alert the intelligence for every new timeframe saved in the aggregate
-    IntelligenceQueue.add(entry['target_id'], agg._id, :aggregate) if check_intelligence_license
+    agg.add_to_intelligence_queue if check_intelligence_license
 
     agg.inc(:count, 1)
 
-    return agg
+    agg
   end
 
   def self.aggregate_peer(datum, entry, params)
@@ -128,7 +128,7 @@ class Processor
     # if it's new, add the entry to the summary and notify the intelligence
     if agg.count == 0
       Aggregate.target(entry['target_id']).add_to_summary(params[:type], datum[:peer])
-      IntelligenceQueue.add(entry['target_id'], agg._id, :aggregate) if check_intelligence_license
+      agg.add_to_intelligence_queue if check_intelligence_license
     end
 
     # we are sure we have the object persisted in the db

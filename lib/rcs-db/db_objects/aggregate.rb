@@ -64,6 +64,14 @@ module Aggregate
     end
   end
 
+  def target_id
+    self.class.instance_variable_get '@target_id'
+  end
+
+  def add_to_intelligence_queue
+    IntelligenceQueue.add(target_id, id, :aggregate)
+  end
+
   module ClassMethods
     def create_collection
       # create the collection for the target's aggregate and shard it

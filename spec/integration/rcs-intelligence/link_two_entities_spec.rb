@@ -40,7 +40,7 @@ describe 'There are two entities in the same operation' do
 
     let(:chat_evidence) { Evidence.target(target.id).create!(da: Time.now.to_i, aid: agent.id, type: :chat, data: chat_data) }
 
-    before { AggregatorQueue.add target.id, chat_evidence.id, chat_evidence.type }
+    before { chat_evidence.add_to_aggregator_queue }
 
     it 'links the two entities' do
       RCS::Aggregator::Processor.process AggregatorQueue.get_queued([:chat]).first
@@ -59,7 +59,7 @@ describe 'There are two entities in the same operation' do
 
     let(:chat_evidence) { Evidence.target(target.id).create!(da: Time.now.to_i, aid: agent.id, type: :chat, data: chat_data) }
 
-    before { AggregatorQueue.add target.id, chat_evidence.id, chat_evidence.type }
+    before { chat_evidence.add_to_aggregator_queue }
 
     it 'links the two entities' do
       RCS::Aggregator::Processor.process AggregatorQueue.get_queued([:chat]).first

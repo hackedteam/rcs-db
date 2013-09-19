@@ -141,7 +141,7 @@ module Evidence
 
     # add to the aggregator queue
     if LicenseManager.instance.check(:correlation)
-      AggregatorQueue.add(target.id, id, type)
+      add_to_aggregator_queue
     end
 
     WatchedItem.matching(agent, target, target.get_parent) do |item, user_ids|
@@ -154,9 +154,11 @@ module Evidence
   end
 
   def add_to_intelligence_queue
-    # Do not check the intelligence license is enabled here. Some of the intelligence
-    # features are provided WITHOUT the intelligence license (mind=blow)
-    IntelligenceQueue.add(target.id, id, :evidence) if intelligence_relevant?
+    IntelligenceQueue.add(target_id, id, :evidence) if intelligence_relevant?
+  end
+
+  def add_to_aggregator_queue
+    AggregatorQueue.add(target_id, id, type)
   end
 
   def self.target(target)
@@ -439,7 +441,7 @@ module Evidence
 
         # add to the aggregator queue the evidence (we need to recalculate them in the new target)
         if LicenseManager.instance.check :correlation
-          AggregatorQueue.add(target[:_id], new_ev._id, new_ev.type)
+          new_ev.add_to_aggregator_queue
         end
 
         new_ev.add_to_intelligence_queue if LicenseManager.instance.check(:intelligence)
