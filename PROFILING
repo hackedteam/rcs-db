@@ -44,3 +44,12 @@ Rcs profiling
       { $sort: {busy_rate: -1} },
       { $limit: 10 }
     )
+
+  * 20 bigger (in size) rest call
+
+    db.profile.aggregate(
+      { $match: {size: {$not: {$type: 2}}} },
+      { $group: {_id: '$uriwp', avg_size: {$avg: '$size'}, cnt: {$sum: 1}} },
+      { $sort: {avg_size: -1} },
+      { $limit: 20 }
+    )
