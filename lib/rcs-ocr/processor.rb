@@ -86,7 +86,7 @@ class Processor
 
     FileUtils.rm_rf temp
 
-    trace :info, "Evidence processed in #{Time.now - start} seconds - #{ev.type} #{size.to_s_bytes} -> text #{data[:body].size.to_s_bytes}"
+    trace :info, "Evidence processed in #{Time.now - start} seconds - #{ev.type} #{size.to_s_bytes}"
 
     # check if there are matching alerts for this evidence
     RCS::DB::Alerting.new_evidence(ev)
@@ -120,6 +120,8 @@ class Processor
     ev[:data] = data
     ev[:kw] += ocr_text.keywords
 
+    trace :info, "Text size is: #{data[:body].size.to_s_bytes}"
+
     ev.save
   end
 
@@ -129,6 +131,8 @@ class Processor
     # take a copy of evidence data (we need to do this to trigger the mongoid save)
     data = ev[:data].dup
     data.merge! processed
+
+    trace :info, "Face recognition output: #{processed.inspect}"
 
     # update the evidence with the new parameters
     ev[:data] = data

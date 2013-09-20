@@ -16,7 +16,9 @@ class Camera
 
     def save_picture(entity, evidence)
       # don't save picture without faces
-      return if evidence.data['face'] == :false
+      return unless evidence.data['face'] == true
+
+      trace :debug, "Face reco is: #{evidence.data['face'].inspect}"
 
       # save only the first three pictures
       return if entity.photos.size >= 3
