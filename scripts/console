@@ -137,7 +137,7 @@ module RCSConsole
       opts.banner = "Usage: console [options]"
       opts.on( '-h HOST', '--host HOST:PORT', String, 'Ip addr (and port), default is 127.0.0.1:27017') { |value| options[:host] = value }
       opts.on( '-d DB', '--db DB', String, 'Database name, default is rcs-test') { |value| options[:db] = value }
-      opts.on( '-s SSH_CONFIG', '--ssh-config PORT', String, 'Read ip and port from the given ssh config, ignores -h and -d') { |value| options[:ssh_config] = value }
+      opts.on( '-s SSH_CONFIG', '--ssh-config SSH_CONFIG', String, 'Read ip and port from the given ssh config, ignores -h and -d') { |value| options[:ssh_config] = value }
     end
 
     optparse.parse(ARGV)
