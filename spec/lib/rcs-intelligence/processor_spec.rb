@@ -116,10 +116,11 @@ describe Processor do
 
     context 'given an aggregate of type "position"' do
       let(:position_aggregate_of_bob) { aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: :position, aid: 'agent_id') }
+      let(:target) { factory_create(:target, operation: operation_x) }
+      let(:entity) { factory_create(:target_entity, target: target) }
 
       it 'calls #process_position_aggregate' do
         described_class.should_receive :process_position_aggregate
-        entity = double()
         described_class.process_aggregate entity, position_aggregate_of_bob
       end
     end

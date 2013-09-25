@@ -105,7 +105,10 @@ class Processor
   # Process the aggregate and (eventually) link the entities
   def self.process_aggregate entity, aggregate
     if aggregate.type == :position
-      process_position_aggregate entity, aggregate
+      process_position_aggregate(entity, aggregate)
+
+      target = Item.find(entity.target_id)
+      Position.suggest_recurring_positions(target, aggregate)
     else
       process_peer_aggregate entity, aggregate
     end
