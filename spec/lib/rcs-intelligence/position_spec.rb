@@ -82,9 +82,82 @@ module Intelligence
           end
         end
       end
+    end
 
+    describe '#recurring_positions' do
+      before do
+        @day = 20130120
+        @aggregate = factory_create(:position_aggregate, target: target, day: @day, lat: 1, lon: 2)
+      end
+
+      context 'when there are at least 3 position in the prev week' do
+        before do
+          factory_create(:position_aggregate, target: target, day: @day - 1, lat: 1, lon: 2, rad: 20)
+          factory_create(:position_aggregate, target: target, day: @day - 2, lat: 1, lon: 2, rad: 10)
+          factory_create(:position_aggregate, target: target, day: @day - 3, lat: 1, lon: 2, rad: 40)
+          factory_create(:position_aggregate, target: target, day: @day - 3, lat: 7, lon: 8, rad: 40)
+        end
+
+        it 'returns their ids' do
+          results = described_class.recurring_positions(target, @aggregate)
+          expect(results).to eq([{:position=>[2, 1], :radius=>10}])
+        end
+      end
+
+      context 'when there aren\'t at least 3 position in the prev week' do
+        before do
+          factory_create(:position_aggregate, target: target, day: @day - 1, lat: 1, lon: 2, rad: 20)
+          factory_create(:position_aggregate, target: target, day: @day - 2, lat: 1, lon: 2, rad: 10)
+          factory_create(:position_aggregate, target: target, day: @day - 8, lat: 1, lon: 2, rad: 40)
+        end
+
+        it 'returns their ids' do
+          results = described_class.recurring_positions(target, @aggregate)
+          expect(results).to eq([])
+        end
+      end
+    end
+
+    describe '#suggest_recurring_positions' do
+      before do
+        @aggregate = factory_create(:position_aggregate, target: target, day: 20130120, lat: 1, lon: 2)
+
+        described_class.should respond_to(:recurring_positions)
+        described_class.stub(:recurring_positions).and_return([{:position=>[9.1919074, 45.4768394], :radius=>100}])
+
+
+        Entity.create_indexes
+      end
+
+      context "when there aren't similar position entities" do
+        before { expect(Entity.positions).to be_empty }
+
+        it 'creates a position entity' do
+          Entity.any_instance.should_receive(:fetch_address).once
+
+          expect {
+            described_class.suggest_recurring_positions(target, @aggregate)
+          }.to change(Entity.positions, :count).from(0).to(1)
+
+          new_entity = Entity.positions.first
+
+          expect(new_entity.position).to eq([9.1919074, 45.4768394])
+          expect(new_entity.level).to eq(:suggested)
+          expect(new_entity.position_attr['accuracy']).to eq(100)
+          expect(new_entity.path).to eq([operation.id])
+        end
+      end
+
+      context "when there are similar position entities" do
+        before { factory_create(:position_entity, path: [operation.id], lat: 45.4768393, lon: 9.191905, rad: 150) }
+
+        it 'does not create a new position entity' do
+          expect {
+            described_class.suggest_recurring_positions(target, @aggregate)
+          }.not_to change(Entity.positions, :count)
+        end
+      end
     end
   end
-
 end
 end

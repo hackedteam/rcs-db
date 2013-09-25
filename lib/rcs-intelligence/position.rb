@@ -26,8 +26,43 @@ class Position
       trace :info, "Saving last position for #{entity.name}: #{entity.last_position.inspect}"
     end
 
-  end
+    def recurring_positions(target, aggregate)
+      date = aggregate.day
+      min_week_appearence_freq = 3
+      a_week_ago = (Date.new(date[0..3].to_i, date[4..5].to_i, date[6..7].to_i) - 7).strftime('%Y%m%d')
 
+      # Select all the position aggregates since a week ago (from the current aggregate day)
+      # Group by position.
+      # NOTE: it can be one distinct position per day (by design)
+      # Take only the aggregates that appear at least 3 times
+      recurring = Aggregate.target(target).collection.aggregate([
+        { '$match' =>  {'type' => 'position', 'day' => {'$gte' => a_week_ago, '$lt' => date}} },
+        { '$group' => {'_id' => '$data.position', cnt: {'$sum' => 1}, rad: {'$min' => '$data.radius'}} },
+        { '$match' => {'cnt' => {'$gte' => min_week_appearence_freq}} },
+        { '$project' => {_id: 1, rad: 1 } }
+      ])
+
+      recurring.map! { |doc| {position: doc["_id"], radius: doc["rad"]} }
+    end
+
+    def suggest_recurring_positions(target, aggregate)
+      operation_id = target.path[0]
+
+      recurring_positions(target, aggregate).each do |hash|
+        attributes = {type: :position, path: [operation_id], position: hash[:position], level: :suggested, position_attr: {accuracy: hash[:radius]}}
+        new_position_entity = Entity.new(attributes)
+
+        similar_position_entity = Entity.path_include(operation_id).positions_within(new_position_entity.position).to_a.find { |e|
+          e.to_point.similar_to?(new_position_entity.to_point)
+        }
+
+        next if similar_position_entity
+
+        new_position_entity.save!
+        new_position_entity.fetch_address
+      end
+    end
+  end
 end
 
 end
