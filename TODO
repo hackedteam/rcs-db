@@ -28,7 +28,7 @@ TODO 9.1.x
 
     statistic analyzer
       automatic detection of home / office (needs timezone for each entity)
-      frequencer for places
+      [OK] frequencer for places
 
   IDEAS:
     message quque on entities
