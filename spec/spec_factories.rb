@@ -103,8 +103,20 @@ factory_define :entity_link do |params|
 end
 
 factory_define :position_entity do |params|
-  target = params.delete(:target) || factory_create(:target)
-  attributes = params.merge({type: :position, path: [target.get_parent.id, target._id]})
+  lat = params.delete(:lat) || params.delete(:latitude) || 45.4768394
+  lon = params.delete(:lon) || params.delete(:longitude) || 9.1919074
+  rad = params.delete(:rad) || params.delete(:radius) || 30
+  path = params.delete(:path)
+
+  unless path
+    target = params.delete(:target) || factory_create(:target)
+    path = [target.path[0], target.id]
+  end
+
+  attributes = {position: [lon, lat], position_attr: {'accuracy' => rad}, level: :automatic, name: "Position_#{rand(1E4)}"}
+  attributes.merge!(params)
+  attributes.merge!(type: :position, path: path)
+
   ::Entity.create!(attributes)
 end
 
@@ -142,7 +154,11 @@ factory_define :aggregate do |params|
 end
 
 factory_define :position_aggregate do |params|
-  attributes = {data: {'position' => [9.1919074, 45.4768394]}, type: :position}
+  lat = params.delete(:lat) || params.delete(:latitude) || 45.4768394
+  lon = params.delete(:lon) || params.delete(:longitude) || 9.1919074
+  rad = params.delete(:rad) || params.delete(:radius)
+
+  attributes = {data: {'position' => [lon, lat], 'radius' => rad}, type: :position, day: '20130101'}
   attributes.deep_merge!(params)
 
   factory_create(:aggregate, attributes)
@@ -246,9 +262,9 @@ factory_define :mic_evidence do |params|
 end
 
 factory_define :position_evidence do |params|
-  lat = params[:latitude] || params[:lat]
-  lon = params[:longitude] || params[:lon]
-  acc = params[:accuracy] || params[:acc]
+  lat = params.delete(:lat) || params.delete(:latitude)
+  lon = params.delete(:lon) || params.delete(:longitude)
+  rad = params.delete(:rad) || params.delete(:radius)
 
   if (!lat and lon) or (lon and !lat)
     raise "Latitude and longitude must be both specified"

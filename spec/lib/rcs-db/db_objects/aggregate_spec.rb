@@ -253,10 +253,10 @@ describe Aggregate do
     let(:subject) { Aggregate }
 
     before do
-      factory_create(:position_aggregate, target: target, count: 03, day: '20130101', data: {'position' => position0})
-      factory_create(:position_aggregate, target: target, count: 04, day: '20130102', data: {'position' => position0})
-      factory_create(:position_aggregate, target: target, count: 10, day: '20130110', data: {'position' => position1, radius: 20})
-      factory_create(:position_aggregate, target: target, count: 30, day: '20130120', data: {'position' => position1})
+      factory_create(:position_aggregate, target: target, count: 04, day: '20130102', data: {'position' => position0, 'radius' => 10})
+      factory_create(:position_aggregate, target: target, count: 03, day: '20130101', data: {'position' => position0, 'radius' => 10})
+      factory_create(:position_aggregate, target: target, count: 10, day: '20130110', data: {'position' => position1, 'radius' => 20})
+      factory_create(:position_aggregate, target: target, count: 30, day: '20130120', data: {'position' => position1, 'radius' => 10})
       @position_entity = factory_create(:position_entity, target: target, position: position0, name: 'place0')
     end
 
@@ -264,7 +264,7 @@ describe Aggregate do
       results = subject.most_visited_places(target.id, {'from' => '20120501', 'to' => '20130115'})
       expect(results.size).to eq 2
       expect(results[0]).to eq("count" => 10, "position" =>position1, "radius" => 20)
-      expect(results[1]).to eq("count" => 07, "radius" => nil, "position" =>position0, "entity" => {"_id"=>@position_entity.id, "name"=>"place0"})
+      expect(results[1]).to eq("count" => 07, "radius" => 10, "position" =>position0, "entity" => {"_id"=>@position_entity.id, "name"=>"place0"})
     end
   end
 end
