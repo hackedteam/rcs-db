@@ -170,8 +170,8 @@ case RbConfig::CONFIG['host_os']
     RUBYENCPATH = File.exists?(paths.first) ? paths.first : paths.last
     RUBYENC = "#{RUBYENCPATH}/rgencoder"
   when /mingw/
-    RUBYENCPATH = 'C:/Program Files (x86)/RubyEncoder15'
-    RUBYENC = "\"C:\\Program Files (x86)\\RubyEncoder15\\rgencoder.exe\""
+    RUBYENCPATH = 'C:/Program Files (x86)/RubyEncoder'
+    RUBYENC = "\"C:\\Program Files (x86)\\RubyEncoder\\rgencoder.exe\""
 end
 
 desc "Create the encrypted code for release"
@@ -188,9 +188,9 @@ task :protect do
     RGPATH = RUBYENCPATH + '/Loaders'
     Dir.mkdir(Dir.pwd + '/lib/rgloader') rescue puts("Folder lib/rgloader already exists.")
     files = Dir[RGPATH + '/**/**']
-    # keep only the interesting files (1.9.3 windows, macos)
+    # keep only the interesting files (2.0.x windows, macos)
     files.delete_if {|v| v.match(/bsd/i) or v.match(/linux/i)}
-    files.keep_if {|v| v.match(/193/) or v.match(/loader.rb/) }
+    files.keep_if {|v| v.match(/20/) or v.match(/loader.rb/) }
     files.each do |f|
       FileUtils.cp(f, Dir.pwd + '/lib/rgloader')
     end
@@ -201,7 +201,7 @@ task :protect do
     # will recreate the lib/rcs-db structure under rcs-db-release
     $modules.each do |name|
       Dir.chdir "lib/rcs-#{name}/"
-      system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-#{name}-release -r --ruby 1.9.3 *.rb */*.rb" || raise("Econding failed.")
+      system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-#{name}-release -r --ruby 2.0.0 *.rb */*.rb" || raise("Econding failed.")
       Dir.chdir "../.."
     end
   end

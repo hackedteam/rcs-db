@@ -18,3 +18,5 @@ DB:
   - Most visited places
   - Ability to search with OR queries in info and notes
   - New and revamped connector system, now supports remote archiviation
+  - Mongodb updated to 2.4.6
+  - Ruby updated to 2.0.0
