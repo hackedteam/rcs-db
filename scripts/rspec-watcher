@@ -2,6 +2,7 @@
 
 require 'fssm'
 require 'colorize'
+require 'terminal-notifier-guard'
 
 $root_path = File.expand_path File.join(File.dirname(__FILE__), '..')
 $spec_path = File.join $root_path, 'spec'
