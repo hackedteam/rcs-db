@@ -110,3 +110,7 @@ config/export.zip.src
 
 # rcs-db-demo script folder
 _data_backup/*
+
+# RVM gemset
+.ruby-gemset
+
