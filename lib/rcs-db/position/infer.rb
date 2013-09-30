@@ -120,7 +120,8 @@ module RCS
             group_positions(0, 6, positions, grouped)
           }
 
-          grouped.each { |position, cnt| return position if cnt > 38 }
+          most_visited = grouped.sort_by {|_key, value| value}.last
+          most_visited[0] if most_visited && most_visited[1] > 38
         end
 
         def office
@@ -131,7 +132,8 @@ module RCS
 
           dist.each { |day, positions| group_positions(8, 19, positions, grouped) }
 
-          grouped.each { |position, cnt| return position if cnt > 20 }
+          most_visited = grouped.sort_by {|_key, value| value}.last
+          most_visited[0] if most_visited && most_visited[1] > 20
         end
       end
 
