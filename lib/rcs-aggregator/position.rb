@@ -1,10 +1,9 @@
-#
-#  Module for handling position aggregations
-#
+require_relative '../rcs-db/position/resolver'
 
 module RCS
 module Aggregator
 
+# Handle position aggregations
 class PositionAggregator
   extend RCS::Tracer
 
@@ -114,6 +113,13 @@ class PositionAggregator
           return Aggregate.target(target_id).create!(params)
         end
       end
+    end
+
+    # fetch the timezone
+    begin
+      params[:data][:timezone] = RCS::DB::PositionResolver.get_google_timezone(params[:data][:position].stringify_keys)
+    rescue Exception => ex
+      trace :error, "Unable to fetch timezone of new position aggregate: #{ex.message}"
     end
 
     # no previous match create a new one
