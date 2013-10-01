@@ -1,7 +1,7 @@
 require 'spec_helper'
 require_db 'db_layer'
 require_db 'grid'
-require_db 'position/infer'
+require_intelligence 'infer'
 
 describe RCS::DB::Position::Infer do
 
