@@ -56,15 +56,14 @@ class BuildWinPhone < Build
 
     @appname = params['appname'] || 'install'
 
+    raise "Certificate file for Windows Phone not found" unless File.exist? Config.instance.cert("winphone.pfx")
+    raise "Aetx file for Windows Phone not found" unless File.exist? Config.instance.cert("winphone.aetx")
+
     # sign the xap
-    CrossPlatform.exec path('XapSignTool'), "sign /P 6troppoHT /f #{path("winphone.pfx")} #{path('core.xap')}", {:chdir => path('')}
-    # TODO: check before release
-    #CrossPlatform.exec path('XapSignTool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("winphone.pfx")} #{path('core.xap')}", {:chdir => path('')}
+    CrossPlatform.exec path('XapSignTool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("winphone.pfx")} #{path('core.xap')}", {:chdir => path('')}
 
     FileUtils.mv path('core.xap'), path(@appname + '.xap')
-    FileUtils.mv path('winphone.aetx'), path(@appname + '.aetx')
-    # TODO: check before release
-    #FileUtils.mv Config.instance.cert('winphone.aetx'), path(@appname + '.aetx')
+    FileUtils.mv Config.instance.cert('winphone.aetx'), path(@appname + '.aetx')
 
     @outputs = [@appname + '.xap', @appname + '.aetx']
   end

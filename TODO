@@ -7,8 +7,6 @@ TODO 9.0.0
 
     scout packer
 
-    winphone certificate
-
   TRY:
 
     hash index for sharding (topac - on branch 9.0.x)
