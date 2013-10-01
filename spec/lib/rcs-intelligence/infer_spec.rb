@@ -3,7 +3,7 @@ require_db 'db_layer'
 require_db 'grid'
 require_intelligence 'infer'
 
-describe RCS::DB::Position::Infer do
+describe RCS::Intelligence::Position::Infer do
 
   silence_alerts
 

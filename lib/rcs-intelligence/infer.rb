@@ -2,8 +2,8 @@ require 'rcs-common/trace'
 require 'date'
 
 module RCS
-  module DB
-    module Position
+  module Intelligence
+    class Position
 
       # Infer the home and the office of a given target.
       class Infer
