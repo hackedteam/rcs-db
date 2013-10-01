@@ -7,6 +7,7 @@ module RCS
 
       # Infer the home and the office of a given target.
       class Infer
+        include Tracer
         attr_reader :target, :from, :to
 
         MIN_DAYS = 3
@@ -137,6 +138,11 @@ module RCS
           minimum_frequency = (35.0 / 100.0) * max_half_hour_per_week # 35%
 
           grouped = group_and_count_positions_within(ranges).last
+          if grouped
+            msg = "Infer: the most visited place of #{target.name} within #{from} and #{to} (#{ranges.inspect}) is #{grouped[0]}, freq: #{grouped[1]}"
+            msg << " [not enough]" unless grouped[1] > minimum_frequency
+            trace :debug, msg
+          end
           grouped[0] if grouped && grouped[1] > minimum_frequency
         end
 
