@@ -4,7 +4,6 @@
 
 # from RCS::Common
 require 'rcs-common/trace'
-require 'pry'
 
 module RCS
 module DB
