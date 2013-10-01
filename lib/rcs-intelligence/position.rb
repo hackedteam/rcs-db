@@ -4,6 +4,7 @@
 
 # from RCS::Common
 require 'rcs-common/trace'
+require_relative 'infer'
 
 module RCS
 module Intelligence
@@ -13,6 +14,38 @@ class Position
   extend Tracer
 
   class << self
+
+    def infer?
+      Time.now.utc.sunday?
+    end
+
+    def infer!(target)
+      infer = RCS::DB::Position::Infer.new(target, Time.now)
+
+      save_inferred_position(target, infer.home, "Home")
+      save_inferred_position(target, infer.office, "Office")
+    end
+
+    def save_inferred_position(target, position, description)
+      operation_id = target.path[0]
+
+      return unless position
+
+      lon_and_lat = [position[:longitude], position[:latitude]]
+
+      return if is_inferred_position_known?(operation_id, lon_and_lat)
+
+      attributes = {type: :position, path: [operation_id], position: lon_and_lat, level: :suggested,
+                    position_attr: {accuracy: position[:radius]}, desc: description}
+
+      new_position_entity = Entity.new(attributes)
+      new_position_entity.save!
+      new_position_entity.fetch_address
+    end
+
+    def is_inferred_position_known?(operation_id, lon_and_lat)
+      Entity.path_include(operation_id).positions.where(position: lon_and_lat).any?
+    end
 
     def save_last_position(entity, evidence)
       return if evidence[:data]['latitude'].nil? or evidence[:data]['longitude'].nil?
