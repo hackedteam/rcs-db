@@ -1,4 +1,4 @@
-require_relative '../rcs-db/position/resolver'
+require_release 'rcs-db/position/resolver'
 
 module RCS
 module Aggregator
