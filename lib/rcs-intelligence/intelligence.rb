@@ -39,6 +39,10 @@ class Intelligence
       EM.defer(proc{ HeartBeat.perform })
       EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
 
+      # once in a day trigger the batch that infer home and office position of each target entity
+      EM.defer(proc{ Position.infer! })
+      EM::PeriodicTimer.new(3600 * 24) { EM.defer(proc{ Position.infer! }) }
+
       # calculate and save the stats
       #EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }
 

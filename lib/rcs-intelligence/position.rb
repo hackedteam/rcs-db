@@ -5,6 +5,7 @@
 # from RCS::Common
 require 'rcs-common/trace'
 require_relative 'infer'
+require_relative 'position'
 
 module RCS
 module Intelligence
@@ -19,24 +20,41 @@ class Position
       Time.now.utc.sunday?
     end
 
-    def infer!(target)
-      infer = RCS::DB::Position::Infer.new(target, Time.now)
+    # Batch cross-target
+    def infer!
+      return unless infer?
 
-      save_inferred_position(target, infer.home, "Home")
-      save_inferred_position(target, infer.office, "Office")
+      trace :info, "Running infer position job..."
+      start_time = Time.now
+
+      Entity.targets.each do |entity|
+        target = Item.find(entity.target_id)
+
+        infer = Infer.new(target, Time.new(2013, 07, 29))
+
+        desc = "Detected automatically analyzing #{entity.name} movements between #{infer.from} and #{infer.to}"
+
+        save_inferred_position(target, infer.home, "House of #{entity.name}", desc)
+        save_inferred_position(target, infer.office, "Workplace of #{entity.name}", desc)
+      end
+
+      trace :info, "Infer position job completed in #{Time.now - start_time} sec."
     end
 
-    def save_inferred_position(target, position, description)
+    def save_inferred_position(target, position, name, desc)
       operation_id = target.path[0]
 
       return unless position
 
       lon_and_lat = [position[:longitude], position[:latitude]]
 
-      return if is_inferred_position_known?(operation_id, lon_and_lat)
+      if is_inferred_position_known?(operation_id, lon_and_lat)
+        trace :info, "Position #{lon_and_lat.inspect} is already known"
+        return
+      end
 
       attributes = {type: :position, path: [operation_id], position: lon_and_lat, level: :suggested,
-                    position_attr: {accuracy: position[:radius]}, desc: description}
+                    position_attr: {accuracy: position[:radius]}, desc: desc, name: name}
 
       new_position_entity = Entity.new(attributes)
       new_position_entity.save!
