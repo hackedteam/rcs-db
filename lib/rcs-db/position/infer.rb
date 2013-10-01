@@ -10,12 +10,17 @@ module RCS
         attr_reader :target, :from, :to
 
         MIN_DAYS = 3
+        HALF_HOUR = 0.5
+        HOME_TIMESLOT = [(22..23.5), (0..6)]
+        WORKDAY_TIMESLOT = [(8..19)]
 
         def initialize(target, week_or_datetime)
           @target = target
           @from, @to = week_bounds(week_or_datetime)
         end
 
+        # Find the first and the last day of the week
+        # the given datetime belong to
         def week_bounds(week_or_datetime)
           if week_or_datetime.respond_to?(:to_date)
             date = week_or_datetime.to_date
@@ -50,7 +55,7 @@ module RCS
         # Returns an hash. Keys are cwdays (eg. Mon is 1, Thu is 2, etc.)
         # Values are time intervals, eg. [20, 20.5, 21]. 20 represents the interval from 8pm to 8:30pm,
         # 20.5 the one from 8:30pm to 9pm.
-        def normalize_interval(interval, timezone)
+        def normalize_interval(interval, timezone = 0)
           return unless interval.respond_to?(:[])
 
           start, stop = interval['start'], interval['end']
@@ -66,13 +71,20 @@ module RCS
 
           while start <= stop do
             results[start.to_date.cwday] ||= []
-            results[start.to_date.cwday] << (start.min == 0 ? start.hour : start.hour + 0.5)
+            results[start.to_date.cwday] << (start.min == 0 ? start.hour : start.hour + HALF_HOUR)
             start += 30 * 60
           end
 
           results
         end
 
+        # Returns an hash like:
+        # {
+        #   1 => {
+        #       14 => [{:latitude=>45.47354920000001, :longitude=>9.232277999999999, :radius=>30}],
+        #       14.5 => [{:latitude=>45.47354920000001, :longitude=>9.232277999999999, :radius=>30}]
+        #   }
+        # }
         def week_distribution
           results = {}
 
@@ -95,48 +107,47 @@ module RCS
           results
         end
 
-        def group_positions(span_start, span_stop, hash, append = {})
+        # Returns a list of couple POSITION, FREQUENCY. Example:
+        # [
+        #   [{:latitude=>45.47354920000001, :longitude=>9.232277999999999, :radius=>30}, 4],
+        #   [{:latitude=>45.4806173, :longitude=>9.221273499999999, :radius=>30}, 42]
+        # ]
+        def group_and_count_positions_within(ranges)
+          dist = week_distribution
+          return [] if dist.keys.size < MIN_DAYS
+
           grouped = {}
 
-          hash.each do |span, positions|
-            next if span < span_start || span > span_stop
-            positions.each { |p|
-              grouped[p] ||= 0; grouped[p] += 1
-              append[p] ||= 0; append[p] += 1
-            }
+          dist.each do |day, intervals|
+            ranges.each do |range|
+              intervals.each do |half_hour, positions|
+                next if !range.include?(half_hour)
+                positions.each { |p| grouped[p] ||= 0; grouped[p] += 1 }
+              end
+            end
           end
 
-          grouped
+          grouped.sort_by { |key, value| value }
+        end
+
+        # Returns the most visited place in the given ranges.
+        # Example: {:latitude=>45.4806173, :longitude=>9.221273499999999, :radius=>30}
+        def most_visited_place(ranges)
+          max_half_hour_per_week = ranges.inject(0) { |num, range| num += range.step(HALF_HOUR).size; num } * 7
+          minimum_frequency = (35.0 / 100.0) * max_half_hour_per_week # 35%
+
+          grouped = group_and_count_positions_within(ranges).last
+          grouped[0] if grouped && grouped[1] > minimum_frequency
         end
 
         def home
-          dist = week_distribution
-          return if dist.keys.size < MIN_DAYS
-
-          grouped = {}
-
-          dist.each { |day, positions|
-            group_positions(22, 23.5, positions, grouped)
-            group_positions(0, 6, positions, grouped)
-          }
-
-          most_visited = grouped.sort_by {|_key, value| value}.last
-          most_visited[0] if most_visited && most_visited[1] > 38
+          most_visited_place(HOME_TIMESLOT)
         end
 
         def office
-          dist = week_distribution
-          return if dist.keys.size < MIN_DAYS
-
-          grouped = {}
-
-          dist.each { |day, positions| group_positions(8, 19, positions, grouped) }
-
-          most_visited = grouped.sort_by {|_key, value| value}.last
-          most_visited[0] if most_visited && most_visited[1] > 20
+          most_visited_place(WORKDAY_TIMESLOT)
         end
       end
-
     end
   end
 end
