@@ -179,7 +179,7 @@ module RCS
         def process(object, options = {})
           if object.kind_of?(Array)
             process_array(object, options)
-          elsif object.respond_to?(:query)
+          elsif object.respond_to?(:context) && object.context.respond_to?(:query)
             process_mongoid_criteria(object, options)
           elsif object.kind_of?(Moped::Query)
             process_moped_query(object, options)
@@ -188,7 +188,6 @@ module RCS
           end
         rescue Exception => ex
           trace :error, "Cache manager: #{ex.message}"
-          trace :error, "#{object} / #{object.inspect} / #{object.kind_of?(Array)} / #{object.respond_to?(:query)} / #{object.kind_of?(Moped::Query)} / #{ex.backtrace.inspect}"
           unsupported(object)
         end
       end
