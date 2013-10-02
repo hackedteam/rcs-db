@@ -188,7 +188,7 @@ module RCS
           end
         rescue Exception => ex
           trace :error, "Cache manager: #{ex.message}"
-          trace :error, "#{object} / #{object.inspect}"
+          trace :error, "#{object} / #{object.inspect} / #{object.kind_of?(Array)} / #{object.respond_to?(:query)} / #{object.kind_of?(Moped::Query)} / #{ex.backtrace.inspect}"
           unsupported(object)
         end
       end
