@@ -156,7 +156,7 @@ class AggregatorQueue < NotificationQueue
   index({flag: 1}, {background: true})
   index({type: 1}, {background: true})
 
-  AGGREGATOR_TYPES = ['call', 'message', 'chat', 'position']
+  AGGREGATOR_TYPES = ['call', 'message', 'chat', 'position', 'url']
 
   def self.add(target_id, evidence_id, type)
     # skip not interesting evidence
