@@ -34,7 +34,8 @@ class WatchedItem
       item = items2id[dw.item_id]
 
       if item._kind == 'operation'
-        Item.targets.path_include(item).each { |i| yield(i, dw.user_ids) }
+        # if match the operation, send the stats target of the current sync, not the operation stats.
+        items.select { |i| i._kind == 'target' && i.path[0] == item.id }.each { |i| yield(i, dw.user_ids) }
       else
         yield(item, dw.user_ids)
       end
