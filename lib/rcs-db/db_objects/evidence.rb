@@ -146,6 +146,9 @@ module Evidence
 
     WatchedItem.matching(agent, target, target.get_parent) do |item, user_ids|
       stats = item.stat.attributes.reject { |key| !%w[evidence dashboard].include?(key) }
+      stats[:last_sync] = item.stat.last_sync
+      stats[:last_sync_status] = item.stat.last_sync_status
+
       message = {item: item, rcpts: user_ids, stats: stats, suppress: {start: Time.now.getutc.to_f, key: item.id}}
       RCS::DB::PushManager.instance.notify('dashboard', message)
     end
