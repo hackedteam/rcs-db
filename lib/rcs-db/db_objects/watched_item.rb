@@ -32,7 +32,12 @@ class WatchedItem
 
     self.in(item_id: items2id.keys).each do |dw|
       item = items2id[dw.item_id]
-      yield(item, dw.user_ids)
+
+      if item._kind == 'operation'
+        Item.targets.path_include(item).each { |i| yield(i, dw.user_ids) }
+      else
+        yield(item, dw.user_ids)
+      end
     end
   end
 end
