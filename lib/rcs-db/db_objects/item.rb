@@ -565,6 +565,8 @@ class Item
     # check for installed AV
     File.open(RCS::DB::Config.instance.file('blacklist'), "r:UTF-8") do |f|
       while offending = f.gets
+        offending = offending.split('#').first
+        offending.strip!
         offending.chomp!
         next unless offending
         bver, bbit, bmatch = offending.split('|')
