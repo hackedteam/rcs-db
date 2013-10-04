@@ -86,8 +86,8 @@ class Alerting
         next if evidence.data.values.select {|v| v =~ Regexp.new(alert.keywords, true)}.empty?
 
         # we MUST not dispatch alert for element that are not accessible by the user
-        user = ::User.find(alert.user_id)
-        next unless agent.users.include? user
+        user = ::User.where(_id: Moped::BSON::ObjectId(alert.user_id)).first
+        next unless agent.users.include?(user)
 
         # save the relevance tag into the evidence
         if evidence.rel < alert.tag
