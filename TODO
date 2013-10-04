@@ -1,16 +1,12 @@
 
 TODO 9.0.0
 
-  IMPLEMENT:
+  check why the collector get stuck on evidene transfer!!!
 
+  IMPLEMENT:
     dashboard in push mode
 
-    scout packer
-
   TRY:
-
-    hash index for sharding (topac - on branch 9.0.x)
-
     caching slow query. try to cache already jsonized list of items and similar
 
 TODO 9.1.x
@@ -25,10 +21,6 @@ TODO 9.1.x
       - new entity type: :group
       - the group contains a list of entities
       - the rendering of the links is demanded to the console (underlying links are created normally)
-
-    statistic analyzer
-      automatic detection of home / office (needs timezone for each entity)
-      [OK] frequencer for places
 
   IDEAS:
     message quque on entities
