@@ -77,6 +77,7 @@ class Processor
         processed = LeadTools.transform(temp, output)
         update_evidence_data_body(ev, output, processed)
         # search for faces in screenshots
+        processed = FaceRecognition.detect(temp)
         update_evidence_data_face(ev, processed) if processed.has_key? :face
       when 'file'
         trace :debug, "Extracting text from: #{File.basename(ev.data['path'])}"
