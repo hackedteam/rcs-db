@@ -19,6 +19,12 @@ module OCR
 class Processor
   extend RCS::Tracer
 
+  @@status = 'Starting...'
+
+  def self.status
+    @@status
+  end
+
   def self.run
     trace :info, "OCR ready to go..."
 
@@ -29,10 +35,12 @@ class Processor
       if (queued = OCRQueue.get_queued)
         entry = queued.first
         count = queued.last
+        @@status = "Processing #{count} evidence in queue"
         trace :info, "#{count} evidence to be processed in queue"
         process entry
       else
         #trace :debug, "Nothing to do, waiting..."
+        @@status = 'Idle...'
         sleep 1
       end
     end

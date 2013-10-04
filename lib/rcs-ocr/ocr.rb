@@ -15,9 +15,37 @@ require_release 'rcs-db/license_component'
 require 'rcs-common/trace'
 
 require_relative 'processor'
+require_relative 'heartbeat'
 
 module RCS
 module OCR
+
+class Ocr
+  include Tracer
+  extend Tracer
+
+  def run
+
+    # all the events are handled here
+    EM::run do
+      # if we have epoll(), prefer it over select()
+      EM.epoll
+
+      # set the thread pool size
+      EM.threadpool_size = 50
+
+      # set up the heartbeat (the interval is in the config)
+      EM.defer(proc{ HeartBeat.perform })
+      EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
+
+      # use a thread for the infinite processor waiting on the queue
+      EM.defer(proc{ Processor.run })
+
+    end
+
+  end
+
+end
 
 class Application
   include RCS::Tracer
@@ -84,7 +112,7 @@ class Application
       end
 
       # the infinite processing loop
-      Processor.run
+      Ocr.new.run
 
       # never reached...
 

@@ -39,9 +39,6 @@ class Aggregator
       EM.defer(proc{ HeartBeat.perform })
       EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
 
-      # calculate and save the stats
-      #EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }
-
       # use a thread for the infinite processor waiting on the queue
       EM.defer(proc{ Processor.run })
 
