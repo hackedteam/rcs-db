@@ -87,6 +87,7 @@ class Alerting
 
         # we MUST not dispatch alert for element that are not accessible by the user
         user = ::User.where(_id: Moped::BSON::ObjectId(alert.user_id)).first
+        next unless user
         next unless agent.users.include?(user)
 
         # save the relevance tag into the evidence
