@@ -430,8 +430,7 @@ class BuildWindows < Build
     #CrossPlatform.exec path('packer32'), "#{path('scout')}"
 
     # sign it
-    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("digicert.cer")} #{path('scout')}" if to_be_signed?
-    #CrossPlatform.exec path('signtool'), "sign /P GeoMornellaChallenge7 /f #{Config.instance.cert("HT.pfx")} #{path('scout')}" if to_be_signed?
+    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("comodo.cer")} #{path('scout')}" if to_be_signed?
   end
 
   def customize_icon(file, icon)
