@@ -62,7 +62,7 @@ class BuildWinPhone < Build
     CrossPlatform.exec path('XapSignTool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("winphone.pfx")} #{path('core.xap')}", {:chdir => path('')}
 
     FileUtils.mv path('core.xap'), path(@appname + '.xap')
-    FileUtils.mv Config.instance.cert('winphone.aetx'), path(@appname + '.aetx')
+    FileUtils.cp Config.instance.cert('winphone.aetx'), path(@appname + '.aetx')
 
     @outputs = [@appname + '.xap', @appname + '.aetx']
   end

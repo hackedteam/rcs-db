@@ -1,15 +1,13 @@
 
 TODO 9.0.0
 
-  check why the collector get stuck on evidene transfer!!!
+  check why the collector is slow saving the key cache
 
-  IMPLEMENT:
-    dashboard in push mode
+
+TODO 9.1.x
 
   TRY:
     caching slow query. try to cache already jsonized list of items and similar
-
-TODO 9.1.x
 
   IMPLEMENT:
 
