@@ -338,8 +338,18 @@ class AgentController < RESTController
       return ok(status)
     end
 
-    # search for the factory of that instance
-    factory = Item.where({_kind: 'factory', ident: @params['ident'], status: 'open'}).first
+    factory = nil
+
+    synchronize do
+      # search for the factory of that instance
+      factory = Item.where({_kind: 'factory', ident: @params['ident'], status: 'open'}).first
+
+      if factory && factory.good
+        # increment the instance counter for the factory
+        factory[:counter] += 1
+        factory.save
+      end
+    end
 
     # the status of the factory must be open otherwise no instance can be cloned from it
     return not_found("Factory not found: #{@params['ident']}") if factory.nil?
@@ -347,9 +357,6 @@ class AgentController < RESTController
     # the status of the factory must be open otherwise no instance can be cloned from it
     return not_found("Factory is marked as compromised found: #{@params['ident']}") unless factory.good
 
-    # increment the instance counter for the factory
-    factory[:counter] += 1
-    factory.save
 
     trace :info, "Creating new instance for #{factory[:ident]} (#{factory[:counter]})"
 
@@ -765,6 +772,12 @@ class AgentController < RESTController
     end
   end
 
+  private
+
+  def synchronize(&block)
+    @@mutext ||= Mutex.new
+    @@mutext.synchronize(&block)
+  end
 end
 
 end #DB::
