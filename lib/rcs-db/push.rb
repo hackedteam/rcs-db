@@ -11,6 +11,8 @@ module RCS
 
       attr_accessor :suppressed
 
+      MESSAGE_DEBUG_KEYS = %w[rcpt rcpts user_ids suppress]
+
       def initialize
         self.suppressed = {}
         @suppression_window = 1.0
@@ -66,12 +68,16 @@ module RCS
       end
 
       def wait_a_moment
+        # 1 sec (should be the same of the @suppression_window)
         sleep 1
       end
 
       def send(web_socket, type, message)
-        WebSocketManager.instance.send(web_socket, type, message)
-        trace :debug, "PUSH Event (sent): #{type} #{message}"
+        msg_to_send = message.deep_dup
+        msg_to_send.reject! { |key| MESSAGE_DEBUG_KEYS.include?(key) }
+
+        WebSocketManager.instance.send(web_socket, type, msg_to_send)
+        trace :debug, "PUSH Event (sent): #{type} #{msg_to_send}"
       end
 
       def suppress(type, message)
@@ -89,16 +95,14 @@ module RCS
       def dispatch(type, message)
         each_session_with_web_socket do |session, web_socket|
           usr_id = session.user.id
+
           # if we have specified a recepient(s), skip all the other online users
           next if message['rcpt'] and usr_id != message['rcpt']
           next if message['rcpts'] and !message['rcpts'].include?(usr_id)
-          # check for accessibility
-          user_ids = message.delete('user_ids')
-          next if user_ids and !user_ids.include?(usr_id)
-          # does not send suppress hash to the clients
-          message.delete('suppress')
-          message.delete('rcpt')
-          message.delete('rcpts')
+
+          # Check for accessibility
+          next if message['user_ids'] and !message['user_ids'].include?(usr_id)
+
           # send the message
           send(web_socket, type, message)
         end
