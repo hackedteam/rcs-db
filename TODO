@@ -1,8 +1,6 @@
 
 TODO 9.0.0
 
-  check why the collector is slow saving the key cache
-
 
 TODO 9.1.x
 
@@ -10,6 +8,11 @@ TODO 9.1.x
     caching slow query. try to cache already jsonized list of items and similar
 
   IMPLEMENT:
+
+    split the collector into 3 separate services:
+      - collector
+      - evidence transfer
+      - network controller
 
     scout++ (with simplified config)
 
