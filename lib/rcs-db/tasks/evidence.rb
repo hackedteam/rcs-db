@@ -95,7 +95,7 @@ module RCS
             name << File.extname(evidence[:data]['path'])
           when 'message'
             if evidence[:data]['type'] == :mail
-              name << '.txt'
+              name << '.eml'
             end
         end
         name
