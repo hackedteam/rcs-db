@@ -440,6 +440,37 @@ class AgentController < RESTController
     end
   end
 
+  # this methods is an helper to reduce the number of requests the collector
+  # has to perform during the ident phase
+  def availables
+    require_auth_level :server
+
+    agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+    return not_found("Agent not found: #{@params['_id']}") if agent.nil?
+
+    availables = []
+
+    # config
+    conf = agent.configs.last
+    availables << :config if conf and conf.activated.nil?
+    # purge
+    availables << :purge if agent.purge and agent.purge != [0,0]
+    # uploads
+    availables << :upload if agent.upload_requests.where({sent: 0}).count > 0
+    # upgrade
+    availables << :upgrade if agent.upgrade_requests.count > 0
+    # exec
+    availables << :exec if agent.exec_requests.count > 0
+    # downloads
+    availables << :download if agent.download_requests.count > 0
+    # filesystem
+    availables << :filesystem if agent.filesystem_requests.count > 0
+
+    trace :debug, "[#{@request[:peer]}] Availables for #{agent.name} are: #{availables.inspect}"
+
+    return ok(availables)
+  end
+
   def config
     require_auth_level :server, :tech
     
