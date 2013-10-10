@@ -106,30 +106,6 @@ module RCSConsole
     Moped.logger.formatter = proc { |sev, time, progname, str| colorize("#{str}\n") }
   end
 
-  def bm(times = 1, &block)
-    es = []
-    times.times do
-      t = Time.now
-      yield
-      es << (Time.now - t)
-    end
-    total = es.inject(0) { |t,n| t += n; t }
-    avg = total.to_f / times.to_f
-
-    msg = "Avg on #{times} executions is #{avg} sec."
-
-    if @_bm_last_result
-      if avg >= @_bm_last_result
-        msg << " #{((100 * (avg - @_bm_last_result)) / avg).round(2)}% loss."
-      else
-        msg << " #{((100 * (@_bm_last_result - avg)) / @_bm_last_result).round(2)}% gain."
-      end
-    end
-
-    puts msg
-    @_bm_last_result = avg
-  end
-
   def run
     options = {}
 
@@ -165,6 +141,41 @@ module RCSConsole
         return line.gsub('HostName', '').strip if segment && line =~ /^\s*HostName.+/
       end
     end
+  end
+end
+
+module RCSConsole::Helpers
+  extend self
+
+  def bm(times = 1, &block)
+    es = []
+    times.times do
+      t = Time.now
+      yield
+      es << (Time.now - t)
+    end
+    total = es.inject(0) { |t,n| t += n; t }
+    avg = total.to_f / times.to_f
+
+    msg = "Avg on #{times} executions is #{avg} sec."
+
+    if @_bm_last_result
+      if avg >= @_bm_last_result
+        msg << " #{((100 * (avg - @_bm_last_result)) / avg).round(2)}% loss."
+      else
+        msg << " #{((100 * (@_bm_last_result - avg)) / @_bm_last_result).round(2)}% gain."
+      end
+    end
+
+    puts msg
+    @_bm_last_result = avg
+  end
+
+  def ev_cross_target(evidence_filter, &block)
+    Item.targets.all.each do |t|
+      Evidence.target(t).where(evidence_filter).each { |e| yield(t, e) }
+    end
+    nil
   end
 end
 
