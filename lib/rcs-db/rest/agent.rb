@@ -466,7 +466,7 @@ class AgentController < RESTController
     # filesystem
     availables << :filesystem if agent.filesystem_requests.count > 0
 
-    trace :debug, "[#{@request[:peer]}] Availables for #{agent.name} are: #{availables.inspect}"
+    trace :info, "[#{@request[:peer]}] Availables for #{agent.name} are: #{availables.inspect}" if availables.size > 0
 
     return ok(availables)
   end
