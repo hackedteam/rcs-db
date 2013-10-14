@@ -556,6 +556,8 @@ class EntityHandle
   field :name, type: String
   field :handle, type: String
 
+  validates_uniqueness_of :handle, scope: :type
+
   after_create :create_callback
 
   def self.default_level
