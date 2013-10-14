@@ -23,7 +23,7 @@ module Migration
 
     run [:recalculate_checksums, :drop_sessions] if version >= '8.4.1'
     run [:fix_connectors, :fix_position_evidences] if version >= '9.0.0'
-    run [:fix_recents, :fix_redirection_tag] if version >= '9.0.0'
+    run [:fix_recents, :fix_redirection_tag, :remove_duplicate_handles] if version >= '9.0.0'
 
     return 0
   end
@@ -59,6 +59,26 @@ module Migration
     end
 
     return 0
+  end
+
+  def remove_duplicate_handles
+    duplicated = Entity.collection.aggregate(
+      {'$unwind' => '$handles'},
+      {'$group' => {'_id' => {'eid' => '$_id', 't' => '$handles.type', 'h' => '$handles.handle'}, 'cnt' => {'$sum' => 1}}},
+      {'$match' => {'cnt' => {'$gte' => 2}}}
+    )
+
+    count = 0
+
+    duplicated.each do |r|
+      entity = Entity.where(_id: Moped::BSON::ObjectId(r['_id']['eid'])).first
+      next unless entity
+      entity.handles.where(type: r['_id']['t'], handle: r['_id']['h']).sort(name: 1).limit(r['cnt'] - 1).destroy_all
+      count +=1
+      print "\r%d entity with duplicated handles fixed" % count
+    end
+
+    nil
   end
 
   def fix_redirection_tag
