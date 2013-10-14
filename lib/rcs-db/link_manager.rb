@@ -94,7 +94,7 @@ class LinkManager
 
     first_link = first_entity.links.connected_to(second_entity).first
     first_link.set_level(params[:level]) if params[:level]
-    first_link.set_type(params[:type]) if params[:type]
+    first_link.type = params[:type] if params[:type]
     first_link.versus = versus if versus
     first_link.add_info params[:info] if params[:info]
     first_link.rel = params[:rel] if params[:rel]
@@ -102,7 +102,7 @@ class LinkManager
 
     second_link = second_entity.links.connected_to(first_entity).first
     second_link.set_level(params[:level]) if params[:level]
-    second_link.set_type(params[:type]) if params[:type]
+    second_link.type = params[:type] if params[:type]
     second_link.versus = opposite_versus if opposite_versus
     second_link.add_info params[:info] if params[:info]
     second_link.rel = params[:rel] if params[:rel]
