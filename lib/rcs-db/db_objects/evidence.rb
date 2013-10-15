@@ -144,20 +144,9 @@ module Evidence
       add_to_aggregator_queue
     end
 
-    WatchedItem.matching(agent, target, target.get_parent) do |item, user_ids|
-      stats = item.stat.attributes.reject { |key| !%w[evidence dashboard].include?(key) }
-
-      stats[:last_sync] = item.stat.last_sync
-
-      if item._kind == 'agent'
-        stats[:last_sync_status] = item.stat.last_sync_status
-      end
-
-      message = {item: item, rcpts: user_ids, stats: stats, suppress: {start: Time.now.getutc.to_f, key: item.id}}
-      RCS::DB::PushManager.instance.notify('dashboard', message)
-    end
-
     add_to_intelligence_queue
+
+    Item.send_dashboard_push(agent, target, target.get_parent)
   end
 
   def add_to_intelligence_queue

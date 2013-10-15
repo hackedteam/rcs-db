@@ -100,6 +100,21 @@ class Item
 
   public
 
+  def self.send_dashboard_push(*items)
+    WatchedItem.matching(*items) do |item, user_ids|
+      stats = item.stat.attributes.reject { |key| !%w[evidence dashboard].include?(key) }
+
+      stats[:last_sync] = item.stat.last_sync
+
+      if item._kind == 'agent'
+        stats[:last_sync_status] = item.stat.last_sync_status
+      end
+
+      message = {item: item, rcpts: user_ids, stats: stats, suppress: {start: Time.now.getutc.to_f, key: item.id}}
+      RCS::DB::PushManager.instance.notify('dashboard', message)
+    end
+  end
+
   def self.operation_items_sorted_by_kind(operation)
     operation_id = operation.respond_to?(:id) ? operation.id : Moped::BSON::ObjectId.from_string(operation)
     order = %w[operation target global factory agent]

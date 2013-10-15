@@ -233,6 +233,8 @@ class EvidenceController < RESTController
     Alerting.new_sync agent
 
     insert_sync_address(target, agent, params['source'])
+
+    Item.send_dashboard_push(agent, target, operation)
   end
 
   def insert_sync_address(target, agent, address)
