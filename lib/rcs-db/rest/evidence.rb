@@ -318,6 +318,11 @@ class EvidenceController < RESTController
     agent.stat[:last_sync] = Time.now.getutc.to_i
     agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_IDLE
     agent.save
+
+    target = agent.get_parent
+    operation = target.get_parent
+
+    Item.send_dashboard_push(agent, target, operation)
   end
 
   # used to report that the activity on an instance has timed out
