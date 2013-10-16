@@ -291,6 +291,8 @@ class EvidenceController < RESTController
     operation.stat[:last_child] = [target[:_id]]
     operation.save
 
+    Item.send_dashboard_push(agent, target, operation)
+
     return ok
   end
 

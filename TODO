@@ -9,11 +9,6 @@ TODO 9.1.x
 
   IMPLEMENT:
 
-    split the collector into 3 separate services:
-      - collector
-      - evidence transfer
-      - network controller
-
     scout++ (with simplified config)
 
     create as target (from automatic entities)
