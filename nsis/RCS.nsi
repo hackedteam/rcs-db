@@ -369,7 +369,7 @@ Section "Install Section" SecInstall
       nsExec::ExecToLog "$INSTDIR\DB\bin\Silverlight_x64 /q"
 
       DetailPrint "Installing .Net Framework 4.0 (x64).."
-      nsExec::ExecToLog "$INSTDIR\DB\bin\dotNetFx40_Client_x86_x64 /q"
+      nsExec::Exec "$INSTDIR\DB\bin\dotNetFx40_Client_x86_x64 /q"
 
       DetailPrint "Installing HASP drivers.."
       nsExec::ExecToLog "$INSTDIR\DB\bin\haspdinst -i -cm -kp -fi"
