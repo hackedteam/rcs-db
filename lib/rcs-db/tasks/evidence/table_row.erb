@@ -3,6 +3,8 @@
 
   <td class="agent"><%= row[:agent] %></td>
 
+  <td class="agent-instance"><%= row[:agent_instance] %></td>
+
   <td class="acquired"><%= Time.at(row[:da]).strftime('%Y-%m-%d %H:%M:%S') %></td>
 
   <td class="received"><%= Time.at(row[:dr]).strftime('%Y-%m-%d %H:%M:%S') %></td>
