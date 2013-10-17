@@ -91,6 +91,20 @@ task :rcs_common_gem do
   end
 end
 
+desc "Create export.zip assets archive (evidence export)"
+task :export_zip do
+  execute "Creating export.zip" do
+    config_path = File.expand_path('../config', __FILE__)
+    target = "#{config_path}/export.zip"
+    srcs = "#{config_path}/export.zip.src/"
+
+    FileUtils.rm(target) if File.exists?(target)
+
+    # Note the -D options (do not add directory entries)
+    system("cd \"#{srcs}\" && zip -r -D \"#{target}\" .")
+  end
+end
+
 desc "Create the NSIS installer for windows"
 task :nsis do
   puts "Housekeeping..."
