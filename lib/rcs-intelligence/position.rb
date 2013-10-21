@@ -58,7 +58,6 @@ class Position
 
       new_position_entity = Entity.new(attributes)
       new_position_entity.save!
-      new_position_entity.fetch_address
     end
 
     def is_inferred_position_known?(operation_id, lon_and_lat)
