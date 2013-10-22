@@ -108,7 +108,8 @@ module Evidence
   end
 
   def may_have_readable_text_or_face?
-    type == 'screenshot' or (type == 'file' and data[:type] == :capture) or type == 'camera'
+    #type == 'screenshot' or (type == 'file' and data[:type] == :capture) or type == 'camera'
+    (type == 'file' and data[:type] == :capture) or type == 'camera'
   end
 
   def translatable?
