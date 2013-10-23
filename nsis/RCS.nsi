@@ -511,9 +511,11 @@ Section "Install Section" SecInstall
     SimpleSC::StartService "RCSMasterRouter" "" 30
     Sleep 15000
 
-    DetailPrint "Migrating data from previous version..."
-    nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --migrate --log"
-    DetailPrint "done"
+    ${If} $installUPGRADE == ${BST_CHECKED}
+      DetailPrint "Migrating data from previous version..."
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --migrate --log"
+      DetailPrint "done"
+    ${EndIf}
 
     DetailPrint "Starting RCS DB..."
     SimpleSC::StartService "RCSDB" "" 30
