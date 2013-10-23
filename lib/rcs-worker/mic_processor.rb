@@ -97,8 +97,9 @@ module Worker
       end
 
       @mic.feed(evidence) do |sample_rate, left_pcm, right_pcm|
+        #trace :debug, "Sample of mp3: #{sample_rate}"
         encode_mp3(sample_rate, left_pcm, right_pcm) do |mp3_bytes|
-          #File.open("#{@mic.file_name}.mp3", 'ab') {|f| f.write(mp3_bytes) }
+          #File.open("#{@mic.file_name.to_i}.mp3", 'ab') {|f| f.write(mp3_bytes) }
           write_to_grid(@mic, mp3_bytes, target, agent)
         end
       end
