@@ -1,48 +1,51 @@
 
 TODO 9.0.0
 
-  FIX:
-    better investigation on "end of file reached" errors from mongoid (hoping for version 4.0.0 with connection pool)
-    try to implement "retry" on mongoid queries
 
-  IMPLEMENT:
-    statistic analyzer (alor)
-      automatic detection of home / office (needs timezone for each entity)
-      frequencer for places
-
-    refactor the connectors to use queue and export from separate process [OK]
-      - xml export [OK]
-      - sync with "archive" rcs installation
-
-    most visited places
-
-    method to send coordinates for the position player in console
-
-    entities in the recent item list (must modify the structure of recents)
-
-    dashboard in push mode
-      - only after the dashboard as been refactored, issue a target|operation.restat on each target|operation.show
-
-    on backup restore -> restat everything!!!
-
-  TEST:
-    flow integration with console
-
-  MIGRATION:
-    migrate old position to the new 2dsphere index
+TODO 9.1.x
 
   TRY:
-    hash index for sharding (topac - on branch 9.0.x)
     caching slow query. try to cache already jsonized list of items and similar
+
+  IMPLEMENT:
+
+    scout++ (with simplified config)
+
+    create as target (from automatic entities)
+
+    ability to group entities together (better visualization)
+      - new entity type: :group
+      - the group contains a list of entities
+      - the rendering of the links is demanded to the console (underlying links are created normally)
+
+  IDEAS:
+    message quque on entities
+      - sort of "inbox" for each entity on what the system performs on it
+        the customer can review the messages and acknowledge them
+
+    archive of "common" criminals
+
+    placeholder targets (linked from other operations)
+
+    intra operation correlation (visualize like a link to a group that actually is the other operation)
+
+    advanced multi operation search
 
 ======================================
 TODO FUTURE:
+
+    better investigation on "end of file reached" errors from mongoid (hoping for version 4.0.0 with connection pool)
 
     Refactoring on rest methods:
       - agent (too much logic here)
       - evidence (too much logic here)
 
     Refactor evidence search filters (Evidence#common_filter, etc.)
+
+    RUBY 2.0.0 ON WINDOWS depends on this:
+      - http_parsers 0.5.3 needs this file https://github.com/johanneswuerbach/http_parser.rb_2.0_precompiled
+      - check if new version has it
+      - check that websocket dependencies have the correct version
 
 ======================================
 IDEAS:

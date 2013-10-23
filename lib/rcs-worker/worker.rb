@@ -1,6 +1,7 @@
 #
 # The main file of the worker
 #
+require 'rcs-common/path_utils'
 
 # relatives
 require_relative 'call_processor'
@@ -8,20 +9,13 @@ require_relative 'heartbeat'
 require_relative 'backlog'
 require_relative 'statistics'
 
-# from RCS::DB
-if File.directory?(Dir.pwd + '/lib/rcs-worker-release')
-  require 'rcs-db-release/config'
-  require 'rcs-db-release/db_layer'
-else
-  require 'rcs-db/config'
-  require 'rcs-db/db_layer'
-end
+require_release 'rcs-db/config'
+require_release 'rcs-db/db_layer'
+require_release 'rcs-db/license_component'
 
 # from RCS::Common
 require 'rcs-common/trace'
 require 'rcs-common/fixnum'
-
-require_relative 'license'
 
 # form System
 require 'digest/md5'
@@ -107,12 +101,6 @@ class Application
 
       # load the license from the db (saved by db)
       LicenseManager.instance.load_from_db
-
-      # TODO: remove after 8.4.0
-      until RCS::DB::DB.instance.mongo_version >= '2.4.0'
-        trace :warn, "Mongodb is not 2.4.x, waiting for upgrade..."
-        sleep 60
-      end
 
       # do the dirty job!
       Worker.new.run

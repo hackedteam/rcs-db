@@ -127,6 +127,14 @@ class RESTController
     end
   end
 
+  def self.require_license(*args)
+    options = args.pop
+    license = options[:license] || raise("Missing license option")
+    self.send(:define_method, :require_license_methods) do
+      {methods: args, license: license}
+    end
+  end
+
   def request=(request)
     @request = request
     identify_action
@@ -160,9 +168,18 @@ class RESTController
     end
   end
 
+  def valid_license?
+    if respond_to?(:require_license_methods) and require_license_methods[:methods].include?(@request[:action])
+      LicenseManager.instance.check(require_license_methods[:license])
+    else
+      true
+    end
+  end
+
   def act!
     begin
       # check we have a valid session and an action
+      return not_authorized('INVALID_LICENSE') unless valid_license?
       return not_authorized('INVALID_COOKIE') unless valid_session?
       return server_error('NULL_ACTION') if @request[:action].nil?
 
@@ -174,8 +191,10 @@ class RESTController
         @params['_id'] = @request[:uri_params].first unless @request[:uri_params].first.nil?
       end
 
-      # GO!
-      response = send(@request[:action])
+      return not_authorized("INVALID_ACTION") if private_methods.include?(@request[:action])
+
+      # Execute the action
+      response = __send__(@request[:action])
 
       return server_error('CONTROLLER_ERROR') if response.nil?
       return response

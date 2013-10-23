@@ -17,17 +17,16 @@ module OCR
   void UseDLL()
   {
       BOOL ret;
-  HMODULE hmod = LoadLibrary("C:\\RCS\\DB\\OCR\\OCR.dll");
+      HMODULE hmod = LoadLibrary("C:\\RCS\\DB\\OCR\\OCR.dll");
 
-  OCRDump_t pDump = (OCRDump_t)GetProcAddress(hmod, "OCRDump");
-  ret = pDump(L"C:\\test.jpg", L"C:\\out.txt");
+      OCRDump_t pDump = (OCRDump_t)GetProcAddress(hmod, "OCRDump");
+      ret = pDump(L"C:\\test.jpg", L"C:\\out.txt");
   }
 =end
 
 module LEADTOOLS
   extend FFI::Library
 
-  # we can use the HASP dongle only on windows
   if RbConfig::CONFIG['host_os'] =~ /mingw/
     ffi_lib File.join(Dir.pwd, 'ocr/ocr.dll')
 

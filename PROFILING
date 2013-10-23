@@ -1,0 +1,55 @@
+Profiling
+
+  Mongo profiling
+
+    * Slow queries aggregated by operation
+
+      db.system.profile.aggregate(
+        { $match: {millis: {$gte: 80}} },
+        { $group: {_id: '$op', cnt: {$sum: 1}} }
+      )
+
+    * Queries that scans the most
+
+      db.system.profile.aggregate(
+        { $match: {op: 'query', 'ns': {$nin: ['rcs.profile', 'rcs.system.profile'] }} },
+        { $group: {_id: '$ns', avg_scans: {$avg: '$nscanned'}, cnt: {$sum: 1}} },
+        { $sort: {avg_scans: -1} }
+      )
+
+Rcs profiling
+
+  * 10 slower rest call with average resp time (em thread queue free)
+
+    db.profile.aggregate(
+      { $match: {'time.total': {$gt: 1}, 'pool.busy': 1, 'pool.queue': 0} },
+      { $group: {_id: '$uriwp', cnt: {$sum: 1}, avg_resp_time: {$avg: '$time.total'}} },
+      { $sort: {cnt: -1} },
+      { $limit: 10 }
+    )
+
+  * 10 most requested rest path with average resp time
+
+    db.profile.aggregate(
+      { $group: {_id: '$uriwp', cnt: {$sum: 1}, avg_resp_time: {$avg: '$time.total'}} },
+      { $sort: {cnt: -1} },
+      { $limit: 20 }
+    )
+
+  * 10 rest call with the highest rate of em-thread-queue busy
+
+    db.profile.aggregate(
+      { $match: {'pool.busy': {$gt: 1}} },
+      { $group: {_id: '$uriwp', busy_rate: {$sum: '$pool.busy'}, avg_resp_time: {$avg: '$time.total'}} },
+      { $sort: {busy_rate: -1} },
+      { $limit: 10 }
+    )
+
+  * 20 bigger (in size) rest call
+
+    db.profile.aggregate(
+      { $match: {size: {$not: {$type: 2}}} },
+      { $group: {_id: '$uriwp', avg_size: {$avg: '$size'}, cnt: {$sum: 1}} },
+      { $sort: {avg_size: -1} },
+      { $limit: 20 }
+    )

@@ -1,28 +1,20 @@
 #
 #  The main file of the Intelligence module (correlation)
 #
+require 'rcs-common/path_utils'
 
-# from RCS::DB
-if File.directory?(Dir.pwd + '/lib/rcs-intelligence-release')
-  require 'rcs-db-release/db'
-  require 'rcs-db-release/config'
-  require 'rcs-db-release/db_layer'
-  require 'rcs-db-release/grid'
-  require 'rcs-db-release/link_manager'
-else
-  require 'rcs-db/db'
-  require 'rcs-db/config'
-  require 'rcs-db/db_layer'
-  require 'rcs-db/grid'
-  require 'rcs-db/link_manager'
-end
+require_release 'rcs-db/db'
+require_release 'rcs-db/config'
+require_release 'rcs-db/db_layer'
+require_release 'rcs-db/grid'
+require_release 'rcs-db/link_manager'
+require_release 'rcs-db/license_component'
 
 # from RCS::Common
 require 'rcs-common/trace'
 
 require_relative 'heartbeat'
 require_relative 'processor'
-require_relative 'license'
 
 require 'eventmachine'
 
@@ -46,6 +38,10 @@ class Intelligence
       # set up the heartbeat (the interval is in the config)
       EM.defer(proc{ HeartBeat.perform })
       EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
+
+      # once in a day trigger the batch that infer home and office position of each target entity
+      EM.defer(proc{ Position.infer! })
+      EM::PeriodicTimer.new(3600 * 24) { EM.defer(proc{ Position.infer! }) }
 
       # calculate and save the stats
       #EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }
@@ -113,12 +109,6 @@ class Application
 
       # load the license from the db (saved by db)
       LicenseManager.instance.load_from_db
-
-      # TODO: remove after 8.4.0
-      until RCS::DB::DB.instance.mongo_version >= '2.4.0'
-        trace :warn, "Mongodb is not 2.4.x, waiting for upgrade..."
-        sleep 60
-      end
 
       # do the dirty job!
       Intelligence.new.run

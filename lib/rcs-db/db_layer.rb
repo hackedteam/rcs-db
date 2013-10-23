@@ -19,6 +19,8 @@ Dir[File.dirname(__FILE__) + '/db_objects/*.rb'].each do |file|
   require file
 end
 
+require_relative 'cache'
+
 module RCS
 module DB
 
@@ -31,13 +33,30 @@ class DB
     @auth_required = false
   end
 
+  def change_mongo_profiler_level
+    result = Mongoid.default_session.command('$eval' => "db.getProfilingStatus()")
+    profiler_level = result['retval']['was']
+
+    trace(:warn, "MongoDB profiler is active") unless profiler_level.zero?
+
+    new_level = RCS::DB::Config.instance.global['MONGO_PROFILER_LEVEL'] || 0
+    new_level = 0 unless [0, 1, 2].include?(new_level)
+
+    if new_level != profiler_level
+      trace(:warn, "Changing mongoDB profiler level to #{new_level}")
+      Mongoid.default_session.command('$eval' => "db.setProfilingLevel(#{new_level})")
+    end
+  rescue Exception => ex
+    trace(:error, "Cannot enable mongoDB profiler: #{ex.message}")
+  end
+
   def connect
     begin
       # we are standalone (no rails or rack)
       ENV['MONGOID_ENV'] = 'yes'
 
       # set the parameters for the mongoid.yaml
-      ENV['MONGOID_DATABASE'] = 'rcs'
+      ENV['MONGOID_DATABASE'] = Config.instance.global['DB_NAME'] || 'rcs'
       ENV['MONGOID_HOST'] = "#{Config.instance.global['CN']}"
       ENV['MONGOID_PORT'] = "27017"
 
@@ -51,6 +70,7 @@ class DB
 
       trace :info, "Connected to MongoDB at #{ENV['MONGOID_HOST']}:#{ENV['MONGOID_PORT']} version #{mongo_version}"
 
+      change_mongo_profiler_level
     rescue Exception => e
       trace :fatal, e
       return false
@@ -197,7 +217,8 @@ class DB
   end
 
   # insert here the class to be indexed
-  @@classes_to_be_indexed = [::Audit, ::User, ::Group, ::Alert, ::Status, ::Core, ::Collector, ::Injector, ::Item, ::PublicDocument, ::EvidenceFilter, ::Entity]
+  @@classes_to_be_indexed = [::Audit, ::User, ::Group, ::Alert, ::Status, ::Core, ::Collector,
+                             ::Injector, ::Item, ::PublicDocument, ::EvidenceFilter, ::Entity, ::WatchedItem, ::ConnectorQueue]
 
   def create_indexes
     db = DB.instance.mongo_connection
@@ -255,7 +276,16 @@ class DB
     end
   end
 
+  def archive_mode?
+    LicenseManager.instance.check(:archive)
+  end
+
   def ensure_signatures
+    if archive_mode?
+      trace :info, "This is an archive installation. Signatures are not created automatically."
+      return
+    end
+
     if Signature.count == 0
       trace :warn, "No Signature found, creating them..."
 
@@ -282,8 +312,15 @@ class DB
         s.value[10..-1] = "0" * (s.value.length - 10) if LicenseManager.instance.limits[:encbits]
       end
     end
-    # dump the signature for NIA, Anon etc to a file
-    File.open(Config.instance.cert('rcs-network.sig'), 'wb') {|f| f.write Signature.where(scope: 'network').first.value}
+
+    dump_network_signature
+  end
+
+  # dump the signature for NIA, Anon etc to a file
+  def dump_network_signature
+    File.open(Config.instance.cert('rcs-network.sig'), 'wb') do |f|
+      f.write Signature.where(scope: 'network').first.value
+    end
   end
 
   def ensure_cn_resolution

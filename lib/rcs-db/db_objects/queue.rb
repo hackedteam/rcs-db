@@ -37,12 +37,20 @@ class NotificationQueue
     end
   end
 
-  def self.get_queued
-    entry = self.where(flag: NotificationQueue::QUEUED).find_and_modify({"$set" => {flag: NotificationQueue::PROCESSED}}, new: false)
-    count = self.where({flag: NotificationQueue::QUEUED}).count() if entry
-    return entry ? [entry, count] : nil
+  def self.retry_on_timeout
+    Timeout::timeout(5) { yield }
+  rescue Timeout::Error
+    trace :warn, "#get_queue was stuck, retrying..."
+    retry
   end
 
+  def self.get_queued
+    retry_on_timeout do
+      entry = self.where(flag: NotificationQueue::QUEUED).find_and_modify({"$set" => {flag: NotificationQueue::PROCESSED}}, new: false)
+      count = self.where({flag: NotificationQueue::QUEUED}).count() if entry
+      entry ? [entry, count] : nil
+    end
+  end
 end
 
 class AlertQueue < NotificationQueue
@@ -90,7 +98,7 @@ class PushQueue < NotificationQueue
   index({flag: 1}, {background: true})
 
   def self.add(type, message)
-    trace :debug, "Adding to #{self.name}: #{type} #{message}"
+    trace :debug, "Adding to #{self.name}: #{type}" # #{message}"
 
     # insert it in the queue
     self.create!({type: type, message: message})
@@ -148,7 +156,7 @@ class AggregatorQueue < NotificationQueue
   index({flag: 1}, {background: true})
   index({type: 1}, {background: true})
 
-  AGGREGATOR_TYPES = ['call', 'message', 'chat', 'position']
+  AGGREGATOR_TYPES = ['call', 'message', 'chat', 'position', 'url']
 
   def self.add(target_id, evidence_id, type)
     # skip not interesting evidence
@@ -160,9 +168,11 @@ class AggregatorQueue < NotificationQueue
   end
 
   def self.get_queued(types)
-    entry = self.where({flag: NotificationQueue::QUEUED, :type.in => types}).find_and_modify({"$set" => {flag: NotificationQueue::PROCESSED}}, new: false)
-    count = self.where({flag: NotificationQueue::QUEUED, :type.in => types}).count() if entry
-    return entry ? [entry, count] : nil
+    retry_on_timeout do
+      entry = self.where({flag: NotificationQueue::QUEUED, :type.in => types}).find_and_modify({"$set" => {flag: NotificationQueue::PROCESSED}}, new: false)
+      count = self.where({flag: NotificationQueue::QUEUED, :type.in => types}).count() if entry
+      entry ? [entry, count] : nil
+    end
   end
 end
 
@@ -188,6 +198,7 @@ class IntelligenceQueue < NotificationQueue
       related_item_class.target(target_id).find ident
     else
       # the #collection_class method has been replaced by #target in Aggregate
+      # TODO: remove
       related_item_class.collection_class(target_id).find ident
     end
   end
@@ -202,6 +213,3 @@ class IntelligenceQueue < NotificationQueue
     self.create!({target_id: target_id.to_s, ident: _id.to_s, type: type})
   end
 end
-
-#end # ::DB
-#end # ::RCS

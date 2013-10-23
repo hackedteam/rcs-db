@@ -94,7 +94,7 @@ class BuildWinMo < Build
 
     case params['type']
       when 'local'
-        Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+        Zip::File.open(path('output.zip'), Zip::File::CREATE) do |z|
           z.file.open('autorun.exe', "wb") { |f| f.write File.open(path('autorun.exe'), 'rb') {|f| f.read} }
           z.file.open('autorun.zoo', "wb") { |f| f.write File.open(path('autorun.zoo'), 'rb') {|f| f.read} }
         end
@@ -102,7 +102,7 @@ class BuildWinMo < Build
         @outputs = ['output.zip']
 
       when 'remote'
-        Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+        Zip::File.open(path('output.zip'), Zip::File::CREATE) do |z|
           z.file.open(@appname + '.cab', "wb") { |f| f.write File.open(path(@appname + '.cab'), 'rb') {|f| f.read} }
         end
         # this is the only file we need to output after this point
@@ -111,7 +111,7 @@ class BuildWinMo < Build
   end
 
   def unique(core)
-    Zip::ZipFile.open(core) do |z|
+    Zip::File.open(core) do |z|
       core_content = z.file.open('core', "rb") { |f| f.read }
       add_magic(core_content)
       File.open(Config.instance.temp('core'), "wb") {|f| f.write core_content}

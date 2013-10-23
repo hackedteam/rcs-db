@@ -149,7 +149,7 @@ class BuildBlackberry < Build
 
     case params['type']
       when 'remote'
-        Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|		
+        Zip::File.open(path('output.zip'), Zip::File::CREATE) do |z|		
           @outputs.delete_if {|o| o['res']}.keep_if {|o| o['.cod'] or o['.jad']}.each do |output|
             if File.file?(path(output))					
               z.file.open(output, "wb") { |f| f.write File.open(path(output), 'rb') {|f| f.read} }
@@ -157,7 +157,7 @@ class BuildBlackberry < Build
           end
         end
       when 'local'
-        Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+        Zip::File.open(path('output.zip'), Zip::File::CREATE) do |z|
           @outputs.keep_if {|o| o['res'] || o['install.bat'] || o['bin'] || o['base'] || o['.cod'] || o['.jad']}.each do |output|
             if output['base']
               z.file.open('/res/net_rim_bb_base.cod', "wb") { |f| f.write File.open(path(output), 'rb') {|f| f.read} }
@@ -177,7 +177,7 @@ class BuildBlackberry < Build
   end
 
   def unique(core)
-    Zip::ZipFile.open(core) do |z|
+    Zip::File.open(core) do |z|
       core_content = z.file.open('res/net_rim_bb_lib_base.cod', "rb") { |f| f.read }
       add_magic(core_content)
       z.file.open('res/net_rim_bb_lib_base.cod', "wb") { |f| f.write core_content }

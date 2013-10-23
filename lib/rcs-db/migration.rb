@@ -15,18 +15,21 @@ require_relative 'db_layer'
 module RCS
 module DB
 
-class Migration
+module Migration
+  extend self
 
-  def self.up_to(version)
+  def up_to(version)
     puts "migrating to #{version}"
 
     run [:recalculate_checksums, :drop_sessions] if version >= '8.4.1'
+    run [:fix_connectors, :fix_position_evidences] if version >= '9.0.0'
+    run [:fix_recents, :fix_redirection_tag, :remove_duplicate_handles] if version >= '9.0.0'
 
     return 0
   end
 
-  def self.run(params)
-    puts "Migration procedure started..."
+  def run(params)
+    puts "\nMigration procedure started..."
 
     ENV['no_trace'] = '1'
 
@@ -49,58 +52,111 @@ class Migration
     puts "Connected to MongoDB at #{ENV['MONGOID_HOST']}:#{ENV['MONGOID_PORT']}"
 
     params.each do |step|
-      puts "\n+ #{step}"
-      self.send(step)
+      start = Time.now
+      puts "Running #{step}"
+      __send__(step)
+      puts "\n#{step} completed in #{Time.now - start} sec"
     end
 
     return 0
   end
 
-  def self.recalculate_checksums
-    start = Time.now
+  def remove_duplicate_handles
+    duplicated = Entity.collection.aggregate(
+      {'$unwind' => '$handles'},
+      {'$group' => {'_id' => {'eid' => '$_id', 't' => '$handles.type', 'h' => '$handles.handle'}, 'cnt' => {'$sum' => 1}}},
+      {'$match' => {'cnt' => {'$gte' => 2}}}
+    )
+
     count = 0
-    puts "Recalculating item checksums..."
+
+    duplicated.each do |r|
+      entity = Entity.where(_id: Moped::BSON::ObjectId(r['_id']['eid'])).first
+      next unless entity
+      entity.handles.where(type: r['_id']['t'], handle: r['_id']['h']).sort(name: 1).limit(r['cnt'] - 1).destroy_all
+      count +=1
+      print "\r%d entity with duplicated handles fixed" % count
+    end
+
+    nil
+  end
+
+  def fix_redirection_tag
+    count = 0
+
+    Injector.where(redirection_tag: 'ww').each do |injector|
+      injector.update_attributes(redirection_tag: 'cdn')
+
+      count += 1
+      print "\r%d injectors migrated" % count
+    end
+  end
+
+  def fix_connectors
+    count = 0
+    moped_collection = Connector.collection
+
+    %w[JSON XML].each do |old_type|
+      result = moped_collection.find({type: old_type}).update_all('$set' => {format: old_type, type: 'LOCAL'})
+      next unless result
+      count += result['n']
+      print "\r%d connectors migrated" % count
+    end
+  end
+
+  def fix_position_evidences
+    count = 0
+    target_ids = Item.targets.only(:_id).map(&:_id)
+
+    filter = {'type' => 'position', 'data.position' => {'$exists' => false}}
+
+    target_ids.each do |target_id|
+      ::Evidence.target(target_id).where(filter).each do |evidence|
+        lon = evidence.data['longitude']
+        lat = evidence.data['latitude']
+        next if lat.nil? or lon.nil?
+        next if lat.to_i.zero? or lon.to_i.zero?
+        lat = lat.to_f if lat.kind_of?(String)
+        lon = lon.to_f if lon.kind_of?(String)
+        evidence.data['position'] = [lon, lat]
+        evidence.save
+        count += 1
+        print "\r%d evidence migrated" % count
+      end
+    end
+  end
+
+  def recalculate_checksums
+    count = 0
     ::Item.each do |item|
       count += 1
       item.cs = item.calculate_checksum
       item.save
       print "\r%d items migrated" % count
     end
-    puts
-    puts "done in #{Time.now - start} secs"
   end
 
-  def self.mark_pre_83_as_bad
-    start = Time.now
+  def mark_pre_83_as_bad
     count = 0
-    puts "Checking for good/bad consistency..."
     ::Item.agents.each do |item|
       count += 1
       item.good = false if item.version < 2013031101
       item.save
       print "\r%d items checked" % count
     end
-    puts
-    puts "done in #{Time.now - start} secs"
   end
 
-  def self.access_control
-    start = Time.now
+  def access_control
     count = 0
-    puts "Rebuilding access control..."
     ::Item.operations.each do |operation|
       count += 1
       Group.rebuild_access_control(operation)
       print "\r%d operations rebuilt" % count
     end
-    puts
-    puts "done in #{Time.now - start} secs"
   end
 
-  def self.reindex_aggregates
-    start = Time.now
+  def reindex_aggregates
     count = 0
-    puts "Re-indexing aggregates..."
     ::Item.targets.each do |target|
       begin
         klass = Aggregate.target(target._id)
@@ -110,31 +166,23 @@ class Migration
         puts e.message
       end
     end
-    puts
-    puts "done in #{Time.now - start} secs"
   end
 
-  def self.reindex_evidences
-    start = Time.now
+  def reindex_evidences
     count = 0
-    puts "Re-indexing evidences..."
     ::Item.targets.each do |target|
       begin
-        klass = Evidence.collection_class(target._id)
+        klass = Evidence.target(target._id)
         DB.instance.sync_indexes(klass)
         print "\r%d evidences collection reindexed" % count += 1
       rescue Exception => e
         puts e.message
       end
     end
-    puts
-    puts "done in #{Time.now - start} secs"
   end
 
-  def self.aggregate_summary
-    start = Time.now
+  def aggregate_summary
     count = 0
-    puts "Creating aggregates summaries..."
     ::Item.targets.each do |target|
       begin
         next if Aggregate.target(target._id).empty?
@@ -145,19 +193,31 @@ class Migration
         puts e.message
       end
     end
-    puts
-    puts "done in #{Time.now - start} secs"
   end
 
-  def self.drop_sessions
-    puts "Deleting old sessions..."
+  def drop_sessions
     ::Session.destroy_all
   end
 
-  def self.cleanup_storage
-    start = Time.now
+  def fix_recents
     count = 0
-    puts "Dropping orphaned collections..."
+    ::User.each do |user|
+      next if user.recent_ids.all? {|x| x.class.eql? Hash}
+
+      user.recent_ids.map! do |x|
+        next if x.class.eql? Hash
+        item = Item.where(id: x).first
+        item.nil? ? {section: 'operations', type: item._kind, id: item.id} : nil
+      end
+      user.recent_ids.compact!
+      user.update_attributes(recent_ids: user.recent_ids)
+
+      print "\r%d users" % count += 1
+    end
+  end
+
+  def cleanup_storage
+    count = 0
     db = DB.instance.mongo_connection
 
     total_size =  db.stats['dataSize']
@@ -186,7 +246,7 @@ class Migration
       # calculate the agents of the target (not deleted), the evidence in the collection
       # and subtract the first from the second
       agents = Item.agents.where(deleted: false, path: target.id).collect {|a| a.id.to_s}
-      grouped = Evidence.collection_class(tid).collection.aggregate([{ "$group" => { _id: "$aid" }}]).collect {|x| x['_id']}
+      grouped = Evidence.target(tid).collection.aggregate([{ "$group" => { _id: "$aid" }}]).collect {|x| x['_id']}
       deleted_aid_evidence = grouped - agents
 
       next if deleted_aid_evidence.empty?
@@ -196,8 +256,8 @@ class Migration
 
       pre_size = db[coll].stats['size']
       deleted_aid_evidence.each do |aid|
-        count = Evidence.collection_class(tid).where(aid: aid).count
-        Evidence.collection_class(tid).where(aid: aid).delete_all
+        count = Evidence.target(tid).where(aid: aid).count
+        Evidence.target(tid).where(aid: aid).delete_all
         puts "#{count} evidence deleted"
       end
       post_size = db[coll].stats['size']
@@ -236,7 +296,6 @@ class Migration
     current_size = total_size - db.stats['dataSize']
 
     puts "#{current_size.to_s_bytes} saved"
-    puts "done in #{Time.now - start} secs"
   end
 
 end

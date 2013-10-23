@@ -98,14 +98,14 @@ SectionEnd
 
 Function .onInit
 
-	; check that 8.4.x is already installed
+	; check that 9.0.x is already installed
 	FileOpen $4 "$INSTDIR\DB\config\VERSION" r
 	FileRead $4 $1
 	FileClose $4
 	${If} $1 != ""
-	   ${StrStr} $0 $1 "8.4.1"
+	   ${StrStr} $0 $1 "9.0"
 	   ${If} $0 == ""
-  	   MessageBox MB_OK "This version can only be installed on 8.4.1 systems, you have $1"
+  	   MessageBox MB_OK "This version can only be installed on 9.0.x systems, you have $1"
   	   Quit
 	   ${EndIf}
 	${EndIf}

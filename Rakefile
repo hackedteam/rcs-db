@@ -6,20 +6,21 @@ require 'rbconfig'
 require 'rspec/core/rake_task'
 
 def default_rspec_opts
-  "-I tests/rspec --color --tag ~speed:slow --order rand"
+  "--color --tag ~speed:slow --order rand"
 end
 
 def default_rspec_opts_slow
-  "-I tests/rspec --color --order rand"
+  "--color --order rand"
 end
 
 def rspec_tasks
   {
-    all: 'tests/rspec/**/*_spec.rb',
-    db: 'tests/rspec/**/rcs-db/**/*_spec.rb',
-    rest: 'tests/rspec/**/rcs-db/rest/*_spec.rb',
-    aggregator: '{tests/rspec/**/rcs-aggregator/**/*_spec.rb,tests/rspec/lib/rcs-db/db_objects/aggregate_spec.rb,tests/rspec/lib/rcs-db/position/po*_spec.rb}',
-    intelligence: '{tests/rspec/**/rcs-intelligence/**/*_spec.rb,tests/rspec/lib/rcs-db/db_objects/entity_spec.rb,tests/rspec/lib/rcs-db/link_manager_spec.rb}'
+    all: 'spec/**/*_spec.rb',
+    db: 'spec/**/rcs-db/**/*_spec.rb',
+    rest: 'spec/**/rcs-db/rest/*_spec.rb',
+    aggregator: '{spec/**/rcs-aggregator/**/*_spec.rb,spec/lib/rcs-db/db_objects/aggregate_spec.rb,spec/lib/rcs-db/position/po*_spec.rb}',
+    intelligence: '{spec/**/rcs-intelligence/**/*_spec.rb,spec/lib/rcs-db/db_objects/entity_spec.rb,spec/lib/rcs-db/link_manager_spec.rb}',
+    ocr: 'spec/**/rcs-ocr/**/*_spec.rb'
   }
 end
 
@@ -79,11 +80,37 @@ task :clean do
   end
 end
 
+desc "Install rcs-common gem system wide"
+task :rcs_common_gem do
+  execute "Installing rcs-common gem system wide" do
+    current_path = File.dirname(__FILE__)
+    gem_path = File.expand_path(File.join(current_path, '../rcs-common'))
+    Dir.chdir(gem_path)
+    system("rake install")
+    Dir.chdir(current_path)
+  end
+end
+
+desc "Create export.zip assets archive (evidence export)"
+task :export_zip do
+  execute "Creating export.zip" do
+    config_path = File.expand_path('../config', __FILE__)
+    target = "#{config_path}/export.zip"
+    srcs = "#{config_path}/export.zip.src/"
+
+    FileUtils.rm(target) if File.exists?(target)
+
+    # Note the -D options (do not add directory entries)
+    system("cd \"#{srcs}\" && zip -r -D \"#{target}\" .")
+  end
+end
+
 desc "Create the NSIS installer for windows"
 task :nsis do
   puts "Housekeeping..."
   Rake::Task[:clean].invoke
   Rake::Task[:protect].invoke
+  Rake::Task[:rcs_common_gem].invoke
 
   puts "Protecting collector code..."
   invoke_collector_task :protect
@@ -138,16 +165,16 @@ task :nsis do
   end
 end
 
+$modules = %w[db worker aggregator intelligence ocr translate connector]
+
 desc "Remove the protected release code"
 task :unprotect do
   execute "Deleting the protected release folder" do
     FileUtils.rm_rf(Dir.pwd + '/lib/rgloader') if File.exist?(Dir.pwd + '/lib/rgloader')
-    FileUtils.rm_rf(Dir.pwd + '/lib/rcs-db-release') if File.exist?(Dir.pwd + '/lib/rcs-db-release')
-    FileUtils.rm_rf(Dir.pwd + '/lib/rcs-worker-release') if File.exist?(Dir.pwd + '/lib/rcs-worker-release')
-    FileUtils.rm_rf(Dir.pwd + '/lib/rcs-aggregator-release') if File.exist?(Dir.pwd + '/lib/rcs-aggregator-release')
-    FileUtils.rm_rf(Dir.pwd + '/lib/rcs-intelligence-release') if File.exist?(Dir.pwd + '/lib/rcs-intelligence-release')
-    FileUtils.rm_rf(Dir.pwd + '/lib/rcs-ocr-release') if File.exist?(Dir.pwd + '/lib/rcs-ocr-release')
-    FileUtils.rm_rf(Dir.pwd + '/lib/rcs-translate-release') if File.exist?(Dir.pwd + '/lib/rcs-translate-release')
+
+    $modules.each do |name|
+      FileUtils.rm_rf(Dir.pwd + "/lib/rcs-#{name}-release") if File.exist?(Dir.pwd + "/lib/rcs-#{name}-release")
+    end
   end
 end
 
@@ -157,29 +184,27 @@ case RbConfig::CONFIG['host_os']
     RUBYENCPATH = File.exists?(paths.first) ? paths.first : paths.last
     RUBYENC = "#{RUBYENCPATH}/rgencoder"
   when /mingw/
-    RUBYENCPATH = 'C:/Program Files (x86)/RubyEncoder15'
-    RUBYENC = "\"C:\\Program Files (x86)\\RubyEncoder15\\rgencoder.exe\""
+    RUBYENCPATH = 'C:/Program Files (x86)/RubyEncoder'
+    RUBYENC = "\"C:\\Program Files (x86)\\RubyEncoder\\rgencoder.exe\""
 end
 
 desc "Create the encrypted code for release"
 task :protect do
   Rake::Task[:unprotect].invoke
+
   execute "Creating release folder" do
-    Dir.mkdir(Dir.pwd + '/lib/rcs-db-release') if not File.directory?(Dir.pwd + '/lib/rcs-db-release')
-    Dir.mkdir(Dir.pwd + '/lib/rcs-worker-release') if not File.directory?(Dir.pwd + '/lib/rcs-worker-release')
-    Dir.mkdir(Dir.pwd + '/lib/rcs-aggregator-release') if not File.directory?(Dir.pwd + '/lib/rcs-aggregator-release')
-    Dir.mkdir(Dir.pwd + '/lib/rcs-intelligence-release') if not File.directory?(Dir.pwd + '/lib/rcs-intelligence-release')
-    Dir.mkdir(Dir.pwd + '/lib/rcs-ocr-release') if not File.directory?(Dir.pwd + '/lib/rcs-ocr-release')
-    Dir.mkdir(Dir.pwd + '/lib/rcs-translate-release') if not File.directory?(Dir.pwd + '/lib/rcs-translate-release')
+    $modules.each do |name|
+      Dir.mkdir(Dir.pwd + "/lib/rcs-#{name}-release") if not File.directory?(Dir.pwd + "/lib/rcs-#{name}-release")
+    end
   end
 
   execute "Copying the rgloader" do
     RGPATH = RUBYENCPATH + '/Loaders'
     Dir.mkdir(Dir.pwd + '/lib/rgloader') rescue puts("Folder lib/rgloader already exists.")
     files = Dir[RGPATH + '/**/**']
-    # keep only the interesting files (1.9.3 windows, macos)
+    # keep only the interesting files (2.0.x windows, macos)
     files.delete_if {|v| v.match(/bsd/i) or v.match(/linux/i)}
-    files.keep_if {|v| v.match(/193/) or v.match(/loader.rb/) }
+    files.keep_if {|v| v.match(/20/) or v.match(/loader.rb/) }
     files.each do |f|
       FileUtils.cp(f, Dir.pwd + '/lib/rgloader')
     end
@@ -188,22 +213,15 @@ task :protect do
   execute "Encrypting code" do
     # we have to change the current dir, otherwise rubyencoder
     # will recreate the lib/rcs-db structure under rcs-db-release
-    Dir.chdir "lib/rcs-db/"
-    system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-db-release -r --ruby 1.9.3 *.rb */*.rb" || raise("Econding failed.")
-    Dir.chdir "../rcs-worker"
-    system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-worker-release -r --ruby 1.9.3 *.rb */*.rb" || raise("Econding failed.")
-    Dir.chdir "../rcs-aggregator"
-    system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-aggregator-release -r --ruby 1.9.3 *.rb */*.rb" || raise("Econding failed.")
-    Dir.chdir "../rcs-intelligence"
-    system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-intelligence-release -r --ruby 1.9.3 *.rb */*.rb" || raise("Econding failed.")
-    Dir.chdir "../rcs-ocr"
-    system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-ocr-release -r --ruby 1.9.3 *.rb */*.rb" || raise("Econding failed.")
-    Dir.chdir "../rcs-translate"
-    system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-translate-release -r --ruby 1.9.3 *.rb */*.rb" || raise("Econding failed.")
-    Dir.chdir "../.."
+    $modules.each do |name|
+      Dir.chdir "lib/rcs-#{name}/"
+      system "#{RUBYENC} --stop-on-error --encoding UTF-8 -o ../rcs-#{name}-release -r --ruby 2.0.0 *.rb */*.rb" || raise("Econding failed.")
+      Dir.chdir "../.."
+    end
   end
+
   execute "Copying other files" do
-    def recursive_copy_non_ruby_files_in(project_name)
+    $modules.each do |project_name|
       Dir["#{Dir.pwd}/lib/rcs-#{project_name}/**/*"].each do |p|
         next if Dir.exists?(p)
         next if File.extname(p) =~ /\.rb/i
@@ -213,9 +231,10 @@ task :protect do
         FileUtils.cp_r(p, dest_file)
       end
     end
-
-    %w[db worker aggregator intelligence ocr translate].each do |name|
-      recursive_copy_non_ruby_files_in(name)
-    end
   end
 end
+
+require 'rcs-common/deploy'
+ENV['DEPLOY_USER'] = 'Administrator'
+ENV['DEPLOY_ADDRESS'] = '192.168.100.100'
+RCS::Deploy::Task.import

@@ -43,7 +43,7 @@ class Processor
 
 
   def self.process(entry)
-    ev = Evidence.collection_class(entry['target_id']).find(entry['evidence_id'])
+    ev = Evidence.target(entry['target_id']).find(entry['evidence_id'])
 
     ev.data[:tr] = "TRANS_IN_PROGRESS"
     ev.save
@@ -57,7 +57,7 @@ class Processor
     dump_to_file(entry['target_id'], ev, temp)
     size = File.size(temp)
 
-    # invoke the ocr on the temp file and get the result
+    # invoke the translation on the temp file and get the result
     if SDL.translate(temp, output)
       raise "output file not found" unless File.exist?(output)
     else
@@ -139,5 +139,5 @@ class Processor
 
 end
 
-end #OCR::
+end #Translate::
 end #RCS::

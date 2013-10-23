@@ -1,32 +1,51 @@
 #
 #  The main file of the ocr
 #
+require 'rcs-common/path_utils'
 
-# from RCS::DB
-if File.directory?(Dir.pwd + '/lib/rcs-ocr-release')
-  require 'rcs-db-release/config'
-  require 'rcs-db-release/db_layer'
-  require 'rcs-db-release/grid'
-  require 'rcs-db-release/exec'
-  require 'rcs-db-release/alert'
-  require 'rcs-db-release/sessions'
-else
-  require 'rcs-db/config'
-  require 'rcs-db/db_layer'
-  require 'rcs-db/grid'
-  require 'rcs-db/exec'
-  require 'rcs-db/alert'
-  require 'rcs-db/sessions'
-end
+require_release 'rcs-db/config'
+require_release 'rcs-db/db_layer'
+require_release 'rcs-db/grid'
+require_release 'rcs-db/exec'
+require_release 'rcs-db/alert'
+require_release 'rcs-db/sessions'
+require_release 'rcs-db/license_component'
 
 # from RCS::Common
 require 'rcs-common/trace'
 
 require_relative 'processor'
-require_relative 'license'
+require_relative 'heartbeat'
 
 module RCS
 module OCR
+
+class Ocr
+  include Tracer
+  extend Tracer
+
+  def run
+
+    # all the events are handled here
+    EM::run do
+      # if we have epoll(), prefer it over select()
+      EM.epoll
+
+      # set the thread pool size
+      EM.threadpool_size = 50
+
+      # set up the heartbeat (the interval is in the config)
+      EM.defer(proc{ HeartBeat.perform })
+      EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
+
+      # use a thread for the infinite processor waiting on the queue
+      EM.defer(proc{ Processor.run })
+
+    end
+
+  end
+
+end
 
 class Application
   include RCS::Tracer
@@ -92,14 +111,8 @@ class Application
         end
       end
 
-      # TODO: remove after 8.4.0
-      until RCS::DB::DB.instance.mongo_version >= '2.4.0'
-        trace :warn, "Mongodb is not 2.4.x, waiting for upgrade..."
-        sleep 60
-      end
-
       # the infinite processing loop
-      Processor.run
+      Ocr.new.run
 
       # never reached...
 

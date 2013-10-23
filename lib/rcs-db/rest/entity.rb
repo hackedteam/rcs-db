@@ -15,15 +15,16 @@ class EntityController < RESTController
 
     mongoid_query do
       fields = ["type", "level", "name", "desc", "path", "photos", 'position', 'position_attr', 'links']
-      entities = []
+      filter = {'user_ids' => @session.user[:_id], 'level' => {'$ne' => :ghost}}
+      fields = fields.inject({}) { |h, f| h[f] = 1; h }
 
-      ::Entity.in(user_ids: [@session.user[:_id]]).ne(level: :ghost).only(fields).each do |ent|
-        ent = ent.as_document
+      entities = ::Entity.collection.find(filter).select(fields).entries.map! do |ent|
         link_size = ent['links'] ? ent['links'].keep_if {|x| x['level'] != :ghost}.size : 0
-        ent.delete('links')
+        # don't send ghost links
+        ent['links'].keep_if {|l| l['level'] != :ghost} if ent['links']
         ent['num_links'] = link_size
         ent['position'] = {longitude: ent['position'][0], latitude: ent['position'][1]} if ent['position'].is_a? Array
-        entities << ent
+        ent
       end
 
       ok(entities)
@@ -35,11 +36,30 @@ class EntityController < RESTController
 
     mongoid_query do
       # Check the presence of the required params
-      [:entities, :from, :to].each do |param_name|
+      %w[ids from to].each do |param_name|
         return bad_request('INVALID_OPERATION') if @params[param_name].blank?
       end
 
       return ok Entity.flow(@params)
+    end
+  end
+
+  def positions
+    require_auth_level :view
+
+    mongoid_query do
+      ids = [@params['ids']].flatten
+      from = @params['from'].to_i
+      to = @params['to'].to_i
+
+      if ids.blank? || from <= 0 || to <= 0 || to < from || to - from >= 1.year
+        trace :error, "Cannot retreive positions flow of #{ids.size} entities from \"#{from.inspect}\" to \"#{to.inspect}\". Invalid parameters."
+        return bad_request('INVALID_OPERATION')
+      end
+
+      options = {summary: @params['summary']}
+
+      ok Entity.positions_flow(ids, from, to, options)
     end
   end
 
@@ -88,7 +108,7 @@ class EntityController < RESTController
         end
       end
 
-      Audit.log :actor => @session.user[:name], :action => 'entity.create', :desc => "Created a new entity named #{e.name}"
+      Audit.log :actor => @session.user[:name], :action => 'entity.create', :entity_name => e.name, :desc => "Created a new entity named #{e.name}"
 
       # convert position to hash {:latitude, :longitude}
       entity = e.as_document
@@ -120,7 +140,7 @@ class EntityController < RESTController
           value.collect! {|x| Moped::BSON::ObjectId(x)}
         end
         if entity[key.to_s] != value and not key['_ids']
-          Audit.log :actor => @session.user[:name], :action => 'entity.update', :desc => "Updated '#{key}' to '#{value}' for entity #{entity.name}"
+          Audit.log :actor => @session.user[:name], :action => 'entity.update', :entity_name => entity.name, :desc => "Updated '#{key}' to '#{value}' for entity #{entity.name}"
         end
       end
 
@@ -141,7 +161,7 @@ class EntityController < RESTController
       # entity created by target cannot be deleted manually, they will disappear with their target
       return conflict('CANNOT_DELETE_TARGET_ENTITY') if e.type == :target
 
-      Audit.log :actor => @session.user[:name], :action => 'entity.destroy', :desc => "Deleted the entity #{e.name}"
+      Audit.log :actor => @session.user[:name], :action => 'entity.destroy', :entity_name => e.name, :desc => "Deleted the entity #{e.name}"
       e.destroy
 
       return ok
@@ -157,7 +177,7 @@ class EntityController < RESTController
       e = Entity.any_in(user_ids: [@session.user[:_id]]).find(@request[:content]['_id'])
       id = e.add_photo(@request[:content]['content'])
 
-      Audit.log :actor => @session.user[:name], :action => 'entity.add_photo', :desc => "Added a new photo to #{e.name}"
+      Audit.log :actor => @session.user[:name], :action => 'entity.add_photo', :entity_name => e.name, :desc => "Added a new photo to #{e.name}"
 
       return ok(id)
     end
@@ -173,7 +193,7 @@ class EntityController < RESTController
       file = GridFS.get(Moped::BSON::ObjectId.from_string(@params['_grid']), @params['target_id'])
       id = e.add_photo(file.read)
 
-      Audit.log :actor => @session.user[:name], :action => 'entity.add_photo', :desc => "Added a new photo to #{e.name}"
+      Audit.log :actor => @session.user[:name], :action => 'entity.add_photo', :entity_name => e.name, :desc => "Added a new photo to #{e.name}"
 
       return ok(id)
     end
@@ -188,7 +208,7 @@ class EntityController < RESTController
       e = Entity.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
       return not_found() unless e.del_photo(@params['photo_id'])
 
-      Audit.log :actor => @session.user[:name], :action => 'entity.del_photo', :desc => "Deleted a photo from #{e.name}"
+      Audit.log :actor => @session.user[:name], :action => 'entity.del_photo', :entity_name => e.name, :desc => "Deleted a photo from #{e.name}"
 
       return ok
     end
@@ -203,7 +223,7 @@ class EntityController < RESTController
       e = Entity.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
       e.handles.create!(level: :manual, type: @params['type'].downcase, name: @params['name'], handle: @params['handle'].downcase)
 
-      Audit.log :actor => @session.user[:name], :action => 'entity.add_handle', :desc => "Added a new handle to #{e.name}"
+      Audit.log :actor => @session.user[:name], :action => 'entity.add_handle', :entity_name => e.name, :desc => "Added a the handle '#{@params['handle'].downcase}' to #{e.name}"
 
       return ok
     end
@@ -218,7 +238,7 @@ class EntityController < RESTController
       e = Entity.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
       e.handles.find(@params['handle_id']).destroy
 
-      Audit.log :actor => @session.user[:name], :action => 'entity.del_handle', :desc => "Deleted an handle from #{e.name}"
+      Audit.log :actor => @session.user[:name], :action => 'entity.del_handle', :entity_name => e.name, :desc => "Deleted an handle from #{e.name}"
 
       return ok
     end
@@ -235,13 +255,13 @@ class EntityController < RESTController
       return conflict('NO_AGGREGATES_FOR_ENTITY') unless entity.type.eql? :target
 
       # extract the most contacted peers for this entity
-      contacted = Aggregate.most_contacted(entity.path.last.to_s, @params)
+      results = Aggregate.most_contacted(entity.path.last.to_s, @params)
 
-      return ok(contacted)
+      return ok(results)
     end
   end
 
-  def most_visited
+  def most_visited_urls
     require_auth_level :view
     require_auth_level :view_profiles
 
@@ -252,9 +272,26 @@ class EntityController < RESTController
       return conflict('NO_AGGREGATES_FOR_ENTITY') unless entity.type.eql? :target
 
       # extract the most contacted peers for this entity
-      contacted = Aggregate.most_visited(entity.path.last.to_s, @params)
+      results = Aggregate.most_visited_urls(entity.path.last.to_s, @params)
 
-      return ok(contacted)
+      return ok(results)
+    end
+  end
+
+  def most_visited_places
+    require_auth_level :view
+    require_auth_level :view_profiles
+
+    return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :correlation
+
+    mongoid_query do
+      entity = Entity.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
+      return conflict('NO_AGGREGATES_FOR_ENTITY') unless entity.type.eql? :target
+
+      # extract the most contacted peers for this entity
+      results = Aggregate.most_visited_places(entity.path.last.to_s, @params)
+
+      return ok(results)
     end
   end
 
@@ -273,7 +310,8 @@ class EntityController < RESTController
 
       link = RCS::DB::LinkManager.instance.add_link(from: e, to: e2, level: :manual, type: @params['type'].to_sym, versus: @params['versus'].to_sym, rel: @params['rel'])
 
-      Audit.log :actor => @session.user[:name], :action => 'entity.add_link', :desc => "Added a new link between #{e.name} and #{e2.name}"
+      Audit.log :actor => @session.user[:name], :action => 'entity.add_link', :entity_name => e.name, :desc => "Added a new link between #{e.name} and #{e2.name}"
+      Audit.log :actor => @session.user[:name], :action => 'entity.add_link', :entity_name => e2.name, :desc => "Added a new link between #{e.name} and #{e2.name}"
 
       return ok(link)
     end
@@ -294,7 +332,8 @@ class EntityController < RESTController
 
       link = RCS::DB::LinkManager.instance.edit_link(from: e, to: e2, level: :manual, type: @params['type'].to_sym, versus: @params['versus'].to_sym, rel: @params['rel'])
 
-      Audit.log :actor => @session.user[:name], :action => 'entity.add_link', :desc => "Added a new link between #{e.name} and #{e2.name}"
+      Audit.log :actor => @session.user[:name], :action => 'entity.add_link', :entity_name => e.name, :desc => "Added a new link between #{e.name} and #{e2.name}"
+      Audit.log :actor => @session.user[:name], :action => 'entity.add_link', :entity_name => e2.name, :desc => "Added a new link between #{e.name} and #{e2.name}"
 
       return ok(link)
     end
@@ -315,7 +354,8 @@ class EntityController < RESTController
 
       RCS::DB::LinkManager.instance.del_link(from: e, to: e2)
 
-      Audit.log :actor => @session.user[:name], :action => 'entity.del_link', :desc => "Deleted a link between #{e.name} and #{e2.name}"
+      Audit.log :actor => @session.user[:name], :action => 'entity.del_link', :entity_name => e.name, :desc => "Deleted a link between #{e.name} and #{e2.name}"
+      Audit.log :actor => @session.user[:name], :action => 'entity.del_link', :entity_name => e2.name, :desc => "Deleted a link between #{e.name} and #{e2.name}"
 
       return ok
     end
@@ -336,7 +376,8 @@ class EntityController < RESTController
 
       e.merge(e2)
 
-      Audit.log :actor => @session.user[:name], :action => 'entity.merge', :desc => "Merged entity '#{e.name}' and '#{e2.name}'"
+      Audit.log :actor => @session.user[:name], :action => 'entity.merge', :entity_name => e.name, :desc => "Merged entity '#{e.name}' and '#{e2.name}'"
+      Audit.log :actor => @session.user[:name], :action => 'entity.merge', :entity_name => e2.name, :desc => "Merged entity '#{e.name}' and '#{e2.name}'"
 
       return ok(e)
     end

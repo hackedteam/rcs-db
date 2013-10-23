@@ -1,27 +1,19 @@
 #
 #  The main file of the translator
 #
+require 'rcs-common/path_utils'
 
-# from RCS::DB
-if File.directory?(Dir.pwd + '/lib/rcs-translate-release')
-  require 'rcs-db-release/config'
-  require 'rcs-db-release/db_layer'
-  require 'rcs-db-release/grid'
-  require 'rcs-db-release/alert'
-  require 'rcs-db-release/sessions'
-else
-  require 'rcs-db/config'
-  require 'rcs-db/db_layer'
-  require 'rcs-db/grid'
-  require 'rcs-db/alert'
-  require 'rcs-db/sessions'
-end
+require_release 'rcs-db/config'
+require_release 'rcs-db/db_layer'
+require_release 'rcs-db/grid'
+require_release 'rcs-db/alert'
+require_release 'rcs-db/sessions'
+require_release 'rcs-db/license_component'
 
 # from RCS::Common
 require 'rcs-common/trace'
 
 require_relative 'processor'
-require_relative 'license'
 
 module RCS
 module Translate
@@ -85,12 +77,6 @@ class Application
         while true do
           sleep 60
         end
-      end
-
-      # TODO: remove after 8.4.0
-      until RCS::DB::DB.instance.mongo_version >= '2.4.0'
-        trace :warn, "Mongodb is not 2.4.x, waiting for upgrade..."
-        sleep 60
       end
 
       # the infinite processing loop

@@ -16,8 +16,8 @@ class Tika
 
     def transform(input_file, output_file)
 
-      text = RCS::DB::CrossPlatform.exec_with_output "java", "-jar ocr/tika/tika.jar --text --encoding=UTF-8 #{input_file}"
-      #meta = RCS::DB::CrossPlatform.exec_with_output "java", "-jar ocr/tika/tika.jar -m #{input_file}"
+      text = RCS::DB::CrossPlatform.exec_with_output "java", "-jar ocr/text/tika.jar --text --encoding=UTF-8 #{input_file}"
+      #meta = RCS::DB::CrossPlatform.exec_with_output "java", "-jar ocr/text/tika.jar -m #{input_file}"
 
       return false if text.nil? or text.size == 0
 

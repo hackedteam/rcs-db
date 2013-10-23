@@ -14,6 +14,7 @@ class Audit
   field :operation_name, type: String
   field :target_name, type: String
   field :agent_name, type: String
+  field :entity_name, type: String
   field :desc, type: String
   
   index({time: 1}, {background: true})
@@ -24,6 +25,7 @@ class Audit
   index({operation_name: 1}, {background: true})
   index({target_name: 1}, {background: true})
   index({agent_name: 1}, {background: true})
+  index({entity_name: 1}, {background: true})
 
   shard_key :time, :actor
 
@@ -161,7 +163,8 @@ class AuditFilters
   field :operation_name, type: Array
   field :target_name, type: Array
   field :agent_name, type: Array
-  
+  field :entity_name, type: Array
+
   store_in collection: 'audit_filters'
 end
 

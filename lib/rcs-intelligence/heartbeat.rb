@@ -26,8 +26,7 @@ class HeartBeat
   def self.perform
 
     # reset the status
-    SystemStatus.my_status = 'OK'
-    SystemStatus.my_error_msg = nil
+    SystemStatus.reset
 
     # report our status to the db
     component = "RCS::Intelligence"

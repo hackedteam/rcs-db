@@ -18,6 +18,7 @@ class Group
   has_and_belongs_to_many :items, dependent: :nullify, autosave: true, after_add: :add_item_callback, after_remove: :remove_item_callback
 
   index({name: 1}, {background: true})
+  index({alert: 1}, {background: true})
   
   store_in collection: 'groups'
 

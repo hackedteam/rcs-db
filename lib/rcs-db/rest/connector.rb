@@ -23,16 +23,19 @@ class ConnectorController < RESTController
 
     return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.limits[:connectors]
 
+    puts @params.inspect
+
     mongoid_query do
       f = ::Connector.new
       f.enabled = @params['enabled'] ? true : false
       f.name = @params['name']
-      f.type = @params['type'] || 'JSON'
-      f.raw = @params['raw']
+      f.type = @params['type'] || raise('Connector type must be provided')
+      f.format = @params['format'] || raise('Connector format must be provided')
+      # f.raw = @params['raw']
       f.keep = @params['keep']
       f.dest = @params['dest']
       f.path = @params['path'].collect! {|x| Moped::BSON::ObjectId(x)} if @params['path'].class == Array
-      f.save
+      f.save!
       
       Audit.log :actor => @session.user[:name], :action => 'connector.create', :desc => "Connector rule '#{f.name}' was created"
 
@@ -57,7 +60,7 @@ class ConnectorController < RESTController
         end
       end
 
-      connector.update_attributes(@params)
+      connector.update_attributes!(@params)
 
       return ok(connector)
     end
@@ -69,6 +72,11 @@ class ConnectorController < RESTController
 
     mongoid_query do
       connector = ::Connector.find(@params['_id'])
+
+      if connector.in_use?
+        raise("The connector is currently being used thus it cannot be deleted at the moment")
+      end
+
       Audit.log :actor => @session.user[:name], :action => 'connector.destroy', :desc => "Deleted the connector rule [#{connector[:name]}]"
       connector.destroy
 

@@ -1,0 +1,3 @@
+LIBRARY	Face
+EXPORTS 
+	detect_faces = detect_faces

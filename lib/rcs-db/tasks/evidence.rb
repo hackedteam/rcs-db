@@ -53,7 +53,6 @@ module RCS
 
       def next_entry
         @description = "Exporting #{@total} evidence"
-
         evidence = ::Evidence.report_filter @params
 
         @display_notes = (@params['note'] == false) ? false : true
@@ -95,7 +94,7 @@ module RCS
             name << File.extname(evidence[:data]['path'])
           when 'message'
             if evidence[:data]['type'] == :mail
-              name << '.txt'
+              name << '.eml'
             end
         end
         name
@@ -165,9 +164,12 @@ module RCS
             end
 
             begin
-              e[:agent] = ::Item.find(e[:aid]).name
+              agent = ::Item.find(e[:aid])
+              e[:agent] = agent.name
+              e[:agent_instance] = agent.instance
             rescue
               e[:agent] = 'unknown'
+              e[:agent_instance] = 'unknown'
             end
 
             # write the current evidence

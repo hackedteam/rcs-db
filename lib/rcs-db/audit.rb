@@ -20,6 +20,7 @@ class Audit
     #  :operation_name
     #  :target_name
     #  :agent_name
+    #  :entity_name
     #  :desc
     
     def log(params)
@@ -49,6 +50,7 @@ class Audit
       s.operation_name = update_search s.operation_name, params[:operation_name] if params.has_key? :operation_name
       s.target_name = update_search s.target_name, params[:target_name] if params.has_key? :target_name
       s.agent_name = update_search s.agent_name, params[:agent_name] if params.has_key? :agent_name
+      s.entity_name = update_search s.entity_name, params[:entity_name] if params.has_key? :entity_name
       s.save
     end
   end

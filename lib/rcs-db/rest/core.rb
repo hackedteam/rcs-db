@@ -2,8 +2,8 @@
 # Controller for Cores
 #
 require 'tempfile'
-require 'zip/zip'
-require 'zip/zipfilesystem'
+require 'zip'
+require 'zip/filesystem'
 
 module RCS
 module DB
@@ -31,7 +31,7 @@ class CoreController < RESTController
         temp = GridFS.to_tmp core[:_grid]
 
         list = []
-        Zip::ZipFile.foreach(temp) do |f|
+        Zip::File.foreach(temp) do |f|
           list << {name: f.name, size: f.size, date: f.time}
         end
 
@@ -62,7 +62,7 @@ class CoreController < RESTController
       File.open(temp, 'wb+') {|f| f.write @request[:content]['content']}
 
       # exctract the version
-      Zip::ZipFile.open(temp) do |z|
+      Zip::File.open(temp) do |z|
         core.version = z.file.open('version', "rb") { |f| f.read }
       end
 
@@ -95,7 +95,7 @@ class CoreController < RESTController
 
       temp = GridFS.to_tmp core[:_grid]
 
-      Zip::ZipFile.open(temp) do |z|
+      Zip::File.open(temp) do |z|
         z.file.open(new_entry, "wb") { |f| f.write @request[:content]['content'] }
       end
 
@@ -136,7 +136,7 @@ class CoreController < RESTController
         # get the core, save to tmp and edit it
         temp = GridFS.to_tmp core[:_grid]
 
-        Zip::ZipFile.open(temp, Zip::ZipFile::CREATE) do |z|
+        Zip::File.open(temp, Zip::File::CREATE) do |z|
           return not_found("File #{@params['name']} not found") unless z.file.exist?(@params['name'])
           z.file.delete(@params['name'])
         end

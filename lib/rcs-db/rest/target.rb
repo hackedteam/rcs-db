@@ -128,7 +128,6 @@ class TargetController < RESTController
       return ok
     end
   end
-
 end
 
 end

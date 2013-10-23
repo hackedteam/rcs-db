@@ -24,8 +24,7 @@ class HeartBeat
   def self.perform
 
     # reset the status
-    SystemStatus.my_status = 'OK'
-    SystemStatus.my_error_msg = nil
+    SystemStatus.reset
 
     # check the consistency of the license
     LicenseManager.instance.periodic_check

@@ -29,7 +29,7 @@ class EvidenceManager
   def run(options)
 
     # config file parsing
-    #return 1 unless Config.instance.load_from_file
+    return 1 unless Config.instance.load_from_file
 
     # connect to MongoDB
     return 1 unless DB.instance.connect

@@ -14,13 +14,19 @@ class Camera
 
   class << self
 
-    def save_first_camera(entity, evidence)
-      return unless entity.photos.empty?
+    def save_picture(entity, evidence)
+      # don't save picture without faces
+      return unless evidence.data['face'] == true
+
+      trace :debug, "Face reco is: #{evidence.data['face'].inspect}"
+
+      # save only the first three pictures
+      return if entity.photos.size >= 3
 
       file = RCS::DB::GridFS.get(evidence.data['_grid'], entity.path.last.to_s)
       entity.add_photo(file.read)
 
-      trace :info, "Saving first camera picture for #{entity.name}"
+      trace :info, "Saving camera picture (#{entity.photos.size}/3) for #{entity.name}"
     end
 
   end

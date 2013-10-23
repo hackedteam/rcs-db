@@ -69,7 +69,7 @@ ${StrStr}
 
 !macro _EnvSet
    ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
-   StrCpy $R0 "$R0;$INSTDIR\DB\ocr"
+   StrCpy $R0 "$R0;$INSTDIR\DB\ocr;$INSTDIR\DB\ocr\face"
    WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R0"
    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("Path", "$R0").r0'
 
@@ -180,14 +180,14 @@ SectionEnd
 
 Function .onInit
 
-	; check that 8.4.x is already installed
+	; check that 9.0.x is already installed
 	FileOpen $4 "$INSTDIR\DB\config\VERSION" r
 	FileRead $4 $1
 	FileClose $4
 	${If} $1 != ""
-	   ${StrStr} $0 $1 "8.4"
+	   ${StrStr} $0 $1 "9.0"
 	   ${If} $0 == ""
-  	   MessageBox MB_OK "This version can only be installed on 8.4.x systems, you have $1"
+  	   MessageBox MB_OK "This version can only be installed on 9.0.x systems, you have $1"
   	   Quit
 	   ${EndIf}
 	${EndIf}

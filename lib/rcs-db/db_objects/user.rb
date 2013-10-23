@@ -1,9 +1,6 @@
 require 'mongoid'
 require 'bcrypt'
 
-#module RCS
-#module DB
-
 class User
   include RCS::Tracer
   include Mongoid::Document
@@ -46,23 +43,35 @@ class User
   field :enabled, type: Boolean
   field :locale, type: String
   field :timezone, type: Integer
-
   field :dashboard_ids, type: Array, default: []
   field :recent_ids, type: Array, default: []
-  
+
   validates_uniqueness_of :name, :message => "USER_ALREADY_EXISTS"
-  
+
   has_and_belongs_to_many :groups, :dependent => :nullify, :autosave => true
   has_many :alerts, :dependent => :destroy
-
   has_one :session, :dependent => :destroy, :autosave => true
 
   index({name: 1}, {background: true})
   index({enabled: 1}, {background: true})
-  
+
   store_in collection: 'users'
 
-  before_destroy :destroy_callback
+  before_destroy :destroy_sessions
+
+  # Runs only if dashboard_ids has been updated
+  after_save { rebuild_watched_items if changed_attributes['dashboard_ids'] }
+
+  scope :enabled, where(enabled: true)
+
+  scope :online, lambda {
+    online_user_id = Session.only(:user_id).map(&:user_id)
+    enabled.in(_id: online_user_id)
+  }
+
+  def rebuild_watched_items
+    WatchedItem.rebuild
+  end
 
   def create_password(password)
     self[:pass] = BCrypt::Password.create(password).to_s
@@ -91,6 +100,13 @@ class User
     return false
   end
 
+  def add_recent(item)
+    self.recent_ids.insert(0, {'section' => item[:section], 'type' => item[:type], 'id' => item[:id]})
+    self.recent_ids.uniq!
+    self.recent_ids = self.recent_ids[0..4]
+    self.save
+  end
+
   def delete_item(id)
     if self.dashboard_ids.include? id
       trace :debug, "Deleting Item #{id} from #{self.name} dashboard"
@@ -98,18 +114,15 @@ class User
       self.save
     end
 
-    if self.recent_ids.include? id
+    self.recent_ids.each do |recent|
+      next unless recent['id'] == id or recent[:id] == id
       trace :debug, "Deleting Item #{id} from #{self.name} recents"
-      self.recent_ids.delete(id)
+      self.recent_ids.delete(recent)
       self.save
     end
   end
 
-  def destroy_callback
-    ::Session.destroy_all(user: [ self._id ])
+  def destroy_sessions
+    ::Session.destroy_all(user: [self._id])
   end
-
 end
-
-#end # ::DB
-#end # ::RCS

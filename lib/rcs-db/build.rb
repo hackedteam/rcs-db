@@ -10,8 +10,8 @@ require 'rcs-common/binary'
 
 require 'fileutils'
 require 'tmpdir'
-require 'zip/zip'
-require 'zip/zipfilesystem'
+require 'zip'
+require 'zip/filesystem'
 require 'securerandom'
 
 module RCS
@@ -72,7 +72,7 @@ class Build
   def unpack
     trace :debug, "Build: unpack: #{@core_filepath}"
 
-    Zip::ZipFile.open(@core_filepath) do |z|
+    Zip::File.open(@core_filepath) do |z|
       z.each do |f|
         f_path = path(f.name)
         FileUtils.mkdir_p(File.dirname(f_path))

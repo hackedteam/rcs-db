@@ -26,7 +26,7 @@ def move_evidence(params)
   target = ::Item.find(params[:target_id])
   agent = ::Item.find(params[:agent_id])
 
-  evidences = Evidence.collection_class(old_target[:_id]).where(:aid => agent[:_id])
+  evidences = Evidence.target(old_target[:_id]).where(:aid => agent[:_id])
 
   puts "Moving #{evidences.count} evidence for agent #{agent.name} to target #{target.name}"
 

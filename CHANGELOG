@@ -1,20 +1,14 @@
 
-Changelog for 8.4.1
-
-DB:
-  - improved mail parsing
-  - fix the missing export evidence feature
-  - fix for single target backup not backing up its operation
-  - support for STARTLS for alerting via email
-  - HASP driver updated to 6.56
-
-
 Changelog for 9.0.0
 
 Collector:
 
 DB:
   - Ability to create manual entities in the intelligence module
-  - Intelligence section new creates links between entities
+  - Links are created between entities communicating each other
+  - Links are created between entities that were in the same place
+  - Most visited places
   - Ability to search with OR queries in info and notes
-
+  - New and revamped connector system, now supports remote archiviation
+  - Mongodb updated to 2.4.6
+  - Ruby updated to 2.0.0

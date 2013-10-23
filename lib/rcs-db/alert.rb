@@ -86,8 +86,9 @@ class Alerting
         next if evidence.data.values.select {|v| v =~ Regexp.new(alert.keywords, true)}.empty?
 
         # we MUST not dispatch alert for element that are not accessible by the user
-        user = ::User.find(alert.user_id)
-        next unless agent.users.include? user
+        user = ::User.where(_id: Moped::BSON::ObjectId(alert.user_id)).first
+        next unless user
+        next unless agent.users.include?(user)
 
         # save the relevance tag into the evidence
         if evidence.rel < alert.tag
@@ -147,7 +148,7 @@ class Alerting
         end
 
         unless alert.type == 'NONE'
-          alert.logs.create!(time: Time.now.getutc.to_i, path: entities.first.path, entities: [entities.first._id, entities.last._id])
+          alert.logs.create!(time: Time.now.getutc.to_i, path: [entities.first.path.first], entities: [entities.first._id, entities.last._id])
           PushManager.instance.notify('alert', {item: entities.first, rcpt: user[:_id]})
           PushManager.instance.notify('alert', {item: entities.last, rcpt: user[:_id]})
         end
@@ -176,7 +177,7 @@ class Alerting
         next unless entity.users.include? user
 
         unless alert.type == 'NONE'
-          alert.logs.create!(time: Time.now.getutc.to_i, path: entity.path, entities: [entity._id])
+          alert.logs.create!(time: Time.now.getutc.to_i, path: [entity.path.first], entities: [entity._id])
           PushManager.instance.notify('alert', {item: entity, rcpt: user[:_id]})
         end
 
@@ -224,9 +225,12 @@ class Alerting
     public
 
     def dispatcher_start
+      # no license, no alerts :)
+      return unless LicenseManager.instance.check :alerting
+
       Thread.new do
         begin
-          dispatcher
+          dispatch
         rescue Exception => e
           trace :error, "ALERTING ERROR: Thread error: #{e.message}"
           trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
@@ -235,57 +239,53 @@ class Alerting
       end
     end
 
-    def dispatcher
-      # no license, no alerts :)
-      return unless LicenseManager.instance.check :alerting
-
+    def dispatch
       loop do
-        if (queued = AlertQueue.get_queued)
-          begin
-            entry = queued.first
-            count = queued.last
-
-            trace :info, "#{count} alerts to be processed in queue"
-
-            if entry.alert and entry.evidence
-              alert = ::Alert.find(entry.alert.first)
-              user = ::User.find(alert.user_id)
-
-              # check if we are in the suppression timeframe
-              if alert.last.nil? or Time.now.getutc.to_i - alert.last > alert.suppression or alert.logs.empty?
-                # we are out of suppression, create a new entry and mail
-                trace :debug, "Triggering alert: #{alert._id}"
-                alert.logs.create!(time: Time.now.getutc.to_i, path: entry.path, evidence: entry.evidence)
-                alert.last = Time.now.getutc.to_i
-                alert.save
-
-                item = Item.find(entry.path.last)
-
-                # notify the console of the new alert
-                PushManager.instance.notify('alert', {item: item, rcpt: user[:_id]})
-                send_mail(entry.to, entry.subject, entry.body) if alert.type == 'MAIL'
-              else
-                trace :debug, "Triggering alert: #{alert._id} (suppressed)"
-                al = alert.logs.last
-                al.evidence += entry.evidence unless al.evidence.include? entry.evidence
-                al.save
-                # notify even if suppressed so the console will reload the alert log list
-                PushManager.instance.notify('alert', {item: item, rcpt: user[:_id]})
-              end
-            else
-              # for queued items without an associated alert, send the mail
-              send_mail(entry.to, entry.subject, entry.body)
-            end
-          rescue Exception => e
-            trace :warn, "Cannot process alert queue: #{e.message}"
-            trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
-          end
-        else
-          # Nothing to do, waiting...
-          sleep 1
-        end
+        queued = AlertQueue.get_queued
+        queued ? process_queued(queued) : sleep(1)
       end
     end
+
+    def process_queued(queued)
+      entry = queued.first
+      count = queued.last
+
+      trace :info, "#{count} alerts to be processed in queue"
+
+      if entry.alert and entry.evidence
+        alert = ::Alert.find(entry.alert.first)
+        user = ::User.find(alert.user_id)
+
+        # check if we are in the suppression timeframe
+        if alert.last.nil? or Time.now.getutc.to_i - alert.last > alert.suppression or alert.logs.empty?
+          # we are out of suppression, create a new entry and mail
+          trace :debug, "Triggering alert: #{alert._id}"
+          alert.logs.create!(time: Time.now.getutc.to_i, path: entry.path, evidence: entry.evidence)
+          alert.last = Time.now.getutc.to_i
+          alert.save
+
+          item = Item.find(entry.path.last)
+
+          # notify the console of the new alert
+          PushManager.instance.notify('alert', {item: item, rcpt: user[:_id]})
+          send_mail(entry.to, entry.subject, entry.body) if alert.type == 'MAIL'
+        else
+          trace :debug, "Triggering alert: #{alert._id} (suppressed)"
+          al = alert.logs.last
+          al.evidence += entry.evidence unless al.evidence.include? entry.evidence
+          al.save
+          # notify even if suppressed so the console will reload the alert log list
+          PushManager.instance.notify('alert', {item: item, rcpt: user[:_id]})
+        end
+      else
+        # for queued items without an associated alert, send the mail
+        send_mail(entry.to, entry.subject, entry.body)
+      end
+    rescue Exception => e
+      trace :warn, "Cannot process alert queue: #{e.message}"
+      trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
+    end
+
 
     def send_mail(to, subject, body)
 

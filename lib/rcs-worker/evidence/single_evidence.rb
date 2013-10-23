@@ -49,7 +49,7 @@ module SingleEvidence
       agent = get_agent
       return nil if agent.nil?
 
-      coll = ::Evidence.collection_class(target[:_id].to_s)
+      coll = ::Evidence.target(target[:_id].to_s)
       evidence = coll.create do |ev|
 
         ev.aid = agent[:_id].to_s

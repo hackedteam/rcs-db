@@ -44,6 +44,9 @@ class Processor
         sleep 1
       end
     end
+  rescue Interrupt
+    trace :info, "System shutdown. Bye bye!"
+    return 0
   rescue Exception => e
     trace :error, "Thread error: #{e.message}"
     trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
@@ -78,7 +81,7 @@ class Processor
         Position.save_last_position(entity, evidence)
       when 'camera'
         # save picture of the target
-        Camera.save_first_camera(entity, evidence)
+        Camera.save_picture(entity, evidence)
       when 'addressbook'
         # analyze the accounts
         Accounts.add_handle(entity, evidence)
@@ -102,7 +105,10 @@ class Processor
   # Process the aggregate and (eventually) link the entities
   def self.process_aggregate entity, aggregate
     if aggregate.type == :position
-      process_position_aggregate entity, aggregate
+      process_position_aggregate(entity, aggregate)
+
+      target = Item.find(entity.target_id)
+      Position.suggest_recurring_positions(target, aggregate)
     else
       process_peer_aggregate entity, aggregate
     end
@@ -187,5 +193,5 @@ class Processor
   end
 end
 
-end #OCR::
+end #Intelligence::
 end #RCS::

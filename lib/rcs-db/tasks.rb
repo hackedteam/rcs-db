@@ -152,7 +152,7 @@ module FileTask
 
   def self.style_assets_count
     @count ||= begin
-      Zip::ZipFile.open(Config.instance.file('export.zip')) do |z|
+      Zip::File.open(Config.instance.file('export.zip')) do |z|
         return z.size
       end
       0
@@ -160,7 +160,7 @@ module FileTask
   end
 
   def self.expand_styles
-    Zip::ZipFile.open(Config.instance.file('export.zip')) do |z|
+    Zip::File.open(Config.instance.file('export.zip')) do |z|
       z.each do |f|
         yield f.name, z.file.open(f.name, "rb") { |c| c.read }
       end

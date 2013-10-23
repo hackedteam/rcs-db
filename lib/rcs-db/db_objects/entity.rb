@@ -45,6 +45,8 @@ class Entity
   index({name: 1}, {background: true})
   index({type: 1}, {background: true})
   index({path: 1}, {background: true})
+  index({level: 1}, {background: true})
+  index({user_ids: 1}, {background: true})
   index({"handles.type" => 1}, {background: true})
   index({"handles.handle" => 1}, {background: true})
   index({position: "2dsphere"}, {background: true})
@@ -264,7 +266,7 @@ class Entity
 
     return nil unless handle
 
-    type = 'phone' if ['call', 'sms', 'mms'].include? type
+    type = :phone if [:call, :sms, :mms].include? type
 
     target = ::Item.find(target_id)
 
@@ -290,7 +292,7 @@ class Entity
     return nil if check_intelligence_license
 
     # use the fulltext (kw) search to be fast
-    Evidence.collection_class(target_id).where({type: 'addressbook', :kw.all => handle.keywords }).each do |e|
+    Evidence.target(target_id).where({type: 'addressbook', :kw.all => handle.keywords }).each do |e|
       @@acc_cache.store(search_key, e[:data]['name'])
       return e[:data]['name']
     end
@@ -371,20 +373,21 @@ class Entity
     true
   end
 
-  def self.flow params
+  def self.flow(params)
     start_time = Time.now # for debugging
 
     # aggregate all the entities by their handles' handle
     # so if 2 entities share the same handle you'll get {'foo.bar@gmail.com' => ['entity1_id', 'entity2_id']}
     # TODO: the type should be also considered as a key with "$handles.handle"
-    match = {:_id => {'$in' => params[:entities]}}
+    ids = params['ids'].map { |id| Moped::BSON::ObjectId(id) }
+    match = {:_id => {'$in' => ids}, :type => {'$in' => %w[person target]}}
     group = {:_id=>"$handles.handle", :entities=>{"$addToSet"=>"$_id"}}
     handles_and_entities = Entity.collection.aggregate [{'$match' => match}, {'$unwind' => '$handles' }, {'$group' => group}]
     handles_and_entities = handles_and_entities.inject({}) { |hash, h| hash[h["_id"]] = h["entities"]; hash }
 
     # take all the tagerts of the given entities:
     # take all the entities of type "target" and for each of these take the second id in the "path" (the "target" id)
-    or_filter = params[:entities].map { |id| {id: id} }
+    or_filter = ids.map { |id| {id: id} }
     target_entities = Entity.targets.any_of(or_filter)
     targets = target_entities.map { |e| e.path[1] }
 
@@ -393,7 +396,7 @@ class Entity
       # take all the aggregates of the selected targets
       # only the aggregates within the given time frame
       # only the aggregates with sender and peer, discard the others (with only the peer information)
-      match = {'data.sender' => {'$exists' => true}, 'data.peer' => {'$exists' => true}, 'day' => {"$gte" => params[:from].to_s, "$lte" => params[:to].to_s}}
+      match = {'data.sender' => {'$exists' => true}, 'data.peer' => {'$exists' => true}, 'day' => {"$gte" => params['from'].to_s, "$lte" => params['to'].to_s}}
       group = {_id: {day: '$day', sender: "$data.sender", peer: "$data.peer", versus: "$data.versus"}, count: {'$sum' => "$count"}}
       aggregates = Aggregate.target(target_id).collection.aggregate [{'$match' => match}, {'$group' => group}]
 
@@ -411,6 +414,9 @@ class Entity
 
         entities_ids = handles_and_entities[handles.first].product handles_and_entities[handles.last]
         entities_ids.each do |entity_ids|
+          # TODO: the #product method sometimes creates couples of the same entity. This happens when an entity
+          # send a message to himself
+          next if entity_ids.uniq.size != 2
           days[data['day']] ||= {}
           days[data['day']][entity_ids] ||= 0
           days[data['day']][entity_ids] += count
@@ -418,9 +424,19 @@ class Entity
       end
     end
 
+    new_format = []
+    days.each do |key, values|
+      entry = {date: key, flows: []}
+      values.each do |k, v|
+        entry[:flows] << {from: k[0], rcpt: k[1], count: v}
+      end
+
+      new_format << entry
+    end
+
     trace :debug, "Entity#flow excecution time: #{Time.now - start_time}" if RCS::DB::Config.instance.global['PERF']
 
-    days
+    new_format
   end
 
   def to_point
@@ -431,6 +447,98 @@ class Entity
     request = {'gpsPosition' => {"latitude" => last_position[:latitude], "longitude" => last_position[:longitude]}}
     result = RCS::DB::PositionResolver.get request
     update_attributes(name: result["address"]["text"]) unless result.empty?
+  end
+
+  def self.positions_flow(ids, from, to, options = {})
+    ext = 70*60
+
+    t = Time.at(from.to_i)
+    from = Time.new(t.year, t.month, t.day, t.hour, t.min, 0).to_i
+
+    t = Time.at(to.to_i)
+    to = Time.new(t.year, t.month, t.day, t.hour, t.min, 0).to_i
+
+    ext_from, ext_to = from - ext, to + ext
+
+    filter = {'data.position' => {'$ne' => nil}, 'da' => {'$gte' => ext_from, '$lte' => ext_to}}
+    project = {'_id' => 0, 'da' => 1, 'data.position' => 1, 'data.accuracy' => 1}
+
+    results = {}
+    entities = []
+    range = (ext_from..ext_to).step(60).to_a
+
+
+    targets.in(:_id => ids).each do |entity|
+      entity_id = entity.id
+      target_id = entity.path[1]
+
+      positions_cnt = 0
+      moped_coll = ::Evidence.target(target_id).collection
+
+      moped_coll.where(filter).select(project).each do |h|
+        da = Time.at(h['da'])
+
+        minute = Time.new(da.year, da.month, da.day, da.hour, da.min, 0).to_i
+        hour = Time.new(da.year, da.month, da.day, da.hour, 0, 0).to_i
+
+        positions_cnt += 1
+        results[minute] ||= {pos: {}}
+        results[minute][:pos][entity_id] = {lat: h['data']['position'][1], lon: h['data']['position'][0], rad: h['data']['accuracy'], alpha: 60}
+
+        results[hour] ||= {pos: {}}
+        results[hour][:density] ||= [0]
+        results[hour][:density] << minute
+      end
+
+      next if positions_cnt.zero?
+
+      last = {alpha: 0}
+
+      range.each do |minute|
+        minute = minute.to_i
+        curr = (results[minute] && results[minute][:pos][entity_id]) ? results[minute][:pos][entity_id] : nil
+
+        next if curr.nil? && last[:alpha] == 0
+
+        if curr
+          last = curr.dup
+        else
+          results[minute] ||= {pos: {}}
+          decresed_alpha = last[:alpha] - 1 >= 0 ? last[:alpha] - 1 : 0
+          last.merge!(alpha: decresed_alpha)
+          results[minute][:pos][entity_id] = last.dup
+        end
+      end
+
+      last = {alpha: 0}
+
+      range.reverse.each do |minute|
+        minute = minute.to_i
+        curr = results[minute] && results[minute][:pos][entity_id] ? results[minute][:pos][entity_id] : nil
+        next if curr.nil? && last[:alpha] == 0
+
+        if curr.nil? || curr[:alpha] < last[:alpha]
+          decresed_alpha = last[:alpha] - 1 >= 0 ? last[:alpha] - 1 : 0
+          last.merge!(alpha: decresed_alpha)
+          results[minute] ||= {pos: {}}
+          results[minute][:pos][entity_id] = last.dup
+        elsif curr && curr[:alpha] >= last[:alpha]
+          last = curr.dup
+        end
+      end
+    end
+
+    if options[:summary]
+      results
+        .select { |t, h| h[:density] && t >= from && t <= to }
+        .map { |t, h| {time: t, positions: h[:pos].map { |ent_id, p| {_id: ent_id, position: p, alpha: p[:alpha]} }, alpha: (Math::log(h[:density].uniq.size)+2)*10 } }
+        .sort { |x,y| x[:time] <=> y[:time] }
+    else
+      results
+        .select { |t, h| t >= from && t <= to }
+        .map { |t, h| {time: t, positions: h[:pos].map { |ent_id, p| {_id: ent_id, position: p, alpha: p[:alpha]} } } }
+        .sort { |x,y| x[:time] <=> y[:time] }
+    end
   end
 end
 
@@ -447,6 +555,8 @@ class EntityHandle
   field :type, type: Symbol
   field :name, type: String
   field :handle, type: String
+
+  validates_uniqueness_of :handle, scope: :type
 
   after_create :create_callback
 
@@ -473,14 +583,16 @@ class EntityHandle
   end
 
   def create_callback
-    return unless check_intelligence_license
+    link! if check_intelligence_license
+  end
 
+  def link!
     # check if other entities have the same handle (it could be an identity relation)
     RCS::DB::LinkManager.instance.check_identity(self._parent, self)
+
     # link any other entity to this new handle (based on aggregates)
     RCS::DB::LinkManager.instance.link_handle(self._parent, self)
   end
-
 end
 
 

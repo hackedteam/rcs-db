@@ -44,6 +44,9 @@ module MicProcessing
     end
 
     #trace :debug, "Sample rate: #{self[:data][:sample_rate]} | data: #{data.size} | wav: #{self[:wav].size}"
+
+    #wav = Wave.new 1, self[:data][:sample_rate]
+    #wav.write "#{self[:data][:sample_rate]}_#{self[:data][:mic_id].to_i}_#{self[:data][:start_time].to_i}.wav", self[:wav]
   end
 
   def type

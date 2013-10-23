@@ -112,7 +112,7 @@ ${StrStr}
 ;--------------------------------
 !macro _EnvSet
    ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
-   StrCpy $R0 "$R0;$INSTDIR\Collector\bin;$INSTDIR\DB\bin;$INSTDIR\Ruby\bin;$INSTDIR\Java\bin;$INSTDIR\Python;$INSTDIR\DB\ocr"
+   StrCpy $R0 "$R0;$INSTDIR\Collector\bin;$INSTDIR\DB\bin;$INSTDIR\Ruby\bin;$INSTDIR\Java\bin;$INSTDIR\Python"
    WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R0"
    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("Path", "$R0").r0'
 
@@ -180,6 +180,8 @@ Section "Update Section" SecUpdate
    Sleep 3000
    SimpleSC::StopService "RCSWorker" 1
    Sleep 3000
+   SimpleSC::StopService "RCSConnector" 1
+   Sleep 3000
    SimpleSC::StopService "RCSAggregator" 1
    Sleep 3000
    SimpleSC::StopService "RCSIntelligence" 1
@@ -217,6 +219,7 @@ Section "Update Section" SecUpdate
    !endif
    RMDir /r "$INSTDIR\DB\lib\rcs-db-release"
    RMDir /r "$INSTDIR\DB\lib\rcs-worker-release"
+   RMDir /r "$INSTDIR\DB\lib\rcs-connector-release"
    RMDir /r "$INSTDIR\DB\lib\rcs-aggregator-release"
    RMDir /r "$INSTDIR\DB\lib\rcs-intelligence-release"
    RMDir /r "$INSTDIR\DB\lib\rgloader"
@@ -279,6 +282,7 @@ Section "Install Section" SecInstall
     SetOutPath "$INSTDIR\DB\lib"
     File "lib\rcs-db.rb"
     File "lib\rcs-worker.rb"
+    File "lib\rcs-connector.rb"
     File "lib\rcs-aggregator.rb"
     File "lib\rcs-intelligence.rb"
     File /r "lib\rgloader"
@@ -300,6 +304,9 @@ Section "Install Section" SecInstall
 
     SetOutPath "$INSTDIR\DB\lib\rcs-worker-release"
     File /r "lib\rcs-worker-release\*.*"
+
+    SetOutPath "$INSTDIR\DB\lib\rcs-connector-release"
+    File /r "lib\rcs-connector-release\*.*"
 
     SetOutPath "$INSTDIR\DB\lib\rcs-aggregator-release"
     File /r "lib\rcs-aggregator-release\*.*"
@@ -357,6 +364,12 @@ Section "Install Section" SecInstall
       
       DetailPrint "Installing VC redistributable 2010 (x64).."
       nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_2010_x64 /q"
+
+      DetailPrint "Installing Silverlight runtime (x64).."
+      nsExec::ExecToLog "$INSTDIR\DB\bin\Silverlight_x64 /q"
+
+      DetailPrint "Installing .Net Framework 4.0 (x64).."
+      nsExec::Exec "$INSTDIR\DB\bin\dotNetFx40_Client_x86_x64 /q"
 
       DetailPrint "Installing HASP drivers.."
       nsExec::ExecToLog "$INSTDIR\DB\bin\haspdinst -i -cm -kp -fi"
@@ -440,6 +453,13 @@ Section "Install Section" SecInstall
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSWorker" "Description" "Remote Control System Worker for data decoding"
       DetailPrint "done"
 
+      DetailPrint "Creating service RCS Connector..."
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSConnector $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-connector"
+      SimpleSC::SetServiceFailure "RCSConnector" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSConnector" "DisplayName" "RCS Connector"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSConnector" "Description" "Remote Control System Connector for data export"
+      DetailPrint "done"
+
       DetailPrint "Creating service RCS Aggregator..."
       nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSAggregator $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-aggregator"
       SimpleSC::SetServiceFailure "RCSAggregator" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
@@ -458,14 +478,22 @@ Section "Install Section" SecInstall
       FileOpen $4 "$INSTDIR\DB\config\admin_pass" w
       FileWrite $4 "$adminpass"
       FileClose $4
+    ${Else}
+      ;TODO: remove after 9.0.0
+      DetailPrint "Creating service RCS Connector..."
+      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSConnector $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-connector"
+      SimpleSC::SetServiceFailure "RCSConnector" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSConnector" "DisplayName" "RCS Connector"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSConnector" "Description" "Remote Control System Connector for data export"
+      DetailPrint "done"
     ${EndIf}
 
     ; make sure the certificate is removed on new install
-    ;Delete "$INSTDIR\DB\config\certs\rcs-network.pem"
+    Delete "$INSTDIR\DB\config\certs\rcs-network.pem"
     ; generate the SSL cert for anon on every install
-    ;DetailPrint "Generating anonymizer certs..."
-    ;nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-certs-anon --log"
-    ;DetailPrint "done"
+    DetailPrint "Generating anonymizer certs..."
+    nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-certs-anon --log"
+    DetailPrint "done"
 
     SetDetailsPrint "both"
 
@@ -493,6 +521,10 @@ Section "Install Section" SecInstall
 
     DetailPrint "Starting RCS Worker..."
     SimpleSC::StartService "RCSWorker" "" 30
+    Sleep 5000
+
+    DetailPrint "Starting RCS Connector..."
+    SimpleSC::StartService "RCSConnector" "" 30
     Sleep 5000
 
     DetailPrint "Starting RCS Aggregator..."
@@ -559,14 +591,6 @@ Section "Install Section" SecInstall
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --defaults --CN $masterAddress"
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config -u admin -p $adminpass -d $masterAddress --add-shard $localAddress"
       SetDetailsPrint "both"
-      DetailPrint "done"
-    ${Else}
-      ; TODO remove after 9.0
-      DetailPrint "Creating service RCS Intelligence..."
-      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSIntelligence $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-intelligence"
-      SimpleSC::SetServiceFailure "RCSIntelligence" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "DisplayName" "RCS Intelligence"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "Description" "Remote Control System Intelligence data correlator"
       DetailPrint "done"
 	  ${EndIf}
     
@@ -714,6 +738,7 @@ Section Uninstall
   DetailPrint "Stopping RCS Services..."
   SimpleSC::StopService "RCSCollector" 1
   SimpleSC::StopService "RCSWorker" 1
+  SimpleSC::StopService "RCSConnector" 1
   SimpleSC::StopService "RCSAggregator" 1
   SimpleSC::StopService "RCSIntelligence" 1
   SimpleSC::StopService "RCSDB" 1
@@ -725,6 +750,7 @@ Section Uninstall
   DetailPrint "Removing RCS Services..."
   SimpleSC::RemoveService "RCSCollector"
   SimpleSC::RemoveService "RCSWorker"
+  SimpleSC::RemoveService "RCSConnector"
   SimpleSC::RemoveService "RCSAggregator"
   SimpleSC::RemoveService "RCSIntelligence"
   SimpleSC::RemoveService "RCSDB"
