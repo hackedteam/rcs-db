@@ -16,12 +16,14 @@ class AuthManager
 
   end
 
-  def auth_server(username, pass, version, peer)
+  def auth_server(username, pass, version, type, peer)
     # if we are in archive mode, no collector is allowed to login
 
     if LicenseManager.instance.check :archive
-      raise "Collector cannot login on archive server"
+      raise "Collector services cannot login on archive server"
     end
+
+    trace :debug, "Server auth: #{username}, #{version}, #{type}, #{peer}"
 
     server_sig = ::Signature.where({scope: 'server'}).first
 
@@ -29,10 +31,14 @@ class AuthManager
     if pass.eql? server_sig['value']
 
       # take the external ip address from the username
-      instance, version, address = username.split(':')
-      Collector.collector_login instance, version, address, peer
+      instance, address = username.split(':')
 
-      trace :info, "Collector [#{username}] logged in"
+      # if it's a collector, create or update the component
+      Collector.collector_login(instance, version, address, peer) if type.eql? 'collector'
+
+      username = "#{instance}:#{type}"
+
+      trace :info, "#{type.capitalize} [#{instance}] logged in"
 
       # delete any previous session from this server
       SessionManager.instance.delete_server(username)
