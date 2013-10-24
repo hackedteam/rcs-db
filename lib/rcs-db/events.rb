@@ -224,9 +224,18 @@ class Events
         trace :info, "Listening for https on port #{port}..."
 
         # start the WS server
-        EM::WebSocket.start(:host => "0.0.0.0", :port => port + 1, :secure => true,
-                            :tls_options => {:private_key_file => Config.instance.cert('DB_KEY'),
-                                             :cert_chain_file => Config.instance.cert('DB_CERT')} ) { |ws| WebSocketManager.instance.handle ws }
+        websocket_opts = {
+          :host => "0.0.0.0",
+          :port => port + 1,
+          :secure => true,
+          :tls_options => {
+            :private_key_file => Config.instance.cert('DB_KEY'),
+            :cert_chain_file => Config.instance.cert('DB_CERT')
+          }
+        }
+
+        EM::WebSocket.start(websocket_opts) { |ws| WebSocketManager.instance.handle(ws) }
+
         trace :info, "Listening for wss on port #{port + 1}..."
 
         # ping for the connected clients
