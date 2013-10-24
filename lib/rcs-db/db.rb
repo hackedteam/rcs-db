@@ -45,7 +45,7 @@ module RCS
 
           # ensure that the CN is resolved to 127.0.0.1 in the /etc/host file
           # this is to avoid IPv6 resolution under windows 2008
-          DB.instance.ensure_cn_resolution
+          database.ensure_cn_resolution
 
           # connect to MongoDB
           establish_database_connection(wait_until_connected: true)
@@ -61,30 +61,30 @@ module RCS
           FileUtils.mkdir_p(Config.instance.global['BACKUP_DIR']) if not File.directory?(Config.instance.global['BACKUP_DIR'])
 
           # ensure the sharding is enabled
-          DB.instance.enable_sharding
+          database.enable_sharding
 
           # ensure all indexes are in place
-          DB.instance.create_indexes
+          database.create_indexes
 
           Audit.log :actor => '<system>', :action => 'startup', :desc => "System started"
 
           # check if we have to mark items for crisis
-          DB.instance.mark_bad_items if File.exist?(Config.instance.file('mark_bad'))
+          database.mark_bad_items if File.exist?(Config.instance.file('mark_bad'))
 
           # enable shard on audit log, it will increase its size forever and ever
-          DB.instance.shard_audit
+          database.shard_audit
 
           # ensure at least one user (admin) is active
-          DB.instance.ensure_admin
+          database.ensure_admin
 
           # ensure we have the signatures for the agents
-          DB.instance.ensure_signatures
+          database.ensure_signatures
 
           # load cores in the /cores dir
           Core.load_all
 
           # create the default filters
-          DB.instance.create_evidence_filters
+          database.create_evidence_filters
 
           # perform any pending operation in the journal
           OffloadManager.instance.recover
