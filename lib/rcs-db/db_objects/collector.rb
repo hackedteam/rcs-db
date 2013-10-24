@@ -28,6 +28,7 @@ class Collector
   index({name: 1}, {background: true})
   index({address: 1}, {background: true})
   index({internal_address: 1}, {background: true})
+  index({type: 1}, {background: true})
 
   scope :remote, where(type: 'remote')
   scope :local, where(type: 'local')

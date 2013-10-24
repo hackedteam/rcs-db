@@ -19,6 +19,7 @@ class Session
 
   index user: 1
   index cookie: 1
+  index level: 1
 
   after_create :rebuild_watched_items
   after_destroy :rebuild_watched_items
