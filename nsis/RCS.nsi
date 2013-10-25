@@ -175,6 +175,8 @@ Section "Update Section" SecUpdate
    DetailPrint ""
    DetailPrint "Stopping RCS Services..."
    SimpleSC::StopService "RCSCollector" 1
+   SimpleSC::StopService "RCSCarrier" 1
+   SimpleSC::StopService "RCSController" 1
    Sleep 3000
    SimpleSC::StopService "RCSDB" 1
    Sleep 3000
@@ -478,14 +480,6 @@ Section "Install Section" SecInstall
       FileOpen $4 "$INSTDIR\DB\config\admin_pass" w
       FileWrite $4 "$adminpass"
       FileClose $4
-    ${Else}
-      ;TODO: remove after 9.0.0
-      DetailPrint "Creating service RCS Connector..."
-      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSConnector $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-connector"
-      SimpleSC::SetServiceFailure "RCSConnector" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSConnector" "DisplayName" "RCS Connector"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSConnector" "Description" "Remote Control System Connector for data export"
-      DetailPrint "done"
     ${EndIf}
 
     ; make sure the certificate is removed on new install
@@ -661,29 +655,66 @@ Section "Install Section" SecInstall
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector-config --defaults -d $masterAddress -u admin -p $adminpass -t -s"
       SetDetailsPrint "both"
       DetailPrint "done"
-    
-      DetailPrint "Creating service RCS Collector..."
-      nsExec::Exec  "$INSTDIR\Collector\bin\nssm.exe install RCSCollector $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector"
-      SimpleSC::SetServiceFailure "RCSCollector" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSCollector" "DisplayName" "RCS Collector"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSCollector" "Description" "Remote Control System Collector for data reception"
+
+      ${If} $installCollector == ${BST_CHECKED}
+        DetailPrint "Creating service RCS Collector..."
+        nsExec::Exec  "$INSTDIR\Collector\bin\nssm.exe install RCSCollector $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector"
+        SimpleSC::SetServiceFailure "RCSCollector" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+        WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSCollector" "DisplayName" "RCS Collector"
+        WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSCollector" "Description" "Remote Control System Collector for data reception"
+        DetailPrint "done"
+
+        DetailPrint "Creating service RCS Carrier..."
+        nsExec::Exec  "$INSTDIR\Collector\bin\nssm.exe install RCSCarrier $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-carrier"
+        SimpleSC::SetServiceFailure "RCSCarrier" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+        WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSCarrier" "DisplayName" "RCS Carrier"
+        WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSCarrier" "Description" "Remote Control System Carier for data transfer to DB"
+        DetailPrint "done"
+      ${EndIf}
+
+      ${If} $installNetworkController == ${BST_CHECKED}
+        DetailPrint "Creating service RCS Controller..."
+        nsExec::Exec  "$INSTDIR\Collector\bin\nssm.exe install RCSController $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-controller"
+        SimpleSC::SetServiceFailure "RCSController" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+        WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSController" "DisplayName" "RCS Controller"
+        WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSController" "Description" "Remote Control System Network Controller for Anonymizers and Network Injectors"
+        DetailPrint "done"
+      ${EndIf}
+    ${Else}
+      ;TODO: remove after 9.1.0
+      DetailPrint "Creating service RCS Carrier..."
+      nsExec::Exec  "$INSTDIR\Collector\bin\nssm.exe install RCSCarrier $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-carrier"
+      SimpleSC::SetServiceFailure "RCSCarrier" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSCarrier" "DisplayName" "RCS Carrier"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSCarrier" "Description" "Remote Control System Carier for data transfer to DB"
       DetailPrint "done"
+
+      ${If} $installNetworkController == ${BST_CHECKED}
+        DetailPrint "Creating service RCS Controller..."
+        nsExec::Exec  "$INSTDIR\Collector\bin\nssm.exe install RCSController $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-controller"
+        SimpleSC::SetServiceFailure "RCSController" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+        WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSController" "DisplayName" "RCS Controller"
+        WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSController" "Description" "Remote Control System Network Controller for Anonymizers and Network Injectors"
+        DetailPrint "done"
+      ${EndIf}
     ${EndIf}
 
     ${If} $installCollector == ${BST_CHECKED}     
       WriteRegDWORD HKLM "Software\HT\RCS" "collector" 0x00000001
-    ${Else}
-      nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector-config --no-collector"
+
+      DetailPrint "Starting RCS Collector..."
+      SimpleSC::StartService "RCSCollector" ""
+
+      DetailPrint "Starting RCS Carrier..."
+      SimpleSC::StartService "RCSCarrier" ""
     ${EndIf}
     
     ${If} $installNetworkController == ${BST_CHECKED}
       WriteRegDWORD HKLM "Software\HT\RCS" "networkcontroller" 0x00000001
-    ${Else}
-      nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector-config --no-network"
-    ${EndIf}
 
-    DetailPrint "Starting RCS Collector..."
-    SimpleSC::StartService "RCSCollector" ""
+      DetailPrint "Starting RCS Controller..."
+      SimpleSC::StartService "RCSController" ""
+    ${EndIf}
 
     WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
 
@@ -739,6 +770,8 @@ SectionEnd
 Section Uninstall
   DetailPrint "Stopping RCS Services..."
   SimpleSC::StopService "RCSCollector" 1
+  SimpleSC::StopService "RCSCarrier" 1
+  SimpleSC::StopService "RCSController" 1
   SimpleSC::StopService "RCSWorker" 1
   SimpleSC::StopService "RCSConnector" 1
   SimpleSC::StopService "RCSAggregator" 1
@@ -751,6 +784,8 @@ Section Uninstall
 
   DetailPrint "Removing RCS Services..."
   SimpleSC::RemoveService "RCSCollector"
+  SimpleSC::RemoveService "RCSCarrier"
+  SimpleSC::RemoveService "RCSController"
   SimpleSC::RemoveService "RCSWorker"
   SimpleSC::RemoveService "RCSConnector"
   SimpleSC::RemoveService "RCSAggregator"
@@ -800,7 +835,7 @@ SectionEnd
 
 Function .onInit
 
-	; check that 8.4.x is already installed
+	; check that 9.0.x is already installed
 	IfFileExists "$INSTDIR\DB\config\VERSION" isDB isCollector
   isDB:
 	  FileOpen $4 "$INSTDIR\DB\config\VERSION" r
@@ -812,9 +847,9 @@ Function .onInit
 	FileRead $4 $1
 	FileClose $4
 	${If} $1 != ""
-	   ${StrStr} $0 $1 "8.4"
+	   ${StrStr} $0 $1 "9.0"
 	   ${If} $0 == ""
-  	   MessageBox MB_OK "This version can only be installed on 8.4.x systems, you have $1"
+  	   MessageBox MB_OK "This version can only be installed on 9.0.x systems, you have $1"
   	   Quit
 	   ${EndIf}
 	${EndIf}

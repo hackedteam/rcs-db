@@ -1,14 +1,8 @@
 
-Changelog for 9.0.0
+Changelog for 9.1.0
 
 Collector:
+  - the collector is now splitted into three different services: collector, carrier and controller
 
 DB:
-  - Ability to create manual entities in the intelligence module
-  - Links are created between entities communicating each other
-  - Links are created between entities that were in the same place
-  - Most visited places
-  - Ability to search with OR queries in info and notes
-  - New and revamped connector system, now supports remote archiviation
-  - Mongodb updated to 2.4.6
-  - Ruby updated to 2.0.0
+
