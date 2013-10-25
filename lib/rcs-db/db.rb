@@ -131,6 +131,9 @@ class Application
       # housekeeping of old servers sessions
       SessionManager.instance.clear_all_servers
 
+      # If there aren't users online, cleans the watched_items list
+      WatchedItem.rebuild
+
       # enter the main loop (hopefully will never exit from it)
       Events.new.setup Config.instance.global['LISTENING_PORT']
       
