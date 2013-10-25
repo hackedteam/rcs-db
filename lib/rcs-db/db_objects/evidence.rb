@@ -147,7 +147,7 @@ module Evidence
 
     add_to_intelligence_queue
 
-    unless STAT_EXCLUSION.inlcude?(type)
+    unless STAT_EXCLUSION.include?(type)
       Item.send_dashboard_push(agent, target, target.get_parent)
     end
   end
