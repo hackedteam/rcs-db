@@ -15,16 +15,17 @@ TODO 9.1.x
       - the group contains a list of entities
       - the rendering of the links is demanded to the console (underlying links are created normally)
 
+    intra operation correlation (visualize like a link to a group that actually is the other operation)
+
+    method to create a graph representation of our data (xml, graphml, etc)
+      - this will be useful for testing new visualizazion libraries on the same dataset
+
+    automatic discovery (and thus suggestion) of groups (communities)
+
   IDEAS:
     message quque on entities
       - sort of "inbox" for each entity on what the system performs on it
         the customer can review the messages and acknowledge them
-
-    archive of "common" criminals
-
-    placeholder targets (linked from other operations)
-
-    intra operation correlation (visualize like a link to a group that actually is the other operation)
 
     advanced multi operation search
 
