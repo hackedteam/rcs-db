@@ -63,8 +63,9 @@ class PositionResolver
           location.merge! get_google_geocoding(location)
 
         elsif request['gpsPosition']
+          location = request['gpsPosition']
           # GPS to address
-          location = get_google_geocoding(request['gpsPosition'])
+          location.merge! get_google_geocoding(request['gpsPosition'])
         elsif request['gpsTimezone']
           # GPS to timezone
           location = get_google_timezone(request['gpsTimezone'])
