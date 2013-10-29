@@ -380,7 +380,7 @@ Section "Install Section" SecInstall
     ; check if the license + dongle is ok
     StrCpy $0 1
     ${Do}
-      nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-license"
+      nsExec::ExecToLog "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-license --check"
       Pop $0
       ${If} $0 != 0
          MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "Insert the USB token associated with the license and retry" IDRETRY retry IDCANCEL cancel
