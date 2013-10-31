@@ -371,7 +371,7 @@ class Call
       when 1
         channel = @channels.values[0]
         gap = (1.0 * channel.written_samples) / channel.sample_rate
-        @status = :single_channel if (gap > 15 or @program == :phone)
+        @status = :single_channel if gap > 15
         trace :debug, "[CALL #{@id}] call status is #{@status}, channel #{channel.name} gap is #{gap} and program is #{@program}"
       when 2
         @status = :dual_channel
