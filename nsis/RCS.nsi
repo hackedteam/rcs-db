@@ -186,6 +186,7 @@ Section "Update Section" SecUpdate
     Pop $0
     ${If} $0 != 0
        MessageBox MB_OK|MB_ICONEXCLAMATION "The license file is invalid. Please restart the installation with the correct one."
+       Delete "$INSTDIR\DB\bin\rcs-license-check"
        Quit
     ${EndIf}
 

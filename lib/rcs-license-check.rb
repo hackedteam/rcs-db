@@ -239,5 +239,5 @@ module LicenseChecker
 end
 
 if __FILE__ == $0
-  LicenseChecker.run! *ARGV
+  exit LicenseChecker.run! *ARGV
 end
