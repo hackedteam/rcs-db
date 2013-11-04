@@ -211,6 +211,12 @@ task :protect do
   end
 
   execute "Encrypting code" do
+
+    # license check script used during the installation
+    FileUtils.rm_f "bin/rcs-license-check"
+    FileUtils.cp "lib/rcs-license-check.rb", "bin/rcs-license-check"
+    system "#{RUBYENC} --stop-on-error --encoding UTF-8 -b- --ruby 2.0.0 bin/rcs-license-check" || raise("Econding failed.")
+
     # we have to change the current dir, otherwise rubyencoder
     # will recreate the lib/rcs-db structure under rcs-db-release
     $modules.each do |name|

@@ -108,7 +108,7 @@ class LicenseManager
       end
 
       # use local time if the dongle presence is not enforced
-      if @limits[:serial] == 'off'
+      if lic[:serial] == 'off'
         time = Time.now.getutc
       else
         time = RCS::DB::Dongle.time

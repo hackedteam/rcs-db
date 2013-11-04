@@ -7,6 +7,8 @@ TODO 9.1.x
   TRY:
     caching slow query. try to cache already jsonized list of items and similar
 
+    improve worker and evidence_transfer speed (measure and optimize)
+
   IMPLEMENT:
 
     scout++ (with simplified config)

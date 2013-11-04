@@ -2,8 +2,8 @@
 :serial: 'off'
 :version: '9.0'
 :type: reusable
-:expiry: '2014-01-01 00:00:00 UTC'
-:maintenance: '2014-01-01 00:00:00 UTC'
+:expiry: '2015-01-01 00:00:00 UTC'
+:maintenance: '2015-01-01 00:00:00 UTC'
 :users: .inf
 :agents:
   :total: .inf
@@ -58,7 +58,7 @@
 :translation: true
 :modify: true
 :hostname_sync: true
-:digest: 4c4899bcfbb7a1104a3f498c93c397d5657f574f
+:digest: b51fd41579a6a19fc84a9a1ea34fef52cce8383d
 :check: LOuWAplu
-:signature: b8ed85520189203ddcf63ab92170883db2c2b44141da53be1c0ef74ec28d5d81
-:integrity: e5beaf079b979b85f0121d35e75935726ea57109635f9b0da681d9b64c3732c2840882dd7ebe4e216a3969203b51d999
+:signature: 3f93e168c102f1a8d772a1d86673f4c56337fb71935725ea712b9694c0bddcbf
+:integrity: 0ffda5b9a666d170b3b9305b9d76e954da330189089e7ef754af1f1b53f503620516543cc6691d5dc988d55b6ecfe238
