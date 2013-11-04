@@ -127,7 +127,7 @@ module LicenseChecker
 
       # the license is not for this version
       if lic[:version] != version
-        raise 'Invalid License File: incorrect version'
+        raise "Invalid License File: incorrect version (#{lic[:version]}) #{version} is needed"
       end
 
       # use local time if the dongle presence is not enforced
@@ -150,7 +150,7 @@ module LicenseChecker
         # get the version from the dongle (can rise exception)
         info = RCS::DB::Dongle.info
         puts "Dongle info: " + info.inspect
-        raise 'Invalid License File: incorrect serial number' if lic[:serial] != info[:serial]
+        raise "Invalid License File: incorrect serial number (#{lic[:serial]}) #{info[:serial]} is needed" if lic[:serial] != info[:serial]
       else
         puts "Hardware dongle not required..."
       end
