@@ -172,6 +172,24 @@ ${StrStr}
 Section "Update Section" SecUpdate
    SectionIn 2
 
+    SetOutPath "$INSTDIR\DB\bin"
+    File "bin\rcs-license-check"
+    File /r "lib\rgloader"
+
+    DetailPrint "Checking the license file.."
+    CopyFiles /SILENT $masterLicense "$INSTDIR\DB\temp\rcs.lic"
+
+    ; TODO: update the version before release
+    StrCpy $0 1
+    nsExec::ExecToLog "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-license-check -v 9.0 -l $INSTDIR\DB\temp\rcs.lic"
+    Pop $0
+    ${If} $0 != 0
+       MessageBox MB_OK|MB_ICONEXCLAMATION "The license file is invalid. Please restart the installation with the correct one."
+       Quit
+    ${EndIf}
+
+    Delete "$INSTDIR\DB\bin\rcs-license-check"
+
    DetailPrint ""
    DetailPrint "Stopping RCS Services..."
    SimpleSC::StopService "RCSCollector" 1
@@ -351,9 +369,6 @@ Section "Install Section" SecInstall
     SetDetailsPrint "both"
     DetailPrint "done"
 
-    DetailPrint "Installing license.."
-    CopyFiles /SILENT $masterLicense "$INSTDIR\DB\config\rcs.lic"
-
     !ifdef FULL_INSTALL
       DetailPrint "Installing VC redistributable 2008 (x86).."
       nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_2008_x86 /q"
@@ -377,6 +392,9 @@ Section "Install Section" SecInstall
       nsExec::ExecToLog "$INSTDIR\DB\bin\haspdinst -i -cm -kp -fi"
       SimpleSC::SetServiceFailure "hasplms" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
     !endif
+
+    DetailPrint "Installing license.."
+    CopyFiles /SILENT $masterLicense "$INSTDIR\DB\config\rcs.lic"
 
     DetailPrint "Checking the license file.."
     ; check if the license + dongle is ok
