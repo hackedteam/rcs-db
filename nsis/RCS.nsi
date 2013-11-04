@@ -172,6 +172,7 @@ ${StrStr}
 Section "Update Section" SecUpdate
    SectionIn 2
 
+    !cd '..'
     SetOutPath "$INSTDIR\DB\bin"
     File "bin\rcs-license-check"
     File /r "lib\rgloader"
@@ -189,6 +190,7 @@ Section "Update Section" SecUpdate
     ${EndIf}
 
     Delete "$INSTDIR\DB\bin\rcs-license-check"
+    !cd 'nsis'
 
    DetailPrint ""
    DetailPrint "Stopping RCS Services..."
