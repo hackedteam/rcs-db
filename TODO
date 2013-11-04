@@ -1,8 +1,5 @@
 
-TODO 9.1.x
-
-  license check before anything else!
-
+TODO 9.2.x
 
   TRY:
     caching slow query. try to cache already jsonized list of items and similar
