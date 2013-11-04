@@ -1,11 +1,11 @@
 
-Changelog for 9.0.1
+Changelog for 9.1.0
 
 - Fix gps position resolving
+- Fix for NI rule building without linux license
 
 
-
-Changelog for 9.1.0
+Changelog for 9.2.0
 
 Collector:
   - the collector is now splitted into three different services: collector, carrier and controller
