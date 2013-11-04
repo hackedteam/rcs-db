@@ -170,6 +170,7 @@ $modules = %w[db worker aggregator intelligence ocr translate connector]
 desc "Remove the protected release code"
 task :unprotect do
   execute "Deleting the protected release folder" do
+    FileUtils.rm_f "bin/rcs-license-check"
     FileUtils.rm_rf(Dir.pwd + '/lib/rgloader') if File.exist?(Dir.pwd + '/lib/rgloader')
 
     $modules.each do |name|
