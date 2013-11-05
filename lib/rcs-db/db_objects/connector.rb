@@ -54,14 +54,12 @@ class Connector
   end
 
   def enqueue_all_previous_evidences
-    trace(:info, "Sending to the connector queue all the previous evidences that matches the connector #{name}...")
+    trace(:info, "Sending to the connector queue all the previous evidence that matches the connector #{name}...")
 
     operation_id, target_id, agent_id = *path
 
     target_filter = target_id ? {_id: target_id} : {}
     agent_filter = agent_id ? {aid: agent_id.to_s} : {}
-
-    operation = Item.operations.where(_id: operation_id)
 
     Item.path_include(operation_id).targets.where(target_filter).each do |target|
       Evidence.target(target).where(agent_filter).each do |evidence|
@@ -69,7 +67,7 @@ class Connector
       end
     end
   rescue Exception => ex
-    trace :error, "Cannot enqueue all the previous evidences (connector #{name}): #{ex.message}"
+    trace :error, "Cannot enqueue all the previous evidence (connector #{name}): #{ex.message}"
     trace :fatal, ex.backtrace.join(", ")
   end
 
