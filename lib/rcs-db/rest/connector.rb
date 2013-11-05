@@ -31,12 +31,12 @@ class ConnectorController < RESTController
       f.name = @params['name']
       f.type = @params['type'] || raise('Connector type must be provided')
       f.format = @params['format'] || raise('Connector format must be provided')
-      # f.raw = @params['raw']
       f.keep = @params['keep']
+      f.enqueue_previous = @params['enqueue_previous'] || false
       f.dest = @params['dest']
       f.path = @params['path'].collect! {|x| Moped::BSON::ObjectId(x)} if @params['path'].class == Array
       f.save!
-      
+
       Audit.log :actor => @session.user[:name], :action => 'connector.create', :desc => "Connector rule '#{f.name}' was created"
 
       return ok(f)
