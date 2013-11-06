@@ -26,20 +26,19 @@ class Group
     Thread.new(&block)
   end
 
+  # user added to a group, we have to put in every item and entity of this group
+  # if already present, it will not be duplicated by mongoid
   def add_user_callback(user)
-    defer do
-      # user added to a group, we have to put in every item and entity of this group
-      # if already present, it will not be duplicated by mongoid
-      self.items.each do |operation|
-        operation.users << user
-        ::Item.any_in({path: [operation._id]}).each do |item|
-          trace :debug, "Adding user #{user.name} to item #{item.name}"
-          item.users << user
-        end
-        ::Entity.any_in({path: [operation._id]}).each do |ent|
-          trace :debug, "Adding user #{user.name} to entity #{ent.name}"
-          ent.users << user
-        end
+    self.items.each do |operation|
+      operation.users << user
+
+      ::Item.any_in({path: [operation._id]}).each do |item|
+        trace :debug, "Adding user #{user.name} to item #{item.name}"
+        item.users << user
+      end
+      ::Entity.any_in({path: [operation._id]}).each do |ent|
+        trace :debug, "Adding user #{user.name} to entity #{ent.name}"
+        ent.users << user
       end
     end
   end
@@ -63,19 +62,18 @@ class Group
     end
   end
 
+  # operation added to a group, we have to put the users in all items and entities
+  # if already present, it will not be duplicated by mongoid
   def add_item_callback(operation)
-    defer do
-      # operation added to a group, we have to put the users in all items and entities
-      # if already present, it will not be duplicated by mongoid
-      operation.users += self.users
-      ::Item.any_in({path: [operation._id]}).each do |item|
-        trace :debug, "Adding these users to item #{item.name}: #{self.users.collect {|u| u.name}.inspect}"
-        item.users += self.users
-      end
-      ::Entity.any_in({path: [operation._id]}).each do |ent|
-        trace :debug, "Adding these users to entity #{ent.name}: #{self.users.collect {|u| u.name}.inspect}"
-        ent.users += self.users
-      end
+    operation.users += self.users
+
+    ::Item.any_in({path: [operation._id]}).each do |item|
+      trace :debug, "Adding these users to item #{item.name}: #{self.users.collect {|u| u.name}.inspect}"
+      item.users += self.users
+    end
+    ::Entity.any_in({path: [operation._id]}).each do |ent|
+      trace :debug, "Adding these users to entity #{ent.name}: #{self.users.collect {|u| u.name}.inspect}"
+      ent.users += self.users
     end
   end
 

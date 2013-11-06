@@ -1,11 +1,10 @@
 require 'mongoid'
 
-#module RCS
-#module DB
-
 class Backup
   include Mongoid::Document
   include Mongoid::Timestamps
+  include RCS::Tracer
+  extend RCS::Tracer
 
   field :enabled, type: Boolean
   field :what, type: String
@@ -24,8 +23,4 @@ class Backup
       self.destroy
     end
   end
-
 end
-
-#end # ::DB
-#end # ::RCS
