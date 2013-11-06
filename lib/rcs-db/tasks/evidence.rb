@@ -75,7 +75,7 @@ module RCS
         @agent_description ||= begin
           return unless @params['filter']['agent']
           agent = Item.agents.find(@params['filter']['agent'])
-          "#{agent.name} (#{agent.instance})"
+          ["#{agent.name} (#{agent.instance})", agent.desc].reject(&:blank?).join(" - ")
         end
       end
 
