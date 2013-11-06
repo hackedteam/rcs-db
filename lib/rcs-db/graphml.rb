@@ -20,6 +20,8 @@ module RCS
       xsi   = "http://www.w3.org/2001/XMLSchema-instance"
       loc   = "http://graphml.graphdrawing.org/xmlns http://graphml.graphdrawing.org/xmlns/1.0/graphml.xsd"
 
+      @_edges = []
+
       @data = {:graphml => {:'@xmlns' => xmlns, :'@xmlns:xsi' => xsi, :'@xsi:schemaLocation' => loc}}
     end
 
@@ -88,6 +90,12 @@ module RCS
       _graph[:edge] ||= []
       add_ampersat_to_keys(opts)
       elem = {:'@id' => id, :'@source' => source_node, :'@target' => target_node}.merge(opts)
+
+      existing_edge = @_edges.find { |e| e[:'@source'] == elem[:'@source'] and e[:'@target'] == elem[:'@target'] }
+      return if existing_edge
+      @_edges << elem
+
+      # specular_edge = @_edges.find { |e| e[:'@source'] == elem[:'@target'] and e[:'@target'] == elem[:'@source'] }
       data elem, data
       _graph[:edge] << elem
     end

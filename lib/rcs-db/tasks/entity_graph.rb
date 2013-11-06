@@ -1,4 +1,4 @@
-require_relative './graphml'
+require_relative '../graphml'
 require_relative '../tasks'
 
 module RCS
