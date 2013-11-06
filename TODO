@@ -8,6 +8,8 @@ TODO 9.2.x
 
   IMPLEMENT:
 
+    export to connector
+
     scout++ (with simplified config)
 
     create as target (from automatic entities)
