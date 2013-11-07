@@ -478,14 +478,6 @@ Section "Install Section" SecInstall
       FileOpen $4 "$INSTDIR\DB\config\admin_pass" w
       FileWrite $4 "$adminpass"
       FileClose $4
-    ${Else}
-      ;TODO: remove after 9.0.0
-      DetailPrint "Creating service RCS Connector..."
-      nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSConnector $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-connector"
-      SimpleSC::SetServiceFailure "RCSConnector" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSConnector" "DisplayName" "RCS Connector"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSConnector" "Description" "Remote Control System Connector for data export"
-      DetailPrint "done"
     ${EndIf}
 
     ; make sure the certificate is removed on new install
@@ -800,7 +792,7 @@ SectionEnd
 
 Function .onInit
 
-	; check that 8.4.x is already installed
+	; check that 9.0.x is already installed
 	IfFileExists "$INSTDIR\DB\config\VERSION" isDB isCollector
   isDB:
 	  FileOpen $4 "$INSTDIR\DB\config\VERSION" r
@@ -812,9 +804,9 @@ Function .onInit
 	FileRead $4 $1
 	FileClose $4
 	${If} $1 != ""
-	   ${StrStr} $0 $1 "8.4"
+	   ${StrStr} $0 $1 "9.0"
 	   ${If} $0 == ""
-  	   MessageBox MB_OK "This version can only be installed on 8.4.x systems, you have $1"
+  	   MessageBox MB_OK "This version can only be installed on 9.0.x systems, you have $1"
   	   Quit
 	   ${EndIf}
 	${EndIf}
