@@ -19,6 +19,7 @@ class Connector
   field :dest, type: String
   field :keep, type: Boolean, default: true
   field :path, type: Array
+  field :enqueue_previous, type: Boolean, default: false
 
   store_in collection: 'connectors'
 
@@ -36,6 +37,12 @@ class Connector
   after_destroy :destroy_archive_node, if: :remote?
   after_save :setup_archive_node, if: lambda { remote? and enabled }
 
+  after_create do
+    if enabled and enqueue_previous
+      Thread.new { enqueue_all_previous_evidences }
+    end
+  end
+
   # Scope: only enabled connectors
   scope :enabled, where(enabled: true)
 
@@ -44,6 +51,24 @@ class Connector
     if path.size != 1 or ::Item.operations.where(_id: path.first).empty?
       errors.add(:invalid, "An archive connector should match only operations")
     end
+  end
+
+  def enqueue_all_previous_evidences
+    trace(:info, "Sending to the connector queue all the previous evidence that matches the connector #{name}...")
+
+    operation_id, target_id, agent_id = *path
+
+    target_filter = target_id ? {_id: target_id} : {}
+    agent_filter = agent_id ? {aid: agent_id.to_s} : {}
+
+    Item.path_include(operation_id).targets.where(target_filter).each do |target|
+      Evidence.target(target).where(agent_filter).each do |evidence|
+        ConnectorQueue.push_evidence(self, target, evidence)
+      end
+    end
+  rescue Exception => ex
+    trace :error, "Cannot enqueue all the previous evidence (connector #{name}): #{ex.message}"
+    trace :fatal, ex.backtrace.join(", ")
   end
 
   def archive_node
