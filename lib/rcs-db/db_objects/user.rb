@@ -105,6 +105,9 @@ class User
     self.recent_ids.uniq!
     self.recent_ids = self.recent_ids[0..4]
     self.save
+  rescue Exception => ex
+    msg = "cannot add #{item[:type]} #{item[:id]} to recent list of user #{self.id}: #{ex.message}" rescue ex.message
+    trace :error, "#add_recent, #{msg}"
   end
 
   def delete_item(id)

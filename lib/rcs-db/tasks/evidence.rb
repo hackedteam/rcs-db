@@ -70,10 +70,20 @@ module RCS
         EvidenceTemplate.new(params.merge(name: name)).render
       end
 
+      # In case of single-agent export
+      def agent_description
+        @agent_description ||= begin
+          return unless @params['filter']['agent']
+          agent = Item.agents.find(@params['filter']['agent'])
+          ["#{agent.name} (#{agent.instance})", agent.desc].reject(&:blank?).join(" - ")
+        end
+      end
+
       def begin_new_file(day)
         out = {}
         out[:name] = File.join(day, 'index.html')
         out[:content] = render(:header)
+        day += ", exported by agent #{agent_description}" if agent_description
         out[:content] << render(:table_header, day: day, display_notes: @display_notes)
         out
       end

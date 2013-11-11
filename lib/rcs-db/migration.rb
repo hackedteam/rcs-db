@@ -21,9 +21,7 @@ module Migration
   def up_to(version)
     puts "migrating to #{version}"
 
-    run [:recalculate_checksums, :drop_sessions] if version >= '8.4.1'
-    run [:fix_connectors, :fix_position_evidences] if version >= '9.0.0'
-    run [:fix_recents, :fix_redirection_tag, :remove_duplicate_handles] if version >= '9.0.0'
+    run [:recalculate_checksums, :drop_sessions]
 
     return 0
   end
@@ -59,71 +57,6 @@ module Migration
     end
 
     return 0
-  end
-
-  def remove_duplicate_handles
-    duplicated = Entity.collection.aggregate(
-      {'$unwind' => '$handles'},
-      {'$group' => {'_id' => {'eid' => '$_id', 't' => '$handles.type', 'h' => '$handles.handle'}, 'cnt' => {'$sum' => 1}}},
-      {'$match' => {'cnt' => {'$gte' => 2}}}
-    )
-
-    count = 0
-
-    duplicated.each do |r|
-      entity = Entity.where(_id: Moped::BSON::ObjectId(r['_id']['eid'])).first
-      next unless entity
-      entity.handles.where(type: r['_id']['t'], handle: r['_id']['h']).sort(name: 1).limit(r['cnt'] - 1).destroy_all
-      count +=1
-      print "\r%d entity with duplicated handles fixed" % count
-    end
-
-    nil
-  end
-
-  def fix_redirection_tag
-    count = 0
-
-    Injector.where(redirection_tag: 'ww').each do |injector|
-      injector.update_attributes(redirection_tag: 'cdn')
-
-      count += 1
-      print "\r%d injectors migrated" % count
-    end
-  end
-
-  def fix_connectors
-    count = 0
-    moped_collection = Connector.collection
-
-    %w[JSON XML].each do |old_type|
-      result = moped_collection.find({type: old_type}).update_all('$set' => {format: old_type, type: 'LOCAL'})
-      next unless result
-      count += result['n']
-      print "\r%d connectors migrated" % count
-    end
-  end
-
-  def fix_position_evidences
-    count = 0
-    target_ids = Item.targets.only(:_id).map(&:_id)
-
-    filter = {'type' => 'position', 'data.position' => {'$exists' => false}}
-
-    target_ids.each do |target_id|
-      ::Evidence.target(target_id).where(filter).each do |evidence|
-        lon = evidence.data['longitude']
-        lat = evidence.data['latitude']
-        next if lat.nil? or lon.nil?
-        next if lat.to_i.zero? or lon.to_i.zero?
-        lat = lat.to_f if lat.kind_of?(String)
-        lon = lon.to_f if lon.kind_of?(String)
-        evidence.data['position'] = [lon, lat]
-        evidence.save
-        count += 1
-        print "\r%d evidence migrated" % count
-      end
-    end
   end
 
   def recalculate_checksums
@@ -197,23 +130,6 @@ module Migration
 
   def drop_sessions
     ::Session.destroy_all
-  end
-
-  def fix_recents
-    count = 0
-    ::User.each do |user|
-      next if user.recent_ids.all? {|x| x.class.eql? Hash}
-
-      user.recent_ids.map! do |x|
-        next if x.class.eql? Hash
-        item = Item.where(id: x).first
-        item.nil? ? {section: 'operations', type: item._kind, id: item.id} : nil
-      end
-      user.recent_ids.compact!
-      user.update_attributes(recent_ids: user.recent_ids)
-
-      print "\r%d users" % count += 1
-    end
   end
 
   def cleanup_storage

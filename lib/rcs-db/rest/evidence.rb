@@ -359,7 +359,7 @@ class EvidenceController < RESTController
     mongoid_query do
 
       filter, filter_hash, target = ::Evidence.common_filter @params
-      return not_found("Target or Agent not found") if filter.nil?
+      return ok([]) if filter.nil?
 
       geo_near_coordinates = filter_hash.delete('geoNear_coordinates')
       geo_near_accuracy = filter_hash.delete('geoNear_accuracy')
@@ -395,7 +395,7 @@ class EvidenceController < RESTController
     mongoid_query do
 
       filter, filter_hash, target = ::Evidence.common_filter @params
-      return not_found("Target or Agent not found") if filter.nil?
+      return ok(-1) if filter.nil?
 
       geo_near_coordinates = filter_hash.delete('geoNear_coordinates')
       geo_near_accuracy = filter_hash.delete('geoNear_accuracy')
@@ -426,7 +426,7 @@ class EvidenceController < RESTController
     mongoid_query do
 
       filter, filter_hash, target = ::Evidence.common_filter @params
-      return not_found("Target or Agent not found") if filter.nil?
+      return ok([]) if filter.nil?
 
       # copy remaining filtering criteria (if any)
       filtering = Evidence.target(target[:_id]).where({:type => 'info'})
@@ -529,7 +529,7 @@ class EvidenceController < RESTController
     mongoid_query do
 
       filter, filter_hash, target = ::Evidence.common_filter @params
-      return not_found("Target or Agent not found") if filter.nil?
+      return ok([]) if filter.nil?
 
       # copy remaining filtering criteria (if any)
       filtering = Evidence.target(target[:_id]).where({:type => 'command'})
@@ -551,7 +551,7 @@ class EvidenceController < RESTController
     mongoid_query do
 
       filter, filter_hash, target = ::Evidence.common_filter @params
-      return not_found("Target or Agent not found") if filter.nil?
+      return ok([]) if filter.nil?
 
       # copy remaining filtering criteria (if any)
       filtering = Evidence.target(target[:_id]).where({:type => 'ip'})

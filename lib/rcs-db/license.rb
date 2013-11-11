@@ -311,7 +311,7 @@ class LicenseManager
 
     # if not build and not demo, raise
     if not LicenseManager.instance.limits[:agents][platform].inject(:|)
-      raise NoLicenseError.new("Cannot build #{demo}, NO license")
+      raise NoLicenseError.new("Cannot build #{platform}, NO license")
     end
 
     return demo
@@ -556,7 +556,13 @@ class LicenseManager
 
     # print the current license
     pp RCS::DB::Dongle.info if @limits[:serial] != 'off'
-    pp @limits
+
+    if options[:check]
+      puts "Version: " + @limits[:version]
+      puts "Expiry: " + @limits[:expiry].to_s
+    else
+      pp @limits
+    end
 
     return 0
   rescue Exception => e
@@ -583,6 +589,10 @@ class LicenseManager
 
       opts.on( '-n', '--new FILE', String, 'Load a new license file into the system' ) do |file|
         options[:new_license] = file
+      end
+
+      opts.on( '-c', '--check', 'Check license validity' ) do
+        options[:check] = true
       end
 
       # This displays the help screen
