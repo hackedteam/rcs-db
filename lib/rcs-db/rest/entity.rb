@@ -102,9 +102,16 @@ class EntityController < RESTController
         doc[:type] = @params['type'].to_sym
         doc[:desc] = @params['desc']
         doc[:level] = :manual
+
+        # when type is :position
         if @params['position'] and @params['position'].size > 0
           doc.position = [@params['position']['longitude'].to_f, @params['position']['latitude'].to_f]
           doc.position_attr[:accuracy] = @params['position_attr']['accuracy'].to_i
+        end
+
+        # when type is :group
+        if @params['children']
+          doc.children = @params['children'].map { |id| Moped::BSON::ObjectId(id) }
         end
       end
 
@@ -115,8 +122,8 @@ class EntityController < RESTController
       entity['position'] = {longitude: entity['position'][0], latitude: entity['position'][1]}  if entity['position'].is_a? Array
       entity.delete('analyzed')
 
-      return ok(entity)
-    end    
+      ok(entity)
+    end
   end
 
   def update
