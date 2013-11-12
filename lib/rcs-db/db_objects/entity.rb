@@ -35,6 +35,12 @@ class Entity
   # position_addr contains {time, accuracy}
   field :position_attr, type: Hash, default: {}
 
+  # list of entity ids that compose a group (entity group)
+  field :children, type: Array, default: []
+
+  # may contains the id of an operation (entity group)
+  field :stand_for, type: Moped::BSON::ObjectId, default: nil
+
   # accounts for this entity
   embeds_many :handles, class_name: "EntityHandle"
   embeds_many :links, class_name: "EntityLink"
@@ -50,11 +56,13 @@ class Entity
   index({"handles.type" => 1}, {background: true})
   index({"handles.handle" => 1}, {background: true})
   index({position: "2dsphere"}, {background: true})
+  # TODO: define usefull indexes for entity groups operations
 
   store_in collection: 'entities'
 
   scope :targets, where(type: :target)
   scope :persons, where(type: :person)
+  scope :groups, where(type: :group)
   scope :virtuals, where(type: :virtual)
   scope :targets_or_persons, where(:type => {'$in' => [:person, :target]})
   scope :positions, where(type: :position)
@@ -82,11 +90,12 @@ class Entity
   after_create :create_callback
   before_destroy :destroy_callback
   after_update :notify_callback
+  after_update :destroy_empty_group_callback
 
   def create_callback
     # make item accessible to the users of the parent operation
-    parent = ::Item.find(self.path.first)
-    self.users = parent.users
+    parent_operation = ::Item.find(self.path.first)
+    self.users = parent_operation.users
 
     # notify (only real entities)
     unless level.eql? :ghost
@@ -96,6 +105,14 @@ class Entity
 
     link_similar_position
     link_target_entities_passed_from_here
+
+    # If there is any group entity (anywhere) that represent the current operation
+    # add the new entity to its list
+    if type != :group
+      Entity.groups.where(stand_for: parent_operation.id).each do |g|
+        g.add_to_set(:children, [self.id])
+      end
+    end
   end
 
   # If the current entity is a position entity (type :position)
@@ -169,7 +186,6 @@ class Entity
   end
 
   def destroy_callback
-
     # remove all the links in linked entities
     self.links.each do |link|
       oe = link.linked_entity
@@ -180,6 +196,16 @@ class Entity
 
     self.photos.each do |photo|
       del_photo photo
+    end
+
+    # If there is any group entity (anywhere) that represent the current operation
+    # remove the entity from its children list
+    if type != :group
+      parent_operation = path.first
+
+      Entity.groups.where(stand_for: parent_operation).each do |g|
+        g.pull(:children, self.id)
+      end
     end
 
     push_destroy_entity
@@ -540,6 +566,48 @@ class Entity
         .sort { |x,y| x[:time] <=> y[:time] }
     end
   end
+
+  # Build an entity of type group, OR update its children and/or name
+  def self.create_or_update_group(operation, name: nil, children: [], stand_for: nil)
+    children = children[0].respond_to?(:id) ? children.map(&:id) : children
+    level = stand_for ? :automatic : :manual
+    operation = operation.respond_to?(:id) ? operation : Item.operations.find(operation)
+
+    filter = {type: :group, path: [operation.id], level: level, stand_for: stand_for}
+
+    group = find_or_initialize_by(filter)
+
+    trace :info, (group.new_record? ? "Create" : "Update") + " entity #{group.id}" + (" (#{name})" if name) + " belonging to operation #{operation.name}"
+
+    group.name = name if name
+
+    group.add_to_set(:children, children)
+
+    group.save!
+  end
+
+  def self.create_or_update_operation_group(first_operation, second_operation)
+    first_operation = Item.operations.find(first_operation) unless first_operation.respond_to?(:id)
+    second_operation = Item.operations.find(second_operation) unless second_operation.respond_to?(:id)
+
+    first_op_name, second_op_name = *[first_operation.name, second_operation.name].map do |name|
+      name =~ /^(op\.|op\s|operation)/ ? name : "Operation #{name}"
+    end
+
+    children_first_op, children_second_op = *[first_operation, second_operation].map do |op|
+      Entity.path_include(op).where(:type.ne => :group).all
+    end
+
+    create_or_update_group(first_operation, name: second_op_name, children: children_second_op, stand_for: second_operation.id)
+    create_or_update_group(second_operation, name: first_op_name, children: children_first_op, stand_for: first_operation.id)
+  end
+
+  def destroy_empty_group_callback
+    if type == :group and children.empty?
+      trace :warn, "Delete empty entity group #{name.inspect}"
+      destroy
+    end
+  end
 end
 
 
@@ -630,6 +698,10 @@ class EntityLink
 
   def linked_entity
     Entity.find(le) rescue nil
+  end
+
+  def cross_operation?
+    _parent.path[0] != linked_entity.path[0]
   end
 
   def linked_entity= entity

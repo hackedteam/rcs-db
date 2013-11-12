@@ -71,6 +71,11 @@ class LinkManager
       entity.push_modify_entity
     end
 
+    if first_link.cross_operation?
+      Entity.create_or_update_operation_group(first_entity.path[0], second_entity.path[0])
+    end
+    # TODO: update any groups even where a link is destroyed
+
     return first_link
   end
 
