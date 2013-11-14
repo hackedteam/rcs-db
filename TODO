@@ -19,6 +19,9 @@ TODO 9.2.x
       - the group contains a list of entities
       - the rendering of the links is demanded to the console (underlying links are created normally)
 
+    bakcup for the handlebook
+      - rebuild the handlebook after restoring a target backup
+
     intra operation correlation (visualize like a link to a group that actually is the other operation)
 
     method to create a graph representation of our data (xml, graphml, etc)
