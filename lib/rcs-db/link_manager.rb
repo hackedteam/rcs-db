@@ -17,7 +17,7 @@ class LinkManager
     first_entity = params[:from]
     second_entity = params[:to]
 
-    raise "Cannot create link on itself" unless first_entity != second_entity
+    raise "Cannot create link on itself (#{first_entity.name})" unless first_entity != second_entity
 
     if params[:versus]
       versus = params[:versus].to_sym
@@ -28,7 +28,7 @@ class LinkManager
     # default is automatic
     params[:level] ||= :automatic
 
-    trace :info, "Creating link between '#{first_entity.name}' and '#{second_entity.name}' [#{params[:level]}, #{params[:type]}, #{versus}]"
+    trace :info, "Creating link between #{first_entity.name.inspect} and #{second_entity.name.inspect} [#{params[:level]}, #{params[:type]}, #{versus}]"
 
     # create a link in this entity
     first_link = first_entity.links.find_or_initialize_by(le: second_entity._id)
@@ -198,31 +198,28 @@ class LinkManager
     first_entity.links.destroy_all
   end
 
-  # check if two entities are the same and create a link between them
+  # Check if two entities are the same and create a link between them.
+  # Search for other entities with the same handle, if found we consider them identical.
   def check_identity(entity, handle)
-    # search for other entities with the same handle
-    ident = Entity.same_path_of(entity).with_handle(handle.type, handle.handle).first
-    return unless ident
+    Entity.with_handle(handle.type, handle.handle, exclude: entity).each do |other_entity|
+      trace :info, "Identity match: #{entity.name.inspect} and #{other_entity.name.inspect} -> #{handle.handle.inspect}"
 
-    # if found we consider them identical
-    trace :info, "Identity match: '#{entity.name}' and '#{ident.name}' -> #{handle.handle}"
-
-    # create the link
-    add_link({from: entity, to: ident, type: :identity, info: handle.handle, versus: :both})
+      # Create the (identity) link
+      add_link(from: entity, to: other_entity, type: :identity, info: handle.handle, versus: :both)
+    end
   end
 
-  # Creates a link from "entity" to any other (target) entity of the same operation
-  # that have a matching "handle" in its aggregates.
-  def link_handle entity, handle
-    Entity.targets.where(path: entity.path.first).each do |e|
+  # Creates a link from ENTITY to any onthe entity that have communicated with HANDLE (based on aggregates)
+  def link_handle(entity, handle)
+    HandleBook.entities_of_targets(handle.type, handle.handle, exclude: entity).each do |peer_entity|
+      trace :debug, "Entity #{entity.name.inspect} must be linked to #{peer_entity.name.inspect} via #{handle.handle.inspect} (#{handle.type.inspect})"
 
-      next unless Aggregate.target(e.path.last).summary_include?(handle.aggregate_types, handle.handle)
+      versus = Aggregate.target(peer_entity.target_id).versus_of_communications_with(handle)
 
-      trace :debug, "#link_handle: Linking #{entity.name} to #{e.name} via #{handle.handle} (#{handle.type})"
-
-      # if we find a peer, create a link
-      e.peer_versus(handle).each do |versus|
-        add_link({from: entity, to: e, type: :peer, level: :automatic, info: handle.handle, versus: versus})
+      if versus
+        add_link(from: entity, to: peer_entity, type: :peer, level: :automatic, info: handle.handle, versus: versus)
+      else
+        trace :warn, "Cannot tell the communication versus"
       end
     end
   end

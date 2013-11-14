@@ -184,8 +184,8 @@ describe Processor do
           Entity.where(name: 'test-target-b').first
         end
 
-        it 'should not create a link' do
-          RCS::DB::LinkManager.instance.should_not_receive :add_link
+        it 'should create a link' do
+          RCS::DB::LinkManager.instance.should_receive :add_link
           described_class.process_aggregate entity_bob, sms_aggregate_of_bob
         end
       end

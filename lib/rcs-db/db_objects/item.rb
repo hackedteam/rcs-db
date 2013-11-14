@@ -204,6 +204,7 @@ class Item
     moved_entities = []
 
     Entity.targets.where(path: self.id).each do |entity|
+      entity.remove_from_operation_groups
       entity.update_attributes(path: new_target_path)
       RCS::DB::LinkManager.instance.del_all_links(entity)
       entity.save
@@ -212,7 +213,7 @@ class Item
 
     moved_entities.each do |entity|
       entity.handles.each { |handle| handle.link! }
-
+      entity.add_to_operation_groups
       Aggregate.target(entity.target_id).positions.each(&:add_to_intelligence_queue)
     end
   end
@@ -534,8 +535,9 @@ class Item
           Evidence.target(self.path.last).destroy_all(aid: self._id.to_s)
           trace :info, "Deleting aggregates for agent #{self.name}..."
           Aggregate.target(self.path.last).destroy_all(aid: self._id.to_s)
-          trace :info, "Rebuilding summary for target #{self.get_parent.name}..."
-          Aggregate.target(self.path.last).rebuild_summary
+          # TODO: deprecated
+          # trace :info, "Rebuilding summary for target #{self.get_parent.name}..."
+          # Aggregate.target(self.path.last).rebuild_summary
           trace :info, "Deleting evidence for agent #{self.name} done."
           # recalculate stats for the target
           self.get_parent.restat

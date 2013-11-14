@@ -241,13 +241,12 @@ module DB
           aggregate_type = 'sms'
           params = {data: {peer: alice_number, versus: :in}, type: aggregate_type, day: Time.now.strftime('%Y%m%d'), aid: 'agent_id', count: 1}
           Aggregate.target(alice.target_id).create! params
-          Aggregate.target(alice.target_id).add_to_summary aggregate_type, alice_number
+          HandleBook.insert_or_update(aggregate_type, alice_number, alice.target_id)
         end
 
         describe '#link_handle' do
 
           before do
-            $STOP = 1
             LinkManager.instance.link_handle bob, phone_handle
             [bob, alice].each &:reload
           end

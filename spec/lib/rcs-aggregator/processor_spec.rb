@@ -84,14 +84,10 @@ describe Processor do
         entry.count.should be iteration
       end
 
-      it 'should create aggregation summary' do
+      it 'should create an handle book document' do
         Processor.process @entry
 
-        aggregates = Aggregate.target(@target._id).where(type: :summary)
-        aggregates.size.should be 1
-
-        entry = aggregates.first
-        entry.info.should include 'skype_receiver'
+        expect(HandleBook.targets(:skype, 'receiver').count).to eq(1)
       end
 
       it 'should create suggested entity if the communication score is higher enough' do
@@ -161,11 +157,10 @@ describe Processor do
         end
       end
 
-      it 'should not create aggregation summary' do
+      it 'should not create an handle book document' do
         Processor.process @entry
 
-        aggregates = Aggregate.target(@target._id).where(type: :summary)
-        aggregates.size.should be 0
+        expect(HandleBook.count).to eq(0)
       end
 
       it 'should create aggregate from evidence' do

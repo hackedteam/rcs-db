@@ -60,12 +60,12 @@ class Processor
     case entry.type
       when :evidence
         evidence = entry.related_item
-        trace :info, "Processing #{evidence.type} evidence for entity #{entity.name}"
+        trace :info, "Processing #{evidence.type} evidence for entity #{entity.name.inspect}"
         process_evidence(entity, evidence)
 
       when :aggregate
         aggregate = entry.related_item
-        trace :info, "Processing #{aggregate.type} aggregate for entity #{entity.name}"
+        trace :info, "Processing #{aggregate.type} aggregate for entity #{entity.name.inspect}"
         process_aggregate(entity, aggregate)
     end
 
@@ -110,46 +110,50 @@ class Processor
       target = Item.find(entity.target_id)
       Position.suggest_recurring_positions(target, aggregate)
     else
-      process_peer_aggregate entity, aggregate
+      process_peer_aggregate(entity, aggregate)
     end
   end
 
-  def self.process_peer_aggregate entity, aggregate
-    # normalize the type to search for the correct account
-    aggregate_type = aggregate.type
-    handle_type = aggregate.entity_handle_type
+  def self.process_peer_aggregate(entity, aggregate)
+    aggregate_type  = aggregate.type
+    handle_type     = aggregate.entity_handle_type
+    peer            = aggregate.data['peer'].strip
+    sender          = aggregate.data['sender']
+    versus          = aggregate.data['versus'].to_sym
 
-    # As the version 9.0.0 the aggregate has a "sender" key that contains the handle of the other peer
+    # The aggregate has a "sender" key that contains the handle of the other peer
     # involved in a communication. The "sender" is an handle of the current entity (the one under surveillance)
-    if !aggregate.data['sender'].blank? and aggregate.data['versus'] == :out
-      entity.create_or_update_handle handle_type, aggregate.data['sender'].downcase
+    if !sender.blank? and versus == :out
+      entity.create_or_update_handle(handle_type, sender.downcase.strip)
     end
 
     # Search for all the existing entities with that account and link it (direct link)
-    Entity.with_handle(handle_type, aggregate.data['peer']).where(:_id.ne => entity.id).each do |peer|
-      info = "#{aggregate.data['sender']} #{aggregate.data['peer']}".strip
-      level = peer.level == :ghost ? :ghost : :automatic
-      RCS::DB::LinkManager.instance.add_link(from: entity, to: peer, level: level, type: :peer, versus: aggregate.data['versus'].to_sym, info: info)
-      return
+    matches = Entity.with_handle(handle_type, peer, exclude: entity).each do |communicating_entity|
+      trace :debug, "Detected that entity #{entity.name.inspect} communicate with the account #{peer.inspect} (#{handle_type}) of entity #{communicating_entity.name.inspect}"
+
+      info = "#{sender} #{peer}".strip
+      level = communicating_entity.level == :ghost ? :ghost : :automatic
+
+      RCS::DB::LinkManager.instance.add_link(from: entity, to: communicating_entity, level: level, type: :peer, versus: versus, info: info)
     end
 
+    return unless matches.blank?
+
+    # If there aren't any entities with that account,
     # search if two entities are communicating with a third party and link them (indirect link)
-    ::Entity.targets.same_path_of(entity).each do |e|
-
-      trace :debug, "Checking if '#{entity.name}' and '#{e.name}' have common peer: #{aggregate.data['peer']}"
-
-      next unless Aggregate.target(e.path.last).summary_include?(aggregate_type, aggregate.data['peer'])
-
-      trace :debug, "Peer found, creating new entity... #{aggregate.data['peer']}"
+    HandleBook.entities_of_targets(aggregate_type, peer, exclude: entity).each do |other_entity|
+      trace :debug, "Detected that entity #{other_entity.name.inspect} is also communicating with the handle #{peer.inspect} (#{handle_type})"
 
       # create the new entity
-      name = Entity.name_from_handle(aggregate_type, aggregate.data['peer'], e.path.last)
-      name ||= aggregate.data['peer']
-      description = "Created automatically because #{entity.name} and #{e.name} communicated with it"
-      ghost = Entity.create!(name: name, type: :person, level: :automatic, path: [entity.path.first], desc: description)
+      name = Entity.name_from_handle(aggregate_type, peer, other_entity.target_id) || peer
+
+      trace :debug, "Create new entity named #{name.inspect}"
+
+      description = "Created automatically because #{entity.name.inspect} and #{other_entity.name.inspect} both communicated with #{peer.inspect} (#{handle_type})"
+      new_person = Entity.create!(name: name, type: :person, level: :automatic, path: [entity.path.first], desc: description)
 
       # the entities will be linked on callback
-      ghost.handles.create!(level: :automatic, type: aggregate_type, handle: aggregate.data['peer'])
+      new_person.handles.create!(level: :automatic, type: handle_type, handle: peer)
     end
   end
 

@@ -114,20 +114,6 @@ module Migration
     end
   end
 
-  def aggregate_summary
-    count = 0
-    ::Item.targets.each do |target|
-      begin
-        next if Aggregate.target(target._id).empty?
-
-        Aggregate.target(target._id).rebuild_summary
-        print "\r%d summaries" % count += 1
-      rescue Exception => e
-        puts e.message
-      end
-    end
-  end
-
   def drop_sessions
     ::Session.destroy_all
   end

@@ -70,21 +70,10 @@ class Entity
   # for example all the entities in the same "operation" of the given one
   scope :same_path_of, lambda { |other_entity| where(:_id.ne => other_entity._id, :path => other_entity.path.first) }
   scope :path_include, lambda { |item| where('path' => {'$in' =>[item.respond_to?(:_id) ? item._id : Moped::BSON::ObjectId.from_string(item.to_s)]}) }
-  scope :with_handle, lambda { |type, value|
-    if type.to_s != 'phone'
-      elem_match(handles: {type: type, handle: value})
-    else
-      parsed = RCS::DB::CountryCallingCodes.number_without_calling_code(value)
-      if parsed == value
-        parsed = value.gsub(/[^0-9]/, '')
-        regexp = /^#{parsed.split('').join('\s{0,1}\-{0,1}')}$/
-        elem_match(handles: {type: type, handle: regexp})
-      else
-        parsed.gsub!(/[^0-9]/, '')
-        regexp = /#{parsed.split('').join('\s{0,1}\-{0,1}')}$/
-        elem_match(handles: {type: type, handle: regexp})
-      end
-    end
+  scope :with_handle, lambda { |type, value, exclude: nil|
+    regexp = EntityHandle.handle_regexp_for_queries(type, value)
+    filter = exclude ? {:_id.ne => exclude.id} : {}
+    where(filter).elem_match(handles: {type: type, handle: regexp})
   }
 
   after_create :create_callback
@@ -106,13 +95,7 @@ class Entity
     link_similar_position
     link_target_entities_passed_from_here
 
-    # If there is any group entity (anywhere) that represent the current operation
-    # add the new entity to its list
-    if type != :group
-      Entity.groups.where(stand_for: parent_operation.id).each do |g|
-        g.add_to_set(:children, [self.id])
-      end
-    end
+    add_to_operation_groups
   end
 
   # If the current entity is a position entity (type :position)
@@ -185,6 +168,30 @@ class Entity
     push_modify_entity
   end
 
+  # If there is any group entity (anywhere) that represent the current operation
+  # remove the entity from its children list
+  def remove_from_operation_groups
+    return if type == :group
+
+    parent_operation_id = path.first
+
+    Entity.groups.where(stand_for: parent_operation_id).each do |g|
+      g.pull(:children, self.id)
+    end
+  end
+
+  # If there is any group entity (anywhere) that represent the current operation
+  # add the new entity to its list
+  def add_to_operation_groups
+    return if type == :group
+
+    parent_operation_id = path.first
+
+    Entity.groups.where(stand_for: parent_operation_id).each do |g|
+      g.add_to_set(:children, [self.id])
+    end
+  end
+
   def destroy_callback
     # remove all the links in linked entities
     self.links.each do |link|
@@ -198,15 +205,7 @@ class Entity
       del_photo photo
     end
 
-    # If there is any group entity (anywhere) that represent the current operation
-    # remove the entity from its children list
-    if type != :group
-      parent_operation = path.first
-
-      Entity.groups.where(stand_for: parent_operation).each do |g|
-        g.pull(:children, self.id)
-      end
-    end
+    remove_from_operation_groups
 
     push_destroy_entity
   end
@@ -329,21 +328,6 @@ class Entity
     return nil
   end
 
-  def peer_versus entity_handle
-    # only targets have aggregates
-    return [] unless type.eql? :target
-
-    # search for communication in one direction
-    criteria = Aggregate.target(path.last).in(:type => entity_handle.aggregate_types).where('data.peer' => entity_handle.handle)
-    versus = []
-    versus << :in if criteria.where('data.versus' => :in).exists?
-    versus << :out if criteria.where('data.versus' => :out).exists?
-
-    trace :debug, "Searching for #{entity_handle.handle} (#{entity_handle.type}) on #{self.name} -> #{versus}"
-
-    return versus
-  end
-
   def promote_ghost
     return unless self.level.eql? :ghost
 
@@ -374,7 +358,7 @@ class Entity
 
       existing_handle
     else
-      trace :info, "Adding handle [#{type}, #{handle}, #{name}] to entity: #{self.name}"
+      trace :info, "Adding handle #{handle.inspect} (#{type.inspect}) to entity #{self.name.inspect}"
       # add to the list of handles
       handles.create! level: EntityHandle.default_level, type: type, name: name, handle: handle
     end
@@ -630,6 +614,27 @@ class EntityHandle
 
   def self.default_level
     :automatic
+  end
+
+  def self.handle_regexp_for_queries(type, value)
+    if type.to_s != 'phone'
+      value
+    else
+      # if the type is phone but the value contains no numbers
+      if value.gsub(/[0-9]/, '') == value
+        return value
+      end
+
+      parsed = RCS::DB::CountryCallingCodes.number_without_calling_code(value)
+
+      if parsed == value
+        parsed = value.gsub(/[^0-9]/, '')
+        /^#{parsed.split('').join('\s{0,1}\-{0,1}')}$/
+      else
+        parsed.gsub!(/[^0-9]/, '')
+        /#{parsed.split('').join('\s{0,1}\-{0,1}')}$/
+      end
+    end
   end
 
   def aggregate_types

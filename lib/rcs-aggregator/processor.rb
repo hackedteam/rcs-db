@@ -62,12 +62,10 @@ class Processor
     ev = Evidence.target(entry['target_id']).find(entry['evidence_id'])
     target = Item.find(entry['target_id'])
 
-    trace :info, "Processing #{ev.type} for target #{target.name}"
+    trace :info, "Processing #{ev.type} evidence for target #{target.name.inspect}"
 
     # extract peer(s) from call, mail, chat, sms
     data = extract_data(entry['target_id'], ev)
-
-    trace :debug, ev.data.inspect
 
     data.each do |datum|
       # already exist?
@@ -128,9 +126,13 @@ class Processor
     # find the existing aggregate or create a new one
     agg = Aggregate.target(entry['target_id']).find_or_create_by(params)
 
-    # if it's new, add the entry to the summary and notify the intelligence
+    # if it's new, add the entry to the handle book and notify the intelligence
     if agg.count == 0
-      Aggregate.target(entry['target_id']).add_to_summary(params[:type], datum[:peer])
+      # TODO: deprecated
+      # Aggregate.target(entry['target_id']).add_to_summary(params[:type], datum[:peer])
+
+      HandleBook.insert_or_update(params[:type], datum[:peer], entry['target_id'])
+
       agg.add_to_intelligence_queue if check_intelligence_license
     end
 

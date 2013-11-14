@@ -52,16 +52,21 @@ module Aggregate
     {latitude: self.data['position'][1], longitude: self.data['position'][0], radius: self.data['radius']}
   end
 
-  def entity_handle_type
-    t = self.type.to_sym
 
-    if [:phone, :sms, :mms].include? t
+  def self.aggregate_type_to_handle_type(aggregate_type)
+    t = aggregate_type.to_sym
+
+    if [:phone, :sms, :mms].include?(t)
       'phone'
-    elsif [:mail, :gmail, :outlook].include? t
+    elsif [:mail, :gmail, :outlook].include?(t)
       'mail'
     else
       "#{t}"
     end
+  end
+
+  def entity_handle_type
+     Aggregate.aggregate_type_to_handle_type(type)
   end
 
   def target_id
@@ -88,49 +93,18 @@ module Aggregate
       "aggregate.#{@target_id}"
     end
 
+    def versus_of_communications_with(handle)
+      trace :debug, "Determining communication versus between target #{@target_id} and the handle #{handle.handle.inspect} (#{handle.type.inspect})"
 
-    # Summary related methods
+      directions = self.in(:type => handle.aggregate_types).where('data.peer' => handle.handle).only('data.versus').distinct('data.versus')
 
-    def add_to_summary(type, peer)
-      summary = self.where(day: '0', aid: '0', type: :summary).first_or_create!
-      summary.add_to_set(:info, type.to_s + '_' + peer.to_s)
-    end
-
-    def summary_include? type, peer
-      summary = self.where(day: '0', type: :summary).first
-      return false unless summary
-
-      # type can be an array of types
-      type = [type].flatten
-
-      type.each do |t|
-        return true if summary.info.include? "#{t}_#{peer}"
+      if directions.size == 1
+        directions.first.to_sym
+      elsif directions.size == 2
+        :both
+      else
+        nil
       end
-
-      false
-    end
-
-    def rebuild_summary
-      return if self.empty?
-
-      # get all the tuple (type, peer)
-      pipeline = [{ "$match" => {:type => {'$nin' => [:summary, :positioner, :frequencer]} }},
-                  { "$group" =>
-                    { _id: { peer: "$data.peer", type: "$type" }}
-                  }]
-      data = self.collection.aggregate(pipeline)
-
-      return if data.empty?
-
-      # normalize them in a better form
-      data.collect! {|e| "#{e['_id']['type']}_#{e['_id']['peer']}"}
-
-      self.where(type: :summary).destroy_all
-
-      summary = self.where(day: '0', aid: '0', type: :summary).first_or_create!
-
-      summary.info = data
-      summary.save!
     end
   end
 

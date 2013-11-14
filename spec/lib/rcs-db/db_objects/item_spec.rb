@@ -159,8 +159,8 @@ describe Item do
     # First operation
 
     let!(:operation) { factory_create(:operation) }
-    let!(:target) { factory_create(:target, operation: operation) }
-    let!(:target2) { factory_create(:target, operation: operation) }
+    let!(:target) { factory_create(:target, operation: operation, name: 'bob') }
+    let!(:target2) { factory_create(:target, operation: operation, name: 'eve') }
 
     let!(:agent1) { factory_create(:agent, target: target) }
 
@@ -175,17 +175,19 @@ describe Item do
     # Other operation
 
     let!(:other_operation) { factory_create(:operation) }
-    let!(:other_target) { factory_create(:target, operation: other_operation) }
+    let!(:other_target) { factory_create(:target, operation: other_operation, name: 'alice') }
     let!(:other_entity) { factory_create(:target_entity, target: other_target, name: 'alice') }
 
     before do
-      factory_create(:entity_handle, entity: entity1, name: 'bob', type: 'skype', handle: 'call-bob')
-      factory_create(:entity_handle, entity: other_entity, name: 'alice', type: 'skype', handle: 'call-alice')
       factory_create(:aggregate, target: other_target, type: 'skype', data: {peer: 'call-bob', versus: :out, sender: 'call-alice'} )
+      # After handles are created a link between bob and alice is created automatically
+      factory_create(:entity_handle, entity: other_entity, name: 'alice', type: 'skype', handle: 'call-alice')
+      factory_create(:entity_handle, entity: entity1, name: 'bob', type: 'skype', handle: 'call-bob')
 
       2.times { factory_create(:position_aggregate, target: target) }
 
       factory_create(:entity_link, from: entity1, to: entity2)
+
       target.move_target(other_operation)
 
       [target, target2, agent1, connector1, connector2, connector3, entity1, entity2, other_entity].each(&:reload)
@@ -200,7 +202,20 @@ describe Item do
       end
 
       it 'does not contains the target entity anymore' do
-        expect(Entity.path_include(operation).to_a).to eq([entity2])
+        expect(Entity.targets.path_include(operation).to_a).to eq([entity2])
+      end
+    end
+
+    context 'entity groups (that stands for operations)' do
+
+      it 'are updated properly' do
+        g = Entity.groups.where(path: [operation.id]).first
+        expect(g.stand_for).to eq(other_operation.id)
+        expect(g.children.sort).to eq([entity1.id, other_entity.id].sort)
+
+        g = Entity.groups.where(path: [other_operation.id]).first
+        expect(g.stand_for).to eq(operation.id)
+        expect(g.children).to eq([entity2.id])
       end
     end
 
