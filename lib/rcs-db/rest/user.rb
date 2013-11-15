@@ -35,7 +35,7 @@ class UserController < RESTController
 
     return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :users
 
-    result = User.create(name: @params['name']) do |doc|
+    user = User.create(name: @params['name']) do |doc|
 
       doc[:pass] = ''
 
@@ -52,19 +52,19 @@ class UserController < RESTController
       doc[:recent_ids] = []
     end
     
-    return conflict(result.errors[:name]) unless result.persisted?
+    return conflict(user.errors[:name]) unless user.persisted?
 
     if @params.has_key? 'group_ids'
       @params['group_ids'].each do |gid|
         group = ::Group.find(gid)
-        result.groups << group
+        group.users << user
       end
     end
 
     username = @params['name']
     Audit.log :actor => @session.user[:name], :action => 'user.create', :user_name => username, :desc => "Created the user '#{username}'"
 
-    return ok(result)
+    return ok(user)
   end
   
   def update
