@@ -37,7 +37,9 @@ module RCS
         EM::run do
           EM.defer(proc{ HeartBeat.perform })
 
-          EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
+          EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) do
+            EM.defer { HeartBeat.perform }
+          end
 
           # calculate and save the stats
           EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }

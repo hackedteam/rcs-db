@@ -26,7 +26,6 @@ class HeartBeat
   extend RCS::Tracer
 
   def self.perform
-
     # reset the status
     SystemStatus.reset
 
@@ -56,6 +55,9 @@ class HeartBeat
       trace :fatal, "Cannot perform status update: #{e.message}"
       trace :fatal, e.backtrace
     end
+  ensure
+    # Ensure that the mongoid connection is closed at the end
+    Mongoid.default_session.disconnect rescue nil
   end
 end
 
