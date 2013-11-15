@@ -43,7 +43,7 @@ module RCS
           EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }
 
           # this is the actual polling
-          EM::PeriodicTimer.new(1) { EM.defer(proc{ QueueManager.instance.check_new }) }
+          EM.defer { QueueManager.run! }
 
           trace :info, "#{component_name} '#{RCS::DB::Config.instance.global['SHARD']}' ready!"
         end
