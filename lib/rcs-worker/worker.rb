@@ -31,21 +31,17 @@ class Worker
   extend Tracer
 
   def run
+    EM.epoll
+    EM.threadpool_size = 50
 
-    # all the events are handled here
     EM::run do
-      # if we have epoll(), prefer it over select()
-      EM.epoll
-
-      # set the thread pool size
-      EM.threadpool_size = 50
-
       # set up the heartbeat (the interval is in the config)
-      EM.defer(proc{ HeartBeat.perform })
-      EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
+      EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) do
+        EM.defer { HeartBeat.perform }
+      end
 
       # calculate and save the stats
-      EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }
+      EM::PeriodicTimer.new(60) { EM.defer { StatsManager.instance.calculate } }
 
       # this is the actual polling
       EM.defer { QueueManager.run! }
