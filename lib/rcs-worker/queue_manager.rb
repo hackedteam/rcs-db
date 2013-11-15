@@ -1,95 +1,98 @@
-# relatives
+require 'rcs-common/trace'
+require 'timeout'
+
 require_relative 'instance_worker'
 
-# from RCS::Common
-require 'rcs-common/trace'
+module RCS::Worker::QueueManager
+  extend RCS::Tracer
+  extend self
 
-# from System
-require 'singleton'
-require 'thread'
+  @active_workers = {}
+  @last_evidence_id = "0"
 
-module RCS
-module Worker
+  def shard
+    @shard ||= RCS::DB::Config.instance.global['SHARD']
+  end
 
-class QueueManager
-  include Singleton
-  include RCS::Tracer
-  
-  def initialize
-    @instances = {}
-    @semaphore = Mutex.new
-    @polling_mutex = Mutex.new
-    @last_id = "0"
+  # Gets a connection to mongodb. Given a single thread, multiple calls to
+  # this method DO NOT create new connections.
+  def db
+    RCS::DB::DB.instance.mongo_connection
+  end
+
+  def close_mongo_connection
+    db.connection.close rescue nil
+  end
+
+  # Gets all the new evidece
+  def new_evidence_list
+    retry_on_timeout do
+      db.collection('grid.evidence.files').find({metadata: {shard: shard}}, {sort: ["_id", :asc]})
+    end
+  end
+
+  # Use this method when accessing mongodb
+  def retry_on_timeout
+    Timeout::timeout(5) { yield }
+  rescue Timeout::Error
+    trace :warn, "Stucked while accessing mongodb, retrying..."
+    close_mongo_connection
+    retry
+  end
+
+  def run!
+    in_a_safe_loop do
+      new_evidence_list.each { |evidence| process_evidence(evidence) }
+    end
+  end
+
+  # Execute the given block every second and DO NOT quit the loop
+  # on any exception
+  def in_a_safe_loop(&block)
+    loop do
+      begin
+        yield
+        sleep(1)
+      rescue Interrupt
+        trace :info, "System shutdown. Bye bye!"
+        return 0
+      rescue Exception => ex
+        close_mongo_connection
+        trace :error, ex.message
+        trace :fatal, "EXCEPTION: [#{ex.class}] #{ex.message}\n#{ex.backtrace.join("\n")}"
+      end
+    end
+  end
+
+  def process_evidence(evidence)
+    id = evidence['_id'].to_s
+    ident, instance = evidence['filename'].to_s.split(":")
+
+    return if id.blank? or ident.blank? or instance.blank?
+
+    enqueue_evidence(instance, ident, id)
+  end
+
+  # Spawns a thread for each agent and sends the current evidence to that thread
+  def enqueue_evidence(instance, ident, id)
+    return if @last_evidence_id >= id
+    uid = "#{ident}:#{instance}"
+
+    trace :debug, "Send evidence #{id} to instance worker #{uid}"
+
+    @active_workers[uid] ||= RCS::Worker::InstanceWorker.new(instance, ident)
+    @active_workers[uid].queue(id)
+
+    @last_evidence_id = id
+  rescue Exception => ex
+    trace(:error, ex.message)
   end
 
   def how_many_processing
-    @instances.select {|k, processor| processor.state == :running}.size
-  end
-
-  def queue(instance, ident, evidence)
-    return nil if instance.nil? or ident.nil? or evidence.nil?
-
-    @semaphore.synchronize do
-      idx = "#{ident}:#{instance}"
-
-      begin
-        @instances[idx] ||= InstanceWorker.new instance, ident
-        @instances[idx].queue(evidence)
-      rescue Exception => e
-        trace :error, e.message
-        return nil
-      end
-    end
+    @active_workers.select { |k, processor| processor.state == :running }.size
   end
 
   def to_s
-    str = ""
-    @instances.each_pair do |idx, processor|
-      str += "#{processor.to_s}"
-    end
-    str
+    @active_workers.inject("") { |str, values| str << "#{values.last.to_s}" }
   end
-
-  def check_new
-    return if @polling_mutex.locked?
-
-    @polling_mutex.synchronize do
-      #trace :debug, "Checking for new evidence..."
-
-      begin
-        db = RCS::DB::DB.instance.mongo_connection
-        evidences = db.collection('grid.evidence.files').find({metadata: {shard: RCS::DB::Config.instance.global['SHARD']}}, {sort: ["_id", :asc]})
-        evidences.each do |ev|
-
-          # don't queue already queued ids.
-          # we rely here on the fact the id are ascending
-          next if @last_id.to_s >= ev['_id'].to_s
-
-          # get the ident from the filename
-          ident, instance = ev['filename'].split(":")
-
-          trace :debug, "Queuing evidence #{ev['_id']}"
-
-          # queue the evidence
-          QueueManager.instance.queue instance, ident, ev['_id'].to_s
-
-          # remember the last processed id
-          @last_id = ev['_id']
-        end
-      rescue Mongo::ConnectionFailure
-        trace :error, "Connection with mongodb lost, exiting..."
-        exit!
-      rescue Exception => e
-        trace :error, "Cannot process pending evidences: [#{e.class}] #{e.message}"
-        if e.message.match(/forcibly closed/)
-          trace :error, "Connection with mongodb lost, exiting..."
-          exit!
-        end
-      end
-    end
-  end
-
 end
-
-end # ::Worker
-end # ::RCS
