@@ -22,6 +22,7 @@ module Migration
     puts "migrating to #{version}"
 
     run [:recalculate_checksums, :drop_sessions]
+    # run [:fill_up_handle_book_from_summary] if version >= '9.2.0'
 
     return 0
   end
@@ -57,6 +58,30 @@ module Migration
     end
 
     return 0
+  end
+
+  def fill_up_handle_book_from_summary
+    count = 0
+
+    Item.targets.each do |target|
+      summary = Aggregate.target(target).where(type: :summary).first
+      next unless summary
+
+      info = summary.info
+      next if info.blank?
+
+      info.each do |string|
+        type, handle = string[0..(string.index('_')-1)], string[(string.index('_')+1)..-1]
+        next if type.blank? or handle.blank?
+
+        print "\r%d peer handles migrated" % (count += 1)
+
+        type = type.downcase.to_sym
+        HandleBook.insert_or_update(type, handle, target.id)
+      end
+    end
+
+    nil
   end
 
   def recalculate_checksums
