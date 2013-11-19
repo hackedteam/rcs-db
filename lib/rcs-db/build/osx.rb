@@ -59,10 +59,10 @@ class BuildOSX < Build
     inputmanager = scramble_name(config, 2)
     driver = scramble_name(config, 4)
     driver64 = scramble_name(config, 16)
-    icon = "q45tyh"
+    #icon = "q45tyh"
         
     @scrambled = {core: core, dir: dir, config: config, inputmanager: inputmanager,
-                  icon: icon, driver: driver, driver64: driver64}
+                  driver: driver, driver64: driver64}
 
     # call the super which will actually do the renaming
     # starting from @outputs and @scrambled
