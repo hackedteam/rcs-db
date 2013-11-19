@@ -11,4 +11,4 @@ Collector:
   - the collector is now splitted into three different services: collector, carrier and controller
 
 DB:
-
+  - tika updated to version 1.4
