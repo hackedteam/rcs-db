@@ -26,7 +26,6 @@ class HeartBeat
   extend RCS::Tracer
 
   def self.perform
-
     # reset the status
     SystemStatus.reset
 
@@ -39,7 +38,8 @@ class HeartBeat
       ip = 'unknown'
     end
 
-    msg = QueueManager.instance.how_many_processing > 0 ? "Processing evidence from #{QueueManager.instance.how_many_processing} agents." : 'Idle...'
+    how_many_processing = QueueManager.how_many_processing
+    msg = how_many_processing > 0 ? "Processing evidence from #{how_many_processing} agents." : 'Idle...'
     message = SystemStatus.my_error_msg || msg
 
     # report our status
@@ -55,6 +55,9 @@ class HeartBeat
       trace :fatal, "Cannot perform status update: #{e.message}"
       trace :fatal, e.backtrace
     end
+  ensure
+    # Ensure that the mongoid connection is closed at the end
+    Mongoid.default_session.disconnect rescue nil
   end
 end
 
