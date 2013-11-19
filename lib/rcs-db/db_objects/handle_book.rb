@@ -11,9 +11,7 @@ class HandleBook
   field :handle, type: String
   field :targets, type: Array, default: []
 
-  validates_uniqueness_of :handle, scope: :type
-
-  index({type: 1, handle: 1}, {background: true})
+  index({type: 1, handle: 1}, {background: true, unique: true})
 
   # Returns a list of target ids that have communicated with the given account
   def self.targets(type, handle)
@@ -50,5 +48,12 @@ class HandleBook
     list.compact!
 
     list
+  end
+
+  # Remove the given target id everywhere.
+  # @note: This is performed with a bulk update so the mongoid callbacks will not be fired.
+  def self.remove_target(target)
+    target_id = target.respond_to?(:id) ? target.id : Moped::BSON::ObjectId(target)
+    where(targets: target_id).pull(:targets, target_id)
   end
 end
