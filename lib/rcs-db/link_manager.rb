@@ -217,7 +217,7 @@ class LinkManager
       versus = Aggregate.target(peer_entity.target_id).versus_of_communications_with(handle)
 
       if versus
-        add_link(from: entity, to: peer_entity, type: :peer, level: :automatic, info: handle.handle, versus: versus)
+        add_link(from: peer_entity, to: entity, type: :peer, level: :automatic, info: handle.handle, versus: versus)
       else
         trace :warn, "Cannot tell the communication versus"
       end
