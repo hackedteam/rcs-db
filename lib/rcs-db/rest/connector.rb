@@ -13,7 +13,11 @@ class ConnectorController < RESTController
     require_auth_level :sys_connectors
 
     mongoid_query do
-      return ok(::Connector.all)
+      list = Connector.all.to_a
+      # Adds the status attribute (real-time calculated measure)
+      list.each { |c| c.attributes['status'] = c.queued_count }
+
+      return ok(list)
     end
   end
 
