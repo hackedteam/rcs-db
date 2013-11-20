@@ -211,7 +211,7 @@ class LinkManager
 
   # Creates a link from ENTITY to any onthe entity that have communicated with HANDLE (based on aggregates)
   def link_handle(entity, handle)
-    HandleBook.entities_of_targets(handle.type, handle.handle, exclude: entity).each do |peer_entity|
+    HandleBook.entities_that_communicate_with(handle.type, handle.handle, exclude: entity).each do |peer_entity|
       trace :debug, "Entity #{entity.name.inspect} must be linked to #{peer_entity.name.inspect} via #{handle.handle.inspect} (#{handle.type.inspect})"
 
       versus = Aggregate.target(peer_entity.target_id).versus_of_communications_with(handle)

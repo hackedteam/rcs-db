@@ -87,7 +87,7 @@ describe Processor do
       it 'should create an handle book document' do
         Processor.process @entry
 
-        expect(HandleBook.targets(:skype, 'receiver').count).to eq(1)
+        expect(HandleBook.targets_that_communicate_with(:skype, 'receiver').count).to eq(1)
       end
 
       it 'should create suggested entity if the communication score is higher enough' do

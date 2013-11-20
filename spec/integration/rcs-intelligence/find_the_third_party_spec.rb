@@ -54,7 +54,7 @@ describe 'Two targets (in different ops) communicate with the same peer' do
 
     it 'creates a record in the handle book' do
       expect(HandleBook.count).to eq(1)
-      expect(HandleBook.targets(:phone, 'alice')).to eq([target.id, target2.id])
+      expect(HandleBook.targets_that_communicate_with(:phone, 'alice')).to eq([target, target2])
     end
 
     it 'has not created any links or handles on the entity' do

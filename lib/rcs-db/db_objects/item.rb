@@ -561,6 +561,9 @@ class Item
     Evidence.target(self._id.to_s).collection.drop
     Aggregate.target(self._id.to_s).collection.drop
     RCS::DB::GridFS.drop_collection(self._id.to_s)
+
+    # Remove from HandleBook
+    HandleBook.remove_target(self)
   end
 
   def create_target_collections

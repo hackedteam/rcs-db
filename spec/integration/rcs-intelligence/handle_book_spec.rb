@@ -32,7 +32,7 @@ describe 'The HandleBook' do
     end
 
     it 'creates a record in the handle book' do
-      expect(HandleBook.targets(:skype, 'alice')).to eq([target.id])
+      expect(HandleBook.targets_that_communicate_with(:skype, 'alice')).to eq([target])
     end
 
     it 'has not created any links or handles on the entity' do

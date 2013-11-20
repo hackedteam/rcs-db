@@ -141,7 +141,7 @@ class Processor
 
     # If there aren't any entities with that account,
     # search if two entities are communicating with a third party and link them (indirect link)
-    HandleBook.entities_of_targets(aggregate_type, peer, exclude: entity).each do |other_entity|
+    HandleBook.entities_that_communicate_with(aggregate_type, peer, exclude: entity).each do |other_entity|
       trace :debug, "Detected that entity #{other_entity.name.inspect} is also communicating with the handle #{peer.inspect} (#{handle_type})"
 
       # create the new entity

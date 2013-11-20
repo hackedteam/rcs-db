@@ -363,6 +363,8 @@ class BackupManager
     # perform the actual restore
     ret = system_command(command)
 
+    HandleBook.rebuild
+
     # if invoked by a task
     yield if block_given?
 
