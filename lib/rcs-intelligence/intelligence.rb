@@ -25,22 +25,25 @@ module RCS
 
       def start_em_loop
         EM.epoll
-        EM.threadpool_size = 50
+        EM.threadpool_size = 15
 
         EM::run do
           # set up the heartbeat (the interval is in the config)
-          EM.defer(proc{ HeartBeat.perform })
-          EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
+          EM.defer { HeartBeat.perform }
+
+          EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) do
+            EM.defer { HeartBeat.perform }
+          end
 
           # once in a day trigger the batch that infer home and office position of each target entity
-          EM.defer(proc{ Position.infer! })
-          EM::PeriodicTimer.new(3600 * 24) { EM.defer(proc{ Position.infer! }) }
+          EM.defer { Position.infer! }
 
-          # calculate and save the stats
-          #EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }
+          EM::PeriodicTimer.new(3600 * 24) do
+            EM.defer { Position.infer! }
+          end
 
           # use a thread for the infinite processor waiting on the queue
-          EM.defer(proc{ Processor.run })
+          EM.defer { Processor.run }
 
           trace :info, "Intelligence Module ready!"
         end

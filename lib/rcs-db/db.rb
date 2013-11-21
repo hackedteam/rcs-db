@@ -32,7 +32,7 @@ module RCS
           FileUtils.rm_rf(Config.instance.temp)
 
           # check the integrity of the code
-          HeartBeat.dont_steal_rcs
+          LicenseManager.dont_steal_rcs
 
           # load the license limits
           return 1 unless LicenseManager.instance.load_license

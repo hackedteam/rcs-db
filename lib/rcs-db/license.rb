@@ -80,6 +80,15 @@ class LicenseManager
                :collectors => {:collectors => 1, :anonymizers => 0}}
   end
 
+
+  def self.dont_steal_rcs
+    if LicenseManager::DONT_STEAL_RCS != "Ò€‹›ﬁﬂ‡°·‚æ…¬˚∆˙©ƒ∂ß´®†¨ˆøΩ≈ç√∫˜µ≤¡™£¢∞§¶•ªº" or
+      RCS::DB::Dongle::DONT_STEAL_RCS != "∆©ƒø†£¢∂øª˚¶∞¨˚˚˙†´ßµ∫√Ïﬁˆ¨Øˆ·‰ﬁÎ¨"
+      trace :fatal, "TAMPERED SOURCE CODE: don't steal RCS, now you are in trouble..."
+      exit!
+    end
+  end
+
   def load_license(periodic = false)
 
     # load the license file

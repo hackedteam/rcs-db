@@ -25,15 +25,18 @@ module RCS
 
       def start_em_loop
         EM.epoll
-        EM.threadpool_size = 50
+        EM.threadpool_size = 15
 
         EM::run do
           # set up the heartbeat (the interval is in the config)
-          EM.defer(proc{ HeartBeat.perform })
-          EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) { EM.defer(proc{ HeartBeat.perform }) }
+          EM.defer { HeartBeat.perform }
+
+          EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) do
+            EM.defer { HeartBeat.perform }
+          end
 
           # use a thread for the infinite processor waiting on the queue
-          EM.defer(proc{ Processor.run })
+          EM.defer { Processor.run }
         end
       end
 
