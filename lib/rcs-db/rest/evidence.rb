@@ -49,6 +49,19 @@ class EvidenceController < RESTController
     return ok({:bytes => @request[:content]['content'].size})
   end
 
+  # used by the carrier to send evidence to the correct worker for an instance
+  def worker
+    require_auth_level :server
+
+    ident, instance = @params['_id'].split(':')
+    shard_id = EvidenceDispatcher.instance.shard_id(ident, instance)
+    address = EvidenceDispatcher.instance.address(shard_id)[:host]
+
+    trace :info, "Assigned Worker for #{ident} #{instance} is #{shard_id} (#{address})"
+
+    return ok("#{address}:#{Config.instance.global['LISTENING_PORT']-1}", {content_type: 'text/html'})
+  end
+
   def update
     require_auth_level :view
     require_auth_level :view_edit

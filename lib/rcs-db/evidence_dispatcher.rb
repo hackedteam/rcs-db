@@ -31,6 +31,9 @@ class EvidenceDispatcher
     @shards.keys[idx]
   end
 
+  def address(shard)
+    @shards[shard]
+  end
 end # EvidenceDispatcher
 
 end # ::DB

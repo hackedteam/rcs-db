@@ -1,6 +1,8 @@
 
 TODO 9.2.x
 
+  investigate .net installation... does it require reboot?
+
   TRY:
     caching slow query. try to cache already jsonized list of items and similar
 
@@ -29,7 +31,7 @@ TODO 9.2.x
 
     automatic discovery (and thus suggestion) of groups (communities)
 
-    worker routing
+    worker routing (alor)
       - db rest method for routing (coordinate with carrier)
       - rest method in workers to accept evidence
       - install a mongo router for each shard
