@@ -33,7 +33,8 @@ TODO 9.2.x
 
     worker routing (alor)
       - db rest method for routing (coordinate with carrier) [ok]
-      - rest method in workers to accept evidence [in progress]
+      - rest method in workers to accept evidence [ok]
+      - statistics for the worker (inbound evidence)
       - install a mongo router for each shard
         - all ruby services (WAIO) talk with the local mongo router
       - tag sharding for the evidence queue (each worker keeps the quque local)
