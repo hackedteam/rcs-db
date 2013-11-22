@@ -15,10 +15,18 @@ module RCS::DB
       LicenseManager.instance.periodic_check
 
       # check if someone has tampered with the license.rb file
-      LicenseManager.dont_steal_rcs
+      self.class.dont_steal_rcs
 
       # check the status of the DB shards
       check_shards
+    end
+
+    def self.dont_steal_rcs
+      if LicenseManager::DONT_STEAL_RCS != "Ò€‹›ﬁﬂ‡°·‚æ…¬˚∆˙©ƒ∂ß´®†¨ˆøΩ≈ç√∫˜µ≤¡™£¢∞§¶•ªº" or
+        RCS::DB::Dongle::DONT_STEAL_RCS != "∆©ƒø†£¢∂øª˚¶∞¨˚˚˙†´ßµ∫√Ïﬁˆ¨Øˆ·‰ﬁÎ¨"
+        trace :fatal, "TAMPERED SOURCE CODE: don't steal RCS, now you are in trouble..."
+        exit!
+      end
     end
 
     def check_shards
