@@ -2,8 +2,6 @@
 #  HTTP requests parsing module
 #
 
-require_relative 'rest'
-
 # from RCS::Common
 require 'rcs-common/trace'
 require 'rcs-common/mime'

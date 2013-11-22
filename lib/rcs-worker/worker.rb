@@ -3,9 +3,8 @@ require 'rcs-common/path_utils'
 
 # relatives
 require_relative 'call_processor'
-require_relative 'heartbeat'
-require_relative 'backlog'
 require_relative 'statistics'
+require_relative 'events'
 
 require_release 'rcs-db/config'
 require_release 'rcs-db/db_layer'
@@ -16,10 +15,6 @@ require 'rcs-common/trace'
 require 'rcs-common/fixnum'
 require 'rcs-common/component'
 
-# form System
-require 'digest/md5'
-require 'optparse'
-
 # from bundle
 require 'eventmachine'
 
@@ -29,27 +24,6 @@ module RCS
       include RCS::Component
 
       component :worker, name: "RCS Worker"
-
-      def start_em_loop
-        EM.epoll
-        EM.threadpool_size = 50
-
-        EM::run do
-          EM.defer(proc{ HeartBeat.perform })
-
-          EM::PeriodicTimer.new(RCS::DB::Config.instance.global['HB_INTERVAL']) do
-            EM.defer { HeartBeat.perform }
-          end
-
-          # calculate and save the stats
-          EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }
-
-          # this is the actual polling
-          EM.defer { QueueManager.run! }
-
-          trace :info, "#{component_name} '#{RCS::DB::Config.instance.global['SHARD']}' ready!"
-        end
-      end
 
       def run(options)
         run_with_rescue do
@@ -65,7 +39,7 @@ module RCS
           LicenseManager.instance.load_from_db
 
           # Start the eventmachine reactor threads
-          start_em_loop
+          Events.new.setup(RCS::DB::Config.instance.global['LISTENING_PORT']-1)
         end
       end
     end

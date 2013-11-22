@@ -32,8 +32,8 @@ TODO 9.2.x
     automatic discovery (and thus suggestion) of groups (communities)
 
     worker routing (alor)
-      - db rest method for routing (coordinate with carrier)
-      - rest method in workers to accept evidence
+      - db rest method for routing (coordinate with carrier) [ok]
+      - rest method in workers to accept evidence [in progress]
       - install a mongo router for each shard
         - all ruby services (WAIO) talk with the local mongo router
       - tag sharding for the evidence queue (each worker keeps the quque local)
