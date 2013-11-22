@@ -13,6 +13,7 @@ require 'rcs-common/trace'
 require 'bson'
 require 'json'
 require 'base64'
+require 'rcs-common/rest'
 
 module RCS
 module DB
@@ -33,19 +34,11 @@ end
 
 class RESTController
   include RCS::Tracer
+  include RCS::Common::Rest
 
-  STATUS_OK = 200
-  STATUS_REDIRECT = 302
-  STATUS_BAD_REQUEST = 400
-  STATUS_AUTH_REQUIRED = 401
-  STATUS_NOT_FOUND = 404
-  STATUS_NOT_AUTHORIZED = 403
-  STATUS_CONFLICT = 409
-  STATUS_SERVER_ERROR = 500
-  
   # the parameters passed on the REST request
   attr_reader :session, :request
-  
+
   @controllers = {}
 
   def ok(*args)

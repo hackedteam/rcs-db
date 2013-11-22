@@ -6,6 +6,7 @@ require_relative 'em_streamer'
 
 # from RCS::Common
 require 'rcs-common/trace'
+require 'rcs-common/rest'
 
 require 'net/http'
 require 'stringio'
@@ -17,12 +18,13 @@ module DB
 
 class RESTResponse
   include RCS::Tracer
-  
+  include RCS::Common::Rest
+
   attr_accessor :status, :content, :content_type, :cookie
-  
+
   def initialize(status, content = '', opts = {}, callback=proc{})
     @status = status
-    @status = RCS::DB::RESTController::STATUS_SERVER_ERROR if @status.nil? or @status.class != Fixnum
+    @status = STATUS_SERVER_ERROR if @status.nil? or @status.class != Fixnum
     
     @content = content
     @content_type = opts[:content_type]
@@ -73,7 +75,7 @@ class RESTResponse
       end
 
     rescue Exception => e
-      @response.status = RCS::DB::RESTController::STATUS_SERVER_ERROR
+      @response.status = STATUS_SERVER_ERROR
       @response.content = 'JSON_SERIALIZATION_ERROR'
       trace :error, e.message
       trace :error, "CONTENT: #{@content}"
@@ -83,7 +85,7 @@ class RESTResponse
     @response.headers['Content-Type'] = @content_type
     @response.headers['Set-Cookie'] = @cookie unless @cookie.nil?
 
-    @response.headers['WWW-Authenticate'] = "Basic realm=\"Secure Area\"" if @response.status == RCS::DB::RESTController::STATUS_AUTH_REQUIRED
+    @response.headers['WWW-Authenticate'] = "Basic realm=\"Secure Area\"" if @response.status == STATUS_AUTH_REQUIRED
 
     # used for redirects
     @response.headers['Location'] = @location unless @location.nil?

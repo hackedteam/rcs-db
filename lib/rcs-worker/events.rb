@@ -4,6 +4,7 @@
 
 # relatives
 require_relative 'heartbeat'
+require_relative 'worker_controller'
 require_release 'rcs-db/parser'
 
 # from RCS::Common
@@ -40,7 +41,13 @@ class HTTPHandler < EM::HttpServer::Server
     @network_peer = @peer
 
     # timeout on the socket
-    set_comm_inactivity_timeout 300
+    set_comm_inactivity_timeout 60
+
+    # we want the connection to be encrypted with ssl
+    start_tls({:private_key_file => RCS::DB::Config.instance.cert('DB_KEY'),
+               :cert_chain_file => RCS::DB::Config.instance.cert('DB_CERT'),
+               :verify_peer => false})
+
 
     trace :debug, "Connection from #{@network_peer}:#{@peer_port}"
   end
@@ -64,16 +71,16 @@ class HTTPHandler < EM::HttpServer::Server
     @request_time = Time.now
 
     # update the connection statistics
-    StatsManager.instance.add conn: 1
+    # StatsManager.instance.add conn: 1
 
-    $watchdog.synchronize do
+    # $watchdog.synchronize do
 
       responder = nil
 
       # Block which fulfills the request
       operation = proc do
 
-        trace :debug, "[#{@peer}] QUE: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time})" if Config.instance.global['PERF']
+        trace :debug, "[#{@peer}] QUE: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time})"
 
         generation_time = Time.now
 
@@ -83,8 +90,11 @@ class HTTPHandler < EM::HttpServer::Server
           # parse all the request params
           request = prepare_request @http_request_method, @http_request_uri, @http_query_string, @http_content, @http, @peer
 
+          request[:time] = {start: @request_time}
+          # request[:time][:queue] = generation_time - @request_time
+
           # get the correct controller
-          controller = CollectorController.new
+          controller = WorkerController.new
           controller.request = request
 
           # do the dirty job :)
@@ -95,14 +105,14 @@ class HTTPHandler < EM::HttpServer::Server
 
           # keep the size of the reply to be used in the closing method
           @response_size = reply.content ? reply.content.bytesize : 0
-          trace :debug, "[#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{request[:query]} (#{Time.now - generation_time}) #{@response_size.to_s_bytes}" if Config.instance.global['PERF']
+          trace :debug, "[#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{request[:query]} (#{Time.now - generation_time}) #{@response_size.to_s_bytes}"
 
           reply
         rescue Exception => e
           trace :error, e.message
           trace :fatal, "EXCEPTION(#{e.class}): " + e.backtrace.join("\n")
 
-          responder = RESTResponse.new(RESTController::STATUS_BAD_REQUEST)
+          responder = RCS::DB::RESTResponse.new(RESTController::STATUS_BAD_REQUEST)
           reply = responder.prepare_response(self, {})
           reply
         end
@@ -121,7 +131,7 @@ class HTTPHandler < EM::HttpServer::Server
       # Let the thread pool handle request
       EM.defer(operation, response)
 
-    end
+    # end
 
   end
 
