@@ -39,7 +39,7 @@ TODO 9.2.x
       - fix rcs-worker-queue to show only the local queue
       - during installation be sure that the old evidence.grid is empty
       - statistics for the worker (inbound evidence)
-      - install a mongo router for each shard
+      - install a mongo router for each shard [ok]
         - all ruby services (WAIO) talk with the local mongo router
 
   IDEAS:

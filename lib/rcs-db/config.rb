@@ -70,7 +70,7 @@ class Config
   end
 
   def load_from_file
-    trace :info, "Loading configuration file..."
+    #trace :info, "Loading configuration file..."
     conf_file = File.join Dir.pwd, CONF_DIR, CONF_FILE
 
     # load the config in the @global hash
@@ -158,6 +158,11 @@ class Config
 
     # load the current config
     load_from_file
+
+    if options[:get_cn]
+      puts @global['CN']
+      return 0
+    end
 
     if options[:shard]
       add_shard options
@@ -517,6 +522,9 @@ class Config
       end
       opts.on( '-n', '--CN CN', String, 'Common Name for the server' ) do |cn|
         options[:cn] = cn
+      end
+      opts.on( '--get-cn', 'Print the current CN for the master') do
+        options[:get_cn] = true
       end
       opts.on( '-N', '--new-CN', 'Use this option to update the CN in the db and registry' ) do
         options[:newcn] = true

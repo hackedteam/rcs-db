@@ -577,7 +577,12 @@ Section "Install Section" SecInstall
       nsExec::Exec '$INSTDIR\DB\mongodb\win\mongod.exe --dbpath $INSTDIR\DB\data --journal --nssize 64 --logpath $INSTDIR\DB\log\mongod.log --logappend --shardsvr --rest --install --serviceName RCSShard --serviceDisplayName "RCS Shard" --serviceDescription "Remote Control System DB Shard for data storage"'
       SimpleSC::SetServiceFailure "RCSShard" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
       DetailPrint "done"
-      
+
+      DetailPrint "Creating service RCS Router..."
+      nsExec::Exec '$INSTDIR\DB\mongodb\win\mongos.exe --logpath $INSTDIR\DB\log\mongos.log --logappend --configdb $masterAddress --install --serviceName RCSMasterRouter --serviceDisplayName "RCS Master Router" --serviceDescription "Remote Control System Master Router for shards"'
+      SimpleSC::SetServiceFailure "RCSMasterRouter" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      DetailPrint "done"
+
       DetailPrint "Creating service RCS Worker..."
       nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSWorker $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-worker"
       SimpleSC::SetServiceFailure "RCSWorker" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
@@ -609,11 +614,25 @@ Section "Install Section" SecInstall
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config -u admin -p $adminpass -d $masterAddress --add-shard $localAddress"
       SetDetailsPrint "both"
       DetailPrint "done"
+    ${Else}
+      ;TODO: remove after 9.2.0
+      nsExec::ExecToStack "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --get-cn"
+      Pop $1
+      Pop $masterAddress
+
+      DetailPrint "Creating service RCS Router..."
+      nsExec::Exec '$INSTDIR\DB\mongodb\win\mongos.exe --logpath $INSTDIR\DB\log\mongos.log --logappend --configdb $masterAddress --install --serviceName RCSMasterRouter --serviceDisplayName "RCS Master Router" --serviceDescription "Remote Control System Master Router for shards"'
+      SimpleSC::SetServiceFailure "RCSMasterRouter" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      DetailPrint "done"
 	  ${EndIf}
     
     DetailPrint "Starting RCS Shard..."
     SimpleSC::StartService "RCSShard" "" 30
     Sleep 3000
+    DetailPrint "Starting RCS Master Router..."
+    SimpleSC::StartService "RCSMasterRouter" "" 30
+    Sleep 3000
+
     DetailPrint "Starting RCS Worker..."
     SimpleSC::StartService "RCSWorker" "" 30
 
@@ -702,7 +721,7 @@ Section "Install Section" SecInstall
         DetailPrint "done"
       ${EndIf}
     ${Else}
-      ;TODO: remove after 9.1.0
+      ;TODO: remove after 9.2.0
       DetailPrint "Creating service RCS Carrier..."
       nsExec::Exec  "$INSTDIR\Collector\bin\nssm.exe install RCSCarrier $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-carrier"
       SimpleSC::SetServiceFailure "RCSCarrier" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
