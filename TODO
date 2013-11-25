@@ -31,9 +31,12 @@ TODO 9.2.x
 
     automatic discovery (and thus suggestion) of groups (communities)
 
-    worker routing (alor)
+    worker routing
       - db rest method for routing (coordinate with carrier) [ok]
       - rest method in workers to accept evidence [ok]
+      - one local collection for each worker (on its own shard)
+      - rcs-db-evidence-queue -> rcs-worker-queue to get stats from all the shards
+      - during installation be sure that the old evidence.grid is empty
       - statistics for the worker (inbound evidence)
       - install a mongo router for each shard
         - all ruby services (WAIO) talk with the local mongo router
