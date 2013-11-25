@@ -5,6 +5,7 @@ require 'rcs-common/path_utils'
 require_relative 'call_processor'
 require_relative 'statistics'
 require_relative 'events'
+require_relative 'backlog'
 
 require_release 'rcs-db/config'
 require_release 'rcs-db/db_layer'
