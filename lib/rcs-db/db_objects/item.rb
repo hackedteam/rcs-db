@@ -398,7 +398,6 @@ class Item
         #add_upgrade('driver64', File.join(build.tmpdir, 'driver64'))
       when 'osx'
         add_upgrade('inputmanager', File.join(build.tmpdir, 'inputmanager'))
-        add_upgrade('driver', File.join(build.tmpdir, 'driver'))
       when 'linux'
         add_upgrade('core32', File.join(build.tmpdir, 'core32'))
         add_upgrade('core64', File.join(build.tmpdir, 'core64'))
