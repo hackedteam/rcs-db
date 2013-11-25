@@ -22,7 +22,7 @@ class WorkerBacklog
   def run(options)
 
     # config file parsing
-    #return 1 unless Config.instance.load_from_file
+    return 1 unless RCS::DB::Config.instance.load_from_file
 
     # connect to MongoDB
     return 1 unless RCS::DB::DB.instance.connect
