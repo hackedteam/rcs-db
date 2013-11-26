@@ -19,7 +19,7 @@ GIT
 PATH
   remote: ../rcs-common
   specs:
-    rcs-common (9.1.0)
+    rcs-common (9.1.1)
       ffi
       log4r (>= 1.1.9)
       mail
@@ -106,7 +106,7 @@ GEM
     slop (3.4.6)
     sys-cpu (0.7.1)
       ffi (>= 1.0.0)
-    sys-filesystem (1.1.0)
+    sys-filesystem (1.1.1)
       ffi
     treetop (1.4.15)
       polyglot
