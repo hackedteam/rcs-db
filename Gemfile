@@ -9,7 +9,7 @@ gem 'em-websocket'
 # http_parser.rb 0.5.3 does not work under windows with ruby 2.0, to escape this limitation a precompiled
 # binary was used.
 # Check this out: https://github.com/johanneswuerbach/http_parser.rb_2.0_precompiled
-gem 'em-http-server', ">= 0.1.3"
+gem 'em-http-server', ">= 0.1.7"
 
 gem 'eventmachine', ">= 1.0.3"
 

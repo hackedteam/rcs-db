@@ -49,7 +49,7 @@ GEM
       em-socksify
       eventmachine (>= 1.0.0.beta.4)
       http_parser.rb (>= 0.5.3)
-    em-http-server (0.1.6)
+    em-http-server (0.1.7)
       eventmachine
     em-socksify (0.3.0)
       eventmachine (>= 1.0.0.beta.4)
@@ -125,7 +125,7 @@ DEPENDENCIES
   bson_ext (= 1.9.2)
   bundler (> 1.0.0)
   em-http-request (= 1.0.3)
-  em-http-server (>= 0.1.3)
+  em-http-server (>= 0.1.7)
   em-websocket
   eventmachine (>= 1.0.3)
   ffi
