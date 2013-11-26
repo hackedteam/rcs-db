@@ -1,9 +1,4 @@
 
-Changelog for 9.1.0
-
-- Fix gps position resolving
-- Fix for NI rule building without linux license
-- Ability to export previous evidence from connectors
 
 Changelog for 9.2.0
 
@@ -12,3 +7,5 @@ Collector:
 
 DB:
   - tika updated to version 1.4
+  - intra operation correlation
+  - ability to group entities together

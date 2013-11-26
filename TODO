@@ -10,21 +10,11 @@ TODO 9.2.x
 
   IMPLEMENT:
 
-    export to connector [OK]
+    export to connector [OK] (needs some config from the console...)
 
     scout++ (with simplified config)
 
     create as target (from automatic entities)
-
-    ability to group entities together (better visualization) [OK]
-      - new entity type: :group [OK]
-      - the group contains a list of entities [OK]
-      - the rendering of the links is demanded to the console (underlying links are created normally)
-
-    bakcup for the handlebook
-      - rebuild the handlebook after restoring a target backup [OK]
-
-    intra operation correlation (visualize like a link to a group that actually is the other operation) [OK]
 
     method to create a graph representation of our data (xml, graphml, etc)
       - this will be useful for testing new visualizazion libraries on the same dataset [OK]
@@ -41,6 +31,10 @@ TODO 9.2.x
       - statistics for the worker (inbound evidence)
       - install a mongo router for each shard [ok]
         - all ruby services (WAIO) talk with the local mongo router
+
+    tests for all the builds of different platforms (win, osx, android...)
+      - build every kind of method (silent, scout, melted, cooked, wap, qrcode...)
+      - test the upgrade process (check that files are put in queue)
 
   IDEAS:
     message quque on entities
