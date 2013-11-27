@@ -45,7 +45,7 @@ class BuildOSX < Build
       end
     end
 
-    FileUtils.cp path(params[:core]), path('core_clear')
+    FileUtils.mv path(params[:core]), path('core_clear')
     CrossPlatform.exec path('seg_encrypt'), path('core_clear') + ' ' + path(params[:core])
     CrossPlatform.exec path('mpress'), "-ub " + path(params[:core])
 
