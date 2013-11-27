@@ -40,6 +40,7 @@ gem 'ruby-opencv'
 # Install the 2.4.4a version via homebrew, and then launch if your homebrew folder
 # is not in the default location, lauch:
 # gem install ruby-opencv -- --with-opencv-dir="/Users/username/.homebrew/Cellar/opencv/2.4.4a"
+# check this out: http://stackoverflow.com/questions/3987683/homebrew-install-specific-version-of-formula
 
 platforms :jruby do
   gem 'json'
