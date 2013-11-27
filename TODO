@@ -37,6 +37,8 @@ TODO 9.2.x
       - test the upgrade process (check that files are put in queue)
       - create a new rake spec:build:all and aliases for spec:build:platform
 
+    protect the code of the rcs-common gem (include the rgloader dir in the gem)
+
   IDEAS:
     message quque on entities
       - sort of "inbox" for each entity on what the system performs on it
