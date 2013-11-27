@@ -3,7 +3,6 @@ IDA Pro v                   # IDA Pro vx.xx
 Wireshark                   # Wireshark x.x.x
 API Monitor                 # Api Monitor vx
 VMWare Tools                # Virtual Machine
-WinPcap                     # Network analyzer
 ^Syser                      # Syser x.xx
 \.NET Reflector             # .NET Reflector Desktop
 ^PE Explorer                # PE Explorer 1.xx Rx
