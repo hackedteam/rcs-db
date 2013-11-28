@@ -251,6 +251,28 @@ class EntityController < RESTController
     end
   end
 
+  def promote_to_target
+    require_auth_level :admin
+    require_auth_level :admin_targets
+    require_auth_level :view_profiles
+    require_auth_level :view
+
+    mongoid_query do
+      entity = Entity.persons.any_in(user_ids: [@session.user[:_id]]).where(_id: @params['_id'])
+      return bad_request('INVALID_OPERATION') unless entity
+
+      entity.promote_to_target
+
+      operation = ::Item.operations.find(entity.path.first)
+
+      Audit.log :actor => @session.user[:name],
+                :action => "target.create",
+                :operation_name => operation.name,
+                :target_name => entity.name,
+                :desc => "Created target '#{entity.name}' (person promoted to target)"
+    end
+  end
+
   def most_contacted
     require_auth_level :view
     require_auth_level :view_profiles

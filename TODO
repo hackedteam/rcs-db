@@ -14,7 +14,7 @@ TODO 9.2.x
 
     scout++ (with simplified config)
 
-    create as target (from automatic entities)
+    create as target (from automatic entities) [OK]
 
     method to create a graph representation of our data (xml, graphml, etc)
       - this will be useful for testing new visualizazion libraries on the same dataset [OK]

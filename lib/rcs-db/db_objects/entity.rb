@@ -592,6 +592,43 @@ class Entity
       destroy
     end
   end
+
+  def promote_to_target
+    return if type != :person
+
+    # Find the corresponding operation (item)
+
+    operation = ::Item.operations.find(path.first)
+
+    # Initialize a new target (item) in order to get its brand new id
+
+    target = ::Item.new(_kind: :target)
+
+    # change the type and the path of the person entity (in order to transform it into a target entity)
+
+    trace :debug, "Promote person #{name} to target"
+
+    new_path = [operation.id, target.id]
+    update_attributes(type: :target, level: :automatic, path: new_path, desc: "#{name} promoted to target entity")
+
+    # Create the target item
+    # @note At this point the related target entity WILL NOT be created because it already exists.
+
+    trace :debug, "Create target #{name} (operation #{operation.name})"
+
+    target.name = name
+    target.status = :open
+    target.path = [operation.id]
+    target.desc = "Created from entity #{self.name}"
+    target.users = operation.users
+    target.stat = ::Stat.new
+    target.stat.evidence = {}
+    target.stat.size = 0
+    target.stat.grid_size = 0
+    target.save!
+
+    reload
+  end
 end
 
 
