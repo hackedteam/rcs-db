@@ -107,6 +107,7 @@ def enable_license
     eval 'class LicenseManager; end' unless defined? LicenseManager
     LicenseManager.stub(:instance).and_return double()
     LicenseManager.instance.stub(:check).and_return true
+    LicenseManager.instance.stub(:can_build_platform).and_return true
   end
 end
 
