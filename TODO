@@ -35,7 +35,7 @@ TODO 9.2.x
     tests for all the builds of different platforms (win, osx, android...)
       - build every kind of method (silent, scout, melted, cooked, wap, qrcode...)
       - test the upgrade process (check that files are put in queue)
-      - create a new rake spec:build:all and aliases for spec:build:platform
+      - create a new rake spec:build:all and aliases for spec:build:platform [ok]
 
     protect the code of the rcs-common gem (include the rgloader dir in the gem)
       - modify the rake build command

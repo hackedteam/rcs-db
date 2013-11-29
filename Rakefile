@@ -23,6 +23,10 @@ def rspec_tasks
   }
 end
 
+def platforms
+  ['all', 'android', 'blackberry', 'ios', 'linux', 'osx', 'symbian', 'windows', 'winmo', 'winphone']
+end
+
 rspec_tasks.each do |task_name, pattern|
 
   desc "Run RSpec test (#{task_name})"
@@ -35,6 +39,15 @@ rspec_tasks.each do |task_name, pattern|
   RSpec::Core::RakeTask.new("spec:#{task_name}:slow") do |test|
     test.rspec_opts = default_rspec_opts_slow
     test.pattern = pattern
+  end
+end
+
+platforms.each do |platform|
+  desc "Run RSpec build test (#{platform})"
+  RSpec::Core::RakeTask.new("spec:build:#{platform}") do |test|
+    test.rspec_opts = default_rspec_opts
+    platform = '**' if platform.eql? 'all'
+    test.pattern = "spec/lib/rcs-db/build/#{platform}_spec.rb"
   end
 end
 
