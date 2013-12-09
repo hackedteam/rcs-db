@@ -24,9 +24,9 @@ TODO 9.2.x
     worker routing
       - db rest method for routing (coordinate with carrier) [ok]
       - rest method in workers to accept evidence [ok]
-      - one local collection for each worker (on its own shard)
+      - one local collection for each worker (on its own shard) [ok]
       - rename rcs-db-evidence-queue -> rcs-db-queue and modify to get stats from all the shards
-      - fix rcs-worker-queue to show only the local queue
+      - fix rcs-worker-queue to show only the local queue [ok]
       - during installation be sure that the old evidence.grid is empty
       - statistics for the worker (inbound evidence)
       - install a mongo router for each shard [ok]

@@ -1,16 +1,11 @@
 # from RCS::Common
 require 'rcs-common/trace'
 require 'rcs-common/fixnum'
+require 'rcs-common/path_utils'
 
-if File.directory?(Dir.pwd + '/lib/rcs-worker-release')
-  require 'rcs-db-release/db'
-  require 'rcs-db-release/grid'
-  require 'rcs-db-release/evidence_dispatcher'
-else
-  require 'rcs-db/db'
-  require 'rcs-db/grid'
-  require 'rcs-db/evidence_dispatcher'
-end
+require_release 'rcs-db/db'
+require_release 'rcs-db/grid'
+require_release 'rcs-db/evidence_dispatcher'
 
 module RCS
 module Worker
@@ -41,14 +36,13 @@ class WorkerBacklog
     entries = entries.sort_by {|k,v| k}
 
     # table definitions
-    table_width = 117
+    table_width = 91
     table_line = '+' + '-' * table_width + '+'
 
     # print the table header
     puts
     puts table_line
-    puts '|' + 'instance'.center(57) + '|' + 'platform'.center(12) + '|' +
-         'shard'.center(25) + '|' + 'logs'.center(6) + '|' + 'size'.center(13) + '|'
+    puts '|' + 'instance'.center(57) + '|' + 'platform'.center(12) + '|' + 'logs'.center(6) + '|' + 'size'.center(13) + '|'
     puts table_line
 
     entries.each do |entry|
@@ -56,9 +50,8 @@ class WorkerBacklog
       ident = entry[0].slice(0..13)
       instance = entry[0].slice(15..-1)
       agent = ::Item.agents.where({ident: ident, instance: instance}).first
-      shard_id = RCS::DB::EvidenceDispatcher.instance.shard_id ident, instance
 
-      puts "| #{entry[0]} |#{agent[:platform].center(12)}| #{shard_id.center(23)} |#{entry[1][:count].to_s.rjust(5)} | #{entry[1][:size].to_s_bytes.rjust(11)} |"
+      puts "| #{entry[0]} |#{agent[:platform].center(12)}|#{entry[1][:count].to_s.rjust(5)} | #{entry[1][:size].to_s_bytes.rjust(11)} |"
     end
 
     puts table_line
