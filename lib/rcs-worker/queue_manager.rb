@@ -17,7 +17,7 @@ module RCS::Worker::QueueManager
   # Gets a connection to mongodb. Given a single thread, multiple calls to
   # this method DO NOT create new connections.
   def db
-    RCS::DB::DB.instance.mongo_connection
+    RCS::Worker::DB.instance.mongo_connection
   end
 
   def close_mongo_connection
@@ -27,7 +27,7 @@ module RCS::Worker::QueueManager
   # Gets all the new evidece
   def new_evidence_list
     retry_on_timeout do
-      db.collection('grid.evidence.files').find({metadata: {shard: shard}}, {sort: ["_id", :asc]})
+      db.collection('grid.evidence.files').find({}, {sort: ["_id", :asc]})
     end
   end
 

@@ -29,9 +29,9 @@ class WorkerBacklog
 
     # calculate the number and the size of all the evidece for each instance
     entries = {}
-    RCS::DB::GridFS.get_distinct_filenames("evidence").each do |inst|
+    RCS::Worker::GridFS.get_distinct_filenames("evidence").each do |inst|
       entries[inst] = {count: 0, size: 0}
-      RCS::DB::GridFS.get_by_filename(inst, "evidence").each do |i|
+      RCS::Worker::GridFS.get_by_filename(inst, "evidence").each do |i|
         entries[inst][:count] += 1
         entries[inst][:size] += i["length"]
       end

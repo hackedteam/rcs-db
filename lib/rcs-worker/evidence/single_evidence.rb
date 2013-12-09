@@ -66,7 +66,7 @@ module SingleEvidence
         # save the binary data (if any)
         unless self[:grid_content].nil?
           ev.data[:_grid_size] = self[:grid_content].bytesize
-          ev.data[:_grid] = RCS::DB::GridFS.put(self[:grid_content], {filename: agent[:_id].to_s}, target[:_id].to_s) unless self[:grid_content].nil?
+          ev.data[:_grid] = RCS::Worker::GridFS.put(self[:grid_content], {filename: agent[:_id].to_s}, target[:_id].to_s) unless self[:grid_content].nil?
         end
 
         # update the evidence statistics
