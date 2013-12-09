@@ -480,8 +480,6 @@ Section "Install Section" SecInstall
       FileClose $4
     ${EndIf}
 
-    ; make sure the certificate is removed on new install
-    Delete "$INSTDIR\DB\config\certs\rcs-network.pem"
     ; generate the SSL cert for anon on every install
     DetailPrint "Generating anonymizer certs..."
     nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-certs-anon --log"
