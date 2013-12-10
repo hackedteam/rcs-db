@@ -14,7 +14,7 @@ module RCS
         @_worker_mongo_connection ||= begin
           # host = RCS::DB::Config.instance.global['CN']
           host = 'localhost'
-          port = 27017
+          port = 27018
 
           super(WORKER_DB_NAME, host, port)
         end
