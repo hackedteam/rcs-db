@@ -21,6 +21,8 @@ TODO 9.2.x
 
     automatic discovery (and thus suggestion) of groups (communities)
 
+    map api request statistics
+
     worker routing
       - db rest method for routing (coordinate with carrier) [ok]
       - rest method in workers to accept evidence [ok]
