@@ -29,6 +29,9 @@ module RCS
       component :worker, name: "RCS Worker"
 
       def run(options)
+        # Force connection to local mongos instance
+        ENV['MONGOID_HOST'] = 'localhost'
+
         run_with_rescue do
           trace_setup
 

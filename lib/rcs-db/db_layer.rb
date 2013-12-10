@@ -57,7 +57,13 @@ class DB
 
       # set the parameters for the mongoid.yaml
       ENV['MONGOID_DATABASE'] = Config.instance.global['DB_NAME'] || 'rcs'
-      ENV['MONGOID_HOST'] = "#{Config.instance.global['CN']}"
+
+      if ENV['MONGOID_HOST']
+        trace :warn, "MONGOID_HOST has been set to #{ENV['MONGOID_HOST']}"
+      else
+        ENV['MONGOID_HOST'] = "#{Config.instance.global['CN']}"
+      end
+
       ENV['MONGOID_PORT'] = "27017"
 
       #Mongoid.logger = ::Logger.new($stdout)
