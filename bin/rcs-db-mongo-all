@@ -11,9 +11,11 @@ case RbConfig::CONFIG['host_os']
   when /darwin/
     os = 'macos'
     ext = ''
+    ulimit = "ulimit -n 1024 &&"
   when /mingw/
     os = 'win'
     ext = '.exe'
+    ulimit = ""
 end
 
 datadir = Dir.pwd + '/data'
@@ -40,22 +42,22 @@ mongos = Dir.pwd + '/mongodb/' + os + '/mongos' + ext
 
 puts "Starting the config server (#{rcs_config['CN']})..."
 # the config server
-parameters = "--dbpath #{configdir} --fork --nssize 64 --logpath #{logdir}/mongoc.log --configsvr --rest"
+parameters = "--dbpath #{configdir} --fork --nssize 64 --logpath #{logdir}/mongoc.log --configsvr --rest --maxConns 1000"
 parameters += " --keyFile #{keyfile}" if require_auth
-`#{mongod} #{parameters}`
+`#{ulimit} #{mongod} #{parameters}`
 
 sleep 1
 
 puts "Starting the shard server..."
 # the shard server
-parameters = "--dbpath #{datadir} --journal --fork  --nssize 64 --logpath #{logdir}/mongod.log --shardsvr --rest"
+parameters = "--dbpath #{datadir} --journal --fork  --nssize 64 --logpath #{logdir}/mongod.log --shardsvr --rest  --maxConns 1000"
 parameters += " --keyFile #{keyfile}" if require_auth
-`#{mongod} #{parameters}`
+`#{ulimit} #{mongod} #{parameters}`
 
 sleep 5
 
 puts "Starting the router..."
 # the shard router
-parameters = "--logpath #{logdir}/mongos.log --fork --configdb #{rcs_config['CN']}"
+parameters = "--logpath #{logdir}/mongos.log --fork --configdb #{rcs_config['CN']}  --maxConns 1000"
 parameters += " --keyFile #{keyfile}" if require_auth
-`#{mongos} #{parameters}`
+`#{ulimit} #{mongos} #{parameters}`
