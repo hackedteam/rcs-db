@@ -60,8 +60,11 @@ class Status
   end
 
   def old_component?
-    return false unless %w[worker collector nc intelligence connector].include?(type)
-    version != $version
+    if type == 'anonymizer'
+      false
+    else
+      version != $version
+    end
   end
 
   def notify
