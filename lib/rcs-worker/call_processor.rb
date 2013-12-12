@@ -82,8 +82,8 @@ class Channel
     expected = expected_samples(evidence)
     samples_to_fill = expected - @written_samples
     seconds_to_fill = samples_to_fill / @needs_resampling
-    trace :debug, "[channel #{to_s}] filling with #{samples_to_fill} samples(@#{@needs_resampling}) to fill #{seconds_to_fill} seconds of missing data."
     return if samples_to_fill <= 0
+    trace :debug, "[channel #{to_s}] filling with #{samples_to_fill} samples(@#{@needs_resampling}) to fill #{seconds_to_fill} seconds of missing data."
     @wav_data.concat [0.0] * samples_to_fill
     @written_samples = expected
   end
@@ -214,7 +214,7 @@ class Call
 
       # fill in later channel
       fillin_gap = a[1].start_time - a[0].start_time
-      #trace :debug, "[CALL #{@id}] FILLING #{fillin_gap.to_f} SECS ON CHANNEL #{a[1].name}"
+      trace :debug, "[CALL #{@id}] FILLING #{fillin_gap.to_f} SECS ON CHANNEL #{a[1].name}"
       a[1].fill_begin(fillin_gap)
     end
 
