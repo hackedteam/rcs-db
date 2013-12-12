@@ -11,6 +11,13 @@ module RCS
         super(attributes)
       end
 
+      def h(s)
+        return unless s.respond_to?(:gsub)
+        escape = {'&' => '&amp;',  '>' => '&gt;',   '<' => '&lt;', '"' => '&quot;', "'" => '&#39;' }
+        regexp = /[&"'><]/
+        s.gsub(regexp, escape)
+      end
+
       # Render self OR another template
       def render name = nil, params = {}
         if name.blank?

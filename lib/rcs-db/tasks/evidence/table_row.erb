@@ -1,7 +1,7 @@
 <tr>
   <td class="id"><%= row[:_id] %></td>
 
-  <td class="agent"><%= row[:agent] %></td>
+  <td class="agent"><%= h(row[:agent]) %></td>
 
   <td class="agent-instance"><%= row[:agent_instance] %></td>
 
@@ -22,9 +22,9 @@
 
         <tr>
           <td class="inner"><%= k %></td>
-          <% v.gsub! /\n/, '<br>' if v.class == String %>
+          <% h(v).gsub!(/\n/, '<br>') if v.class == String %>
           <% v = Time.at(v.to_i) if k == 'begin' or k == 'end' %>
-          <td class="inner"><%= v %></td>
+          <td class="inner"><%= h(v) %></td>
         </tr>
       <% end %>
 
@@ -71,6 +71,6 @@
   </td>
 
   <% if display_notes %>
-    <td class="note"><%= row[:note] %></td>
+    <td class="note"><pre><%= h(row[:note]) %></pre></td>
   <% end %>
 </tr>
