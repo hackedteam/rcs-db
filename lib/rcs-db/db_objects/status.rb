@@ -79,7 +79,9 @@ class Status
   end
 
   def check
-    if !error? and unupdated?
+    return if error?
+
+    if unupdated?
       trace :warn, "Component #{name} (#{address}) is not responding, marking failed..."
       alert_failed
       update_attributes(status: ERROR, info: 'Not sending status update for more than 2 minutes')
