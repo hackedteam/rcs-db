@@ -19,6 +19,9 @@ module RCS::DB
 
       # check the status of the DB shards
       check_shards
+
+      # check the status of other components
+      ::Status.status_check
     end
 
     def self.dont_steal_rcs
