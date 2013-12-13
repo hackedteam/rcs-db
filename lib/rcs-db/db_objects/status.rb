@@ -88,12 +88,12 @@ class Status
       trace :warn, "Component #{name} (#{address}) is not responding, marking failed..."
       alert_failed
       update_attributes(status: ERROR, info: 'Not sending status update for more than 2 minutes')
-    elsif ok? and low_resources?
-      trace :warn, "Component #{name} has low resources, raising a warning..."
-      update_attributes(status: WARN)
     elsif old_component?
       trace :warn, "Component #{name} has version #{version}, should be #{$version}"
       update_attributes(status: ERROR, info: "Component version is #{version}, should be #{$version}")
+    elsif ok? and low_resources?
+      trace :warn, "Component #{name} has low resources, raising a warning..."
+      update_attributes(status: WARN)
     end
   end
 
@@ -108,6 +108,16 @@ class Status
     monitor[:type] = type
     monitor[:version] = version
 
+    # Maybe the component is telling to rcs-db that is running ok but
+    # the db know that it outdated so...
+    if monitor.old_component?
+      monitor[:status] = ERROR
+      monitor[:info] = "Component version is #{version}, should be #{$version}"
+      monitor.save!
+
+      return
+    end
+
     if (Integer(status) rescue nil)
       status = status.to_s
     else
@@ -121,7 +131,7 @@ class Status
     monitor.alert_restored if monitor[:status] == ERROR and status == OK
 
     monitor[:status] = status
-    monitor.save
+    monitor.save!
   end
 
   def self.status_check
