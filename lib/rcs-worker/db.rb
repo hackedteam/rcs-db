@@ -10,14 +10,16 @@ module RCS
     class DB < RCS::DB::DB
       WORKER_DB_NAME = 'rcs-worker'
 
-      def mongo_connection
-        @_worker_mongo_connection ||= begin
-          # host = RCS::DB::Config.instance.global['CN']
-          host = 'localhost'
-          port = 27018
+      def change_mongo_host(host)
+        @_worker_host = host.split(":").first
+        @mongo_db = nil
+      end
 
-          super(WORKER_DB_NAME, host, port)
-        end
+      def mongo_connection
+        host = @_worker_host || 'localhost'
+        port = 27018
+
+        super(WORKER_DB_NAME, host, port)
       end
     end
 
