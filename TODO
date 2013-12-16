@@ -6,20 +6,18 @@ TODO 9.2.x
   TRY:
     caching slow query. try to cache already jsonized list of items and similar
 
-    improve worker and evidence_transfer speed (measure and optimize)
-
   IMPLEMENT:
 
     export to connector [OK] (needs some config from the console...)
 
     scout++ (with simplified config)
 
-    create as target (from automatic entities) [OK]
+    create as target (from automatic entities) [OK] (needs button in console)
 
-    method to create a graph representation of our data (xml, graphml, etc)
-      - this will be useful for testing new visualizazion libraries on the same dataset [OK]
-
-    automatic discovery (and thus suggestion) of groups (communities)
+    crypto-currency dissector
+      - implement the evidence format
+      - dissector in bdb
+      - check compilation under windows
 
     map api request statistics
 
@@ -51,6 +49,8 @@ TODO 9.2.x
 
 ======================================
 TODO FUTURE:
+
+    automatic discovery (and thus suggestion) of groups (communities)
 
     better investigation on "end of file reached" errors from mongoid (hoping for version 4.0.0 with connection pool)
 
