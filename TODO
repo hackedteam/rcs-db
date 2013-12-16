@@ -27,10 +27,10 @@ TODO 9.2.x
       - one local collection for each worker (on its own shard) [ok]
       - rename rcs-db-evidence-queue -> rcs-db-queue and modify to get stats from all the shards
       - fix rcs-worker-queue to show only the local queue [ok]
-      - during installation be sure that the old evidence.grid is empty and delete config/worker_stat
+      - during installation be sure that the old evidence.grid is empty and delete config/worker_stat [ok]
       - statistics for the worker (inbound evidence) [ok]
       - install a mongo router for each shard [ok]
-        - all ruby services (WAIO) talk with the local mongo router
+        - all ruby services (WAIO) talk with the local mongo router [ok]
 
     tests for all the builds of different platforms (win, osx, android...)
       - build every kind of method (silent, scout, melted, cooked, wap, qrcode...)
