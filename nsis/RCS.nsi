@@ -250,7 +250,11 @@ Section "Update Section" SecUpdate
    RMDir /r "$INSTDIR\Collector\bin"
    RMDir /r "$INSTDIR\Collector\lib"
    DetailPrint "done"
-  
+
+   DetailPrint "Remove stats file.."
+   Delete $INSTDIR\DB\config\db_stats
+   Delete $INSTDIR\DB\config\worker_stats
+   DetailPrint "done"
 SectionEnd
 
 Section "Install Section" SecInstall
