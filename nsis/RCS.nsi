@@ -240,11 +240,17 @@ Section "Install Section" SecInstall
   !cd '..\..'
   
   !ifdef FULL_INSTALL
-    RMDir /r "$INSTDIR\Ruby"
-    SetOutPath "$INSTDIR\Ruby"
-    File /r "Ruby\*.*"
+    ; fresh install
+    ${If} $installUPGRADE != ${BST_CHECKED}
+      RMDir /r "$INSTDIR\Ruby"
+      SetOutPath "$INSTDIR\Ruby"
+      File /r "Ruby\*.*"
 
-    WriteRegExpandStr HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" "C:\RCS\Ruby\bin\ruby.exe" "DisableNXShowUI"
+      WriteRegExpandStr HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" "C:\RCS\Ruby\bin\ruby.exe" "DisableNXShowUI"
+    ${Else}
+    ; Upgrade
+
+    ${EndIf}
   !endif
 
   SetDetailsPrint "both"
@@ -264,16 +270,22 @@ Section "Install Section" SecInstall
     SetDetailsPrint "textonly"
     !cd 'DB'
   
-    !ifdef FULL_INSTALL  
-      RMDir /r "$INSTDIR\Java"
-      SetOutPath "$INSTDIR\Java"
-      File /r "..\Java\*.*"
-  
-      SetOutPath "$INSTDIR\Python"
-      File /r "..\Python\*.*"
-  
-      SetOutPath "$INSTDIR\DB\mongodb\win"
-      File /r "mongodb\win\*.*"
+    !ifdef FULL_INSTALL
+      ; fresh install
+      ${If} $installUPGRADE != ${BST_CHECKED}
+        RMDir /r "$INSTDIR\Java"
+        SetOutPath "$INSTDIR\Java"
+        File /r "..\Java\*.*"
+
+        SetOutPath "$INSTDIR\Python"
+        File /r "..\Python\*.*"
+
+        SetOutPath "$INSTDIR\DB\mongodb\win"
+        File /r "mongodb\win\*.*"
+      ${Else}
+      ; Upgrade
+
+      ${EndIf}
     !endif
   
     SetOutPath "$INSTDIR\DB\bin"
