@@ -365,27 +365,33 @@ Section "Install Section" SecInstall
     CopyFiles /SILENT $masterLicense "$INSTDIR\DB\config\rcs.lic"
 
     !ifdef FULL_INSTALL
-      DetailPrint "Installing VC redistributable 2008 (x86).."
-      nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_2008_x86 /q"
+      ; fresh install
+      ${If} $installUPGRADE != ${BST_CHECKED}
+        DetailPrint "Installing VC redistributable 2008 (x86).."
+        nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_2008_x86 /q"
 
-      DetailPrint "Installing VC redistributable 2008 (x64).."
-      nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_2008_x64 /q"
+        DetailPrint "Installing VC redistributable 2008 (x64).."
+        nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_2008_x64 /q"
 
-      DetailPrint "Installing VC redistributable 2010 (x86).."
-      nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_2010_x86 /q"
-      
-      DetailPrint "Installing VC redistributable 2010 (x64).."
-      nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_2010_x64 /q"
+        DetailPrint "Installing VC redistributable 2010 (x86).."
+        nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_2010_x86 /q"
 
-      DetailPrint "Installing Silverlight runtime (x64).."
-      nsExec::ExecToLog "$INSTDIR\DB\bin\Silverlight_x64 /q"
+        DetailPrint "Installing VC redistributable 2010 (x64).."
+        nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_2010_x64 /q"
 
-      DetailPrint "Installing .Net Framework 4.0 (x64).."
-      nsExec::Exec "$INSTDIR\DB\bin\dotNetFx40_Client_x86_x64 /q"
+        DetailPrint "Installing Silverlight runtime (x64).."
+        nsExec::ExecToLog "$INSTDIR\DB\bin\Silverlight_x64 /q"
 
-      DetailPrint "Installing HASP drivers.."
-      nsExec::ExecToLog "$INSTDIR\DB\bin\haspdinst -i -cm -kp -fi"
-      SimpleSC::SetServiceFailure "hasplms" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+        DetailPrint "Installing .Net Framework 4.0 (x64).."
+        nsExec::Exec "$INSTDIR\DB\bin\dotNetFx40_Client_x86_x64 /q"
+
+        DetailPrint "Installing HASP drivers.."
+        nsExec::ExecToLog "$INSTDIR\DB\bin\haspdinst -i -cm -kp -fi"
+        SimpleSC::SetServiceFailure "hasplms" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      ${Else}
+      ; Upgrade
+
+      ${EndIf}
     !endif
 
     DetailPrint "Checking the license file.."
