@@ -60,7 +60,7 @@ class Status
   end
 
   def old_component?
-    if type == 'anonymizer'
+    if type == 'anonymizer' or type == 'injector'
       false
     else
       version != $version
