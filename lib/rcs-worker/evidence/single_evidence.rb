@@ -72,7 +72,7 @@ module SingleEvidence
         # update the evidence statistics
         size = ev.data.to_s.size
         size += ev.data[:_grid_size] unless ev.data[:_grid_size].nil?
-        RCS::Worker::StatsManager.instance.add evidence: 1, evidence_size: size
+        RCS::Worker::StatsManager.instance.add processed_evidence: 1, processed_evidence_size: size
 
         # keyword full search
         ev.kw = self[:kw]

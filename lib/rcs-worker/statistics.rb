@@ -17,7 +17,7 @@ class StatsManager < Stats
   def initialize
     # configure the storage statistics
     @sections = {:minutes => 0, :hours => 60, :days => 24, :weeks => 7}
-    @template = {evidence: 0, evidence_size: 0}
+    @template = {inbound_evidence: 0, inbound_evidence_size: 0, processed_evidence: 0, processed_evidence_size: 0}
 
     # persist the statistics
     @persist = true
@@ -50,84 +50,76 @@ class StatsManager < Stats
     initialize
   end
 
+  def print_row_line(column_width = 26)
+    @table_line ||= begin
+      table_width = 0
+      @stats[:total].each_key do |k|
+        next if k == :start
+        table_width += column_width
+      end
+
+      '+' + '-' * (table_width - 1)  + '+'
+    end
+
+    puts @table_line
+  end
+
   def print_total
     puts "Total Statistics from: #{@stats[:total][:start]}"
 
-    table_width = 0
-    @stats[:total].each_key do |k|
-      next if k == :start
-      table_width += 18
-    end
-
-    table_line = '+' + '-' * (table_width - 1)  + '+'
-    puts table_line
+    print_row_line
 
     @stats[:total].each_key do |k|
       next if k == :start
-      print "| #{k.to_s.center(15)} "
+      print "| #{k.to_s.center(23)} "
     end
     puts '|'
-    puts table_line
+    print_row_line
     @stats[:total].each_pair do |k,v|
       next if k == :start
       if k.to_s['_size']
-        print "| #{v.to_s_bytes.rjust(15)} "
+        print "| #{v.to_s_bytes.rjust(23)} "
       else
-        print "| #{v.to_s.rjust(15)} "
+        print "| #{v.to_s.rjust(23)} "
       end
     end
     puts '|'
-    puts table_line
+    print_row_line
   end
 
   def print_section(section)
     puts "Last 5 #{section.to_s} statistics:"
 
-    table_width = 0
-    @stats[:total].each_key do |k|
-      next if k == :start
-      table_width += 18
-    end
-
-    table_line = '+' + '-' * (table_width - 1)  + '+'
-    puts table_line
+    print_row_line
 
     @stats[section][:last].each do |minute|
       minute.each_pair do |k,v|
         if k.to_s['_size']
-          print "| #{v.to_i.to_s_bytes.rjust(15)} "
+          print "| #{v.to_i.to_s_bytes.rjust(23)} "
         else
-          print "| #{v.to_s.rjust(15)} "
+          print "| #{v.to_s.rjust(23)} "
         end
       end
       puts '|'
     end
-    puts table_line
+    print_row_line
   end
 
   def print_average(section)
     puts "Average by #{section.to_s} statistics:"
 
-    table_width = 0
-    @stats[:total].each_key do |k|
-      next if k == :start
-      table_width += 18
-    end
-
-    table_line = '+' + '-' * (table_width - 1)  + '+'
-    puts table_line
+    print_row_line
 
     @stats[section][:average].each_pair do |k,v|
       next if k == :samples
       if k.to_s['_size']
-        print "| #{v.to_i.to_s_bytes.rjust(15)} "
+        print "| #{v.to_i.to_s_bytes.rjust(23)} "
       else
-        print "| #{v.to_s.rjust(15)} "
+        print "| #{v.to_s.rjust(23)} "
       end
     end
     puts '|'
-    puts table_line
-
+    print_row_line
   end
 
 
