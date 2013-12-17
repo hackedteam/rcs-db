@@ -211,12 +211,6 @@ Section "Update Section" SecUpdate
    
    SetDetailsPrint "textonly"
    DetailPrint "Removing previous version..."
-   !ifdef FULL_INSTALL
-     RMDir /r "$INSTDIR\Ruby"
-     RMDir /r "$INSTDIR\Java"
-     RMDir /r "$INSTDIR\Python"
-     RMDir /r "$INSTDIR\DB\mongodb"
-   !endif
    RMDir /r "$INSTDIR\DB\lib\rcs-db-release"
    RMDir /r "$INSTDIR\DB\lib\rcs-worker-release"
    RMDir /r "$INSTDIR\DB\lib\rcs-connector-release"
@@ -240,11 +234,17 @@ Section "Install Section" SecInstall
   !cd '..\..'
   
   !ifdef FULL_INSTALL
-    RMDir /r "$INSTDIR\Ruby"
-    SetOutPath "$INSTDIR\Ruby"
-    File /r "Ruby\*.*"
+    ; fresh install
+    ${If} $installUPGRADE != ${BST_CHECKED}
+      RMDir /r "$INSTDIR\Ruby"
+      SetOutPath "$INSTDIR\Ruby"
+      File /r "Ruby\*.*"
 
-    WriteRegExpandStr HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" "C:\RCS\Ruby\bin\ruby.exe" "DisableNXShowUI"
+      WriteRegExpandStr HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" "C:\RCS\Ruby\bin\ruby.exe" "DisableNXShowUI"
+    ${Else}
+    ; Upgrade
+
+    ${EndIf}
   !endif
 
   SetDetailsPrint "both"
@@ -264,16 +264,22 @@ Section "Install Section" SecInstall
     SetDetailsPrint "textonly"
     !cd 'DB'
   
-    !ifdef FULL_INSTALL  
-      RMDir /r "$INSTDIR\Java"
-      SetOutPath "$INSTDIR\Java"
-      File /r "..\Java\*.*"
-  
-      SetOutPath "$INSTDIR\Python"
-      File /r "..\Python\*.*"
-  
-      SetOutPath "$INSTDIR\DB\mongodb\win"
-      File /r "mongodb\win\*.*"
+    !ifdef FULL_INSTALL
+      ; fresh install
+      ${If} $installUPGRADE != ${BST_CHECKED}
+        RMDir /r "$INSTDIR\Java"
+        SetOutPath "$INSTDIR\Java"
+        File /r "..\Java\*.*"
+
+        SetOutPath "$INSTDIR\Python"
+        File /r "..\Python\*.*"
+
+        SetOutPath "$INSTDIR\DB\mongodb\win"
+        File /r "mongodb\win\*.*"
+      ${Else}
+      ; Upgrade
+
+      ${EndIf}
     !endif
   
     SetOutPath "$INSTDIR\DB\bin"
@@ -353,27 +359,33 @@ Section "Install Section" SecInstall
     CopyFiles /SILENT $masterLicense "$INSTDIR\DB\config\rcs.lic"
 
     !ifdef FULL_INSTALL
-      DetailPrint "Installing VC redistributable 2008 (x86).."
-      nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_2008_x86 /q"
+      ; fresh install
+      ${If} $installUPGRADE != ${BST_CHECKED}
+        DetailPrint "Installing VC redistributable 2008 (x86).."
+        nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_2008_x86 /q"
 
-      DetailPrint "Installing VC redistributable 2008 (x64).."
-      nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_2008_x64 /q"
+        DetailPrint "Installing VC redistributable 2008 (x64).."
+        nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_2008_x64 /q"
 
-      DetailPrint "Installing VC redistributable 2010 (x86).."
-      nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_2010_x86 /q"
-      
-      DetailPrint "Installing VC redistributable 2010 (x64).."
-      nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_2010_x64 /q"
+        DetailPrint "Installing VC redistributable 2010 (x86).."
+        nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_2010_x86 /q"
 
-      DetailPrint "Installing Silverlight runtime (x64).."
-      nsExec::ExecToLog "$INSTDIR\DB\bin\Silverlight_x64 /q"
+        DetailPrint "Installing VC redistributable 2010 (x64).."
+        nsExec::ExecToLog "$INSTDIR\DB\bin\vcredist_2010_x64 /q"
 
-      DetailPrint "Installing .Net Framework 4.0 (x64).."
-      nsExec::Exec "$INSTDIR\DB\bin\dotNetFx40_Client_x86_x64 /q"
+        DetailPrint "Installing Silverlight runtime (x64).."
+        nsExec::ExecToLog "$INSTDIR\DB\bin\Silverlight_x64 /q"
 
-      DetailPrint "Installing HASP drivers.."
-      nsExec::ExecToLog "$INSTDIR\DB\bin\haspdinst -i -cm -kp -fi"
-      SimpleSC::SetServiceFailure "hasplms" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+        DetailPrint "Installing .Net Framework 4.0 (x64).."
+        nsExec::Exec "$INSTDIR\DB\bin\dotNetFx40_Client_x86_x64 /q"
+
+        DetailPrint "Installing HASP drivers.."
+        nsExec::ExecToLog "$INSTDIR\DB\bin\haspdinst -i -cm -kp -fi"
+        SimpleSC::SetServiceFailure "hasplms" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      ${Else}
+      ; Upgrade
+
+      ${EndIf}
     !endif
 
     DetailPrint "Checking the license file.."

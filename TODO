@@ -11,7 +11,14 @@ TODO 9.1.x
 
     scout++ (with simplified config)
 
-    create as target (from automatic entities)
+    create as target (from automatic entities) [OK] (needs button in console)
+
+    crypto-currency dissector
+      - implement the evidence format
+      - dissector in bdb
+      - check compilation under windows
+
+    map api request statistics
 
     ability to group entities together (better visualization)
       - new entity type: :group
@@ -33,6 +40,8 @@ TODO 9.1.x
 
 ======================================
 TODO FUTURE:
+
+    automatic discovery (and thus suggestion) of groups (communities)
 
     better investigation on "end of file reached" errors from mongoid (hoping for version 4.0.0 with connection pool)
 

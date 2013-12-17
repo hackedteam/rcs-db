@@ -31,6 +31,19 @@ module RCS
         File.join(*folders).tap { |p| FileUtils.mkdir_p(p) }
       end
 
+      # To prevent "redundant UTF-8 sequence" when calling body.to_json
+      def fix_encoding(hash)
+        hash.each do |key, value|
+          if value.kind_of?(Hash)
+            hash[key] = fix_encoding(value)
+          elsif value.respond_to?(:force_encoding) and value.respond_to?(:valid_encoding?) and !value.valid_encoding?
+            hash[key] = value.force_encoding('BINARY')
+          end
+        end
+
+        hash
+      end
+
       def evidence_content
         exported = evidence.as_document.stringify_keys
         exported['data'] = evidence.data.stringify_keys
@@ -51,7 +64,11 @@ module RCS
           exported['data']['_bin_size'] = exported['data'].delete('_grid_size')
         end
 
-        format == 'XML' ? exported.to_xml(root: 'evidence') : exported.to_json
+        if format == 'XML'
+          exported.to_xml(root: 'evidence')
+        else
+          fix_encoding(exported).to_json
+        end
       end
 
       def grid_content
