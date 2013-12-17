@@ -47,8 +47,22 @@ module RCS
         end
       end
 
+      # To prevent "redundant UTF-8 sequence" when calling body.to_json
+      def fix_evidence_body_encoding(body)
+        value = body[:evidence]['data']['body']
+
+        if value.respond_to?(:force_encoding) and value.respond_to?(:valid_encoding?) and !value.valid_encoding?
+          body[:evidence]['data']['body'] = value.force_encoding('BINARY')
+        end
+      rescue Exception => ex
+        trace(:error, "Error in #fix_evidence_body_encoding: #{ex.message}")
+      end
+
       def send_evidence(evidence, other_attributes)
         body = {evidence: evidence.attributes}.merge(other_attributes)
+
+        fix_evidence_body_encoding(body)
+
         grid_id = evidence.data['_grid']
 
         if grid_id
