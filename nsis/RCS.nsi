@@ -234,12 +234,6 @@ Section "Update Section" SecUpdate
    
    SetDetailsPrint "textonly"
    DetailPrint "Removing previous version..."
-   !ifdef FULL_INSTALL
-     RMDir /r "$INSTDIR\Ruby"
-     RMDir /r "$INSTDIR\Java"
-     RMDir /r "$INSTDIR\Python"
-     RMDir /r "$INSTDIR\DB\mongodb"
-   !endif
    RMDir /r "$INSTDIR\DB\lib\rcs-db-release"
    RMDir /r "$INSTDIR\DB\lib\rcs-worker-release"
    RMDir /r "$INSTDIR\DB\lib\rcs-connector-release"
