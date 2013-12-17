@@ -29,7 +29,7 @@ RSpec.configure do |config|
 
   config.before(:each) do
     turn_off_tracer
-    empty_test_db
+    empty_test_db unless @disable_mongoid_purge
   end
 
   config.after(:all) do
@@ -90,6 +90,10 @@ end
 
 def empty_test_db
   Mongoid.purge!
+end
+
+def do_not_empty_test_db
+  @disable_mongoid_purge = true
 end
 
 # Check out RCS::Tracer module of rcs-common gem
