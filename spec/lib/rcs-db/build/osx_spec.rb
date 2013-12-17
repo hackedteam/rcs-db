@@ -9,9 +9,9 @@ require_db 'core'
 require_relative 'shared'
 
 module RCS::DB
-  describe BuildLinux do
+  describe BuildOSX do
 
-    shared_spec_for(:linux, melt: 'curl_7.32.0-1ubuntu1_i386.deb')
+    shared_spec_for(:osx, melt: 'Stickies.app.zip')
 
     before(:all) do
       @signature = ::Signature.create!(scope: 'agent', value: 'A'*32)
@@ -22,7 +22,7 @@ module RCS::DB
       end
     end
 
-    describe 'linux builder' do
+    describe 'osx builder' do
       it 'should create the silent installer' do
         params = {
           'factory' => {'_id' => @factory.id},
@@ -32,7 +32,7 @@ module RCS::DB
 
         subject.create(params)
 
-        # # build successful
+        # build successful
         expect(File.size(subject.path(subject.outputs.first))).not_to eql(0)
       end
 
