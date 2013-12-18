@@ -32,7 +32,7 @@ class BuildIOS < Build
     super
 
     # realign the memory hashes after the binary patching
-    CrossPlatform.exec path('build/ldid.exe'), '-S' + path('ent.plist') + ' ' + path('core'), {:chdir => path('build')}
+    CrossPlatform.exec path('build/ldid'), '-S' + path('ent.plist') + ' ' + path('core'), {:chdir => path('build')}
 
     @outputs = ['codesign_allocate', 'core', 'dylib', 'ent.plist', 'install.sh', 'ldid', 'config']
   end
