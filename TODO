@@ -29,6 +29,8 @@ TODO 9.2.x
     protect the code of the rcs-common gem (include the rgloader dir in the gem)
       - modify the rake build command
 
+    filter links by type (e.g. I want to see only skype links). We can change the format of the info attribute..
+
   IDEAS:
     message quque on entities
       - sort of "inbox" for each entity on what the system performs on it
