@@ -39,6 +39,8 @@ GEM
       multi_json (~> 1.0)
     addressable (2.3.5)
     bcrypt-ruby (3.1.2)
+    bdb (0.2.6.5)
+      tuple (>= 0.1.2)
     builder (3.0.4)
     coderay (1.0.9)
     cookiejar (0.3.0)
@@ -86,6 +88,7 @@ GEM
       method_source (~> 0.8)
       slop (~> 3.4)
     rake (10.1.0)
+    ref (1.0.5)
     rest-client (1.6.7)
       mime-types (>= 1.16)
     rspec (2.14.1)
@@ -99,6 +102,9 @@ GEM
     ruby-opencv (0.0.10)
     rubyzip (1.0.0)
     rvincenty (0.1.0)
+    sbdb (0.0.12.2)
+      bdb (>= 0.2.6.5)
+      ref
     simplecov (0.7.1)
       multi_json (~> 1.0)
       simplecov-html (~> 0.7.1)
@@ -111,6 +117,7 @@ GEM
     treetop (1.4.15)
       polyglot
       polyglot (>= 0.3.1)
+    tuple (0.1.2)
     tzinfo (0.3.37)
     uuidtools (2.1.4)
     xml-simple (1.1.2)
@@ -146,6 +153,7 @@ DEPENDENCIES
   ruby-opencv
   rubyzip
   rvincenty
+  sbdb
   simplecov
   uuidtools
   xml-simple

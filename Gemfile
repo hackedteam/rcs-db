@@ -42,6 +42,10 @@ gem 'ruby-opencv'
 # gem install ruby-opencv -- --with-opencv-dir="/Users/username/.homebrew/Cellar/opencv/2.4.4a"
 # check this out: http://stackoverflow.com/questions/3987683/homebrew-install-specific-version-of-formula
 
+gem 'sbdb'
+# needs some love to compile bdb and tuple under windows
+# see scripts/coins/bdb_compile.txt
+
 platforms :jruby do
   gem 'json'
   gem 'jruby-openssl'
