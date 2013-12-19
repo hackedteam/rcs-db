@@ -4,30 +4,25 @@
 Dir.chdir File.dirname(File.dirname(File.realpath(__FILE__)))
 
 # list of logs to be opened
-logs = []
+$logs = []
 
-last_log = Dir['log/rcs-db**'].max
-unless last_log.nil?
-  logs << last_log
-  logs << File.join('log/err', File.basename(last_log))
+def append_logs_of(component)
+  last_log = Dir["log/rcs-#{component.to_s.downcase}**"].max
+  return unless last_log
+  $logs << last_log
+  $logs << File.join('log/err', File.basename(last_log))
 end
 
-last_log = Dir['log/rcs-worker**'].max
-unless last_log.nil?
-  logs << last_log
-  logs << File.join('log/err', File.basename(last_log))
+given_component = ARGV[0]
+
+if given_component
+  append_logs_of(given_component)
+else
+  append_logs_of(:db)
+  append_logs_of(:worker)
+  append_logs_of(:aggregator)
+  append_logs_of(:intelligence)
+  append_logs_of(:connector)
 end
 
-last_log = Dir['log/rcs-aggregator**'].max
-unless last_log.nil?
-  logs << last_log
-  logs << File.join('log/err', File.basename(last_log))
-end
-
-last_log = Dir['log/rcs-intelligence**'].max
-unless last_log.nil?
-  logs << last_log
-  logs << File.join('log/err', File.basename(last_log))
-end
-
-spawn "bin/baretail.exe " + logs.join(" ")
+spawn "bin/baretail.exe " + $logs.join(" ")
