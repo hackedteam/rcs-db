@@ -1,10 +1,12 @@
 # from RCS::Common
 require 'rcs-common/trace'
 require 'rcs-common/fixnum'
+require 'rcs-common/path_utils'
 
 require_relative 'db'
 require_relative 'grid'
 require_relative 'evidence_dispatcher'
+
 require_release 'rcs-worker/db'
 
 module RCS
