@@ -145,106 +145,135 @@ class BCDataStream
   
 end
 
-def parse_key_value(type, kds, vds)
-  hash = {}
-  case type
-    when 'version'
-      hash['version'] = vds.read_uint32()
-    when 'name'
-      hash['address'] = kds.read_string()
-      hash['name'] = vds.read_string()
-    when 'defaultkey'
-      hash['key'] = B58Encode.public_key_to_bc_address(vds.read_bytes(vds.read_compact_size))
-      #hash['key'] = vds.read_bytes(vds.read_compact_size)
-    when 'key'
-      hash['key'] = B58Encode.public_key_to_bc_address(kds.read_bytes(kds.read_compact_size))
-      #hash['privkey'] = vds.read_bytes(vds.read_compact_size())
-    when "wkey"
-      hash['key'] = B58Encode.public_key_to_bc_address(kds.read_bytes(kds.read_compact_size))
-      #d['private_key'] = vds.read_bytes(vds.read_compact_size())
-      #d['created'] = vds.read_int64()
-      #d['expires'] = vds.read_int64()
-      #d['comment'] = vds.read_string()
-    when "ckey"
-      hash['key'] = B58Encode.public_key_to_bc_address(kds.read_bytes(kds.read_compact_size))
-      #hash['crypted_key'] = vds.read_bytes(vds.read_compact_size())
+
+class CoinWallet
+
+  attr_reader :count
+  attr_reader :version
+  attr_reader :default_key
+
+  def initialize(file, kind)
+    @keys = []
+    @default_key = nil
+    @addressbook = []
+    @kinds = Set.new
+    @count = 0
+    @version = :unknown
+    @seed = kind_to_value(kind)
+
+    load_db(file)
   end
-  
-  return hash
-end
 
-def dump_key_value(key, value)
-  
-  kds = BCDataStream.new(key)
-  vds = BCDataStream.new(value)
-  type = kds.read_string
+  def keys(type = :public)
+    return @keys if type.eql? :all
 
-  $entries << type
-
-  #puts "TYPE: #{type.inspect}"
-
-  return unless ['defaultkey', 'name', 'version', 'key', 'ckey', 'wkey'].include? type
-  
-  #puts "KEY(#{key.bytesize}): #{key.inspect}"
-  #puts "VALUE(#{value.bytesize}): #{value.inspect}"
-  
-  ret = parse_key_value(type, kds, vds)
-  
-  #puts ret.inspect
-  
-  return {type: type, dump: ret}
-end
-
-$entries = Set.new
-
-puts "dumping..."
-
-env = SBDB::Env.new '.', SBDB::CREATE | SBDB::Env::INIT_TRANSACTION
-db = env.btree 'btc_wallet_enc.dat', 'main', :flags => SBDB::RDONLY
-
-puts "#{db.count} entries"
-
-keys = []
-
-db.each do |k,v| 
-  tuple = dump_key_value(k, v)
-  next unless tuple
-    
-  if ['key', 'ckey', 'wkey'].include? tuple[:type]
-    keys << tuple[:dump]['key']
+    @addressbook.select {|k| k[:local].eql? true}.collect {|x| x.reject {|v| v == :local}}
   end
-  
-  if tuple[:type].eql? 'name'
-    if keys.include? tuple[:dump]['address']
-      tuple[:local] = true
+
+  def addressbook(local = nil)
+    @addressbook.select {|k| k[:local].eql? local}.collect {|x| x.reject {|v| v == :local}}
+  end
+
+  private
+
+  def kind_to_value(kind)
+    case kind
+      when :bitcoin
+        0
+      when :litecoin
+        48
+      when :feathercoin
+        14
+      when :namecoin
+        52
     end
   end
 
-  puts tuple.inspect
-  puts 
+  def load_db(file)
+    env = SBDB::Env.new '.', SBDB::CREATE | SBDB::Env::INIT_TRANSACTION
+    db = env.btree file, 'main', :flags => SBDB::RDONLY
+    @count = db.count
+
+    load_entries(db)
+
+    db.close
+    env.close
+  end
+
+  def load_entries(db)
+    db.each do |k,v|
+      tuple = parse_key_value(k, v)
+      next unless tuple
+
+      @kinds << tuple[:type]
+
+      case tuple[:type]
+        when :version
+          @version = tuple[:dump][:version]
+        when :defaultkey
+          @default_key = tuple[:dump]
+        when :key, :wkey, :ckey
+          @keys << tuple[:dump]
+        when :name
+          tuple[:dump][:local] = true if @keys.any? {|k| k[:address].eql? tuple[:dump][:address] }
+          @addressbook << tuple[:dump]
+      end
+    end
+  end
+
+  def parse_key_value(key, value)
+
+    kds = BCDataStream.new(key)
+    vds = BCDataStream.new(value)
+    type = kds.read_string
+
+    hash = {}
+    case type
+      when 'version'
+        hash[:version] = vds.read_uint32()
+      when 'name'
+        hash[:address] = kds.read_string()
+        hash[:name] = vds.read_string()
+      when 'defaultkey'
+        key = vds.read_bytes(vds.read_compact_size)
+        #hash[:key] = key
+        hash[:address] = B58Encode.public_key_to_bc_address(key, @seed)
+      when 'key'
+        key = kds.read_bytes(kds.read_compact_size)
+        #hash[:key] = key
+        hash[:address] = B58Encode.public_key_to_bc_address(key, @seed)
+        #hash['privkey'] = vds.read_bytes(vds.read_compact_size())
+      when "wkey"
+        key = kds.read_bytes(kds.read_compact_size)
+        #hash[:key] = key
+        hash[:address] = B58Encode.public_key_to_bc_address(key, @seed)
+        #d['private_key'] = vds.read_bytes(vds.read_compact_size())
+        #d['created'] = vds.read_int64()
+        #d['expires'] = vds.read_int64()
+        #d['comment'] = vds.read_string()
+      when "ckey"
+        key = kds.read_bytes(kds.read_compact_size)
+        #hash[:key] = key
+        hash[:address] = B58Encode.public_key_to_bc_address(key, @seed)
+        #hash['crypted_key'] = vds.read_bytes(vds.read_compact_size())
+    end
+
+    return {type: type.to_sym, dump: hash}
+  end
 
 end
 
-puts $entries.inspect
 
-db.close
-env.close
 
-=begin
-env = Bdb::Env.new(0)
-env_flags =  Bdb::DB_CREATE |    # Create the environment if it does not already exist.
-             Bdb::DB_INIT_TXN  | # Initialize transactions
-             Bdb::DB_INIT_LOCK | # Initialize locking.
-             Bdb::DB_INIT_LOG  | # Initialize logging
-             Bdb::DB_INIT_MPOOL  # Initialize the in-memory cache.
-# env.encrypt = 'yourpassword'   # If you need it.
-env.open('.', env_flags, 0);
+puts "dumping..."
 
-db = env.db
-db.open(nil, 'bit_wallet.dat', 'main', Bdb::Db::BTREE, Bdb::DB_RDONLY, 0)    
+cw = CoinWallet.new('ftc_wallet_enc.dat', :feathercoin)
 
-#puts db.get(nil, 'key', nil, 0)
+puts "#{cw.count} entries"
 
-db.close(0)
-env.close
-=end
+puts "Version: #{cw.version}"
+puts "Default key: #{cw.default_key}"
+puts "Addressbook:"
+puts cw.addressbook
+puts "Local keys:"
+puts cw.keys

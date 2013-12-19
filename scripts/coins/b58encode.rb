@@ -1,7 +1,6 @@
 require 'digest'
 
 module B58Encode
-
   extend self
   
   @@__b58chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
