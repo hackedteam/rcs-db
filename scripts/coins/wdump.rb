@@ -3,6 +3,7 @@ require 'bdb'
 require 'set'
 
 require 'digest'
+require 'pp'
 
 module B58Encode
   extend self
@@ -88,12 +89,16 @@ module B58Encode
 end
 
 class BCDataStream
+
+  attr_reader :read_cursor
+  attr_reader :buffer
+
   def initialize(string)
     @buffer = string
     @read_cursor = 0
   end
   
-  def read_string()
+  def read_string
     # Strings are encoded depending on length:
     # 0 to 252 :  1-byte-length followed by bytes (if any)
     # 253 to 65,535 : byte'253' 2-byte-length followed by bytes
@@ -105,7 +110,7 @@ class BCDataStream
     end
     
     begin
-      length = self.read_compact_size()
+      length = self.read_compact_size
     rescue Exception => e
       raise "attempt to read past end of buffer: #{e.message}"
     end
@@ -113,8 +118,12 @@ class BCDataStream
     return self.read_bytes(length)
   end
   
-  def read_uint32(); return _read_num('I', 4).first;  end
-  
+  def read_uint32; return _read_num('L', 4).first;  end
+  def read_int32; return _read_num('l', 4).first;  end
+  def read_uint64; return _read_num('Q', 8).first;  end
+  def read_int64; return _read_num('q', 8).first;  end
+  def read_boolean; return _read_num('c', 1).first == 1;  end
+
   def read_bytes(length)
     result = @buffer[@read_cursor..@read_cursor+length-1]
     @read_cursor += length
@@ -123,7 +132,7 @@ class BCDataStream
     raise "attempt to read past end of buffer: #{e.message}"
   end
   
-  def read_compact_size()
+  def read_compact_size
     size = @buffer[@read_cursor].ord
     @read_cursor += 1
     if size == 253
@@ -145,23 +154,28 @@ class BCDataStream
   
 end
 
-
 class CoinWallet
 
-  attr_reader :count
-  attr_reader :version
-  attr_reader :default_key
+  attr_reader :count, :version, :default_key, :kinds, :seed
 
   def initialize(file, kind)
-    @keys = []
-    @default_key = nil
-    @addressbook = []
+    @seed = kind_to_value(kind)
     @kinds = Set.new
     @count = 0
     @version = :unknown
-    @seed = kind_to_value(kind)
+    @keys = []
+    @default_key = nil
+    @addressbook = []
+    @transactions = []
+    @encrypted = false
 
     load_db(file)
+  rescue Exception => e
+    puts "Cannot load Wallet: #{e.message}"
+  end
+
+  def encrypted?
+    @encrypted
   end
 
   def keys(type = :public)
@@ -172,6 +186,14 @@ class CoinWallet
 
   def addressbook(local = nil)
     @addressbook.select {|k| k[:local].eql? local}.collect {|x| x.reject {|v| v == :local}}
+  end
+
+  def transactions
+    @transactions
+  end
+
+  def own?(key)
+    @keys.any? {|k| k[:address].eql? key}
   end
 
   private
@@ -214,11 +236,20 @@ class CoinWallet
           @default_key = tuple[:dump]
         when :key, :wkey, :ckey
           @keys << tuple[:dump]
+          @encrypted = true if tuple[:type].eql? :ckey
         when :name
           tuple[:dump][:local] = true if @keys.any? {|k| k[:address].eql? tuple[:dump][:address] }
           @addressbook << tuple[:dump]
+        when :tx
+
+          @transactions << tuple[:dump]
       end
     end
+
+    # we have finished parsing the whole wallet
+    # we have all the addresses, we can now fill the :own properties in the out transactions
+    # thus we can calculate the real amount of the transaction (out - change + fee)
+    recalculate_tx
   end
 
   def parse_key_value(key, value)
@@ -230,10 +261,10 @@ class CoinWallet
     hash = {}
     case type
       when 'version'
-        hash[:version] = vds.read_uint32()
+        hash[:version] = vds.read_uint32
       when 'name'
-        hash[:address] = kds.read_string()
-        hash[:name] = vds.read_string()
+        hash[:address] = kds.read_string
+        hash[:name] = vds.read_string
       when 'defaultkey'
         key = vds.read_bytes(vds.read_compact_size)
         #hash[:key] = key
@@ -242,27 +273,208 @@ class CoinWallet
         key = kds.read_bytes(kds.read_compact_size)
         #hash[:key] = key
         hash[:address] = B58Encode.public_key_to_bc_address(key, @seed)
-        #hash['privkey'] = vds.read_bytes(vds.read_compact_size())
+        #hash['privkey'] = vds.read_bytes(vds.read_compact_size)
       when "wkey"
         key = kds.read_bytes(kds.read_compact_size)
         #hash[:key] = key
         hash[:address] = B58Encode.public_key_to_bc_address(key, @seed)
-        #d['private_key'] = vds.read_bytes(vds.read_compact_size())
-        #d['created'] = vds.read_int64()
-        #d['expires'] = vds.read_int64()
-        #d['comment'] = vds.read_string()
+        #d['private_key'] = vds.read_bytes(vds.read_compact_size)
+        #d['created'] = vds.read_int64
+        #d['expires'] = vds.read_int64
+        #d['comment'] = vds.read_string
       when "ckey"
         key = kds.read_bytes(kds.read_compact_size)
         #hash[:key] = key
         hash[:address] = B58Encode.public_key_to_bc_address(key, @seed)
-        #hash['crypted_key'] = vds.read_bytes(vds.read_compact_size())
+        #hash['crypted_key'] = vds.read_bytes(vds.read_compact_size)
+      when 'tx'
+        hash.merge! parse_tx(kds, vds)
     end
 
     return {type: type.to_sym, dump: hash}
   end
 
+  def parse_tx(kds, vds)
+    hash = {}
+    id = kds.read_bytes(32)
+
+    ctx = CoinTransaction.new(id, vds, self)
+
+    hash[:id] = ctx.id
+    hash[:from] = ctx.from
+    hash[:to] = ctx.to
+    hash[:amount] = ctx.amount
+    hash[:time] = ctx.time
+    hash[:versus] = ctx.versus
+    hash[:in] = ctx.in
+    hash[:out] = ctx.out
+
+    return hash
+  end
+
+  def recalculate_tx
+    @transactions.each do |tx|
+      tx[:out].each do |x|
+        x[:own] = own?(x[:address])
+      end
+    end
+  end
+
 end
 
+class CoinTransaction
+
+  attr_reader :id, :from, :to, :amount, :time, :versus, :in, :out
+
+  def initialize(id, vds, wallet)
+    @id = id.reverse.unpack("H*").first
+    @wallet = wallet
+    @in = []
+    @out = []
+
+    tx = parse_tx(vds)
+
+    calculate_tx(tx)
+
+  rescue Exception => e
+    puts "Cannot parse Transaction: #{e.message}"
+    puts e.backtrace.join("\n")
+  end
+
+  def calculate_tx(tx)
+
+    #puts "=== TRANSACTION IN ==="
+    tx['txIn'].each do |t|
+      # TODO: search in the previous hash repo
+      #pp t
+      #pp t.collect { |x| x.unpack("H*").first }
+      #puts t['prevout_hash'].inspect
+
+      #next unless t['value']
+      #value = t['value']/1.0e8
+      #puts "#{value} -> #{extract_pubkey(t['scriptPubKey'])}"
+    end
+
+    tx['txOut'].each do |t|
+      next unless t['value']
+      value = t['value']/1.0e8
+      address = extract_pubkey(t['scriptPubKey'])
+      @out << {value: value, address: address} if address
+    end
+
+    @time = tx['timeReceived']
+    @versus = (tx['fromMe'] == true) ? :out : :in
+  end
+
+  def parse_tx(vds)
+    h = parse_merkle_tx(vds)
+    n_vtxPrev = vds.read_compact_size
+    h['vtxPrev'] = []
+    (1..n_vtxPrev).each { h['vtxPrev'] << parse_merkle_tx(vds) }
+
+    h['mapValue'] = {}
+    n_mapValue = vds.read_compact_size
+    (1..n_mapValue).each do
+      key = vds.read_string
+      value = vds.read_string
+      h['mapValue'][key] = value
+    end
+
+    n_orderForm = vds.read_compact_size
+    h['orderForm'] = []
+    (1..n_orderForm).each do
+      first = vds.read_string
+      second = vds.read_string
+      h['orderForm'] << [first, second]
+    end
+
+    h['fTimeReceivedIsTxTime'] = vds.read_uint32
+    h['timeReceived'] = vds.read_uint32
+    h['fromMe'] = vds.read_boolean
+    h['spent'] = vds.read_boolean
+
+    return h
+  end
+
+  def parse_merkle_tx(vds)
+    h = parse_transaction(vds)
+    h['hashBlock'] = vds.read_bytes(32)
+    n_merkleBranch = vds.read_compact_size
+    h['merkleBranch'] = vds.read_bytes(32*n_merkleBranch)
+    h['nIndex'] = vds.read_int32
+    return h
+  end
+
+  def parse_transaction(vds)
+    h = {}
+    start_pos = vds.read_cursor
+    h['version'] = vds.read_int32
+
+    n_vin = vds.read_compact_size
+    h['txIn'] = []
+    (1..n_vin).each {  h['txIn'] << parse_TxIn(vds)  }
+
+    n_vout = vds.read_compact_size
+    h['txOut'] = []
+    (1..n_vout).each { h['txOut'] << parse_TxOut(vds) }
+
+    h['lockTime'] = vds.read_uint32
+    h['__data__'] = vds.buffer[start_pos..vds.read_cursor-1]
+    return h
+  end
+
+  def parse_TxIn(vds)
+    h = {}
+    h['prevout_hash'] = vds.read_bytes(32)
+    h['prevout_n'] = vds.read_uint32
+    h['scriptSig'] = vds.read_bytes(vds.read_compact_size)
+    h['sequence'] = vds.read_uint32
+    return h
+  end
+
+  def parse_TxOut(vds)
+    h = {}
+    h['value'] = vds.read_int64
+    h['scriptPubKey'] = vds.read_bytes(vds.read_compact_size)
+    return h
+  end
+
+  def extract_pubkey(bytes)
+    # here we should parse the OPCODES and check them, but we are lazy
+    # and we fake the full parsing... :)
+
+    address = nil
+
+    case bytes.bytesize
+      # TODO: implement other opcodes
+      when 132
+        # non-generated TxIn transactions push a signature
+        # (seventy-something bytes) and then their public key
+        # (33 or 65 bytes) onto the stack:
+      when 67
+        # The Genesis Block, self-payments, and pay-by-IP-address payments look like:
+        # 65 BYTES:... CHECKSIG
+      when 25
+        # Pay-by-Bitcoin-address TxOuts look like:
+        # DUP HASH160 20 BYTES:... EQUALVERIFY CHECKSIG
+        # [ OP_DUP, OP_HASH160, OP_PUSHDATA4, OP_EQUALVERIFY, OP_CHECKSIG ]
+        op_prefix = bytes[0..2]
+        op_suffix = bytes[-2..-1]
+
+        if op_prefix.eql? "\x76\xa9\x14".force_encoding('ASCII-8BIT') and
+           op_suffix.eql? "\x88\xac".force_encoding('ASCII-8BIT')
+          address = B58Encode.hash_160_to_bc_address(bytes[3..-3], @wallet.seed)
+        end
+      when 23
+        # BIP16 TxOuts look like:
+        # HASH160 20 BYTES:... EQUAL
+    end
+
+    return address
+  rescue
+  end
+
+end
 
 
 puts "dumping..."
@@ -272,8 +484,12 @@ cw = CoinWallet.new('ftc_wallet_enc.dat', :feathercoin)
 puts "#{cw.count} entries"
 
 puts "Version: #{cw.version}"
+puts "Encrypted: #{cw.encrypted?}"
+puts "Entries: #{cw.kinds.inspect}"
 puts "Default key: #{cw.default_key}"
 puts "Addressbook:"
 puts cw.addressbook
 puts "Local keys:"
 puts cw.keys
+puts "Transactions:"
+puts cw.transactions

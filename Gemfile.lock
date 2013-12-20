@@ -19,7 +19,7 @@ GIT
 PATH
   remote: ../rcs-common
   specs:
-    rcs-common (9.1.1)
+    rcs-common (9.2.0)
       ffi
       log4r (>= 1.1.9)
       mail
