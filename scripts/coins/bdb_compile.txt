@@ -1,0 +1,12 @@
+
+wget http://download.oracle.com/berkeley-db/db-5.1.29.zip
+
+cd build_unix
+sh ../dist/configure --enable-mingw LIBCSO_LIBS=-lwsock32 LIBXSO_LIBS=-lwsock32 --disable-replication --prefix=/usr/local
+make
+make install
+
+
+gem install bdb-0.2.6.5.gem   (modificata: inserito c:/devkit/local in extconf.rb)
+gem install tuple-0.1.2.gem   (modificata: definit i tipi u_int8_t in tuple.c)
+gem install sbdb
