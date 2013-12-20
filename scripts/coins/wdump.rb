@@ -241,7 +241,6 @@ class CoinWallet
           tuple[:dump][:local] = true if @keys.any? {|k| k[:address].eql? tuple[:dump][:address] }
           @addressbook << tuple[:dump]
         when :tx
-
           @transactions << tuple[:dump]
       end
     end
@@ -314,8 +313,16 @@ class CoinWallet
 
   def recalculate_tx
     @transactions.each do |tx|
-      tx[:out].each do |x|
-        x[:own] = own?(x[:address])
+      # fill in the :own properties which indicate the amount is for an address inside the wallet
+      tx[:out].map {|x| x[:own] = own?(x[:address])}
+
+      # calculate the amounts based on the direction
+      if tx[:versus].eql? :in
+        tx[:amount] = tx[:out].select {|x| x[:own]}.first[:value]
+        tx[:to] = tx[:out].select {|x| x[:own]}.first[:address]
+      else
+        tx[:amount] = tx[:out].select {|x| not x[:own]}.first[:value]
+        tx[:to] = tx[:out].select {|x| not x[:own]}.first[:address]
       end
     end
   end
