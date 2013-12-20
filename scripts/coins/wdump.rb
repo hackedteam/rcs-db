@@ -156,7 +156,7 @@ end
 
 class CoinWallet
 
-  attr_reader :count, :version, :default_key, :kinds, :seed
+  attr_reader :count, :version, :default_key, :kinds, :seed, :balance
 
   def initialize(file, kind)
     @seed = kind_to_value(kind)
@@ -168,6 +168,7 @@ class CoinWallet
     @addressbook = []
     @transactions = []
     @encrypted = false
+    @balance = 0
 
     load_db(file)
   rescue Exception => e
@@ -320,9 +321,11 @@ class CoinWallet
       if tx[:versus].eql? :in
         tx[:amount] = tx[:out].select {|x| x[:own]}.first[:value]
         tx[:to] = tx[:out].select {|x| x[:own]}.first[:address]
+        @balance += tx[:amount]
       else
         tx[:amount] = tx[:out].select {|x| not x[:own]}.first[:value]
         tx[:to] = tx[:out].select {|x| not x[:own]}.first[:address]
+        @balance -= tx[:amount]
       end
     end
   end
@@ -500,3 +503,5 @@ puts "Local keys:"
 puts cw.keys
 puts "Transactions:"
 puts cw.transactions
+puts "Balance:"
+puts cw.balance
