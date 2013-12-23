@@ -173,6 +173,7 @@ class CoinWallet
     load_db(file)
   rescue Exception => e
     puts "Cannot load Wallet: #{e.message}"
+    puts e.backtrace.join("\n")
   end
 
   def encrypted?
@@ -298,7 +299,7 @@ class CoinWallet
     hash = {}
     id = kds.read_bytes(32)
 
-    ctx = CoinTransaction.new(id, vds, self)
+    ctx = CoinTransaction.new(id, vds, self.seed)
 
     hash[:id] = ctx.id
     hash[:from] = ctx.from
@@ -328,6 +329,11 @@ class CoinWallet
 
         # calculate the fee based on the in and out tx
         if tx[:in].size > 0
+          tx[:in].each do |txin|
+            @transactions.each do |prev_tx|
+              txin.merge!(prev_tx[:out][txin[:prevout_index]]) if prev_tx[:id] == txin[:prevout_hash]
+            end
+          end
           amount_in =  tx[:in].inject(0) {|tot, y| tot += y[:value]}
           amount_out =  tx[:out].inject(0) {|tot, y| tot += y[:value]}
           tx[:fee] = (amount_in - amount_out).round(8)
@@ -346,9 +352,9 @@ class CoinTransaction
 
   attr_reader :id, :from, :to, :amount, :time, :versus, :in, :out
 
-  def initialize(id, vds, wallet)
+  def initialize(id, vds, seed)
     @id = id.reverse.unpack("H*").first
-    @wallet = wallet
+    @seed = seed
     @in = []
     @out = []
 
@@ -362,24 +368,12 @@ class CoinTransaction
   end
 
   def calculate_tx(tx)
-
-    #puts "=== TRANSACTION ==="
-
-    #puts tx.inspect
-
     tx['txIn'].each do |t|
+      itx = {}
       # search in the previous hash repo
-      prev = t['prevout_hash'].reverse.unpack('H*').first
-      index = t['prevout_n']
-      @wallet.transactions.each do |x|
-        @in << x[:out][index] if x[:id] == prev
-      end
-      #pp t.collect { |x| x.unpack("H*").first }
-      #puts t['prevout_hash'].inspect
-
-      #next unless t['value']
-      #value = t['value']/1.0e8
-      #puts "#{value} -> #{extract_pubkey(t['scriptPubKey'])}"
+      itx[:prevout_hash] = t['prevout_hash'].reverse.unpack('H*').first
+      itx[:prevout_index] = t['prevout_n']
+      @in << itx
     end
 
     tx['txOut'].each do |t|
@@ -491,7 +485,7 @@ class CoinTransaction
 
         if op_prefix.eql? "\x76\xa9\x14".force_encoding('ASCII-8BIT') and
            op_suffix.eql? "\x88\xac".force_encoding('ASCII-8BIT')
-          address = B58Encode.hash_160_to_bc_address(bytes[3..-3], @wallet.seed)
+          address = B58Encode.hash_160_to_bc_address(bytes[3..-3], @seed)
         end
       when 23
         # BIP16 TxOuts look like:
@@ -505,9 +499,12 @@ class CoinTransaction
 end
 
 
+begin
 puts "dumping..."
 
 cw = CoinWallet.new('ftc_wallet_enc.dat', :feathercoin)
+#cw = CoinWallet.new('ltc_wallet_enc.dat', :litecoin)
+#cw = CoinWallet.new('btc_wallet_enc.dat', :bitcoin)
 
 puts "#{cw.count} entries"
 
@@ -519,7 +516,12 @@ puts "Addressbook:"
 puts cw.addressbook
 puts "Local keys:"
 puts cw.keys
-puts "Transactions:"
+puts "Transactions: (#{cw.transactions.size})"
 puts cw.transactions
 puts "Balance:"
 puts cw.balance
+
+rescue Exception => e
+  puts "ERROR: #{e.message}"
+  puts e.backtrace.join("\n")
+end
