@@ -325,9 +325,19 @@ class CoinWallet
       else
         tx[:amount] = tx[:out].select {|x| not x[:own]}.first[:value]
         tx[:to] = tx[:out].select {|x| not x[:own]}.first[:address]
-        @balance -= tx[:amount]
+
+        # calculate the fee based on the in and out tx
+        if tx[:in].size > 0
+          amount_in =  tx[:in].inject(0) {|tot, y| tot += y[:value]}
+          amount_out =  tx[:out].inject(0) {|tot, y| tot += y[:value]}
+          tx[:fee] = (amount_in - amount_out).round(8)
+        end
+
+        @balance -= (tx[:amount] + tx[:fee])
       end
     end
+
+    @balance = @balance.round(8)
   end
 
 end
@@ -353,10 +363,17 @@ class CoinTransaction
 
   def calculate_tx(tx)
 
-    #puts "=== TRANSACTION IN ==="
+    #puts "=== TRANSACTION ==="
+
+    #puts tx.inspect
+
     tx['txIn'].each do |t|
-      # TODO: search in the previous hash repo
-      #pp t
+      # search in the previous hash repo
+      prev = t['prevout_hash'].reverse.unpack('H*').first
+      index = t['prevout_n']
+      @wallet.transactions.each do |x|
+        @in << x[:out][index] if x[:id] == prev
+      end
       #pp t.collect { |x| x.unpack("H*").first }
       #puts t['prevout_hash'].inspect
 
@@ -368,6 +385,7 @@ class CoinTransaction
     tx['txOut'].each do |t|
       next unless t['value']
       value = t['value']/1.0e8
+
       address = extract_pubkey(t['scriptPubKey'])
       @out << {value: value, address: address} if address
     end
