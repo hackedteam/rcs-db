@@ -14,6 +14,8 @@ module RCS::DB
     shared_spec_for(:android)
 
     before(:all) do
+      RCS::DB::Config.instance.load_from_file
+
       @signature = ::Signature.create!(scope: 'agent', value: 'A'*32)
 
       @factory = Item.create!(name: 'testfactory', _kind: :factory, path: [], stat: ::Stat.new, good: true).tap do |f|
@@ -34,6 +36,10 @@ module RCS::DB
         subject.create(params)
 
         expect(File.size(subject.path(subject.outputs.first))).not_to eql(0)
+      end
+
+      it 'should create the melted installer' do
+        pending
       end
     end
   end
