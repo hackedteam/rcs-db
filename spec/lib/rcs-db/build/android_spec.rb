@@ -11,7 +11,7 @@ require_relative 'shared'
 module RCS::DB
   describe BuildAndroid do
 
-    shared_spec_for(:android)
+    shared_spec_for(:android, melt: 'DailyBible.apk')
 
     before(:all) do
       RCS::DB::Config.instance.load_from_file
@@ -39,7 +39,16 @@ module RCS::DB
       end
 
       it 'should create the melted installer' do
-        pending
+        params = {
+          'factory' => {'_id' => @factory.id},
+          'binary'  => {'demo' => false},
+          'melt'    => {'input' => melt_file},
+          'package' => {}
+        }
+
+        subject.create(params)
+
+        expect(File.size(subject.path(subject.outputs.first))).not_to eql(0)
       end
     end
   end
