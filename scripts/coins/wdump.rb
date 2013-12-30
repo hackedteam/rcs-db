@@ -317,11 +317,17 @@ class CoinWallet
     @transactions.each do |tx|
       # fill in the :own properties which indicate the amount is for an address inside the wallet
       tx[:out].map {|x| x[:own] = own?(x[:address])}
+    end
+
+    @transactions.each do |tx|
+      tx[:from] = Set.new
 
       # calculate the amounts based on the direction
       if tx[:versus].eql? :in
         tx[:amount] = tx[:out].select {|x| x[:own]}.first[:value]
         tx[:to] = tx[:out].select {|x| x[:own]}.first[:address]
+        # TODO: calculate the source from the past tx
+        #tx[:from] = ???
         @balance += tx[:amount]
       else
         tx[:amount] = tx[:out].select {|x| not x[:own]}.first[:value]
@@ -331,7 +337,10 @@ class CoinWallet
         if tx[:in].size > 0
           tx[:in].each do |txin|
             @transactions.each do |prev_tx|
-              txin.merge!(prev_tx[:out][txin[:prevout_index]]) if prev_tx[:id] == txin[:prevout_hash]
+              if prev_tx[:id] == txin[:prevout_hash]
+                txin.merge!(prev_tx[:out][txin[:prevout_index]])
+                tx[:from] << prev_tx[:out][txin[:prevout_index]][:address]
+              end
             end
           end
           amount_in =  tx[:in].inject(0) {|tot, y| tot += y[:value]}
