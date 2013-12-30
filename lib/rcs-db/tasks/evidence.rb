@@ -12,7 +12,7 @@ module RCS
       end
 
       def h(s)
-        return unless s.respond_to?(:gsub)
+        return s unless s.respond_to?(:gsub)
         escape = {'&' => '&amp;',  '>' => '&gt;',   '<' => '&lt;', '"' => '&quot;', "'" => '&#39;' }
         regexp = /[&"'><]/
         s.gsub(regexp, escape)
