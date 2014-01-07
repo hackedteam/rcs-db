@@ -10,16 +10,20 @@ TODO 9.2.x
 
     export to connector [OK] (needs some config from the console...)
 
-    scout++ (with simplified config)
+    soldier (with simplified config)
+
+    new blacklist format
+      0|Online|B/S|32|Kaspersky
+
+    support for exploit pack file with VPS address (serving only exploits)
 
     create as target (from automatic entities) [OK] (needs button in console)
 
     crypto-currency dissector
       - implement the evidence format
-      - dissector in bdb
-      - check compilation under windows
-
-    map api request statistics
+      - dissector in sbdb [ok]
+      - check compilation under windows [ok]
+      - remove temporart files __db*
 
     tests for all the builds of different platforms (win, osx, android...)
       - build every kind of method (silent, scout, melted, cooked, wap, qrcode...)
@@ -42,6 +46,8 @@ TODO 9.2.x
 TODO FUTURE:
 
     automatic discovery (and thus suggestion) of groups (communities)
+
+    map api request statistics
 
     better investigation on "end of file reached" errors from mongoid (hoping for version 4.0.0 with connection pool)
 
