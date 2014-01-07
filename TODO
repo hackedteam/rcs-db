@@ -1,14 +1,10 @@
 
 TODO 9.2.x
 
-  investigate .net installation... does it require reboot?
-
   TRY:
     caching slow query. try to cache already jsonized list of items and similar
 
   IMPLEMENT:
-
-    export to connector [OK] (needs some config from the console...)
 
     soldier (with simplified config)
 
@@ -17,13 +13,16 @@ TODO 9.2.x
 
     support for exploit pack file with VPS address (serving only exploits)
 
+    class to manipulate the windows firewall
+
     create as target (from automatic entities) [OK] (needs button in console)
+    export to connector [OK] (needs some config from the console...)
 
     crypto-currency dissector
       - implement the evidence format
       - dissector in sbdb [ok]
       - check compilation under windows [ok]
-      - remove temporart files __db*
+      - remove temporary files __db*
 
     tests for all the builds of different platforms (win, osx, android...)
       - build every kind of method (silent, scout, melted, cooked, wap, qrcode...)
@@ -34,13 +33,6 @@ TODO 9.2.x
       - modify the rake build command
 
     filter links by type (e.g. I want to see only skype links). We can change the format of the info attribute..
-
-  IDEAS:
-    message quque on entities
-      - sort of "inbox" for each entity on what the system performs on it
-        the customer can review the messages and acknowledge them
-
-    advanced multi operation search
 
 ======================================
 TODO FUTURE:
@@ -54,6 +46,12 @@ TODO FUTURE:
     Refactoring on rest methods:
       - agent (too much logic here)
       - evidence (too much logic here)
+
+    message quque on entities
+      - sort of "inbox" for each entity on what the system performs on it
+        the customer can review the messages and acknowledge them
+
+    advanced multi operation search
 
     Refactor evidence search filters (Evidence#common_filter, etc.)
 
