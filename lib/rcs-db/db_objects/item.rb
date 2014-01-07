@@ -349,7 +349,8 @@ class Item
 
       build.clean
     end
-
+  rescue Exception => e
+    trace :error, "Cannot add first time upload: #{e.message}"
   end
 
   def add_upgrade(name, file)
