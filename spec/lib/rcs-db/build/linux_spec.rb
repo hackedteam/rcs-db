@@ -1,12 +1,3 @@
-require 'spec_helper'
-require 'fileutils'
-
-require_db 'db_layer'
-require_db 'grid'
-require_db 'build'
-require_db 'core'
-require_db 'alert'
-
 require_relative 'shared'
 
 module RCS::DB

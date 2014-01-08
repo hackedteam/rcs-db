@@ -1,11 +1,3 @@
-require 'spec_helper'
-require 'fileutils'
-
-require_db 'db_layer'
-require_db 'grid'
-require_db 'build'
-require_db 'core'
-
 require_relative 'shared'
 
 # Note: signtool.exe should be executed with administrative privileges

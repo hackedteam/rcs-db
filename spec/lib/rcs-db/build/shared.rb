@@ -1,3 +1,12 @@
+require 'fileutils'
+require 'spec_helper'
+
+require_db 'db_layer'
+require_db 'grid'
+require_db 'build'
+require_db 'core'
+require_db 'alert'
+
 def shared_spec_for(core, params = {})
   enable_license
 
