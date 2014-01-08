@@ -35,6 +35,10 @@ module RCS::DB
 
         expect(File.size(subject.path(subject.outputs.first))).not_to eql(0)
       end
+
+      it 'should create the ugrade build' do
+        @agent.upgrade!
+      end
     end
   end
 end

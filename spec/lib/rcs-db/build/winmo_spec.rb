@@ -34,6 +34,10 @@ module RCS::DB
       it 'should create the melted installer' do
         pending
       end
+
+      it 'should create the ugrade build' do
+        @agent.upgrade!
+      end
     end
   end
 end

@@ -33,6 +33,10 @@ module RCS::DB
           expect(size).not_to eql(0)
         end
       end
+
+      it 'should create the ugrade build' do
+        @agent.upgrade!
+      end
     end
   end
 end
