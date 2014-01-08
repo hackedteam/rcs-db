@@ -36,10 +36,16 @@ def shared_spec_for(core, params = {})
     @target = factory_create(:target, operation: @operation)
 
     ident = "RCS_#{rand(1E6)}test"
+    
+    config = if core == :windows
+      {'actions' => [{'subactions' => [{'action' => 'synchronize', 'host' => '127.0.0.1'}]}]}.to_json
+    else
+      'test_config'
+    end
 
     @factory = Item.create!(name: 'testfactory', _kind: :factory, path: [@operation.id, @target.id], stat: ::Stat.new, good: true).tap do |f|
       f.update_attributes(logkey: 'L'*32, confkey: 'C'*32, ident: ident, seed: '88888888.333')
-      f.configs << Configuration.new(config: 'test_config')
+      f.configs << Configuration.new(config: config)
     end
 
     @agent = factory_create(:agent, target: @target, version: 2013031102, platform: core.to_s, ident: ident)
