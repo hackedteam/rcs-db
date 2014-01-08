@@ -6,10 +6,7 @@ TODO 9.2.x
 
   IMPLEMENT:
 
-    soldier (with simplified config)
-
-    new blacklist format
-      0|Online|B/S|32|Kaspersky
+    soldier building (with simplified config)
 
     support for exploit pack file with VPS address (serving only exploits)
 
@@ -17,6 +14,8 @@ TODO 9.2.x
 
     create as target (from automatic entities) [OK] (needs button in console)
     export to connector [OK] (needs some config from the console...)
+
+    NSIS for silent installation
 
     crypto-currency dissector
       - implement the evidence format

