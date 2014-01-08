@@ -14,7 +14,7 @@ class EntityController < RESTController
     require_auth_level :view_profiles
 
     mongoid_query do
-      fields = ["type", "level", "name", "desc", "path", "photos", 'position', 'position_attr', 'links']
+      fields = ["type", "level", "name", "desc", "path", "photos", 'position', 'position_attr', 'links', 'children', 'stand_for']
       filter = {'user_ids' => @session.user[:_id], 'level' => {'$ne' => :ghost}}
       fields = fields.inject({}) { |h, f| h[f] = 1; h }
 
