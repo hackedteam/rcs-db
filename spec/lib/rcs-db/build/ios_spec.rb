@@ -9,7 +9,7 @@ require_db 'core'
 require_relative 'shared'
 
 module RCS::DB
-  describe BuildIOS do
+  describe BuildIOS, build: true do
 
     shared_spec_for(:ios, melt: 'Stickies.app.zip')
 

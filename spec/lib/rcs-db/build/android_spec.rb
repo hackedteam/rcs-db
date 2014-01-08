@@ -9,7 +9,7 @@ require_db 'core'
 require_relative 'shared'
 
 module RCS::DB
-  describe BuildAndroid do
+  describe BuildAndroid, build: true do
 
     shared_spec_for(:android, melt: 'DailyBible.apk')
 

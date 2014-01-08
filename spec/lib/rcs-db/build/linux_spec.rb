@@ -9,7 +9,7 @@ require_db 'core'
 require_relative 'shared'
 
 module RCS::DB
-  describe BuildLinux do
+  describe BuildLinux, build: true do
 
     shared_spec_for(:linux, melt: 'curl_7.32.0-1ubuntu1_i386.deb')
 

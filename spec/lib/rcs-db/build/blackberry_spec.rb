@@ -9,7 +9,7 @@ require_db 'core'
 require_relative 'shared'
 
 module RCS::DB
-  describe BuildBlackberry do
+  describe BuildBlackberry, build: true do
 
     shared_spec_for(:blackberry)
 

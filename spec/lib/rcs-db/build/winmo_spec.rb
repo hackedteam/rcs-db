@@ -11,7 +11,7 @@ require_relative 'shared'
 # Note: signtool.exe should be executed with administrative privileges
 
 module RCS::DB
-  describe BuildWinMo do
+  describe BuildWinMo, build: true do
 
     shared_spec_for(:winmo)
 

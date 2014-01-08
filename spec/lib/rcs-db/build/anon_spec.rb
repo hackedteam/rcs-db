@@ -9,7 +9,7 @@ require_db 'core'
 require_relative 'shared'
 
 module RCS::DB
-  describe BuildAnon do
+  describe BuildAnon, build: true do
 
     shared_spec_for(:anon)
 

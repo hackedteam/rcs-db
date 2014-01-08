@@ -9,7 +9,7 @@ require_db 'core'
 require_relative 'shared'
 
 module RCS::DB
-  describe BuildOSX do
+  describe BuildOSX, build: true do
 
     shared_spec_for(:osx, melt: 'Stickies.app.zip')
 
