@@ -17,13 +17,6 @@ module RCS::DB
 
     before(:all) do
       RCS::DB::Config.instance.load_from_file
-
-      @signature = ::Signature.create!(scope: 'agent', value: 'A'*32)
-
-      @factory = Item.create!(name: 'testfactory', _kind: :factory, path: [], stat: ::Stat.new, good: true).tap do |f|
-        f.update_attributes logkey: 'L'*32, confkey: 'C'*32, ident: 'RCS_000000test', seed: '88888888.333'
-        f.configs << Configuration.new({config: 'test_config'})
-      end
     end
 
     describe 'Windows Mobile builder' do

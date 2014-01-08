@@ -20,6 +20,21 @@ def shared_spec_for(core, params = {})
   before(:all) do
     do_not_empty_test_db
 
+    @signature = ::Signature.create!(scope: 'agent', value: 'A'*32)
+
+    @operation = factory_create(:operation)
+
+    @target = factory_create(:target, operation: @operation)
+
+    ident = "RCS_#{rand(1E6)}test"
+
+    @factory = Item.create!(name: 'testfactory', _kind: :factory, path: [@operation.id, @target.id], stat: ::Stat.new, good: true).tap do |f|
+      f.update_attributes(logkey: 'L'*32, confkey: 'C'*32, ident: ident, seed: '88888888.333')
+      f.configs << Configuration.new(config: 'test_config')
+    end
+
+    @agent = factory_create(:agent, target: @target, version: 2013031102, platform: core.to_s, ident: ident)
+
     FileUtils.cp(fixtures_path(params[:melt]), RCS::DB::Config.instance.temp) if params[:melt]
     FileUtils.cp("#{remote_cores_path}/#{core}.zip", "#{local_cores_path}/")
   end

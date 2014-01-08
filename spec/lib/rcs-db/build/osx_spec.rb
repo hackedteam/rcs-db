@@ -13,15 +13,6 @@ module RCS::DB
 
     shared_spec_for(:osx, melt: 'Stickies.app.zip')
 
-    before(:all) do
-      @signature = ::Signature.create!(scope: 'agent', value: 'A'*32)
-
-      @factory = Item.create!(name: 'testfactory', _kind: :factory, path: [], stat: ::Stat.new, good: true).tap do |f|
-        f.update_attributes logkey: 'L'*32, confkey: 'C'*32, ident: 'RCS_000000test', seed: '88888888.333'
-        f.configs << Configuration.new({config: 'test_config'})
-      end
-    end
-
     describe 'osx builder' do
       it 'should create the silent installer' do
         params = {

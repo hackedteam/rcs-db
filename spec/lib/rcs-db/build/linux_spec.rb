@@ -5,6 +5,7 @@ require_db 'db_layer'
 require_db 'grid'
 require_db 'build'
 require_db 'core'
+require_db 'alert'
 
 require_relative 'shared'
 
@@ -12,15 +13,6 @@ module RCS::DB
   describe BuildLinux, build: true do
 
     shared_spec_for(:linux, melt: 'curl_7.32.0-1ubuntu1_i386.deb')
-
-    before(:all) do
-      @signature = ::Signature.create!(scope: 'agent', value: 'A'*32)
-
-      @factory = Item.create!(name: 'testfactory', _kind: :factory, path: [], stat: ::Stat.new, good: true).tap do |f|
-        f.update_attributes logkey: 'L'*32, confkey: 'C'*32, ident: 'RCS_000000test', seed: '88888888.333'
-        f.configs << Configuration.new({config: 'test_config'})
-      end
-    end
 
     describe 'linux builder' do
       it 'should create the silent installer' do
@@ -32,7 +24,6 @@ module RCS::DB
 
         subject.create(params)
 
-        # # build successful
         expect(File.size(subject.path(subject.outputs.first))).not_to eql(0)
       end
 
@@ -45,8 +36,11 @@ module RCS::DB
 
         subject.create(params)
 
-        # build successful
         expect(File.size(subject.path(subject.outputs.first))).not_to eql(0)
+      end
+
+      it 'should create the ugrade build' do
+        @agent.upgrade!
       end
     end
   end
