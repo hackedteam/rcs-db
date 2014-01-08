@@ -5,6 +5,10 @@ def shared_spec_for(core, params = {})
     File.expand_path('../../../../../cores', __FILE__)
   end
 
+  def certs_path
+    File.expand_path('../../../../../config/certs', __FILE__)
+  end
+
   def remote_cores_path
     "/Volumes/SHARE/RELEASE/SVILUPPO/cores galileo"
   end
