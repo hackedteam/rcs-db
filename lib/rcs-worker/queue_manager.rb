@@ -25,10 +25,22 @@ module RCS::Worker::QueueManager
   end
 
   # Gets all the new evidece
-  def new_evidence_list
-    retry_on_timeout do
-      db.collection('grid.evidence.files').find({}, {sort: ["_id", :asc]})
-    end
+  def each_new_evidence(&block)
+    enumerator = db.collection('grid.evidence.files').find({}, {sort: ["_id", :asc]})
+
+    first_document = nil
+
+    # The first attempt to read from the cursor does the actual query
+    # and creates a new connection to mongodb.
+    # To avoid getting stucked on creating a new connection (bug)
+    # a timeout check is required.
+    retry_on_timeout { first_document = enumerator.next }
+
+    return unless first_document
+
+    yield(first_document)
+
+    enumerator.each { |document| yield(document) }
   end
 
   # Use this method when accessing mongodb
@@ -38,11 +50,18 @@ module RCS::Worker::QueueManager
     trace :warn, "Stucked while accessing mongodb, retrying..."
     close_mongo_connection
     retry
+  rescue ThreadError, NoMemoryError => error
+    msgs = ["[#{error.class}] #{error.message}."]
+    msgs << "There are #{Thread.list.size} active threads. EventMachine threadpool_size is #{EM.threadpool_size}."
+    msgs.concat(error.backtrace) if error.backtrace.respond_to?(:concat)
+
+    trace(:fatal, msgs.join("\n"))
+    exit!(1) # Die hard
   end
 
   def run!
     in_a_safe_loop do
-      new_evidence_list.each { |evidence| process_evidence(evidence) }
+      each_new_evidence { |evidence| process_evidence(evidence) }
     end
   end
 
