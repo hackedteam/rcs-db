@@ -40,8 +40,15 @@ class NotificationQueue
   def self.retry_on_timeout
     Timeout::timeout(5) { yield }
   rescue Timeout::Error
-    trace :warn, "#get_queue was stuck, retrying..."
+    trace(:warn, "#get_queue was stuck, retrying...")
     retry
+  rescue ThreadError, NoMemoryError => error
+    msgs = ["[#{error.class}] #{error.message}."]
+    msgs << "There are #{Thread.list.size} active threads. EventMachine threadpool_size is #{EM.threadpool_size}."
+    msgs.concat(error.backtrace) if error.backtrace.respond_to?(:concat)
+
+    trace(:fatal, msgs.join("\n"))
+    exit!(1) # Die hard
   end
 
   def self.get_queued
