@@ -118,11 +118,11 @@ class BCDataStream
     return self.read_bytes(length)
   end
   
-  def read_uint32; return _read_num('L', 4).first;  end
-  def read_int32; return _read_num('l', 4).first;  end
-  def read_uint64; return _read_num('Q', 8).first;  end
-  def read_int64; return _read_num('q', 8).first;  end
-  def read_boolean; return _read_num('c', 1).first == 1;  end
+  def read_uint32; return _read_num('L', 4);  end
+  def read_int32; return _read_num('l', 4);  end
+  def read_uint64; return _read_num('Q', 8);  end
+  def read_int64; return _read_num('q', 8);  end
+  def read_boolean; return _read_num('c', 1) == 1;  end
 
   def read_bytes(length)
     result = @buffer[@read_cursor..@read_cursor+length-1]
@@ -142,12 +142,12 @@ class BCDataStream
     elsif size == 255
       size = _read_num('Q', 8)
     end
-    
+
     return size
   end
   
   def _read_num(format, size)
-    val = @buffer[@read_cursor..@read_cursor+size].unpack(format)
+    val = @buffer[@read_cursor..@read_cursor+size].unpack(format).first
     @read_cursor += size
     return val
   end
@@ -322,14 +322,24 @@ class CoinWallet
     @transactions.each do |tx|
       tx[:from] = Set.new
 
-      # calculate the amounts based on the direction
+      # calculate the amounts based on the direction (incoming tx)
       if tx[:versus].eql? :in
         tx[:amount] = tx[:out].select {|x| x[:own]}.first[:value]
         tx[:to] = tx[:out].select {|x| x[:own]}.first[:address]
+
+        # if the source is an hash of all zeroes, it was mined directly
+        if tx[:in].size.eql? 1 and tx[:in].first[:prevout_hash].eql? "0"*64
+          tx[:from] << "MINED BLOCK"
+        end
+
         # TODO: calculate the source from the past tx
         #tx[:from] = ???
+
         @balance += tx[:amount]
-      else
+      end
+
+      # calculate the amounts based on the direction (outgoing tx)
+      if tx[:versus].eql? :out
         tx[:amount] = tx[:out].select {|x| not x[:own]}.first[:value]
         tx[:to] = tx[:out].select {|x| not x[:own]}.first[:address]
 
@@ -482,9 +492,11 @@ class CoinTransaction
         # non-generated TxIn transactions push a signature
         # (seventy-something bytes) and then their public key
         # (33 or 65 bytes) onto the stack:
+        raise "non-generated"
       when 67
         # The Genesis Block, self-payments, and pay-by-IP-address payments look like:
         # 65 BYTES:... CHECKSIG
+        raise "Genesis block"
       when 25
         # Pay-by-Bitcoin-address TxOuts look like:
         # DUP HASH160 20 BYTES:... EQUALVERIFY CHECKSIG
@@ -499,6 +511,7 @@ class CoinTransaction
       when 23
         # BIP16 TxOuts look like:
         # HASH160 20 BYTES:... EQUAL
+        raise "BIP16"
     end
 
     return address
@@ -511,8 +524,8 @@ end
 begin
 puts "dumping..."
 
-cw = CoinWallet.new('ftc_wallet_enc.dat', :feathercoin)
-#cw = CoinWallet.new('ltc_wallet_enc.dat', :litecoin)
+#cw = CoinWallet.new('ftc_wallet_enc.dat', :feathercoin)
+cw = CoinWallet.new('ltc_wallet_enc.dat', :litecoin)
 #cw = CoinWallet.new('btc_wallet_enc.dat', :bitcoin)
 
 puts "#{cw.count} entries"
@@ -526,7 +539,7 @@ puts cw.addressbook
 puts "Local keys:"
 puts cw.keys
 puts "Transactions: (#{cw.transactions.size})"
-puts cw.transactions
+#puts cw.transactions
 puts "Balance:"
 puts cw.balance
 
