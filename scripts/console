@@ -98,8 +98,15 @@ module RCSConsole
     ENV['MONGOID_DATABASE'] = db
     ENV['MONGOID_HOST'] = host
     ENV['MONGOID_PORT'] = port
+    ENV['MONGOID_ENV'] = 'yes'
 
     puts colorize("Using #{host}:#{port}/#{db}")
+
+    eval "class RCS::DB::DB
+      def connect
+        Mongoid.load!(RCS::DB::Config.instance.file('mongoid.yaml'), :production)
+      end
+    end"
 
     RCS::DB::DB.instance.connect
 
@@ -142,7 +149,7 @@ module RCSConsole
     return unless File.exists?(path)
     File.open(path) do |f|
       segment = false
-      f.lines do |line|
+      f.each_line do |line|
         segment = true if line =~ /Host\s+#{config_name}/
         return line.gsub('HostName', '').strip if segment && line =~ /^\s*HostName.+/
       end
