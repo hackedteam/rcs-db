@@ -139,6 +139,13 @@ class Status
   end
 
   def self.status_check
-    all.each { |status| status.check }
+    all.each do |status|
+      begin
+        status.check
+      rescue Exception => ex
+        trace :fatal, "Cannot perform status check of component #{status.name}: [#{ex.class}] #{ex.message}"
+        trace :fatal, ex.backtrace
+      end
+    end
   end
 end
