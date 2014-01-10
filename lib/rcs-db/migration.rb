@@ -21,7 +21,7 @@ module Migration
   def up_to(version)
     puts "migrating to #{version}"
 
-    run [:recalculate_checksums, :drop_sessions]
+    run [:recalculate_checksums, :drop_sessions, :remove_statuses]
     run [:fill_up_handle_book_from_summary, :move_grid_evidence_to_worker_db] if version >= '9.2.0'
 
     return 0
@@ -160,6 +160,10 @@ module Migration
 
   def drop_sessions
     ::Session.destroy_all
+  end
+
+  def remove_statuses
+    ::Status.destroy_all
   end
 
   def cleanup_storage
