@@ -113,7 +113,14 @@ class PeerAggregator
   # Extract email from strings like "Ask Me" <ask@me.it>
   # The first part is the nickname, the real email is enclosed by angular brackets
   def self.email_address string
-    string.strip.scan(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i).first.downcase
+    extracted_mail = string.strip.scan(/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}\b/i).first
+
+    if extracted_mail.blank?
+      raise "Unable to extract a valid email address from the string #{string.inspect}."
+    end
+
+    extracted_mail.downcase!
+    extracted_mail
   end
 
   def self.extract_email ev
