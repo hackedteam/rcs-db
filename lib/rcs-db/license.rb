@@ -154,8 +154,8 @@ class LicenseManager
   end
 
   def new_license(file)
-
-    raise "file not found" unless File.exist? file
+    file = "#{ENV['CWD']}/#{file}" if !File.exist?(file) and ENV['CWD']
+    raise "file not found" unless File.exist?(file)
 
     trace :info, "Loading new license file #{file}"
 
