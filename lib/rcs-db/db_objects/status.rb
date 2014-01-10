@@ -55,8 +55,12 @@ class Status
     disk <= 15 or cpu >= 85 or pcpu >= 85
   end
 
+  def self.current_utc_time
+    Time.now.getutc.to_i
+  end
+
   def unupdated?
-    Time.now.getutc.to_i - time > 120
+    self.class.current_utc_time - time > 120
   end
 
   def old_component?
@@ -104,7 +108,7 @@ class Status
     monitor[:pcpu] = stats[:pcpu]
     monitor[:cpu] = stats[:cpu]
     monitor[:disk] = stats[:disk]
-    monitor[:time] = Time.now.getutc.to_i
+    monitor[:time] = current_utc_time
     monitor[:type] = type
     monitor[:version] = version
 
