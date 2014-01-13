@@ -1,3 +1,4 @@
+require 'openssl'
 require 'net/http'
 require 'json'
 require 'benchmark'
@@ -1479,7 +1480,12 @@ if false
   
 end
 
-
+if true
+  puts "agent.blacklist"
+  res = http.request_get('/agent/blacklist', {'Cookie' => cookie})
+  puts res.body
+  puts
+end
 
 # logout
 res = http.request_post('/auth/logout', nil, {'Cookie' => cookie})
