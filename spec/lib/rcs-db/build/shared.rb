@@ -28,7 +28,7 @@ def shared_spec_for(core, params = {})
   end
 
   let(:melt_file) do
-    params[:melt]
+    File.basename params[:melt]
   end
 
   before(:all) do
