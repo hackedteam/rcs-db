@@ -10,6 +10,8 @@ TODO 9.2.0  (2014022401)
 
     class to manipulate the windows firewall
 
+    money tx duplicate suppression
+
     intelligence support for MONEY
 
     create as target (from automatic entities) [OK] (needs button in console)
