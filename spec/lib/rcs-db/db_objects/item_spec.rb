@@ -28,7 +28,7 @@ describe Item do
     it 'assigns a default value to some attributes' do
       expect(subject.deleted).to be_false
       expect(subject.demo).to be_false
-      expect(subject.scout).to be_false
+      expect(subject.level).to eql :scout
       expect(subject.upgradable).to be_false
       expect(subject.purge).to eql [0, 0]
       expect(subject.good).to be_true

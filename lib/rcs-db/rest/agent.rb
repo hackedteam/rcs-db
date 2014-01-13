@@ -290,7 +290,7 @@ class AgentController < RESTController
     require_auth_level :server, :tech
     
     demo = (@params['demo'] == 'true') ? true : false
-    scout = (@params['scout'] == 'true') ? true : false
+    level = @params['level'].to_sym
     platform = @params['platform'].downcase
 
     # retro compatibility for older agents (pre 8.0) sending win32, win64, ios, osx
@@ -310,7 +310,7 @@ class AgentController < RESTController
 
     # yes it is, return the status
     unless agent.nil?
-      trace :info, "#{agent[:name]} status is #{agent[:status]} [#{agent[:ident]}:#{agent[:instance]}] (demo: #{demo}, scout: #{scout}, good: #{agent[:good]})"
+      trace :info, "#{agent[:name]} status is #{agent[:status]} [#{agent[:ident]}:#{agent[:instance]}] (demo: #{demo}, scout: #{level}, good: #{agent[:good]})"
 
       # if the agent was queued, but now we have a license, use it and set the status to open
       # a demo agent will never be queued
@@ -320,7 +320,7 @@ class AgentController < RESTController
       end
 
       # the agent was a scout but now is upgraded to elite
-      if agent.scout and not scout
+      if agent.level.eql? :scout and level.eql? :elite
         # add the upload files for the first sync
         agent.add_first_time_uploads
 
@@ -329,8 +329,8 @@ class AgentController < RESTController
       end
 
       # update the scout flag
-      if agent.scout != scout
-        agent.scout = scout
+      if agent.level != level
+        agent.level = level
         agent.save
       end
 
@@ -387,7 +387,7 @@ class AgentController < RESTController
     agent.platform = platform
     agent.instance = @params['instance'].downcase
     agent.demo = demo
-    agent.scout = scout
+    agent.level = level
 
     # default is queued
     agent.status = 'queued'
@@ -404,7 +404,7 @@ class AgentController < RESTController
     agent.save
 
     # the scout must not receive the first uploads
-    unless scout
+    if level.eql? :elite
       # add the upload files for the first sync
       agent.add_first_time_uploads
 

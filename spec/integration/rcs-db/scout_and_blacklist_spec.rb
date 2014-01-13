@@ -13,7 +13,7 @@ describe 'The scout has to be upgaded' do
 
   before do
     agent.version = 3
-    agent.scout = true
+    agent.level = :scout
   end
 
   context "blacklisted software is present" do
