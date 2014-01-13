@@ -4,6 +4,9 @@ TODO 9.2.0  (2014022401)
   IMPLEMENT:
 
     soldier building (with simplified config)
+      - modify the scout properties -> level: :scout, :soldier, :elite
+      - migration for the new property
+        - checksum is different
 
     class to manipulate the windows firewall
 

