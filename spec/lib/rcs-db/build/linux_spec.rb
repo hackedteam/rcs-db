@@ -3,7 +3,7 @@ require_relative 'shared'
 module RCS::DB
   describe BuildLinux, build: true do
 
-    shared_spec_for(:linux, melt: 'curl_7.32.0-1ubuntu1_i386.deb')
+    shared_spec_for(:linux, melt: 'builds/melt_linux.deb')
 
     describe 'linux builder' do
       it 'should create the silent installer' do

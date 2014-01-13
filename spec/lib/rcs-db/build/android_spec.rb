@@ -3,7 +3,7 @@ require_relative 'shared'
 module RCS::DB
   describe BuildAndroid, build: true do
 
-    shared_spec_for(:android, melt: 'DailyBible.apk')
+    shared_spec_for(:android, melt: 'builds/melt_android.apk')
 
     before(:all) do
       RCS::DB::Config.instance.load_from_file

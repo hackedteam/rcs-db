@@ -3,7 +3,7 @@ require_relative 'shared'
 module RCS::DB
   describe BuildIOS, build: true do
 
-    shared_spec_for(:ios, melt: 'Stickies.app.zip')
+    shared_spec_for(:ios)
 
     describe 'IOS Builder' do
       it 'should create the silent installer' do

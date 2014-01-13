@@ -5,18 +5,13 @@ require_relative 'shared'
 module RCS::DB
   describe BuildWindows, build: true do
 
-    shared_spec_for(:windows, melt: 'wps.exe')
+    shared_spec_for(:windows, melt: 'builds/melt_windows.exe')
 
     before(:all) do
       RCS::DB::Config.instance.load_from_file
     end
 
     describe 'windows builder' do
-      before do
-        limits = {magic: 'LOuWAplu'}
-        LicenseManager.instance.stub(:limits).and_return(limits)
-      end
-
       it "should create the silent installer" do
         params = {
           'factory' => {'_id' => @factory.id},

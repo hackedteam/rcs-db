@@ -3,7 +3,7 @@ require_relative 'shared'
 module RCS::DB
   describe BuildOSX, build: true do
 
-    shared_spec_for(:osx, melt: 'Stickies.app.zip')
+    shared_spec_for(:osx, melt: 'builds/melt_osx.app.zip')
 
     describe 'osx builder' do
       it 'should create the silent installer' do
