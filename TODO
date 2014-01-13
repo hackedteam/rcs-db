@@ -5,19 +5,14 @@ TODO 9.2.0  (2014022401)
 
     soldier building (with simplified config)
 
-    support for exploit pack file with VPS address (serving only exploits)
-
     class to manipulate the windows firewall
+
+    intelligence support for MONEY
 
     create as target (from automatic entities) [OK] (needs button in console)
     export to connector [OK] (needs some config from the console...)
 
     NSIS for silent installation
-
-    tests for all the builds of different platforms (win, osx, android...)
-      - build every kind of method (silent, scout, melted, cooked, wap, qrcode...)
-      - test the upgrade process (check that files are put in queue)
-      - create a new rake spec:build:all and aliases for spec:build:platform [ok]
 
     protect the code of the rcs-common gem (include the rgloader dir in the gem)
       - modify the rake build command
