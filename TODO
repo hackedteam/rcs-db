@@ -3,26 +3,32 @@ TODO 9.2.0  (2014022401)
 
   IMPLEMENT:
 
-    soldier building (with simplified config)
+    soldier building (with simplified config)  (alor)
+      - icon name is scout++ in the array
+      - upgrade name is "soldier"
       - modify the scout properties -> level: :scout, :soldier, :elite
       - migration for the new property
         - checksum is different
 
-    class to manipulate the windows firewall
+    class to manipulate the windows firewall  (topac)
 
-    money tx duplicate suppression
+    money tx duplicate suppression [ok]
 
-    intelligence support for MONEY
+    map api request statistics  (alor)
+      - limit per client / per day [ok]
+      - no request if out of maintenance [ok]
+
+    intelligence support for MONEY  (topac)
 
     create as target (from automatic entities) [OK] (needs button in console)
     export to connector [OK] (needs some config from the console...)
 
-    NSIS for silent installation
-
-    protect the code of the rcs-common gem (include the rgloader dir in the gem)
+    protect the code of the rcs-common gem (include the rgloader dir in the gem)  (topac)
       - modify the rake build command
 
     filter links by type (e.g. I want to see only skype links). We can change the format of the info attribute..
+
+    NSIS for silent installation
 
 TODO:  9.2.x
 
@@ -30,7 +36,6 @@ TODO:  9.2.x
     caching slow query. try to cache already jsonized list of items and similar
 
   IMPLEMENT:
-    map api request statistics
 
     crypto-currency dissector
       - support for multibit and armory wallets

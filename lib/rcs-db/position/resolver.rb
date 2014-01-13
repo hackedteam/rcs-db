@@ -17,11 +17,32 @@ class PositionResolver
   extend RCS::Tracer
   
   @@cache = {}
+  @@daily_requests = 0
 
   class << self
 
+    def valid_maintenance?
+      LicenseManager.instance.check :maintenance
+    end
+
     def position_enabled?
       Config.instance.global['POSITION']
+    end
+
+    def daily_limit_reset
+      @@daily_requests = 0
+    end
+
+    def daily_limit_consume
+      @@daily_requests += 1
+    end
+
+    def daily_limit
+      LicenseManager.instance.limits[:gapi] || 100
+    end
+
+    def daily_limit_reached?
+      @@daily_requests < daily_limit
     end
 
     def google_api_key
@@ -40,7 +61,13 @@ class PositionResolver
 
       begin
         # skip resolution on request
-        return {} unless position_enabled?
+        return {} unless position_enabled? and valid_maintenance?
+
+        # enforce a daily limit on the number of requests
+        if daily_limit_reached?
+          trace :warn, "Your daily quota of google api requests has been reached"
+          return {}
+        end
 
         # check for cached values (to avoid too many external request)
         cached = get_cache params
@@ -72,6 +99,9 @@ class PositionResolver
         elsif request['wifiAccessPoints'] or request['cellTowers']
           # wireless to GPS
           location = get_google_geoposition(request)
+
+          # count the daily requests
+          daily_limit_consume
 
           # avoid too large ranges, usually incorrect positioning
           if not location['accuracy'].nil? and location['accuracy'] > 15000

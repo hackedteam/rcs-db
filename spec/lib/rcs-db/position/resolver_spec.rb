@@ -29,6 +29,8 @@ describe PositionResolver do
   end
 
   before do
+    PositionResolver.stub(:daily_limit_reached?).and_return false
+    PositionResolver.stub(:valid_maintenance?).and_return true
     PositionResolver.stub(:position_enabled?).and_return true
     # this is a development key (used for test: 100 query each day)
     PositionResolver.stub(:google_api_key).and_return 'AIzaSyAmG3O2wuA9Hj2L5an-ofRndUwVSrqElLM'
@@ -40,8 +42,32 @@ describe PositionResolver do
     turn_off_tracer
   end
 
-  it 'should not resove if resolving is not enabled' do
+  it 'should not resolve if resolving is not enabled' do
     PositionResolver.stub(:position_enabled?).and_return false
+    PositionResolver.should_not_receive :get_cache
+    PositionResolver.get({})
+  end
+
+  it 'should not resolve if maintenance is not active' do
+    PositionResolver.stub(:valid_maintenance?).and_return false
+    PositionResolver.should_not_receive :get_cache
+    PositionResolver.get({})
+  end
+
+  it 'should not exceed the max number of daily requests' do
+    PositionResolver.stub(:daily_limit_reached?).and_return true
+    PositionResolver.should_not_receive :get_cache
+    PositionResolver.get({})
+  end
+
+  it 'should correctly count the max number of daily requests' do
+    PositionResolver.stub(:daily_limit).and_return 3
+    # consume the daily limit
+    PositionResolver.daily_limit_consume
+    PositionResolver.daily_limit_consume
+    PositionResolver.should_receive :get_cache
+    PositionResolver.get({})
+    PositionResolver.daily_limit_consume
     PositionResolver.should_not_receive :get_cache
     PositionResolver.get({})
   end
@@ -90,9 +116,9 @@ describe PositionResolver do
   end
 
   it 'should resolve geoip location' do
-    request = {'ipAddress' => {'ipv4' => '88.50.246.138'}}
+    request = {'ipAddress' => {'ipv4' => '8.8.8.8'}}
     position = PositionResolver.get(request)
-    expected = {"latitude" => 45.4667, "longitude" => 9.2, "accuracy" => 20000, "address" => {"text"=>"Via Anselmo Ronchetti, 2-6, 20122 Milan, Italy"}}
+    expected = {"latitude" => 38, "longitude" => -97, "accuracy" => 20000, "address" => {"text"=>"8636-8692 Northwest 120th Street, Potwin, KS 67123, USA"}}
 
     position.should eq expected
   end
@@ -107,7 +133,7 @@ describe PositionResolver do
   it 'should use google to resolve gps coords into address (geocoding)' do
     request = {'gpsPosition' => {"latitude" => 45.4774536, "longitude" => 9.1906932}}
     position = PositionResolver.get(request)
-    expected = {"address"=>{"text"=>"Via Fatebenesorelle, 2-14, 20121 Milan, Italy"}}
+    expected = {"address"=>{"text"=>"Via Fatebenesorelle, 2-14, 20121 Milan, Italy"}, "latitude" => 45.4774536, "longitude" => 9.1906932}
 
     position.should eq expected
   end
@@ -131,11 +157,11 @@ describe PositionResolver do
     lon = position['longitude']
     accuracy = position['accuracy']
 
-    lat.should be_within(0.00005).of(45.477492)
-    lon.should be_within(0.00005).of(9.1907943)
+    lat.should be_within(0.00005).of(45.477083)
+    lon.should be_within(0.00005).of(9.1911716)
     accuracy.should be_within(50).of(677)
 
-    position['address'].should eq({"text"=>"Via Fatebenesorelle, 2-14, 20121 Milan, Italy"})
+    position['address'].should eq({"text"=>"Corso di Porta Nuova, 19, 20121 Milan, Italy"})
   end
 
   it 'should use google to resolve wifi into gps coords (geolocation)' do
@@ -157,8 +183,8 @@ describe PositionResolver do
     lon = position['longitude']
     accuracy = position['accuracy']
 
-    lat.should be_within(0.00005).of(45.4765431)
-    lon.should be_within(0.00005).of(9.1907635)
+    lat.should be_within(0.00005).of(45.4765395)
+    lon.should be_within(0.00005).of(9.190857)
     accuracy.should be_within(10).of(52)
 
     position['address']['text'].should include "Via della Moscova"
