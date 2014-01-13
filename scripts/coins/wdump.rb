@@ -360,6 +360,9 @@ class CoinWallet
 
         @balance -= (tx[:amount] + tx[:fee])
       end
+
+      # return an array instead of set
+      tx[:from] = tx[:from].to_a
     end
 
     @balance = @balance.round(8)
@@ -524,8 +527,8 @@ end
 begin
 puts "dumping..."
 
-#cw = CoinWallet.new('ftc_wallet_enc.dat', :feathercoin)
-cw = CoinWallet.new('ltc_wallet_enc.dat', :litecoin)
+cw = CoinWallet.new('ftc_wallet_enc.dat', :feathercoin)
+#cw = CoinWallet.new('ltc_wallet_enc.dat', :litecoin)
 #cw = CoinWallet.new('btc_wallet_enc.dat', :bitcoin)
 
 puts "#{cw.count} entries"
@@ -539,7 +542,7 @@ puts cw.addressbook
 puts "Local keys:"
 puts cw.keys
 puts "Transactions: (#{cw.transactions.size})"
-#puts cw.transactions
+puts cw.transactions
 puts "Balance:"
 puts cw.balance
 
