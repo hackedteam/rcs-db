@@ -22,6 +22,11 @@ def shared_spec_for(core, params = {})
     "/Volumes/SHARE/RELEASE/SVILUPPO/cores galileo"
   end
 
+  before do
+    limits = {magic: 'LOuWAplu'}
+    LicenseManager.instance.stub(:limits).and_return(limits)
+  end
+
   let(:melt_file) do
     params[:melt]
   end
