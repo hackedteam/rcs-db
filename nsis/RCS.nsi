@@ -570,8 +570,11 @@ Section "Install Section" SecInstall
     #nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=443'
     #nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=444'
     SimpleFC::AddPort 443 "RCS Database" 6 0 2 "" 1
-    SimpleFC::AddPort 444 "RCS Database" 6 0 2 "" 1
-	
+    SimpleFC::AddPort 444 "RCS Database Websocket" 6 0 2 "" 1
+    SimpleFC::AddPort 27017 "RCS Mongo Router" 6 0 2 "LocalSubnet" 1
+    SimpleFC::AddPort 27018 "RCS Mongo Shard" 6 0 2 "LocalSubnet" 1
+    SimpleFC::AddPort 27019 "RCS Mongo Config" 6 0 2 "LocalSubnet" 1
+
     !cd '..'
     WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
     WriteRegDWORD HKLM "Software\HT\RCS" "master" 0x00000001
@@ -693,10 +696,6 @@ Section "Install Section" SecInstall
     File "config\VERSION_BUILD"
     SetDetailsPrint "both"
     DetailPrint "done"
-    
-    DetailPrint "Adding firewall rule for port 80/tcp..."
-    #nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSCollector" dir=in action=allow protocol=TCP localport=80'
-    SimpleFC::AddPort 80 "RCS Collector" 6 0 2 "" 1
 	
     !cd '..'
     
