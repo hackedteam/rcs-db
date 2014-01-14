@@ -44,7 +44,7 @@ gem 'ruby-opencv'
 
 gem 'sbdb'
 # needs some love to compile bdb and tuple under windows
-# see scripts/coins/bdb_compile.txt
+# see scripts/coins/INSTALL
 
 platforms :jruby do
   gem 'json'
