@@ -15,13 +15,6 @@ TODO 9.2.0  (2014022401)
 
     money tx duplicate suppression [ok]
 
-    map api request (alor)
-      - limit per client / per day [ok]
-      - no request if out of maintenance [ok]
-      - reset at midnight
-      - statistics [ok]
-      - serialize the counter
-
     intelligence support for MONEY  (topac)
 
     create as target (from automatic entities) [OK] (needs button in console)
@@ -33,6 +26,7 @@ TODO 9.2.0  (2014022401)
     filter links by type (e.g. I want to see only skype links). We can change the format of the info attribute..
 
     NSIS for silent installation
+      - firewall rules for mongodb ports
 
 TODO:  9.2.x
 

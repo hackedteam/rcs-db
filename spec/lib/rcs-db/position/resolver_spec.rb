@@ -29,6 +29,9 @@ describe PositionResolver do
   end
 
   before do
+    StatsManager.stub(:instance).and_return double()
+    StatsManager.instance.stub(:add).and_return true
+
     PositionResolver.stub(:daily_limit_reached?).and_return false
     PositionResolver.stub(:valid_maintenance?).and_return true
     PositionResolver.stub(:position_enabled?).and_return true
@@ -90,7 +93,7 @@ describe PositionResolver do
 
   it 'should use the cache to resolve' do
     PositionResolver.should_not_receive :get_google_geocoding
-    request = {'gpsPosition' => {"latitude" => 45.4774536, "longitude" => 9.1906932}}
+    request = {'gpsPosition' => {"latitude" => 45.477, "longitude" => 9.190}}
     response = {'address' => {'text' => "Via Fatebenesorelle, 2-14, 20121 Milan, Italy"}}
     PositionResolver.put_cache(request, response)
 

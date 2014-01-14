@@ -23,7 +23,7 @@ class StatsManager < Stats
     @persist = true
 
     # where do we save the stats?
-    @dump_file = Config.instance.file('db_stats')
+    @dump_file = RCS::DB::Config.instance.file('db_stats')
 
     # initialize the stats repository
     super
