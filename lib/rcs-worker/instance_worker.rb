@@ -211,6 +211,12 @@ class InstanceWorker
   end
 
   def save_evidence(evidence)
+    # update the evidence statistics
+    size = evidence.data.inspect.size
+    size += evidence.data[:_grid_size] unless evidence.data[:_grid_size].nil?
+    RCS::Worker::StatsManager.instance.add processed_evidence: 1, processed_evidence_size: size
+
+    # enqueue in the ALL the queues
     evidence.enqueue
   end
 
