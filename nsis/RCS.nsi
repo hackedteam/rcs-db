@@ -566,11 +566,12 @@ Section "Install Section" SecInstall
     SimpleSC::StartService "RCSIntelligence" "" 30
     Sleep 5000
 
-    DetailPrint "Adding firewall rule for port 443/tcp and 444/tcp..."
+    DetailPrint "Adding firewall rules for port 443/tcp and 444/tcp..."
     #nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=443'
     #nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=444'
     SimpleFC::AddPort 443 "RCS Database" 6 0 2 "" 1
     SimpleFC::AddPort 444 "RCS Database Websocket" 6 0 2 "" 1
+    DetailPrint "Adding firewall rules for port 27017, 27018 and 27019/tcp..."
     SimpleFC::AddPort 27017 "RCS Mongo Router" 6 0 2 "LocalSubnet" 1
     SimpleFC::AddPort 27018 "RCS Mongo Shard" 6 0 2 "LocalSubnet" 1
     SimpleFC::AddPort 27019 "RCS Mongo Config" 6 0 2 "LocalSubnet" 1
@@ -587,7 +588,12 @@ Section "Install Section" SecInstall
        
     SetDetailsPrint "both"
     DetailPrint "done"
-    
+
+    DetailPrint "Adding firewall rules for port 27017, 27018 and 27019/tcp..."
+    SimpleFC::AddPort 27017 "RCS Mongo Router" 6 0 2 "LocalSubnet" 1
+    SimpleFC::AddPort 27018 "RCS Mongo Shard" 6 0 2 "LocalSubnet" 1
+    SimpleFC::AddPort 27019 "RCS Mongo Config" 6 0 2 "LocalSubnet" 1
+
     ; fresh install
     ${If} $installUPGRADE != ${BST_CHECKED}
       DetailPrint "Creating service RCS Shard..."
