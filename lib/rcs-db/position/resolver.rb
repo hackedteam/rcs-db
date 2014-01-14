@@ -3,6 +3,7 @@
 #
 
 require_relative '../frontend'
+require_relative '../statistics'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -42,7 +43,7 @@ class PositionResolver
     end
 
     def daily_limit_reached?
-      @@daily_requests < daily_limit
+      @@daily_requests > daily_limit
     end
 
     def google_api_key
@@ -65,7 +66,7 @@ class PositionResolver
 
         # enforce a daily limit on the number of requests
         if daily_limit_reached?
-          trace :warn, "Your daily quota of google api requests has been reached"
+          trace :warn, "Your daily quota of google api requests has been reached (#{@@daily_requests}/#{daily_limit})"
           return {}
         end
 
@@ -73,6 +74,7 @@ class PositionResolver
         cached = get_cache params
         if cached
           trace :debug, "Positioning: resolved from cache #{cached.inspect}"
+          StatsManager.instance.add gapi_cache: 1
           return cached
         end
 
@@ -102,6 +104,7 @@ class PositionResolver
 
           # count the daily requests
           daily_limit_consume
+          StatsManager.instance.add gapi: 1
 
           # avoid too large ranges, usually incorrect positioning
           if not location['accuracy'].nil? and location['accuracy'] > 15000
@@ -131,7 +134,7 @@ class PositionResolver
     def get_google_geoposition(request)
       # https://developers.google.com/maps/documentation/business/geolocation/
       Timeout::timeout(5) do
-        response = Frontend.proxy('POST', 'https', 'www.googleapis.com', "/geolocation/v1/geolocate?key=#{google_api_key}", request.to_json, {"Content-Type" => "application/json"})
+        response = Frontend.proxy('POST', 'https', 'www.googleapis.com', "/geolocation/v1/geolocate?key=#{google_api_key}", request.to_json, {"Content-Type" => "application/json", "Referer" => "http://test.gapi"})
         response.kind_of? Net::HTTPSuccess or raise(response.body)
         resp = JSON.parse(response.body)
         raise('invalid response') unless resp['location']

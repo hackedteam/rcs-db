@@ -7,6 +7,7 @@ TODO 9.2.0  (2014022401)
       - icon name is scout++ in the array
       - upgrade name is "soldier"
       - modify the scout properties -> level: :scout, :soldier, :elite
+      - new json config
       - migration for the new property
         - checksum is different
 
@@ -14,9 +15,12 @@ TODO 9.2.0  (2014022401)
 
     money tx duplicate suppression [ok]
 
-    map api request statistics  (alor)
+    map api request (alor)
       - limit per client / per day [ok]
       - no request if out of maintenance [ok]
+      - reset at midnight
+      - statistics [ok]
+      - serialize the counter
 
     intelligence support for MONEY  (topac)
 

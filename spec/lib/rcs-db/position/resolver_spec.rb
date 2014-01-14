@@ -62,13 +62,21 @@ describe PositionResolver do
 
   it 'should correctly count the max number of daily requests' do
     PositionResolver.stub(:daily_limit).and_return 3
-    # consume the daily limit
     PositionResolver.daily_limit_consume
     PositionResolver.daily_limit_consume
     PositionResolver.should_receive :get_cache
     PositionResolver.get({})
     PositionResolver.daily_limit_consume
     PositionResolver.should_not_receive :get_cache
+    PositionResolver.get({})
+  end
+
+  it 'should correctly reset the counter at midnight' do
+    PositionResolver.stub(:daily_limit).and_return 1
+    PositionResolver.daily_limit_consume
+    PositionResolver.daily_limit_consume
+    PositionResolver.daily_limit_reset
+    PositionResolver.should_receive :get_cache
     PositionResolver.get({})
   end
 

@@ -1056,7 +1056,7 @@ if false
 end
   
 # evidence
-if true
+if false
   # evidence.index
   #filter = {target: '4f28003c2afb65cf4700006c'}.to_json
   #res = http.request_get(URI.escape("/evidence?filter=#{filter}&startIndex=0&numItems=20"), {'Cookie' => cookie})
@@ -1157,9 +1157,10 @@ if false
 end
 
 # position
-if false
-  # TEST TORINO
-  loc = {map: {wifi_towers: [{mac_address: '00:21:1C:7A:D6:22', signal_strength: -76, ssid: 'OMNI-LOBBY'}]}}
+if true
+  cells = [{mobileCountryCode: 222, mobileNetworkCode: 1, locationAreaCode: 61208, cellId: 528, signalStrength: -92, timingAdvance: 0, age: 0}]
+  request = {'cellTowers' => cells, radioType: 'gsm'}
+  loc = {map: request}
   puts 'location.wifi'
   res = http.request_post('/position', loc.to_json, {'Cookie' => cookie})
   puts res.body
@@ -1480,7 +1481,7 @@ if false
   
 end
 
-if true
+if false
   puts "agent.blacklist"
   res = http.request_get('/agent/blacklist', {'Cookie' => cookie})
   puts res.body
