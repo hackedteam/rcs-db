@@ -27,7 +27,6 @@ module RCS
           # initialize random number generator
           srand(Time.now.to_i)
 
-          trace_setup
           # ensure the temp directory is empty
           FileUtils.rm_rf(Config.instance.temp)
 

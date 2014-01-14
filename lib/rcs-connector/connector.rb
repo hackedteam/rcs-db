@@ -64,7 +64,6 @@ module RCS
 
       def run(options)
         run_with_rescue do
-          trace_setup
 
           # config file parsing
           return 1 unless RCS::DB::Config.instance.load_from_file

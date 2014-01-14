@@ -54,8 +54,6 @@ module RCS
           # initialize random number generator
           srand(Time.now.to_i)
 
-          trace_setup
-
           # config file parsing
           return 1 unless RCS::DB::Config.instance.load_from_file
 
