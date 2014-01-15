@@ -12,6 +12,12 @@ TODO 9.2.0  (2014022401)
         - checksum is different
 
     class to manipulate the windows firewall  (topac)
+      - automatic rules on collector
+        - ensure firewall on
+        - accept from localsubnet
+        - accept only from the first anon
+        - accept all if COLLECTOR_IS_GOOD
+      - automatic rules (port LISTENING_PORT-1) on worker
 
     money tx duplicate suppression [ok]
 
