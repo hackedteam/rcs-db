@@ -22,6 +22,7 @@ module Migration
     puts "migrating to #{version}"
 
     run [:recalculate_checksums, :drop_sessions, :remove_statuses]
+    run [:remove_ni_java_rules] if version >= '9.1.5'
     run [:fill_up_handle_book_from_summary, :move_grid_evidence_to_worker_db] if version >= '9.2.0'
 
     return 0
@@ -159,6 +160,14 @@ module Migration
         print "\r%d evidences collection reindexed" % count += 1
       rescue Exception => e
         puts e.message
+      end
+    end
+  end
+
+  def remove_ni_java_rules
+    ::Injector.each do |ni|
+      ni.rules.each do |rule|
+        rule.destroy if rule.action.eql? 'INJECT-HTML-JAVA'
       end
     end
   end
