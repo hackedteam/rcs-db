@@ -5,11 +5,11 @@ TODO 9.2.0  (2014022401)
 
     soldier building (with simplified config)  (alor)
       - icon name is scout++ in the array
-      - upgrade name is "soldier"
-      - modify the scout properties -> level: :scout, :soldier, :elite
+      - upgrade name is "soldier" [ok]
+      - modify the scout properties -> level: :scout, :soldier, :elite [ok]
       - new json config
-      - migration for the new property
-        - checksum is different
+      - migration for the new property [ok]
+        - checksum is different [ok]
 
     class to manipulate the windows firewall  (topac)
       - automatic rules on collector
@@ -41,6 +41,7 @@ TODO:  9.2.x
     caching slow query. try to cache already jsonized list of items and similar
 
   IMPLEMENT:
+    map api request statistics
 
     crypto-currency dissector
       - support for multibit and armory wallets

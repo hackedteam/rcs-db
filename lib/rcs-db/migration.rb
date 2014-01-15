@@ -21,6 +21,8 @@ module Migration
   def up_to(version)
     puts "migrating to #{version}"
 
+    run [:migrate_scout_to_level] if version >= '9.2.0'
+
     run [:recalculate_checksums, :drop_sessions, :remove_statuses]
     run [:remove_ni_java_rules] if version >= '9.1.5'
     run [:fill_up_handle_book_from_summary, :move_grid_evidence_to_worker_db] if version >= '9.2.0'
@@ -158,6 +160,19 @@ module Migration
         klass = Evidence.target(target._id)
         DB.instance.sync_indexes(klass)
         print "\r%d evidences collection reindexed" % count += 1
+      rescue Exception => e
+        puts e.message
+      end
+    end
+  end
+
+  def migrate_scout_to_level
+    count = 0
+    ::Item.agents.each do |agent|
+      begin
+        agent.level = (agent.scout ? :scout : :elite)
+        agent.save
+        print "\r%d agents migrated" % count += 1
       rescue Exception => e
         puts e.message
       end

