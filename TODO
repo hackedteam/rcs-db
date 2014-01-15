@@ -23,6 +23,8 @@ TODO 9.2.0  (2014022401)
 
     intelligence support for MONEY  (topac)
 
+    export for MONEY evidence (topac)
+
     create as target (from automatic entities) [OK] (needs button in console)
     export to connector [OK] (needs some config from the console...)
 
