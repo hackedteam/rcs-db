@@ -4,10 +4,10 @@ TODO 9.2.0  (2014022401)
   IMPLEMENT:
 
     soldier building (with simplified config)  (alor)
-      - icon name is scout++ in the array
+      - icon name is scout++ in the array [ok
       - upgrade name is "soldier" [ok]
       - modify the scout properties -> level: :scout, :soldier, :elite [ok]
-      - new json config
+      - new json config [..]
       - migration for the new property [ok]
         - checksum is different [ok]
 
