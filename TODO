@@ -4,8 +4,8 @@ TODO 9.2.0  (2014022401)
   IMPLEMENT:
 
     soldier building (with simplified config)  (alor)
-      - binary patch the config in the soldier
-      - update soldier config
+      - binary patch the config in the soldier [ok]
+      - update soldier config [ok]
       - icon name is scout++ in the array [ok]
       - upgrade name is "soldier" [ok]
       - modify the scout properties -> level: :scout, :soldier, :elite [ok]

