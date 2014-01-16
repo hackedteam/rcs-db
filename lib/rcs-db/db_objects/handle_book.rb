@@ -74,7 +74,7 @@ class HandleBook
   def self.remove_target(target)
     target_id = target.respond_to?(:id) ? target.id : Moped::BSON::ObjectId(target)
     result = where(targets: target_id).pull(:targets, target_id)
-    where(targets: []).destroy_all if result['n'] > 0
+    where(targets: []).destroy_all if result and result['n'] > 0
   end
 
   def self.rebuild
