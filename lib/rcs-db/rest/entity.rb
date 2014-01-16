@@ -270,6 +270,8 @@ class EntityController < RESTController
                 :operation_name => operation.name,
                 :target_name => entity.name,
                 :desc => "Created target '#{entity.name}' (person promoted to target)"
+
+      return ok
     end
   end
 
