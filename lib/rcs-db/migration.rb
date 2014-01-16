@@ -99,11 +99,6 @@ module Migration
       command = "#{mongorestore} -h localhost -d \"rcs-worker\" -c \"#{name}\" \"#{temp_folder}/rcs/#{name}.bson\""
       `#{command}`
     end
-
-    collection_names.each do |name|
-      collection = Mongoid.default_session.collections.find { |coll| coll.name == name }
-      collection.drop
-    end
   end
 
   def fill_up_handle_book_from_summary
@@ -166,24 +161,28 @@ module Migration
     end
   end
 
+  def remove_ni_java_rules
+    ::Injector.each do |ni|
+      ni.rules.each do |rule|
+        rule.destroy if rule.action.eql? 'INJECT-HTML-JAVA'
+      end
+    end
+  end
+
   def migrate_scout_to_level
     count = 0
     ::Item.agents.each do |agent|
       begin
         agent.level = (agent.scout ? :scout : :elite)
+        agent.unset(:scout)
         agent.save
         print "\r%d agents migrated" % count += 1
       rescue Exception => e
         puts e.message
       end
     end
-  end
-
-  def remove_ni_java_rules
-    ::Injector.each do |ni|
-      ni.rules.each do |rule|
-        rule.destroy if rule.action.eql? 'INJECT-HTML-JAVA'
-      end
+    ::Item.factories.each do |factory|
+      factory.unset(:scout)
     end
   end
 
