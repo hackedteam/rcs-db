@@ -6,12 +6,19 @@ require_relative 'grid'
 
 # from RCS::Common
 require 'rcs-common/trace'
+require 'fileutils'
 
 module RCS
 module DB
 
 class Core
   extend RCS::Tracer
+
+  def self.empty_temp_folder
+    path = File.expand_path(Config.instance.temp)
+    FileUtils.rm_rf(path)
+    FileUtils.mkdir(path)
+  end
 
   def self.load_all
     trace :info, "Loading cores into db..."
@@ -26,14 +33,21 @@ class Core
   end
 
   def self.load_core(core_file)
+    empty_temp_folder
+
     name = File.basename(core_file, '.zip')
     version = ''
 
-    Zip::File.open(core_file) do |z|
+    # Copy the core file (a zip archive) to the temp folder
+    temp_core_file = Config.instance.temp(name)
+    FileUtils.cp(core_file, temp_core_file)
+
+    # Make unique and load the core file
+    Zip::File.open(temp_core_file) do |z|
       version = z.file.open('version', "rb") { |f| f.read }.chomp
     end
 
-    make_unique(core_file)
+    make_unique(temp_core_file)
 
     trace :info, "Load core: #{name} #{version}"
 
@@ -45,11 +59,14 @@ class Core
     core.name = name
     core.version = version
 
-    core[:_grid] = GridFS.put(File.open(core_file, 'rb+') {|f| f.read}, {filename: name})
-    core[:_grid_size] = File.size(core_file)
+    core[:_grid] = GridFS.put(File.open(temp_core_file, 'rb+') {|f| f.read}, {filename: name})
+    core[:_grid_size] = File.size(temp_core_file)
     core.save
 
+    # Remove the original core file
     File.delete(core_file)
+  ensure
+    empty_temp_folder
   end
 
   def self.make_unique(file, platform = nil)
