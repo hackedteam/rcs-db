@@ -258,7 +258,7 @@ class EntityController < RESTController
     require_auth_level :view
 
     mongoid_query do
-      entity = Entity.persons.any_in(user_ids: [@session.user[:_id]]).where(_id: @params['_id'])
+      entity = Entity.persons.any_in(user_ids: [@session.user[:_id]]).where(_id: @params['_id']).first
       return bad_request('INVALID_OPERATION') unless entity
 
       entity.promote_to_target
