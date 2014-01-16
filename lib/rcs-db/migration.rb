@@ -96,6 +96,11 @@ module Migration
       command = "#{mongorestore} -h localhost -d \"rcs-worker\" -c \"#{name}\" \"#{temp_folder}/rcs/#{name}.bson\""
       `#{command}`
     end
+
+    collection_names.each do |name|
+      collection = Mongoid.default_session.collections.find { |coll| coll.name == name }
+      collection.drop
+    end
   end
 
   def fill_up_handle_book_from_summary
