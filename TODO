@@ -45,6 +45,8 @@ TODO:  9.2.x
   IMPLEMENT:
     map api request statistics
 
+    PUSH messages send the whole object (like dashboard)
+
     crypto-currency dissector
       - support for multibit and armory wallets
       - parse the blockchain to get the "from" of a transaction
