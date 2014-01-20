@@ -13,6 +13,7 @@ require 'mongo'
 require 'mongoid'
 require 'moped'
 require 'rbconfig'
+require 'socket'
 
 # require all the DB objects
 Dir[File.dirname(__FILE__) + '/db_objects/*.rb'].each do |file|
@@ -58,7 +59,7 @@ class DB
       # set the parameters for the mongoid.yaml
       ENV['MONGOID_DATABASE'] = Config.instance.global['DB_NAME'] || 'rcs'
 
-      ENV['MONGOID_HOST'] = 'localhost'
+      ENV['MONGOID_HOST'] = Socket.gethostname
       ENV['MONGOID_PORT'] = "27017"
 
       #Mongoid.logger = ::Logger.new($stdout)
