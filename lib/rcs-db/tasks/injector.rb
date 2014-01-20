@@ -24,7 +24,7 @@ class InjectorTask
 
     raise "Cannot send rules to a Network Injector that has never synchronized with the system" if injector.version == 0
     # TODO: check before release
-    raise "Version too old, please update the Network Injector" if injector.version < 2013111101
+    raise "Version too old, please update the Network Injector" if injector.version < 2014012001
 
     injector.rules.where(:enabled => true).each do |rule|
 
