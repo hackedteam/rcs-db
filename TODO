@@ -5,16 +5,8 @@ TODO 9.2.0  (2014022401)
 
     export to connector [OK] (needs some config from the console...)
 
+    soldier building [OK] (needs changes in console and testing)
 
-    soldier building (with simplified config)  (alor)
-      - binary patch the config in the soldier [ok]
-      - update soldier config [ok]
-      - icon name is scout++ in the array [ok]
-      - upgrade name is "soldier" [ok]
-      - modify the scout properties -> level: :scout, :soldier, :elite [ok]
-      - new json config [ok]
-      - migration for the new property [ok]
-        - checksum is different [ok]
 
     class to manipulate the windows firewall  (topac)
       - automatic rules on collector
@@ -23,8 +15,6 @@ TODO 9.2.0  (2014022401)
         - accept only from the first anon
         - accept all if COLLECTOR_IS_GOOD
       - automatic rules (port LISTENING_PORT-1) on worker
-
-    money tx duplicate suppression [ok]
 
     intelligence support for MONEY  (topac)
 
