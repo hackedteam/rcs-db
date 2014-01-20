@@ -27,7 +27,7 @@ class TopologyTask
       # don't push to "not monitored" anon
       next unless anon.poll
 
-      raise "Cannot push to #{anon.name}" unless Frontend.nc_push(anon.address)
+      raise "Cannot push to #{anon.name}" unless Frontend.nc_push(anon)
     end
     
     yield @description = "Topology applied successfully"

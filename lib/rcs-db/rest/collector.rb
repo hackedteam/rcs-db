@@ -172,7 +172,7 @@ class CollectorController < RESTController
           collector.upgradable = true
           collector.save
 
-          return server_error("Cannot push to #{collector.name}") unless Frontend.nc_push(collector.address)
+          return server_error("Cannot push to #{collector.name}") unless Frontend.nc_push(collector)
 
           return ok
       end

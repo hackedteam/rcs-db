@@ -11,14 +11,17 @@ module DB
 class Frontend
   extend RCS::Tracer
 
-  def self.nc_push(address)
+  def self.nc_push(object)
     begin
       # find a network controller in the status list
       nc = ::Status.where({type: 'nc'}).any_in(status: [::Status::OK, ::Status::WARN]).first
 
-      return false if nc.nil?
+      if nc.nil?
+        trace(:error, "The rcs-controller component is not OK")
+        return false
+      end
 
-      trace :info, "Frontend: Pushing configuration to #{address}"
+      trace(:info, "Frontend: Pushing configuration to #{object.respond_to?(:name) ? object.name : object}")
 
       headers = {}
       sig = ::Signature.where({scope: 'server'}).first
@@ -27,7 +30,11 @@ class Frontend
       # send the push request
       http = Net::HTTP.new(nc.address, 80)
       http.read_timeout = 500
-      resp = http.send_request('PUSH', "#{address}", '', headers)
+
+      headers['Content-type'] = 'application/json'
+      content = object.attributes.reject{ |name| name.to_s == '_grid' }.to_json
+
+      resp = http.send_request('PUSH', content, '', headers)
 
       return false unless resp.body == "OK"
 
