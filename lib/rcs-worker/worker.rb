@@ -17,6 +17,7 @@ require_relative 'db'
 require 'rcs-common/trace'
 require 'rcs-common/fixnum'
 require 'rcs-common/component'
+require 'rcs-common/winfirewall'
 
 # from bundle
 require 'eventmachine'
@@ -28,6 +29,15 @@ module RCS
 
       component :worker, name: "RCS Worker"
 
+      def setup_firewall
+        return unless WinFirewall.exists?
+
+        rule_name = "RCS_FWR_RULE_coll_to_worker"
+        port = RCS::DB::Config.instance.global['LISTENING_PORT']-1
+        WinFirewall.del_rule(rule_name)
+        WinFirewall.add_rule(action: :allow, direction: :in, name: rule_name, local_port: port, remote_ip: 'LocalSubnet', protocol: :tcp)
+      end
+
       def run(options)
         run_with_rescue do
           # config file parsing
@@ -38,6 +48,8 @@ module RCS
 
           # load the license from the db (saved by db)
           LicenseManager.instance.load_from_db
+
+          setup_firewall
 
           # Start the eventmachine reactor threads
           Events.new.setup(RCS::DB::Config.instance.global['LISTENING_PORT']-1)
