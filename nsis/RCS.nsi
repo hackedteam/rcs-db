@@ -682,9 +682,17 @@ Section "Install Section" SecInstall
     SetOutPath "$INSTDIR\Collector\lib"
     File /r "lib\rgloader"
     File "lib\rcs-collector.rb"
+    File "lib\rcs-carrier.rb"
+    File "lib\rcs-controller.rb"
     
     SetOutPath "$INSTDIR\Collector\lib\rcs-collector-release"
     File /r "lib\rcs-collector-release\*.*"
+
+    SetOutPath "$INSTDIR\Collector\lib\rcs-carrier-release"
+    File /r "lib\rcs-carrier-release\*.*"
+
+    SetOutPath "$INSTDIR\Collector\lib\rcs-controller-release"
+    File /r "lib\rcs-controller-release\*.*"
 
     ; make sure the cache is clean after upgrade
     Delete "$INSTDIR\Collector\config\cache.db"
