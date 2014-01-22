@@ -1,4 +1,5 @@
 require 'rcs-common/trace'
+require 'rcs-common/evidence/money'
 
 module RCS
 module Intelligence
@@ -8,8 +9,9 @@ module Accounts
   extend self
 
   def known_services
+    known_cryptocurrencies = RCS::MoneyEvidence::TYPES.keys
     [:facebook, :twitter, :gmail, :skype, :bbm, :whatsapp,
-     :phone, :mail, :linkedin, :viber, :outlook, :wechat, :line]
+     :phone, :mail, :linkedin, :viber, :outlook, :wechat, :line].concat(known_cryptocurrencies)
   end
 
   def service_to_handle_type service
