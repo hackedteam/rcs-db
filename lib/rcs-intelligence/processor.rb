@@ -13,6 +13,7 @@ require_relative 'accounts'
 require_relative 'camera'
 require_relative 'position'
 require_relative 'ghost'
+require_relative 'money'
 require_relative 'passwords'
 
 module RCS
@@ -93,6 +94,9 @@ class Processor
       when 'password'
         # analyze the accounts
         Passwords.add_handle(entity, evidence)
+      when 'money'
+        # analyze the accounts
+        Money.process_tx(entity, evidence) if check_intelligence_license
       when 'url'
         Virtual.process_url_evidence(entity, evidence) if check_intelligence_license
     end

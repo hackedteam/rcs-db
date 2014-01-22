@@ -112,11 +112,11 @@ module Evidence
   end
 
   def translatable?
-    ['keylog', 'chat', 'clipboard', 'message'].include?(type)
+    %w[keylog chat clipboard message].include?(type)
   end
 
   def intelligence_relevant?
-    ['addressbook', 'password', 'position'].include?(type)
+    %w[addressbook password position money].include?(type)
   end
 
   def enqueue
