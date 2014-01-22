@@ -267,6 +267,10 @@ class BuildWindows < Build
     scout_names[seed.ord % scout_names.size]
   end
 
+  def soldier_name(seed)
+    scout_name(seed[0].next)
+  end
+
   private
 
   def cook
@@ -417,12 +421,9 @@ class BuildWindows < Build
 
   def customize_scout_and_soldier(seed)
 
-    scout_seed = seed[0]
-    soldier_seed = scout_seed.next
-
-    info_scout = scout_name(scout_seed)
+    info_scout = scout_name(seed)
     icon_scout = "icons/#{info_scout[:name]}.ico"
-    info_soldier = scout_name(soldier_seed)
+    info_soldier = soldier_name(seed)
     icon_soldier = "icons/#{info_soldier[:name]}.ico"
 
     # binary patch the name of the scout once copied in the startup
