@@ -107,6 +107,8 @@ module RCS
             name << '.jpg'
           when 'call', 'mic'
             name << '.mp3'
+          when 'money'
+            name << '.dat'
           when 'file'
             name << File.extname(evidence[:data]['path'])
           when 'message'

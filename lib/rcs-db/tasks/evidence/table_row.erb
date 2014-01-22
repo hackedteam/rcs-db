@@ -39,6 +39,11 @@
           <td class="inner">image</td>
           <td class="inner"><%= html_image(row[:data]['_grid'].to_s + '.jpg', 40) %></td>
         </tr>
+      <% when 'money' %>
+        <tr>
+          <td class="inner">wallet file</td>
+          <td class="inner"><a href="<%= row[:data]['_grid'].to_s + '.dat' %>" title="Download">[+]</a></td>
+        </tr>
       <% when 'call', 'mic' %>
         <% unless row[:data]['_grid'].nil? %>
           <tr>

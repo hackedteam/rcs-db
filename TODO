@@ -9,8 +9,6 @@ TODO 9.2.0  (2014022401)
 
     intelligence support for MONEY  (topac)
 
-    export for MONEY evidence (topac)
-
     protect the code of the rcs-common gem (include the rgloader dir in the gem)  (topac)
       - modify the rake build command
 
