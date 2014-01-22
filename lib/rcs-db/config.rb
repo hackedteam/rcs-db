@@ -363,20 +363,21 @@ class Config
       out = `openssl req -subj #{subj} -batch -days 3650 -nodes -new -x509 -keyout rcs-anon-ca.key -out rcs-anon-ca.crt -config openssl.cnf 2>&1`
       trace :info, out if $log
 
-      return unless File.exist? 'rcs-anon-ca.crt'
+      raise('Missing file rcs-anon-ca.crt') unless File.exist? 'rcs-anon-ca.crt'
 
       trace :info, "Generating anonymizer certificate..."
       subj = "/CN=\"#{SecureRandom.base64(20)[0..10]}\""
       out = `openssl req -subj #{subj} -batch -days 3650 -nodes -new -keyout rcs-anon.key -out rcs-anon.csr -config openssl.cnf 2>&1`
       trace :info, out if $log
 
-      return unless File.exist? 'rcs-anon.key'
+      raise('Missing file rcs-anon.key') unless File.exist? 'rcs-anon.key'
+      raise('Missing file rcs-anon.csr') unless File.exist? 'rcs-anon.csr'
 
       trace :info, "Signing certificates..."
       out = `openssl ca -batch -days 3650 -out rcs-anon.crt -in rcs-anon.csr -config openssl.cnf -name CA_network 2>&1`
       trace :info, out if $log
 
-      return unless File.exist? 'rcs-anon.crt'
+      raise('Missing file rcs-anon.crt') unless File.exist? 'rcs-anon.crt'
 
       trace :info, "Creating certificates bundles..."
 
