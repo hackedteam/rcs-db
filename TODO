@@ -6,9 +6,7 @@ TODO 9.2.0  (2014022401)
     export to connector [OK] (needs some config from the console...)
     soldier building [OK] (needs changes in console and testing)
 
-    intelligence support for MONEY  (topac)
-
-    export for MONEY evidence (topac)
+    intelligence support for MONEY [OK]
 
     protect the code of the rcs-common gem (include the rgloader dir in the gem)  (topac)
       - modify the rake build command
