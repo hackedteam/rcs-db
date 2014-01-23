@@ -1,49 +1,78 @@
 require 'rcs-common/trace'
+require 'rcs-common/evidence/money'
 # require_release 'rcs-db/link_manager'
 
 module RCS
   module Intelligence
-    module Money
-      extend self
-      extend RCS::Tracer
+    class MoneyTxProcessor
+      include RCS::Tracer
 
-      def self.valid_tx_evidence?(evidence)
-        data = evidence.data
-        return false if data['type'] != :tx
+      attr_reader :sender, :receiver, :currency, :versus
 
-        %w[from rcpt currency].each do |attr_name|
-          return false unless data[attr_name]
-        end
+      def initialize(entity, aggregate)
+        @entity = entity
+        data = aggregate.data
 
-        true
+        @sender   = data['sender']
+        @receiver = data['peer']
+        @incoming = data['versus'] == :in
+        @versus   = data['versus']
+        @currency = aggregate.type
       end
 
-      def self.process_tx(entity, evidence)
-        return unless valid_tx_evidence?(evidence)
+      def outgoing?
+        !incoming?
+      end
 
-        data = evidence.data
+      def incoming?
+        @incoming
+      end
 
-        from, rcpt, currency = data['from'], data['rcpt'], data['currency']
+      # The address of the current #entity
+      def entity_address
+        @entity_address ||= incoming? ? receiver : sender
+      end
 
-        from, rcpt = rcpt, from if data['incoming'] == 1
+      # Note: In case of incoming tx the sender address is nil (while the rcpt addr
+      # is owned by #entity). In case of outgoing tx both addr are not-nil.
+      def other_address
+        @other_address ||= incoming? ? sender : receiver
+      end
 
-        # Ensure that the current entity has an handle that match
-        # the tx input address
-        # TODO (or create the handle?)
-        if entity.handles.where(type: currency, handle: from).empty?
-          trace(:error, "Entity #{entity.name} does not own the #{currency} address #{from}")
-          return
-        end
+      # Ensure that #entity has an handle that match #entity_address
+      # otherwise create it
+      def ensure_entity_address!
+        handle = @entity.handles.where(type: currency, handle: entity_address).first
+        return handle if handle
 
-        # Search other entities to find an handle that match
-        # the tx output address
-        Entity.with_handle(data['currency'], rcpt, exclude: entity).each { |rcpt_entity|
-          amount = data['amount']
-          trace(:info, "Entity #{entity.name} sent #{amount} #{currency}(s) to #{rcpt_entity.name}")
-          RCS::DB::LinkManager.instance.add_link(from: entity, to: rcpt_entity, level: :automatic, type: :peer, versus: :out, info: "#{from} #{rcpt}")
+        trace(:info, "Entity #{@entity.name} does not own the #{currency} address #{entity_address}, adding handle...")
+        @entity.create_or_update_handle(currency, entity_address, entity_address)
+      end
+
+      def process
+        return unless other_address
+
+        ensure_entity_address!
+
+        # Search other entities to find an handle that match #other_address
+        Entity.with_handle(currency, other_address, exclude: @entity).each { |other_entity|
+          trace(:info, "Entity #{@entity.name} #{incoming? ? 'received' : 'sent'} some #{currency}s #{incoming? ? 'from' : 'to'} #{other_entity.name}")
+          info = outgoing? ? "#{entity_address} #{other_address}" : "#{other_address} #{entity_address}"
+          RCS::DB::LinkManager.instance.add_link(from: @entity, to: other_entity, level: :automatic, type: :peer, versus: versus, info: info)
         }
+      end
+    end
 
-        # TODO: search the handlebook
+
+    module Money
+      extend self
+
+      def known_cryptocurrencies
+        RCS::MoneyEvidence::TYPES.keys
+      end
+
+      def process_money_tx_aggregate(entity, aggregate)
+        MoneyTxProcessor.new(entity, aggregate).process
       end
     end
   end

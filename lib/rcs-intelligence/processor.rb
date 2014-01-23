@@ -94,9 +94,6 @@ class Processor
       when 'password'
         # analyze the accounts
         Passwords.add_handle(entity, evidence)
-      when 'money'
-        # analyze the accounts
-        Money.process_tx(entity, evidence) if check_intelligence_license
       when 'url'
         Virtual.process_url_evidence(entity, evidence) if check_intelligence_license
     end
@@ -113,6 +110,8 @@ class Processor
 
       target = Item.find(entity.target_id)
       Position.suggest_recurring_positions(target, aggregate)
+    elsif Money.known_cryptocurrencies.include?(aggregate.type)
+      Money.process_money_tx_aggregate(entity, aggregate) if check_intelligence_license
     else
       process_peer_aggregate(entity, aggregate)
     end

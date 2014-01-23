@@ -116,7 +116,7 @@ module Evidence
   end
 
   def intelligence_relevant?
-    %w[addressbook password position money].include?(type)
+    %w[addressbook password position].include?(type)
   end
 
   def enqueue

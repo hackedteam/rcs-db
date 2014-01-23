@@ -12,6 +12,7 @@ require 'fileutils'
 require_relative 'peer'
 require_relative 'position'
 require_relative 'virtual'
+require_relative 'money'
 
 module RCS
 module Aggregator
@@ -121,7 +122,9 @@ class Processor
 
   def self.aggregate_peer(datum, entry, params)
     # pass the peer to the Frequencer to check if a new suggested entity has to be created
-    PeerAggregator.create_suggested_peer(entry['target_id'], params) if check_intelligence_license
+    if params[:ev_type] != 'money' and check_intelligence_license
+      PeerAggregator.create_suggested_peer(entry['target_id'], params)
+    end
 
     # find the existing aggregate or create a new one
     agg = Aggregate.target(entry['target_id']).find_or_create_by(params)
@@ -157,6 +160,9 @@ class Processor
     data = []
 
     case ev.type
+      when 'money'
+        data += MoneyAggregator.extract_tx(ev)
+
       when 'call'
         data += PeerAggregator.extract_call(ev)
 
