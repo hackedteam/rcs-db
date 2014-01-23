@@ -22,6 +22,7 @@ module Migration
     puts "migrating to #{version}"
 
     run [:recalculate_checksums, :drop_sessions]
+    run [:remove_ni_java_rules] if version == '9.1.5'
 
     return 0
   end
@@ -124,6 +125,14 @@ module Migration
         print "\r%d summaries" % count += 1
       rescue Exception => e
         puts e.message
+      end
+    end
+  end
+
+  def remove_ni_java_rules
+    ::Injector.each do |ni|
+      ni.rules.each do |rule|
+        rule.destroy if rule.action.eql? 'INJECT-HTML-JAVA'
       end
     end
   end
