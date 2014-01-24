@@ -10,6 +10,7 @@ TODO 9.2.0  (2014022401)
 
     protect the code of the rcs-common gem (include the rgloader dir in the gem)  (topac)
       - modify the rake build command
+      - rake deploy to castore (ask if you want to restart the worker)
 
     filter links by type (e.g. I want to see only skype links). We can change the format of the info attribute..
 
