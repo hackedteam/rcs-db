@@ -600,7 +600,7 @@ class Item
         # scout version | scout/offline | soldier/blacklist | architecture | AV software
         bver, bmethod, btype, bbit, bmatch = offending.split('|')
 
-        # bmethod is # for online or * for online/offline
+        # bmethod is $ for online or * for online/offline
 
         bver = bver.to_i
         trace :debug, "Checking for #{bmatch} | #{bver} <= #{self.version.to_i} | bit: #{bbit}"

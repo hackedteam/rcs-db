@@ -633,6 +633,7 @@ class AgentController < RESTController
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
       # check if the agent can be upgraded and to which kind of agent
       kind = agent.blacklisted_software?
+      trace :info, "Agent #{agent.name} can be upgraded to: #{kind}"
       return ok(kind)
     end
   end
