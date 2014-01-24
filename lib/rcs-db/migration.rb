@@ -173,7 +173,7 @@ module Migration
     count = 0
     ::Item.agents.each do |agent|
       begin
-        agent.level = (agent.scout ? :scout : :elite)
+        agent.level = (agent[:scout] ? :scout : :elite)
         agent.unset(:scout)
         agent.save
         print "\r%d agents migrated" % count += 1
