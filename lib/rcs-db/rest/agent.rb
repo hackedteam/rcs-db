@@ -626,6 +626,17 @@ class AgentController < RESTController
     end
   end
 
+  def can_upgrade
+    require_auth_level :tech
+
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+      # check if the agent can be upgraded and to which kind of agent
+      kind = agent.blacklisted_software?
+      return ok(kind)
+    end
+  end
+
   def blacklist
     require_auth_level :tech
     ok(File.read(RCS::DB::Config.instance.file('blacklist')))
