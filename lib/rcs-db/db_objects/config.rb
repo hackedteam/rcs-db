@@ -58,8 +58,8 @@ class Configuration
     conf.keys.each do |key|
       next unless conf[key].has_key? :repeat
       params = _params(key.to_s)
-      conf[key][:repeat] = params[:repeat]
-      conf[key][:iter] = params[:iter] if key.eql? :camera
+      conf[key][:repeat] = params[:repeat] || 0
+      conf[key][:iter] = params[:iter] || 0 if key.eql? :camera
     end
 
     conf.to_json
