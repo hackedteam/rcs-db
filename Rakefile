@@ -98,7 +98,7 @@ task :rcs_common_gem do
     current_path = File.dirname(__FILE__)
     gem_path = File.expand_path(File.join(current_path, '../rcs-common'))
     Dir.chdir(gem_path)
-    system("rake install")
+    system("rake protect:install")
     Dir.chdir(current_path)
   end
 end
