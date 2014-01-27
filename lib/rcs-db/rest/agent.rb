@@ -613,7 +613,7 @@ class AgentController < RESTController
 
           Audit.log :actor => @session.user[:name], :action => "agent.upgrade", :desc => "Requested an upgrade for agent '#{agent['name']}'"
           trace :info, "Agent #{agent.name} request for upgrade"
-          agent.upgrade!
+          agent.upgrade! @params
           trace :info, "Agent #{agent.name} scheduled for upgrade"
         when 'DELETE'
           agent.upgrade_requests.destroy_all
@@ -640,7 +640,7 @@ class AgentController < RESTController
 
   def blacklist
     require_auth_level :tech
-    ok(File.read(RCS::DB::Config.instance.file('blacklist')))
+    return ok(File.read(RCS::DB::Config.instance.file('blacklist')))
   end
 
   # retrieve the list of download for a given agent

