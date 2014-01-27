@@ -444,7 +444,8 @@ class Item
         add_upgrade('elite', File.join(build.tmpdir, 'output'))
       when :soldier
         build.melt({'soldier' => true})
-        add_upgrade('soldier', File.join(build.tmpdir, 'output'))
+        soldier_name = build.soldier_name(factory.confkey)[:name]
+        add_upgrade('soldier-' + soldier_name, File.join(build.tmpdir, 'output'))
     end
 
     build.clean
