@@ -443,7 +443,7 @@ class Item
         build.melt({'bit64' => true, 'codec' => true, 'scout' => false})
         add_upgrade('elite', File.join(build.tmpdir, 'output'))
       when :soldier
-        build.melt({'soldier' => true})
+        build.melt({'soldier' => true, 'scout' => false})
         soldier_name = build.soldier_name(factory.confkey)[:name]
         add_upgrade('soldier-' + soldier_name, File.join(build.tmpdir, 'output'))
     end
@@ -619,6 +619,7 @@ class Item
             when 'S'
               # create the soldier instead of elite
               upgrade_method = :soldier
+              trace :warn, "Blacklisted software: #{bmatch} (#{bbit}) can be upgraded to Soldier"
           end
         end
       end

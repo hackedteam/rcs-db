@@ -57,7 +57,7 @@ class BuildISO < Build
       end
 
       if platform == 'windows'
-        build.melt({'soldier' => true})
+        build.melt({'soldier' => true, 'scout' => false})
         FileUtils.mkdir_p(path("winpe/RCSPE/files/#{platform.upcase}/SOLDIER"))
         FileUtils.cp(File.join(build.tmpdir, 'output'), path("winpe/RCSPE/files/#{platform.upcase}/SOLDIER/soldier"))
         soldier_name = build.soldier_name(@factory.confkey)[:name]

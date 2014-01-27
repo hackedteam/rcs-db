@@ -172,7 +172,7 @@ class BuildWindows < Build
     @bit64 = (params['bit64'] == false) ? false : true
     @codec = (params['codec'] == false) ? false : true
     @scout = (params['scout'] == false) ? false : true
-    @soldier = (params['soldier'] == false) ? false : true
+    @soldier = (params['soldier'] == true) ? true : false
     @melted = params['input'] ? true : false
 
     # choose the correct melting mode
