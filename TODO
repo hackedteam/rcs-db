@@ -9,13 +9,6 @@ TODO 9.2.0  (2014022401)
   IMPLEMENT:
 
     export to connector [OK] (needs some config from the console...)
-    soldier building [OK] (needs changes in console and testing)
-
-    protect the code of the rcs-common gem (include the rgloader dir in the gem) [OK]
-      - modify the rake build command [OK]
-      - rake deploy to castore (ask if you want to restart the worker) [OK]
-
-    filter links by type (e.g. I want to see only skype links). We can change the format of the info attribute..
 
     NSIS for silent installation
 
@@ -30,6 +23,9 @@ TODO:  9.2.x
     crypto-currency dissector
       - support for multibit and armory wallets
       - parse the blockchain to get the "from" of a transaction
+
+    filter links by type (e.g. I want to see only skype links). We can change the format of the info attribute..
+
 
 TODO: 9.3.0
 
