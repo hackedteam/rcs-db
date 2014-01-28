@@ -10,6 +10,14 @@ TODO 9.2.0  (2014022401)
 
     export to connector [OK] (needs some config from the console...)
 
+    rcs-money
+      - NSIS installer
+      - windows service
+      - autoscan every X minutes
+      - autodetect installed *coins client
+      - read from *coins directories
+      - Money class to be used by the worker to get the "from" of tx
+
     NSIS for silent installation
 
 TODO:  9.2.x
