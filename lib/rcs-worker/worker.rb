@@ -32,7 +32,7 @@ module RCS
       def setup_firewall
         return unless WinFirewall.exists?
 
-        rule_name = "RCS_FWR_RULE_coll_to_worker"
+        rule_name = "RCS_FW Carrier to Worker"
         port = RCS::DB::Config.instance.global['LISTENING_PORT']-1
         WinFirewall.del_rule(rule_name)
         WinFirewall.add_rule(action: :allow, direction: :in, name: rule_name, local_port: port, remote_ip: 'LocalSubnet', protocol: :tcp)
