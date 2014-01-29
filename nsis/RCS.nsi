@@ -172,6 +172,7 @@ ${StrStr}
 Section "Update Section" SecUpdate
    SectionIn 2
 
+  ${If} $installMaster == ${BST_CHECKED}
     !cd '..'
     SetOutPath "$INSTDIR\DB\bin"
     File "bin\rcs-license-check"
@@ -192,63 +193,64 @@ Section "Update Section" SecUpdate
 
     Delete "$INSTDIR\DB\bin\rcs-license-check"
     !cd 'nsis'
+  ${EndIf}
 
-   DetailPrint ""
-   DetailPrint "Stopping RCS Services..."
-   SimpleSC::StopService "RCSCollector" 1
-   SimpleSC::StopService "RCSCarrier" 1
-   SimpleSC::StopService "RCSController" 1
-   Sleep 3000
-   SimpleSC::StopService "RCSDB" 1
-   Sleep 3000
-   SimpleSC::StopService "RCSWorker" 1
-   Sleep 3000
-   SimpleSC::StopService "RCSConnector" 1
-   Sleep 3000
-   SimpleSC::StopService "RCSAggregator" 1
-   Sleep 3000
-   SimpleSC::StopService "RCSIntelligence" 1
+  DetailPrint ""
+  DetailPrint "Stopping RCS Services..."
+  SimpleSC::StopService "RCSCollector" 1
+  SimpleSC::StopService "RCSCarrier" 1
+  SimpleSC::StopService "RCSController" 1
+  Sleep 3000
+  SimpleSC::StopService "RCSDB" 1
+  Sleep 3000
+  SimpleSC::StopService "RCSWorker" 1
+  Sleep 3000
+  SimpleSC::StopService "RCSConnector" 1
+  Sleep 3000
+  SimpleSC::StopService "RCSAggregator" 1
+  Sleep 3000
+  SimpleSC::StopService "RCSIntelligence" 1
 
-   ReadRegDWORD $R0 HKLM "Software\HT\RCS" "ocr"
-   IntCmp $R0 1 0 noocr noocr
-     Sleep 3000
-     SimpleSC::StopService "RCSOCR" 1
-   noocr:
+  ReadRegDWORD $R0 HKLM "Software\HT\RCS" "ocr"
+  IntCmp $R0 1 0 noocr noocr
+    Sleep 3000
+    SimpleSC::StopService "RCSOCR" 1
+  noocr:
 
-   ReadRegDWORD $R0 HKLM "Software\HT\RCS" "translate"
-   IntCmp $R0 1 0 notrans notrans
-     Sleep 3000
-     SimpleSC::StopService "RCSTranslate" 1
-   notrans:
+  ReadRegDWORD $R0 HKLM "Software\HT\RCS" "translate"
+  IntCmp $R0 1 0 notrans notrans
+    Sleep 3000
+    SimpleSC::StopService "RCSTranslate" 1
+  notrans:
 
-   Sleep 3000
-   SimpleSC::StopService "RCSMasterRouter" 1
-   Sleep 3000
-   SimpleSC::StopService "RCSMasterConfig" 1
-   Sleep 3000
-   SimpleSC::StopService "RCSShard" 1
+  Sleep 3000
+  SimpleSC::StopService "RCSMasterRouter" 1
+  Sleep 3000
+  SimpleSC::StopService "RCSMasterConfig" 1
+  Sleep 3000
+  SimpleSC::StopService "RCSShard" 1
 
-   Sleep 5000
+  Sleep 5000
    
-   DetailPrint "done"
+  DetailPrint "done"
    
-   SetDetailsPrint "textonly"
-   DetailPrint "Removing previous version..."
-   RMDir /r "$INSTDIR\DB\lib\rcs-db-release"
-   RMDir /r "$INSTDIR\DB\lib\rcs-worker-release"
-   RMDir /r "$INSTDIR\DB\lib\rcs-connector-release"
-   RMDir /r "$INSTDIR\DB\lib\rcs-aggregator-release"
-   RMDir /r "$INSTDIR\DB\lib\rcs-intelligence-release"
-   RMDir /r "$INSTDIR\DB\lib\rgloader"
-   RMDir /r "$INSTDIR\DB\bin"
-   RMDir /r "$INSTDIR\Collector\bin"
-   RMDir /r "$INSTDIR\Collector\lib"
-   DetailPrint "done"
+  SetDetailsPrint "textonly"
+  DetailPrint "Removing previous version..."
+  RMDir /r "$INSTDIR\DB\lib\rcs-db-release"
+  RMDir /r "$INSTDIR\DB\lib\rcs-worker-release"
+  RMDir /r "$INSTDIR\DB\lib\rcs-connector-release"
+  RMDir /r "$INSTDIR\DB\lib\rcs-aggregator-release"
+  RMDir /r "$INSTDIR\DB\lib\rcs-intelligence-release"
+  RMDir /r "$INSTDIR\DB\lib\rgloader"
+  RMDir /r "$INSTDIR\DB\bin"
+  RMDir /r "$INSTDIR\Collector\bin"
+  RMDir /r "$INSTDIR\Collector\lib"
+  DetailPrint "done"
 
-   DetailPrint "Remove stats file.."
-   Delete $INSTDIR\DB\config\db_stats
-   Delete $INSTDIR\DB\config\worker_stats
-   DetailPrint "done"
+  DetailPrint "Remove stats file.."
+  Delete $INSTDIR\DB\config\db_stats
+  Delete $INSTDIR\DB\config\worker_stats
+  DetailPrint "done"
 SectionEnd
 
 Section "Install Section" SecInstall
@@ -270,7 +272,7 @@ Section "Install Section" SecInstall
       WriteRegExpandStr HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" "C:\RCS\Ruby\bin\ruby.exe" "DisableNXShowUI"
     ${Else}
     ; Upgrade
-
+    ; TODO: check if we need to install a new ruby version
     ${EndIf}
   !endif
 
@@ -305,7 +307,7 @@ Section "Install Section" SecInstall
         File /r "mongodb\win\*.*"
       ${Else}
       ; Upgrade
-
+      ; TODO: check if we need to install a new java/python version
       ${EndIf}
     !endif
   
@@ -408,7 +410,7 @@ Section "Install Section" SecInstall
         SimpleSC::SetServiceFailure "hasplms" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
       ${Else}
       ; Upgrade
-
+      ; TODO: check if we need to install a new version
       ${EndIf}
     !endif
 
