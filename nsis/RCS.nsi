@@ -190,7 +190,7 @@ Section "Update Section" SecUpdate
        Quit
     ${EndIf}
 
-    Delete /SILENT "$INSTDIR\DB\bin\rcs-license-check"
+    Delete "$INSTDIR\DB\bin\rcs-license-check"
     !cd 'nsis'
 
    DetailPrint ""
