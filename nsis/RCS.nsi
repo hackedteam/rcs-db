@@ -264,16 +264,16 @@ Section "Install Section" SecInstall
   
   !ifdef FULL_INSTALL
     ; fresh install
-    ${If} $installUPGRADE != ${BST_CHECKED}
+    ;${If} $installUPGRADE != ${BST_CHECKED}
       RMDir /r "$INSTDIR\Ruby"
       SetOutPath "$INSTDIR\Ruby"
       File /r "Ruby\*.*"
 
       WriteRegExpandStr HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" "C:\RCS\Ruby\bin\ruby.exe" "DisableNXShowUI"
-    ${Else}
+    ;${Else}
     ; Upgrade
     ; TODO: check if we need to install a new ruby version
-    ${EndIf}
+    ;${EndIf}
   !endif
 
   SetDetailsPrint "both"
@@ -307,7 +307,7 @@ Section "Install Section" SecInstall
         File /r "mongodb\win\*.*"
       ${Else}
       ; Upgrade
-      ; TODO: check if we need to install a new java/python version
+      ; TODO: check if we need to install a new java/python/mongo version
       ${EndIf}
     !endif
   
