@@ -160,7 +160,7 @@ class Config
     load_from_file
 
     if options[:get_cn]
-      puts @global['CN']
+      print @global['CN']
       return 0
     end
 
