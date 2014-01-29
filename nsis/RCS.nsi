@@ -183,7 +183,7 @@ Section "Update Section" SecUpdate
 
     ; TODO: update the version before release
     StrCpy $0 1
-    nsExec::ExecToLog "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-license-check -v 9.0 -l $INSTDIR\DB\temp\rcs.lic"
+    nsExec::ExecToLog "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-license-check -v 9.2 -l $INSTDIR\DB\temp\rcs.lic"
     Pop $0
     ${If} $0 != 0
        MessageBox MB_OK|MB_ICONEXCLAMATION "The license file is invalid. Please restart the installation with the correct one."

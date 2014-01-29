@@ -33,7 +33,7 @@ class LicenseManager
   include RCS::Tracer
   include RCS::Crypt
 
-  LICENSE_VERSION = '9.0'
+  LICENSE_VERSION = '9.2'
 
   LICENSE_FILE = 'rcs.lic'
 
