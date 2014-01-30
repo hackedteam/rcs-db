@@ -94,7 +94,13 @@ module RCS
       end
 
       def establish_database_connection
-        @_conn ||= Application.new.establish_database_connection
+        @_conn ||= begin
+          # temporarily change $stdout to avoid seeing the trace(...)
+          o, $stdout = $stdout, Class.new { |c| def c.write(*args); end }
+          Application.new.establish_database_connection
+        ensure
+          $stdout = o
+        end
       end
 
       def purge(currency)
