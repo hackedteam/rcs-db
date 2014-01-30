@@ -25,9 +25,6 @@ module RCS
           time:       evidence.da
         }
 
-        # TODO - remove this line
-        trace(:debug, "Extraced data from evidence TX is #{extracted_data.inspect}")
-
         [extracted_data]
       end
     end
