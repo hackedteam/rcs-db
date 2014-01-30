@@ -288,6 +288,7 @@ class Build
       deliver params['deliver']
     rescue Exception => e
       trace :error, "Cannot build: #{e.message}"
+      trace :error, "Parameters: #{params.inspect}"
       trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
       clean
       raise e
