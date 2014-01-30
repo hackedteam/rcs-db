@@ -39,7 +39,7 @@ class Core
     version = ''
 
     # Copy the core file (a zip archive) to the temp folder
-    temp_core_file = Config.instance.temp(name)
+    temp_core_file = Config.instance.temp(File.basename(core_file))
     FileUtils.cp(core_file, temp_core_file)
 
     # Make unique and load the core file
