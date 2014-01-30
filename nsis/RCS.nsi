@@ -598,6 +598,12 @@ Section "Install Section" SecInstall
 
     ; fresh install
     ${If} $installUPGRADE != ${BST_CHECKED}
+
+      ; generate the SSL cert
+      DetailPrint "Generating CA and certs for worker..."
+      !insertmacro ExecOrQuit "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-ca --generate-certs --log" "Unable to generate CA and certs."
+      DetailPrint "done"
+
       DetailPrint "Creating service RCS Shard..."
       nsExec::Exec '$INSTDIR\DB\mongodb\win\mongod.exe --dbpath $INSTDIR\DB\data --journal --nssize 64 --logpath $INSTDIR\DB\log\mongod.log --logappend --shardsvr --rest --install --serviceName RCSShard --serviceDisplayName "RCS Shard" --serviceDescription "Remote Control System DB Shard for data storage"'
       SimpleSC::SetServiceFailure "RCSShard" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
@@ -641,6 +647,12 @@ Section "Install Section" SecInstall
       DetailPrint "done"
     ${Else}
       ;TODO: remove after 9.2.0
+
+      ; generate the SSL cert
+      DetailPrint "Generating CA and certs for worker..."
+      !insertmacro ExecOrQuit "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-ca --generate-certs --log" "Unable to generate CA and certs."
+      DetailPrint "done"
+
       nsExec::ExecToStack "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --get-cn"
       Pop $1
       Pop $masterAddress

@@ -6,6 +6,8 @@ TODO 9.2.0  (2014022401)
 
     instalation on shard (check the cn for the router)
 
+    Worker stucked on getting evidence from db
+
   IMPLEMENT:
 
     export to connector [OK] (needs some config from the console...)
