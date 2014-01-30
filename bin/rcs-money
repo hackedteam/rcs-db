@@ -1,0 +1,12 @@
+#!/usr/bin/env ruby
+$LOAD_PATH.unshift File.join(File.dirname(__FILE__), '..', 'lib')
+
+require 'bundler/setup'
+
+if ARGV.empty?
+  require_relative '../lib/rcs-money'
+  exit RCS::Money::Application.run!(*ARGV)
+else
+  require_relative '../lib/rcs-money/cli'
+  RCS::Money::CLI.run
+end

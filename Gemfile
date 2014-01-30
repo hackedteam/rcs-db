@@ -46,6 +46,8 @@ gem 'sbdb'
 # needs some love to compile bdb and tuple under windows
 # see scripts/coins/INSTALL
 
+gem 'bitcoin-ruby'
+
 platforms :jruby do
   gem 'json'
   gem 'jruby-openssl'
