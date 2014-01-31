@@ -10,7 +10,7 @@ require_relative 'backlog'
 require_release 'rcs-db/config'
 require_release 'rcs-db/db_layer'
 require_release 'rcs-db/license_component'
-require_release 'rcs-money/tx' rescue nil
+require_release 'rcs-moneyx/tx', required: false
 
 require_relative 'db'
 
