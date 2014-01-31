@@ -32,8 +32,12 @@ module RCS
         ((100.0 * imported_bytes) / filesize).round(2)
       end
 
+      def null_part?
+        null_block_head_at and imported_bytes <= null_block_head_at
+      end
+
       def real_import_percentage
-        not_null_size = null_block_head_at || filesize
+        not_null_size = null_part? ? null_block_head_at : filesize
         ((100.0 * imported_bytes) / not_null_size).round(2)
       end
     end
