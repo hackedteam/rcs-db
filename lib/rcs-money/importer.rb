@@ -90,6 +90,7 @@ module RCS
 
           until file.eof?
             magic = file.read(4)
+            break if magic.size != 4
 
             # Block terminated / incomplete block
             if magic == null_block_head
@@ -99,7 +100,10 @@ module RCS
 
             raise "Invalid network magic"  unless block_head == magic
 
-            size = file.read(4).unpack("L")[0]
+            size_raw = file.read(4)
+            break if size_raw.size != 4
+
+            size = size_raw.unpack("L")[0]
             readed_bytes += 4 + 4 + size
 
             percentage = (readed_bytes * 100.0 / blk_file.filesize).round(2)
@@ -107,6 +111,7 @@ module RCS
             print "\r[#{@currency}] #{blk_file.name}, #{percentage}%" if @cli
 
             blk_raw_content = file.read(size)
+            break if blk_raw_content.size != size
 
             block = Bitcoin::Protocol::Block.new(blk_raw_content)
             block.tx.each { |tx| import_tx(tx) }
