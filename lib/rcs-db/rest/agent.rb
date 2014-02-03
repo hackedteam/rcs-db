@@ -645,7 +645,7 @@ class AgentController < RESTController
 
   def disable_analysis
     require_auth_level :tech
-    File.write(RCS::DB::Config.instance.file('blacklist_analysis'), "###")
+    File.write(RCS::DB::Config.instance.file('blacklist_analysis'), "zzz #disabled by tests")
     return ok
   end
 
