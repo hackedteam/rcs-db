@@ -20,6 +20,19 @@ module RCS
         end
       end
 
+      def size
+        files.sum(&:filesize)
+      end
+
+      def days_since_last_update
+        p = files.last.path
+
+        mtime = [File.mtime(p), File.ctime(p)].max
+
+        day_diff = (Time.now - mtime) / (3600 * 24)
+        day_diff.round(1)
+      end
+
       def import_percentage
         _files = files
 

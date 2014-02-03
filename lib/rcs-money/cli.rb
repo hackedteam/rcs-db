@@ -78,8 +78,25 @@ module RCS
 
         currencies.each do |currency|
           blocks_folder = BlocksFolder.discover(currency)
-          percentage = blocks_folder ? "#{blocks_folder.import_percentage}%" : "not found"
-          puts "#{currency}:".ljust(16) + "#{percentage}"
+
+          printed_line = ["#{currency}:"]
+
+          if blocks_folder
+            percentage = blocks_folder.import_percentage
+
+            printed_line << "#{percentage}%"
+
+            size = Tx.for(currency).mongo_session.command(dbStats: 1)['fileSize']
+            size = (size / 1073741824.0).round(2)
+            printed_line << "mongodb #{size} GB"
+
+            size = (blocks_folder.size / 1073741824.0).round(2)
+            printed_line << "Blocks #{size} GB #{blocks_folder.days_since_last_update < 1 ? '' : '(updated '+blocks_folder.days_since_last_update.to_s+' days ago)'}"
+          else
+            printed_line << "not found"
+          end
+
+          puts printed_line.map { |string| string.to_s.ljust(20) }.join
         end
       end
 
