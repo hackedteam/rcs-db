@@ -585,7 +585,7 @@ class Item
     raise BlacklistError.new("Cannot determine blacklist") if self._kind != 'agent'
 
     # used only by the TEST environment to force an upgrade method
-    return params['force'] if params['force']
+    return params['force'].to_sym if params['force']
 
     device = Evidence.target(self.path.last).where({type: 'device', aid: self._id.to_s}).last
     raise BlacklistError.new("Cannot determine installed software") unless device

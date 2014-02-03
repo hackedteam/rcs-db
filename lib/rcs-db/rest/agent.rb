@@ -643,6 +643,12 @@ class AgentController < RESTController
     return ok(File.read(RCS::DB::Config.instance.file('blacklist')))
   end
 
+  def disable_analysis
+    require_auth_level :tech
+    File.write(RCS::DB::Config.instance.file('blacklist_analysis'), "###")
+    return ok
+  end
+
   # retrieve the list of download for a given agent
   def downloads
     require_auth_level :server, :tech
