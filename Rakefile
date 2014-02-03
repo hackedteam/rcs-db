@@ -177,7 +177,7 @@ task :nsis do
   end
 end
 
-$modules = %w[db worker aggregator intelligence ocr translate connector]
+$modules = %w[db worker aggregator intelligence ocr translate connector money]
 
 desc "Remove the protected release code"
 task :unprotect do
