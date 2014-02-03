@@ -67,13 +67,10 @@ module RCS
       end
 
       def import_blk_file(blk_file)
-        if blk_file.imported?
-          puts "\n[#{@currency}] #{blk_file.path} seems already impoted" if @cli
-          return
-        end
+        return if blk_file.imported?
 
-        msg = "[#{@currency}] Start importing #{blk_file.path} from offeset #{blk_file.imported_bytes} (#{blk_file.import_percentage}%)"
-        @cli ? puts("\n#{msg}") : trace(:info, msg)
+        msg = "[#{@currency}] Start importing #{blk_file.path} from offeset #{blk_file.imported_bytes} (filesize is #{blk_file.filesize})"
+        @cli ? puts("#{msg}") : trace(:info, msg)
 
         ensure_indexes
 
@@ -94,7 +91,7 @@ module RCS
 
             # Block terminated / incomplete block
             if magic == null_block_head
-              blk_file.null_block_head_at = readed_bytes
+              blk_file.null_part_start_at = readed_bytes
               break
             end
 
@@ -127,6 +124,9 @@ module RCS
         end
 
         blk_file.save!
+
+        msg = "[#{@currency}] Import of #{blk_file.path} complete"
+        @cli ? puts("\n#{msg}") : trace(:info, msg)
       end
 
       def block_head
@@ -134,7 +134,7 @@ module RCS
       end
 
       def null_block_head
-        "\x00\x00\x00\x00".force_encoding('BINARY')
+        BlkFile::NULL_PART_BEGIN_WITH
       end
     end
   end
