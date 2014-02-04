@@ -55,6 +55,7 @@ class InstanceWorker
     @evidences = []
     @state = :running
     @seconds_sleeping = 0
+    @evidence_under_process = nil
     @semaphore = Mutex.new
 
     # get info about the agent instance from evidence db
@@ -80,15 +81,16 @@ class InstanceWorker
         until @evidences.empty?
           resume
           # this is via mongo and not via mongoid (so don't use Moped:: scope)
-          raw_id = BSON::ObjectId(@evidences.shift)
+          @evidence_under_process = @evidences.shift
+          raw_id = BSON::ObjectId(@evidence_under_process)
 
-          trace :debug, "[#{@agent['ident']}:#{@agent['instance']}] still #{@evidences.size} evidences to go ..."
+          trace(:debug, "[#{@agent['ident']}:#{@agent['instance']}] still #{@evidences.size} evidences to go ...") if @agent
 
           begin
             start_time = Time.now
 
             # get binary evidence
-            data = RCS::Worker::GridFS.get(raw_id, "evidence")
+            data = RCS::Worker::GridFS.get(raw_id, "evidence") rescue nil
             next if data.nil?
 
             raw = data.read
@@ -126,29 +128,30 @@ class InstanceWorker
 
               next if ev.empty?
 
-              # store agent instance in evidence (used when storing into db)
-              ev[:instance] ||= @agent['instance']
-              ev[:ident] ||= @agent['ident']
-
-              # find correct processing module and extend evidence
-              mod = "#{ev[:type].to_s.capitalize}Processing"
-              if RCS.const_defined? mod.to_sym
-                ev.extend eval(mod)
-              else
-                ev.extend DefaultProcessing
-              end
-
-              # post processing
-              ev.process if ev.respond_to? :process
-
-              # full text indexing
-              ev.respond_to?(:keyword_index) ? ev.keyword_index : ev.default_keyword_index
-
-              trace :debug, "[#{raw_id}:#{@ident}:#{@instance}] processing evidence of type #{ev[:type]} (#{raw.bytesize} bytes)"
-
-              # get info about the agent instance from evidence db
               begin
                 get_agent_target
+
+                # store agent instance in evidence (used when storing into db)
+                ev[:instance] ||= @agent['instance']
+                ev[:ident] ||= @agent['ident']
+
+                # find correct processing module and extend evidence
+                mod = "#{ev[:type].to_s.capitalize}Processing"
+                if RCS.const_defined? mod.to_sym
+                  ev.extend eval(mod)
+                else
+                  ev.extend DefaultProcessing
+                end
+
+                # post processing
+                ev.process if ev.respond_to? :process
+
+                # full text indexing
+                ev.respond_to?(:keyword_index) ? ev.keyword_index : ev.default_keyword_index
+
+                trace :debug, "[#{raw_id}:#{@ident}:#{@instance}] processing evidence of type #{ev[:type]} (#{raw.bytesize} bytes)"
+
+                # get info about the agent instance from evidence db
 
                 processor = case ev[:type]
                               when 'call'
@@ -170,6 +173,8 @@ class InstanceWorker
                   save_evidence(evidence) unless evidence.nil?
                 end
 
+                processing_time = Time.now - start_time
+                trace :info, "[#{raw_id}] processed #{ev_type.upcase} for agent #{@agent['name']} (#{@agent.ident}) in #{processing_time} sec"
               rescue InvalidAgentTarget => e
                 trace :error, "Cannot find agent #{ident}:#{instance}, deleting all related evidence."
                 RCS::Worker::GridFS.delete_by_filename("#{ident}:#{instance}", "evidence")
@@ -178,9 +183,6 @@ class InstanceWorker
                 trace :error, "[#{raw_id}:#{@ident}:#{@instance}] #{e.backtrace}"
               end
             end
-
-            processing_time = Time.now - start_time
-            trace :info, "[#{raw_id}] processed #{ev_type.upcase} for agent #{@agent['name']} (#{@agent.ident}) in #{processing_time} sec"
 
           rescue Mongo::ConnectionFailure => e
             trace :error, "[#{raw_id}:#{@ident}:#{@instance}] cannot connect to database, retrying in 5 seconds ..."
@@ -197,8 +199,12 @@ class InstanceWorker
           end
 
           # delete raw evidence
-          RCS::Worker::GridFS.delete(raw_id, "evidence")
-          trace :debug, "deleted raw evidence #{raw_id}"
+          begin
+            RCS::Worker::GridFS.delete(raw_id, "evidence")
+            trace :debug, "deleted raw evidence #{raw_id}"
+          rescue Exception => ex
+            trace :error, "Unable to delete raw evidence #{raw_id} (maybe is missing)"
+          end
 
         end
         take_some_rest
@@ -249,7 +255,12 @@ class InstanceWorker
   end
 
   def queue(id)
-    @evidences << id unless id.nil?
+    return unless id
+
+    if !@evidences.include?(id) and @evidence_under_process != id
+      trace(:debug, "Adding evidence #{id} to InstanceWorker #{@ident}:#{@instance} queue")
+      @evidences << id
+    end
 
     @semaphore.synchronize do
       if stopped?

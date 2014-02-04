@@ -24,25 +24,6 @@ module RCS::Worker::QueueManager
     db.connection.close rescue nil
   end
 
-  # Gets all the new evidece
-  def each_new_evidence(&block)
-    enumerator = db.collection('grid.evidence.files').find({}, {sort: ["_id", :asc]})
-
-    first_document = nil
-
-    # The first attempt to read from the cursor does the actual query
-    # and creates a new connection to mongodb.
-    # To avoid getting stucked on creating a new connection (bug)
-    # a timeout check is required.
-    retry_on_timeout { first_document = enumerator.next }
-
-    return unless first_document
-
-    yield(first_document)
-
-    enumerator.each { |document| yield(document) }
-  end
-
   # Use this method when accessing mongodb
   def retry_on_timeout
     Timeout::timeout(5) { yield }
@@ -61,7 +42,13 @@ module RCS::Worker::QueueManager
 
   def run!
     in_a_safe_loop do
-      each_new_evidence { |evidence| process_evidence(evidence) }
+      next_block = []
+
+      retry_on_timeout do
+        next_block = db.collection('grid.evidence.files').find({}, {sort: ["_id", :asc]}).limit(100).to_a
+      end
+
+      next_block.each { |ev| process_evidence(ev) }
     end
   end
 
@@ -94,15 +81,10 @@ module RCS::Worker::QueueManager
 
   # Spawns a thread for each agent and sends the current evidence to that thread
   def enqueue_evidence(instance, ident, id)
-    return if @last_evidence_id >= id
     uid = "#{ident}:#{instance}"
-
-    trace :debug, "Send evidence #{id} to instance worker #{uid}"
 
     @active_workers[uid] ||= RCS::Worker::InstanceWorker.new(instance, ident)
     @active_workers[uid].queue(id)
-
-    @last_evidence_id = id
   rescue Exception => ex
     trace(:error, ex.message)
   end
