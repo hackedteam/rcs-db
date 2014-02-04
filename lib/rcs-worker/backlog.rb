@@ -51,6 +51,9 @@ class WorkerBacklog
       instance = entry[0].slice(15..-1)
       agent = ::Item.agents.where({ident: ident, instance: instance}).first
 
+      # in case the agent is not there anymore
+      agent = {platform: 'DELETED'} unless agent
+
       puts "| #{entry[0]} |#{agent[:platform].center(12)}|#{entry[1][:count].to_s.rjust(5)} | #{entry[1][:size].to_s_bytes.rjust(11)} |"
     end
 
