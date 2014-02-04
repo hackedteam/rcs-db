@@ -4,18 +4,19 @@ require 'set'
 
 require 'digest'
 require 'pp'
+require 'fileutils'
 
 module B58Encode
   extend self
-  
+
   @@__b58chars = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
   @@__b58base = @@__b58chars.bytesize
 
   def self.encode(v)
-    # encode v, which is a string of bytes, to base58.    
+    # encode v, which is a string of bytes, to base58.
 
     long_value = 0
-    v.chars.to_a.reverse.each_with_index do |c, i| 
+    v.chars.to_a.reverse.each_with_index do |c, i|
       long_value += (256**i) * c.ord
     end
 
@@ -31,18 +32,18 @@ module B58Encode
     v.chars.to_a.each do |c|
       c == "\0" ? nPad += 1 : break
     end
-    
+
     return (@@__b58chars[0] * nPad) + result
   end
-  
+
   def self.decode(v, length)
     #decode v into a string of len bytes
 
     long_value = 0
-    v.chars.to_a.reverse.each_with_index do |c, i| 
+    v.chars.to_a.reverse.each_with_index do |c, i|
       long_value += @@__b58chars.index(c) * (@@__b58base**i)
     end
-    
+
     result = ''
     while long_value >= 256 do
       div, mod = long_value.divmod(256)
@@ -56,14 +57,14 @@ module B58Encode
       c == @@__b58chars[0] ? nPad += 1 : break
     end
     result = 0.chr * nPad + result
-    
+
     if !length.nil? and result.size != length
       return nil
     end
 
-    return result  
+    return result
   end
-  
+
   def hash_160(public_key)
     h1 = Digest::SHA256.new.digest(public_key)
     h2 = Digest::RMD160.new.digest(h1)
@@ -97,7 +98,7 @@ class BCDataStream
     @buffer = string
     @read_cursor = 0
   end
-  
+
   def read_string
     # Strings are encoded depending on length:
     # 0 to 252 :  1-byte-length followed by bytes (if any)
@@ -108,7 +109,7 @@ class BCDataStream
     if @buffer.eql? nil
       raise "not initialized"
     end
-    
+
     begin
       length = self.read_compact_size
     rescue Exception => e
@@ -117,7 +118,7 @@ class BCDataStream
 
     return self.read_bytes(length)
   end
-  
+
   def read_uint32; return _read_num('L', 4);  end
   def read_int32; return _read_num('l', 4);  end
   def read_uint64; return _read_num('Q', 8);  end
@@ -131,7 +132,7 @@ class BCDataStream
   rescue Exception => e
     raise "attempt to read past end of buffer: #{e.message}"
   end
-  
+
   def read_compact_size
     size = @buffer[@read_cursor].ord
     @read_cursor += 1
@@ -145,13 +146,13 @@ class BCDataStream
 
     return size
   end
-  
+
   def _read_num(format, size)
     val = @buffer[@read_cursor..@read_cursor+size].unpack(format).first
     @read_cursor += size
     return val
   end
-  
+
 end
 
 class CoinWallet
@@ -172,8 +173,8 @@ class CoinWallet
 
     load_db(file)
   rescue Exception => e
-    puts "Cannot load Wallet: #{e.message}"
     puts e.backtrace.join("\n")
+    raise "Cannot load Wallet: #{e.message}"
   end
 
   def encrypted?
@@ -222,6 +223,9 @@ class CoinWallet
 
     db.close
     env.close
+
+    # remove temporary env files
+    9.times {|i| FileUtils.rm_rf "__db.00#{i}" }
   end
 
   def load_entries(db)
@@ -317,6 +321,8 @@ class CoinWallet
     @transactions.each do |tx|
       # fill in the :own properties which indicate the amount is for an address inside the wallet
       tx[:out].map {|x| x[:own] = own?(x[:address])}
+      # fix the "fromMe" that is incorrect if the wallet was rebuilt with -rescan
+      tx[:versus] = tx[:out].any? {|x| own?(x[:address])} ? :in : :out
     end
 
     @transactions.each do |tx|
@@ -385,8 +391,7 @@ class CoinTransaction
     calculate_tx(tx)
 
   rescue Exception => e
-    puts "Cannot parse Transaction: #{e.message}"
-    puts e.backtrace.join("\n")
+    raise "Cannot parse Transaction: #{e.message}"
   end
 
   def calculate_tx(tx)
@@ -495,11 +500,9 @@ class CoinTransaction
         # non-generated TxIn transactions push a signature
         # (seventy-something bytes) and then their public key
         # (33 or 65 bytes) onto the stack:
-        raise "non-generated"
       when 67
         # The Genesis Block, self-payments, and pay-by-IP-address payments look like:
         # 65 BYTES:... CHECKSIG
-        raise "Genesis block"
       when 25
         # Pay-by-Bitcoin-address TxOuts look like:
         # DUP HASH160 20 BYTES:... EQUALVERIFY CHECKSIG
@@ -514,7 +517,6 @@ class CoinTransaction
       when 23
         # BIP16 TxOuts look like:
         # HASH160 20 BYTES:... EQUAL
-        raise "BIP16"
     end
 
     return address
@@ -527,8 +529,8 @@ end
 begin
 puts "dumping..."
 
-cw = CoinWallet.new('ftc_wallet_enc.dat', :feathercoin)
-#cw = CoinWallet.new('ltc_wallet_enc.dat', :litecoin)
+#cw = CoinWallet.new('ftc_wallet_enc.dat', :feathercoin)
+cw = CoinWallet.new('wallet_lite.dat', :litecoin)
 #cw = CoinWallet.new('btc_wallet_enc.dat', :bitcoin)
 
 puts "#{cw.count} entries"

@@ -779,7 +779,7 @@ if false
 end
 
 # agents
-if false
+if true
 =begin
   res = http.request_get('/operation', {'Cookie' => cookie})
   operations = JSON.parse(res.body)
@@ -796,12 +796,16 @@ if false
   puts "You got #{agents.size} agents."
   puts
 
+  puts 'agent.can_upgrade'
+  res = http.request_get("/agent/can_upgrade/#{agents.first['_id']}", {'Cookie' => cookie})
+  resp = JSON.parse(res.body)
+  puts resp.inspect
   
-  puts "agent.show"
-  res = http.request_get("/agent/#{agents.first['_id']}", {'Cookie' => cookie})
+  #puts "agent.show"
+  #res = http.request_get("/agent/#{agents.first['_id']}", {'Cookie' => cookie})
   #agent = JSON.parse(res.body)
-  agent = JSON.parse(res.body)
-  puts agent.inspect
+  #agent = JSON.parse(res.body)
+  #puts agent.inspect
 
   #puts "agent.filesystem POST"
   #filesystem_post = {
