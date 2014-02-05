@@ -41,11 +41,12 @@ module RCS
 
       def run
         if !agent?
+          trace(:info, "[#{@agent_uid}] Evidence processing started for agent #{@agent_uid}")
           delete_all_evidence
           return
+        else
+          trace(:info, "[#{@agent_uid}] Evidence processing started for agent #{agent.name}")
         end
-
-        trace(:info, "[#{@agent_uid}] Evidence processing started for Agent #{agent.name}")
 
         idle_time = 0
 
@@ -81,7 +82,7 @@ module RCS
       end
 
       def target
-        @target ||= agent.get_parent
+        @target ||= agent.get_parent if agent
       end
 
       def delete_all_evidence
@@ -147,7 +148,7 @@ module RCS
 
         decode_failed(raw_id, decoded_data) if decoded_data
       ensure
-        delete_evidence(raw_id)
+        delete_evidence(raw_id) if raw_id
       end
 
       def processor_class(evidence_type)
