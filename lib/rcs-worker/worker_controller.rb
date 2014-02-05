@@ -23,7 +23,7 @@ module RCS::Worker
 
       trace :info, "Evidence [#{uid}][#{grid_id}] stored into local worker db."
 
-      InstanceWorkerMng.worker_thread(uid)
+      InstanceWorkerMng.spawn_worker_thread(uid)
 
       ok(bytes: content.size)
     rescue Exception => e

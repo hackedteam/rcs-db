@@ -163,7 +163,6 @@ class Events
         # calculate and save the stats
         EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }
 
-        # TODO: defer?
         InstanceWorkerMng.setup
         InstanceWorkerMng.spawn_worker_threads
 
