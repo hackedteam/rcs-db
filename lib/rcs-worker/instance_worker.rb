@@ -110,7 +110,7 @@ module RCS::Worker
       list.each do |ev|
         next if ev.empty?
 
-        trace(:debug, "[#{@agent_uid}] Processing #{ev[:type]} evidence #{raw_id}")
+        trace(:info, "[#{@agent_uid}] Processing #{ev[:type].upcase} evidence for agent #{agent.name}")
 
         # store agent instance in evidence (used when storing into db)
         ev[:instance] ||= @instance
