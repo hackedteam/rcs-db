@@ -51,7 +51,7 @@ module RCS
 
         loop do
           @collection ||= db.collection('grid.evidence.files')
-          list = @collection.find({}, {sort: ["_id", :asc]}).limit(READ_LIMIT).to_a
+          list = @collection.find({filename: @agent_uid}, {sort: ["_id", :asc]}).limit(READ_LIMIT).to_a
 
           if list.empty?
             idle_time += READ_INTERVAL
