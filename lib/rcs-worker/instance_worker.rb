@@ -1,3 +1,9 @@
+require 'mongo'
+require 'openssl'
+require 'digest/sha1'
+require 'digest/md5'
+require 'thread'
+
 require 'rcs-common/trace'
 require 'rcs-common/evidence'
 require 'rcs-common/path_utils'
@@ -12,17 +18,10 @@ require_relative 'call_processor'
 require_relative 'mic_processor'
 require_relative 'single_processor'
 
-require 'mongo'
-require 'openssl'
-require 'digest/sha1'
-require 'digest/md5'
-require 'thread'
+require_relative 'evidence/single_evidence'
+require_relative 'evidence/audio_evidence'
+Dir[File.expand_path('../evidence/*.rb', __FILE__)].each { |path| require(path) }
 
-# specific evidence processors
-# TODO: use autoload to prevent code injection
-Dir[File.dirname(__FILE__) + '/evidence/*.rb'].each do |file|
-  require file
-end
 
 module RCS::Worker
   class InstanceWorker
