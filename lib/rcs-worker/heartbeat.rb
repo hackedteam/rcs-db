@@ -5,16 +5,20 @@ require 'rcs-common/path_utils'
 
 require_release 'rcs-db/db_layer'
 
-require_relative 'queue_manager'
+require_relative 'instance_worker_mng'
 
 module RCS
   module Worker
     class HeartBeat < RCS::HeartBeat::Base
       component :worker
 
+      after_heartbeat do
+        InstanceWorkerMng.remove_dead_worker_threads
+      end
+
       def message
-        how_many_processing = QueueManager.how_many_processing
-        how_many_processing > 0 ? "Processing evidence from #{how_many_processing} agents." : 'Idle...'
+        cnt = InstanceWorkerMng.worker_threads_count
+        cnt > 0 ? "Processing evidence from #{cnt} agents." : 'Idle...'
       end
     end
   end
