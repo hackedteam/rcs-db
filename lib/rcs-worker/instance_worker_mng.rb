@@ -49,7 +49,7 @@ module RCS::Worker::InstanceWorkerMng
 
       keys.each do |agent|
         return if @worker_threads[agent].alive?
-        trace(:info, "Removing dead instance_worker thread #{agent}")
+        trace(:debug, "Removing dead instance_worker thread #{agent}")
         @worker_threads.reject! { |k, t| k == agent }
       end
     end

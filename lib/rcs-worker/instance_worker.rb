@@ -28,9 +28,9 @@ module RCS
     class InstanceWorker
       include RCS::Tracer
 
-      MAX_IDLE_TIME = 30
+      MAX_IDLE_TIME = 300 # 5 minutes
       READ_INTERVAL = 3
-      READ_LIMIT = 80
+      READ_LIMIT = 100
       DECODING_FAILED_FOLDER = 'decoding_failed'
 
       def initialize(instance, ident)
@@ -65,7 +65,7 @@ module RCS
           sleep(READ_INTERVAL)
         end
 
-        trace(:info, "[#{@agent_uid}] Evidence processing terminated for Agent #{agent.name} (#{idle_time} sec idle)")
+        trace(:info, "[#{@agent_uid}] Evidence processing terminated for agent: #{agent.name} (#{idle_time} sec idle)")
       end
 
       def db
@@ -112,7 +112,7 @@ module RCS
         list.each do |ev|
           next if ev.empty?
 
-          trace(:info, "[#{@agent_uid}] Processing #{ev[:type].upcase} evidence for agent #{agent.name}")
+          trace(:info, "[#{@agent_uid}] Processing #{ev[:type].upcase} evidence for agent: #{agent.name}")
 
           # store agent instance in evidence (used when storing into db)
           ev[:instance] ||= @instance
