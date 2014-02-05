@@ -42,6 +42,9 @@ class NotificationQueue
   rescue Timeout::Error
     trace(:warn, "#get_queue was stuck, retrying...")
     retry
+  rescue ArgumentError
+    trace(:warn, "#get_queue cannot read from connection, retrying...")
+    retry
   rescue ThreadError, NoMemoryError => error
     msgs = ["[#{error.class}] #{error.message}."]
     msgs << "There are #{Thread.list.size} active threads. EventMachine threadpool_size is #{EM.threadpool_size}."
