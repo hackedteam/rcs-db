@@ -44,7 +44,7 @@ module RCS::Worker
         return
       end
 
-      trace(:info, "[#{@agent_uid}] Started. Agent #{agent.id}, target #{target.id}")
+      trace(:info, "[#{@agent_uid}] Evidence processing started for Agent #{agent.name}")
 
       idle_time = 0
 
@@ -63,7 +63,7 @@ module RCS::Worker
         sleep(READ_INTERVAL)
       end
 
-      trace(:info, "[#{@agent_uid}] Terminated after #{idle_time} sec of idle time")
+      trace(:info, "[#{@agent_uid}] Evidence processing terminated for Agent #{agent.name} (#{idle_time} sec idle)")
     end
 
     def db
@@ -179,10 +179,10 @@ module RCS::Worker
 
       return [evidences, decoded_data]
     rescue EmptyEvidenceError => e
-      trace :debug, "[#{raw_id}:#{@ident}:#{@instance}] deleting empty evidence #{raw_id}"
+      trace :debug, "[#{@agent_uid}] deleting empty evidence #{raw_id}"
       return nil
     rescue EvidenceDeserializeError => e
-      trace :warn, "[#{raw_id}:#{@ident}:#{@instance}] decoding failed for #{raw_id}: #{e.to_s}, deleting..."
+      trace :warn, "[#{@agent_uid}] decoding failed for #{raw_id}: #{e.to_s}, deleting..."
       decoding_failed(raw_id, decoded_data)
       return nil
     end
