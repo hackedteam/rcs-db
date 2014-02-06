@@ -7,6 +7,7 @@ if ARGV.empty?
   require_relative '../lib/rcs-money'
   exit RCS::Money::Application.run!(*ARGV)
 else
-  require_relative '../lib/rcs-money/cli'
+  require 'rcs-common/path_utils'
+  require_release 'rcs-money/cli'
   RCS::Money::CLI.run
 end
