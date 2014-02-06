@@ -36,7 +36,7 @@ gem 'bson_ext', "= 1.9.2"
 gem 'mongoid', ">= 3.0.0"
 gem 'rvincenty'
 
-gem 'ruby-opencv'
+gem 'ruby-opencv', "= 0.0.10"
 # Install the 2.4.4a version via homebrew, and then launch if your homebrew folder
 # is not in the default location, lauch:
 # gem install ruby-opencv -- --with-opencv-dir="/Users/username/.homebrew/Cellar/opencv/2.4.4a"
