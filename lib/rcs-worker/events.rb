@@ -163,9 +163,6 @@ class Events
         # calculate and save the stats
         EM::PeriodicTimer.new(60) { EM.defer(proc{ StatsManager.instance.calculate }) }
 
-        InstanceWorkerMng.setup
-        InstanceWorkerMng.spawn_worker_threads
-
         trace :info, "RCS Worker '#{RCS::DB::Config.instance.global['SHARD']}' ready!"
       end
     rescue Exception => e

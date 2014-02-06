@@ -6,6 +6,7 @@ require_relative 'call_processor'
 require_relative 'statistics'
 require_relative 'events'
 require_relative 'backlog'
+require_relative 'instance_worker_mng'
 
 require_release 'rcs-db/config'
 require_release 'rcs-db/db_layer'
@@ -51,6 +52,10 @@ module RCS
           LicenseManager.instance.load_from_db
 
           setup_firewall
+
+          # start the threads for the pending evidence in the db
+          InstanceWorkerMng.setup
+          InstanceWorkerMng.spawn_worker_threads
 
           # Start the eventmachine reactor threads
           Events.new.setup(RCS::DB::Config.instance.global['LISTENING_PORT']-1)

@@ -66,6 +66,8 @@ module RCS::Worker::InstanceWorkerMng
   end
 
   def spawn_worker_threads
+    count = agents.count
+    trace :info, "Restarting processing evidence for #{count} agents in queue" if count > 0
     agents.each { |name| spawn_worker_thread(name) }
   end
 end
