@@ -42,7 +42,7 @@ class NotificationQueue
   rescue Timeout::Error
     trace(:warn, "#get_queue was stuck, retrying...")
     retry
-  rescue ArgumentError
+  rescue ArgumentError, EOFError
     trace(:warn, "#get_queue cannot read from connection, retrying...")
     retry
   rescue ThreadError, NoMemoryError => error
