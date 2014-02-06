@@ -25,7 +25,10 @@ module RCS
       end
 
       def days_since_last_update
-        p = files.last.path
+        _files = files
+        return 0 if _files.empty?
+
+        p = _files.last.path
 
         mtime = [File.mtime(p), File.ctime(p)].max
 
@@ -35,6 +38,7 @@ module RCS
 
       def import_percentage
         _files = files
+        return 0 if _files.empty?
 
         sum = _files.inject(0) { |sum, blk_file| sum += blk_file.real_import_percentage }
         medium = (sum / _files.count).round(2)
@@ -42,8 +46,12 @@ module RCS
 
       # @see: https://en.bitcoin.it/wiki/Data_directory
       def self.discover(currency)
+        win_drive_letter = ENV['HOMEDRIVE'].to_s.empty? ? 'C' : ENV['HOMEDRIVE'][0]
+        win_app_data = ENV['APPDATA'].to_s.gsub("\\", "/")
+
         paths = [
-          "#{ENV['APPDATA']}\\#{currency.to_s.capitalize}\\blocks",
+          "#{win_app_data}/#{currency.to_s.capitalize}/blocks",
+          "#{win_drive_letter}:/Users/Administrator/AppData/Roaming/#{currency.to_s.capitalize}/blocks",
           "#{ENV['HOME']}/Library/Application Support/#{currency.to_s.capitalize}/blocks"
         ]
 

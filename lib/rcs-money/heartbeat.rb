@@ -17,6 +17,8 @@ module RCS
           blocks_folder = BlocksFolder.discover(currency)
           @import_status[currency] = blocks_folder ? blocks_folder.import_percentage : nil
         end
+
+        trace(:info, "[heartbeat] #{message}")
       end
 
       def import_never_started?
@@ -30,7 +32,7 @@ module RCS
       end
 
       def status
-        import_never_started? or import_incomplete? ? 'WARN' : 'OK'
+        (import_never_started? or import_incomplete?) ? 'WARN' : 'OK'
       end
 
       def message

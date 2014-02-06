@@ -17,6 +17,7 @@ module RCS
         blocks_folder = BlocksFolder.discover(@currency)
 
         if blocks_folder
+          trace(:info, "[#{@currency}] Start import folder #{blocks_folder.path}") unless @cli
           import_blocks_folder(blocks_folder)
         else
           puts "[#{@currency}] Unable to find blocks folder" if @cli
