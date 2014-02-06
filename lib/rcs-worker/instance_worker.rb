@@ -25,6 +25,8 @@ Dir[File.expand_path('../evidence/*.rb', __FILE__)].each { |path| require(path) 
 
 module RCS
   module Worker
+    class MissingAgentError < Exception; end
+
     class InstanceWorker
       include RCS::Tracer
 
@@ -40,13 +42,9 @@ module RCS
       end
 
       def run
-        if !agent?
-          trace(:info, "[#{@agent_uid}] Evidence processing started for agent #{@agent_uid}")
-          delete_all_evidence
-          return
-        else
-          trace(:info, "[#{@agent_uid}] Evidence processing started for agent #{agent.name}")
-        end
+        raise MissingAgentError.new("Unable to run instance worker #{@agent_uid}, agent is missing") unless agent?
+
+        trace(:info, "[#{@agent_uid}] Evidence processing started for agent #{agent.name}")
 
         idle_time = 0
 
@@ -66,6 +64,9 @@ module RCS
         end
 
         trace(:info, "[#{@agent_uid}] Evidence processing terminated for agent: #{agent.name} (#{idle_time} sec idle)")
+      rescue MissingAgentError => ex
+        trace(:error, ex.message)
+        delete_all_evidence
       end
 
       def db
@@ -98,12 +99,9 @@ module RCS
       end
 
       def process(grid_ev)
-        if !agent?
-          @_all_evidence_deleted ||= delete_all_evidence
-          return
-        end
-
         raw_id = grid_ev['_id']
+
+        raise MissingAgentError.new("Unable to process evidence #{raw_id}, agent #{@agent_uid} is missing") unless agent?
 
         list, decoded_data = decrypt_evidence(raw_id)
 
@@ -142,6 +140,8 @@ module RCS
         trace :error, "[#{@agent_uid}] cannot connect to database, retrying in 5 seconds..."
         sleep(5)
         retry
+      rescue MissingAgentError => ex
+        raise(ex)
       rescue Exception => e
         trace :fatal, "[#{@agent_uid}] Unrecoverable error processing evidence #{raw_id}: #{e.class} #{e.message}"
         trace :fatal, "[#{@agent_uid}] EXCEPTION: " + e.backtrace.join("\n")
