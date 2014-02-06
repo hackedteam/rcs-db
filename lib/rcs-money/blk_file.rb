@@ -23,6 +23,10 @@ module RCS
         @filesize ||= File.size(path)
       end
 
+      def filesize!
+        File.size(path)
+      end
+
       def imported?
         filesize == imported_bytes
       end

@@ -81,7 +81,7 @@ module RCS
 
         # if the blk file is new, save the import process every 1024 blocks
         # otherwise save it every block
-        n = readed_bytes.zero? ? 1024 : 1
+        n = readed_bytes.zero? ? 64 : 1
 
         File.open(blk_file.path) do |file|
           file.seek(blk_file.imported_bytes)
@@ -104,7 +104,8 @@ module RCS
             size = size_raw.unpack("L")[0]
             readed_bytes += 4 + 4 + size
 
-            percentage = (readed_bytes * 100.0 / blk_file.filesize).round(2)
+            current_filesize = readed_bytes >= blk_file.filesize ? blk_file.filesize! : blk_file.filesize
+            percentage = (readed_bytes * 100.0 / current_filesize).round(2)
 
             if @cli
               print "\r[#{@currency}] #{blk_file.name}, #{percentage}%"
