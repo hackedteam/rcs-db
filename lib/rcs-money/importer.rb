@@ -75,9 +75,9 @@ module RCS
 
         ensure_indexes
 
-        filesize = blk_file.filesize
         readed_bytes = blk_file.imported_bytes
         readed_blocks = blk_file.imported_blocks
+        percentage_echo = 0
 
         # if the blk file is new, save the import process every 1024 blocks
         # otherwise save it every block
@@ -106,7 +106,12 @@ module RCS
 
             percentage = (readed_bytes * 100.0 / blk_file.filesize).round(2)
 
-            print "\r[#{@currency}] #{blk_file.name}, #{percentage}%" if @cli
+            if @cli
+              print "\r[#{@currency}] #{blk_file.name}, #{percentage}%"
+            elsif percentage - percentage_echo >= 0.5
+              trace(:info, "[#{@currency}] #{blk_file.name} @ #{percentage}% (#{readed_blocks} blocks)")
+              percentage_echo = percentage
+            end
 
             blk_raw_content = file.read(size)
             break if blk_raw_content.size != size
