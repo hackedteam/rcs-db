@@ -58,6 +58,8 @@ class Processor
   def self.process(entry)
     entity = entry.related_entity
 
+    return unless entity
+
     case entry.type
       when :evidence
         evidence = entry.related_item
