@@ -144,7 +144,7 @@ module RCS
           end
         end
 
-        trace(:info, "[#{@agent_uid}] Processed #{ev_processed_count} #{ev_type.upcase} evidence (#{decoded_data.size} bytes) for agent #{agent.name} in #{Time.now - start_time} sec") if ev_processed_count > 0
+        trace(:info, "[#{@agent_uid}] Processed #{ev_processed_count} #{ev_type.upcase} evidence for agent #{agent.name} (#{decoded_data.size} bytes in #{Time.now - start_time} sec") if ev_processed_count > 0
       rescue Mongo::ConnectionFailure => e
         trace :error, "[#{@agent_uid}] cannot connect to database, retrying in 5 seconds..."
         sleep(5)
