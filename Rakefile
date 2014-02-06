@@ -5,7 +5,7 @@ require 'rbconfig'
 require 'rspec/core/rake_task'
 
 def default_rspec_opts
-  "--color --tag ~speed:slow --order rand"
+  "--color --tag ~speed:slow --tag ~build:true --order rand"
 end
 
 def default_rspec_opts_slow
