@@ -131,9 +131,6 @@ class Processor
 
     # if it's new, add the entry to the handle book and notify the intelligence
     if agg.count == 0
-      # TODO: deprecated
-      # Aggregate.target(entry['target_id']).add_to_summary(params[:type], datum[:peer])
-
       HandleBook.insert_or_update(params[:type], datum[:peer], entry['target_id'])
 
       agg.add_to_intelligence_queue if check_intelligence_license

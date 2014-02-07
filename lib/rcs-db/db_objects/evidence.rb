@@ -458,12 +458,6 @@ module Evidence
       trace :info, "Evidence Move: #{total} left to move for agent #{agent.name} to target #{target.name}" unless total < 0
     end
 
-    # TODO: deprecated
-    # we moved aggregates, have to rebuild the summary
-    # if LicenseManager.instance.check :correlation
-    #   Aggregate.target(old_target[:_id]).rebuild_summary
-    # end
-
     # recalculate stats
     old_target.restat
     old_target.get_parent.restat
