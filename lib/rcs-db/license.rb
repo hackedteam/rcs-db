@@ -561,7 +561,7 @@ class LicenseManager
       puts "Version: " + @limits[:version]
       puts "Expiry: " + @limits[:expiry].to_s
     else
-      pp @limits
+      pp @limits.select {|x| not [:magic, :encbits].include? x}
     end
 
     return 0
