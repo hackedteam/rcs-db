@@ -17,6 +17,8 @@ require_release 'rcs-db/connector_manager'
 require_relative 'call_processor'
 require_relative 'mic_processor'
 require_relative 'single_processor'
+require_relative 'db'
+require_relative 'statistics'
 
 require_relative 'evidence/single_evidence'
 require_relative 'evidence/audio_evidence'
