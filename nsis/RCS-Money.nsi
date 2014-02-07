@@ -66,30 +66,10 @@ ${StrStr}
   !insertmacro MUI_LANGUAGE "English"
 
 ;--------------------------------
-
-!macro _EnvSet
-;    ReadRegStr $R0 HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path"
-;    StrCpy $R0 "$R0;$INSTDIR\DB\money"
-;    WriteRegExpandStr HKLM "SYSTEM\CurrentControlSet\Control\Session Manager\Environment" "Path" "$R0"
-;    System::Call 'Kernel32::SetEnvironmentVariableA(t, t) i("Path", "$R0").r0'
-
-;    SendMessage ${HWND_BROADCAST} ${WM_WININICHANGE} 0 "STR:Environment" /TIMEOUT=5000
-!macroend
-!define EnvSet "!insertmacro _EnvSet"
-
-;--------------------------------
 ;Installer Sections
 
 Section "Install Section" SecInstall
-
   SetDetailsPrint "both"
-
-  DetailPrint "Setting up the path..."
-  ${EnvSet}
-  DetailPrint "done"
-
-  DetailPrint "Stopping RCS Money..."
-  SimpleSC::StopService "RCSMoney" 1
 
   DetailPrint "Extracting files..."
   SetDetailsPrint "textonly"
@@ -104,8 +84,11 @@ Section "Install Section" SecInstall
   SetOutPath "$INSTDIR\DB\bin"
   File /r "bin\rcs-money"
 
+  SetOutPath "$INSTDIR\DB\bin"
+  File /r "bin\rcs-money.bat"
+
   SetDetailsPrint "both"
-  DetailPrint "done"
+  DetailPrint "Done"
 
   ReadRegDWORD $R0 HKLM "Software\HT\RCS" "money"
   IntCmp $R0 1 alreadyinstalled
@@ -115,16 +98,20 @@ Section "Install Section" SecInstall
   SimpleSC::SetServiceFailure "RCSMoney" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
   WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSMoney" "DisplayName" "RCS Money"
   WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSMoney" "Description" "Remote Control System Money Module"
-  DetailPrint "done"
+  DetailPrint "Done"
 
+  DetailPrint "Writing Windows registry..."
   WriteRegDWORD HKLM "Software\HT\RCS" "money" 0x00000001
-
-  ; nsExec::Exec "reg import $INSTDIR\DB\money\money-key.reg"
 
   alreadyinstalled:
 
+  DetailPrint "Stopping RCS Money..."
+  SimpleSC::StopService "RCSMoney"
+  Sleep 5000
+
   DetailPrint "Starting RCS Money..."
-  SimpleSC::StartService "RCSMoney" "" 30
+  SimpleSC::StartService "RCSMoney"
+  Sleep 5000
 
   !cd "nsis"
 
@@ -144,15 +131,14 @@ Section "Install Section" SecInstall
 SectionEnd
 
 Section Uninstall
-  DetailPrint "Stopping RCS Money Services..."
+  DetailPrint "Stopping RCS Money service..."
   SimpleSC::StopService "RCSMoney" 1
-  DetailPrint "done"
+  DetailPrint "Done"
 
-  DetailPrint "Removing RCS Money Services..."
+  DetailPrint "Removing RCS Money service..."
   SimpleSC::RemoveService "RCSMoney"
-  DetailPrint "done"
+  DetailPrint "Done"
 
-  DetailPrint ""
   DetailPrint "Deleting files..."
   SetDetailsPrint "textonly"
   ReadRegStr $INSTDIR HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCS" "InstDir"
@@ -162,13 +148,13 @@ Section Uninstall
   Delete "$INSTDIR\DB\lib\rcs-money.rb"
 
   SetDetailsPrint "both"
-  DetailPrint "done"
+  DetailPrint "Done"
 
   DetailPrint ""
   DetailPrint "Removing registry keys..."
   DeleteRegKey HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\RCSMoney"
   DeleteRegKey HKLM "Software\HT\RCS\money"
-  DetailPrint "done"
+  DetailPrint "Done"
 
 SectionEnd
 
