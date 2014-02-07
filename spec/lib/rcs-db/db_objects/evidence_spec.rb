@@ -1,6 +1,8 @@
 require 'spec_helper'
 require_db 'db_layer'
 require_db 'grid'
+require_db 'connector_manager'
+require_db 'alert'
 
 describe Evidence do
 
@@ -198,6 +200,41 @@ describe Evidence do
       expect(results['position']).to eql 2
       expect(results['file']).to eql 0
       expect(results).not_to have_key('ip')
+    end
+  end
+
+  describe '#enqueue' do
+
+    silence_alerts
+    enable_license
+
+    let(:target) { factory_create(:target) }
+
+    let(:agent) { factory_create(:agent, target: target) }
+
+    let!(:evidence) { factory_create(:chat_evidence, agent: agent, target: target) }
+
+    context 'when the evidence must be discarded due to matching connectors rules' do
+
+      before { RCS::DB::ConnectorManager.stub(:process_evidence).and_return(:discard) }
+
+      it 'does not adds the evidence to the other queues' do
+        RCS::DB::ConnectorManager.should_receive(:process_evidence).with(target, evidence)
+        [OCRQueue, TransQueue, AggregatorQueue, IntelligenceQueue].each { |klass| klass.should_not_receive(:add) }
+        evidence.enqueue
+      end
+    end
+
+    context 'when the evidence must not be discarded accoding to (eventually) matching connectors' do
+
+      before { RCS::DB::ConnectorManager.stub(:process_evidence).and_return(:keep) }
+
+      it 'Adds the evidence to the other queues' do
+        RCS::DB::ConnectorManager.should_receive(:process_evidence).with(target, evidence)
+        [OCRQueue, IntelligenceQueue].each { |klass| klass.should_not_receive(:add) }
+        [TransQueue, AggregatorQueue].each { |klass| klass.should_receive(:add) }
+        evidence.enqueue
+      end
     end
   end
 end

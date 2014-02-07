@@ -81,40 +81,6 @@ module RCS
           end
         end
       end
-
-      describe '#save_evidence' do
-
-        let(:target) { factory_create :target }
-
-        let(:agent) { factory_create :agent, target: target }
-
-        let(:evidence) { factory_create :chat_evidence, target: target }
-
-        let(:subject) { described_class.new(agent.instance, agent.ident) }
-
-        context 'when the evidence must be discarded due to matching connectors rules' do
-
-          before { RCS::DB::ConnectorManager.stub(:process_evidence).and_return(:discard) }
-
-          it 'does not adds the evidence to the other queues' do
-            RCS::DB::ConnectorManager.should_receive(:process_evidence).with(target, evidence)
-            [OCRQueue, TransQueue, AggregatorQueue, IntelligenceQueue].each { |klass| klass.should_not_receive(:add) }
-            subject.save_evidence(evidence)
-          end
-        end
-
-        context 'when the evidence must not be discarded accoding to (eventually) matching connectors' do
-
-          before { RCS::DB::ConnectorManager.stub(:process_evidence).and_return(:keep) }
-
-          it 'Adds the evidence to the other queues' do
-            RCS::DB::ConnectorManager.should_receive(:process_evidence).with(target, evidence)
-            [OCRQueue, IntelligenceQueue].each { |klass| klass.should_not_receive(:add) }
-            [TransQueue, AggregatorQueue].each { |klass| klass.should_receive(:add) }
-            subject.save_evidence(evidence)
-          end
-        end
-      end
     end
   end
 end
