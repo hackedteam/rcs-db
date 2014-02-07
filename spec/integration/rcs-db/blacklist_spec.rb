@@ -7,6 +7,10 @@ describe 'The scout has to be upgaded' do
 
   silence_alerts
 
+  before do
+    Item.any_instance.stub(:blacklist_path).and_return(fixtures_path('blacklist'))
+  end
+
   let!(:operation) { factory_create(:operation) }
   let!(:target) { factory_create(:target, operation: operation) }
   let!(:agent) { factory_create(:agent, target: target) }
@@ -20,11 +24,11 @@ describe 'The scout has to be upgaded' do
 
     let!(:evidence) { factory_create(:device_evidence, agent: agent)}
 
-    it 'should detect unicode software' do
+    it 'should detect unicode software and suggest soldier' do
       evidence.data = {content: "Architecture: 64-bit\n\nApplication list:\n 360杀毒"}
       evidence.save
 
-      expect { agent.blacklisted_software? }.to raise_error BlacklistError, /prevents the upgrade/i
+      expect(agent.blacklisted_software?).to eq(:soldier)
     end
 
     it 'should detect ascii software' do
@@ -34,11 +38,11 @@ describe 'The scout has to be upgaded' do
       expect { agent.blacklisted_software? }.to raise_error BlacklistError, /prevents the upgrade/i
     end
 
-    it 'should detect 32 bit software' do
+    it 'should detect 32 bit software and suggest soldier' do
       evidence.data = {content: "Architecture: 32-bit\n\nApplication list:\n Kaspersky Antivirus"}
       evidence.save
 
-      expect { agent.blacklisted_software? }.to raise_error BlacklistError, /prevents the upgrade/i
+      expect(agent.blacklisted_software?).to eq(:soldier)
     end
 
     it 'should not detect 64 bit software (if only 32 is in blacklist)' do

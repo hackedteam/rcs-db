@@ -576,6 +576,14 @@ class Item
     RCS::DB::GridFS.create_collection(self._id)
   end
 
+  def blacklist_path
+    @@blacklist_path ||= RCS::DB::Config.instance.file('blacklist')
+  end
+
+  def blacklist_analysis_path
+    @@blacklist_analysis_path ||= RCS::DB::Config.instance.file('blacklist_analysis')
+  end
+
   def blacklisted_software?(params = {})
     upgrade_method = :elite
 
@@ -590,7 +598,7 @@ class Item
     installed = device[:data]['content']
 
     # check for installed AV
-    File.open(RCS::DB::Config.instance.file('blacklist'), "r:UTF-8") do |f|
+    File.open(blacklist_path, "r:UTF-8") do |f|
       while offending = f.gets
         offending = offending.split('#').first
         offending.strip!
@@ -623,7 +631,7 @@ class Item
     end
 
     # check for installed analysis programs
-    File.readlines(RCS::DB::Config.instance.file('blacklist_analysis')).each do |offending|
+    File.readlines(blacklist_analysis_path).each do |offending|
       offending = offending.split('#').first
       offending.strip!
       offending.chomp!
