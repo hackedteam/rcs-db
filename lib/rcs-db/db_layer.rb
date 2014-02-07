@@ -230,15 +230,6 @@ class DB
     trace :info, "Ensuring indexing on collections..."
 
     @@classes_to_be_indexed.each { |klass| sync_indexes(klass) }
-
-    # index on shard id for the worker
-    coll = db.collection('grid.evidence.files')
-
-    # TODO: create the index only if not empty, this collection
-    # will be moved to the local worker databases
-    if coll.count > 0
-      coll.create_index('metadata.shard')
-    end
   end
 
   def enable_sharding
