@@ -40,7 +40,7 @@ module RCS
         _files = files
         return 0 if _files.empty?
 
-        sum = _files.inject(0) { |sum, blk_file| sum += blk_file.real_import_percentage }
+        sum = _files.inject(0) { |sum, blk_file| sum += blk_file.import_percentage }
         medium = (sum / _files.count).round(2)
       end
 

@@ -31,10 +31,6 @@ module RCS
         filesize == imported_bytes
       end
 
-      def import_percentage
-        ((100.0 * imported_bytes) / filesize).round(2)
-      end
-
       def null_part_reduced?
         @_null_part_reduced || begin
           File.open(path) do |file|
@@ -48,9 +44,9 @@ module RCS
         null_part_start_at and imported_bytes <= null_part_start_at
       end
 
-      def real_import_percentage
+      def import_percentage
         if null_part? and null_part_reduced?
-          return(import_percentage)
+          return ((100.0 * imported_bytes) / filesize).round(2)
         end
 
         not_null_size = null_part? ? null_part_start_at : filesize
