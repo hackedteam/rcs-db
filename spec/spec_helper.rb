@@ -28,6 +28,9 @@ RSpec.configure do |config|
   end
 
   config.before(:each) do
+    # Silence deprecation warning
+    I18n.enforce_available_locales = false
+
     turn_off_tracer
     empty_test_db unless @disable_mongoid_purge
   end
