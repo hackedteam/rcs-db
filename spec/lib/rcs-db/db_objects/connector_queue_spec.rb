@@ -21,9 +21,6 @@ describe ConnectorQueue do
     expect(described_class.collection.name).to eql 'connector_queue'
   end
 
-  describe '#evidence' do
-    pending
-  end
 
   context 'given an evidence and a connector' do
 
@@ -31,6 +28,26 @@ describe ConnectorQueue do
     let (:agent) { factory_create(:agent, target: target) }
     let (:evidence) { factory_create(:addressbook_evidence, agent: agent) }
     let (:connector) { factory_create(:connector, item: agent) }
+
+    describe '#evidence' do
+
+      let(:subject) do
+        factory_create(:connector_queue_for_evidence, connector: connector, target: target, evidence: evidence)
+      end
+
+      it 'returns the referred evidence' do
+        expect(subject.evidence).to eq(evidence)
+      end
+
+      context 'the evidence is deleted' do
+
+        before { evidence.destroy }
+
+        it 'returns nil' do
+          expect(subject.evidence).to be_nil
+        end
+      end
+    end
 
     describe '#connector' do
 
