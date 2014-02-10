@@ -15,6 +15,12 @@ module RCS
         @mongo_db = nil
       end
 
+      def purge!
+        mongo_connection.collections.each do |collection|
+          collection.drop
+        end and true
+      end
+
       def mongo_connection
         host = @_worker_host || 'localhost'
         port = 27018

@@ -211,6 +211,21 @@ end
 
 # Evidence factories
 
+factory_define :raw_evidence do |params|
+  agent = params[:agent]
+  filename = params[:filename]
+
+  raise("Agent and filename provided simultaneously") if agent and filename
+
+  filename = "#{agent.ident}:#{agent.instance}" if agent
+
+  raise("Invalid filename") if filename =~ /\ARCS\_\d+\:.+\z/
+
+  content = params[:content] || "Random evidence content #{rand(1E15)}"
+
+  RCS::Worker::GridFS.put(content, {filename: filename}, "evidence")
+end
+
 factory_define :evidence do |params|
   unless params[:agent] or params[:target]
     raise "An agent or a target must be supplied"

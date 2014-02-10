@@ -51,8 +51,7 @@ module RCS
         idle_time = 0
 
         loop do
-          @collection ||= db.collection('grid.evidence.files')
-          list = @collection.find({filename: @agent_uid}, {sort: ["_id", :asc]}).limit(READ_LIMIT).to_a
+          list = fetch
 
           if list.empty?
             idle_time += READ_INTERVAL
@@ -69,6 +68,11 @@ module RCS
       rescue MissingAgentError => ex
         trace(:error, ex.message)
         delete_all_evidence
+      end
+
+      def fetch
+        @collection ||= db.collection('grid.evidence.files')
+        @collection.find({filename: @agent_uid}, {sort: ["_id", :asc]}).limit(READ_LIMIT).to_a
       end
 
       def db

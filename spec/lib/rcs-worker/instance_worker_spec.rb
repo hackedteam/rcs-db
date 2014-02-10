@@ -81,6 +81,27 @@ module RCS
           end
         end
       end
+
+      context 'given an agent with evidence to be processed' do
+        let(:target) { factory_create :target }
+
+        let(:agent) { factory_create :agent, target: target }
+
+        let(:subject) { described_class.new(agent.instance, agent.ident) }
+
+        let!(:raw_evidence) { factory_create(:raw_evidence, agent: agent, content: "hello") }
+
+        let!(:raw_evidence2) { factory_create(:raw_evidence, agent: agent, content: "hello") }
+
+        describe '#delete_all_evidence' do
+          before { expect(subject.fetch.count).to eq(2) }
+
+          it 'deletes all the evidence' do
+            subject.delete_all_evidence
+            expect(subject.fetch.count).to eq(0)
+          end
+        end
+      end
     end
   end
 end
