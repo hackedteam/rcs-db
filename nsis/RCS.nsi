@@ -48,7 +48,7 @@ ${StrStr}
   !ifdef FULL_INSTALL
     OutFile "rcs-setup-${PACKAGE_VERSION}.exe"
   !else
-  OutFile "rcs-update-${PACKAGE_VERSION}.exe"
+    OutFile "rcs-update-${PACKAGE_VERSION}.exe"
   !endif
   
   ;Default installation folder

@@ -22,6 +22,8 @@ TODO:  9.2.x
   IMPLEMENT:
     PUSH messages send the whole object (like dashboard)
 
+    fix usb building zip creation (uses too much ram in f.read)
+
     crypto-currency dissector
       - support for multibit and armory wallets
       - parse the blockchain to get the "from" of a transaction
