@@ -36,7 +36,7 @@ module SingleEvidence
     end
 
     def default_keyword_index
-      self[:kw] = []
+      self[:kw] = [] unless self[:kw].kind_of?(Array)
 
       self[:data].each_value do |value|
         next unless value.is_a? String or value.is_a? Symbol

@@ -362,7 +362,10 @@ class Evidence
       end
     elsif !info.empty?
       # otherwise we use it for full text search with keywords
-      groups_of_words = info.map { |words| words.strip.keywords }
+      groups_of_words = info.map { |words|
+        keywords = words.strip.keywords
+        keywords.empty? ? [words] : keywords
+      }
 
       filter_hash['$or'] ||= []
       filter_hash['$or'].concat groups_of_words.map { |words| {'kw' => {'$all' => words}} }

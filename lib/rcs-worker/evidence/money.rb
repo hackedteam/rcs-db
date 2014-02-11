@@ -33,6 +33,16 @@ module RCS
 
     def process
       self[:data][:from] = fetch_input_addresses if fetch_input_addresses?
+      append_addresses_to_kw
+    end
+
+    def append_addresses_to_kw
+      self[:kw] ||= []
+
+      self[:kw] << self[:data][:from] if self[:data][:from]
+      self[:kw] << self[:data][:rcpt] if self[:data][:rcpt]
+      puts '-'*30
+      puts self[:kw].inspect
     end
   end
 end
