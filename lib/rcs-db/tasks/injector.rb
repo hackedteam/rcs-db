@@ -43,7 +43,7 @@ class InjectorTask
       redirect_user["#{rule.ident} #{rule.ident_param}"] ||= tag
 
       # automatic patterns for rules
-      rule.resource = '*.youtube.com/watch*' if rule.action == 'INJECT-HTML-FLASH'
+      rule.resource = '*www.youtube.com/watch*' if rule.action == 'INJECT-HTML-FLASH'
 
       redirect_url << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.probability} #{rule.resource}"
 
