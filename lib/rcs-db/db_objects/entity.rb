@@ -561,7 +561,7 @@ class Entity
 
     group = find_or_initialize_by(filter)
 
-    trace :info, (group.new_record? ? "Create" : "Update") + " entity #{group.id}" + (" (#{name})" if name) + " belonging to operation #{operation.name}"
+    trace :info, (group.new_record? ? "Create" : "Update") + " group #{group.id}" + (" (#{name.inspect})" if name) + " belonging to operation #{operation.name.inspect}"
 
     group.name = name if name
 
