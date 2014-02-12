@@ -11,12 +11,121 @@ describe RCS::Connector::Dispatcher do
   stub_temp_folder
   enable_license
 
+  let(:subject) { described_class }
+
   describe '#status' do
-    pending
+
+    context 'when the thread pool is empty' do
+
+      it 'returns Idle' do
+        expect(subject.status).to eq("Idle")
+      end
+    end
+  end
+
+  describe '#run' do
+
+    before { subject.stub(:loop_and_wait).and_yield }
+
+    context 'when there are 3 connector_queue with the same scope' do
+
+      before do
+        3.times { factory_create(:connector_queue_for_evidence) }
+      end
+
+      it 'calls dispatch once (create one thread)' do
+        subject.should_receive(:dispatch).once
+        subject.run
+      end
+    end
+
+    context 'when it starts one or more thread' do
+      before do
+        factory_create(:connector_queue_for_evidence)
+        subject.stub(:dispatch) { sleep(1) }
+      end
+
+      describe '#status' do
+
+        it 'returns Working' do
+          subject.run
+          expect(subject.status).to eq("Working")
+        end
+      end
+    end
   end
 
   describe '#dispatch' do
-    pending
+    context 'when there are 2 connector_queue to be processed' do
+
+      before do
+        2.times { factory_create(:connector_queue_for_evidence) }
+        @scope = "default"
+        subject.stub(:process)
+      end
+
+      it 'calls #process twice' do
+        subject.should_receive(:process).twice
+        subject.dispatch(@scope)
+      end
+
+      it 'destroy all the connector_queue documents' do
+        subject.dispatch(@scope)
+        expect(ConnectorQueue.all.count).to be_zero
+      end
+
+      context 'there is an error during process' do
+
+        before do
+          turn_off_tracer(print_errors: false)
+          subject.stub(:process).and_raise("foo bar")
+        end
+
+        it 'does not raise any expection' do
+          expect { subject.dispatch(@scope) }.not_to raise_error
+        end
+
+        it 'does not delete the connector_queue' do
+          subject.dispatch(@scope)
+          expect(ConnectorQueue.all.count).to eq(2)
+        end
+
+        it 'fills up #thread_with_errors' do
+          subject.dispatch(@scope)
+          expect(subject.thread_with_errors).to eq([@scope])
+        end
+      end
+    end
+  end
+
+  describe '#process' do
+
+    let!(:connector_queue) { factory_create(:connector_queue_for_evidence) }
+
+    it 'calls #dump' do
+      subject.should_receive(:dump)
+      subject.process(connector_queue)
+    end
+
+    context 'the connector is missing' do
+
+      before { Connector.destroy_all }
+
+      it 'does not raise any error nor calls #dump' do
+        subject.should_not_receive(:dump)
+        expect { subject.process(connector_queue) }.not_to raise_error
+      end
+    end
+
+    context 'the evidence is missing' do
+
+      before { ::Evidence.target(connector_queue.data[:target_id]).destroy_all }
+
+      it 'does not raise any error nor calls #dump' do
+        subject.should_not_receive(:dump)
+        expect { subject.process(connector_queue) }.not_to raise_error
+      end
+    end
   end
 
   describe '#dump' do

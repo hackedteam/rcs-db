@@ -332,7 +332,7 @@ end
 
 factory_define :connector_queue do |params|
   connector = params.delete(:connector)
-  attributes = {type: :dump_evidence, scope: :default}
+  attributes = {type: :dump_evidence, scope: :default}.merge(params)
   attributes.merge!(connector_id: connector.id) if connector
   attributes.merge!(params)
 

@@ -58,12 +58,13 @@ module RCS
         connector = connector_queue.connector
         data = connector_queue.data
         type = connector_queue.type
-        archive_node = connector.archive_node
 
         if !connector
           trace :warn, "Was about to process #{connector_queue}, but the connector is missing."
           return
         end
+
+        archive_node = connector.archive_node
 
         if data['path'] and connector.remote?
           operation_id = data['path'].first
