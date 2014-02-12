@@ -13,6 +13,8 @@ describe Processor do
   silence_alerts
   enable_license
 
+  before { turn_off_tracer(print_errors: false) }
+
   context 'processing evidence from the queue' do
     before do
       @target = factory_create :target, name: 'testtarget'

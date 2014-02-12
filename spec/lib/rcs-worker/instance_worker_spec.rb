@@ -94,7 +94,10 @@ module RCS
         let!(:raw_evidence2) { factory_create(:raw_evidence, agent: agent, content: "hello") }
 
         describe '#delete_all_evidence' do
-          before { expect(subject.fetch.count).to eq(2) }
+          before do
+            turn_off_tracer(print_errors: false)
+            expect(subject.fetch.count).to eq(2)
+          end
 
           it 'deletes all the evidence' do
             subject.delete_all_evidence
