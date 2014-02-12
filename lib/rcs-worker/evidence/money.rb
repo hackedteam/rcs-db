@@ -41,8 +41,6 @@ module RCS
 
       self[:kw] << self[:data][:from] if self[:data][:from]
       self[:kw] << self[:data][:rcpt] if self[:data][:rcpt]
-      puts '-'*30
-      puts self[:kw].inspect
     end
   end
 end
