@@ -292,6 +292,10 @@ class Killer
         analyze_scout_v5(sample)
       when 5.1
         analyze_scout_v51(sample)
+      when 6
+        analyze_scout_v6(sample)
+      when 7
+        analyze_scout_v7(sample)
       else
         puts "UNKNOWN BINARY, falling back to grep..."
         analyze_unknown(sample)
@@ -373,22 +377,29 @@ class Killer
     puts "Local IP: #{$local_address}"
 
     begin
-      collectors = [options[:url]] if options[:url]
-      collectors = load_from_file(options[:file]) if options[:file]
+      begin
+        collectors = [options[:url]] if options[:url]
+        collectors = load_from_file(options[:file]) if options[:file]
 
-      if options[:check]
-        collectors.each { |coll| check_collector(coll) }
+        if options[:check]
+          collectors.each { |coll| check_collector(coll) }
+        end
+
+        if options[:info]
+          collectors.each { |coll| get_collector_info(coll) }
+        end
+
+        if options[:kill]
+          collectors.each { |coll| kill_collector(coll) }
+        end
+
+        sleep 1 if options[:loop]
+      rescue Interrupt
+        puts "User asked to exit. Bye bye!"
+        exit!
+      rescue Exception => e
+        puts "ERROR: #{e.message}"
       end
-
-      if options[:info]
-        collectors.each { |coll| get_collector_info(coll) }
-      end
-
-      if options[:kill]
-        collectors.each { |coll| kill_collector(coll) }
-      end
-
-      sleep 1 if options[:loop]
 
     end while options[:loop]
 
