@@ -7,7 +7,7 @@ Dir.chdir File.dirname(File.dirname(File.realpath(__FILE__)))
 $logs = []
 
 def append_logs_of(component)
-  last_log = Dir["log/rcs-#{component.to_s.downcase}**"].max
+  last_log = Dir["log/rcs-#{component.to_s.downcase}_**"].max
   return unless last_log
   $logs << last_log
   $logs << File.join('log/err', File.basename(last_log))
@@ -23,6 +23,7 @@ else
   append_logs_of(:aggregator)
   append_logs_of(:intelligence)
   append_logs_of(:connector)
+  append_logs_of(:money)
 end
 
 spawn "bin/baretail.exe " + $logs.join(" ")
