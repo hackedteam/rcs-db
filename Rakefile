@@ -139,7 +139,6 @@ task :nsis do
   execute 'Generating RCS-Exploit NSIS installer...' do
  		system "#{MAKENSIS} /V1 ./nsis/RCS-Exploits.nsi"
 	end
-		
 	execute 'Signing RCS-Exploits installer...' do
 		system "./nsis/SignTool.exe sign /P GeoMornellaChallenge7 /f ./nsis/HT.pfx ./nsis/rcs-exploits-#{VERSION}.exe"
 	end
@@ -147,7 +146,6 @@ task :nsis do
 	execute 'Generating RCS-Agent NSIS installer...' do
 		system "#{MAKENSIS} /V1 ./nsis/RCS-Agents.nsi"
 	end
-		
 	execute 'Signing RCS-Agents installer...' do
 		system "./nsis/SignTool.exe sign /P GeoMornellaChallenge7 /f ./nsis/HT.pfx ./nsis/rcs-agents-#{VERSION}.exe"
 	end
@@ -155,7 +153,6 @@ task :nsis do
 	execute 'Generating RCS NSIS installer...' do
 		system "#{MAKENSIS} /V1 ./nsis/RCS.nsi"
 	end
-		
 	execute 'Signing RCS installer...' do
 		system "./nsis/SignTool.exe sign /P GeoMornellaChallenge7 /f ./nsis/HT.pfx ./nsis/rcs-setup-#{VERSION}.exe"
   end
@@ -163,7 +160,6 @@ task :nsis do
   execute 'Generating RCS-OCR NSIS installer...' do
     system "#{MAKENSIS} /V1 ./nsis/RCS-OCR.nsi"
   end
-
   execute 'Signing RCS-OCR installer...' do
     system "./nsis/SignTool.exe sign /P GeoMornellaChallenge7 /f ./nsis/HT.pfx ./nsis/rcs-ocr-#{VERSION}.exe"
   end
@@ -171,9 +167,16 @@ task :nsis do
   execute 'Generating RCS-Translate NSIS installer...' do
     system "#{MAKENSIS} /V1 ./nsis/RCS-Translate.nsi"
   end
-
   execute 'Signing RCS-Translate installer...' do
     system "./nsis/SignTool.exe sign /P GeoMornellaChallenge7 /f ./nsis/HT.pfx ./nsis/rcs-translate-#{VERSION}.exe"
+  end
+
+  execute 'Generating RCS-Money NSIS installer...' do
+    system "#{MAKENSIS} /V1 ./nsis/RCS-Money.nsi"
+  end
+
+  execute 'Signing RCS-Money installer...' do
+    system "./nsis/SignTool.exe sign /P GeoMornellaChallenge7 /f ./nsis/HT.pfx ./nsis/rcs-money-#{VERSION}.exe"
   end
 end
 
