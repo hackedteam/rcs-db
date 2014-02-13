@@ -210,46 +210,28 @@ class Killer
   end
 
   def analyze_scout_v5(sample)
-    offset = 0x2E6E4
-    watermark = sample[offset..offset+7]
-    puts "WATERMARK: #{watermark} (#{$watermark_table[watermark]})"
-
-    offset = 0x2e4d0
-    ident = sample[offset..offset+14]
-    ident[0..3] = "RCS_"
-    puts "IDENT: " + ident
-
-    offset = 0x2E7C0
-    sync = sample[offset..offset+63]
-    puts "SYNC ADDRESS: " + sync
+    analyze_scout_offsets(sample, 0x2E6E4, 0x2e4d0, 0x2E7C0)
   end
 
   def analyze_scout_v51(sample)
-    offset = 0x2e724
-    watermark = sample[offset..offset+7]
-    puts "WATERMARK: #{watermark} (#{$watermark_table[watermark]})"
-
-    offset = 0x2e510
-    ident = sample[offset..offset+14]
-    ident[0..3] = "RCS_"
-    puts "IDENT: " + ident
-
-    offset = 0x2e800
-    sync = sample[offset..offset+63]
-    puts "SYNC ADDRESS: " + sync
+    analyze_scout_offsets(sample, 0x2e724, 0x2e510, 0x2e800)
   end
 
   def analyze_scout_v6(sample)
-    offset = 0x2fc6c
+    analyze_scout_offsets(sample, 0x2fc6c, 0x2fa94, 0x2f9f0)
+  end
+
+  def analyze_scout_offsets(sample, wmark, id, sync)
+    offset = wmark
     watermark = sample[offset..offset+7]
     puts "WATERMARK: #{watermark} (#{$watermark_table[watermark]})"
 
-    offset = 0x2fa94
+    offset = id
     ident = sample[offset..offset+14]
     ident[0..3] = "RCS_"
     puts "IDENT: " + ident
 
-    offset = 0x2f9f0
+    offset = sync
     sync = sample[offset..offset+63]
     puts "SYNC ADDRESS: " + sync
   end
