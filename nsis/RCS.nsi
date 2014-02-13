@@ -587,7 +587,7 @@ Section "Install Section" SecInstall
     DetailPrint "Installing single Shard files..."
     SetDetailsPrint "textonly"
     !cd 'DB'
-       
+
     SetDetailsPrint "both"
     DetailPrint "done"
 
@@ -596,12 +596,20 @@ Section "Install Section" SecInstall
     SimpleFC::AddPort 27018 "RCS Mongo Shard" 6 0 2 "LocalSubnet" 1
     SimpleFC::AddPort 27019 "RCS Mongo Config" 6 0 2 "LocalSubnet" 1
 
+    SetOutPath "$INSTDIR\DB\config\certs"
+    File "config\certs\openssl.cnf"
+
     ; fresh install
     ${If} $installUPGRADE != ${BST_CHECKED}
 
+      ; write the config yaml
+      DetailPrint "Writing the configuration..."
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --defaults --CN $masterAddress"
+      DetailPrint "done"
+
       ; generate the SSL cert
       DetailPrint "Generating CA and certs for worker..."
-      !insertmacro ExecOrQuit "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-ca --generate-certs --log" "Unable to generate CA and certs."
+      !insertmacro ExecOrQuit "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-ca --generate-certs --log" "Unable to generate CA and certs for worker"
       DetailPrint "done"
 
       DetailPrint "Creating service RCS Shard..."
@@ -634,17 +642,6 @@ Section "Install Section" SecInstall
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "DisplayName" "RCS Intelligence"
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "Description" "Remote Control System Intelligence data correlator"
       DetailPrint "done"
-
-      DetailPrint "Starting RCS Shard..."
-      SimpleSC::StartService "RCSShard" "" 30
-      Sleep 3000
-
-      DetailPrint "Writing the configuration..."
-      SetDetailsPrint "textonly"
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --defaults --CN $masterAddress"
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config -u admin -p $adminpass -d $masterAddress --add-shard $localAddress"
-      SetDetailsPrint "both"
-      DetailPrint "done"
     ${Else}
       ;TODO: remove after 9.2.0
 
@@ -662,13 +659,18 @@ Section "Install Section" SecInstall
       SimpleSC::SetServiceFailure "RCSMasterRouter" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
       DetailPrint "done"
 	  ${EndIf}
-    
+
     DetailPrint "Starting RCS Shard..."
     SimpleSC::StartService "RCSShard" "" 30
     Sleep 3000
+
     DetailPrint "Starting RCS Master Router..."
     SimpleSC::StartService "RCSMasterRouter" "" 30
-    Sleep 3000
+    Sleep 5000
+
+    ; write the config yaml
+    DetailPrint "Updating the shard configuration..."
+    nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config -u admin -p $adminpass -d $masterAddress --add-shard $localAddress"
 
     DetailPrint "Starting RCS Worker..."
     SimpleSC::StartService "RCSWorker" "" 30
