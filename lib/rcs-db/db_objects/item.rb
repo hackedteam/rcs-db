@@ -370,7 +370,7 @@ class Item
     self.upgrade_requests.destroy_all if self.upgradable
 
     if self.level.eql? :scout
-      raise "Compromised scout cannot be upgraded" if self.version <= 3
+      raise "Compromised scout version cannot be upgraded" if self.version <= 6
       
       # check the presence of blacklisted AV in the device evidence
       method = blacklisted_software? params
