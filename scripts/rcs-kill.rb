@@ -239,6 +239,21 @@ class Killer
     puts "SYNC ADDRESS: " + sync
   end
 
+  def analyze_scout_v6(sample)
+    offset = 0x2fc6c
+    watermark = sample[offset..offset+7]
+    puts "WATERMARK: #{watermark} (#{$watermark_table[watermark]})"
+
+    offset = 0x2fa94
+    ident = sample[offset..offset+14]
+    ident[0..3] = "RCS_"
+    puts "IDENT: " + ident
+
+    offset = 0x2f9f0
+    sync = sample[offset..offset+63]
+    puts "SYNC ADDRESS: " + sync
+  end
+
   def analyze_unknown(sample)
     offset = nil
     $watermark_table.keys.each do |k|
@@ -272,6 +287,7 @@ class Killer
     return 3 if compare_offset(binary, 0x21518, 3)
     return 5 if compare_offset(binary, 0x21956, 5)
     return 5.1 if compare_offset(binary, 0x21946, 5)
+    return 6 if compare_offset(binary, 0x21c52, 6)
 
     return "unknown"
   end
