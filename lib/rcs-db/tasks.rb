@@ -346,7 +346,7 @@ class TaskManager
       when 'audit'
         Audit.log :actor => user_name, :action => "audit.export", :desc => "Exported the audit log: #{params.inspect}"
       when 'evidence'
-        Audit.log :actor => user_name, :action => "evidence.export", :desc => "Exported some evidence: #{params.inspect}"
+        Audit.log :actor => user_name, :action => "evidence.export", :desc => "Exported evidence with filter #{params['filter']}"
       when 'injector'
         Audit.log :actor => user_name, :action => "injector.push", :desc => "Pushed the rules to a Network Injector"
       when 'topology'
