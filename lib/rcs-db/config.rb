@@ -289,7 +289,7 @@ class Config
       if options[:gen_ca] or !File.exist?('rcs-ca.crt')
         trace :info, "Generating a new CA authority..."
         # default one
-        subj = "/CN=\"System Certification Authority\"/O=\"Organization ltd\""
+        subj = "/CN=\"Root Certification Authority\"/O=\"ACME Corp\""
         # if specified...
         subj = "/CN=\"#{options[:ca_name]}\"" if options[:ca_name]
         out = `openssl req -subj #{subj} -batch -days 3650 -nodes -new -x509 -keyout rcs-ca.key -out rcs-ca.crt -config openssl.cnf 2>&1`
