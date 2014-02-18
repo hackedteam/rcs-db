@@ -16,7 +16,7 @@ gem 'eventmachine', ">= 1.0.3"
 # TAR/GZIP compression
 gem "minitar", ">= 0.5.5", :git => "git://github.com/danielemilan/minitar.git", :branch => "master"
 
-gem 'rubyzip'
+gem 'rubyzip', '= 1.0.0'
 gem 'bcrypt-ruby'
 gem 'plist'
 gem 'uuidtools'
