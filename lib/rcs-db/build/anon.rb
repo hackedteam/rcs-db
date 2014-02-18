@@ -40,6 +40,11 @@ class BuildAnon < Build
       File.write(path('version'), "2014000000")
     end
 
+    # write the anon config
+    File.write(path('nexthop'), coll.config)
+
+    trace :info, "Building anonymizer #{coll.address} with nexthop: #{coll.config}"
+
     # create the installer tar gz
     begin
       gz = Zlib::GzipWriter.new(File.open(path('install.tar.gz'), 'wb'))
@@ -58,6 +63,9 @@ class BuildAnon < Build
       Minitar::pack_file(h, output)
 
       h = {name: path('managerport'), as: 'bbproxy/etc/managerport'}
+      Minitar::pack_file(h, output)
+
+      h = {name: path('nexthop'), as: 'bbproxy/etc/nexthop'}
       Minitar::pack_file(h, output)
 
       h = {name: path('bbproxy/init.d/bbproxy'), as: 'bbproxy/init.d/bbproxy', mode: 0755}
