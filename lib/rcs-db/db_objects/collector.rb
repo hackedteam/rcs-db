@@ -36,7 +36,7 @@ class Collector
   after_create :create_log_collection
 
   before_save do
-    raise("Unable to save #{name}. The address #{address} is blacklisted.") if (changed_attributes['address'] || new_record?) and address_backlisted?
+    raise("Unable to save #{name}. The address #{address} is blacklisted.") if (changed_attributes['address'] || new_record?) and blacklisted?
   end
 
   def drop_log_collection
@@ -593,7 +593,7 @@ class Collector
     BLACKLIST
   end
 
-  def address_backlisted?
+  def blacklisted?
     blacklist.include?(self.address.to_s)
   end
 end
