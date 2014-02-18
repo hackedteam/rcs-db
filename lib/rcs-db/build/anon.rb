@@ -31,7 +31,15 @@ class BuildAnon < Build
 
     # the local port to listen on
     File.open(path('managerport'), 'wb') {|f| f.write params['port']}
-    
+
+    # retrieve the current collector
+    coll = Collector.find(params['id'])
+    if coll.good == false
+      trace :warn, "Building an anonymizer with BAD status..."
+      # write a fake version that is BAD for the collector check
+      File.write(path('version'), "2014000000")
+    end
+
     # create the installer tar gz
     begin
       gz = Zlib::GzipWriter.new(File.open(path('install.tar.gz'), 'wb'))

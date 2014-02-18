@@ -7,6 +7,8 @@ TODO 9.2.0  (2014022401)
 
   anon ip blacklist
 
+  build old anon with fake version file
+
   mark bad on install
 
 TODO:  9.2.x
