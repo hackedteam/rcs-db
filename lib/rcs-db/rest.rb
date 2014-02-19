@@ -58,8 +58,9 @@ class RESTController
     RESTResponse.new(STATUS_REDIRECT, message, opts, callback)
   end
 
-  def not_authorized(message='', callback=nil)
-    RESTResponse.new(STATUS_NOT_AUTHORIZED, message, {}, callback)
+  def not_authorized(message='', opts={}, callback=nil)
+    opts[:content_type] = 'text/html'
+    RESTResponse.new(STATUS_NOT_AUTHORIZED, message, opts, callback)
   end
 
   def auth_required(message='', opts={}, callback=nil)
@@ -174,7 +175,7 @@ class RESTController
     begin
       # check we have a valid session and an action
       return not_authorized('INVALID_LICENSE') unless valid_license?
-      return not_authorized('INVALID_COOKIE') unless valid_session?
+      return not_authorized() unless valid_session?
       return server_error('NULL_ACTION') if @request[:action].nil?
 
       # make a copy of the params, handy for access and mongoid queries
@@ -325,7 +326,7 @@ class InvalidController < RESTController
 
     # default reply (403 Forbidden) for invalid controllers
     trace :error, "[#{@request[:peer]}] Invalid controller invoked: #{@request[:controller]}/#{@request[:action]}. Replied 403."
-    return not_authorized('INVALID_COOKIE')
+    return not_authorized()
   end
 end
 
