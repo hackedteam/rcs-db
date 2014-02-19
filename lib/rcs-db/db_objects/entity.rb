@@ -5,9 +5,6 @@ require_relative '../link_manager'
 require_relative '../position/proximity'
 require_relative '../country_calling_codes'
 
-#module RCS
-#module DB
-
 class Entity
   extend RCS::Tracer
   include RCS::Tracer
@@ -794,17 +791,42 @@ class EntityLink
     self.level = level unless level.eql? :ghost
   end
 
+  # Returns true if the two operation are unlinked, otherwise, if there is at
+  # least one entity of OP1 linked to at least one entity of OP2, returns false.
+  def unlinked_operations?(op1, op2)
+    return false if op1 == op2
+
+    linked_entity_ids = begin
+      list = Entity.collection.find(path: op1).select('links.le' => 1).inject([]) { |list, doc|
+        ids = (doc['links'] || []).map! { |h| h['le'] }
+        list.concat(ids)
+      }
+      list.uniq!
+      list
+    end
+
+    other_entity_ids = Entity.collection.find(path: op2).select('_id' => 1).map { |doc| doc['_id'] }
+
+    (linked_entity_ids & other_entity_ids).empty?
+  end
+
   def destroy_callback
+    op1, op2 = _parent.path[0], linked_entity.path[0]
+
     # if the parent is still ghost and this was the only link
     # destroy the parent since it was created only with that link
     if self._parent.level.eql? :ghost and self._parent.links.size == 0
       trace :debug, "Destroying ghost entity on last link (#{self._parent.name})"
       self._parent.destroy
     end
+
+    # If the link was cross-operation, and there are no more links between
+    # the two operations destroy the operation groups (if any)
+    if op1 != op2 and unlinked_operations?(op1, op2)
+      trace(:info, "There are no more links between operations #{op1} and #{op2}. Remove op groups.")
+
+      Entity.groups.where(path: op1, stand_for: op2).destroy_all
+      Entity.groups.where(path: op2, stand_for: op1).destroy_all
+    end
   end
-
 end
-
-
-#end # ::DB
-#end # ::RCS
