@@ -87,6 +87,12 @@ class RESTResponse
 
     @response.headers['WWW-Authenticate'] = "Basic realm=\"Secure Area\"" if @response.status == STATUS_AUTH_REQUIRED
 
+    # fake server reply
+    @response.headers['Server'] = 'nginx'
+
+    # date header
+    @response.headers['Date'] = Time.now.getutc.strftime("%a, %d %b %Y %H:%M:%S %Z")
+
     # used for redirects
     @response.headers['Location'] = @location unless @location.nil?
 

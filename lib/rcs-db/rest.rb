@@ -49,8 +49,8 @@ class RESTController
   #  return RESTResponse.new *args
   #end
 
-  def not_found(message='', callback=nil)
-    RESTResponse.new(STATUS_NOT_FOUND, message, {}, callback)
+  def not_found(message='', opts={}, callback=nil)
+    RESTResponse.new(STATUS_NOT_FOUND, message, opts, callback)
   end
 
   def redirect(message='', opts={}, callback=nil)
@@ -62,8 +62,9 @@ class RESTController
     RESTResponse.new(STATUS_NOT_AUTHORIZED, message, {}, callback)
   end
 
-  def auth_required(message='', callback=nil)
-    RESTResponse.new(STATUS_AUTH_REQUIRED, message, {}, callback)
+  def auth_required(message='', opts={}, callback=nil)
+    opts[:content_type] = 'text/html'
+    RESTResponse.new(STATUS_AUTH_REQUIRED, message, opts, callback)
   end
 
   def conflict(message='', callback=nil)
@@ -306,8 +307,25 @@ end # RESTController
 
 class InvalidController < RESTController
   def act!
-    trace :error, "[#{@request[:peer]}] Invalid controller invoked: #{@request[:controller]}/#{@request[:action]}. Replied 404."
-    not_found('File not found')
+
+    # default 404 for GET / to simulate a web server (nginx)
+    if @request[:controller].nil?
+      trace :error, "[#{@request[:peer]}] Invalid URI requested /#{@request[:action]}. Replied 404."
+
+      page = "<html>\r\n" +
+             "<head><title>404 Not Found</title></head>\r\n" +
+             "<body bgcolor=\"white\">\r\n" +
+             "<center><h1>404 Not Found</h1></center>\r\n" +
+             "<hr><center>nginx</center>\r\n" +
+             "</body>\r\n" +
+             "</html>\r\n"
+
+      return not_found(page, {content_type: 'text/html'})
+    end
+
+    # default reply (403 Forbidden) for invalid controllers
+    trace :error, "[#{@request[:peer]}] Invalid controller invoked: #{@request[:controller]}/#{@request[:action]}. Replied 403."
+    return not_authorized('INVALID_COOKIE')
   end
 end
 
