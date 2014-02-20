@@ -719,7 +719,6 @@ Section "Install Section" SecInstall
     RMDir /r "$INSTDIR\Collector\public"
 
     SetOutPath "$INSTDIR\Collector\config"
-    File "config\decoy.rb"
     File "config\trace.yaml"
     File "config\VERSION"
     File "config\VERSION_BUILD"
