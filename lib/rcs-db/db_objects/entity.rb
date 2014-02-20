@@ -811,6 +811,8 @@ class EntityLink
   end
 
   def destroy_callback
+    return unless linked_entity
+
     op1, op2 = _parent.path[0], linked_entity.path[0]
 
     # if the parent is still ghost and this was the only link
