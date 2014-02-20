@@ -1,14 +1,6 @@
 
 TODO 9.2.0  (2014022401)
 
-  vmprotect (ok)
-  new names (ok)
-  new agent name -> agent_hash.exe  (hash =  ver, iconid) (OK)
-
-  anon ip blacklist
-
-  build old anon with fake version file
-
   mark bad on install
 
 TODO:  9.2.x

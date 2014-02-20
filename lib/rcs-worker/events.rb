@@ -124,7 +124,7 @@ class HTTPHandler < EM::HttpServer::Server
         reply.send_response
 
          # keep the size of the reply to be used in the closing method
-        @response_size = reply.headers['Content-length'] || 0
+        @response_size = reply.headers['Content-Length'] || 0
       end
 
 

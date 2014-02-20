@@ -95,6 +95,22 @@ class HTTPHandler < EM::HttpServer::Server
     @closed = true
   end
 
+  # override of the em-http-server handler
+  def http_error_string(code, desc)
+    trace :warn, "HACK ALERT: #{@peer} is sending bad requests: #{@http_headers.inspect}"
+
+    # close the connection
+    close_connection
+
+    return ''
+  end
+
+  def http_request_errback(exception)
+    http_error_string(500, "Server error")
+
+    trace :warn, "HACK ALERT: #{@peer} something caused a deep exception: #{exception.message}"
+  end
+
   def self.sessionmanager
     @session_manager || SessionManager.instance
   end
@@ -183,7 +199,7 @@ class HTTPHandler < EM::HttpServer::Server
         reply.send_response
 
         # keep the size of the reply to be used in the closing method
-        @response_size = reply.headers['Content-length'] || 0
+        @response_size = reply.headers['Content-Length'] || 0
 
         # update the connection statistics
         StatsManager.instance.add data_size: @response_size
