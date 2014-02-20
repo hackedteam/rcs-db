@@ -245,7 +245,6 @@ Section "Update Section" SecUpdate
   RMDir /r "$INSTDIR\DB\bin"
   RMDir /r "$INSTDIR\Collector\bin"
   RMDir /r "$INSTDIR\Collector\lib"
-  RMDir /r "$INSTDIR\Collector\nginx"
   DetailPrint "done"
 
   DetailPrint "Remove stats file.."
@@ -691,10 +690,7 @@ Section "Install Section" SecInstall
     DetailPrint "Installing Collector files..."
     SetDetailsPrint "textonly"
     !cd 'Collector'
-
-    SetOutPath "$INSTDIR\Collector\nginx"
-    File /r "nginx\nginx.exe"
-
+  
     SetOutPath "$INSTDIR\Collector\bin"
     File /r "bin\*.*"
     
