@@ -164,38 +164,36 @@ class LinkManager
     first_entity = params[:from]
     second_entity = params[:to]
 
-    trace :info, "Moving links from '#{first_entity.name}' to '#{second_entity.name}'"
+    trace(:info, "Moving links from '#{first_entity.name}' to '#{second_entity.name}'")
 
-    # delete the links between the 2 entities
-    del_link params
+    links_to_create = []
+    links_to_delete = []
 
-    # merge links
     first_entity.links.each do |link|
       linked_entity = link.linked_entity
-      backlink = linked_entity.links.connected_to(first_entity).first
 
-      # exclude links between the 2 entities that have to be merged
-      next if linked_entity == second_entity
+      # Keep intact links between the twp
+      next if second_entity == linked_entity
 
-      # Finds (if any) a link from the second entity to the `linked_entity`
+      # Delete link on the first entity
+      links_to_delete << {from: first_entity, to: linked_entity}
+
+      # Add/update link on the second entity
+      new_link_attributes = link.attributes.reject { |name| %w[le _id].include?(name) }.symbolize_keys
+      new_link_attributes.merge!(from: second_entity, to: linked_entity)
       existing_link = second_entity.links.connected_to(linked_entity).first
-
+      # Resolve link conflict
       if existing_link
-        existing_backlink = linked_entity.links.connected_to(second_entity).first
-
-        existing_link.add_info(link.info)
-        existing_backlink.add_info(link.info)
-      else
-        # adds the link to second entity
-        second_entity.links << link
-        # updates the backlink
-        backlink.le = second_entity._id
-        backlink.save
+        new_link_attributes.merge!(level: :automatic) if [existing_link.level, link.level].include?(:manual)
+        new_link_attributes.merge!(rel: [existing_link.rel, link.rel].max)
       end
+      links_to_create << new_link_attributes
     end
 
-    # delete all the old links
-    first_entity.links.destroy_all
+    links_to_delete.each { |params| del_link(params) }
+    links_to_create.each { |params| add_link(params) }
+
+    nil
   end
 
   # Check if two entities are the same and create a link between them.

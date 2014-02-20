@@ -143,50 +143,62 @@ module DB
       end
     end
 
-    context 'given two linked entities and a third one' do
-      before do
-        Entity.any_instance.stub(:alert_new_entity).and_return nil
-        Entity.any_instance.stub(:push_new_entity).and_return nil
-        RCS::DB::LinkManager.any_instance.stub(:alert_new_link).and_return nil
+    describe '#move_links' do
 
-        @operation = Item.create!(name: 'test-operation', _kind: 'operation', path: [], stat: ::Stat.new)
-        @entity1 = Entity.create!(name: 'entity1', type: :target, path: [@operation._id], level: :automatic)
-        @entity2 = Entity.create!(name: 'entity2', type: :target, path: [@operation._id], level: :automatic)
-        @entity3 = Entity.create!(name: 'entity3', type: :target, path: [@operation._id], level: :automatic)
+      silence_alerts
 
-        LinkManager.instance.add_link(from: @entity1, to: @entity2, level: :manual, type: :peer, versus: :in, info: 'test')
+      3.times do |i|
+        let(:"entity#{i+1}") { factory_create(:target_entity) }
       end
 
-      it 'should move a link from one entity to another' do
-        LinkManager.instance.move_links(from: @entity2, to: @entity3)
-        @entity1.reload
-        @entity2.reload
-        @entity3.reload
+      it 'moves a link from one entity to another' do
+        factory_create(:entity_link, from: entity1, to: entity2)
+        described_class.instance.move_links(from: entity2, to: entity3)
 
-        @entity1.links.size.should be 1
-        @entity2.links.size.should be 0
-        @entity3.links.size.should be 1
+        [entity1, entity2, entity3].each(&:reload)
 
-        @entity1.linked_to?(@entity3).should be_true
+        entity1.links.size.should be 1
+        entity2.links.size.should be 0
+        entity3.links.size.should be 1
+
+        entity1.linked_to?(entity3).should be_true
       end
 
-      context 'when the is already a links from the two entities' do
-        before do
-          LinkManager.instance.add_link(from: @entity2, to: @entity3, level: :manual, type: :peer, versus: :in, info: 'test2')
-        end
+      it 'does not touch links between the two' do
+        factory_create(:entity_link, from: entity2, to: entity3)
 
-        it 'should not leave orphan links' do
-          LinkManager.instance.move_links(from: @entity2, to: @entity3)
-          @entity1.reload
-          @entity2.reload
-          @entity3.reload
+        described_class.instance.should_not_receive(:add_link)
+        described_class.instance.should_not_receive(:del_link)
 
-          @entity3.links.size.should be 1
-          @entity2.links.size.should be 0
-          @entity1.links.size.should be 1
+        described_class.instance.move_links(from: entity2, to: entity3)
 
-          @entity1.linked_to?(@entity3).should be_true
-        end
+        [entity1, entity2, entity3].each(&:reload)
+
+        entity3.links.size.should be 1
+        entity2.links.size.should be 1
+        entity1.links.size.should be 0
+
+        entity1.linked_to?(entity3).should be_false
+      end
+
+      it 'resolve conflict between existing links' do
+        factory_create(:entity_link, from: entity2, to: entity1, info: ['a'])
+        factory_create(:entity_link, from: entity1, to: entity3, info: ['b'], rel: 1)
+
+        described_class.instance.move_links(from: entity2, to: entity3)
+
+        [entity1, entity2, entity3].each(&:reload)
+
+        entity3.links.size.should be 1
+        entity2.links.size.should be 0
+        entity1.links.size.should be 1
+
+        entity1.linked_to?(entity3).should be_true
+
+        link = entity1.links.first
+        expect(link.info.sort).to eq(['a', 'b'])
+        expect(link.rel).to eq(1)
+        expect(link.versus).to eq(:both)
       end
     end
 
