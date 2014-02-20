@@ -361,10 +361,10 @@ class EntityController < RESTController
 
       return not_found() if e.nil? or e2.nil?
 
-      link = RCS::DB::LinkManager.instance.edit_link(from: e, to: e2, level: :manual, type: @params['type'].to_sym, versus: @params['versus'].to_sym, rel: @params['rel'])
+      link = RCS::DB::LinkManager.instance.edit_link(from: e, to: e2, type: @params['type'].to_sym, versus: @params['versus'].to_sym, rel: @params['rel'])
 
-      Audit.log :actor => @session.user[:name], :action => 'entity.add_link', :entity_name => e.name, :desc => "Added a new link between #{e.name} and #{e2.name}"
-      Audit.log :actor => @session.user[:name], :action => 'entity.add_link', :entity_name => e2.name, :desc => "Added a new link between #{e.name} and #{e2.name}"
+      Audit.log :actor => @session.user[:name], :action => 'entity.add_link', :entity_name => e.name, :desc => "Edited link between #{e.name} and #{e2.name}"
+      Audit.log :actor => @session.user[:name], :action => 'entity.add_link', :entity_name => e2.name, :desc => "Edited link between #{e.name} and #{e2.name}"
 
       return ok(link)
     end
