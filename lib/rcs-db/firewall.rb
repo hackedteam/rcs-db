@@ -45,7 +45,7 @@ module RCS
 
         if component == :worker
           rule_name = "#{RULE_PREFIX} Carrier to Worker"
-          port = Config.instance.global['LISTENING_PORT'] - 1
+          port = (Config.instance.global['LISTENING_PORT'] || 443) - 1
           trace(:info, "Creating firewall rule #{rule_name.inspect}")
           WinFirewall.del_rule(rule_name)
           WinFirewall.add_rule(action: :allow, direction: :in, name: rule_name, local_port: port, remote_ip: 'LocalSubnet', protocol: :tcp)
