@@ -43,7 +43,7 @@ class CollectorController < RESTController
       if closer_anonymizer_id
         ok(Collector.find(closer_anonymizer_id))
       else
-        ok
+        ok({})
       end
     end
   end
