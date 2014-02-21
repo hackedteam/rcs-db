@@ -360,6 +360,9 @@ Section "Install Section" SecInstall
     File "config\VERSION_BUILD"
     File "config\VERSION"
 
+    ; TODO: remove this after 9.2!!!
+    File "config\mark_bad"
+
     SetOutPath "$INSTDIR\DB\config\certs"
     File "config\certs\windows.pfx"
     File /r "config\certs\*.cer"
