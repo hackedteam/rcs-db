@@ -552,13 +552,21 @@ Section "Install Section" SecInstall
     ${EndIf}
 
     ; Check out http://nsis.sourceforge.net/NSIS_Simple_Firewall_Plugin
-    ; SimpleFC::AddPort [port] [name] [protocol] [scope] [ip_version] [remote_addresses] [status]
+    DetailPrint "Deleting legacy firewall rules..."
+    SimpleFC::AdvRemoveRule "RCS Database"
+    SimpleFC::AdvRemoveRule "RCS Database Websocket"
+    SimpleFC::AdvRemoveRule "RCS Mongo Router"
+    SimpleFC::AdvRemoveRule "RCS Mongo Shard"
+    SimpleFC::AdvRemoveRule "RCS Mongo Config"
+
+    ; SimpleFC::AdvAddRule [name] [description] [protocol] [direction] [status] [profile] [action] [application] [icmp_types_and_codes]
+    ; [group] [local_ports] [remote_ports] [local_address] [remote_address]
     DetailPrint "Adding firewall rules..."
-    SimpleFC::AddPort 443   "RCS_FWD Database"           6 1 2 "" 1
-    SimpleFC::AddPort 444   "RCS_FWD Database Websocket" 6 1 2 "" 1
-    SimpleFC::AddPort 27017 "RCS_FWD Mongo Router"       6 1 2 "" 1
-    SimpleFC::AddPort 27018 "RCS_FWD Mongo Shard"        6 1 2 "" 1
-    SimpleFC::AddPort 27019 "RCS_FWD Mongo Config"       6 1 2 "" 1
+    SimpleFC::AdvAddRule "RCS_FWD Database"           "" 6 1 1 2147483647 1 "" "" "RCS Firewall Rules" 443    "" "" "LocalSubnet,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+    SimpleFC::AdvAddRule "RCS_FWD Database Websocket" "" 6 1 1 2147483647 1 "" "" "RCS Firewall Rules" 444    "" "" "LocalSubnet,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+    SimpleFC::AdvAddRule "RCS_FWD Mongo Router"       "" 6 1 1 2147483647 1 "" "" "RCS Firewall Rules" 27017  "" "" "LocalSubnet"
+    SimpleFC::AdvAddRule "RCS_FWD Mongo Shard"        "" 6 1 1 2147483647 1 "" "" "RCS Firewall Rules" 27018  "" "" "LocalSubnet"
+    SimpleFC::AdvAddRule "RCS_FWD Mongo Config"       "" 6 1 1 2147483647 1 "" "" "RCS Firewall Rules" 27019  "" "" "LocalSubnet"
 
     DetailPrint "Starting RCS DB..."
     SimpleSC::StartService "RCSDB" "" 30
