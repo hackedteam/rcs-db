@@ -33,12 +33,12 @@ module RCS
 
       def run(options)
         run_with_rescue do
+          # config file parsing
+          return 1 unless RCS::DB::Config.instance.load_from_file
+
           # Wait until the firewall is ON
           RCS::DB::Firewall.wait
           RCS::DB::Firewall.create_default_rules(:worker)
-
-          # config file parsing
-          return 1 unless RCS::DB::Config.instance.load_from_file
 
           # connect to MongoDB
           establish_database_connection(wait_until_connected: true)

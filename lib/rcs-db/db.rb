@@ -25,9 +25,6 @@ module RCS
 
       def run(options)
         run_with_rescue do
-          # Wait until the firewall is ON
-          Firewall.wait
-
           # initialize random number generator
           srand(Time.now.to_i)
 
@@ -45,6 +42,9 @@ module RCS
 
           # we need the certs
           return 1 unless Config.instance.check_certs
+
+          # Wait until the firewall is ON
+          Firewall.wait
 
           # ensure that the CN is resolved to 127.0.0.1 in the /etc/host file
           # this is to avoid IPv6 resolution under windows 2008
