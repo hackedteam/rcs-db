@@ -72,7 +72,7 @@ class DB
 
       trace :info, "Connected to MongoDB at #{ENV['MONGOID_HOST']}:#{ENV['MONGOID_PORT']} version #{mongo_version}"
 
-      change_mongo_profiler_level
+      # change_mongo_profiler_level
     rescue Exception => e
       trace :fatal, e
       return false

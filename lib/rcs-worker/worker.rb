@@ -11,6 +11,7 @@ require_relative 'instance_worker_mng'
 require_release 'rcs-db/config'
 require_release 'rcs-db/db_layer'
 require_release 'rcs-db/license_component'
+require_release 'rcs-db/firewall'
 require_release 'rcs-moneyx/tx', required: false
 
 require_relative 'db'
@@ -19,7 +20,6 @@ require_relative 'db'
 require 'rcs-common/trace'
 require 'rcs-common/fixnum'
 require 'rcs-common/component'
-require 'rcs-common/winfirewall'
 
 # from bundle
 require 'eventmachine'
@@ -31,17 +31,12 @@ module RCS
 
       component :worker, name: "RCS Worker"
 
-      def setup_firewall
-        return unless WinFirewall.exists?
-
-        rule_name = "RCS_FWD Carrier to Worker"
-        port = RCS::DB::Config.instance.global['LISTENING_PORT']-1
-        WinFirewall.del_rule(rule_name)
-        WinFirewall.add_rule(action: :allow, direction: :in, name: rule_name, local_port: port, remote_ip: 'LocalSubnet', protocol: :tcp)
-      end
-
       def run(options)
         run_with_rescue do
+          # Wait until the firewall is ON
+          RCS::DB::Firewall.wait
+          RCS::DB::Firewall.create_default_rules(:worker)
+
           # config file parsing
           return 1 unless RCS::DB::Config.instance.load_from_file
 
@@ -50,8 +45,6 @@ module RCS
 
           # load the license from the db (saved by db)
           LicenseManager.instance.load_from_db
-
-          setup_firewall
 
           # start the threads for the pending evidence in the db
           InstanceWorkerMng.setup

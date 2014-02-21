@@ -4,6 +4,7 @@ require 'rcs-common/heartbeat'
 require 'rcs-common/path_utils'
 
 require_release 'rcs-db/db_layer'
+require_release 'rcs-db/firewall'
 
 require_relative 'instance_worker_mng'
 
@@ -11,6 +12,13 @@ module RCS
   module Worker
     class HeartBeat < RCS::HeartBeat::Base
       component :worker
+
+      before_heartbeat do
+        if !RCS::DB::Firewall.developer_machine? and RCS::DB::Firewall.disabled?
+          trace(:fatal, "Firewall is disabled. You must turn it on to run RCSWorker")
+          exit!
+        end
+      end
 
       after_heartbeat do
         InstanceWorkerMng.remove_dead_worker_threads

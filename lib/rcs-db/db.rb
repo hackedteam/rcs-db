@@ -10,6 +10,7 @@ require_relative 'offload_manager'
 require_relative 'statistics'
 require_relative 'backup'
 require_relative 'sessions'
+require_relative 'firewall'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -24,6 +25,9 @@ module RCS
 
       def run(options)
         run_with_rescue do
+          # Wait until the firewall is ON
+          Firewall.wait
+
           # initialize random number generator
           srand(Time.now.to_i)
 

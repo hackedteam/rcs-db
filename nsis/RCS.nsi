@@ -548,6 +548,15 @@ Section "Install Section" SecInstall
       DetailPrint "done"
     ${EndIf}
 
+    ; Check out http://nsis.sourceforge.net/NSIS_Simple_Firewall_Plugin
+    ; SimpleFC::AddPort [port] [name] [protocol] [scope] [ip_version] [remote_addresses] [status]
+    DetailPrint "Adding firewall rules..."
+    SimpleFC::AddPort 443   "RCS_FWD Database"           6 1 2 "" 1
+    SimpleFC::AddPort 444   "RCS_FWD Database Websocket" 6 1 2 "" 1
+    SimpleFC::AddPort 27017 "RCS_FWD Mongo Router"       6 1 2 "" 1
+    SimpleFC::AddPort 27018 "RCS_FWD Mongo Shard"        6 1 2 "" 1
+    SimpleFC::AddPort 27019 "RCS_FWD Mongo Config"       6 1 2 "" 1
+
     DetailPrint "Starting RCS DB..."
     SimpleSC::StartService "RCSDB" "" 30
     Sleep 10000
@@ -567,15 +576,6 @@ Section "Install Section" SecInstall
     DetailPrint "Starting RCS Intelligence..."
     SimpleSC::StartService "RCSIntelligence" "" 30
     Sleep 5000
-
-    DetailPrint "Adding firewall rules for port 443/tcp and 444/tcp..."
-    SimpleFC::AddPort 443 "RCS Database" 6 0 2 "LocalSubnet" 1
-    SimpleFC::AddPort 444 "RCS Database Websocket" 6 0 2 "LocalSubnet" 1
-
-    DetailPrint "Adding firewall rules for port 27017, 27018 and 27019/tcp..."
-    SimpleFC::AddPort 27017 "RCS Mongo Router" 6 0 2 "LocalSubnet" 1
-    SimpleFC::AddPort 27018 "RCS Mongo Shard" 6 0 2 "LocalSubnet" 1
-    SimpleFC::AddPort 27019 "RCS Mongo Config" 6 0 2 "LocalSubnet" 1
 
     !cd '..'
     WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
