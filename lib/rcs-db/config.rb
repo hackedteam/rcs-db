@@ -71,7 +71,7 @@ class Config
 
   def load_from_file
     #trace :info, "Loading configuration file..."
-    conf_file = File.join Dir.pwd, CONF_DIR, CONF_FILE
+    conf_file = File.join $execution_directory, CONF_DIR, CONF_FILE
 
     # load the config in the @global hash
     begin
@@ -105,17 +105,17 @@ class Config
   end
 
   def temp(name=nil)
-    temp = File.join Dir.pwd, temp_folder_name
+    temp = File.join $execution_directory, temp_folder_name
     temp = File.join temp, name if name
     return temp
   end
   
   def file(name)
-    return File.join Dir.pwd, CONF_DIR, @global[name].nil? ? name : @global[name]
+    return File.join $execution_directory, CONF_DIR, @global[name].nil? ? name : @global[name]
   end
 
   def cert(name)
-    return File.join Dir.pwd, CERT_DIR, @global[name].nil? ? name : @global[name]
+    return File.join $execution_directory, CERT_DIR, @global[name].nil? ? name : @global[name]
   end
 
   def is_slow?(time)
@@ -123,8 +123,8 @@ class Config
     return time > @global['SLOW']
   end
 
-  def safe_to_file
-    conf_file = File.join Dir.pwd, CONF_DIR, CONF_FILE
+  def save_to_file
+    conf_file = File.join $execution_directory, CONF_DIR, CONF_FILE
 
     # Write the @global into a yaml file
     begin
@@ -146,7 +146,7 @@ class Config
       return 0
     end
 
-    $version = File.read(Dir.pwd + '/config/VERSION')
+    $version = File.read(file('VERSION'))
 
     # migration
     return Migration.up_to $version if options[:migrate]
@@ -227,7 +227,7 @@ class Config
     trace :info, PP.pp(@global, "")
 
     # save the configuration
-    safe_to_file
+    save_to_file
 
     return 0
   end
@@ -268,7 +268,7 @@ class Config
     @global['SHARD'] = shard['shardAdded']
 
     # save the configuration
-    safe_to_file
+    save_to_file
 
     # logout
     http.request_post('/auth/logout', nil, {'Cookie' => cookie})
@@ -278,9 +278,9 @@ class Config
     trace :info, "Generating ssl certificates..."
 
     # ensure dir is present
-    FileUtils.mkdir_p File.join(Dir.pwd, CERT_DIR)
+    FileUtils.mkdir_p File.join($execution_directory, CERT_DIR)
 
-    Dir.chdir File.join(Dir.pwd, CERT_DIR) do
+    Dir.chdir File.join($execution_directory, CERT_DIR) do
 
       File.open('index.txt', 'wb+') { |f| f.write '' }
       File.open('serial.txt', 'wb+') { |f| f.write '01' }
@@ -351,9 +351,9 @@ class Config
     trace :info, "Generating anon ssl certificates..."
 
     # ensure dir is present
-    FileUtils.mkdir_p File.join(Dir.pwd, CERT_DIR)
+    FileUtils.mkdir_p File.join($execution_directory, CERT_DIR)
 
-    Dir.chdir File.join(Dir.pwd, CERT_DIR) do
+    Dir.chdir File.join($execution_directory, CERT_DIR) do
 
       File.open('index.txt', 'wb+') { |f| f.write '' }
       File.open('serial.txt', 'wb+') { |f| f.write '01' }
@@ -487,7 +487,7 @@ class Config
         ext = '.exe'
     end
 
-    return Dir.pwd + '/mongodb/' + os + '/' + file + ext
+    return $execution_directory + '/mongodb/' + os + '/' + file + ext
   end
 
   def self.file_path(file)

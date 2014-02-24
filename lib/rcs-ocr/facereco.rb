@@ -29,7 +29,7 @@ module FACE
   extend FFI::Library
 
   if RbConfig::CONFIG['host_os'] =~ /mingw/
-    ffi_lib File.join(Dir.pwd, 'ocr/face/Face.dll')
+    ffi_lib File.join($execution_directory, 'ocr/face/Face.dll')
 
     ffi_convention :stdcall
 

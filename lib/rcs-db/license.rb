@@ -83,7 +83,7 @@ class LicenseManager
   def load_license(periodic = false)
 
     # load the license file
-    lic_file = File.join Dir.pwd, RCS::DB::Config::CONF_DIR, LICENSE_FILE
+    lic_file = File.join $execution_directory, RCS::DB::Config::CONF_DIR, LICENSE_FILE
 
     unless File.exist? lic_file
       trace :fatal, "No license file found"
@@ -184,7 +184,7 @@ class LicenseManager
     end
 
     # save the new license file
-    lic_file = File.join Dir.pwd, RCS::DB::Config::CONF_DIR, LICENSE_FILE
+    lic_file = File.join $execution_directory, RCS::DB::Config::CONF_DIR, LICENSE_FILE
     File.open(lic_file, "wb") {|f| f.write content}
 
     # load the new one

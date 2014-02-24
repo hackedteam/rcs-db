@@ -63,7 +63,7 @@ class BuildUSB < Build
     # write the ini file
     File.open(path('winpe/RCSPE/RCS.ini'), 'w') do |f|
       f.puts "[RCS]"
-      f.puts "VERSION=#{File.read(Dir.pwd + '/config/VERSION')}"
+      f.puts "VERSION=#{File.read(Config.instance.file('VERSION'))}"
       f.puts "HUID=#{@factory.ident}"
       f.puts "HCORE=#{names[:core]}"
       f.puts "HCONF=#{names[:config]}"
