@@ -179,7 +179,7 @@ module RCS
 
       def decode_failed(raw_id, decoded_data)
         Dir.mkdir(DECODING_FAILED_FOLDER) unless File.exists?(DECODING_FAILED_FOLDER)
-        path = "#{DECODING_FAILED_FOLDER}/#{raw_id}.dec"
+        path = "#{DECODING_FAILED_FOLDER}/#{agent.id}_#{raw_id}.dec"
         File.open(path, 'wb') { |file| file.write(decoded_data) }
         trace :debug, "[#{@agent_uid}] Undecoded evidence #{raw_id} stored to #{path}"
       end
