@@ -44,14 +44,25 @@ module RCS
       def create_default_rules(component=nil)
         return if !WinFirewall.exists?
 
+        trace(:info, "Creating firewall rules...")
+
         if component == :worker
           rule_name = "#{RULE_PREFIX} Carrier to Worker"
           port = (Config.instance.global['LISTENING_PORT'] || 443) - 1
-          trace(:info, "Creating firewall rule #{rule_name.inspect}")
           WinFirewall.del_rule(rule_name)
           WinFirewall.add_rule(action: :allow, direction: :in, name: rule_name, local_port: port, remote_ip: 'LocalSubnet', protocol: :tcp)
         elsif component == :db
-          # DB related rules are created by the nsis installer
+          # Note: some rules are also created by the nsis installer
+
+          rule_name = "#{RULE_PREFIX} Database"
+          WinFirewall.del_rule(rule_name)
+          port = Config.instance.global['LISTENING_PORT'] || 443
+          WinFirewall.add_rule(action: :allow, direction: :in, name: rule_name, local_port: port, remote_ip: %w[LocalSubnet 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16], protocol: :tcp)
+
+          rule_name = "#{RULE_PREFIX} Database Websocket"
+          WinFirewall.del_rule(rule_name)
+          port = (Config.instance.global['LISTENING_PORT'] || 443) + 1
+          WinFirewall.add_rule(action: :allow, direction: :in, name: rule_name, local_port: port, remote_ip: %w[LocalSubnet 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16], protocol: :tcp)
         end
       end
 
