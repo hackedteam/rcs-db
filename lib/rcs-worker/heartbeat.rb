@@ -15,7 +15,7 @@ module RCS
 
       before_heartbeat do
         if !RCS::DB::Firewall.developer_machine? and RCS::DB::Firewall.disabled?
-          trace(:fatal, "Firewall is disabled. You must turn it on to run RCSWorker")
+          trace(:fatal, "Firewall is disabled. Quitting...")
           exit!
         end
       end
