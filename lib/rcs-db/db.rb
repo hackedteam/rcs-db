@@ -45,6 +45,7 @@ module RCS
 
           # Wait until the firewall is ON
           Firewall.wait
+          RCS::DB::Firewall.create_default_rules(:db)
 
           # ensure that the CN is resolved to 127.0.0.1 in the /etc/host file
           # this is to avoid IPv6 resolution under windows 2008

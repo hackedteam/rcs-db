@@ -16,8 +16,8 @@ module RCS
         # check the consistency of the license
         LicenseManager.instance.periodic_check
 
-        if !Firewall.developer_machine? and Firewall.disabled?
-          trace(:fatal, "Firewall is disabled. Quitting...")
+        if !Firewall.ok?
+          trace(:fatal, "#{Firewall.error_message}. Quitting...")
           exit!
         end
 

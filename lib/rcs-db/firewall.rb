@@ -9,28 +9,32 @@ module RCS
 
       RULE_PREFIX = "RCS_FWD"
 
-      def developer_machine?
-        Config.instance.global['SKIP_FIREWALL_CHECK']
+      def ok?
+        !error_message
       end
 
-      def exists?
-        WinFirewall.exists?
+      def error_message
+        return nil if !WinFirewall.exists?
+        return nil if developer_machine?
+        return "Firewall must be activated on all profiles" if WinFirewall.status == :off
+        return "Firewall default policy must block incoming connections by default" if !WinFirewall.block_inbound?
+        nil
       end
 
-      def disabled?
-        exists? and (WinFirewall.status == :off)
-      end
-
+      # Wait until the firewall is healty (#error_message returns nil)
       def wait
-        error_logged = false
+        last_err = nil
 
         loop do
-          break if developer_machine?
-          break if !disabled?
+          err = Firewall.error_message
 
-          unless error_logged
-            trace(:fatal, "Firewall is disabled. You must turn it on get this component work correcly.")
-            error_logged = true
+          trace(:info, "Firewall is now ok.") if !err and last_err
+
+          break if !err
+
+          if err and err != last_err
+            trace(:fatal, "#{err}. You must fix this on get this component work correcly.")
+            last_err = err
           end
 
           sleep(10)
@@ -38,10 +42,7 @@ module RCS
       end
 
       def create_default_rules(component=nil)
-        return unless exists?
-
-        # Do nothing in this case
-        return if developer_machine? and disabled?
+        return if !WinFirewall.exists?
 
         if component == :worker
           rule_name = "#{RULE_PREFIX} Carrier to Worker"
@@ -49,7 +50,15 @@ module RCS
           trace(:info, "Creating firewall rule #{rule_name.inspect}")
           WinFirewall.del_rule(rule_name)
           WinFirewall.add_rule(action: :allow, direction: :in, name: rule_name, local_port: port, remote_ip: 'LocalSubnet', protocol: :tcp)
+        elsif component == :db
+          # DB related rules are created by the nsis installer
         end
+      end
+
+      private
+
+      def developer_machine?
+        Config.instance.global['SKIP_FIREWALL_CHECK']
       end
     end
   end
