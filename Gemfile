@@ -39,7 +39,7 @@ gem 'rvincenty'
 gem 'ruby-opencv', "= 0.0.10"
 # Install the 2.4.4a version via homebrew, and then launch if your homebrew folder
 # is not in the default location, lauch:
-# gem install ruby-opencv -- --with-opencv-dir="/Users/username/.homebrew/Cellar/opencv/2.4.4a"
+# gem install ruby-opencv -v 0.0.10 -- --with-opencv-dir="/Users/username/.homebrew/Cellar/opencv/2.4.4a"
 # check this out: http://stackoverflow.com/questions/3987683/homebrew-install-specific-version-of-formula
 
 gem 'sbdb'
