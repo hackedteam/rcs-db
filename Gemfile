@@ -5,10 +5,6 @@ gem "rcs-common", ">= 9.2.0", :path => "../rcs-common"
 
 gem 'em-http-request', "=1.0.3" # > 1.0.3 version does not work under Windows
 gem 'em-websocket'
-# NOTE: em-websocket depends on http_parser.rb 0.5.3
-# http_parser.rb 0.5.3 does not work under windows with ruby 2.0, to escape this limitation a precompiled
-# binary was used.
-# Check this out: https://github.com/johanneswuerbach/http_parser.rb_2.0_precompiled
 gem 'em-http-server', ">= 0.1.7"
 
 gem 'eventmachine', ">= 1.0.3"
