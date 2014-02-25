@@ -743,10 +743,10 @@ Section "Install Section" SecInstall
     ; fresh install
     ${If} $installUPGRADE != ${BST_CHECKED}
       DetailPrint ""
-      DetailPrint "Writing the configuration..."
+      DetailPrint "Writing the collector configuration..."
       SetDetailsPrint "textonly"
       ; retrieve the certs from the server
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector-config --defaults -d $masterAddress -u admin -p $adminpass -t -s"
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector-config --defaults -d $masterAddress -u admin -p $adminpass -t -s --wait-db"
       SetDetailsPrint "both"
       DetailPrint "done"
 
