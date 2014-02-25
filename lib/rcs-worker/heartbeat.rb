@@ -14,8 +14,8 @@ module RCS
       component :worker
 
       before_heartbeat do
-        if !Firewall.ok?
-          trace(:fatal, "#{Firewall.error_message}. Quitting...")
+        if !RCS::DB::Firewall.ok?
+          trace(:fatal, "#{RCS::DB::Firewall.error_message}. Quitting...")
           exit!
         end
       end
