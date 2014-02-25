@@ -781,6 +781,10 @@ Section "Install Section" SecInstall
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSCarrier" "Description" "Remote Control System Carier for data transfer to DB"
       DetailPrint "done"
 
+      DetailPrint "Migrating data from previous version..."
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector-config --migrate --alternative-log"
+      DetailPrint "done"
+
       ${If} $installNetworkController == ${BST_CHECKED}
         DetailPrint "Creating service RCS Controller..."
         nsExec::Exec  "$INSTDIR\Collector\bin\nssm.exe install RCSController $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-controller"
