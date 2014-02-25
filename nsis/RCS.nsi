@@ -450,6 +450,7 @@ Section "Install Section" SecInstall
       SetDetailsPrint "both"
       ; write the config yaml
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --defaults --CN $masterCN --log"
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --add-skip-firewall-check --log"
       DetailPrint "done"
 
       ; generate the SSL cert
@@ -615,6 +616,7 @@ Section "Install Section" SecInstall
       ; write the config yaml
       DetailPrint "Writing the configuration..."
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --defaults --CN $masterAddress"
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --add-skip-firewall-check"
       DetailPrint "done"
 
       ; generate the SSL cert
@@ -829,7 +831,11 @@ Section "Install Section" SecInstall
   
       SetDetailsPrint "both"
       DetailPrint "done"
-  
+
+      DetailPrint "Updating the configuration..."
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --remove-skip-firewall-check --log"
+      DetailPrint "done"
+
       DetailPrint "ReStarting RCS DB..."
       SimpleSC::RestartService "RCSDB" "" 30
       !cd '..'

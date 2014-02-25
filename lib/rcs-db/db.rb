@@ -43,10 +43,6 @@ module RCS
           # we need the certs
           return 1 unless Config.instance.check_certs
 
-          # Wait until the firewall is ON
-          Firewall.wait
-          RCS::DB::Firewall.create_default_rules(:db)
-
           # ensure that the CN is resolved to 127.0.0.1 in the /etc/host file
           # this is to avoid IPv6 resolution under windows 2008
           database.ensure_cn_resolution
@@ -104,6 +100,10 @@ module RCS
 
           # If there aren't users online, cleans the watched_items list
           WatchedItem.rebuild
+
+          # Wait until the firewall is on
+          Firewall.wait
+          Firewall.create_default_rules(:db)
 
           # enter the main loop (hopefully will never exit from it)
           Events.new.setup Config.instance.global['LISTENING_PORT']

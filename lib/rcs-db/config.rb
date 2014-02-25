@@ -159,6 +159,18 @@ class Config
     # load the current config
     load_from_file
 
+    if options[:add_skip_firewall_check]
+      @global.merge!('SKIP_FIREWALL_CHECK' => true)
+      save_to_file
+      return 0
+    end
+
+    if options[:remove_skip_firewall_check]
+      @global.reject! { |key| key == 'SKIP_FIREWALL_CHECK' }
+      save_to_file
+      return 0
+    end
+
     if options[:get_cn]
       print @global['CN']
       return 0
@@ -597,6 +609,12 @@ class Config
       opts.on( '-X', '--defaults', 'Write a new config file with default values' ) do
         options[:defaults] = true
       end
+      opts.on( '--add-skip-firewall-check', 'Add SKIP_FIREWALL_CHECK to the configuration params') do
+        options[:add_skip_firewall_check] = true
+      end
+      opts.on( '--remove-skip-firewall-check', 'Remove SKIP_FIREWALL_CHECK from the configuration params' ) do
+        options[:remove_skip_firewall_check] = true
+      end
       opts.on( '-B', '--backup-dir DIR', String, 'The directory to be used for backups' ) do |dir|
         options[:backup] = dir
       end
@@ -642,6 +660,11 @@ class Config
       end
       opts.on( '--cleanup', 'Cleanup the db by deleting dangling entries') do
         options[:cleanup] = true
+      end
+      opts.on("-h", "--help", "Display this help") do
+        hidden_switches = ["--add-skip-firewall-check", "--remove-skip-firewall-check"]
+        puts opts.to_s.split("\n").delete_if { |line| hidden_switches.find{|s| line =~ /#{s}/} }.join("\n")
+        exit
       end
     end
 
