@@ -1,7 +1,6 @@
 
 TODO 9.2.0  (2014022401)
 
-  mark bad on install
 
 TODO:  9.2.x
 
@@ -42,11 +41,6 @@ TODO FUTURE:
     advanced multi operation search
 
     Refactor evidence search filters (Evidence#common_filter, etc.)
-
-    RUBY 2.0.0 ON WINDOWS depends on this:
-      - http_parsers 0.5.3 needs this file https://github.com/johanneswuerbach/http_parser.rb_2.0_precompiled
-      - check if new version has it
-      - check that websocket dependencies have the correct version
 
 ======================================
 IDEAS:
