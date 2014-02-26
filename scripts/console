@@ -75,6 +75,7 @@ module RCSConsole
     Bundler.require :development
 
     puts "Chdir to #{root_path}"
+    $execution_directory = root_path
     Dir.chdir root_path
 
     puts "Add #{root_path}/lib folder to $LOAD_PATH"
