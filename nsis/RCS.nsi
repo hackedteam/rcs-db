@@ -300,9 +300,11 @@ Section "Install Section" SecInstall
         SetOutPath "$INSTDIR\Java"
         File /r "..\Java\*.*"
 
+        RMDir /r "$INSTDIR\Python"
         SetOutPath "$INSTDIR\Python"
         File /r "..\Python\*.*"
 
+        RMDir /r "$INSTDIR\DB\mongodb\win"
         SetOutPath "$INSTDIR\DB\mongodb\win"
         File /r "mongodb\win\*.*"
       ;${Else}
