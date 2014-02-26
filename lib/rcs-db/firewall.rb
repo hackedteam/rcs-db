@@ -50,7 +50,7 @@ module RCS
           rule_name = "#{RULE_PREFIX} Carrier to Worker"
           port = (Config.instance.global['LISTENING_PORT'] || 443) - 1
           WinFirewall.del_rule(rule_name)
-          WinFirewall.add_rule(action: :allow, direction: :in, name: rule_name, local_port: port, remote_ip: 'LocalSubnet', protocol: :tcp)
+          WinFirewall.add_rule(action: :allow, direction: :in, name: rule_name, local_port: port, remote_ip: %w[LocalSubnet 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16], protocol: :tcp)
         elsif component == :db
           # Note: some rules are also created by the nsis installer
 
