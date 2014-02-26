@@ -23,6 +23,8 @@ class InjectorTask
     vector_files = {}
 
     raise "Cannot send rules to a Network Injector that has never synchronized with the system" if injector.version == 0
+    raise "Cannot send rules to a Network Injector which has errors" if ::Status.where({type: 'injector', address: injector.address, status: ::Status::OK}).count == 0
+
     # TODO: check before release
     raise "Version too old, please update the Network Injector" if injector.version < 2014012001
 
