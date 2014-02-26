@@ -8,6 +8,7 @@ if ARGV.empty?
   exit RCS::Money::Application.run!(*ARGV)
 else
   require 'rcs-common/path_utils'
+  $execution_directory = File.expand_path('../..', __FILE__)
   require_release 'rcs-money/cli'
   RCS::Money::CLI.run
 end

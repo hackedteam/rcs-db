@@ -1,3 +1,4 @@
+require_release 'rcs-db/config'
 require_relative 'blk_file'
 
 module RCS
@@ -44,6 +45,27 @@ module RCS
         medium = (sum / _files.count).round(2)
       end
 
+      def self.configured_path(currency, win_drive_letter)
+        opts = begin
+          RCS::DB::Config.instance.load_from_file if RCS::DB::Config.instance.global.empty?
+          RCS::DB::Config.instance.global
+        end
+
+        money = opts['MONEY'] || opts['money']
+        return unless money
+        path = money[currency.to_s.upcase] || money[currency.to_s.downcase]
+        return unless path
+
+        if path.include?(":")
+          path.gsub!("\\", "/")
+          path.gsub!(/(.+)\/$/, '\1')
+          path << "/blocks" if path !~ /.+blocks$/i
+          path
+        else
+          "#{win_drive_letter}:/Users/#{path}/AppData/Roaming/#{currency.to_s.capitalize}/blocks"
+        end
+      end
+
       # @see: https://en.bitcoin.it/wiki/Data_directory
       def self.discover(currency)
         win_drive_letter = ENV['HOMEDRIVE'].to_s.empty? ? 'C' : ENV['HOMEDRIVE'][0]
@@ -55,11 +77,9 @@ module RCS
           "#{ENV['HOME']}/Library/Application Support/#{currency.to_s.capitalize}/blocks"
         ]
 
-        paths.each do |path|
-          return new(currency, path) if Dir.exists?(path)
-        end
+        path = paths.find { |p| Dir.exists?(p) } || configured_path(currency, win_drive_letter)
 
-        nil
+        new(currency, path) if path
       end
     end
   end
