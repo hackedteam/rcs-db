@@ -295,7 +295,7 @@ Section "Install Section" SecInstall
   
     !ifdef FULL_INSTALL
       ; fresh install
-      ${If} $installUPGRADE != ${BST_CHECKED}
+      ;${If} $installUPGRADE != ${BST_CHECKED}
         RMDir /r "$INSTDIR\Java"
         SetOutPath "$INSTDIR\Java"
         File /r "..\Java\*.*"
@@ -305,10 +305,10 @@ Section "Install Section" SecInstall
 
         SetOutPath "$INSTDIR\DB\mongodb\win"
         File /r "mongodb\win\*.*"
-      ${Else}
+      ;${Else}
       ; Upgrade
       ; TODO: check if we need to install a new java/python/mongo version
-      ${EndIf}
+      ;${EndIf}
     !endif
   
     SetOutPath "$INSTDIR\DB\bin"
