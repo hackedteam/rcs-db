@@ -46,24 +46,9 @@ module RCS
       end
 
       def self.configured_path(currency, win_drive_letter)
-        opts = begin
-          RCS::DB::Config.instance.load_from_file if RCS::DB::Config.instance.global.empty?
-          RCS::DB::Config.instance.global
-        end
-
-        money = opts['MONEY'] || opts['money']
-        return unless money
-        path = money[currency.to_s.upcase] || money[currency.to_s.downcase]
-        return unless path
-
-        if path.include?(":")
-          path.gsub!("\\", "/")
-          path.gsub!(/(.+)\/$/, '\1')
-          path << "/blocks" if path !~ /.+blocks$/i
-          path
-        else
-          "#{win_drive_letter}:/Users/#{path}/AppData/Roaming/#{currency.to_s.capitalize}/blocks"
-        end
+        RCS::DB::Config.instance.load_from_file if RCS::DB::Config.instance.global.empty?
+        user = RCS::DB::Config.instance.global['MONEY_USER']
+        "#{win_drive_letter}:/Users/#{user}/AppData/Roaming/#{currency.to_s.capitalize}/blocks" if user
       end
 
       # @see: https://en.bitcoin.it/wiki/Data_directory
