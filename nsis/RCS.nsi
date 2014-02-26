@@ -603,9 +603,9 @@ Section "Install Section" SecInstall
     DetailPrint "done"
 
     DetailPrint "Adding firewall rules for port 27017, 27018 and 27019/tcp..."
-    SimpleFC::AddPort 27017 "RCS Mongo Router" 6 0 2 "LocalSubnet" 1
-    SimpleFC::AddPort 27018 "RCS Mongo Shard" 6 0 2 "LocalSubnet" 1
-    SimpleFC::AddPort 27019 "RCS Mongo Config" 6 0 2 "LocalSubnet" 1
+    SimpleFC::AdvAddRule "RCS_FWD Mongo Router"       "" 6 1 1 2147483647 1 "" "" "RCS Firewall Rules" 27017  "" "" "LocalSubnet"
+    SimpleFC::AdvAddRule "RCS_FWD Mongo Shard"        "" 6 1 1 2147483647 1 "" "" "RCS Firewall Rules" 27018  "" "" "LocalSubnet"
+    SimpleFC::AdvAddRule "RCS_FWD Mongo Config"       "" 6 1 1 2147483647 1 "" "" "RCS Firewall Rules" 27019  "" "" "LocalSubnet"
 
     SetOutPath "$INSTDIR\DB\config\certs"
     File "config\certs\openssl.cnf"
