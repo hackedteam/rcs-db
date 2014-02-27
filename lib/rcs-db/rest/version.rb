@@ -26,7 +26,9 @@ class VersionController < RESTController
     console_file = $execution_directory + "/console/rcs-console-#{@params['_id']}.air"
 
     return not_found() unless File.exist?(console_file)
-    
+
+    trace :info, "Console update (#{@params['_id']}) sent to client"
+
     return stream_file(console_file)
   end
   
