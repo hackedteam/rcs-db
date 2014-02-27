@@ -47,13 +47,16 @@ end
 [:agent, :factory].each do |kind|
   Item.where(_kind: kind, status: 'open').each do |item|
     sync_host = item.configs.last.sync_host rescue nil
+
     next unless sync_host
-    target = item.get_parent rescue nil
-    next unless target
-    operation = target.get_parent rescue nil
-    next unless operation
+
+    names = [item.name]
+    names << item.get_parent.name rescue nil
+    names << item.get_parent.get_parent.name rescue nil
+    names.compact!
+
     list[sync_host] = {type: 'unknown', name: 'unknown', items: []} unless list[sync_host]
-    list[sync_host][:items] << "#{item._kind.to_s.capitalize}: #{operation.name} -> #{target.name} -> #{item.name}"
+    list[sync_host][:items] << "#{item._kind.to_s.capitalize}: #{names.reverse.join(' -> ')}"
   end
 end
 
