@@ -10,9 +10,10 @@ end.parse!
 
 
 # Setup
-
 puts "Initializing..."
 $execution_directory  = File.expand_path('../..', __FILE__)
+$execution_directory = "c:/rcs/db/" if File.exist?("c:/rcs/db/lib")
+
 $LOAD_PATH << $execution_directory+"/lib"
 Dir.chdir($execution_directory)
 
@@ -47,10 +48,12 @@ end
   Item.where(_kind: kind, status: 'open').each do |item|
     sync_host = item.configs.last.sync_host rescue nil
     next unless sync_host
-    op_name = Item.find(item.path.first).name rescue nil
-    next unless op_name
+    target = item.get_parent rescue nil
+    next unless target
+    operation = target.get_parent rescue nil
+    next unless operation
     list[sync_host] = {type: 'unknown', name: 'unknown', items: []} unless list[sync_host]
-    list[sync_host][:items] << "#{item._kind.to_s.capitalize}: #{op_name} / #{item.name}"
+    list[sync_host][:items] << "#{item._kind.to_s.capitalize}: #{operation.name} -> #{target.name} -> #{item.name}"
   end
 end
 
