@@ -28,7 +28,7 @@ module Hasp
 
   # we can use the HASP dongle only on windows
   if RbConfig::CONFIG['host_os'] =~ /mingw/
-    ffi_lib File.join($execution_directory, 'bin/ruby_x64.dll')
+    ffi_lib File.join($execution_directory || Dir.pwd, 'bin/ruby_x64.dll')
 
     ffi_convention :stdcall
 
