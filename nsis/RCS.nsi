@@ -211,6 +211,12 @@ Section "Update Section" SecUpdate
   Sleep 3000
   SimpleSC::StopService "RCSIntelligence" 1
 
+  ReadRegDWORD $R0 HKLM "Software\HT\RCS" "money"
+  IntCmp $R0 1 0 nomoney nomoney
+    Sleep 3000
+    SimpleSC::StopService "RCSMoney" 1
+  nomoney:
+
   ReadRegDWORD $R0 HKLM "Software\HT\RCS" "ocr"
   IntCmp $R0 1 0 noocr noocr
     Sleep 3000
@@ -849,6 +855,11 @@ Section "Install Section" SecInstall
       !cd '..'
     ${EndIf}
   !endif
+
+  ReadRegDWORD $R0 HKLM "Software\HT\RCS" "money"
+  IntCmp $R0 1 0 nomoney nomoney
+    SimpleSC::StartService "RCSMoney" ""
+  nomoney:
 
   ReadRegDWORD $R0 HKLM "Software\HT\RCS" "ocr"
   IntCmp $R0 1 0 noocr noocr
