@@ -7,6 +7,7 @@ module RCS
 module DB
 
   describe LinkManager do
+    
     enable_license
 
     context 'given two entities' do

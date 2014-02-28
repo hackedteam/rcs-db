@@ -194,10 +194,6 @@ module Migration
     ::Status.destroy_all
   end
 
-  def drop_sessions
-    ::Session.destroy_all
-  end
-
   def cleanup_storage
     count = 0
     db = DB.instance.mongo_connection
