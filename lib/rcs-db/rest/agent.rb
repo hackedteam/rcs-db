@@ -631,6 +631,8 @@ class AgentController < RESTController
 
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+      # elite must not be checked for blacklisted software
+      return ok(:elite) if agent.level.eql? :elite
       # check if the agent can be upgraded and to which kind of agent
       kind = agent.blacklisted_software?
       trace :info, "Agent #{agent.name} can be upgraded to: #{kind}"
