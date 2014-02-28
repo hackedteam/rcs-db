@@ -239,7 +239,7 @@ Section "Update Section" SecUpdate
   Sleep 5000
    
   DetailPrint "done"
-   
+
   SetDetailsPrint "textonly"
   DetailPrint "Removing previous version..."
   RMDir /r "$INSTDIR\DB\lib\rcs-db-release"
