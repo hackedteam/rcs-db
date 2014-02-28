@@ -82,8 +82,8 @@ class Channel
     expected = expected_samples(evidence)
     samples_to_fill = expected - @written_samples
     seconds_to_fill = samples_to_fill / @needs_resampling
-    trace :debug, "[channel #{to_s}] filling with #{samples_to_fill} samples(@#{@needs_resampling}) to fill #{seconds_to_fill} seconds of missing data."
     return if samples_to_fill <= 0
+    trace :debug, "[channel #{to_s}] filling with #{samples_to_fill} samples(@#{@needs_resampling}) to fill #{seconds_to_fill} seconds of missing data."
     @wav_data.concat [0.0] * samples_to_fill
     @written_samples = expected
   end
@@ -214,7 +214,7 @@ class Call
 
       # fill in later channel
       fillin_gap = a[1].start_time - a[0].start_time
-      #trace :debug, "[CALL #{@id}] FILLING #{fillin_gap.to_f} SECS ON CHANNEL #{a[1].name}"
+      trace :debug, "[CALL #{@id}] FILLING #{fillin_gap.to_f} SECS ON CHANNEL #{a[1].name}"
       a[1].fill_begin(fillin_gap)
     end
 
@@ -339,10 +339,6 @@ class Call
       ev.data[:duration] = 0
       ev.data[:status] = :recording
 
-      # update the evidence statistics
-      # TODO: where do we add the size to the stats? (probably in the same place where we will forward to connectors)
-      RCS::Worker::StatsManager.instance.add evidence: 1
-
       # keyword full search
       ev.kw = []
       ev.kw += peer.keywords
@@ -371,7 +367,7 @@ class Call
       when 1
         channel = @channels.values[0]
         gap = (1.0 * channel.written_samples) / channel.sample_rate
-        @status = :single_channel if (gap > 15 or @program == :phone)
+        @status = :single_channel if gap > 15
         trace :debug, "[CALL #{@id}] call status is #{@status}, channel #{channel.name} gap is #{gap} and program is #{@program}"
       when 2
         @status = :dual_channel

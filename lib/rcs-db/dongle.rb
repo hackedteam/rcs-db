@@ -28,19 +28,19 @@ module Hasp
 
   # we can use the HASP dongle only on windows
   if RbConfig::CONFIG['host_os'] =~ /mingw/
-    ffi_lib File.join(Dir.pwd, 'bin/ruby_x64.dll')
+    ffi_lib File.join($execution_directory || Dir.pwd, 'bin/ruby_x64.dll')
 
-     ffi_convention :stdcall
+    ffi_convention :stdcall
 
-      AES_PADDING = 16
-      STRUCT_SIZE = 128
+    AES_PADDING = 16
+    STRUCT_SIZE = 128
 
-     class Info < FFI::Struct
-       layout :enc, [:char, STRUCT_SIZE + AES_PADDING]
-     end
+    class Info < FFI::Struct
+     layout :enc, [:char, STRUCT_SIZE + AES_PADDING]
+    end
 
-     attach_function :RI, [:pointer], Info.by_value
-     attach_function :DC, [], :int
+    attach_function :RI, [:pointer], Info.by_value
+    attach_function :DC, [], :int
   end
 
 end

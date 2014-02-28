@@ -3,6 +3,8 @@
 #
 
 require_relative '../frontend'
+require_relative '../statistics'
+require_relative '../config'
 
 # from RCS::Common
 require 'rcs-common/trace'
@@ -17,8 +19,14 @@ class PositionResolver
   extend RCS::Tracer
   
   @@cache = {}
+  @@daily_requests = File.read(RCS::DB::Config.instance.file('gapi'))[8..-1].to_i rescue 0
+  @@last_request = File.read(RCS::DB::Config.instance.file('gapi'))[0..7] rescue Time.now.strftime("%d%Y%m")
 
   class << self
+
+    def valid_maintenance?
+      LicenseManager.instance.check :maintenance
+    end
 
     def position_enabled?
       Config.instance.global['POSITION']
@@ -40,12 +48,13 @@ class PositionResolver
 
       begin
         # skip resolution on request
-        return {} unless position_enabled?
+        return {} unless position_enabled? and valid_maintenance?
 
         # check for cached values (to avoid too many external request)
         cached = get_cache params
         if cached
           trace :debug, "Positioning: resolved from cache #{cached.inspect}"
+          StatsManager.instance.add gapi_cache: 1
           return cached
         end
 
@@ -66,12 +75,27 @@ class PositionResolver
           location = request['gpsPosition']
           # GPS to address
           location.merge! get_google_geocoding(request['gpsPosition'])
+          #location.merge! request['gpsPosition']
         elsif request['gpsTimezone']
           # GPS to timezone
           location = get_google_timezone(request['gpsTimezone'])
         elsif request['wifiAccessPoints'] or request['cellTowers']
+
+          # reset the limit daily
+          daily_limit_reset if last_request_yesterday?
+
+          # add to the stats here, so we can see how many were requested in a day
+          # even if the quota was reached. useful to tune the license
+          StatsManager.instance.add gapi: 1
+
+          # enforce a daily limit on the number of requests
+          raise "Your daily quota of google api requests has been reached (#{@@daily_requests}/#{daily_limit})" if daily_limit_reached?
+
           # wireless to GPS
           location = get_google_geoposition(request)
+
+          # count the daily requests
+          daily_limit_consume
 
           # avoid too large ranges, usually incorrect positioning
           if not location['accuracy'].nil? and location['accuracy'] > 15000
@@ -150,6 +174,29 @@ class PositionResolver
       @@cache[request.hash] = response
     end
 
+    def last_request_yesterday?
+      @@last_request != Time.now.strftime("%d%Y%m")
+    end
+
+    def daily_limit_reset
+      @@daily_requests = 0
+      now = Time.now.strftime("%d%Y%m")
+      File.open(RCS::DB::Config.instance.file('gapi'), "w") {|f| f.write now + "0"}
+    end
+
+    def daily_limit_consume
+      @@daily_requests += 1
+      File.open(RCS::DB::Config.instance.file('gapi'), "w") {|f| f.write @@last_request + @@daily_requests.to_s}
+    end
+
+    def daily_limit
+      LicenseManager.instance.limits[:gapi] || 100
+    end
+
+    def daily_limit_reached?
+      trace :debug, "request (#{@@daily_requests}/#{daily_limit})"
+      @@daily_requests > daily_limit
+    end
 
     def decode_evidence(data)
 

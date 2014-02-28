@@ -13,6 +13,7 @@ require 'rcs-common/trace'
 require 'bson'
 require 'json'
 require 'base64'
+require 'rcs-common/rest'
 
 module RCS
 module DB
@@ -33,19 +34,11 @@ end
 
 class RESTController
   include RCS::Tracer
+  include RCS::Common::Rest
 
-  STATUS_OK = 200
-  STATUS_REDIRECT = 302
-  STATUS_BAD_REQUEST = 400
-  STATUS_AUTH_REQUIRED = 401
-  STATUS_NOT_FOUND = 404
-  STATUS_NOT_AUTHORIZED = 403
-  STATUS_CONFLICT = 409
-  STATUS_SERVER_ERROR = 500
-  
   # the parameters passed on the REST request
   attr_reader :session, :request
-  
+
   @controllers = {}
 
   def ok(*args)
@@ -56,8 +49,18 @@ class RESTController
   #  return RESTResponse.new *args
   #end
 
-  def not_found(message='', callback=nil)
-    RESTResponse.new(STATUS_NOT_FOUND, message, {}, callback)
+  def p404
+    "<html>\r\n" +
+    "<head><title>404 Not Found</title></head>\r\n" +
+    "<body bgcolor=\"white\">\r\n" +
+    "<center><h1>404 Not Found</h1></center>\r\n" +
+    "<hr><center>nginx</center>\r\n" +
+    "</body>\r\n" +
+    "</html>\r\n"
+  end
+
+  def not_found(message='', opts={}, callback=nil)
+    RESTResponse.new(STATUS_NOT_FOUND, message, opts, callback)
   end
 
   def redirect(message='', opts={}, callback=nil)
@@ -65,12 +68,24 @@ class RESTController
     RESTResponse.new(STATUS_REDIRECT, message, opts, callback)
   end
 
-  def not_authorized(message='', callback=nil)
-    RESTResponse.new(STATUS_NOT_AUTHORIZED, message, {}, callback)
+  def p403
+    "<html>\r\n" +
+    "<head><title>403 Forbidden</title></head>\r\n" +
+    "<body bgcolor=\"white\">\r\n" +
+    "<center><h1>403 Forbidden</h1></center>\r\n" +
+    "<hr><center>nginx</center>\r\n" +
+    "</body>\r\n" +
+    "</html>\r\n"
   end
 
-  def auth_required(message='', callback=nil)
-    RESTResponse.new(STATUS_AUTH_REQUIRED, message, {}, callback)
+  def not_authorized(message='', opts={}, callback=nil)
+    opts[:content_type] = 'text/html'
+    RESTResponse.new(STATUS_NOT_AUTHORIZED, message, opts, callback)
+  end
+
+  def auth_required(message='', opts={}, callback=nil)
+    opts[:content_type] = 'text/html'
+    RESTResponse.new(STATUS_AUTH_REQUIRED, message, opts, callback)
   end
 
   def conflict(message='', callback=nil)
@@ -180,7 +195,7 @@ class RESTController
     begin
       # check we have a valid session and an action
       return not_authorized('INVALID_LICENSE') unless valid_license?
-      return not_authorized('INVALID_COOKIE') unless valid_session?
+      return not_authorized() unless valid_session?
       return server_error('NULL_ACTION') if @request[:action].nil?
 
       # make a copy of the params, handy for access and mongoid queries
@@ -313,8 +328,17 @@ end # RESTController
 
 class InvalidController < RESTController
   def act!
-    trace :error, "[#{@request[:peer]}] Invalid controller invoked: #{@request[:controller]}/#{@request[:action]}. Replied 404."
-    not_found('File not found')
+
+    # default 404 for GET / to simulate a web server (nginx)
+    if @request[:controller].nil?
+      trace :error, "[#{@request[:peer]}] Invalid URI requested /#{@request[:action]}. Replied 404."
+
+      return not_found(p404, {content_type: 'text/html'})
+    end
+
+    # default reply (403 Forbidden) for invalid controllers
+    trace :error, "[#{@request[:peer]}] Invalid controller invoked: #{@request[:controller]}/#{@request[:action]}. Replied 403."
+    return not_authorized(p403)
   end
 end
 

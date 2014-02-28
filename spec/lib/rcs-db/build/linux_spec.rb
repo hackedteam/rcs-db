@@ -1,23 +1,38 @@
-require 'spec_helper'
+require_relative 'shared'
 
-require_db 'db_layer'
-require_db 'grid'
-require_db 'build'
+module RCS::DB
+  describe BuildLinux, build: true do
 
-module RCS
-module DB
+    shared_spec_for(:linux, melt: 'builds/melt_linux.deb')
 
-  describe BuildLinux do
+    describe 'linux builder' do
+      it 'should create the silent installer' do
+        params = {
+          'factory' => {'_id' => @factory.id},
+          'binary'  => {'demo' => false},
+          'melt'    => {}
+        }
 
-    before { turn_off_tracer }
+        subject.create(params)
 
-    describe '#intialize' do
+        expect(File.size(subject.path(subject.outputs.first))).not_to eql(0)
+      end
 
-      it 'sets the "platform" to "linux"' do
-        expect(subject.platform).to eql 'linux'
+      it 'should create the melted installer' do
+        params = {
+          'factory' => {'_id' => @factory.id},
+          'binary'  => {'demo' => false},
+          'melt'    => {'input' => melt_file}
+        }
+
+        subject.create(params)
+
+        expect(File.size(subject.path(subject.outputs.first))).not_to eql(0)
+      end
+
+      it 'should create the ugrade build' do
+        @agent.upgrade!
       end
     end
   end
-
-end
 end

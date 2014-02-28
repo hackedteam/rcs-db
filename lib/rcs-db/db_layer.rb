@@ -13,6 +13,7 @@ require 'mongo'
 require 'mongoid'
 require 'moped'
 require 'rbconfig'
+require 'socket'
 
 # require all the DB objects
 Dir[File.dirname(__FILE__) + '/db_objects/*.rb'].each do |file|
@@ -57,7 +58,8 @@ class DB
 
       # set the parameters for the mongoid.yaml
       ENV['MONGOID_DATABASE'] = Config.instance.global['DB_NAME'] || 'rcs'
-      ENV['MONGOID_HOST'] = "#{Config.instance.global['CN']}"
+
+      ENV['MONGOID_HOST'] = Socket.gethostname
       ENV['MONGOID_PORT'] = "27017"
 
       #Mongoid.logger = ::Logger.new($stdout)
@@ -70,7 +72,7 @@ class DB
 
       trace :info, "Connected to MongoDB at #{ENV['MONGOID_HOST']}:#{ENV['MONGOID_PORT']} version #{mongo_version}"
 
-      change_mongo_profiler_level
+      # change_mongo_profiler_level
     rescue Exception => e
       trace :fatal, e
       return false
@@ -218,7 +220,8 @@ class DB
 
   # insert here the class to be indexed
   @@classes_to_be_indexed = [::Audit, ::User, ::Group, ::Alert, ::Status, ::Core, ::Collector,
-                             ::Injector, ::Item, ::PublicDocument, ::EvidenceFilter, ::Entity, ::WatchedItem, ::ConnectorQueue]
+                             ::Injector, ::Item, ::PublicDocument, ::EvidenceFilter, ::Entity,
+                             ::WatchedItem, ::ConnectorQueue, ::Signature, ::Session]
 
   def create_indexes
     db = DB.instance.mongo_connection
@@ -227,10 +230,6 @@ class DB
     trace :info, "Ensuring indexing on collections..."
 
     @@classes_to_be_indexed.each { |klass| sync_indexes(klass) }
-
-    # index on shard id for the worker
-    coll = db.collection('grid.evidence.files')
-    coll.create_index('metadata.shard')
   end
 
   def enable_sharding

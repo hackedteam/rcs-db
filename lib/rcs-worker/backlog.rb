@@ -1,16 +1,11 @@
 # from RCS::Common
 require 'rcs-common/trace'
 require 'rcs-common/fixnum'
+require 'rcs-common/path_utils'
 
-if File.directory?(Dir.pwd + '/lib/rcs-worker-release')
-  require 'rcs-db-release/db'
-  require 'rcs-db-release/grid'
-  require 'rcs-db-release/evidence_dispatcher'
-else
-  require 'rcs-db/db'
-  require 'rcs-db/grid'
-  require 'rcs-db/evidence_dispatcher'
-end
+require_release 'rcs-db/db'
+require_release 'rcs-db/grid'
+require_release 'rcs-db/evidence_dispatcher'
 
 module RCS
 module Worker
@@ -22,16 +17,16 @@ class WorkerBacklog
   def run(options)
 
     # config file parsing
-    #return 1 unless Config.instance.load_from_file
+    return 1 unless RCS::DB::Config.instance.load_from_file
 
     # connect to MongoDB
     return 1 unless RCS::DB::DB.instance.connect
 
     # calculate the number and the size of all the evidece for each instance
     entries = {}
-    RCS::DB::GridFS.get_distinct_filenames("evidence").each do |inst|
+    RCS::Worker::GridFS.get_distinct_filenames("evidence").each do |inst|
       entries[inst] = {count: 0, size: 0}
-      RCS::DB::GridFS.get_by_filename(inst, "evidence").each do |i|
+      RCS::Worker::GridFS.get_by_filename(inst, "evidence").each do |i|
         entries[inst][:count] += 1
         entries[inst][:size] += i["length"]
       end
@@ -41,14 +36,13 @@ class WorkerBacklog
     entries = entries.sort_by {|k,v| k}
 
     # table definitions
-    table_width = 117
+    table_width = 91
     table_line = '+' + '-' * table_width + '+'
 
     # print the table header
     puts
     puts table_line
-    puts '|' + 'instance'.center(57) + '|' + 'platform'.center(12) + '|' +
-         'shard'.center(25) + '|' + 'logs'.center(6) + '|' + 'size'.center(13) + '|'
+    puts '|' + 'instance'.center(57) + '|' + 'platform'.center(12) + '|' + 'logs'.center(6) + '|' + 'size'.center(13) + '|'
     puts table_line
 
     entries.each do |entry|
@@ -56,9 +50,11 @@ class WorkerBacklog
       ident = entry[0].slice(0..13)
       instance = entry[0].slice(15..-1)
       agent = ::Item.agents.where({ident: ident, instance: instance}).first
-      shard_id = RCS::DB::EvidenceDispatcher.instance.shard_id ident, instance
 
-      puts "| #{entry[0]} |#{agent[:platform].center(12)}| #{shard_id.center(23)} |#{entry[1][:count].to_s.rjust(5)} | #{entry[1][:size].to_s_bytes.rjust(11)} |"
+      # in case the agent is not there anymore
+      agent = {platform: 'DELETED'} unless agent
+
+      puts "| #{entry[0]} |#{agent[:platform].center(12)}|#{entry[1][:count].to_s.rjust(5)} | #{entry[1][:size].to_s_bytes.rjust(11)} |"
     end
 
     puts table_line

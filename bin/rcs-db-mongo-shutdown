@@ -1,0 +1,15 @@
+#!/usr/bin/env ruby
+
+def windows?
+  RbConfig::CONFIG['host_os'] =~ /mingw/
+end
+
+if windows?
+  puts "ERROR: unsupported os"
+else
+  require 'moped'
+  session = Moped::Session.new(["127.0.0.1:27017"])
+  db = session.use("admin")
+  db.command(shutdown: 1) rescue nil
+  system "killall -15 mongod"
+end

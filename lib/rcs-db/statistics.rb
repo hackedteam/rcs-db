@@ -17,13 +17,13 @@ class StatsManager < Stats
   def initialize
     # configure the storage statistics
     @sections = {:minutes => 0, :hours => 60, :days => 24, :weeks => 7}
-    @template = {conn: 0, query: 0, data_size: 0, evidence: 0, evidence_size: 0}
+    @template = {conn: 0, query: 0, data_size: 0, gapi: 0, gapi_cache: 0}
 
     # persist the statistics
     @persist = true
 
     # where do we save the stats?
-    @dump_file = Config.instance.file('db_stats')
+    @dump_file = RCS::DB::Config.instance.file('db_stats')
 
     # initialize the stats repository
     super
@@ -48,6 +48,14 @@ class StatsManager < Stats
     FileUtils.rm_rf(@dump_file)
     initialize
   end
+
+=begin
+  def add(hash)
+    trace :debug, "STAT ADD: #{hash}"
+    super
+    trace :debug, "STAT ADDED: #{@stats[:minutes][:last].first.inspect}"
+  end
+=end
 
   def print_total
     puts "Total Statistics from: #{@stats[:total][:start]}"

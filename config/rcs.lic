@@ -1,6 +1,6 @@
 ---
 :serial: 'off'
-:version: '9.0'
+:version: '9.2'
 :type: reusable
 :expiry: '2015-01-01 00:00:00 UTC'
 :maintenance: '2015-01-01 00:00:00 UTC'
@@ -58,7 +58,7 @@
 :translation: true
 :modify: true
 :hostname_sync: true
-:digest: b51fd41579a6a19fc84a9a1ea34fef52cce8383d
+:digest: 5c9b6c8c06a558432aea3a6f95fbf47ea72cd95f
 :check: LOuWAplu
-:signature: 3f93e168c102f1a8d772a1d86673f4c56337fb71935725ea712b9694c0bddcbf
-:integrity: 0ffda5b9a666d170b3b9305b9d76e954da330189089e7ef754af1f1b53f503620516543cc6691d5dc988d55b6ecfe238
+:signature: f464dc8928ecbd048a8870889783dc406b0e9ccd6cd57898a3093c2527aed243
+:integrity: e7f5068f8ec7a4d66b677b7656829b0b2505175494851ba91587f99e26f7fdfddcbd03505b6cb8487b5dbc0965f25cd7

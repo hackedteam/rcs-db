@@ -5,9 +5,6 @@ require_relative '../link_manager'
 require_relative '../position/proximity'
 require_relative '../country_calling_codes'
 
-#module RCS
-#module DB
-
 class Entity
   extend RCS::Tracer
   include RCS::Tracer
@@ -35,6 +32,12 @@ class Entity
   # position_addr contains {time, accuracy}
   field :position_attr, type: Hash, default: {}
 
+  # list of entity ids that compose a group (entity group)
+  field :children, type: Array, default: []
+
+  # may contains the id of an operation (entity group)
+  field :stand_for, type: Moped::BSON::ObjectId, default: nil
+
   # accounts for this entity
   embeds_many :handles, class_name: "EntityHandle"
   embeds_many :links, class_name: "EntityLink"
@@ -50,11 +53,13 @@ class Entity
   index({"handles.type" => 1}, {background: true})
   index({"handles.handle" => 1}, {background: true})
   index({position: "2dsphere"}, {background: true})
+  # TODO: define usefull indexes for entity groups operations
 
   store_in collection: 'entities'
 
   scope :targets, where(type: :target)
   scope :persons, where(type: :person)
+  scope :groups, where(type: :group)
   scope :virtuals, where(type: :virtual)
   scope :targets_or_persons, where(:type => {'$in' => [:person, :target]})
   scope :positions, where(type: :position)
@@ -62,31 +67,21 @@ class Entity
   # for example all the entities in the same "operation" of the given one
   scope :same_path_of, lambda { |other_entity| where(:_id.ne => other_entity._id, :path => other_entity.path.first) }
   scope :path_include, lambda { |item| where('path' => {'$in' =>[item.respond_to?(:_id) ? item._id : Moped::BSON::ObjectId.from_string(item.to_s)]}) }
-  scope :with_handle, lambda { |type, value|
-    if type.to_s != 'phone'
-      elem_match(handles: {type: type, handle: value})
-    else
-      parsed = RCS::DB::CountryCallingCodes.number_without_calling_code(value)
-      if parsed == value
-        parsed = value.gsub(/[^0-9]/, '')
-        regexp = /^#{parsed.split('').join('\s{0,1}\-{0,1}')}$/
-        elem_match(handles: {type: type, handle: regexp})
-      else
-        parsed.gsub!(/[^0-9]/, '')
-        regexp = /#{parsed.split('').join('\s{0,1}\-{0,1}')}$/
-        elem_match(handles: {type: type, handle: regexp})
-      end
-    end
+  scope :with_handle, lambda { |type, value, exclude: nil|
+    regexp = EntityHandle.handle_regexp_for_queries(type, value)
+    filter = exclude ? {:_id.ne => exclude.id} : {}
+    where(filter).elem_match(handles: {type: type, handle: regexp})
   }
 
   after_create :create_callback
   before_destroy :destroy_callback
   after_update :notify_callback
+  after_update :destroy_empty_group_callback
 
   def create_callback
     # make item accessible to the users of the parent operation
-    parent = ::Item.find(self.path.first)
-    self.users = parent.users
+    parent_operation = ::Item.find(self.path.first)
+    self.users = parent_operation.users
 
     # notify (only real entities)
     unless level.eql? :ghost
@@ -96,6 +91,8 @@ class Entity
 
     link_similar_position
     link_target_entities_passed_from_here
+
+    add_to_operation_groups
   end
 
   # If the current entity is a position entity (type :position)
@@ -168,8 +165,31 @@ class Entity
     push_modify_entity
   end
 
-  def destroy_callback
+  # If there is any group entity (anywhere) that represent the current operation
+  # remove the entity from its children list
+  def remove_from_operation_groups
+    return if type == :group
 
+    parent_operation_id = path.first
+
+    Entity.groups.where(stand_for: parent_operation_id).each do |g|
+      g.pull(:children, self.id)
+    end
+  end
+
+  # If there is any group entity (anywhere) that represent the current operation
+  # add the new entity to its list
+  def add_to_operation_groups
+    return if type == :group
+
+    parent_operation_id = path.first
+
+    Entity.groups.where(stand_for: parent_operation_id).each do |g|
+      g.add_to_set(:children, [self.id])
+    end
+  end
+
+  def destroy_callback
     # remove all the links in linked entities
     self.links.each do |link|
       oe = link.linked_entity
@@ -181,6 +201,8 @@ class Entity
     self.photos.each do |photo|
       del_photo photo
     end
+
+    remove_from_operation_groups
 
     push_destroy_entity
   end
@@ -303,21 +325,6 @@ class Entity
     return nil
   end
 
-  def peer_versus entity_handle
-    # only targets have aggregates
-    return [] unless type.eql? :target
-
-    # search for communication in one direction
-    criteria = Aggregate.target(path.last).in(:type => entity_handle.aggregate_types).where('data.peer' => entity_handle.handle)
-    versus = []
-    versus << :in if criteria.where('data.versus' => :in).exists?
-    versus << :out if criteria.where('data.versus' => :out).exists?
-
-    trace :debug, "Searching for #{entity_handle.handle} (#{entity_handle.type}) on #{self.name} -> #{versus}"
-
-    return versus
-  end
-
   def promote_ghost
     return unless self.level.eql? :ghost
 
@@ -348,7 +355,7 @@ class Entity
 
       existing_handle
     else
-      trace :info, "Adding handle [#{type}, #{handle}, #{name}] to entity: #{self.name}"
+      trace :info, "Adding handle #{handle.inspect} (#{type.inspect}) to entity #{self.name.inspect}"
       # add to the list of handles
       handles.create! level: EntityHandle.default_level, type: type, name: name, handle: handle
     end
@@ -540,6 +547,85 @@ class Entity
         .sort { |x,y| x[:time] <=> y[:time] }
     end
   end
+
+  # Build an entity of type group, OR update its children and/or name
+  def self.create_or_update_group(operation, name: nil, children: [], stand_for: nil)
+    children = children[0].respond_to?(:id) ? children.map(&:id) : children
+    level = stand_for ? :automatic : :manual
+    operation = operation.respond_to?(:id) ? operation : Item.operations.find(operation)
+
+    filter = {type: :group, path: [operation.id], level: level, stand_for: stand_for}
+
+    group = find_or_initialize_by(filter)
+
+    trace :info, (group.new_record? ? "Create" : "Update") + " group #{group.id}" + (" (#{name.inspect})" if name) + " belonging to operation #{operation.name.inspect}"
+
+    group.name = name if name
+
+    group.add_to_set(:children, children)
+
+    group.save!
+  end
+
+  def self.create_or_update_operation_group(first_operation, second_operation)
+    first_operation = Item.operations.find(first_operation) unless first_operation.respond_to?(:id)
+    second_operation = Item.operations.find(second_operation) unless second_operation.respond_to?(:id)
+
+    first_op_name, second_op_name = *[first_operation.name, second_operation.name].map do |name|
+      name =~ /^(op\.|op\s|operation)/ ? name : "Operation #{name}"
+    end
+
+    children_first_op, children_second_op = *[first_operation, second_operation].map do |op|
+      Entity.path_include(op).where(:type.ne => :group).all
+    end
+
+    create_or_update_group(first_operation, name: second_op_name, children: children_second_op, stand_for: second_operation.id)
+    create_or_update_group(second_operation, name: first_op_name, children: children_first_op, stand_for: first_operation.id)
+  end
+
+  def destroy_empty_group_callback
+    if type == :group and children.empty?
+      trace :warn, "Delete empty entity group #{name.inspect}"
+      destroy
+    end
+  end
+
+  def promote_to_target
+    return if type != :person
+
+    # Find the corresponding operation (item)
+
+    operation = ::Item.operations.find(path.first)
+
+    # Initialize a new target (item) in order to get its brand new id
+
+    target = ::Item.new(_kind: :target)
+
+    # change the type and the path of the person entity (in order to transform it into a target entity)
+
+    trace :debug, "Promote person #{name} to target"
+
+    new_path = [operation.id, target.id]
+    update_attributes(type: :target, level: :automatic, path: new_path, desc: "#{name} promoted to target entity")
+
+    # Create the target item
+    # @note At this point the related target entity WILL NOT be created because it already exists.
+
+    trace :debug, "Create target #{name} (operation #{operation.name})"
+
+    target.name = name
+    target.status = :open
+    target.path = [operation.id]
+    target.desc = "Created from entity #{self.name}"
+    target.users = operation.users
+    target.stat = ::Stat.new
+    target.stat.evidence = {}
+    target.stat.size = 0
+    target.stat.grid_size = 0
+    target.save!
+
+    reload
+  end
 end
 
 
@@ -562,6 +648,27 @@ class EntityHandle
 
   def self.default_level
     :automatic
+  end
+
+  def self.handle_regexp_for_queries(type, value)
+    if type.to_s != 'phone'
+      value
+    else
+      # if the type is phone but the value contains no numbers
+      if value.gsub(/[0-9]/, '') == value
+        return value
+      end
+
+      parsed = RCS::DB::CountryCallingCodes.number_without_calling_code(value)
+
+      if parsed == value
+        parsed = value.gsub(/[^0-9]/, '')
+        /^#{parsed.split('').join('\s{0,1}\-{0,1}')}$/
+      else
+        parsed.gsub!(/[^0-9]/, '')
+        /#{parsed.split('').join('\s{0,1}\-{0,1}')}$/
+      end
+    end
   end
 
   def aggregate_types
@@ -632,6 +739,10 @@ class EntityLink
     Entity.find(le) rescue nil
   end
 
+  def cross_operation?
+    _parent.path[0] != linked_entity.path[0]
+  end
+
   def linked_entity= entity
     self.le = entity.id
   end
@@ -680,17 +791,44 @@ class EntityLink
     self.level = level unless level.eql? :ghost
   end
 
+  # Returns true if the two operation are unlinked, otherwise, if there is at
+  # least one entity of OP1 linked to at least one entity of OP2, returns false.
+  def unlinked_operations?(op1, op2)
+    return false if op1 == op2
+
+    linked_entity_ids = begin
+      list = Entity.collection.find(path: op1).select('links.le' => 1).inject([]) { |list, doc|
+        ids = (doc['links'] || []).map! { |h| h['le'] }
+        list.concat(ids)
+      }
+      list.uniq!
+      list
+    end
+
+    other_entity_ids = Entity.collection.find(path: op2).select('_id' => 1).map { |doc| doc['_id'] }
+
+    (linked_entity_ids & other_entity_ids).empty?
+  end
+
   def destroy_callback
+    return unless linked_entity
+
+    op1, op2 = _parent.path[0], linked_entity.path[0]
+
     # if the parent is still ghost and this was the only link
     # destroy the parent since it was created only with that link
     if self._parent.level.eql? :ghost and self._parent.links.size == 0
       trace :debug, "Destroying ghost entity on last link (#{self._parent.name})"
       self._parent.destroy
     end
+
+    # If the link was cross-operation, and there are no more links between
+    # the two operations destroy the operation groups (if any)
+    if op1 != op2 and unlinked_operations?(op1, op2)
+      trace(:info, "There are no more links between operations #{op1} and #{op2}. Remove op groups.")
+
+      Entity.groups.where(path: op1, stand_for: op2).destroy_all
+      Entity.groups.where(path: op2, stand_for: op1).destroy_all
+    end
   end
-
 end
-
-
-#end # ::DB
-#end # ::RCS

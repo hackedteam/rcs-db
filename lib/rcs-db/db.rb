@@ -1,6 +1,4 @@
-#
 #  The main file of the db
-#
 
 # relatives
 require_relative 'events'
@@ -12,150 +10,105 @@ require_relative 'offload_manager'
 require_relative 'statistics'
 require_relative 'backup'
 require_relative 'sessions'
+require_relative 'firewall'
 
 # from RCS::Common
 require 'rcs-common/trace'
+require 'rcs-common/component'
 
 module RCS
-module DB
+  module DB
+    class Application
+      include RCS::Component
 
-class Application
-  include RCS::Tracer
-  extend RCS::Tracer
+      component :db, name: "RCS Database"
 
-  def self.trace_setup
-    # if we can't find the trace config file, default to the system one
-    if File.exist? 'trace.yaml'
-      typ = Dir.pwd
-      ty = 'trace.yaml'
-    else
-      typ = File.dirname(File.dirname(File.dirname(__FILE__)))
-      ty = typ + "/config/trace.yaml"
-      #puts "Cannot find 'trace.yaml' using the default one (#{ty})"
-    end
+      def run(options)
+        run_with_rescue do
+          # initialize random number generator
+          srand(Time.now.to_i)
 
-    # ensure the log directory is present
-    Dir::mkdir(Dir.pwd + '/log') if not File.directory?(Dir.pwd + '/log')
-    Dir::mkdir(Dir.pwd + '/log/err') if not File.directory?(Dir.pwd + '/log/err')
+          # ensure the temp directory is empty
+          FileUtils.rm_rf(Config.instance.temp)
 
-    # initialize the tracing facility
-    begin
-      trace_init typ, ty
-    rescue Exception => e
-      puts e
-      exit
-    end
-  end
+          # check the integrity of the code
+          HeartBeat.dont_steal_rcs
 
-  # the main of the collector
-  def run(options)
+          # load the license limits
+          return 1 unless LicenseManager.instance.load_license
 
-    # initialize random number generator
-    srand(Time.now.to_i)
+          # config file parsing
+          return 1 unless Config.instance.load_from_file
 
-    begin
-      build = File.read(Dir.pwd + '/config/VERSION_BUILD')
-      $version = File.read(Dir.pwd + '/config/VERSION')
-      trace :fatal, "Starting the RCS Database #{$version} (#{build})..."
+          # we need the certs
+          return 1 unless Config.instance.check_certs
 
-      # ensure the temp directory is empty
-      FileUtils.rm_rf(Config.instance.temp)
+          # ensure that the CN is resolved to 127.0.0.1 in the /etc/host file
+          # this is to avoid IPv6 resolution under windows 2008
+          database.ensure_cn_resolution
 
-      # check the integrity of the code
-      HeartBeat.dont_steal_rcs
+          # connect to MongoDB
+          establish_database_connection(wait_until_connected: true)
 
-      # load the license limits
-      return 1 unless LicenseManager.instance.load_license
+          if Config.instance.global['JSON_CACHE']
+            RCS::DB::Cache.observe :item, :core, :injector, :entity, :evidence, :aggregate
+          end
 
-      # config file parsing
-      return 1 unless Config.instance.load_from_file
+          # ensure the temp dir is present
+          Dir::mkdir(Config.instance.temp) if not File.directory?(Config.instance.temp)
 
-      # we need the certs
-      return 1 unless Config.instance.check_certs
+          # make sure the backup dir is present
+          FileUtils.mkdir_p(Config.instance.global['BACKUP_DIR']) if not File.directory?(Config.instance.global['BACKUP_DIR'])
 
-      # ensure that the CN is resolved to 127.0.0.1 in the /etc/host file
-      # this is to avoid IPv6 resolution under windows 2008
-      DB.instance.ensure_cn_resolution
+          # ensure the sharding is enabled
+          database.enable_sharding
 
-      # connect to MongoDB
-      until DB.instance.connect
-        trace :warn, "Cannot connect to MongoDB, retrying..."
-        sleep 5
+          # ensure all indexes are in place
+          database.create_indexes
+
+          Audit.log :actor => '<system>', :action => 'startup', :desc => "System started"
+
+          # check if we have to mark items for crisis
+          database.mark_bad_items if File.exist?(Config.instance.file('mark_bad'))
+
+          # enable shard on audit log, it will increase its size forever and ever
+          database.shard_audit
+
+          # ensure at least one user (admin) is active
+          database.ensure_admin
+
+          # ensure we have the signatures for the agents
+          database.ensure_signatures
+
+          # load cores in the /cores dir
+          Core.load_all
+
+          # create the default filters
+          database.create_evidence_filters
+
+          # perform any pending operation in the journal
+          OffloadManager.instance.recover
+
+          # ensure the backup of metadata
+          BackupManager.ensure_backup
+
+          # creates all the necessary queues
+          NotificationQueue.create_queues
+
+          # housekeeping of old servers sessions
+          SessionManager.instance.clear_all_servers
+
+          # If there aren't users online, cleans the watched_items list
+          WatchedItem.rebuild
+
+          # Wait until the firewall is on
+          Firewall.wait
+          Firewall.create_default_rules(:db)
+
+          # enter the main loop (hopefully will never exit from it)
+          Events.new.setup Config.instance.global['LISTENING_PORT']
+        end
       end
-
-      if Config.instance.global['JSON_CACHE']
-        RCS::DB::Cache.observe :item, :core, :injector, :entity, :evidence, :aggregate
-      end
-
-      # ensure the temp dir is present
-      Dir::mkdir(Config.instance.temp) if not File.directory?(Config.instance.temp)
-
-      # make sure the backup dir is present
-      FileUtils.mkdir_p(Config.instance.global['BACKUP_DIR']) if not File.directory?(Config.instance.global['BACKUP_DIR'])
-
-      # ensure the sharding is enabled
-      DB.instance.enable_sharding
-
-      # ensure all indexes are in place
-      DB.instance.create_indexes
-
-      Audit.log :actor => '<system>', :action => 'startup', :desc => "System started"
-
-      # check if we have to mark items for crisis
-      DB.instance.mark_bad_items if File.exist?(Config.instance.file('mark_bad'))
-
-      # enable shard on audit log, it will increase its size forever and ever
-      DB.instance.shard_audit
-
-      # ensure at least one user (admin) is active
-      DB.instance.ensure_admin
-
-      # ensure we have the signatures for the agents
-      DB.instance.ensure_signatures
-
-      # load cores in the /cores dir
-      Core.load_all
-
-      # create the default filters
-      DB.instance.create_evidence_filters
-
-      # perform any pending operation in the journal
-      OffloadManager.instance.recover
-
-      # ensure the backup of metadata
-      BackupManager.ensure_backup
-
-      # creates all the necessary queues
-      NotificationQueue.create_queues
-
-      # housekeeping of old servers sessions
-      SessionManager.instance.clear_all_servers
-
-      # If there aren't users online, cleans the watched_items list
-      WatchedItem.rebuild
-
-      # enter the main loop (hopefully will never exit from it)
-      Events.new.setup Config.instance.global['LISTENING_PORT']
-      
-    rescue Interrupt
-      trace :info, "System shutdown. Bye bye!"
-      Audit.log :actor => '<system>', :action => 'shutdown', :desc => "System shutdown"
-      return 0
-    rescue Exception => e
-      trace :fatal, "FAILURE: " << e.message
-      trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
-      return 1
-    end
-    
-    return 0
-  end
-
-  # we instantiate here an object and run it
-  def self.run!(*argv)
-    self.trace_setup
-    return Application.new.run(argv)
-  end
-
-end # Application::
-end #DB::
+    end # Application::
+  end #DB::
 end #RCS::

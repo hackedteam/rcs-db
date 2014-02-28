@@ -70,8 +70,8 @@ class Config
   end
 
   def load_from_file
-    trace :info, "Loading configuration file..."
-    conf_file = File.join Dir.pwd, CONF_DIR, CONF_FILE
+    #trace :info, "Loading configuration file..."
+    conf_file = File.join $execution_directory, CONF_DIR, CONF_FILE
 
     # load the config in the @global hash
     begin
@@ -105,17 +105,17 @@ class Config
   end
 
   def temp(name=nil)
-    temp = File.join Dir.pwd, temp_folder_name
+    temp = File.join $execution_directory, temp_folder_name
     temp = File.join temp, name if name
     return temp
   end
   
   def file(name)
-    return File.join Dir.pwd, CONF_DIR, @global[name].nil? ? name : @global[name]
+    return File.join $execution_directory, CONF_DIR, @global[name].nil? ? name : @global[name]
   end
 
   def cert(name)
-    return File.join Dir.pwd, CERT_DIR, @global[name].nil? ? name : @global[name]
+    return File.join $execution_directory, CERT_DIR, @global[name].nil? ? name : @global[name]
   end
 
   def is_slow?(time)
@@ -123,8 +123,8 @@ class Config
     return time > @global['SLOW']
   end
 
-  def safe_to_file
-    conf_file = File.join Dir.pwd, CONF_DIR, CONF_FILE
+  def save_to_file
+    conf_file = File.join $execution_directory, CONF_DIR, CONF_FILE
 
     # Write the @global into a yaml file
     begin
@@ -146,7 +146,7 @@ class Config
       return 0
     end
 
-    $version = File.read(Dir.pwd + '/config/VERSION')
+    $version = File.read(file('VERSION'))
 
     # migration
     return Migration.up_to $version if options[:migrate]
@@ -158,6 +158,23 @@ class Config
 
     # load the current config
     load_from_file
+
+    if options[:add_skip_firewall_check]
+      @global.merge!('SKIP_FIREWALL_CHECK' => true)
+      save_to_file
+      return 0
+    end
+
+    if options[:remove_skip_firewall_check]
+      @global.reject! { |key| key == 'SKIP_FIREWALL_CHECK' }
+      save_to_file
+      return 0
+    end
+
+    if options[:get_cn]
+      print @global['CN']
+      return 0
+    end
 
     if options[:shard]
       add_shard options
@@ -222,7 +239,7 @@ class Config
     trace :info, PP.pp(@global, "")
 
     # save the configuration
-    safe_to_file
+    save_to_file
 
     return 0
   end
@@ -263,7 +280,7 @@ class Config
     @global['SHARD'] = shard['shardAdded']
 
     # save the configuration
-    safe_to_file
+    save_to_file
 
     # logout
     http.request_post('/auth/logout', nil, {'Cookie' => cookie})
@@ -273,9 +290,9 @@ class Config
     trace :info, "Generating ssl certificates..."
 
     # ensure dir is present
-    FileUtils.mkdir_p File.join(Dir.pwd, CERT_DIR)
+    FileUtils.mkdir_p File.join($execution_directory, CERT_DIR)
 
-    Dir.chdir File.join(Dir.pwd, CERT_DIR) do
+    Dir.chdir File.join($execution_directory, CERT_DIR) do
 
       File.open('index.txt', 'wb+') { |f| f.write '' }
       File.open('serial.txt', 'wb+') { |f| f.write '01' }
@@ -284,7 +301,7 @@ class Config
       if options[:gen_ca] or !File.exist?('rcs-ca.crt')
         trace :info, "Generating a new CA authority..."
         # default one
-        subj = "/CN=\"System Certification Authority\"/O=\"Organization ltd\""
+        subj = "/CN=\"Root Certification Authority\"/O=\"ACME Corp\""
         # if specified...
         subj = "/CN=\"#{options[:ca_name]}\"" if options[:ca_name]
         out = `openssl req -subj #{subj} -batch -days 3650 -nodes -new -x509 -keyout rcs-ca.key -out rcs-ca.crt -config openssl.cnf 2>&1`
@@ -346,32 +363,33 @@ class Config
     trace :info, "Generating anon ssl certificates..."
 
     # ensure dir is present
-    FileUtils.mkdir_p File.join(Dir.pwd, CERT_DIR)
+    FileUtils.mkdir_p File.join($execution_directory, CERT_DIR)
 
-    Dir.chdir File.join(Dir.pwd, CERT_DIR) do
+    Dir.chdir File.join($execution_directory, CERT_DIR) do
 
       File.open('index.txt', 'wb+') { |f| f.write '' }
       File.open('serial.txt', 'wb+') { |f| f.write '01' }
 
       trace :info, "Generating a new Anon CA authority..."
-      subj = "/CN=\"#{SecureRandom.base64(20)[0..10]}\""
+      subj = "/CN=\"#{SecureRandom.urlsafe_base64(20)[0..10]}\""
       out = `openssl req -subj #{subj} -batch -days 3650 -nodes -new -x509 -keyout rcs-anon-ca.key -out rcs-anon-ca.crt -config openssl.cnf 2>&1`
       trace :info, out if $log
 
-      return unless File.exist? 'rcs-anon-ca.crt'
+      raise('Missing file rcs-anon-ca.crt') unless File.exist? 'rcs-anon-ca.crt'
 
       trace :info, "Generating anonymizer certificate..."
-      subj = "/CN=\"#{SecureRandom.base64(20)[0..10]}\""
+      subj = "/CN=\"#{SecureRandom.urlsafe_base64(20)[0..10]}\""
       out = `openssl req -subj #{subj} -batch -days 3650 -nodes -new -keyout rcs-anon.key -out rcs-anon.csr -config openssl.cnf 2>&1`
       trace :info, out if $log
 
-      return unless File.exist? 'rcs-anon.key'
+      raise('Missing file rcs-anon.key') unless File.exist? 'rcs-anon.key'
+      raise('Missing file rcs-anon.csr') unless File.exist? 'rcs-anon.csr'
 
       trace :info, "Signing certificates..."
       out = `openssl ca -batch -days 3650 -out rcs-anon.crt -in rcs-anon.csr -config openssl.cnf -name CA_network 2>&1`
       trace :info, out if $log
 
-      return unless File.exist? 'rcs-anon.crt'
+      raise('Missing file rcs-anon.crt') unless File.exist? 'rcs-anon.crt'
 
       trace :info, "Creating certificates bundles..."
 
@@ -481,7 +499,7 @@ class Config
         ext = '.exe'
     end
 
-    return Dir.pwd + '/mongodb/' + os + '/' + file + ext
+    return $execution_directory + '/mongodb/' + os + '/' + file + ext
   end
 
   def self.file_path(file)
@@ -517,6 +535,9 @@ class Config
       end
       opts.on( '-n', '--CN CN', String, 'Common Name for the server' ) do |cn|
         options[:cn] = cn
+      end
+      opts.on( '--get-cn', 'Print the current CN for the master') do
+        options[:get_cn] = true
       end
       opts.on( '-N', '--new-CN', 'Use this option to update the CN in the db and registry' ) do
         options[:newcn] = true
@@ -588,6 +609,12 @@ class Config
       opts.on( '-X', '--defaults', 'Write a new config file with default values' ) do
         options[:defaults] = true
       end
+      opts.on( '--add-skip-firewall-check', 'Add SKIP_FIREWALL_CHECK to the configuration params') do
+        options[:add_skip_firewall_check] = true
+      end
+      opts.on( '--remove-skip-firewall-check', 'Remove SKIP_FIREWALL_CHECK from the configuration params' ) do
+        options[:remove_skip_firewall_check] = true
+      end
       opts.on( '-B', '--backup-dir DIR', String, 'The directory to be used for backups' ) do |dir|
         options[:backup] = dir
       end
@@ -633,6 +660,11 @@ class Config
       end
       opts.on( '--cleanup', 'Cleanup the db by deleting dangling entries') do
         options[:cleanup] = true
+      end
+      opts.on("-h", "--help", "Display this help") do
+        hidden_switches = ["--add-skip-firewall-check", "--remove-skip-firewall-check"]
+        puts opts.to_s.split("\n").delete_if { |line| hidden_switches.find{|s| line =~ /#{s}/} }.join("\n")
+        exit
       end
     end
 

@@ -17,7 +17,7 @@ class LinkManager
     first_entity = params[:from]
     second_entity = params[:to]
 
-    raise "Cannot create link on itself" unless first_entity != second_entity
+    raise "Cannot create link on itself (#{first_entity.name})" unless first_entity != second_entity
 
     if params[:versus]
       versus = params[:versus].to_sym
@@ -28,7 +28,7 @@ class LinkManager
     # default is automatic
     params[:level] ||= :automatic
 
-    trace :info, "Creating link between '#{first_entity.name}' and '#{second_entity.name}' [#{params[:level]}, #{params[:type]}, #{versus}]"
+    trace :info, "Creating link between #{first_entity.name.inspect} and #{second_entity.name.inspect} [#{params[:level]}, #{params[:type]}, #{versus}]"
 
     # create a link in this entity
     first_link = first_entity.links.find_or_initialize_by(le: second_entity._id)
@@ -70,6 +70,11 @@ class LinkManager
       # notify the links
       entity.push_modify_entity
     end
+
+    if first_link.cross_operation?
+      Entity.create_or_update_operation_group(first_entity.path[0], second_entity.path[0])
+    end
+    # TODO: update any groups even where a link is destroyed
 
     return first_link
   end
@@ -159,65 +164,60 @@ class LinkManager
     first_entity = params[:from]
     second_entity = params[:to]
 
-    trace :info, "Moving links from '#{first_entity.name}' to '#{second_entity.name}'"
+    trace(:info, "Moving links from '#{first_entity.name}' to '#{second_entity.name}'")
 
-    # delete the links between the 2 entities
-    del_link params
+    links_to_create = []
+    links_to_delete = []
 
-    # merge links
     first_entity.links.each do |link|
       linked_entity = link.linked_entity
-      backlink = linked_entity.links.connected_to(first_entity).first
 
-      # exclude links between the 2 entities that have to be merged
-      next if linked_entity == second_entity
+      # Keep intact links between the twp
+      next if second_entity == linked_entity
 
-      # Finds (if any) a link from the second entity to the `linked_entity`
+      # Delete link on the first entity
+      links_to_delete << {from: first_entity, to: linked_entity}
+
+      # Add/update link on the second entity
+      new_link_attributes = link.attributes.reject { |name| %w[le _id].include?(name) }.symbolize_keys
+      new_link_attributes.merge!(from: second_entity, to: linked_entity)
       existing_link = second_entity.links.connected_to(linked_entity).first
-
+      # Resolve link conflict
       if existing_link
-        existing_backlink = linked_entity.links.connected_to(second_entity).first
-
-        existing_link.add_info(link.info)
-        existing_backlink.add_info(link.info)
-      else
-        # adds the link to second entity
-        second_entity.links << link
-        # updates the backlink
-        backlink.le = second_entity._id
-        backlink.save
+        new_link_attributes.merge!(level: :automatic) if [existing_link.level, link.level].include?(:manual)
+        new_link_attributes.merge!(rel: [existing_link.rel, link.rel].max)
       end
+      links_to_create << new_link_attributes
     end
 
-    # delete all the old links
-    first_entity.links.destroy_all
+    links_to_delete.each { |params| del_link(params) }
+    links_to_create.each { |params| add_link(params) }
+
+    nil
   end
 
-  # check if two entities are the same and create a link between them
+  # Check if two entities are the same and create a link between them.
+  # Search for other entities with the same handle, if found we consider them identical.
   def check_identity(entity, handle)
-    # search for other entities with the same handle
-    ident = Entity.same_path_of(entity).with_handle(handle.type, handle.handle).first
-    return unless ident
+    Entity.with_handle(handle.type, handle.handle, exclude: entity).each do |other_entity|
+      trace :info, "Identity match: #{entity.name.inspect} and #{other_entity.name.inspect} -> #{handle.handle.inspect}"
 
-    # if found we consider them identical
-    trace :info, "Identity match: '#{entity.name}' and '#{ident.name}' -> #{handle.handle}"
-
-    # create the link
-    add_link({from: entity, to: ident, type: :identity, info: handle.handle, versus: :both})
+      # Create the (identity) link
+      add_link(from: entity, to: other_entity, type: :identity, info: handle.handle, versus: :both)
+    end
   end
 
-  # Creates a link from "entity" to any other (target) entity of the same operation
-  # that have a matching "handle" in its aggregates.
-  def link_handle entity, handle
-    Entity.targets.where(path: entity.path.first).each do |e|
+  # Creates a link from ENTITY to any onthe entity that have communicated with HANDLE (based on aggregates)
+  def link_handle(entity, handle)
+    HandleBook.entities_that_communicate_with(handle.type, handle.handle, exclude: entity).each do |peer_entity|
+      trace :debug, "Entity #{entity.name.inspect} must be linked to #{peer_entity.name.inspect} via #{handle.handle.inspect} (#{handle.type.inspect})"
 
-      next unless Aggregate.target(e.path.last).summary_include?(handle.aggregate_types, handle.handle)
+      versus = Aggregate.target(peer_entity.target_id).versus_of_communications_with(handle)
 
-      trace :debug, "#link_handle: Linking #{entity.name} to #{e.name} via #{handle.handle} (#{handle.type})"
-
-      # if we find a peer, create a link
-      e.peer_versus(handle).each do |versus|
-        add_link({from: entity, to: e, type: :peer, level: :automatic, info: handle.handle, versus: versus})
+      if versus
+        add_link(from: peer_entity, to: entity, type: :peer, level: :automatic, info: handle.handle, versus: versus)
+      else
+        trace :warn, "Cannot tell the communication versus"
       end
     end
   end

@@ -36,7 +36,7 @@ module SingleEvidence
     end
 
     def default_keyword_index
-      self[:kw] = []
+      self[:kw] = [] unless self[:kw].kind_of?(Array)
 
       self[:data].each_value do |value|
         next unless value.is_a? String or value.is_a? Symbol
@@ -68,11 +68,6 @@ module SingleEvidence
           ev.data[:_grid_size] = self[:grid_content].bytesize
           ev.data[:_grid] = RCS::DB::GridFS.put(self[:grid_content], {filename: agent[:_id].to_s}, target[:_id].to_s) unless self[:grid_content].nil?
         end
-
-        # update the evidence statistics
-        size = ev.data.to_s.size
-        size += ev.data[:_grid_size] unless ev.data[:_grid_size].nil?
-        RCS::Worker::StatsManager.instance.add evidence: 1, evidence_size: size
 
         # keyword full search
         ev.kw = self[:kw]

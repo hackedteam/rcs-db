@@ -48,7 +48,7 @@ ${StrStr}
   !ifdef FULL_INSTALL
     OutFile "rcs-setup-${PACKAGE_VERSION}.exe"
   !else
-  OutFile "rcs-update-${PACKAGE_VERSION}.exe"
+    OutFile "rcs-update-${PACKAGE_VERSION}.exe"
   !endif
   
   ;Default installation folder
@@ -172,56 +172,91 @@ ${StrStr}
 Section "Update Section" SecUpdate
    SectionIn 2
 
-   DetailPrint ""
-   DetailPrint "Stopping RCS Services..."
-   SimpleSC::StopService "RCSCollector" 1
-   Sleep 3000
-   SimpleSC::StopService "RCSDB" 1
-   Sleep 3000
-   SimpleSC::StopService "RCSWorker" 1
-   Sleep 3000
-   SimpleSC::StopService "RCSConnector" 1
-   Sleep 3000
-   SimpleSC::StopService "RCSAggregator" 1
-   Sleep 3000
-   SimpleSC::StopService "RCSIntelligence" 1
+  ${If} $installMaster == ${BST_CHECKED}
+    !cd '..'
+    SetOutPath "$INSTDIR\DB\bin"
+    File "bin\rcs-license-check"
+    File /r "lib\rgloader"
 
-   ReadRegDWORD $R0 HKLM "Software\HT\RCS" "ocr"
-   IntCmp $R0 1 0 noocr noocr
-     Sleep 3000
-     SimpleSC::StopService "RCSOCR" 1
-   noocr:
+    DetailPrint "Checking the license file.."
+    CopyFiles /SILENT $masterLicense "$INSTDIR\DB\temp\rcs.lic"
 
-   ReadRegDWORD $R0 HKLM "Software\HT\RCS" "translate"
-   IntCmp $R0 1 0 notrans notrans
-     Sleep 3000
-     SimpleSC::StopService "RCSTranslate" 1
-   notrans:
+    ; TODO: update the version before release
+    StrCpy $0 1
+    nsExec::ExecToLog "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-license-check -v 9.2 -l $INSTDIR\DB\temp\rcs.lic"
+    Pop $0
+    ${If} $0 != 0
+       MessageBox MB_OK|MB_ICONEXCLAMATION "The license file is invalid. Please restart the installation with the correct one."
+       Delete "$INSTDIR\DB\bin\rcs-license-check"
+       Quit
+    ${EndIf}
 
-   Sleep 3000
-   SimpleSC::StopService "RCSMasterRouter" 1
-   Sleep 3000
-   SimpleSC::StopService "RCSMasterConfig" 1
-   Sleep 3000
-   SimpleSC::StopService "RCSShard" 1
+    Delete "$INSTDIR\DB\bin\rcs-license-check"
+    !cd 'nsis'
+  ${EndIf}
 
-   Sleep 5000
+  DetailPrint ""
+  DetailPrint "Stopping RCS Services..."
+  SimpleSC::StopService "RCSCollector" 1
+  SimpleSC::StopService "RCSCarrier" 1
+  SimpleSC::StopService "RCSController" 1
+  Sleep 3000
+  SimpleSC::StopService "RCSDB" 1
+  Sleep 3000
+  SimpleSC::StopService "RCSWorker" 1
+  Sleep 3000
+  SimpleSC::StopService "RCSConnector" 1
+  Sleep 3000
+  SimpleSC::StopService "RCSAggregator" 1
+  Sleep 3000
+  SimpleSC::StopService "RCSIntelligence" 1
+
+  ReadRegDWORD $R0 HKLM "Software\HT\RCS" "money"
+  IntCmp $R0 1 0 nomoney nomoney
+    Sleep 3000
+    SimpleSC::StopService "RCSMoney" 1
+  nomoney:
+
+  ReadRegDWORD $R0 HKLM "Software\HT\RCS" "ocr"
+  IntCmp $R0 1 0 noocr noocr
+    Sleep 3000
+    SimpleSC::StopService "RCSOCR" 1
+  noocr:
+
+  ReadRegDWORD $R0 HKLM "Software\HT\RCS" "translate"
+  IntCmp $R0 1 0 notrans notrans
+    Sleep 3000
+    SimpleSC::StopService "RCSTranslate" 1
+  notrans:
+
+  Sleep 3000
+  SimpleSC::StopService "RCSMasterRouter" 1
+  Sleep 3000
+  SimpleSC::StopService "RCSMasterConfig" 1
+  Sleep 3000
+  SimpleSC::StopService "RCSShard" 1
+
+  Sleep 5000
    
-   DetailPrint "done"
-   
-   SetDetailsPrint "textonly"
-   DetailPrint "Removing previous version..."
-   RMDir /r "$INSTDIR\DB\lib\rcs-db-release"
-   RMDir /r "$INSTDIR\DB\lib\rcs-worker-release"
-   RMDir /r "$INSTDIR\DB\lib\rcs-connector-release"
-   RMDir /r "$INSTDIR\DB\lib\rcs-aggregator-release"
-   RMDir /r "$INSTDIR\DB\lib\rcs-intelligence-release"
-   RMDir /r "$INSTDIR\DB\lib\rgloader"
-   RMDir /r "$INSTDIR\DB\bin"
-   RMDir /r "$INSTDIR\Collector\bin"
-   RMDir /r "$INSTDIR\Collector\lib"
-   DetailPrint "done"
-  
+  DetailPrint "done"
+
+  SetDetailsPrint "textonly"
+  DetailPrint "Removing previous version..."
+  RMDir /r "$INSTDIR\DB\lib\rcs-db-release"
+  RMDir /r "$INSTDIR\DB\lib\rcs-worker-release"
+  RMDir /r "$INSTDIR\DB\lib\rcs-connector-release"
+  RMDir /r "$INSTDIR\DB\lib\rcs-aggregator-release"
+  RMDir /r "$INSTDIR\DB\lib\rcs-intelligence-release"
+  RMDir /r "$INSTDIR\DB\lib\rgloader"
+  RMDir /r "$INSTDIR\DB\bin"
+  RMDir /r "$INSTDIR\Collector\bin"
+  RMDir /r "$INSTDIR\Collector\lib"
+  DetailPrint "done"
+
+  DetailPrint "Remove stats file.."
+  Delete $INSTDIR\DB\config\db_stats
+  Delete $INSTDIR\DB\config\worker_stats
+  DetailPrint "done"
 SectionEnd
 
 Section "Install Section" SecInstall
@@ -235,16 +270,16 @@ Section "Install Section" SecInstall
   
   !ifdef FULL_INSTALL
     ; fresh install
-    ${If} $installUPGRADE != ${BST_CHECKED}
+    ;${If} $installUPGRADE != ${BST_CHECKED}
       RMDir /r "$INSTDIR\Ruby"
       SetOutPath "$INSTDIR\Ruby"
       File /r "Ruby\*.*"
 
       WriteRegExpandStr HKLM "SOFTWARE\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" "C:\RCS\Ruby\bin\ruby.exe" "DisableNXShowUI"
-    ${Else}
+    ;${Else}
     ; Upgrade
-
-    ${EndIf}
+    ; TODO: check if we need to install a new ruby version
+    ;${EndIf}
   !endif
 
   SetDetailsPrint "both"
@@ -266,20 +301,22 @@ Section "Install Section" SecInstall
   
     !ifdef FULL_INSTALL
       ; fresh install
-      ${If} $installUPGRADE != ${BST_CHECKED}
+      ;${If} $installUPGRADE != ${BST_CHECKED}
         RMDir /r "$INSTDIR\Java"
         SetOutPath "$INSTDIR\Java"
         File /r "..\Java\*.*"
 
+        RMDir /r "$INSTDIR\Python"
         SetOutPath "$INSTDIR\Python"
         File /r "..\Python\*.*"
 
+        RMDir /r "$INSTDIR\DB\mongodb\win"
         SetOutPath "$INSTDIR\DB\mongodb\win"
         File /r "mongodb\win\*.*"
-      ${Else}
+      ;${Else}
       ; Upgrade
-
-      ${EndIf}
+      ; TODO: check if we need to install a new java/python/mongo version
+      ;${EndIf}
     !endif
   
     SetOutPath "$INSTDIR\DB\bin"
@@ -331,6 +368,9 @@ Section "Install Section" SecInstall
     File "config\VERSION_BUILD"
     File "config\VERSION"
 
+    ; TODO: remove this after 9.2!!!
+    File "config\mark_bad"
+
     SetOutPath "$INSTDIR\DB\config\certs"
     File "config\certs\windows.pfx"
     File /r "config\certs\*.cer"
@@ -354,9 +394,6 @@ Section "Install Section" SecInstall
 
     SetDetailsPrint "both"
     DetailPrint "done"
-
-    DetailPrint "Installing license.."
-    CopyFiles /SILENT $masterLicense "$INSTDIR\DB\config\rcs.lic"
 
     !ifdef FULL_INSTALL
       ; fresh install
@@ -384,9 +421,12 @@ Section "Install Section" SecInstall
         SimpleSC::SetServiceFailure "hasplms" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
       ${Else}
       ; Upgrade
-
+      ; TODO: check if we need to install a new version
       ${EndIf}
     !endif
+
+    DetailPrint "Installing license.."
+    CopyFiles /SILENT $masterLicense "$INSTDIR\DB\config\rcs.lic"
 
     DetailPrint "Checking the license file.."
     ; check if the license + dongle is ok
@@ -418,6 +458,11 @@ Section "Install Section" SecInstall
       SetDetailsPrint "both"
       ; write the config yaml
       nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --defaults --CN $masterCN --log"
+
+      ${If} $installShard != ${BST_CHECKED}
+        nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --add-skip-firewall-check --log"
+      ${EndIf}
+
       DetailPrint "done"
 
       ; generate the SSL cert
@@ -519,6 +564,23 @@ Section "Install Section" SecInstall
       DetailPrint "done"
     ${EndIf}
 
+    ; Check out http://nsis.sourceforge.net/NSIS_Simple_Firewall_Plugin
+    DetailPrint "Deleting legacy firewall rules..."
+    SimpleFC::AdvRemoveRule "RCS Database"
+    SimpleFC::AdvRemoveRule "RCS Database Websocket"
+    SimpleFC::AdvRemoveRule "RCS Mongo Router"
+    SimpleFC::AdvRemoveRule "RCS Mongo Shard"
+    SimpleFC::AdvRemoveRule "RCS Mongo Config"
+
+    ; SimpleFC::AdvAddRule [name] [description] [protocol] [direction] [status] [profile] [action] [application] [icmp_types_and_codes]
+    ; [group] [local_ports] [remote_ports] [local_address] [remote_address]
+    DetailPrint "Adding firewall rules..."
+    SimpleFC::AdvAddRule "RCS_FWD Database"           "" 6 1 1 2147483647 1 "" "" "RCS Firewall Rules" 443    "" "" "LocalSubnet,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+    SimpleFC::AdvAddRule "RCS_FWD Database Websocket" "" 6 1 1 2147483647 1 "" "" "RCS Firewall Rules" 444    "" "" "LocalSubnet,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+    SimpleFC::AdvAddRule "RCS_FWD Mongo Router"       "" 6 1 1 2147483647 1 "" "" "RCS Firewall Rules" 27017  "" "" "LocalSubnet"
+    SimpleFC::AdvAddRule "RCS_FWD Mongo Shard"        "" 6 1 1 2147483647 1 "" "" "RCS Firewall Rules" 27018  "" "" "LocalSubnet"
+    SimpleFC::AdvAddRule "RCS_FWD Mongo Config"       "" 6 1 1 2147483647 1 "" "" "RCS Firewall Rules" 27019  "" "" "LocalSubnet"
+
     DetailPrint "Starting RCS DB..."
     SimpleSC::StartService "RCSDB" "" 30
     Sleep 10000
@@ -539,12 +601,6 @@ Section "Install Section" SecInstall
     SimpleSC::StartService "RCSIntelligence" "" 30
     Sleep 5000
 
-    DetailPrint "Adding firewall rule for port 443/tcp and 444/tcp..."
-    #nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=443'
-    #nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSDB" dir=in action=allow protocol=TCP localport=444'
-    SimpleFC::AddPort 443 "RCS Database" 6 0 2 "" 1
-    SimpleFC::AddPort 444 "RCS Database" 6 0 2 "" 1
-	
     !cd '..'
     WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
     WriteRegDWORD HKLM "Software\HT\RCS" "master" 0x00000001
@@ -554,17 +610,42 @@ Section "Install Section" SecInstall
     DetailPrint "Installing single Shard files..."
     SetDetailsPrint "textonly"
     !cd 'DB'
-       
+
     SetDetailsPrint "both"
     DetailPrint "done"
-    
+
+    DetailPrint "Adding firewall rules for port 27017, 27018 and 27019/tcp..."
+    SimpleFC::AdvAddRule "RCS_FWD Mongo Router"       "" 6 1 1 2147483647 1 "" "" "RCS Firewall Rules" 27017  "" "" "LocalSubnet"
+    SimpleFC::AdvAddRule "RCS_FWD Mongo Shard"        "" 6 1 1 2147483647 1 "" "" "RCS Firewall Rules" 27018  "" "" "LocalSubnet"
+    SimpleFC::AdvAddRule "RCS_FWD Mongo Config"       "" 6 1 1 2147483647 1 "" "" "RCS Firewall Rules" 27019  "" "" "LocalSubnet"
+
+    SetOutPath "$INSTDIR\DB\config\certs"
+    File "config\certs\openssl.cnf"
+
     ; fresh install
     ${If} $installUPGRADE != ${BST_CHECKED}
+
+      ; write the config yaml
+      DetailPrint "Writing the configuration..."
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --defaults --CN $masterAddress"
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --add-skip-firewall-check"
+      DetailPrint "done"
+
+      ; generate the SSL cert
+      DetailPrint "Generating CA and certs for worker..."
+      !insertmacro ExecOrQuit "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-ca --generate-certs --log" "Unable to generate CA and certs for worker"
+      DetailPrint "done"
+
       DetailPrint "Creating service RCS Shard..."
       nsExec::Exec '$INSTDIR\DB\mongodb\win\mongod.exe --dbpath $INSTDIR\DB\data --journal --nssize 64 --logpath $INSTDIR\DB\log\mongod.log --logappend --shardsvr --rest --install --serviceName RCSShard --serviceDisplayName "RCS Shard" --serviceDescription "Remote Control System DB Shard for data storage"'
       SimpleSC::SetServiceFailure "RCSShard" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
       DetailPrint "done"
-      
+
+      DetailPrint "Creating service RCS Router..."
+      nsExec::Exec '$INSTDIR\DB\mongodb\win\mongos.exe --logpath $INSTDIR\DB\log\mongos.log --logappend --configdb $masterAddress --install --serviceName RCSMasterRouter --serviceDisplayName "RCS Master Router" --serviceDescription "Remote Control System Master Router for shards"'
+      SimpleSC::SetServiceFailure "RCSMasterRouter" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      DetailPrint "done"
+
       DetailPrint "Creating service RCS Worker..."
       nsExec::Exec  "$INSTDIR\DB\bin\nssm.exe install RCSWorker $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-worker"
       SimpleSC::SetServiceFailure "RCSWorker" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
@@ -585,22 +666,36 @@ Section "Install Section" SecInstall
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "DisplayName" "RCS Intelligence"
       WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSIntelligence" "Description" "Remote Control System Intelligence data correlator"
       DetailPrint "done"
+    ${Else}
+      ;TODO: remove after 9.2.0
 
-      DetailPrint "Starting RCS Shard..."
-      SimpleSC::StartService "RCSShard" "" 30
-      Sleep 3000
+      ; generate the SSL cert
+      DetailPrint "Generating CA and certs for worker..."
+      !insertmacro ExecOrQuit "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --generate-ca --generate-certs --log" "Unable to generate CA and certs."
+      DetailPrint "done"
 
-      DetailPrint "Writing the configuration..."
-      SetDetailsPrint "textonly"
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --defaults --CN $masterAddress"
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config -u admin -p $adminpass -d $masterAddress --add-shard $localAddress"
-      SetDetailsPrint "both"
+      nsExec::ExecToStack "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --get-cn"
+      Pop $1
+      Pop $masterAddress
+
+      DetailPrint "Creating service RCS Router..."
+      nsExec::Exec '$INSTDIR\DB\mongodb\win\mongos.exe --logpath $INSTDIR\DB\log\mongos.log --logappend --configdb $masterAddress --install --serviceName RCSMasterRouter --serviceDisplayName "RCS Master Router" --serviceDescription "Remote Control System Master Router for shards"'
+      SimpleSC::SetServiceFailure "RCSMasterRouter" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
       DetailPrint "done"
 	  ${EndIf}
-    
+
     DetailPrint "Starting RCS Shard..."
     SimpleSC::StartService "RCSShard" "" 30
     Sleep 3000
+
+    DetailPrint "Starting RCS Master Router..."
+    SimpleSC::StartService "RCSMasterRouter" "" 30
+    Sleep 5000
+
+    ; write the config yaml
+    DetailPrint "Updating the shard configuration..."
+    nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config -u admin -p $adminpass -d $masterAddress --add-shard $localAddress"
+
     DetailPrint "Starting RCS Worker..."
     SimpleSC::StartService "RCSWorker" "" 30
 
@@ -627,9 +722,17 @@ Section "Install Section" SecInstall
     SetOutPath "$INSTDIR\Collector\lib"
     File /r "lib\rgloader"
     File "lib\rcs-collector.rb"
+    File "lib\rcs-carrier.rb"
+    File "lib\rcs-controller.rb"
     
     SetOutPath "$INSTDIR\Collector\lib\rcs-collector-release"
     File /r "lib\rcs-collector-release\*.*"
+
+    SetOutPath "$INSTDIR\Collector\lib\rcs-carrier-release"
+    File /r "lib\rcs-carrier-release\*.*"
+
+    SetOutPath "$INSTDIR\Collector\lib\rcs-controller-release"
+    File /r "lib\rcs-controller-release\*.*"
 
     ; make sure the cache is clean after upgrade
     Delete "$INSTDIR\Collector\config\cache.db"
@@ -641,51 +744,87 @@ Section "Install Section" SecInstall
     RMDir /r "$INSTDIR\Collector\public"
 
     SetOutPath "$INSTDIR\Collector\config"
-    File "config\decoy.rb"
     File "config\trace.yaml"
     File "config\VERSION"
     File "config\VERSION_BUILD"
     SetDetailsPrint "both"
     DetailPrint "done"
-    
-    DetailPrint "Adding firewall rule for port 80/tcp..."
-    #nsExec::ExecToLog 'netsh advfirewall firewall add rule name="RCSCollector" dir=in action=allow protocol=TCP localport=80'
-    SimpleFC::AddPort 80 "RCS Collector" 6 0 2 "" 1
 	
     !cd '..'
     
     ; fresh install
     ${If} $installUPGRADE != ${BST_CHECKED}
       DetailPrint ""
-      DetailPrint "Writing the configuration..."
+      DetailPrint "Writing the collector configuration..."
       SetDetailsPrint "textonly"
       ; retrieve the certs from the server
-      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector-config --defaults -d $masterAddress -u admin -p $adminpass -t -s"
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector-config --defaults -d $masterAddress -u admin -p $adminpass -t -s --wait-db"
       SetDetailsPrint "both"
       DetailPrint "done"
-    
-      DetailPrint "Creating service RCS Collector..."
-      nsExec::Exec  "$INSTDIR\Collector\bin\nssm.exe install RCSCollector $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector"
-      SimpleSC::SetServiceFailure "RCSCollector" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSCollector" "DisplayName" "RCS Collector"
-      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSCollector" "Description" "Remote Control System Collector for data reception"
+
+      ${If} $installCollector == ${BST_CHECKED}
+        DetailPrint "Creating service RCS Collector..."
+        nsExec::Exec  "$INSTDIR\Collector\bin\nssm.exe install RCSCollector $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector"
+        SimpleSC::SetServiceFailure "RCSCollector" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+        WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSCollector" "DisplayName" "RCS Collector"
+        WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSCollector" "Description" "Remote Control System Collector for data reception"
+        DetailPrint "done"
+
+        DetailPrint "Creating service RCS Carrier..."
+        nsExec::Exec  "$INSTDIR\Collector\bin\nssm.exe install RCSCarrier $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-carrier"
+        SimpleSC::SetServiceFailure "RCSCarrier" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+        WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSCarrier" "DisplayName" "RCS Carrier"
+        WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSCarrier" "Description" "Remote Control System Carier for data transfer to DB"
+        DetailPrint "done"
+      ${EndIf}
+
+      ${If} $installNetworkController == ${BST_CHECKED}
+        DetailPrint "Creating service RCS Controller..."
+        nsExec::Exec  "$INSTDIR\Collector\bin\nssm.exe install RCSController $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-controller"
+        SimpleSC::SetServiceFailure "RCSController" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+        WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSController" "DisplayName" "RCS Controller"
+        WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSController" "Description" "Remote Control System Network Controller for Anonymizers and Network Injectors"
+        DetailPrint "done"
+      ${EndIf}
+    ${Else}
+      ;TODO: remove after 9.2.0
+      DetailPrint "Creating service RCS Carrier..."
+      nsExec::Exec  "$INSTDIR\Collector\bin\nssm.exe install RCSCarrier $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-carrier"
+      SimpleSC::SetServiceFailure "RCSCarrier" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSCarrier" "DisplayName" "RCS Carrier"
+      WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSCarrier" "Description" "Remote Control System Carier for data transfer to DB"
       DetailPrint "done"
+
+      DetailPrint "Migrating data from previous version..."
+      nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector-config --migrate --alternative-log"
+      DetailPrint "done"
+
+      ${If} $installNetworkController == ${BST_CHECKED}
+        DetailPrint "Creating service RCS Controller..."
+        nsExec::Exec  "$INSTDIR\Collector\bin\nssm.exe install RCSController $INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-controller"
+        SimpleSC::SetServiceFailure "RCSController" "0" "" "" "1" "60000" "1" "60000" "1" "60000"
+        WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSController" "DisplayName" "RCS Controller"
+        WriteRegStr HKLM "SYSTEM\CurrentControlSet\Services\RCSController" "Description" "Remote Control System Network Controller for Anonymizers and Network Injectors"
+        DetailPrint "done"
+      ${EndIf}
     ${EndIf}
 
     ${If} $installCollector == ${BST_CHECKED}     
       WriteRegDWORD HKLM "Software\HT\RCS" "collector" 0x00000001
-    ${Else}
-      nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector-config --no-collector"
+
+      DetailPrint "Starting RCS Collector..."
+      SimpleSC::StartService "RCSCollector" ""
+
+      DetailPrint "Starting RCS Carrier..."
+      SimpleSC::StartService "RCSCarrier" ""
     ${EndIf}
     
     ${If} $installNetworkController == ${BST_CHECKED}
       WriteRegDWORD HKLM "Software\HT\RCS" "networkcontroller" 0x00000001
-    ${Else}
-      nsExec::Exec "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\Collector\bin\rcs-collector-config --no-network"
-    ${EndIf}
 
-    DetailPrint "Starting RCS Collector..."
-    SimpleSC::StartService "RCSCollector" ""
+      DetailPrint "Starting RCS Controller..."
+      SimpleSC::StartService "RCSController" ""
+    ${EndIf}
 
     WriteRegDWORD HKLM "Software\HT\RCS" "installed" 0x00000001
 
@@ -704,12 +843,23 @@ Section "Install Section" SecInstall
   
       SetDetailsPrint "both"
       DetailPrint "done"
-  
+
+      ${If} $installShard != ${BST_CHECKED}
+        DetailPrint "Updating the configuration..."
+        nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config --remove-skip-firewall-check --log"
+        DetailPrint "done"
+      ${EndIf}
+
       DetailPrint "ReStarting RCS DB..."
       SimpleSC::RestartService "RCSDB" "" 30
       !cd '..'
     ${EndIf}
   !endif
+
+  ReadRegDWORD $R0 HKLM "Software\HT\RCS" "money"
+  IntCmp $R0 1 0 nomoney nomoney
+    SimpleSC::StartService "RCSMoney" ""
+  nomoney:
 
   ReadRegDWORD $R0 HKLM "Software\HT\RCS" "ocr"
   IntCmp $R0 1 0 noocr noocr
@@ -741,6 +891,8 @@ SectionEnd
 Section Uninstall
   DetailPrint "Stopping RCS Services..."
   SimpleSC::StopService "RCSCollector" 1
+  SimpleSC::StopService "RCSCarrier" 1
+  SimpleSC::StopService "RCSController" 1
   SimpleSC::StopService "RCSWorker" 1
   SimpleSC::StopService "RCSConnector" 1
   SimpleSC::StopService "RCSAggregator" 1
@@ -753,6 +905,8 @@ Section Uninstall
 
   DetailPrint "Removing RCS Services..."
   SimpleSC::RemoveService "RCSCollector"
+  SimpleSC::RemoveService "RCSCarrier"
+  SimpleSC::RemoveService "RCSController"
   SimpleSC::RemoveService "RCSWorker"
   SimpleSC::RemoveService "RCSConnector"
   SimpleSC::RemoveService "RCSAggregator"

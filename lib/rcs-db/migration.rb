@@ -4,7 +4,7 @@
 
 require 'mongoid'
 require 'set'
-
+require 'fileutils'
 require 'rcs-common/trace'
 
 require_relative 'db_objects/group'
@@ -21,8 +21,11 @@ module Migration
   def up_to(version)
     puts "migrating to #{version}"
 
-    run [:recalculate_checksums, :drop_sessions]
-    run [:remove_ni_java_rules] if version == '9.1.5'
+    run [:migrate_scout_to_level] if version >= '9.2.0'
+
+    run [:recalculate_checksums, :drop_sessions, :remove_statuses]
+    run [:remove_ni_java_rules] if version >= '9.1.5'
+    run [:fill_up_handle_book_from_summary, :move_grid_evidence_to_worker_db] if version >= '9.2.0'
 
     return 0
   end
@@ -58,6 +61,49 @@ module Migration
     end
 
     return 0
+  end
+
+  def move_grid_evidence_to_worker_db
+    collection_names = %w[grid.evidence.files grid.evidence.chunks]
+    go_on_and_migrate = true
+
+    collection_names.each do |name|
+      collection = Mongoid.default_session.collections.find { |coll| coll.name == name }
+
+      if collection.nil?
+        go_on_and_migrate = false
+      elsif collection.find.count.zero?
+        go_on_and_migrate = false
+        collection.drop rescue nil
+      end
+    end
+
+    return unless go_on_and_migrate
+
+    temp_folder = File.expand_path('../../../temp', __FILE__)
+    Dir.mkdir(temp_folder) unless Dir.exists?(temp_folder)
+    temp_folder = "#{temp_folder}/migration"
+    FileUtils.rm_rf(temp_folder)
+    Dir.mkdir(temp_folder)
+
+    collection_names.each do |name|
+      mongodump = RCS::DB::Config.mongo_exec_path('mongodump')
+      puts "Dump #{name}"
+      command = "#{mongodump} -h localhost -d \"rcs\" -c \"#{name}\" -o \"#{temp_folder}\""
+      `#{command}`
+    end
+
+    collection_names.each do |name|
+      mongorestore = RCS::DB::Config.mongo_exec_path('mongorestore')
+      puts "Restore #{name}"
+      command = "#{mongorestore} -h localhost -d \"rcs-worker\" -c \"#{name}\" \"#{temp_folder}/rcs/#{name}.bson\""
+      `#{command}`
+    end
+  end
+
+  def fill_up_handle_book_from_summary
+    puts "Rebuild handle book"
+    HandleBook.rebuild
   end
 
   def recalculate_checksums
@@ -115,26 +161,37 @@ module Migration
     end
   end
 
-  def aggregate_summary
-    count = 0
-    ::Item.targets.each do |target|
-      begin
-        next if Aggregate.target(target._id).empty?
-
-        Aggregate.target(target._id).rebuild_summary
-        print "\r%d summaries" % count += 1
-      rescue Exception => e
-        puts e.message
-      end
-    end
-  end
-
   def remove_ni_java_rules
     ::Injector.each do |ni|
       ni.rules.each do |rule|
         rule.destroy if rule.action.eql? 'INJECT-HTML-JAVA'
       end
     end
+  end
+
+  def migrate_scout_to_level
+    count = 0
+    ::Item.agents.each do |agent|
+      begin
+        agent.level = (agent[:scout] ? :scout : :elite)
+        agent.unset(:scout)
+        agent.save
+        print "\r%d agents migrated" % count += 1
+      rescue Exception => e
+        puts e.message
+      end
+    end
+    ::Item.factories.each do |factory|
+      factory.unset(:scout)
+    end
+  end
+
+  def drop_sessions
+    ::Session.destroy_all
+  end
+
+  def remove_statuses
+    ::Status.destroy_all
   end
 
   def drop_sessions

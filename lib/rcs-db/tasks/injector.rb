@@ -23,8 +23,10 @@ class InjectorTask
     vector_files = {}
 
     raise "Cannot send rules to a Network Injector that has never synchronized with the system" if injector.version == 0
+    raise "Cannot send rules to a Network Injector which has errors" if ::Status.where({type: 'injector', address: injector.address, status: ::Status::OK}).count == 0
+
     # TODO: check before release
-    raise "Version too old, please update the Network Injector" if injector.version < 2013111101
+    raise "Version too old, please update the Network Injector" if injector.version < 2014012001
 
     injector.rules.where(:enabled => true).each do |rule|
 
@@ -43,7 +45,7 @@ class InjectorTask
       redirect_user["#{rule.ident} #{rule.ident_param}"] ||= tag
 
       # automatic patterns for rules
-      rule.resource = '*.youtube.com/watch*' if rule.action == 'INJECT-HTML-FLASH'
+      rule.resource = '*www.youtube.com/watch*' if rule.action == 'INJECT-HTML-FLASH'
 
       redirect_url << "#{redirect_user["#{rule.ident} #{rule.ident_param}"]} #{rule.probability} #{rule.resource}"
 
@@ -109,7 +111,7 @@ class InjectorTask
 
     yield @description = "Creating binary config"
 
-    raise "Cannot push to #{injector.name}" unless Frontend.nc_push(injector.address)
+    raise "Cannot push to #{injector.name}" unless Frontend.nc_push(injector)
     
     @description = "Rules applied successfully"
   end

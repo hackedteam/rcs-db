@@ -144,11 +144,7 @@ factory_define :aggregate do |params|
   attributes = {day: Time.now.strftime('%Y%m%d'), aid: 'agent_id', count: 10}
   attributes.deep_merge! params
 
-  summary = ::Aggregate.target(target).find_or_create_by(day: 0, type: :summary)
-  summary[:info] = [] unless summary[:info]
-  summary[:info] << "#{attributes[:type]}_#{attributes[:data][:peer]}"
-  summary[:aid] = 'an_agent_id'
-  summary.save!
+  HandleBook.insert_or_update(attributes[:type], attributes[:data][:peer] || attributes[:data]['peer'], target.id)
 
   ::Aggregate.target(target).create!(attributes)
 end
@@ -214,6 +210,21 @@ factory_define :remote_connector do |params|
 end
 
 # Evidence factories
+
+factory_define :raw_evidence do |params|
+  agent = params[:agent]
+  filename = params[:filename]
+
+  raise("Agent and filename provided simultaneously") if agent and filename
+
+  filename = "#{agent.ident}:#{agent.instance}" if agent
+
+  raise("Invalid filename") if filename =~ /\ARCS\_\d+\:.+\z/
+
+  content = params[:content] || "Random evidence content #{rand(1E15)}"
+
+  RCS::Worker::GridFS.put(content, {filename: filename}, "evidence")
+end
 
 factory_define :evidence do |params|
   unless params[:agent] or params[:target]
@@ -321,7 +332,7 @@ end
 
 factory_define :connector_queue do |params|
   connector = params.delete(:connector)
-  attributes = {type: :dump_evidence, scope: :default}
+  attributes = {type: :dump_evidence, scope: :default}.merge(params)
   attributes.merge!(connector_id: connector.id) if connector
   attributes.merge!(params)
 

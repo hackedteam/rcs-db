@@ -33,7 +33,7 @@ class LicenseManager
   include RCS::Tracer
   include RCS::Crypt
 
-  LICENSE_VERSION = '9.0'
+  LICENSE_VERSION = '9.2'
 
   LICENSE_FILE = 'rcs.lic'
 
@@ -83,7 +83,7 @@ class LicenseManager
   def load_license(periodic = false)
 
     # load the license file
-    lic_file = File.join Dir.pwd, RCS::DB::Config::CONF_DIR, LICENSE_FILE
+    lic_file = File.join $execution_directory, RCS::DB::Config::CONF_DIR, LICENSE_FILE
 
     unless File.exist? lic_file
       trace :fatal, "No license file found"
@@ -108,7 +108,7 @@ class LicenseManager
       end
 
       # use local time if the dongle presence is not enforced
-      if @limits[:serial] == 'off'
+      if lic[:serial] == 'off'
         time = Time.now.getutc
       else
         time = RCS::DB::Dongle.time
@@ -154,8 +154,8 @@ class LicenseManager
   end
 
   def new_license(file)
-
-    raise "file not found" unless File.exist? file
+    file = "#{ENV['CWD']}/#{file}" if !File.exist?(file) and ENV['CWD']
+    raise "file not found" unless File.exist?(file)
 
     trace :info, "Loading new license file #{file}"
 
@@ -184,7 +184,7 @@ class LicenseManager
     end
 
     # save the new license file
-    lic_file = File.join Dir.pwd, RCS::DB::Config::CONF_DIR, LICENSE_FILE
+    lic_file = File.join $execution_directory, RCS::DB::Config::CONF_DIR, LICENSE_FILE
     File.open(lic_file, "wb") {|f| f.write content}
 
     # load the new one
@@ -561,7 +561,7 @@ class LicenseManager
       puts "Version: " + @limits[:version]
       puts "Expiry: " + @limits[:expiry].to_s
     else
-      pp @limits
+      pp @limits.select {|x| not [:magic, :encbits].include? x}
     end
 
     return 0

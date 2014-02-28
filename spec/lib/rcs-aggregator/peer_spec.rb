@@ -205,6 +205,21 @@ describe PeerAggregator do
         @evidence_mail.data = {'type' => :mail}
       end
 
+      it 'raise an error when the email is invalid' do
+        invalid_email = 'not an email'
+
+        [1, 0].each do |incoming|
+          @evidence_mail.data.merge!('from' => invalid_email, 'rcpt' => 'receiver@mail.com', 'incoming' => incoming, 'body' => 'test mail')
+          expect { PeerAggregator.extract_message(@evidence_mail) }.to raise_error("Unable to extract a valid email address from the string #{invalid_email.inspect}.")
+        end
+
+        @evidence_mail.data.merge!('from' => 'bob@ask.com', 'rcpt' => invalid_email, 'incoming' => 1, 'body' => 'test mail')
+        expect { PeerAggregator.extract_message(@evidence_mail) }.not_to raise_error
+
+        @evidence_mail.data.merge!('from' => 'bob@ask.com', 'rcpt' => invalid_email, 'incoming' => 0, 'body' => 'test mail')
+        expect { PeerAggregator.extract_message(@evidence_mail) }.to raise_error("Unable to extract a valid email address from the string #{invalid_email.inspect}.")
+      end
+
       it 'should parse evidence (incoming)' do
         @evidence_mail.data.merge!({'from' => 'Test account <test@account.com>', 'rcpt' => 'receiver@mail.com', 'incoming' => 1, 'body' => 'test mail'})
         parsed = PeerAggregator.extract_message(@evidence_mail)

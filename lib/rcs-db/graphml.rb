@@ -88,7 +88,21 @@ module RCS
       _graph[:edge] ||= []
       add_ampersat_to_keys(opts)
       elem = {:'@id' => id, :'@source' => source_node, :'@target' => target_node}.merge(opts)
+
+      existing_edge = _graph[:edge].find { |e| e[:'@source'] == elem[:'@source'] and e[:'@target'] == elem[:'@target'] }
+      return if existing_edge
+
+      # find specular edges if any
+      _graph[:edge].size.times do |index|
+        e = _graph[:edge][index]
+        if e[:'@source'] == elem[:'@target'] and e[:'@target'] == elem[:'@source']
+          _graph[:edge][index][:directed] = false
+          return
+        end
+      end
+
       data elem, data
+
       _graph[:edge] << elem
     end
 

@@ -1,7 +1,7 @@
 require 'spec_helper'
 
 # Unload the Build class
-# build.rb file may have been required by anohter spec
+# build.rb file may have been required by another spec
 $LOADED_FEATURES.reject! { |path| path =~ /\/build.rb\Z/ }
 
 # Define a fake builder class

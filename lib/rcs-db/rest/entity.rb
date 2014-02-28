@@ -14,7 +14,7 @@ class EntityController < RESTController
     require_auth_level :view_profiles
 
     mongoid_query do
-      fields = ["type", "level", "name", "desc", "path", "photos", 'position', 'position_attr', 'links']
+      fields = ["type", "level", "name", "desc", "path", "photos", 'position', 'position_attr', 'links', 'children', 'stand_for']
       filter = {'user_ids' => @session.user[:_id], 'level' => {'$ne' => :ghost}}
       fields = fields.inject({}) { |h, f| h[f] = 1; h }
 
@@ -102,9 +102,16 @@ class EntityController < RESTController
         doc[:type] = @params['type'].to_sym
         doc[:desc] = @params['desc']
         doc[:level] = :manual
+
+        # when type is :position
         if @params['position'] and @params['position'].size > 0
           doc.position = [@params['position']['longitude'].to_f, @params['position']['latitude'].to_f]
           doc.position_attr[:accuracy] = @params['position_attr']['accuracy'].to_i
+        end
+
+        # when type is :group
+        if @params['children']
+          doc.children = @params['children'].map { |id| Moped::BSON::ObjectId(id) }
         end
       end
 
@@ -115,8 +122,8 @@ class EntityController < RESTController
       entity['position'] = {longitude: entity['position'][0], latitude: entity['position'][1]}  if entity['position'].is_a? Array
       entity.delete('analyzed')
 
-      return ok(entity)
-    end    
+      ok(entity)
+    end
   end
 
   def update
@@ -244,6 +251,30 @@ class EntityController < RESTController
     end
   end
 
+  def promote_to_target
+    require_auth_level :admin
+    require_auth_level :admin_targets
+    require_auth_level :view_profiles
+    require_auth_level :view
+
+    mongoid_query do
+      entity = Entity.persons.any_in(user_ids: [@session.user[:_id]]).where(_id: @params['_id']).first
+      return bad_request('INVALID_OPERATION') unless entity
+
+      entity.promote_to_target
+
+      operation = ::Item.operations.find(entity.path.first)
+
+      Audit.log :actor => @session.user[:name],
+                :action => "target.create",
+                :operation_name => operation.name,
+                :target_name => entity.name,
+                :desc => "Created target '#{entity.name}' (person promoted to target)"
+
+      return ok
+    end
+  end
+
   def most_contacted
     require_auth_level :view
     require_auth_level :view_profiles
@@ -330,10 +361,10 @@ class EntityController < RESTController
 
       return not_found() if e.nil? or e2.nil?
 
-      link = RCS::DB::LinkManager.instance.edit_link(from: e, to: e2, level: :manual, type: @params['type'].to_sym, versus: @params['versus'].to_sym, rel: @params['rel'])
+      link = RCS::DB::LinkManager.instance.edit_link(from: e, to: e2, type: @params['type'].to_sym, versus: @params['versus'].to_sym, rel: @params['rel'])
 
-      Audit.log :actor => @session.user[:name], :action => 'entity.add_link', :entity_name => e.name, :desc => "Added a new link between #{e.name} and #{e2.name}"
-      Audit.log :actor => @session.user[:name], :action => 'entity.add_link', :entity_name => e2.name, :desc => "Added a new link between #{e.name} and #{e2.name}"
+      Audit.log :actor => @session.user[:name], :action => 'entity.add_link', :entity_name => e.name, :desc => "Edited link between #{e.name} and #{e2.name}"
+      Audit.log :actor => @session.user[:name], :action => 'entity.add_link', :entity_name => e2.name, :desc => "Edited link between #{e.name} and #{e2.name}"
 
       return ok(link)
     end

@@ -36,8 +36,10 @@ class ConnectorQueue
 
   def evidence
     @evidence ||= begin
-      return unless data['target_id']
-      ::Evidence.target(data['target_id']).where(id: data['evidence_id']).first
+      target_id = data['target_id'] || data[:target_id]
+      return unless target_id
+      evidence_id = data['evidence_id'] || data[:evidence_id]
+      ::Evidence.target(target_id).where(id: evidence_id).first
     end
   end
 

@@ -28,6 +28,26 @@ class CollectorController < RESTController
     end
   end
 
+  def first_anonymizer
+    require_auth_level :server
+
+    mongoid_query do
+      # Find the collector which is requesting the first anonymizer
+      current_session = Session.where(cookie: @request[:cookie]).first
+      collector_instance = current_session.server.gsub(':collector', '')
+      collector = Collector.where(instance: collector_instance, type: 'local').first
+
+      # Find the anonymizer closer to that collector
+      closer_anonymizer_id = collector.next[0]
+
+      if closer_anonymizer_id
+        ok(Collector.find(closer_anonymizer_id))
+      else
+        ok({})
+      end
+    end
+  end
+
   def create
     require_auth_level :sys
     require_auth_level :sys_frontend
@@ -152,7 +172,7 @@ class CollectorController < RESTController
           collector.upgradable = true
           collector.save
 
-          return server_error("Cannot push to #{collector.name}") unless Frontend.nc_push(collector.address)
+          return server_error("Cannot push to #{collector.name}") unless Frontend.nc_push(collector)
 
           return ok
       end

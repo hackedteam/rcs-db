@@ -7,4 +7,4 @@ Dir.chdir File.dirname(File.dirname(File.realpath(__FILE__)))
 require 'bundler/setup'
 require_relative '../lib/rcs-db'
 
-exit RCS::DB::EvidenceManager.run!(*ARGV)
+exit RCS::DB::QueueStats.run!(*ARGV)

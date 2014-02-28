@@ -6,6 +6,7 @@ require_relative 'em_streamer'
 
 # from RCS::Common
 require 'rcs-common/trace'
+require 'rcs-common/rest'
 
 require 'net/http'
 require 'stringio'
@@ -15,14 +16,36 @@ require 'zlib'
 module RCS
 module DB
 
+  HTTP_STATUS_CODES = {
+    200 => 'OK',
+    301 => 'Moved Permanently',
+    302 => 'Found',
+    304 => 'Not Modified',
+    400 => 'Bad Request',
+    401 => 'Unauthorized',
+    403 => 'Forbidden',
+    404 => 'Not Found',
+    405 => 'Method Not Allowed',
+    406 => 'Not Acceptable',
+    408 => 'Request Timeout',
+    409 => 'Conflict',
+    500 => 'Internal Server Error',
+    501 => 'Not Implemented',
+    502 => 'Bad Gateway',
+    503 => 'Service Unavailable',
+    504 => 'Gateway Timeout',
+    505 => 'HTTP Version Not Supported',
+  }
+
 class RESTResponse
   include RCS::Tracer
-  
+  include RCS::Common::Rest
+
   attr_accessor :status, :content, :content_type, :cookie
-  
+
   def initialize(status, content = '', opts = {}, callback=proc{})
     @status = status
-    @status = RCS::DB::RESTController::STATUS_SERVER_ERROR if @status.nil? or @status.class != Fixnum
+    @status = STATUS_SERVER_ERROR if @status.nil? or @status.class != Fixnum
     
     @content = content
     @content_type = opts[:content_type]
@@ -48,7 +71,7 @@ class RESTResponse
     @response = EM::DelegatedHttpResponse.new @connection
 
     @response.status = @status
-    @response.status_string = ::Net::HTTPResponse::CODE_TO_OBJ["#{@response.status}"].name.gsub(/Net::HTTP/, '')
+    @response.status_string = HTTP_STATUS_CODES[@response.status]
     @cache_json ||= Config.instance.global['JSON_CACHE']
 
     begin
@@ -73,17 +96,38 @@ class RESTResponse
       end
 
     rescue Exception => e
-      @response.status = RCS::DB::RESTController::STATUS_SERVER_ERROR
+      @response.status = STATUS_SERVER_ERROR
       @response.content = 'JSON_SERIALIZATION_ERROR'
       trace :error, e.message
       trace :error, "CONTENT: #{@content}"
       trace :fatal, "EXCEPTION(#{e.class}): " + e.backtrace.join("\n")
     end
-    
-    @response.headers['Content-Type'] = @content_type
-    @response.headers['Set-Cookie'] = @cookie unless @cookie.nil?
 
-    @response.headers['WWW-Authenticate'] = "Basic realm=\"Secure Area\"" if @response.status == RCS::DB::RESTController::STATUS_AUTH_REQUIRED
+    # fake server reply
+    @response.headers['Server'] = 'nginx'
+    @response.headers['Date'] = Time.now.getutc.strftime("%a, %d %b %Y %H:%M:%S GMT")
+
+    @response.headers['Content-Type'] = @content_type
+    @response.headers['Content-Length'] = @response.content.bytesize
+
+    # fixup_headers override to evade content-length reset
+    metaclass = class << @response; self; end
+    metaclass.send(:define_method, :fixup_headers, proc {})
+    # override the generate_header_lines to NOT sort the headers in the reply
+    metaclass.send(:define_method, :generate_header_lines, proc { |in_hash|
+      out_ary = []
+   			in_hash.keys.each {|k|
+   				v = in_hash[k]
+   				if v.is_a?(Array)
+   					v.each {|v1| out_ary << "#{k}: #{v1}\r\n" }
+   				else
+   					out_ary << "#{k}: #{v}\r\n"
+   				end
+   			}
+   		out_ary
+    })
+
+    @response.headers['Set-Cookie'] = @cookie unless @cookie.nil?
 
     # used for redirects
     @response.headers['Location'] = @location unless @location.nil?
@@ -143,15 +187,21 @@ class RESTFileStream
     @response = EM::DelegatedHttpResponse.new @connection
 
     @response.status = 200
-    @response.status_string = ::Net::HTTPResponse::CODE_TO_OBJ["#{@response.status}"].name.gsub(/Net::HTTP/, '')
+    @response.status_string = HTTP_STATUS_CODES[@response.status]
 
-    @response.headers["Content-length"] = File.size @filename
+    @response.headers["Content-Length"] = File.size @filename
 
     # fixup_headers override to evade content-length reset
     metaclass = class << @response; self; end
     metaclass.send(:define_method, :fixup_headers, proc {})
-    
+
     @response.headers["Content-Type"] = RCS::MimeType.get @filename
+
+    # fake server reply
+    @response.headers['Server'] = 'nginx'
+
+    # date header
+    @response.headers['Date'] = Time.now.getutc.strftime("%a, %d %b %Y %H:%M:%S GMT")
 
     if request[:headers][:connection] && request[:headers][:connection].downcase == 'keep-alive'
       # keep the connection open to allow multiple requests on the same connection
@@ -167,7 +217,7 @@ class RESTFileStream
 
   def size
     fail "response still not prepared" if @response.nil?
-    @response.headers["Content-length"]
+    @response.headers["Content-Length"]
   end
 
   def content
@@ -208,14 +258,20 @@ class RESTGridStream
     @connection = connection
     @response = EM::DelegatedHttpResponse.new @connection
     
-    @response.headers["Content-length"] = @grid_io.file_length
+    @response.headers["Content-Length"] = @grid_io.file_length
     
     # fixup_headers override to evade content-length reset
     metaclass = class << @response; self; end
     metaclass.send(:define_method, :fixup_headers, proc {})
     
     @response.headers["Content-Type"] = @grid_io.content_type
-    
+
+    # fake server reply
+    @response.headers['Server'] = 'nginx'
+
+    # date header
+    @response.headers['Date'] = Time.now.getutc.strftime("%a, %d %b %Y %H:%M:%S GMT")
+
     if request[:headers][:connection] && request[:headers][:connection].downcase == 'keep-alive'
       # keep the connection open to allow multiple requests on the same connection
       # this will increase the speed of sync since it decrease the latency on the net
@@ -230,7 +286,7 @@ class RESTGridStream
 
   def size
     fail "response still not prepared" if @response.nil?
-    @response.headers["Content-length"]
+    @response.headers["Content-Length"]
   end
 
   def content
@@ -252,6 +308,7 @@ class RESTGridStream
       trace :debug, "[#{@request[:peer]}] REP: [#{@request[:method]}] #{@request[:uri]} #{@request[:query]} (#{Time.now - @request[:time][:start]})" if Config.instance.global['PERF']
     end
   end
+
 end # RESTGridStream
 
 end # ::DB

@@ -51,7 +51,6 @@ class BuildOSX < Build
     #inputmanager = scramble_name(config, 2)
     #driver = scramble_name(config, 4)
     #driver64 = scramble_name(config, 16)
-        
     @scrambled = {core: core, dir: dir, config: config}
 
     # call the super which will actually do the renaming

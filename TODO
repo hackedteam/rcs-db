@@ -1,42 +1,26 @@
 
-TODO 9.0.0
-
-
-TODO 9.1.x
+TODO:  9.2.x
 
   TRY:
     caching slow query. try to cache already jsonized list of items and similar
 
   IMPLEMENT:
+    PUSH messages send the whole object (like dashboard)
 
-    scout++ (with simplified config)
-
-    create as target (from automatic entities) [OK] (needs button in console)
+    fix usb building zip creation (uses too much ram in f.read)
 
     crypto-currency dissector
-      - implement the evidence format
-      - dissector in bdb
-      - check compilation under windows
+      - support for multibit and armory wallets
+      - parse the blockchain to get the "from" of a transaction
 
-    map api request statistics
+    filter links by type (e.g. I want to see only skype links). We can change the format of the info attribute..
 
-    ability to group entities together (better visualization)
-      - new entity type: :group
-      - the group contains a list of entities
-      - the rendering of the links is demanded to the console (underlying links are created normally)
 
-  IDEAS:
-    message quque on entities
-      - sort of "inbox" for each entity on what the system performs on it
-        the customer can review the messages and acknowledge them
+TODO: 9.3.0
 
-    archive of "common" criminals
+    archive mode able to receive from multiple systems
 
-    placeholder targets (linked from other operations)
-
-    intra operation correlation (visualize like a link to a group that actually is the other operation)
-
-    advanced multi operation search
+    automatic discovery (and thus suggestion) of groups (communities)
 
 ======================================
 TODO FUTURE:
@@ -49,12 +33,13 @@ TODO FUTURE:
       - agent (too much logic here)
       - evidence (too much logic here)
 
-    Refactor evidence search filters (Evidence#common_filter, etc.)
+    message quque on entities
+      - sort of "inbox" for each entity on what the system performs on it
+        the customer can review the messages and acknowledge them
 
-    RUBY 2.0.0 ON WINDOWS depends on this:
-      - http_parsers 0.5.3 needs this file https://github.com/johanneswuerbach/http_parser.rb_2.0_precompiled
-      - check if new version has it
-      - check that websocket dependencies have the correct version
+    advanced multi operation search
+
+    Refactor evidence search filters (Evidence#common_filter, etc.)
 
 ======================================
 IDEAS:

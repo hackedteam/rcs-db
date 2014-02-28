@@ -82,7 +82,7 @@ module RCS
         @agent_description ||= begin
           return unless @params['filter']['agent']
           agent = Item.agents.find(@params['filter']['agent'])
-          ["#{agent.name} (#{agent.instance})", agent.desc].reject(&:blank?).join(" - ")
+          "#{agent.name} (#{agent.instance})"
         end
       end
 
@@ -107,6 +107,8 @@ module RCS
             name << '.jpg'
           when 'call', 'mic'
             name << '.mp3'
+          when 'money'
+            name << '.dat'
           when 'file'
             name << File.extname(evidence[:data]['path'])
           when 'message'

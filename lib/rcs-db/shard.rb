@@ -21,6 +21,10 @@ class Shard
     db.command({ listshards: 1 })
   end
 
+  def self.hosts
+    sorted.map { |info| info['host'] }
+  end
+
   def self.sorted
     shards = all['shards']
     shards.sort_by { |x| x['_id'] }

@@ -1,0 +1,77 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+
+options = {}
+
+OptionParser.new do |opts|
+  opts.on('-h', '--host ADDR', String, 'Address of MongoDB server') { |addr| options[:host] = addr }
+end.parse!
+
+
+# Setup
+puts "Initializing..."
+$execution_directory  = File.expand_path('../..', __FILE__)
+$execution_directory = "c:/rcs/db/" if File.exist?("c:/rcs/db/lib")
+
+$LOAD_PATH << $execution_directory+"/lib"
+Dir.chdir($execution_directory)
+
+if File.exists?("#{$execution_directory}/Gemfile")
+  require 'bundler'
+  Bundler.load
+  Bundler.setup
+end
+
+require 'rcs-common/path_utils'
+require_release 'rcs-db/config'
+require_release 'rcs-db/db_layer'
+
+ENV['no_trace']         = '1'
+ENV['MONGOID_ENV']      = 'yes'
+ENV['MONGOID_DATABASE'] = 'rcs'
+ENV['MONGOID_HOST']     =  options[:host] || "127.0.0.1"
+ENV['MONGOID_PORT']     = "27017"
+
+Mongoid.load!(RCS::DB::Config.instance.file('mongoid.yaml'), :production)
+
+
+# Fetch the list
+
+puts "Fetching..."
+list = Collector.in(type: [:remote, :collector]).inject({}) do |hash, coll|
+  hash[coll.address] = {type: coll.type, name: coll.name, items: []} if coll.address
+  hash
+end
+
+[:agent, :factory].each do |kind|
+  Item.where(_kind: kind, status: 'open').each do |item|
+    sync_host = item.configs.last.sync_host rescue nil
+
+    next unless sync_host
+
+    names = [item.name]
+    names << item.get_parent.name rescue nil
+    names << item.get_parent.get_parent.name rescue nil
+    names.compact!
+
+    list[sync_host] = {type: 'unknown', name: 'unknown', items: []} unless list[sync_host]
+    list[sync_host][:items] << "#{item._kind.to_s.capitalize}: #{names.reverse.join(' -> ')}"
+  end
+end
+
+
+# Print the list
+
+list.each do |addr, info|
+  name = if info[:type] == 'unknown'
+    "Unknown"
+  else
+    ((info[:type] == :collector) ? "Collector" : "Anonymizer") + " named " + info[:type].inspect
+  end
+
+  puts "#{addr} - #{name}"
+  info[:items].uniq.each do |str|
+    puts "\t - #{str}"
+  end
+end

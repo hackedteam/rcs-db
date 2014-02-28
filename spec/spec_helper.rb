@@ -24,12 +24,17 @@ RSpec.configure do |config|
     FileUtils.rm_rf(spec_temp_folder)
     FileUtils.mkdir_p(spec_temp_folder)
     mongo_setup
+    stub_worker_db_name
     empty_test_db
   end
 
   config.before(:each) do
+    # Silence deprecation warning
+    I18n.enforce_available_locales = false
+
     turn_off_tracer
-    empty_test_db
+    stub_worker_db_name
+    empty_test_db unless @disable_mongoid_purge
   end
 
   config.after(:all) do
@@ -90,6 +95,14 @@ end
 
 def empty_test_db
   Mongoid.purge!
+
+  if defined?(RCS::Worker::DB)
+    RCS::Worker::DB.instance.purge!
+  end
+end
+
+def do_not_empty_test_db
+  @disable_mongoid_purge = true
 end
 
 # Check out RCS::Tracer module of rcs-common gem
@@ -107,6 +120,7 @@ def enable_license
     eval 'class LicenseManager; end' unless defined? LicenseManager
     LicenseManager.stub(:instance).and_return double()
     LicenseManager.instance.stub(:check).and_return true
+    LicenseManager.instance.stub(:can_build_platform).and_return true
   end
 end
 
@@ -139,4 +153,10 @@ def stub_temp_folder
   end
 
   after { FileUtils.rm_r RCS::DB::Config.instance.temp }
+end
+
+def stub_worker_db_name
+  return unless defined?(RCS::Worker::DB)
+  RCS::Worker::DB.__send__(:remove_const, :WORKER_DB_NAME)
+  RCS::Worker::DB.const_set(:WORKER_DB_NAME, "rcs-worker-test")
 end

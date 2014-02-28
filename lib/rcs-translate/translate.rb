@@ -1,6 +1,4 @@
-#
-#  The main file of the translator
-#
+# The main file of the translator
 require 'rcs-common/path_utils'
 
 require_release 'rcs-db/config'
@@ -12,96 +10,49 @@ require_release 'rcs-db/license_component'
 
 # from RCS::Common
 require 'rcs-common/trace'
+require 'rcs-common/component'
 
 require_relative 'processor'
 
 module RCS
-module Translate
+  module Translate
+    class Application
+      include RCS::Component
 
-class Application
-  include RCS::Tracer
-  extend RCS::Tracer
+      component :translate, name: "TRANSLATE Processor"
 
-  def self.trace_setup
-    # if we can't find the trace config file, default to the system one
-    if File.exist? 'trace.yaml'
-      typ = Dir.pwd
-      ty = 'trace.yaml'
-    else
-      typ = File.dirname(File.dirname(File.dirname(__FILE__)))
-      ty = typ + "/config/trace.yaml"
-      #puts "Cannot find 'trace.yaml' using the default one (#{ty})"
-    end
+      def wait_for_translation_license
+        unless LicenseManager.instance.check :translation
+          RCS::DB::DB.instance.mongo_connection.drop_collection 'trans_queue'
 
-    # ensure the log directory is present
-    Dir::mkdir(Dir.pwd + '/log') if not File.directory?(Dir.pwd + '/log')
-    Dir::mkdir(Dir.pwd + '/log/err') if not File.directory?(Dir.pwd + '/log/err')
+          # do nothing...
+          trace :info, "TRANSLATE license is disabled, going to sleep..."
 
-    # initialize the tracing facility
-    begin
-      trace_init typ, ty
-    rescue Exception => e
-      puts e
-      exit
-    end
-  end
-
-  # the main of the collector
-  def run(options)
-
-    # initialize random number generator
-    srand(Time.now.to_i)
-
-    begin
-      build = File.read(Dir.pwd + '/config/VERSION_BUILD')
-      $version = File.read(Dir.pwd + '/config/VERSION')
-      trace :fatal, "Starting the TRANSLATE Processor #{$version} (#{build})..."
-
-      # config file parsing
-      return 1 unless RCS::DB::Config.instance.load_from_file
-
-      # connect to MongoDB
-      until RCS::DB::DB.instance.connect
-        trace :warn, "Cannot connect to MongoDB, retrying..."
-        sleep 5
-      end
-
-      # load the license from the db (saved by db)
-      LicenseManager.instance.load_from_db
-
-      unless LicenseManager.instance.check :translation
-        RCS::DB::DB.instance.mongo_connection.drop_collection 'trans_queue'
-
-        # do nothing...
-        trace :info, "TRANSLATE license is disabled, going to sleep..."
-        while true do
-          sleep 60
+          loop { sleep(60) }
         end
       end
 
-      # the infinite processing loop
-      Processor.run
+      # the main of the collector
+      def run(options)
+        run_with_rescue do
+          # initialize random number generator
+          srand(Time.now.to_i)
 
-      # never reached...
+          # config file parsing
+          return 1 unless RCS::DB::Config.instance.load_from_file
 
-    rescue Interrupt
-      trace :info, "User asked to exit. Bye bye!"
-      return 0
-    rescue Exception => e
-      trace :fatal, "FAILURE: " << e.message
-      trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
-      return 1
-    end
-    
-    return 0
-  end
+          # connect to MongoDB
+          establish_database_connection(wait_until_connected: true)
 
-  # we instantiate here an object and run it
-  def self.run!(*argv)
-    self.trace_setup
-    return Application.new.run(argv)
-  end
+          # load the license from the db (saved by db)
+          LicenseManager.instance.load_from_db
 
-end # Application::
-end #DB::
+          wait_for_translation_license
+
+          # the infinite processing loop
+          Processor.run
+        end
+      end
+    end # Application::
+  end #DB::
 end #RCS::

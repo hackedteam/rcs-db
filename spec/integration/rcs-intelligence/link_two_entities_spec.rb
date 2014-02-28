@@ -11,30 +11,22 @@ describe 'There are two entities in the same operation' do
   silence_alerts
 
   # There is one operation
-
   let!(:operation) { Item.create!(name: 'testoperation', _kind: :operation, path: [], stat: ::Stat.new) }
 
   # The first target (with its entity) and an agent
-
   let(:target) { Item.create!(name: 'testtarget', _kind: :target, path: [operation.id], stat: ::Stat.new) }
-
   let(:entity) { Entity.any_in({path: [target.id]}).first }
-
   let(:aggregate_class) { Aggregate.target target.id }
-
   let(:agent) { Item.create!(name: 'testagent', _kind: :agent, path: target.path+[target.id], stat: ::Stat.new) }
 
   # Another target (with its entity)
-
   let(:another_target) { Item.create!(name: 'testtarget2', _kind: :target, path: [operation.id], stat: ::Stat.new) }
-
   let(:another_entity) { Entity.any_in({path: [another_target.id]}).first }
 
   # Add an handle to the other entity
-
   before { another_entity.create_or_update_handle "skype", "john", "John Cipollina" }
 
-  describe 'an evidence is sended to the aggregator' do
+  describe 'an evidence is sent to the aggregator' do
 
     let(:chat_data) { {'from' => 'john', 'rcpt' => 'receiver', 'incoming' => 1, 'program' => 'skype', 'content' => 'all your base are belong to us'} }
 
@@ -53,7 +45,7 @@ describe 'There are two entities in the same operation' do
     end
   end
 
-  describe 'an evidence (without versus) is sended to the aggregator' do
+  describe 'an evidence (without versus) is sent to the aggregator' do
 
     let(:chat_data) { {'peer' => 'john', 'program' => 'skype', 'content' => 'my kingdom for a horse'} }
 

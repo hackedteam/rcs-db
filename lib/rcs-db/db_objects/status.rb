@@ -55,13 +55,20 @@ class Status
     disk <= 15 or cpu >= 85 or pcpu >= 85
   end
 
+  def self.current_utc_time
+    Time.now.getutc.to_i
+  end
+
   def unupdated?
-    Time.now.getutc.to_i - time > 120
+    self.class.current_utc_time - time > 120
   end
 
   def old_component?
-    return false unless %w[worker collector nc intelligence connector].include?(type)
-    version != $version
+    if type == 'anonymizer' or type == 'injector'
+      false
+    else
+      version != $version
+    end
   end
 
   def notify
@@ -79,16 +86,18 @@ class Status
   end
 
   def check
-    if !error? and unupdated?
+    return if error?
+
+    if unupdated?
       trace :warn, "Component #{name} (#{address}) is not responding, marking failed..."
       alert_failed
       update_attributes(status: ERROR, info: 'Not sending status update for more than 2 minutes')
-    elsif ok? and low_resources?
-      trace :warn, "Component #{name} has low resources, raising a warning..."
-      update_attributes(status: WARN)
     elsif old_component?
       trace :warn, "Component #{name} has version #{version}, should be #{$version}"
       update_attributes(status: ERROR, info: "Component version is #{version}, should be #{$version}")
+    elsif ok? and low_resources?
+      trace :warn, "Component #{name} has low resources, raising a warning..."
+      update_attributes(status: WARN)
     end
   end
 
@@ -99,9 +108,19 @@ class Status
     monitor[:pcpu] = stats[:pcpu]
     monitor[:cpu] = stats[:cpu]
     monitor[:disk] = stats[:disk]
-    monitor[:time] = Time.now.getutc.to_i
+    monitor[:time] = current_utc_time
     monitor[:type] = type
     monitor[:version] = version
+
+    # Maybe the component is telling to rcs-db that is running ok but
+    # the db know that it outdated so...
+    if monitor.old_component?
+      monitor[:status] = ERROR
+      monitor[:info] = "Component version is #{version}, should be #{$version}"
+      monitor.save!
+
+      return
+    end
 
     if (Integer(status) rescue nil)
       status = status.to_s
@@ -116,10 +135,17 @@ class Status
     monitor.alert_restored if monitor[:status] == ERROR and status == OK
 
     monitor[:status] = status
-    monitor.save
+    monitor.save!
   end
 
   def self.status_check
-    all.each { |status| status.check }
+    all.each do |status|
+      begin
+        status.check
+      rescue Exception => ex
+        trace :fatal, "Cannot perform status check of component #{status.name}: [#{ex.class}] #{ex.message}"
+        trace :fatal, ex.backtrace
+      end
+    end
   end
 end

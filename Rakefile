@@ -1,4 +1,3 @@
-require "bundler/gem_tasks"
 require 'rake'
 require 'rbconfig'
 
@@ -6,7 +5,7 @@ require 'rbconfig'
 require 'rspec/core/rake_task'
 
 def default_rspec_opts
-  "--color --tag ~speed:slow --order rand"
+  "--color --tag ~speed:slow --tag ~build:true --order rand"
 end
 
 def default_rspec_opts_slow
@@ -24,6 +23,10 @@ def rspec_tasks
   }
 end
 
+def platforms
+  ['all', 'android', 'blackberry', 'ios', 'linux', 'osx', 'symbian', 'windows', 'winmo', 'winphone']
+end
+
 rspec_tasks.each do |task_name, pattern|
 
   desc "Run RSpec test (#{task_name})"
@@ -36,6 +39,15 @@ rspec_tasks.each do |task_name, pattern|
   RSpec::Core::RakeTask.new("spec:#{task_name}:slow") do |test|
     test.rspec_opts = default_rspec_opts_slow
     test.pattern = pattern
+  end
+end
+
+platforms.each do |platform|
+  desc "Run RSpec build test (#{platform})"
+  RSpec::Core::RakeTask.new("spec:build:#{platform}") do |test|
+    test.rspec_opts = default_rspec_opts
+    platform = '**' if platform.eql? 'all'
+    test.pattern = "spec/lib/rcs-db/build/#{platform}_spec.rb"
   end
 end
 
@@ -86,7 +98,7 @@ task :rcs_common_gem do
     current_path = File.dirname(__FILE__)
     gem_path = File.expand_path(File.join(current_path, '../rcs-common'))
     Dir.chdir(gem_path)
-    system("rake install")
+    system("rake protect:install")
     Dir.chdir(current_path)
   end
 end
@@ -127,7 +139,6 @@ task :nsis do
   execute 'Generating RCS-Exploit NSIS installer...' do
  		system "#{MAKENSIS} /V1 ./nsis/RCS-Exploits.nsi"
 	end
-		
 	execute 'Signing RCS-Exploits installer...' do
 		system "./nsis/SignTool.exe sign /P GeoMornellaChallenge7 /f ./nsis/HT.pfx ./nsis/rcs-exploits-#{VERSION}.exe"
 	end
@@ -135,7 +146,6 @@ task :nsis do
 	execute 'Generating RCS-Agent NSIS installer...' do
 		system "#{MAKENSIS} /V1 ./nsis/RCS-Agents.nsi"
 	end
-		
 	execute 'Signing RCS-Agents installer...' do
 		system "./nsis/SignTool.exe sign /P GeoMornellaChallenge7 /f ./nsis/HT.pfx ./nsis/rcs-agents-#{VERSION}.exe"
 	end
@@ -143,7 +153,6 @@ task :nsis do
 	execute 'Generating RCS NSIS installer...' do
 		system "#{MAKENSIS} /V1 ./nsis/RCS.nsi"
 	end
-		
 	execute 'Signing RCS installer...' do
 		system "./nsis/SignTool.exe sign /P GeoMornellaChallenge7 /f ./nsis/HT.pfx ./nsis/rcs-setup-#{VERSION}.exe"
   end
@@ -151,7 +160,6 @@ task :nsis do
   execute 'Generating RCS-OCR NSIS installer...' do
     system "#{MAKENSIS} /V1 ./nsis/RCS-OCR.nsi"
   end
-
   execute 'Signing RCS-OCR installer...' do
     system "./nsis/SignTool.exe sign /P GeoMornellaChallenge7 /f ./nsis/HT.pfx ./nsis/rcs-ocr-#{VERSION}.exe"
   end
@@ -159,17 +167,25 @@ task :nsis do
   execute 'Generating RCS-Translate NSIS installer...' do
     system "#{MAKENSIS} /V1 ./nsis/RCS-Translate.nsi"
   end
-
   execute 'Signing RCS-Translate installer...' do
     system "./nsis/SignTool.exe sign /P GeoMornellaChallenge7 /f ./nsis/HT.pfx ./nsis/rcs-translate-#{VERSION}.exe"
   end
+
+  execute 'Generating RCS-Money NSIS installer...' do
+    system "#{MAKENSIS} /V1 ./nsis/RCS-Money.nsi"
+  end
+
+  execute 'Signing RCS-Money installer...' do
+    system "./nsis/SignTool.exe sign /P GeoMornellaChallenge7 /f ./nsis/HT.pfx ./nsis/rcs-money-#{VERSION}.exe"
+  end
 end
 
-$modules = %w[db worker aggregator intelligence ocr translate connector]
+$modules = %w[db worker aggregator intelligence ocr translate connector money]
 
 desc "Remove the protected release code"
 task :unprotect do
   execute "Deleting the protected release folder" do
+    FileUtils.rm_f "bin/rcs-license-check"
     FileUtils.rm_rf(Dir.pwd + '/lib/rgloader') if File.exist?(Dir.pwd + '/lib/rgloader')
 
     $modules.each do |name|
@@ -211,6 +227,12 @@ task :protect do
   end
 
   execute "Encrypting code" do
+
+    # license check script used during the installation
+    FileUtils.rm_f "bin/rcs-license-check"
+    FileUtils.cp "lib/rcs-license-check.rb", "bin/rcs-license-check"
+    system "#{RUBYENC} --stop-on-error --encoding UTF-8 -b- --ruby 2.0.0 bin/rcs-license-check" || raise("Econding failed.")
+
     # we have to change the current dir, otherwise rubyencoder
     # will recreate the lib/rcs-db structure under rcs-db-release
     $modules.each do |name|

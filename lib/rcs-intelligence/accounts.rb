@@ -9,7 +9,7 @@ module Accounts
 
   def known_services
     [:facebook, :twitter, :gmail, :skype, :bbm, :whatsapp,
-     :phone, :mail, :linkedin, :viber, :outlook, :wechat, :line]
+     :phone, :mail, :linkedin, :viber, :outlook, :wechat, :line].concat(Money.known_cryptocurrencies)
   end
 
   def service_to_handle_type service
@@ -54,7 +54,9 @@ module Accounts
 
     data = addressbook_evidence[:data]
     handle_type = service_to_handle_type data['program']
-    handle = data['handle'].downcase
+    handle = data['handle']
+    handle.downcase! unless Money.known_cryptocurrencies.include?(handle_type)
+
     name = data['name'].blank? ? handle : data['name']
 
     {name: name, type: handle_type, handle: handle}

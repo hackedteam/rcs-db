@@ -1,96 +1,63 @@
 # encoding: utf-8
-#
-#  Heartbeat to update the status of the component in the db
-#
 
-# relatives
+require 'rcs-common/heartbeat'
+
 require_relative 'db_layer'
 require_relative 'license'
 require_relative 'shard'
-
-# from RCS::Common
-require 'rcs-common/trace'
-require 'rcs-common/systemstatus'
-
-# system
-require 'socket'
+require_relative 'firewall'
 
 module RCS
-module DB
+  module DB
+    class HeartBeat < RCS::HeartBeat::Base
+      component 'db', 'RCS::DB'
 
-class HeartBeat
-  extend RCS::Tracer
+      before_heartbeat do
+        # check the consistency of the license
+        LicenseManager.instance.periodic_check
 
-  def self.perform
+        if !Firewall.ok?
+          trace(:fatal, "#{Firewall.error_message}. Quitting...")
+          exit!
+        end
 
-    # reset the status
-    SystemStatus.reset
+        # check if someone has tampered with the license.rb file
+        self.class.dont_steal_rcs
 
-    # check the consistency of the license
-    LicenseManager.instance.periodic_check
+        # check the status of the DB shards
+        check_shards
 
-    # check the status of the DB shards
-    check_shards
+        # check the status of other components
+        ::Status.status_check
+      end
 
-    # check if someone has tampered with the license.rb file
-    dont_steal_rcs
+      def self.dont_steal_rcs
+        if LicenseManager::DONT_STEAL_RCS != "Ò€‹›ﬁﬂ‡°·‚æ…¬˚∆˙©ƒ∂ß´®†¨ˆøΩ≈ç√∫˜µ≤¡™£¢∞§¶•ªº" or
+          RCS::DB::Dongle::DONT_STEAL_RCS != "∆©ƒø†£¢∂øª˚¶∞¨˚˚˙†´ßµ∫√Ïﬁˆ¨Øˆ·‰ﬁÎ¨"
+          trace :fatal, "TAMPERED SOURCE CODE: don't steal RCS, now you are in trouble..."
+          exit!
+        end
+      end
 
-    # report our status to the db
-    component = "RCS::DB"
-    # our local ip address
-    begin
-      ip = Socket.gethostname
-    rescue Exception => e
-      ip = 'unknown'
-    end
+      def check_shards
+        shards = Shard.all
+        shards['shards'].each do |shard|
+          status = Shard.find(shard['_id'])
 
-    message = SystemStatus.my_error_msg || "#{SessionManager.instance.all.size} connections..."
+          next if status['ok'] != 0
 
-    # report our status
-    status = SystemStatus.my_status
-    disk = SystemStatus.disk_free
-    cpu = SystemStatus.cpu_load
-    pcpu = SystemStatus.my_cpu_load(component)
+          trace :fatal, "Heartbeat shard check: #{status['errmsg']}"
 
-    # create the stats hash
-    stats = {:disk => disk, :cpu => cpu, :pcpu => pcpu}
+          RCS::SystemStatus.my_status = 'ERROR'
+          RCS::SystemStatus.my_error_msg = status['errmsg']
+        end
+      rescue Exception => e
+        trace :fatal, "Cannot perform shard check: #{e.message}"
+      end
 
-    begin
-    # send the status to the db
-    ::Status.status_update component, ip, status, message, stats, 'db', $version
-    # check the status of other components
-    ::Status.status_check
-    rescue Exception => e
-      trace :fatal, "Cannot perform status update: #{e.message}"
-      trace :fatal, e.backtrace
-    end
-  end
-
-  def self.check_shards
-    begin
-    shards = Shard.all
-    shards['shards'].each do |shard|
-      status = Shard.find(shard['_id'])
-      if status['ok'] == 0
-        trace :fatal, "Heartbeat shard check: #{status['errmsg']}"
-        SystemStatus.my_status = 'ERROR'
-        SystemStatus.my_error_msg = status['errmsg']
+      def message
+        "#{SessionManager.instance.all.size} connections..."
       end
     end
-    rescue Exception => e
-      trace :fatal, "Cannot perform shard check: #{e.message}"
-    end
   end
-
-  def self.dont_steal_rcs
-    if LicenseManager::DONT_STEAL_RCS != "Ò€‹›ﬁﬂ‡°·‚æ…¬˚∆˙©ƒ∂ß´®†¨ˆøΩ≈ç√∫˜µ≤¡™£¢∞§¶•ªº" or
-       Dongle::DONT_STEAL_RCS != "∆©ƒø†£¢∂øª˚¶∞¨˚˚˙†´ßµ∫√Ïﬁˆ¨Øˆ·‰ﬁÎ¨"
-      trace :fatal, "TAMPERED SOURCE CODE: don't steal RCS, now you are in trouble..."
-      exit!
-    end
-  end
-
 end
-
-end #DB::
-end #RCS::

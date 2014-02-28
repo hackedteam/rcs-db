@@ -1,65 +1,36 @@
 # encoding: utf-8
-#
-#  Heartbeat to update the status of the component in the db
-#
 
-require_relative 'queue_manager'
+require 'rcs-common/heartbeat'
+require 'rcs-common/path_utils'
 
-# from RCS::Common
-require 'rcs-common/trace'
-require 'rcs-common/systemstatus'
+require_release 'rcs-db/db_layer'
+require_release 'rcs-db/firewall'
 
-# from RCS::DB
-if File.directory?(Dir.pwd + '/lib/rcs-worker-release')
-  require 'rcs-db-release/db_layer'
-else
-  require 'rcs-db/db_layer'
-end
-
-# system
-require 'socket'
+require_relative 'instance_worker_mng'
 
 module RCS
-module Worker
+  module Worker
+    class HeartBeat < RCS::HeartBeat::Base
+      component :worker
 
-class HeartBeat
-  extend RCS::Tracer
+      before_heartbeat do
+        if !RCS::DB::Firewall.ok?
+          trace(:fatal, "#{RCS::DB::Firewall.error_message}. Quitting...")
+          exit!
+        end
+      end
 
-  def self.perform
-    # reset the status
-    SystemStatus.reset
+      after_heartbeat do
+        InstanceWorkerMng.remove_dead_worker_threads
+      end
 
-    # report our status to the db
-    component = "RCS::Worker"
-    # our local ip address
-    begin
-      ip = Socket.gethostname
-    rescue Exception => e
-      ip = 'unknown'
-    end
-
-    how_many_processing = QueueManager.how_many_processing
-    msg = how_many_processing > 0 ? "Processing evidence from #{how_many_processing} agents." : 'Idle...'
-    message = SystemStatus.my_error_msg || msg
-
-    # report our status
-    status = SystemStatus.my_status
-
-    # create the stats hash
-    stats = {:disk => SystemStatus.disk_free, :cpu => SystemStatus.cpu_load, :pcpu => SystemStatus.my_cpu_load(component)}
-
-    begin
-      # send the status to the db
-      ::Status.status_update component, ip, status, message, stats, 'worker', $version
-    rescue Exception => e
-      trace :fatal, "Cannot perform status update: #{e.message}"
-      trace :fatal, e.backtrace
+      def message
+        cnt = InstanceWorkerMng.worker_threads_count
+        cnt > 0 ? "Processing evidence from #{cnt} agents." : 'Idle...'
+      end
     end
   ensure
     # Ensure that the mongoid connection is closed at the end
     Mongoid.default_session.disconnect rescue nil
   end
 end
-
-end #Collector::
-end #RCS::

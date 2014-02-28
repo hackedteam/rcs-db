@@ -34,6 +34,9 @@ class ShardController < RESTController
     @params['host'] = @request[:peer] if @params['host'] == 'auto'
     
     output = Shard.create "#{@params['host']}"
+
+    trace :debug, "Shard creation: #{output}"
+
     return ok(output)
   end
 

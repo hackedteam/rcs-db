@@ -46,7 +46,7 @@ module BackupManager
   end
 
   def delete(folder)
-    folder = File.join(BACKUPPATH, folder, 'data')
+    folder = File.join(BACKUPPATH, folder)
     raise "Cannot find folder #{folder}" unless Dir.exists?(folder)
     FileUtils.rm_rf folder
   end

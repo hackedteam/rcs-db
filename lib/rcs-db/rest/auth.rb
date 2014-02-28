@@ -26,11 +26,12 @@ class AuthController < RESTController
         user = @params['user']
         pass = @params['pass']
         version = @params['version']
+        type = @params['type']
 
         begin
 
           # check if it's a collector logging in
-          unless (sess = AuthManager.instance.auth_server(user, pass, version, @request[:peer])).nil?
+          unless (sess = AuthManager.instance.auth_server(user, pass, version, type, @request[:peer])).nil?
             return ok(sess, {cookie: 'session=' + sess[:cookie] + '; path=/;'})
           end
 

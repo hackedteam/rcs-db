@@ -79,31 +79,6 @@ describe Aggregate do
     end
   end
 
-  it 'should create and retrieve summary' do
-    aggregate_class.add_to_summary('test', 'peer')
-
-    aggregates = aggregate_class.where(type: :summary)
-    aggregates.size.should be 1
-    entry = aggregates.first
-    entry.info.should include 'test_peer'
-
-    aggregate_class.summary_include?('test', 'peer').should be true
-  end
-
-  it 'should not duplicate summary' do
-    aggregate_class.add_to_summary('test', 'peer')
-    aggregate_class.add_to_summary('test', 'peer')
-    aggregates = aggregate_class.where(type: :summary)
-    aggregates.size.should be 1
-  end
-
-  it 'should not rebuild summary if empty' do
-    aggregate_class.rebuild_summary
-
-    aggregates = aggregate_class.where(type: :summary)
-    aggregates.size.should be 0
-  end
-
   context 'given some data' do
     before do
       aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: :sms, aid: 'agent_id', count: 1, data: {peer: 'test1', versus: :in})
@@ -112,17 +87,6 @@ describe Aggregate do
       aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: :skype, aid: 'agent_id', count: 1, data: {peer: 'test.ardo', versus: :in})
       aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: :skype, aid: 'agent_id', count: 2, data: {peer: 'test.one', versus: :in})
       aggregate_class.create!(day: Time.now.strftime('%Y%m%d'), type: :phone, aid: 'agent_id', count: 3, data: {peer: 'test.ardissimo', versus: :in})
-    end
-
-    it 'should be able to rebuild summary' do
-      aggregate_class.rebuild_summary
-
-      aggregates = aggregate_class.where(type: :summary)
-      aggregates.size.should be 1
-      entry = aggregates.first
-      entry.info.should include 'sms_test1'
-      entry.info.should include 'sms_test2'
-      entry.info.should include 'sms_test3'
     end
 
     it 'should report the most (1) contacted' do

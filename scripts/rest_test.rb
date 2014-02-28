@@ -5,6 +5,7 @@ require 'benchmark'
 require 'open-uri'
 require 'pp'
 require 'cgi'
+require 'openssl'
 
 class CGI
   def self.encode_query(hash)
@@ -778,7 +779,7 @@ if false
 end
 
 # agents
-if false
+if true
 =begin
   res = http.request_get('/operation', {'Cookie' => cookie})
   operations = JSON.parse(res.body)
@@ -795,12 +796,16 @@ if false
   puts "You got #{agents.size} agents."
   puts
 
+  puts 'agent.can_upgrade'
+  res = http.request_get("/agent/can_upgrade/#{agents.first['_id']}", {'Cookie' => cookie})
+  resp = JSON.parse(res.body)
+  puts resp.inspect
   
-  puts "agent.show"
-  res = http.request_get("/agent/#{agents.first['_id']}", {'Cookie' => cookie})
+  #puts "agent.show"
+  #res = http.request_get("/agent/#{agents.first['_id']}", {'Cookie' => cookie})
   #agent = JSON.parse(res.body)
-  agent = JSON.parse(res.body)
-  puts agent.inspect
+  #agent = JSON.parse(res.body)
+  #puts agent.inspect
 
   #puts "agent.filesystem POST"
   #filesystem_post = {
@@ -1064,16 +1069,20 @@ if false
   #puts
   
   # evidence.index
-  #filter = {target: '4ea526392afb656f0600003e', agent: '4ea526392afb656f06000133', type: ['keylog']}.to_json
-  #res = http.request_get(URI.escape("/evidence?filter=#{filter}&startIndex=0&numItems=10"), {'Cookie' => cookie})
-  #puts "evidence.index"
-  #puts res
-  #puts
+  filter = {target: '4f86902a2afb6512a700006f', agent: '512f19972afb6522d9000010'}.to_json
+  url = URI.escape("/evidence?filter=#{filter}&startIndex=0&numItems=10")
+  res = http.request_get(url, {'Cookie' => cookie})
+  puts "evidence.index"
+  puts url
+  puts res.body
+  puts
 
   # evidence.total
-  filter = {target: '4F44F5CA2AFB65935200006E', agent: '4f57169a2afb6519d4000009'}.to_json
-  res = http.request_get(URI.escape("/evidence/total?filter=#{filter}"), {'Cookie' => cookie})
-  puts "evidence.index"
+  filter = {target: '4f86902a2afb6512a700006f', agent: '512f19972afb6522d9000010'}.to_json
+  url = URI.escape("/evidence/total?filter=#{filter}")
+  res = http.request_get(url, {'Cookie' => cookie})
+  puts "evidence.total"
+  puts url
   puts res.body
   puts
   
@@ -1152,9 +1161,10 @@ if false
 end
 
 # position
-if false
-  # TEST TORINO
-  loc = {map: {wifi_towers: [{mac_address: '00:21:1C:7A:D6:22', signal_strength: -76, ssid: 'OMNI-LOBBY'}]}}
+if true
+  cells = [{mobileCountryCode: 222, mobileNetworkCode: 1, locationAreaCode: 61208, cellId: 528, signalStrength: -92, timingAdvance: 0, age: 0}]
+  request = {'cellTowers' => cells, radioType: 'gsm'}
+  loc = {map: request}
   puts 'location.wifi'
   res = http.request_post('/position', loc.to_json, {'Cookie' => cookie})
   puts res.body
@@ -1475,7 +1485,7 @@ if false
   
 end
 
-if true
+if false
   puts "agent.blacklist"
   res = http.request_get('/agent/blacklist', {'Cookie' => cookie})
   puts res.body
