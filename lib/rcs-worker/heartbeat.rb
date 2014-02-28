@@ -29,8 +29,5 @@ module RCS
         cnt > 0 ? "Processing evidence from #{cnt} agents." : 'Idle...'
       end
     end
-  ensure
-    # Ensure that the mongoid connection is closed at the end
-    Mongoid.default_session.disconnect rescue nil
   end
 end
