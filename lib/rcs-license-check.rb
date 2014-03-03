@@ -134,7 +134,7 @@ module LicenseChecker
       if lic[:serial] == 'off'
         time = Time.now.getutc
       else
-        time = RCS::DB::Dongle.time
+        time = Dongle.time
       end
 
       if not lic[:expiry].nil? and Time.parse(lic[:expiry]).getutc < time
@@ -148,7 +148,7 @@ module LicenseChecker
       if lic[:serial] != 'off'
         puts "Checking for hardware dongle..."
         # get the version from the dongle (can rise exception)
-        info = RCS::DB::Dongle.info
+        info = Dongle.info
         puts "Dongle info: " + info.inspect
         raise "Invalid License File: incorrect serial number (#{lic[:serial]}) #{info[:serial]} is needed" if lic[:serial] != info[:serial]
       else
@@ -224,7 +224,7 @@ module LicenseChecker
     license = load_license options[:file], options[:version]
 
     # print the dongle infos
-    pp RCS::DB::Dongle.info if license[:serial] != 'off'
+    pp Dongle.info if license[:serial] != 'off'
 
     puts "Version: " + license[:version]
     puts "Expiry: " + license[:expiry].to_s
