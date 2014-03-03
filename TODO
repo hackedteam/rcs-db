@@ -11,16 +11,16 @@ TODO:  9.2.x
 
     crypto-currency dissector
       - support for multibit and armory wallets
-      - parse the blockchain to get the "from" of a transaction
 
     filter links by type (e.g. I want to see only skype links). We can change the format of the info attribute..
-
 
 TODO: 9.3.0
 
     archive mode able to receive from multiple systems
 
     automatic discovery (and thus suggestion) of groups (communities)
+    calculate "centrality" on entities
+    calculate "weight" on entities
 
 ======================================
 TODO FUTURE:
