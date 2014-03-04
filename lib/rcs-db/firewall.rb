@@ -33,7 +33,7 @@ module RCS
           break if !err
 
           if err and err != last_err
-            trace(:fatal, "#{err}. You must fix this on get this component work correcly.")
+            trace(:fatal, "#{err}. You must fix this to get this component work correcly.")
             last_err = err
           end
 
