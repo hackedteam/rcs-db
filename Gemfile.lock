@@ -24,6 +24,8 @@ PATH
       log4r (>= 1.1.9)
       mail
       mime-types
+      mongoid (>= 3.0.0)
+      sbdb
       sys-cpu
       sys-filesystem
 
