@@ -38,6 +38,8 @@ class Core
     name = File.basename(core_file, '.zip')
     version = ''
 
+    trace :info, "Loading core: #{name}..."
+
     # Copy the core file (a zip archive) to the temp folder
     temp_core_file = Config.instance.temp(File.basename(core_file))
     FileUtils.cp(core_file, temp_core_file)
@@ -47,9 +49,9 @@ class Core
       version = z.file.open('version', "rb") { |f| f.read }.chomp
     end
 
-    make_unique(temp_core_file)
+    trace :info, "Load core: #{name} has version #{version}"
 
-    trace :info, "Load core: #{name} #{version}"
+    make_unique(temp_core_file)
 
     # delete if already present
     ::Core.where({name: name}).destroy_all
@@ -62,6 +64,8 @@ class Core
     core[:_grid] = GridFS.put(File.open(temp_core_file, 'rb+') {|f| f.read}, {filename: name})
     core[:_grid_size] = File.size(temp_core_file)
     core.save
+
+    trace :info, "Load core: #{name} has been loaded"
 
     # Remove the original core file
     File.delete(core_file)
