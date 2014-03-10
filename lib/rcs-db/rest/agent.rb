@@ -200,7 +200,15 @@ class AgentController < RESTController
       agent = Item.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
 
       @params['desc'] ||= ''
-      
+
+      addresses = Configuration.sync_hosts(@params['config'])
+      addresses.each do |address|
+        raise "Unable to save the configuration. The address #{address} is blacklisted." if Collector.blacklisted?(address)
+        collector = Collector.where(address: address).first
+        next unless collector
+        raise "Incompatible collector #{address}" if collector.good != agent.good
+      end
+
       case agent._kind
         when 'agent'
           # the config was not sent, replace it
