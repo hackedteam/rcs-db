@@ -968,14 +968,11 @@ Function .onInit
 	FileRead $4 $1
 	FileClose $4
 	${If} $1 != ""
-	  ${StrStr} $0 $1 "9.2.0"
-	  ${If} $0 == ""
-	    ${StrStr} $0 $1 "9.1"
-	    ${If} $0 == ""
-  	    MessageBox MB_OK "This version can only be installed on 9.1.x systems, you have $1"
-  	    Quit
-	    ${EndIf}
-	  ${EndIf}
+	   ${StrStr} $0 $1 "9.1"
+	   ${If} $0 == ""
+  	   MessageBox MB_OK "This version can only be installed on 9.1.x systems, you have $1"
+  	   Quit
+	   ${EndIf}
 	${EndIf}
 
   ${IfNot} ${RunningX64}
