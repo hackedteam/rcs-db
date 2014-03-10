@@ -40,8 +40,9 @@ class Config
 
   attr_reader :global
 
+  $execution_directory ||= File.expand_path('../../../', __FILE__)
+
   def initialize
-    $execution_directory ||= File.expand_path('../../../', __FILE__)
     @global = {}
   end
 
