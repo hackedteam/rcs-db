@@ -98,12 +98,13 @@ class DB
   # executed frequently, in that case, cache the new session
   def open(host, port, db, options = {})
     options[:max_retries] ||= 0
-    session = Moped::Session.new(["#{host}:#{port}"], options)
-    yield session.use(db)
+    new_session = Moped::Session.new(["#{host}:#{port}"], options)
+    new_session.use(db)
+    yield(new_session)
   rescue Moped::Errors::ConnectionFailure
     options[:raise]==false ? nil : raise
   ensure
-    session.disconnect
+    new_session.disconnect
   end
 
   def session(database = nil)
@@ -361,7 +362,14 @@ class DB
 
     trace :info, "Log Rotation"
 
-    session('admin').command(logRotate: 1)
+    host = "127.0.0.1"
+    db_name = 'admin'
+
+    [27017, 27018, 27019].each do |port|
+      DB.instance.open(host, port, db_name) { |db| db.command(logRotate: 1) }
+    end
+
+    true
   end
 
   def create_evidence_filters
