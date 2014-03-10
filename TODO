@@ -1,26 +1,55 @@
 
 TODO:  9.2.x
 
-  TRY:
-    caching slow query. try to cache already jsonized list of items and similar
-
   IMPLEMENT:
+
+    Password enforcement for users
+      - strong password required (10 chars + [a-zA-Z0-9]) - (change even in the console form)
+      - passwords expire every 3 months
+      - alerts on every login starting from 15 days before expiry (message push in console)
+      - expired account get a custom "expired password" error on login
+      - migration to set the expiry time in 15 days for all users after upgrade
+      - hidden config.yaml flag to not expire passwords (for us on devel machines)
+
+    fix the audit log
+      - many actions are not reported correctly (build, config)
+      - insert the op and target even to agent operation
+
+    new protocol for anonymizers (alor & fabio)
+      - NC will remain only for retro-comp and to upgrade to new anons
+      - anon -> collector status reporting
+      - collector -> anons configuration
+
+    be sure the core directory is empty before building any installer
+
     PUSH messages send the whole object (like dashboard)
 
     fix usb building zip creation (uses too much ram in f.read)
 
     crypto-currency dissector
       - support for multibit and armory wallets
-      - parse the blockchain to get the "from" of a transaction
 
     filter links by type (e.g. I want to see only skype links). We can change the format of the info attribute..
 
+  TRY:
+    caching slow query. try to cache already jsonized list of items and similar
 
 TODO: 9.3.0
+
+    Use Mongodb 2.6.x
+
+    Mongoid refactoring
+      - check if mongoid 4 is stable
+      - migrate to mongoid 4
+      - get rid of old ruby-mongo-driver
+      - use the new moped/gridfs
+      - check if the connection pooling helps resolving the "get_stucked" problem
 
     archive mode able to receive from multiple systems
 
     automatic discovery (and thus suggestion) of groups (communities)
+    calculate "centrality" on entities
+    calculate "weight" on entities
 
 ======================================
 TODO FUTURE:

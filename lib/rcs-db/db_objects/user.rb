@@ -118,10 +118,12 @@ class User
     end
 
     self.recent_ids.each do |recent|
-      next unless recent['id'] == id or recent[:id] == id
-      trace :debug, "Deleting Item #{id} from #{self.name} recents"
-      self.recent_ids.delete(recent)
-      self.save
+      # next unless recent['id'] == id or recent[:id] == id
+      if recent == id or (recent.respond_to?(:[]) and (recent['id'] == id or recent[:id] == id))
+        trace :debug, "Deleting Item #{id} from #{self.name} recents"
+        self.recent_ids.delete(recent)
+        self.save
+      end
     end
   end
 

@@ -40,6 +40,21 @@ class PublicController < RESTController
     end
   end
 
+  def destroy_file
+    require_auth_level :server
+    trace :info, "[#{@request[:peer]}] Has served a file and is requesting to delete #{@params['file']} from all collectors"
+
+    # here we need to return to the callee and then issue the Frontend#collector_get
+    # since it is called by a collector, it will stuck in the event loop waiting forever
+    # so we create a thread, and after a small sleep we issue the delete on all frontends
+    Thread.new do
+      sleep 3
+      Frontend.collector_del(@params['file'])
+    end
+
+    return ok
+  end
+
 end
 
 end #DB::

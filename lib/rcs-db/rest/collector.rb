@@ -218,6 +218,14 @@ class CollectorController < RESTController
     end
   end
 
+  def custom_relay
+    require_auth_level :server, :sys, :tech
+
+    return not_found unless File.exist? RCS::DB::Config.instance.file('relay_server')
+
+    return ok(File.read(RCS::DB::Config.instance.file('relay_server')).gsub("\n", ''))
+  end
+
 end
 
 end #DB::
