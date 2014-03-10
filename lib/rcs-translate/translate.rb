@@ -23,7 +23,7 @@ module RCS
 
       def wait_for_translation_license
         unless LicenseManager.instance.check :translation
-          RCS::DB::DB.instance.mongo_connection.drop_collection 'trans_queue'
+          RCS::DB::DB.instance.drop_collection 'trans_queue'
 
           # do nothing...
           trace :info, "TRANSLATE license is disabled, going to sleep..."

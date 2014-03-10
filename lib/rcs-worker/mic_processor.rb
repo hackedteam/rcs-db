@@ -1,5 +1,4 @@
 require 'ffi'
-require 'mongo'
 require 'mongoid'
 require 'stringio'
 
@@ -114,14 +113,19 @@ module Worker
     end
 
     def write_to_grid(mic, mp3_bytes, target, agent)
-      db = RCS::DB::DB.instance.mongo_connection
-      fs = Mongo::GridFileSystem.new(db, "grid.#{target[:_id]}")
+      file_id = mic.evidence.data[:_grid] || mic.evidence.data['_grid']
+      collection = "grid.#{target[:_id]}"
+      file_length = nil
 
-      fs.open(mic.file_name, 'a') do |f|
-        f.write mp3_bytes
-        mic.update_attributes({data: {_grid: Moped::BSON::ObjectId.from_string(f.files_id.to_s), _grid_size: f.file_length, duration: mic.duration}})
+      if file_id
+        file_length = RCS::DB::GridFS.append(files_id, mp3_bytes, collection)
+      else
+        file_id = RCS::DB::GridFS.put(mp3_bytes, {filename: mic.file_name}, collection)
+        file_length = mp3_bytes.bytesize
       end
-      agent.stat.size += mp3_bytes.size
+
+      mic.update_data(_grid: Moped::BSON::ObjectId.from_string(file_id.to_s), _grid_size: file_length, duration: mic.duration)
+      agent.stat.size += mp3_bytes.bytesize
       agent.save
     end
   end

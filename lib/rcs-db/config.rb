@@ -41,6 +41,7 @@ class Config
   attr_reader :global
 
   def initialize
+    $execution_directory ||= File.expand_path('../../../', __FILE__)
     @global = {}
   end
 

@@ -75,13 +75,10 @@ class Aggregate
   end
 
   def self.create_collection
-    # create the collection for the target's aggregate and shard it
-    db = RCS::DB::DB.instance.mongo_connection
-    collection = db.collection self.collection.name
     # ensure indexes
-    self.create_indexes
+    create_indexes
     # enable sharding only if not enabled
-    RCS::DB::Shard.set_key(collection, {type: 1, day: 1, aid: 1}) unless collection.stats['sharded']
+    RCS::DB::Shard.set_key(collection, {type: 1, day: 1, aid: 1}) unless RCS::DB::Shard.sharded?(collection)
   end
 
   def self.versus_of_communications_with(handle)

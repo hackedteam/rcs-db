@@ -2,7 +2,6 @@
 # Controller for Items
 #
 
-require 'mongo'
 require 'mongoid'
 
 module RCS

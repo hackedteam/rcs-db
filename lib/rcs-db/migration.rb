@@ -196,9 +196,9 @@ module Migration
 
   def cleanup_storage
     count = 0
-    db = DB.instance.mongo_connection
+    db = DB.instance
 
-    total_size =  db.stats['dataSize']
+    total_size =  db.db_stats['dataSize']
 
     collections = db.collection_names
     # keep only collection with _id in the name
@@ -232,13 +232,13 @@ module Migration
       puts
       puts target.name
 
-      pre_size = db[coll].stats['size']
+      pre_size = db.collection_stats(coll)['size'].to_i
       deleted_aid_evidence.each do |aid|
         count = Evidence.target(tid).where(aid: aid).count
         Evidence.target(tid).where(aid: aid).delete_all
         puts "#{count} evidence deleted"
       end
-      post_size = db[coll].stats['size']
+      post_size = db.collection_stats(coll)['size'].to_i
       target.restat
       target.get_parent.restat
       puts "#{(pre_size - post_size).to_s_bytes} cleaned up"
@@ -261,17 +261,17 @@ module Migration
       puts
       puts "#{target.name} (gridfs)"
 
-      pre_size = db["grid.#{tid}.files"].stats['size'] + db["grid.#{tid}.chunks"].stats['size']
+      pre_size = db.collection_stats("grid.#{tid}.files")['size'] + db.collection_stats("grid.#{tid}.chunks")['size']
       deleted_aid_grid.each do |aid|
         GridFS.delete_by_agent(aid, tid)
       end
-      post_size = db["grid.#{tid}.files"].stats['size'] + db["grid.#{tid}.chunks"].stats['size']
+      post_size = db.collection_stats("grid.#{tid}.files")['size'] + db.collection_stats("grid.#{tid}.chunks")['size']
       target.restat
       target.get_parent.restat
       puts "#{(pre_size - post_size).to_s_bytes} cleaned up"
     end
 
-    current_size = total_size - db.stats['dataSize']
+    current_size = total_size - db.db_stats['dataSize']
 
     puts "#{current_size.to_s_bytes} saved"
   end

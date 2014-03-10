@@ -301,7 +301,7 @@ class RESTController
       ret = yield
       @request[:time][:moingoid] = Time.now - start
       return ret
-    rescue Mongo::ConnectionFailure =>  e
+    rescue Moped::Errors::ConnectionFailure =>  e
       trace :error, "Connection to database lost, retrying in 5 seconds..."
       sleep 5
       retry if attempt ||= 0 and attempt += 1 and attempt < 2

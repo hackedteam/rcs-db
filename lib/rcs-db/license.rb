@@ -391,12 +391,12 @@ class LicenseManager
   end
 
   def store_in_db
-    db = RCS::DB::DB.instance.mongo_connection
-    db['license'].update({}, @limits, {:upsert  => true})
+    db = RCS::DB::DB.instance.session
+    db['license'].find().upsert(@limits)
   end
 
   def load_from_db
-    db = RCS::DB::DB.instance.mongo_connection
+    db = RCS::DB::DB.instance.session
     db['license'].find({}).first
   end
 

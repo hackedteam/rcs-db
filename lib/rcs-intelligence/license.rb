@@ -41,7 +41,7 @@ class LicenseManager
   end
 
   def load_from_db
-    db = RCS::DB::DB.instance.mongo_connection
+    db = RCS::DB::DB.instance.session
     @limits = db['license'].find({}).first
   end
 

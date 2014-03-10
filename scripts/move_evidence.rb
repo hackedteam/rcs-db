@@ -3,7 +3,6 @@
 #
 
 require 'bundler/setup'
-require 'mongo'
 require 'rcs-common/trace'
 require_relative 'db'
 
@@ -63,7 +62,7 @@ RCS::DB::DB.instance.connect
 params.each do |p|
   begin
     move_evidence p
-  rescue Mongo::OperationFailure
+  rescue Moped::Errors::ConnectionFailure
     retry
   end
 end

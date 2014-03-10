@@ -1,5 +1,4 @@
 require 'bundler'
-require 'mongo'
 require 'mongoid'
 require 'pry'
 require 'rcs-common/path_utils'
@@ -86,8 +85,7 @@ end
 def mongo_setup
   Mongoid.load!('config/mongoid.yaml', :production)
 
-  connection = Mongo::MongoClient.new(ENV['MONGOID_HOST'], ENV['MONGOID_PORT'])
-  admin_db = connection.db('admin')
+  admin_db = Mongoid.default_session.with(database: 'admin')
   shard_list = admin_db.command(listshards: 1)['shards']
   admin_db.command(addshard: "#{ENV['MONGOID_HOST']}:27018") if shard_list.empty?
   admin_db.command(enablesharding: ENV['MONGOID_DATABASE']) rescue nil

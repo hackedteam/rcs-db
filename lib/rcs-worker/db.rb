@@ -12,26 +12,30 @@ module RCS
 
       def change_mongo_host(host)
         @_worker_host = host.split(":").first
-        @mongo_db = nil
+        @_default_session = nil
       end
 
       def purge!
-        mongo_connection.collections.each do |collection|
+        session.collections.each do |collection|
           collection.drop
         end and true
       end
 
-      def mongo_connection
-        host = @_worker_host || 'localhost'
-        port = 27018
+      def session
+        @_default_session ||= begin
+          host = @_worker_host || 'localhost'
+          port = 27018
 
-        super(WORKER_DB_NAME, host, port)
+          session = Moped::Session.new(["#{host}:#{port}"])
+          session.use(WORKER_DB_NAME)
+          session
+        end
       end
     end
 
     class GridFS < RCS::DB::GridFS
-      def self.db
-        RCS::Worker::DB.instance.mongo_connection
+      def self.session
+        RCS::Worker::DB.instance.session
       end
     end
   end

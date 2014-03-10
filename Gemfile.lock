@@ -1,15 +1,4 @@
 GIT
-  remote: git://github.com/alor/mongo-ruby-driver.git
-  revision: b1d59bfe1700b88b1550b4fc6de1ae8778923ddf
-  branch: 1.9.2_append
-  specs:
-    bson (1.9.2)
-    bson_ext (1.9.2)
-      bson (~> 1.9.2)
-    mongo (1.9.2)
-      bson (~> 1.9.2)
-
-GIT
   remote: git://github.com/danielemilan/minitar.git
   revision: 56af58400e2d8171906dee4bf5c5a1d930e5b7b6
   branch: master
@@ -44,6 +33,9 @@ GEM
     bdb (0.2.6.5)
       tuple (>= 0.1.2)
     bitcoin-ruby (0.0.5)
+    bson (1.9.2)
+    bson_ext (1.9.2)
+      bson (~> 1.9.2)
     builder (3.0.4)
     coderay (1.1.0)
     cookiejar (0.3.0)
@@ -135,7 +127,6 @@ DEPENDENCIES
   activesupport
   bcrypt-ruby
   bitcoin-ruby
-  bson (= 1.9.2)
   bson_ext (= 1.9.2)
   bundler (> 1.0.0)
   em-http-request (= 1.0.3)
@@ -148,7 +139,6 @@ DEPENDENCIES
   lrucache
   mail
   minitar (>= 0.5.5)!
-  mongo (= 1.9.2)!
   mongoid (>= 3.0.0)
   persistent_http
   plist

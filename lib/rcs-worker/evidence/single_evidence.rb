@@ -1,4 +1,3 @@
-require 'mongo'
 require 'mongoid'
 
 # from RCS::Common
@@ -25,14 +24,16 @@ module SingleEvidence
       return false unless self.respond_to? :duplicate_criteria
       return false if agent.nil? or target.nil?
 
-      db = RCS::DB::DB.instance.mongo_connection
+      db = RCS::DB::DB.instance.session
       criteria = self.duplicate_criteria
       criteria.merge! "aid" => agent['_id'].to_s
-      evs = db["evidence.#{target['_id'].to_s}"].find criteria
+      is_duplicated = !!db["evidence.#{target['_id'].to_s}"].find.first
 
-      trace :debug, "DUPLICATE CHECK #{criteria}: #{evs.has_next?}"
+      if is_duplicated
+        trace(:debug, "DUPLICATE CHECK #{criteria}: #{is_duplicated.inspect}")
+      end
 
-      evs.has_next?
+      is_duplicated
     end
 
     def default_keyword_index

@@ -158,17 +158,14 @@ class Item
             self.stat.last_sync = a.stat.last_sync
           end
         end
-        db = RCS::DB::DB.instance.mongo_connection
+        db = RCS::DB::DB.instance
         # evidence size
-        collection = db.collection('evidence.' + self._id.to_s)
-        self.stat.size = collection.stats['size'].to_i
+        self.stat.size = db.collection_stats("evidence.#{self._id.to_s}")['size'].to_i
         # grid size
         begin
-          collection = db.collection('grid.' + self._id.to_s + '.files')
-          self.stat.grid_size = collection.stats['size'].to_i
-          collection = db.collection('grid.' + self._id.to_s + '.chunks')
-          self.stat.grid_size += collection.stats['size'].to_i
-        rescue Mongo::OperationFailure
+          self.stat.grid_size = db.collection_stats('grid.' + self._id.to_s + '.files')['size'].to_i
+          self.stat.grid_size += db.collection_stats('grid.' + self._id.to_s + '.chunks')['size'].to_i
+        rescue Moped::Errors::OperationFailure
           # the grid collection is not present
           self.stat.grid_size = 0
         end

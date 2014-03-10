@@ -1,5 +1,4 @@
 require 'ffi'
-require 'mongo'
 require 'mongoid'
 require 'stringio'
 require 'digest/md5'
@@ -441,7 +440,7 @@ class CallProcessor
     end
     return call.bid, call.raw_counter
   end
-  
+
   def encode_mp3(sample_rate, left_pcm, right_pcm)
     @encoder ||= ::MP3Encoder.new(2, sample_rate)
     unless @encoder.nil?
@@ -450,16 +449,21 @@ class CallProcessor
       end
     end
   end
-  
-  def write_to_grid(call, mp3_bytes)
-    db = RCS::DB::DB.instance.mongo_connection
-    fs = Mongo::GridFileSystem.new(db, "grid.#{@target[:_id]}")
 
-    fs.open(call.file_name, 'a') do |f|
-      f.write mp3_bytes
-      call.update_data({_grid: Moped::BSON::ObjectId.from_string(f.files_id.to_s), _grid_size: f.file_length, duration: call.duration})
+  def write_to_grid(call, mp3_bytes)
+    file_id = call.evidence.data[:_grid] || call.evidence.data['_grid']
+    collection = "grid.#{@target[:_id]}"
+    file_length = nil
+
+    if file_id
+      file_length = RCS::DB::GridFS.append(files_id, mp3_bytes, collection)
+    else
+      file_id = RCS::DB::GridFS.put(mp3_bytes, {filename: call.file_name}, collection)
+      file_length = mp3_bytes.bytesize
     end
-    @agent.stat.size += mp3_bytes.size
+
+    call.update_data(_grid: Moped::BSON::ObjectId.from_string(file_id.to_s), _grid_size: file_length, duration: call.duration)
+    @agent.stat.size += mp3_bytes.bytesize
     @agent.save
   end
 

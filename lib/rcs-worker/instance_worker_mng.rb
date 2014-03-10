@@ -14,19 +14,19 @@ module RCS::Worker::InstanceWorkerMng
   @worker_threads = {}
 
   def db
-    RCS::Worker::DB.instance.mongo_connection
+    RCS::Worker::DB.instance.session
   end
 
   def collection
-    @collection ||= db.collection('grid.evidence.files')
+    @collection ||= db['grid.evidence.files']
   end
 
   def agents
-    collection.distinct(:filename)
+    collection.find.distinct(:filename)
   end
 
   def ensure_indexes
-    collection.create_index({filename: 1}, {background: 1})
+    collection.indexes.create({filename: 1}, {background: 1})
   end
 
   def spawn_worker_thread(agent)

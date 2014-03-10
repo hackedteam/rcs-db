@@ -62,7 +62,7 @@ class BackupManager
 
       # retrieve the list of collection and iterate on it to create a backup
       # the 'what' property of a backup decides which collections have to be backed up
-      collections = DB.instance.mongo_connection.collection_names
+      collections = DB.instance.collection_names
 
       # don't backup the "volatile" collections
       collections.delete('statuses')
@@ -141,14 +141,14 @@ class BackupManager
   end
 
   def self.get_last_incremental_id(params)
-    db = DB.instance.mongo_connection
+    session = DB.instance.session
 
     incremental_ids = {}
 
     params[:coll].each do |coll|
       next unless (coll['evidence.'] || coll['aggregate.'] || coll['grid.'])
       # get the last bson object id
-      ev = db.collection(coll).find().sort({_id: -1}).limit(1).first
+      ev = session[coll].find().sort({_id: -1}).limit(1).first
       incremental_ids[coll.to_s.gsub(".", "_")] = ev['_id'].to_s unless ev.nil?
     end
 

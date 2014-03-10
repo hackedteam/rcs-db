@@ -32,9 +32,7 @@ class Audit
   store_in collection: 'audit'
 
   def self.shard_collection
-    db = RCS::DB::DB.instance.mongo_connection
-    audit = db.collection('audit')
-    RCS::DB::Shard.set_key(audit, {time: 1, actor: 1}) unless audit.stats['sharded']
+    RCS::DB::Shard.set_key(collection, {time: 1, actor: 1})  unless RCS::DB::Shard.sharded?(collection)
   end
 
   def self.filter(params)

@@ -44,6 +44,7 @@ TODO: 9.3.0
       - get rid of old ruby-mongo-driver
       - use the new moped/gridfs
       - check if the connection pooling helps resolving the "get_stucked" problem
+      - does logrotate also works on mongoc and mongod?
 
     archive mode able to receive from multiple systems
 

