@@ -65,17 +65,30 @@ class Configuration
     conf.to_json
   end
 
-  def sync_host
-    # search for the first sync action and take the sync address
-    config = JSON.parse(self.config)
-    config['actions'].each do |action|
+  def self.sync_hosts(json)
+    list = []
+
+    parsed_json = JSON.parse(json)
+
+    parsed_json['actions'].each do |action|
       action['subactions'].each do |sub|
         if sub['action'] == 'synchronize'
-          return sub['host']
+          list << sub['host']
         end
       end
     end
-    return nil
+
+    list.uniq!
+    list.compact!
+    list
+  end
+
+  def sync_hosts
+    self.class.sync_hosts(self.config)
+  end
+
+  def sync_host
+    sync_hosts.first
   end
 
   def method_missing(meth, *args, &block)

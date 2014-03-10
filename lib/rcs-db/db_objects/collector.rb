@@ -594,6 +594,10 @@ class Collector
   end
 
   def blacklisted?
-    blacklist.include?(self.address.to_s)
+    self.class.blacklisted?(self.address.to_s)
+  end
+
+  def self.blacklisted?(address)
+    BLACKLIST.include?(address)
   end
 end
