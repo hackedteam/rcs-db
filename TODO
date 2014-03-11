@@ -15,6 +15,8 @@ TODO:  9.2.x
       - many actions are not reported correctly (build, config)
       - insert the op and target even to agent operation
 
+    fix the PUSH to anon with spaces in the desc or name
+
     new protocol for anonymizers (alor & fabio)
       - NC will remain only for retro-comp and to upgrade to new anons
       - anon -> collector status reporting
