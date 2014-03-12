@@ -18,7 +18,7 @@ module RCS::Worker::InstanceWorkerMng
   end
 
   def collection
-    @collection ||= db['grid.evidence.files']
+    db['grid.evidence.files']
   end
 
   def agents
