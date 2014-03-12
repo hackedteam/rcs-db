@@ -1,4 +1,5 @@
 require 'rcs-common/trace'
+require 'digest/md5'
 require 'singleton'
 
 require_release 'rcs-db/config'
@@ -11,8 +12,7 @@ module RCS
       WORKER_DB_NAME = 'rcs-worker'
 
       def change_mongo_host(host)
-        @_worker_host = host.split(":").first
-        @_default_session = nil
+        Thread.current[:"[mongoid]:rcs_worker_host"] = host.split(":").first
       end
 
       def purge!
@@ -22,12 +22,15 @@ module RCS
       end
 
       def session
-        host = @_worker_host || 'localhost'
-        port = 27018
+        host    = Thread.current[:"[mongoid]:rcs_worker_host"] || 'localhost'
+        port    = 27018
+        db_name = WORKER_DB_NAME
 
-        Thread.current[:"[mongoid]:session_for_rcs_worker"] ||= begin
+        session_hash = Digest::MD5.hexdigest("#{host}#{port}#{db_name}")[0..9]
+
+        Thread.current[:"[mongoid]:session_rcs_worker_#{session_hash}"] ||= begin
           session = Moped::Session.new(["#{host}:#{port}"])
-          session.use(WORKER_DB_NAME)
+          session.use(db_name)
           session
         end
       end
