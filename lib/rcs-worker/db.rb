@@ -22,10 +22,10 @@ module RCS
       end
 
       def session
-        @_default_session ||= begin
-          host = @_worker_host || 'localhost'
-          port = 27018
+        host = @_worker_host || 'localhost'
+        port = 27018
 
+        Thread.current[:"[mongoid]:session_for_rcs_worker"] ||= begin
           session = Moped::Session.new(["#{host}:#{port}"])
           session.use(WORKER_DB_NAME)
           session

@@ -117,11 +117,11 @@ class DB
   end
 
   def sharded_collections
-    @_sharded_collections ||= session('config')['collections']
+    session('config')['collections']
   end
 
   def db_name
-    @_db_name ||= session.instance_variable_get('@current_database').name
+    session.instance_variable_get('@current_database').name
   end
 
   def collection_exists?(collection)
