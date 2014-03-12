@@ -456,7 +456,7 @@ class CallProcessor
     file_length = nil
 
     if file_id
-      file_length = RCS::DB::GridFS.append(files_id, mp3_bytes, collection)
+      file_length = RCS::DB::GridFS.append(file_id, mp3_bytes, collection)
     else
       file_id = RCS::DB::GridFS.put(mp3_bytes, {filename: call.file_name}, collection)
       file_length = mp3_bytes.bytesize
