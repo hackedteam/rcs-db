@@ -13,7 +13,9 @@ module RCS
       class << self
 
         def collection_name(coll)
-          coll ? "#{DEFAULT_GRID_NAME}.#{coll}" : DEFAULT_GRID_NAME
+          collname = coll.to_s.downcase.strip
+          return DEFAULT_GRID_NAME if collname.empty?
+          collname.start_with?(DEFAULT_GRID_NAME) ? collname : "#{DEFAULT_GRID_NAME}.#{collname}"
         end
 
         def session
