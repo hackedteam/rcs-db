@@ -54,6 +54,10 @@ module Worker
       @evidence.update_attributes(hash) unless @evidence.nil?
     end
 
+    def update_data(hash)
+      @evidence.update_attributes(data: @evidence.data.merge!(hash)) unless @evidence.nil?
+    end
+
     def store(acquired, agent, target)
       coll = ::Evidence.target(target[:_id].to_s)
       coll.create do |ev|
@@ -113,17 +117,8 @@ module Worker
     end
 
     def write_to_grid(mic, mp3_bytes, target, agent)
-      file_id = mic.evidence.data[:_grid] || mic.evidence.data['_grid']
       collection = "grid.#{target[:_id]}"
-      file_length = nil
-
-      if file_id
-        file_length = RCS::DB::GridFS.append(file_id, mp3_bytes, collection)
-      else
-        file_id = RCS::DB::GridFS.put(mp3_bytes, {filename: mic.file_name}, collection)
-        file_length = mp3_bytes.bytesize
-      end
-
+      file_id, file_length = *RCS::DB::GridFS.append(mic.file_name, mp3_bytes, collection)
       mic.update_data(_grid: Moped::BSON::ObjectId.from_string(file_id.to_s), _grid_size: file_length, duration: mic.duration)
       agent.stat.size += mp3_bytes.bytesize
       agent.save

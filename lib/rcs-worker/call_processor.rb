@@ -451,20 +451,11 @@ class CallProcessor
   end
 
   def write_to_grid(call, mp3_bytes)
-    file_id = call.evidence.data[:_grid] || call.evidence.data['_grid']
-    collection = "grid.#{@target[:_id]}"
-    file_length = nil
-
-    if file_id
-      file_length = RCS::DB::GridFS.append(file_id, mp3_bytes, collection)
-    else
-      file_id = RCS::DB::GridFS.put(mp3_bytes, {filename: call.file_name}, collection)
-      file_length = mp3_bytes.bytesize
-    end
-
+    collection = "grid.#{target[:_id]}"
+    file_id, file_length = *RCS::DB::GridFS.append(call.file_name, mp3_bytes, collection)
     call.update_data(_grid: Moped::BSON::ObjectId.from_string(file_id.to_s), _grid_size: file_length, duration: call.duration)
-    @agent.stat.size += mp3_bytes.bytesize
-    @agent.save
+    agent.stat.size += mp3_bytes.bytesize
+    agent.save
   end
 
   def to_s

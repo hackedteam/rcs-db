@@ -53,10 +53,11 @@ module RCS
           raise
         end
 
-        def append(id, content, collection = nil)
-          get_bucket(collection).append(id, content, md5: false)
+        def append(filename, content, collection = nil)
+          options = {md5: false, filename: true, create: {filename: filename}}
+          get_bucket(collection).append(filename, content, options)
         rescue Exception => e
-          trace :error, "Cannot append content to the grid file #{id} of collection #{collection_name(collection)}: #{e.message}"
+          trace :error, "Cannot append content to the grid file #{filename} of collection #{collection_name(collection)}: #{e.message}"
           raise
         end
 
