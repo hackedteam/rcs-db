@@ -159,7 +159,13 @@ module RCS
         raise(ex)
       rescue ThreadError, NoMemoryError => ex
         memory_error = true
-        raise(ex)
+
+        msgs = ["[#{error.class}] #{error.message}."]
+        msgs << "There are #{Thread.list.size} active threads. EventMachine threadpool_size is #{EM.threadpool_size}."
+        msgs.concat(error.backtrace) if error.backtrace.respond_to?(:concat)
+
+        trace(:fatal, msgs.join("\n"))
+        exit!(1) # Die hard
       rescue Exception => e
         trace :fatal, "[#{@agent_uid}] Unrecoverable error processing evidence #{raw_id}: #{e.class} #{e.message}"
         trace :fatal, "[#{@agent_uid}] EXCEPTION: " + e.backtrace.join("\n")
