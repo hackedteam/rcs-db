@@ -110,13 +110,18 @@ module RCS
 
             before do
               subject.stub(:decrypt_evidence).and_raise(NoMemoryError.new("foo memory"))
+              subject.stub(:trace)
+              subject.stub(:exit!)
             end
 
-            it 'raises that error' do
-              expect { subject.fetch.each { |ev| subject.process(ev) } }.to raise_error(NoMemoryError)
+            it 'calls exit (killing the process)' do
+              subject.should_receive(:exit!)
+              subject.fetch.each { |ev| subject.process(ev) }
             end
 
             it 'keeps the raw evidence' do
+              subject.should_receive(:exit!)
+
               begin
                 subject.fetch.each { |ev| subject.process(ev) }
               rescue Exception
