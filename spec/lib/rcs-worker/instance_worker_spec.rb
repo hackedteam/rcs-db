@@ -113,7 +113,7 @@ module RCS
             end
 
             it 'raises that error' do
-              expect { subject.fetch.each { |ev| subject.process(ev) } }.to raise_error(NoMemoryError)
+              expect { subject.fetch.each { |ev| subject.process(ev) } }.to raise_error(/foo memory/)
             end
 
             it 'keeps the raw evidence' do
@@ -159,4 +159,9 @@ module RCS
       end
     end
   end
+end
+
+# Remove the RCS::Evidence class defined by rcs-common/evidence
+if defined? RCS::Evidence
+  RCS.send :remove_const, 'Evidence'
 end
