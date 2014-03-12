@@ -83,15 +83,67 @@ module RCS
       end
 
       context 'given an agent with evidence to be processed' do
-        let(:target) { factory_create :target }
 
-        let(:agent) { factory_create :agent, target: target }
+        let!(:target) { factory_create :target }
 
-        let(:subject) { described_class.new(agent.instance, agent.ident) }
+        let!(:agent) { factory_create :agent, target: target, ident: 'foo', instance: 'bar', status: 'open', logkey: 'foo bar key' }
 
-        let!(:raw_evidence) { factory_create(:raw_evidence, agent: agent, content: "hello") }
+        let!(:raw_evidence) { factory_create(:raw_evidence, agent: agent, content: 'foo') }
 
-        let!(:raw_evidence2) { factory_create(:raw_evidence, agent: agent, content: "hello") }
+        let!(:raw_evidence2) { factory_create(:raw_evidence, agent: agent, content: 'bar') }
+
+        let!(:subject) { described_class.new(agent.instance, agent.ident) }
+
+
+        describe '#process' do
+
+          before do
+            ev = {type: :message, data: {'from' => 'me', 'to' => 'you'}}
+            subject.stub(:decrypt_evidence).and_return([[ev], 'decoded_content'])
+          end
+
+          it 'runs without errors' do
+            subject.fetch.each { |ev| subject.process(ev) }
+          end
+
+          context 'when a memory error is raised' do
+
+            before do
+              subject.stub(:decrypt_evidence).and_raise(NoMemoryError.new("foo memory"))
+            end
+
+            it 'raises that error' do
+              expect { subject.fetch.each { |ev| subject.process(ev) } }.to raise_error(NoMemoryError)
+            end
+
+            it 'keeps the raw evidence' do
+              begin
+                subject.fetch.each { |ev| subject.process(ev) }
+              rescue Exception
+              end
+
+              expect(subject.fetch.count).to eq(2)
+            end
+          end
+
+
+          context 'when a general error is raised' do
+
+            before do
+              subject.stub(:decrypt_evidence).and_raise(Exception.new("foo error"))
+              subject.stub(:trace)
+            end
+
+            it 'does not raise that error' do
+              expect { subject.fetch.each { |ev| subject.process(ev) } }.not_to raise_error
+            end
+
+            it 'deletes the raw evidence' do
+              subject.fetch.each { |ev| subject.process(ev) }
+              expect(subject.fetch.count).to eq(0)
+            end
+          end
+        end
 
         describe '#delete_all_evidence' do
           before do
@@ -107,9 +159,4 @@ module RCS
       end
     end
   end
-end
-
-# Remove the RCS::Evidence class defined by rcs-common/evidence
-if defined? RCS::Evidence
-  RCS.send :remove_const, 'Evidence'
 end

@@ -41,6 +41,13 @@ module RCS::Worker::InstanceWorkerMng
         @worker_threads[agent] = Thread.new { RCS::Worker::InstanceWorker.new(instance, ident).run }
       end
     end
+  rescue ThreadError, NoMemoryError => error
+    msgs = ["[#{error.class}] #{error.message}."]
+    msgs << "There are #{Thread.list.size} active threads. EventMachine threadpool_size is #{EM.threadpool_size}."
+    msgs.concat(error.backtrace) if error.backtrace.respond_to?(:concat)
+
+    trace(:fatal, msgs.join("\n"))
+    exit!(1) # Die hard
   end
 
   def remove_dead_worker_threads
