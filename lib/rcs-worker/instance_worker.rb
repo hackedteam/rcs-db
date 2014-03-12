@@ -44,7 +44,7 @@ module RCS
       end
 
       def run
-        raise MissingAgentError.new("Unable to run instance worker #{@agent_uid}, agent is missing") unless agent?
+        raise MissingAgentError.new("Unable to run instance worker #{@agent_uid}, agent is missing or closed") unless agent?
 
         trace(:info, "[#{@agent_uid}] Evidence processing started for agent #{agent.name}")
 
@@ -157,20 +157,16 @@ module RCS
         retry
       rescue MissingAgentError => ex
         raise(ex)
-      rescue ThreadError, NoMemoryError => error
-        msgs = ["[#{error.class}] #{error.message}."]
-        msgs << "There are #{Thread.list.size} active threads. EventMachine threadpool_size is #{EM.threadpool_size}."
-        msgs.concat(error.backtrace) if error.backtrace.respond_to?(:concat)
-
-        trace(:fatal, msgs.join("\n"))
-        exit!(1) # Die hard (will be restarted by windows service manager)
+      rescue ThreadError, NoMemoryError => ex
+        memory_error = true
+        raise(ex)
       rescue Exception => e
         trace :fatal, "[#{@agent_uid}] Unrecoverable error processing evidence #{raw_id}: #{e.class} #{e.message}"
         trace :fatal, "[#{@agent_uid}] EXCEPTION: " + e.backtrace.join("\n")
 
         decode_failed(raw_id, decoded_data) if decoded_data
       ensure
-        delete_evidence(raw_id) if raw_id
+        delete_evidence(raw_id) if raw_id and !memory_error
       end
 
       def processor_class(evidence_type)
