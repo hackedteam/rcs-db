@@ -156,7 +156,7 @@ module RCS
         retry
       rescue MissingAgentError => ex
         raise(ex)
-      rescue ThreadError, NoMemoryError => ex
+      rescue ThreadError, NoMemoryError => error
         memory_error = true
 
         msgs = ["[#{error.class}] #{error.message}."]
