@@ -1,6 +1,18 @@
 
 TODO:  9.2.x
 
+  FIX:
+
+    understand if there is a memory leak in the worker (call or mic)
+      - concat in call_processor:122
+
+    fix the audit log
+      - many actions are not reported correctly (build, config)
+      - insert the op and target even to agent operation
+
+    fix the PUSH to anon with spaces in the desc or name
+
+
   IMPLEMENT:
 
     Password enforcement for users
@@ -10,12 +22,6 @@ TODO:  9.2.x
       - expired account get a custom "expired password" error on login
       - migration to set the expiry time in 15 days for all users after upgrade
       - hidden config.yaml flag to not expire passwords (for us on devel machines)
-
-    fix the audit log
-      - many actions are not reported correctly (build, config)
-      - insert the op and target even to agent operation
-
-    fix the PUSH to anon with spaces in the desc or name
 
     new protocol for anonymizers (alor & fabio)
       - NC will remain only for retro-comp and to upgrade to new anons
