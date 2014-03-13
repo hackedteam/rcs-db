@@ -64,7 +64,7 @@ class HTTPHandler < EM::HttpServer::Server
   def process_http_request
     #trace :info, "[#{@peer}] Incoming HTTP Connection"
     size = (@http_content) ? @http_content.bytesize : 0
-    trace :debug, "[#{@peer}] REQ: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time}) #{size.to_s_bytes}"
+    #trace :debug, "[#{@peer}] REQ: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time}) #{size.to_s_bytes}"
 
     # get it again since if the connection is kept-alive we need a fresh timing for each
     # request and not the total from the beginning of the connection
@@ -80,7 +80,7 @@ class HTTPHandler < EM::HttpServer::Server
       # Block which fulfills the request
       operation = proc do
 
-        trace :debug, "[#{@peer}] QUE: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time})"
+        #trace :debug, "[#{@peer}] QUE: [#{@http_request_method}] #{@http_request_uri} #{@http_query_string} (#{Time.now - @request_time})"
 
         generation_time = Time.now
 
@@ -105,7 +105,7 @@ class HTTPHandler < EM::HttpServer::Server
 
           # keep the size of the reply to be used in the closing method
           @response_size = reply.content ? reply.content.bytesize : 0
-          trace :debug, "[#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{request[:query]} (#{Time.now - generation_time}) #{@response_size.to_s_bytes}"
+          #trace :debug, "[#{@peer}] GEN: [#{request[:method]}] #{request[:uri]} #{request[:query]} (#{Time.now - generation_time}) #{@response_size.to_s_bytes}"
 
           reply
         rescue Exception => e

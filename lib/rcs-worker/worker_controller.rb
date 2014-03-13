@@ -21,7 +21,7 @@ module RCS::Worker
       # update the evidence statistics (dump to local file config/worker_stats)
       StatsManager.instance.add(inbound_evidence: 1, inbound_evidence_size: @request[:content]['content'].bytesize)
 
-      trace :debug, "Evidence [#{uid}][#{grid_id}] stored into local worker db."
+      trace :info, "Evidence [#{uid}][#{grid_id}] stored into local worker cache."
 
       InstanceWorkerMng.spawn_worker_thread(uid)
 

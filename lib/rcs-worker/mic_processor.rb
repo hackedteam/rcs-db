@@ -103,6 +103,10 @@ module Worker
         end
       end
 
+      # explicitly invoke the Garbage Collector to free some RAM
+      # the wav allocated in memory could consume many resources
+      GC.start
+
       return @mic.bid, @mic.raw_counter
     end
 
