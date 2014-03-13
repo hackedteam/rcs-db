@@ -190,7 +190,7 @@ class Call
   def get_channel(evidence)
     channel = @channels[evidence[:data][:channel]] 
     channel ||= create_channel(evidence)
-    return (channel.accept? evidence ? channel : nil)
+    channel.accept?(evidence) ? channel : nil
   end
 
   def num_channels
@@ -441,9 +441,9 @@ class CallProcessor
     raise "Target expected" unless @target
     collection = "grid.#{@target[:_id]}"
     file_id, file_length = *RCS::DB::GridFS.append(call.file_name, mp3_bytes, collection)
-    call.update_data(_grid: Moped::BSON::ObjectId.from_string(file_id.to_s), _grid_size: file_length, duration: call.duration)
-    agent.stat.size += mp3_bytes.bytesize
-    agent.save
+    call.update_call_data(_grid: Moped::BSON::ObjectId.from_string(file_id.to_s), _grid_size: file_length, duration: call.duration)
+    @agent.stat.size += mp3_bytes.bytesize
+    @agent.save
   end
 
   def to_s
