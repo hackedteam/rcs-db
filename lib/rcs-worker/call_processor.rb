@@ -438,7 +438,8 @@ class CallProcessor
   end
 
   def write_to_grid(call, mp3_bytes)
-    collection = "grid.#{target[:_id]}"
+    raise "Target expected" unless @target
+    collection = "grid.#{@target[:_id]}"
     file_id, file_length = *RCS::DB::GridFS.append(call.file_name, mp3_bytes, collection)
     call.update_data(_grid: Moped::BSON::ObjectId.from_string(file_id.to_s), _grid_size: file_length, duration: call.duration)
     agent.stat.size += mp3_bytes.bytesize
