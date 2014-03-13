@@ -23,7 +23,6 @@ gem 'activesupport'
 gem 'rest-client'
 gem 'xml-simple'
 gem 'persistent_http'
-gem 'bson_ext', "= 1.9.2"
 gem 'mongoid', ">= 3.0.0"
 gem 'rvincenty'
 

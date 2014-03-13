@@ -33,9 +33,6 @@ GEM
     bdb (0.2.6.5)
       tuple (>= 0.1.2)
     bitcoin-ruby (0.0.5)
-    bson (1.9.2)
-    bson_ext (1.9.2)
-      bson (~> 1.9.2)
     builder (3.0.4)
     coderay (1.1.0)
     cookiejar (0.3.0)
@@ -127,7 +124,6 @@ DEPENDENCIES
   activesupport
   bcrypt-ruby
   bitcoin-ruby
-  bson_ext (= 1.9.2)
   bundler (> 1.0.0)
   em-http-request (= 1.0.3)
   em-http-server (>= 0.1.7)

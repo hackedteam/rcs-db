@@ -10,7 +10,6 @@ require_relative 'rest_response'
 require 'rcs-common/trace'
 
 # system
-require 'bson'
 require 'json'
 require 'base64'
 require 'rcs-common/rest'
