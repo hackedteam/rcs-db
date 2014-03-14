@@ -3,9 +3,6 @@ TODO:  9.2.x
 
   FIX:
 
-    understand if there is a memory leak in the worker (call or mic)
-      - concat in call_processor:122
-
     fix the audit log
       - many actions are not reported correctly (build, config)
       - insert the op and target even to agent operation
