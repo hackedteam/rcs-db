@@ -14,6 +14,8 @@ require_relative 'stubs/tracer'
 require_relative 'stubs/mongoid'
 require_relative 'stubs/archive_server'
 
+$execution_directory = File.expand_path('../..', __FILE__)
+
 # Define global before and each proc
 RSpec.configure do |config|
 
