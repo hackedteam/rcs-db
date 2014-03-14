@@ -198,8 +198,8 @@ module BuildTaskType
         end
         trace :info, "Task #{@_id} completed."
       rescue Exception => e
-        trace :error, "Cannot complete: #{e.message}"
-        trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
+        trace :error, "Cannot complete task: #{e.message}"
+        #trace :debug, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
         @description = "ERROR: #{e.message}"
         error
       ensure

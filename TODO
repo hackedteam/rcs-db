@@ -10,8 +10,6 @@ TODO:  9.2.x
       - many actions are not reported correctly (build, config)
       - insert the op and target even to agent operation
 
-    fix the PUSH to anon with spaces in the desc or name
-
 
   IMPLEMENT:
 
