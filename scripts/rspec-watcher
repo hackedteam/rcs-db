@@ -2,28 +2,18 @@
 
 require 'fssm'
 require 'colorize'
-require 'terminal-notifier-guard'
-
-$root_path = File.expand_path File.join(File.dirname(__FILE__), '..')
-$spec_path = File.join $root_path, 'spec'
-
-def send_system_notification result, msg, interval
-  bin_name = result && 'success' || 'failed'
-  binpath = File.expand_path "~/.rvm/gems/ruby-1.9.3-p392/bin/terminal-notifier-#{bin_name}"
-  `#{binpath} -title #{File.basename(__FILE__)} -message \"#{msg}\nExecuted in #{interval} sec.\"`
-end
+require 'optparse'
 
 def log msg
   puts msg.colorize :light_blue
 end
 
 def spec filepath
-  spec_filepath = File.join $root_path, filepath
-  cmd = "cd \"#{$root_path}\"; rspec -I spec --color --format doc \"#{spec_filepath}\" --tag ~speed:slow"
+  spec_filepath = File.join $opts[:root_path], filepath
+  cmd = "cd \"#{$opts[:root_path]}\"; rspec -I spec --color --format doc \"#{spec_filepath}\" --tag ~speed:slow"
   cmd << " --example \"#{$opts[:example]}\"" if $opts[:example]
   start = Time.now
   result = system(cmd)
-  send_system_notification(result, filepath, Time.now - start) rescue nil
 end
 
 def changed filepath
@@ -48,6 +38,15 @@ def monitor path, opts = {}
   end
 end
 
-$opts = {:regexp => ARGV[0], :example => ARGV[1]}
+$opts = {}
+$opts[:root_path] = File.expand_path(File.join(File.dirname(__FILE__), '..'))
+
+OptionParser.new do |opts|
+  opts.on( '-f', '--file REGEXP', String, 'Consider only files that matches REGEXP' ) { |value| $opts[:regexp] = value }
+  opts.on( '-e', '--example REGEXP', String, 'Consider only examples that matches REGEXP' ) { |value| $opts[:example] = value }
+  opts.on( '-r', '--root-path [PATH]', String, "Root path. Default is #{$opts[:root_path]}") { |value| $opts[:root_path] = value }
+end.parse!
+
 puts "Options: " + $opts.inspect
-monitor($root_path)
+
+monitor($opts[:root_path])
