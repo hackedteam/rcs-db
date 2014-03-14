@@ -310,7 +310,7 @@ class RESTController
     rescue Mongoid::Errors::InvalidOptions => e
       trace :error, "Invalid parameter => #{e.message}"
       return bad_request(e.message)
-    rescue BSON::InvalidObjectId => e
+    rescue Moped::Errors::InvalidObjectId => e
       trace :error, "Bad request #{e.class} => #{e.message}"
       return bad_request(e.message)
     rescue BlacklistError => e
