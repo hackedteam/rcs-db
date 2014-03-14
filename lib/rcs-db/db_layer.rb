@@ -257,33 +257,41 @@ class DB
     ::Audit.shard_collection
   end
 
+  # check that at least one admin is present and enabled
+  # if it does not exists, create it
   def ensure_admin
-    # check that at least one admin is present and enabled
-    # if it does not exists, create it
-    if User.where(enabled: true, privs: 'ADMIN').count == 0
-      trace :warn, "No ADMIN found, creating a default admin user..."
-      User.where(name: 'admin').delete_all
-      user = User.create(name: 'admin') do |u|
-        if File.exist? Config.instance.file('admin_pass')
-          pass = File.read(Config.instance.file('admin_pass'))
-          FileUtils.rm_rf Config.instance.file('admin_pass')
-        else
-          pass = 'adminp123'
-        end
-        u[:pass] = u.create_password(pass)
-        u[:enabled] = true
-        u[:desc] = 'Default admin user'
-        u[:privs] = ::User::PRIVS
-        u[:locale] = 'en_US'
-        u[:timezone] = 0
-      end
-      Audit.log :actor => '<system>', :action => 'user.create', :user_name => 'admin', :desc => "Created the default user 'admin'"
+    return if User.where(enabled: true, privs: 'ADMIN').count > 0
 
-      group = Group.create(name: "administrators", alert: false)
-      group.users << user
-      group.save
-      Audit.log :actor => '<system>', :action => 'group.create', :group_name => 'administrators', :desc => "Created the default group 'administrators'"
+    trace :warn, "No ADMIN found, creating a default admin user..."
+
+    User.where(name: 'admin').delete_all
+
+    if File.exist? Config.instance.file('admin_pass')
+      admin_pass = File.read(Config.instance.file('admin_pass'))
+      FileUtils.rm_rf Config.instance.file('admin_pass')
+    else
+      admin_pass = 'adminp123'
     end
+
+    user = User.new
+
+    user.name     = 'admin'
+    user.pass     = admin_pass
+    user.enabled  = true
+    user.desc     = 'Default admin user'
+    user.privs    = ::User::PRIVS
+    user.locale   = 'en_US'
+    user.timezone = 0
+
+    user.save!
+
+    Audit.log :actor => '<system>', :action => 'user.create', :user_name => 'admin', :desc => "Created the default user 'admin'"
+
+    group = Group.create(name: "administrators", alert: false)
+    group.users << user
+    group.save
+
+    Audit.log :actor => '<system>', :action => 'group.create', :group_name => 'administrators', :desc => "Created the default group 'administrators'"
   end
 
   def archive_mode?

@@ -269,7 +269,7 @@ class RESTController
 
     raise BasicAuthRequired.new if user.nil? or not user.enabled
 
-    raise BasicAuthRequired.new unless user.verify_password(password)
+    raise BasicAuthRequired.new unless user.has_password?(password)
 
     trace :info, "Auth granted for user #{username} to #{@request[:uri]}"
   end

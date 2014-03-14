@@ -38,7 +38,7 @@ include RCS::Factory::Helpers
 # Definitions
 
 factory_define :user do |params|
-  attributes = {name: "testuser_#{rand(1E10)}", enabled: true, cookie: "cookie_#{rand(1E20)}"}
+  attributes = {name: "testuser_#{rand(1E10)}", enabled: true, cookie: "cookie_#{rand(1E20)}", pass: 'foo bar f00 BAR'}
   attributes.merge!(params)
 
   ::User.create!(attributes)

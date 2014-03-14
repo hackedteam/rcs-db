@@ -67,7 +67,7 @@ class AuthManager
     end
 
     # the account is valid
-    if user.verify_password(pass)
+    if user.has_password?(pass)
       auth_level = []
       # symbolize the privs array
       user[:privs].each do |p|

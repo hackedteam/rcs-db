@@ -68,17 +68,19 @@ class AuthController < RESTController
       user = User.where(name: 'admin').first
 
       # user not found, create it
-      if user.nil?
+      unless user
         DB.instance.ensure_admin
         user = User.where(name: 'admin').first
       end
-      
+
       trace :info, "Resetting password for user 'admin'"
+
       Audit.log :actor => '<system>', :action => 'auth.reset', :user_name => 'admin', :desc => "Password reset"
-      user.create_password(@params['pass'])
-      user.save
+
+      user.pass = @params['pass']
+      user.save!
     end
-    
+
     ok("Password reset for user 'admin'")
   end
 

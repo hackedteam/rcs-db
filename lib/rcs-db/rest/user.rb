@@ -35,24 +35,22 @@ class UserController < RESTController
 
     return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :users
 
-    user = User.create(name: @params['name']) do |doc|
+    user = User.new
 
-      doc[:pass] = ''
+    user.name     = @params['name']
+    user.pass     = @params['pass']
+    user.desc     = @params['desc']
+    user.contact  = @params['contact']
+    user.privs    = @params['privs']
+    user.enabled  = @params['enabled']
+    user.locale   = @params['locale']
+    user.timezone = @params['timezone']
 
-      password = @params['pass']
-      doc[:pass] = doc.create_password(password) if password != '' and not password.nil?
+    user.save
 
-      doc[:desc] = @params['desc']
-      doc[:contact] = @params['contact']
-      doc[:privs] = @params['privs']
-      doc[:enabled] = @params['enabled']
-      doc[:locale] = @params['locale']
-      doc[:timezone] = @params['timezone']
-      doc[:dashboard_ids] = []
-      doc[:recent_ids] = []
+    user.errors.each do |attribute, message|
+      return conflict(message)
     end
-    
-    return conflict(user.errors[:name]) unless user.persisted?
 
     if @params.has_key? 'group_ids'
       @params['group_ids'].each do |gid|
@@ -66,27 +64,36 @@ class UserController < RESTController
 
     return ok(user)
   end
-  
+
   def update
     require_auth_level :admin, :sys, :tech, :view
-    
+
     mongoid_query do
       user = User.find(@params['_id'])
       @params.delete('_id')
-      
+
       # if non-admin you can modify only yourself
       unless @session[:level].include? :admin
         return not_found("User not found") if user._id != @session.user[:_id]
       end
-      
+
       # if enabling a user, check the license
-      if user[:enabled] == false and @params.include?('enabled') and @params['enabled'] == true
+      if user.enabled == false and @params.include?('enabled') and @params['enabled'] == true
         return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :users
+      end
+
+      if @params['pass'] and user.has_password?(@params['pass'])
+        return conflict("SAME_PASSWORD")
+      end
+
+      result = user.update_attributes(@params)
+
+      user.errors.each do |attribute, message|
+        return conflict(message)
       end
 
       # if pass is modified, treat it separately
       if @params.has_key? 'pass'
-        @params['pass'] = user.create_password(@params['pass'])
         Audit.log :actor => @session.user[:name], :action => 'user.update', :user_name => user['name'], :desc => "Changed password for user '#{user['name']}'"
       else
         @params.each_pair do |key, value|
@@ -98,10 +105,8 @@ class UserController < RESTController
           end
         end
       end
-      
-      result = user.update_attributes(@params)
-      
-      return ok(user)
+
+      ok(user)
     end
   end
 

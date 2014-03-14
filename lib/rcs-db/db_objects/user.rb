@@ -45,14 +45,14 @@ class User
   field :timezone, type: Integer
   field :dashboard_ids, type: Array, default: []
   field :recent_ids, type: Array, default: []
-
-  validates_uniqueness_of :name, :message => "USER_ALREADY_EXISTS"
+  field :pwd_changed_at, type: DateTime
+  field :pwd_changed_cs, type: String
 
   has_and_belongs_to_many :groups, :dependent => :nullify, :autosave => true
   has_many :alerts, :dependent => :destroy
   has_one :session, :dependent => :destroy, :autosave => true
 
-  index({name: 1}, {background: true})
+  index({name: 1}, {background: true, unique: true})
   index({enabled: 1}, {background: true})
 
   store_in collection: 'users'
@@ -69,15 +69,82 @@ class User
     enabled.in(_id: online_user_id)
   }
 
+  # Password must be 10 characters long and contains at least 1 number, 1 uppercase letter and 1 downcase letter
+  STRONG_PWD_REGEXP = /(?=.*[a-z]+)(?=.*[A-Z]+)(?=.*[0-9]+)(?=.{10,})/
+
+  validates_uniqueness_of :name, if: :name_changed?, message: "USER_ALREADY_EXISTS"
+
+  validates_format_of :pass, with: STRONG_PWD_REGEXP, if: :password_changed?, message: "WEAK_PASSWORD"
+
+  # Password must not contains the username
+  validate do
+    errors.add(:pass, "WEAK_PASSWORD") if password_changed? and password_match_username?
+  end
+
+  before_save do
+    if password_changed?
+      self.pass = hash_password(self.pass)
+      self.pwd_changed_at = now
+    end
+
+    self.pwd_changed_cs = calculate_pwd_changed_cs
+  end
+
+  def calculate_pwd_changed_cs
+    Digest::MD5.hexdigest("s0m3_s4lt_#{self.pwd_changed_at.to_i}")
+  end
+
+  def password_match_username?
+    return false unless self.pass
+    return false unless self.name
+
+    self.pass.downcase =~ /#{self.name}/i
+  end
+
   def rebuild_watched_items
     WatchedItem.rebuild
   end
 
-  def create_password(password)
-    self[:pass] = BCrypt::Password.create(password).to_s
+  def hash_password(password)
+    BCrypt::Password.create(password).to_s
   end
 
-  def verify_password(password)
+  def password_expired?
+    return false if password_never_expire?
+
+    # Someone tried to change pwd_changed_at via mongodb
+    return true if pwd_changed_cs != calculate_pwd_changed_cs
+
+    thirty_days = 3600 * 24 * 30
+    pwd_changed_at and (now - pwd_changed_at > thirty_days)
+  end
+
+  def password_expiring?
+    return false if password_never_expire?
+
+    fifteen_days = 3600 * 24 * 15
+    pwd_changed_at and (now - pwd_changed_at > fifteen_days)
+  end
+
+  def password_never_expire?
+    !!RCS::DB::Config.instance.global['PASSWORD_NEVER_EXPIRE']
+  end
+
+  def now
+    Time.now.utc
+  end
+
+  def password_changed?
+    return true if new_record?
+    changed_attributes.keys.include?('pass')
+  end
+
+  def name_changed?
+    return true if new_record?
+    changed_attributes.keys.include?('name')
+  end
+
+  def has_password?(password)
     begin
       # load the hash from the db, convert to Password object and check if it matches
       if BCrypt::Password.new(self[:pass]) == password
@@ -87,8 +154,7 @@ class User
       # retro-compatibility for the migrated account which used only the SHA1
       if self[:pass] == Digest::SHA1.hexdigest(password)
         trace :info, "Old password schema is used by #{self.name}, migrating to the new one..."
-        # convert to the new format so the next time it will be migrated
-        self.create_password(password)
+        self.pass = password
         self.save
         return true
       end
