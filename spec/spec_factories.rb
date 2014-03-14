@@ -217,9 +217,8 @@ factory_define :raw_evidence do |params|
 
   raise("Agent and filename provided simultaneously") if agent and filename
 
-  filename = "#{agent.ident}:#{agent.instance}" if agent
-
-  raise("Invalid filename") if filename =~ /\ARCS\_\d+\:.+\z/
+  filename = "#{agent.ident}:#{agent.instance}" if agent and agent.ident and agent.instance
+  filename ||= "filename_#{rand(1E10)}"
 
   content = params[:content] || "Random evidence content #{rand(1E15)}"
 
