@@ -16,7 +16,7 @@ class QueueStats
   include RCS::Tracer
 
   def print_row_line
-    table_width = 152
+    table_width = 154
     puts '+' + '-' * table_width + '+'
   end
 
@@ -24,7 +24,7 @@ class QueueStats
     puts
     print_row_line
     puts '|' + 'instance'.center(57) + '|' + 'platform'.center(12) + '|' +
-         'last sync time'.center(25) + '|' + 'logs'.center(6) + '|' + 'size'.center(13) + '|' + 'shard'.center(34) + '|'
+         'last sync time'.center(25) + '|' + 'logs'.center(8) + '|' + 'size'.center(13) + '|' + 'shard'.center(34) + '|'
     print_row_line
   end
 
@@ -36,40 +36,34 @@ class QueueStats
   def print_rows(shard = nil)
     entries = {}
 
-    RCS::Worker::GridFS.get_distinct_filenames("evidence").each do |inst|
-      entries[inst] = {count: 0, size: 0}
+    session = RCS::Worker::GridFS.session
 
-      RCS::Worker::GridFS.get_by_filename(inst, "evidence").each do |i|
-        entries[inst][:count] += 1
-        entries[inst][:size] += i["length"]
-      end
+    pipeline = [{'$group' => {'_id' => '$filename', 'count' => {'$sum' => 1}, 'size' => {'$sum' => '$length'}}}]
 
+    session['grid.evidence.files'].aggregate(pipeline).each do |doc|
+      entries[doc['_id']] = doc.symbolize_keys.reject { |k| k == :_id }
+    end
+
+    entries.keys.each do |inst|
       ident = inst.slice(0..13)
       instance = inst.slice(15..-1)
       agent = ::Item.agents.where({ident: ident, instance: instance}).first
 
-      # if the agent is not found we need to delete the pending evidence
-      unless agent
-        entries.delete(inst)
-        RCS::Worker::GridFS.delete_by_filename(inst, "evidence")
-        next
-      end
+      entries[inst][:platform] = agent ? agent[:platform] : '[DELETED]'
 
-      entries[inst][:platform] = agent[:platform]
-
-      if agent.stat[:last_sync]
+      if agent and agent.stat[:last_sync]
         time = Time.at(agent.stat[:last_sync]).getutc
         time = time.to_s.split(' +').first
         entries[inst][:time] = time
       else
-        entries[inst][:time] = ""
+        entries[inst][:time] = " "*23
       end
     end
 
     entries = entries.sort_by {|k,v| v[:time]}
 
     entries.each do |entry|
-      puts "| #{entry[0]} |#{entry[1][:platform].center(12)}| #{entry[1][:time]} |#{entry[1][:count].to_s.rjust(5)} | #{entry[1][:size].to_s_bytes.rjust(11)} | #{shard.rjust(32)} |"
+      puts "| #{entry[0]} |#{entry[1][:platform].center(12)}| #{entry[1][:time]} |#{entry[1][:count].to_s.rjust(7)} | #{entry[1][:size].to_s_bytes.rjust(11)} | #{shard.rjust(32)} |"
     end
   end
 
