@@ -114,12 +114,14 @@ module RCS
 
         ev_type = nil
         ev_processed_count = 0
+        date_acquired = '?'
 
         list.each do |ev|
           next if ev.empty?
 
           ev_processed_count += 1
           ev_type ||= ev[:type]
+          date_acquired = Time.at(ev[:da]).utc if ev[:da]
 
           trace(:debug, "[#{@agent_uid}] Processing #{ev[:type].upcase} evidence for agent: #{agent.name}")
 
@@ -148,7 +150,7 @@ module RCS
           end
         end
 
-        trace(:info, "[#{@agent_uid}] Processed #{ev_processed_count} #{ev_type.upcase} evidence for agent #{agent.name} (#{decoded_data.size} bytes in #{Time.now - start_time} sec") if ev_processed_count > 0
+        trace(:info, "[#{@agent_uid}] Processed #{ev_processed_count} #{ev_type.upcase} evidence for agent #{agent.name} (#{decoded_data.size} bytes in #{Time.now - start_time} sec) acquired on #{date_acquired}") if ev_processed_count > 0
       rescue Moped::Errors::ConnectionFailure => e
         trace :error, "[#{@agent_uid}] cannot connect to database, retrying in 5 seconds..."
         sleep(5)
