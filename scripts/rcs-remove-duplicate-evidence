@@ -1,0 +1,86 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+
+options = {}
+
+OptionParser.new do |opts|
+  opts.on('-h', '--host ADDR', String, 'Address of MongoDB server') { |addr| options[:host] = addr }
+end.parse!
+
+
+# Setup
+puts "Initializing..."
+$execution_directory  = File.expand_path('../..', __FILE__)
+$execution_directory = "c:/rcs/db/" if File.exist?("c:/rcs/db/lib")
+
+$LOAD_PATH << $execution_directory+"/lib"
+Dir.chdir($execution_directory)
+
+if File.exists?("#{$execution_directory}/Gemfile")
+  require 'bundler'
+  Bundler.load
+  Bundler.setup
+end
+
+require 'rcs-common/path_utils'
+require_release 'rcs-db/config'
+require_release 'rcs-db/db_layer'
+
+ENV['no_trace']         = '1'
+ENV['MONGOID_ENV']      = 'yes'
+ENV['MONGOID_DATABASE'] = 'rcs'
+ENV['MONGOID_HOST']     =  options[:host] || "127.0.0.1"
+ENV['MONGOID_PORT']     = "27017"
+
+Mongoid.load!(RCS::DB::Config.instance.file('mongoid.yaml'), :production)
+
+
+# main
+require 'digest/md5'
+
+def hash_evidence(ev)
+  Digest::MD5.hexdigest(ev['aid'].to_s + ev['da'].to_s + ev['type'].to_s + ev['data'].inspect)
+end
+
+targets = Item.targets.all
+targets_count = targets.count
+
+puts "There are #{targets_count} targets"
+
+begin
+
+  targets.each do |target|
+    ev_count = ::Evidence.target(target).collection.find.count
+    next if ev_count == 0
+
+    puts "Analyzing #{ev_count} evidence of target #{target.name.inspect} (#{target.id})"
+
+    evidence = {}
+    count = 0
+    duplicated = 0
+
+    ::Evidence.target(target).collection.find.each do |ev|
+      hash = hash_evidence(ev)
+      id = ev['_id']
+
+      msg = "Checking evidence #{count += 1} / #{ev_count} (#{(count * 100 / ev_count).round(2)}%)"
+      msg = msg.ljust(50)
+      print "\r\t#{msg}"
+
+      if evidence.has_key?(hash)
+        duplicated += 1
+        # TODO: remove evidence with id evidence[hash]
+        print "\r\t#{msg} - Removed #{duplicated} duplicate evidence (#{(duplicated * 100.0 / count).round(2)}% of analyzed)"
+      else
+        evidence[hash] = id
+      end
+    end
+
+    puts if count > 0
+  end
+
+rescue Interrupt
+  puts
+  puts "bye"
+end
