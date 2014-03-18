@@ -1,14 +1,5 @@
 
-TODO:  9.2.x
-
-  FIX:
-
-    fix the audit log
-      - many actions are not reported correctly (build, config)
-      - insert the op and target even to agent operation
-
-
-  IMPLEMENT:
+TODO 9.2.1
 
     Password enforcement for users
       - strong password required (10 chars + [a-zA-Z0-9]) - (change even in the console form)
@@ -17,6 +8,17 @@ TODO:  9.2.x
       - expired account get a custom "expired password" error on login
       - migration to set the expiry time in 15 days for all users after upgrade
       - hidden config.yaml flag to not expire passwords (for us on devel machines)
+
+
+TODO:  9.2.x
+
+  FIX:
+
+    fix the audit log
+      - many actions are not reported correctly (build, config)
+      - insert the op and target even to agent operation
+
+  IMPLEMENT:
 
     new protocol for anonymizers (alor & fabio)
       - NC will remain only for retro-comp and to upgrade to new anons
