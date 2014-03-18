@@ -1063,10 +1063,17 @@ FunctionEnd
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Function FuncInstallationType
-   ${If} $installUPGRADE == ${BST_CHECKED}
+  ${If} $installUPGRADE == ${BST_CHECKED}
+   Abort
+  ${EndIf}
+
+  ; check for developer machine
+  IfFileExists "C:\ALLINONE" isDevel isProduction
+  isProduction:
+    $installDISTRIBUTED = ${BST_CHECKED}
     Abort
-   ${EndIf}
-   
+  isDevel:
+
   !insertmacro MUI_HEADER_TEXT "Installation Type" "Deployment Method"
 
   nsDialogs::Create /NOUNLOAD 1018
