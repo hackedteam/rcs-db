@@ -1,17 +1,11 @@
-#
-# Layer for accessing the real DB
-#
-
-require_relative 'audit'
-require_relative 'config'
-
-# from RCS::Common
-require 'rcs-common/trace'
-
-# system
 require 'mongoid'
 require 'rbconfig'
 require 'socket'
+require 'rcs-common/trace'
+require 'rcs-common/fixnum'
+
+require_relative 'audit'
+require_relative 'config'
 
 # require all the DB objects
 Dir[File.dirname(__FILE__) + '/db_objects/*.rb'].each do |file|

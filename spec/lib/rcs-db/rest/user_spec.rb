@@ -1,6 +1,5 @@
 require 'spec_helper'
 require_db 'db_layer'
-require_db 'evidence_manager'
 
 module RCS
 module DB

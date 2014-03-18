@@ -15,6 +15,7 @@ require_release 'rcs-db/firewall'
 require_release 'rcs-moneyx/tx', required: false
 
 require_relative 'db'
+require_relative 'queue_stats'
 
 # from RCS::Common
 require 'rcs-common/trace'

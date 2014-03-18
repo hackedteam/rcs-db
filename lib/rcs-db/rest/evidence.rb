@@ -3,8 +3,6 @@
 #
 
 require_relative '../db_layer'
-require_relative '../evidence_manager'
-require_relative '../evidence_dispatcher'
 require_relative '../position/resolver'
 require_relative '../connector_manager'
 
@@ -22,31 +20,48 @@ module DB
 
 class EvidenceController < RESTController
 
+  SYNC_IDLE = 0
+  SYNC_IN_PROGRESS = 1
+  SYNC_TIMEOUTED = 2
+  SYNC_PROCESSING = 3
+  SYNC_GHOST = 4
+
   # this must be a POST request
   # the instance is passed as parameter to the uri
   # the content is passed as body of the request
+  #
+  # NOTE: this is used only by the evidence imported. It does not send the evidence
+  # to the right shard but always to the LOCAL rcs-worker service
   def create
     require_auth_level :server, :tech_import
 
-    return conflict if @request[:content]['content'].nil?
+    content = @request[:content]['content']
+
+    return conflict unless content
 
     ident = @params['_id'].slice(0..13)
     instance = @params['_id'].slice(15..-1).downcase
 
     # save the evidence in the db
     begin
-      id, shard_id = RCS::DB::EvidenceManager.instance.store_evidence ident, instance, @request[:content]['content']
+      id = send_evidence_to_local_worker(ident, instance, content)
 
       # update the evidence statistics
-      StatsManager.instance.add evidence: 1, evidence_size: @request[:content]['content'].bytesize
+      StatsManager.instance.add(evidence: 1, evidence_size: content.bytesize)
     rescue Exception => e
       trace :warn, "Cannot save evidence: #{e.message}"
       trace :fatal, e.backtrace.join("\n")
       return not_found
     end
-    
-    trace :info, "Evidence [#{ident}::#{instance}][#{id}] saved and dispatched to shard #{shard_id}"
-    return ok({:bytes => @request[:content]['content'].size})
+
+    trace(:info, "Evidence [#{ident}::#{instance}][#{id}] sended to local worker")
+
+    ok(bytes: content.bytesize)
+  end
+
+  def send_evidence_to_local_worker(ident, instance, content)
+    trace :debug, "Sending #{content.bytesize} bytes evidence of agent #{ident}:#{instance} to the local worker"
+    # TODO
   end
 
   # used by the carrier to send evidence to the correct worker for an instance
@@ -223,7 +238,7 @@ class EvidenceController < RESTController
 
     # update the stats
     agent.stat[:last_sync] = time
-    agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_IN_PROGRESS
+    agent.stat[:last_sync_status] = SYNC_IN_PROGRESS
     agent.stat[:source] = params['source']
     agent.stat[:user] = params['user']
     agent.stat[:device] = params['device']
@@ -331,7 +346,7 @@ class EvidenceController < RESTController
     trace :info, "#{agent[:name]} sync end [#{agent[:ident]}:#{agent[:instance]}]"
 
     agent.stat[:last_sync] = Time.now.getutc.to_i
-    agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_IDLE
+    agent.stat[:last_sync_status] = SYNC_IDLE
     agent.save
 
     target = agent.get_parent
@@ -362,7 +377,7 @@ class EvidenceController < RESTController
     trace :info, "#{agent[:name]} sync timeouted [#{agent[:ident]}:#{agent[:instance]}]"
 
     agent.stat[:last_sync] = Time.now.getutc.to_i
-    agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_TIMEOUTED
+    agent.stat[:last_sync_status] = SYNC_TIMEOUTED
     agent.save
   end
 
