@@ -40,28 +40,48 @@ class EvidenceController < RESTController
     return conflict unless content
 
     ident = @params['_id'].slice(0..13)
-    instance = @params['_id'].slice(15..-1).downcase
+    instance = @params['_id'].slice(15..-1)
 
-    # save the evidence in the db
+    return conflict if ident.blank? or instance.blank?
+
+    instance.downcase!
+
     begin
-      id = send_evidence_to_local_worker(ident, instance, content)
-
-      # update the evidence statistics
-      StatsManager.instance.add(evidence: 1, evidence_size: content.bytesize)
+      send_evidence_to_local_worker(ident, instance, content)
     rescue Exception => e
-      trace :warn, "Cannot save evidence: #{e.message}"
+      trace :warn, "Cannot send evidence to local worker: #{e.message}"
       trace :fatal, e.backtrace.join("\n")
       return not_found
     end
-
-    trace(:info, "Evidence [#{ident}::#{instance}][#{id}] sended to local worker")
 
     ok(bytes: content.bytesize)
   end
 
   def send_evidence_to_local_worker(ident, instance, content)
-    trace :debug, "Sending #{content.bytesize} bytes evidence of agent #{ident}:#{instance} to the local worker"
-    # TODO
+    trace :debug, "Sending evidence of agent #{ident}:#{instance} (#{content.bytesize} bytes) to the local worker"
+
+    host = 'localhost'
+    port = (Config.instance.global['LISTENING_PORT'] || 443) - 1
+
+    connection = Net::HTTP.new(host, port)
+    connection.use_ssl = true
+    connection.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    connection.open_timeout = 5
+
+    request = Net::HTTP::Post.new("/evidence/#{ident}:#{instance}")
+    request.add_field 'Connection', 'keep-alive'
+    request.add_field 'Keep-Alive', '60'
+    request.body = content
+
+    resp = connection.request(request)
+    resp_code = resp.code.to_i
+
+    if resp_code = 200
+      processed_bytes = JSON.parse(resp.body)['bytes'].to_i
+      raise "Invalid bytesize" if processed_bytes != content.bytesize
+    else
+      raise "#{resp_code} error"
+    end
   end
 
   # used by the carrier to send evidence to the correct worker for an instance
