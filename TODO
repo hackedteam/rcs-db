@@ -29,6 +29,9 @@ TODO:  9.2.x
 
     fix usb building zip creation (uses too much ram in f.read)
 
+    export via command line
+      - autosplit on date or size
+
     crypto-currency dissector
       - support for multibit and armory wallets
 

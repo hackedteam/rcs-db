@@ -489,7 +489,7 @@ class AgentController < RESTController
     return not_found if agent.level.eql? :scout
 
     # don't send the config to agent too old
-    if agent.version < 2012041601
+    if agent.level.eql? :elite and agent.version < 2012041601
       trace :info, "Agent #{agent.name} is too old (#{agent.version}), new config will be skipped"
       return not_found
     end
@@ -641,6 +641,8 @@ class AgentController < RESTController
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
       # elite must not be checked for blacklisted software
       return ok(:elite) if agent.level.eql? :elite
+      # if already soldier, upgrade to soldier
+      return ok(:soldier) if agent.level.eql? :soldier
       # check if the agent can be upgraded and to which kind of agent
       kind = agent.blacklisted_software?
       trace :info, "Agent #{agent.name} can be upgraded to: #{kind}"
