@@ -40,7 +40,8 @@ Mongoid.load!(RCS::DB::Config.instance.file('mongoid.yaml'), :production)
 require 'digest/md5'
 
 def hash_evidence(ev)
-  Digest::MD5.hexdigest(ev['aid'].to_s + ev['da'].to_s + ev['type'].to_s + ev['data'].inspect)
+  data = ev['data'].reject { |key| key == '_grid' or key == :_grid }
+  Digest::MD5.hexdigest(ev['aid'].to_s + ev['da'].to_s + ev['type'].to_s + data.inspect)
 end
 
 targets = Item.targets.all
@@ -50,28 +51,56 @@ puts "There are #{targets_count} targets"
 
 begin
 
+  only = ['304:0c61', '309:90ab', '309:9a', '309:96', '003:3046']
+  target_whitelist = {}
+  agent_whitelist = {}
+  type_blacklist = %w[url application]
+
+  Item.agents.each do |a|
+    only.each do |string|
+      ident, instance = *string.split(':')
+      if a.ident =~ /RCS.+#{ident}\z/ and a.instance =~ /\A#{instance}.+/
+        target = a.get_parent
+        target_whitelist[target.id] = target.name
+        agent_whitelist[a.id] = a.name
+      end
+    end
+  end
+
   targets.each do |target|
     ev_count = ::Evidence.target(target).collection.find.count
     next if ev_count == 0
+    next unless target_whitelist.has_key?(target.id)
 
     puts "Analyzing #{ev_count} evidence of target #{target.name.inspect} (#{target.id})"
+
+    sleep 1
 
     evidence = {}
     count = 0
     duplicated = 0
 
     ::Evidence.target(target).collection.find.each do |ev|
-      hash = hash_evidence(ev)
-      id = ev['_id']
+      count += 1
+      aid = Moped::BSON::ObjectId.from_string(ev['aid'])
 
-      msg = "Checking evidence #{count += 1} / #{ev_count} (#{(count * 100 / ev_count).round(2)}%)"
-      msg = msg.ljust(50)
-      print "\r\t#{msg}"
+      next unless agent_whitelist.has_key?(aid)
+      next if type_blacklist.include?(ev['type'].to_s)
+
+      id = ev['_id']
+      ev_type = ev['type']
+      ev_da = ev['da']
+
+      hash = hash_evidence(ev)
+
+      percentage = (count * 100 / ev_count).round(2)
 
       if evidence.has_key?(hash)
         duplicated += 1
-        # TODO: remove evidence with id evidence[hash]
-        print "\r\t#{msg} - Removed #{duplicated} duplicate evidence (#{(duplicated * 100.0 / count).round(2)}% of analyzed)"
+        counters = "#{count} / #{ev_count} (#{percentage}%) #{duplicated} duplicated"
+        puts "\t#{counters} > #{id} #{ev_type.to_s.upcase} evidence aquired at #{Time.at(ev_da).utc} by agent #{agent_whitelist[aid].inspect}, duplicate of ev #{evidence[hash]}"
+
+        ::Evidence.target(target).find(id).destroy if ev['note'].to_s.strip.size == 0
       else
         evidence[hash] = id
       end
