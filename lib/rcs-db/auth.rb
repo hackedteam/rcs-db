@@ -66,6 +66,12 @@ class AuthManager
       return nil
     end
 
+    if user.password_expired?
+      Audit.log :actor => username, :action => 'login', :user_name => username, :desc => "User '#{username}' cannot access because password is expired"
+      trace :warn, "User [#{username}] EXPIRED PASSWORD"
+      return nil
+    end
+
     # the account is valid
     if user.has_password?(pass)
       auth_level = []

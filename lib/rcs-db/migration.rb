@@ -74,11 +74,12 @@ module Migration
 
   def add_pwd_changed_at_to_users
     count = 0
+    changed_date = Time.at(Time.now.utc.to_i - (75 * 24 * 3600)).utc
 
     User.each do |user|
       next if user[:pwd_changed_at]
 
-      user.reset_pwd_changed_at
+      user.reset_pwd_changed_at(changed_date)
       user.save
 
       print "\r%d user migrated" % (count += 1)

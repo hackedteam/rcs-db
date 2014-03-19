@@ -49,7 +49,7 @@ module RCS
 
         describe "#add_pwd_changed_at_to_users" do
 
-          let(:now) { Time.new(2014, 01, 01).utc }
+          let(:now) { Time.now.utc }
 
           before do
             User.any_instance.stub(:now).and_return(now)
@@ -57,10 +57,10 @@ module RCS
 
           context 'the pwd_changed_at attribute already exists' do
 
-            let!(:user) { factory_create(:user) }
+            let(:user) { factory_create(:user) }
 
             before do
-              expect(user).to respond_to(:pwd_changed_at)
+              expect(user.pwd_changed_at).not_to be_nil
               expect(user.password_expired?).to be_false
             end
 
@@ -70,7 +70,7 @@ module RCS
             end
 
             it 'does not modify the user' do
-              expect(user.pwd_changed_at).to eq(now)
+              expect(user.pwd_changed_at.to_i).to eq(now.to_i)
               expect(user.password_expired?).to be_false
             end
           end
@@ -96,9 +96,11 @@ module RCS
             end
 
             it 'modify the user' do
-              expect(user.pwd_changed_at).to eq(now)
+              expect(user.pwd_changed_at.to_i).not_to eq(now.to_i)
               expect(user.pwd_changed_cs).not_to be_nil
               expect(user.password_expired?).to be_false
+              expect(user.password_expiring?).to be_true
+              expect(user.password_days_left).to eq(15)
             end
           end
         end
