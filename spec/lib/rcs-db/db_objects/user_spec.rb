@@ -42,9 +42,9 @@ describe User do
       end
     end
 
-    context 'when a user has changed the password at least 15 days ago' do
+    context 'when a user has changed the password 87 days ago' do
 
-      before { user.reset_pwd_changed_at(Time.now.utc - 15*24*3600) }
+      before { user.reset_pwd_changed_at(Time.now.utc - 3*29*24*3600) }
 
       it 'returns true' do
         expect(user.password_expiring?).to be_true

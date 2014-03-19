@@ -113,20 +113,23 @@ class User
   end
 
   def password_expired?
-    return false if password_never_expire?
-
     # Someone tried to change pwd_changed_at via mongodb
     return true if pwd_changed_cs != calculate_pwd_changed_cs
 
-    three_months = 3600 * 24 * 31 * 3
-    pwd_changed_at and (now - pwd_changed_at > three_months)
+    password_days_left.zero?
   end
 
   def password_expiring?
-    return false if password_never_expire?
+    password_days_left <= 15
+  end
 
-    fifteen_days = 3600 * 24 * 15
-    pwd_changed_at and (now - pwd_changed_at > fifteen_days)
+  def password_days_left
+    return Float::INFINITY if password_never_expire?
+
+    three_months = 31 * 3
+    elapsed_days = ((now - pwd_changed_at) / (3600 * 24)).round
+    remaining_days = three_months - elapsed_days
+    remaining_days < 0 ? 0 : remaining_days
   end
 
   def password_never_expire?
