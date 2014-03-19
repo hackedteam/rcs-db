@@ -35,7 +35,7 @@ describe User do
 
     context 'when a user has changed the password recently' do
 
-      before { user.update_attributes(pwd_changed_at: Time.now.utc - 10*24*3600) }
+      before { user.reset_pwd_changed_at(Time.now.utc - 10*24*3600) }
 
       it 'returns false' do
         expect(user.password_expiring?).to be_false
@@ -44,7 +44,7 @@ describe User do
 
     context 'when a user has changed the password at least 15 days ago' do
 
-      before { user.update_attributes(pwd_changed_at: Time.now.utc - 15*24*3600) }
+      before { user.reset_pwd_changed_at(Time.now.utc - 15*24*3600) }
 
       it 'returns true' do
         expect(user.password_expiring?).to be_true
@@ -86,7 +86,7 @@ describe User do
 
     context 'when a user has changed the password recently' do
 
-      before { user.update_attributes(pwd_changed_at: Time.now.utc - 10*24*3600) }
+      before { user.reset_pwd_changed_at(Time.now.utc - 10*24*3600) }
 
       it 'returns false' do
         expect(user.password_expired?).to be_false
@@ -104,7 +104,7 @@ describe User do
 
     context 'when a user has changed the password at least 30 days ago' do
 
-      before { user.update_attributes(pwd_changed_at: Time.now.utc - 30*24*3600) }
+      before { user.reset_pwd_changed_at(Time.now.utc - 30*24*3600) }
 
       it 'returns true' do
         expect(user.password_expired?).to be_true

@@ -84,14 +84,17 @@ class User
   before_save do
     if password_changed?
       self.pass = hash_password(self.pass)
-      self.pwd_changed_at = now
+      reset_pwd_changed_at
     end
-
-    self.pwd_changed_cs = calculate_pwd_changed_cs
   end
 
   def calculate_pwd_changed_cs
-    Digest::MD5.hexdigest("s0m3_s4lt_#{self.pwd_changed_at.to_i}")
+    Digest::MD5.hexdigest("#{self.id}_#{self.pwd_changed_at.to_i}")
+  end
+
+  def reset_pwd_changed_at(datetime = now)
+    self.pwd_changed_at = datetime
+    self.pwd_changed_cs = calculate_pwd_changed_cs
   end
 
   def password_match_username?
@@ -127,7 +130,11 @@ class User
   end
 
   def password_never_expire?
-    !!RCS::DB::Config.instance.global['PASSWORD_NEVER_EXPIRE']
+    if pwd_changed_at.nil? and pwd_changed_cs.nil? # user not migrated
+      true
+    else
+      !!RCS::DB::Config.instance.global['PASSWORD_NEVER_EXPIRE']
+    end
   end
 
   def now

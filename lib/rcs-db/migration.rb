@@ -22,6 +22,7 @@ module Migration
     puts "migrating to #{version}"
 
     run [:recalculate_checksums, :drop_sessions, :remove_statuses]
+    run [:fix_users_index_on_name, :add_pwd_changed_at_to_users] if version >= '9.2.1'
 
     return 0
   end
@@ -57,6 +58,31 @@ module Migration
     end
 
     return 0
+  end
+
+  def fix_users_index_on_name
+    User.collection.indexes.drop
+    User.create_indexes
+  rescue Exception => error
+    if error.message =~ /duplicate key error/
+      User.index_options[{name: 1}] = {background: true}
+      User.create_indexes
+    else
+      raise
+    end
+  end
+
+  def add_pwd_changed_at_to_users
+    count = 0
+
+    User.each do |user|
+      next if user[:pwd_changed_at]
+
+      user.reset_pwd_changed_at
+      user.save
+
+      print "\r%d user migrated" % (count += 1)
+    end
   end
 
   def recalculate_checksums
