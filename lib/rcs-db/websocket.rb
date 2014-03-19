@@ -65,8 +65,19 @@ class WebSocketManager
       return
     end
 
-    # grant the access to the client
-    ws.send({type: 'auth', result: 'granted', time: Time.now.getutc.to_i}.to_json)
+    user = session.user
+
+    if user.password_expired?
+      ws.send({type: 'auth', result: 'password_expired', time: Time.now.getutc.to_i}.to_json)
+    else
+      # grant the access to the client
+
+      ws.send({type: 'auth', result: 'granted', time: Time.now.getutc.to_i}.to_json)
+
+      if user.password_expiring?
+        ws.send({type: 'auth', result: 'password_expiring', days_left: user.password_days_left, time: Time.now.getutc.to_i}.to_json)
+      end
+    end
 
     # save the websocket handle in the session for later use in push messages
     @sessions[msg['cookie']] = ws
