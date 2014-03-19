@@ -133,7 +133,7 @@ class User
     if pwd_changed_at.nil? and pwd_changed_cs.nil? # user not migrated
       true
     else
-      !!RCS::DB::Config.instance.global['PASSWORD_NEVER_EXPIRE']
+      !!RCS::DB::Config.instance.global['PASSWORDS_NEVER_EXPIRE']
     end
   end
 

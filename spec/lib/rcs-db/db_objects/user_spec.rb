@@ -56,18 +56,18 @@ describe User do
 
     let(:user) { factory_create(:user) }
 
-    context 'when the PASSWORD_NEVER_EXPIRE flag is set' do
+    context 'when the PASSWORDS_NEVER_EXPIRE flag is set' do
 
-      before { RCS::DB::Config.instance.global['PASSWORD_NEVER_EXPIRE'] = 1 }
+      before { RCS::DB::Config.instance.global['PASSWORDS_NEVER_EXPIRE'] = 1 }
 
       it 'returns true' do
         expect(user.password_never_expire?).to be_true
       end
     end
 
-    context 'when the PASSWORD_NEVER_EXPIRE flag is not' do
+    context 'when the PASSWORDS_NEVER_EXPIRE flag is not' do
 
-      before { RCS::DB::Config.instance.global['PASSWORD_NEVER_EXPIRE'] = nil }
+      before { RCS::DB::Config.instance.global['PASSWORDS_NEVER_EXPIRE'] = nil }
 
       it 'returns false' do
         expect(user.password_never_expire?).to be_false
@@ -106,7 +106,7 @@ describe User do
         expect(user.password_expired?).to be_false
       end
 
-      context 'the PASSWORD_NEVER_EXPIRE flag is set' do
+      context 'the PASSWORDS_NEVER_EXPIRE flag is set' do
 
         before { user.stub(:password_never_expire?).and_return(true) }
 
@@ -124,7 +124,7 @@ describe User do
         expect(user.password_expired?).to be_true
       end
 
-      context 'the PASSWORD_NEVER_EXPIRE flag is set' do
+      context 'the PASSWORDS_NEVER_EXPIRE flag is set' do
 
         before { user.stub(:password_never_expire?).and_return(true) }
 
