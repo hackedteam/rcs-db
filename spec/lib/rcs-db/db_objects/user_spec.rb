@@ -54,12 +54,14 @@ describe User do
 
   describe '#password_never_expire?' do
 
+    let(:user) { factory_create(:user) }
+
     context 'when the PASSWORD_NEVER_EXPIRE flag is set' do
 
       before { RCS::DB::Config.instance.global['PASSWORD_NEVER_EXPIRE'] = 1 }
 
       it 'returns true' do
-        expect(described_class.new.password_never_expire?).to be_true
+        expect(user.password_never_expire?).to be_true
       end
     end
 
@@ -68,7 +70,19 @@ describe User do
       before { RCS::DB::Config.instance.global['PASSWORD_NEVER_EXPIRE'] = nil }
 
       it 'returns false' do
-        expect(described_class.new.password_never_expire?).to be_false
+        expect(user.password_never_expire?).to be_false
+      end
+    end
+
+    context 'when the user has the pwd_changed_at (and pwd_changed_cs) attributes missing (not migrated yet)' do
+
+      before do
+        user.update_attribute(:pwd_changed_at, nil)
+        user.update_attribute(:pwd_changed_cs, nil)
+      end
+
+      it 'returns true' do
+        expect(user.password_never_expire?).to be_true
       end
     end
   end
