@@ -118,8 +118,8 @@ class User
     # Someone tried to change pwd_changed_at via mongodb
     return true if pwd_changed_cs != calculate_pwd_changed_cs
 
-    thirty_days = 3600 * 24 * 30
-    pwd_changed_at and (now - pwd_changed_at > thirty_days)
+    three_months = 3600 * 24 * 31 * 3
+    pwd_changed_at and (now - pwd_changed_at > three_months)
   end
 
   def password_expiring?
