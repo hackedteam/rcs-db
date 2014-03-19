@@ -15,6 +15,8 @@ module RCS
 
         describe "#fix_users_index_on_name" do
 
+          before { User.collection.drop }
+
           context 'when all the user names are unique' do
 
             before do
