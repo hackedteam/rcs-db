@@ -76,7 +76,7 @@ class EvidenceController < RESTController
     resp = connection.request(request)
     resp_code = resp.code.to_i
 
-    if resp_code = 200
+    if resp_code == 200
       processed_bytes = JSON.parse(resp.body)['bytes'].to_i
       raise "Invalid bytesize" if processed_bytes != content.bytesize
     else
