@@ -82,10 +82,14 @@ class User
   end
 
   before_save do
-    if password_changed?
+    if password_changed? and !is_pass_hashed?
       self.pass = hash_password(self.pass)
       reset_pwd_changed_at
     end
+  end
+
+  def is_pass_hashed?
+    !!(BCrypt::Password.new(self.pass) rescue false)
   end
 
   def calculate_pwd_changed_cs
@@ -162,25 +166,7 @@ class User
   end
 
   def has_password?(password)
-    begin
-      # load the hash from the db, convert to Password object and check if it matches
-      if BCrypt::Password.new(self[:pass]) == password
-        return true
-      end
-    rescue BCrypt::Errors::InvalidHash
-      # retro-compatibility for the migrated account which used only the SHA1
-      if self[:pass] == Digest::SHA1.hexdigest(password)
-        trace :info, "Old password schema is used by #{self.name}, migrating to the new one..."
-        self.pass = password
-        self.save
-        return true
-      end
-    rescue Exception => e
-      trace :warn, "Error verifying password: #{e.message}"
-      return false
-    end
-
-    return false
+    BCrypt::Password.new(self.pass) == password
   end
 
   def add_recent(item)
