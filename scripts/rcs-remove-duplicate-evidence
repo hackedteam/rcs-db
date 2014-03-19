@@ -82,6 +82,7 @@ begin
 
     ::Evidence.target(target).collection.find.each do |ev|
       count += 1
+      next if ev['aid'].to_s.size == 0
       aid = Moped::BSON::ObjectId.from_string(ev['aid'])
 
       next unless agent_whitelist.has_key?(aid)
