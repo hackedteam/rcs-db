@@ -50,12 +50,17 @@ class AuthController < RESTController
         rescue Exception => e
           trace :error, "#{e.message}"
           trace :error, "#{e.backtrace}"
-          return conflict('LICENSE_LIMIT_REACHED')
+
+          if e.message =~ /password expired/i
+            return not_authorized("EXPIRED_ACCOUNT")
+          else
+            return conflict('LICENSE_LIMIT_REACHED')
+          end
         end
 
     end
     
-    not_authorized("invalid account")
+    not_authorized("INVALID_ACCOUNT")
   end
 
   # this method is used to create (or recreate) the admin
@@ -65,23 +70,30 @@ class AuthController < RESTController
     return not_authorized("can only be used locally") unless @request[:peer].eql? '127.0.0.1'
 
     mongoid_query do
-      user = User.where(name: 'admin').first
+      username, password = @params['user'], @params['pass']
 
-      # user not found, create it
-      unless user
+      user = User.where(name: username).first
+
+      # Create the admin user if is missing
+      if username == 'admin' and !user
         DB.instance.ensure_admin
-        user = User.where(name: 'admin').first
+        user = User.where(name: username).first
+      elsif !user
+        return not_found("User not found")
       end
 
-      trace :info, "Resetting password for user 'admin'"
+      trace :info, "Resetting #{username.inspect} password"
 
-      Audit.log :actor => '<system>', :action => 'auth.reset', :user_name => 'admin', :desc => "Password reset"
+      user.pass = password
 
-      user.pass = @params['pass']
-      user.save!
+      if !user.save
+        return server_error(user.errors.values.join(", "))
+      end
+
+      Audit.log :actor => '<system>', :action => 'auth.reset', :user_name => username, :desc => "Password reset"
     end
 
-    ok("Password reset for user 'admin'")
+    ok("Password changed")
   end
 
   # once the session is over you can explicitly logout
