@@ -457,6 +457,8 @@ class Item
   end
 
   def upgrade_soldier
+    # TODO check the version of the current soldier
+
     factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
     build = RCS::DB::Build.factory(self.platform.to_sym)
     build.load({'_id' => factory._id})

