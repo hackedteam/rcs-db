@@ -13,7 +13,16 @@ class UserController < RESTController
     require_auth_level :admin
     require_auth_level :admin_users
 
-    users = User.all
+    users = User.all.map do |user|
+      user[:password_expired] = !!user.password_expired?
+
+      # Prevent these attributes to reach the client
+      user[:pass]             = nil
+      user[:pwd_changed_at]   = nil
+      user[:pwd_changed_cs]   = nil
+      user
+    end
+
     return ok(users)
   end
 
