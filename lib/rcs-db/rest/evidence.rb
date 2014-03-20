@@ -5,11 +5,13 @@
 require_relative '../db_layer'
 require_relative '../position/resolver'
 require_relative '../connector_manager'
+require_relative '../evidence_dispatcher'
 
 # rcs-common
 require 'rcs-common/symbolize'
 require 'eventmachine'
 require 'em-http-request'
+
 
 # system
 require 'time'
