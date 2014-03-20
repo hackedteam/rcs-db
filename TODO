@@ -1,22 +1,12 @@
 
 TODO 9.2.1
 
-    Password enforcement for users
-      - strong password required (10 chars + [a-zA-Z0-9]) - (change even in the console form)   [OK]
-      - passwords expire every 3 months                                                         [OK]
-      - alerts on every login starting from 15 days before expiry (message push in console)     [OK]
-      - expired account get a custom "expired password" error on login                          [OK]
-      - migration to set the expiry time in 15 days for all users after upgrade                 [OK]
-      - hidden config.yaml flag to not expire passwords (for us on devel machines)              [OK]
-
-
-TODO:  9.2.x
-
-  FIX:
-
     fix the audit log
       - many actions are not reported correctly (build, config)
       - insert the op and target even to agent operation
+
+
+TODO:  9.2.x
 
   IMPLEMENT:
 
@@ -47,8 +37,6 @@ TODO: 9.3.0
     Mongoid refactoring
       - check if mongoid 4 is stable
       - migrate to mongoid 4
-      - get rid of old ruby-mongo-driver  [OK]
-      - use the new moped/gridfs          [OK]
       - check if the connection pooling helps resolving the "get_stucked" problem
 
     archive mode able to receive from multiple systems

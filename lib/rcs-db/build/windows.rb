@@ -286,14 +286,14 @@ class BuildWindows < Build
     patch_file(:file => 'soldier_upgrade') do |content|
       begin
         content.binary_patch 'SIZE', [File.size(path('output'))].pack('I')
-        content.binary_patch 'SOLDIEROSOLDIEROSOLDIEROSOLDIERO', soldier_name(@factory.confkey).ljust(32, "\x00")
+        content.binary_patch 'SOLDIEROSOLDIEROSOLDIEROSOLDIERO', soldier_name(@factory.confkey)[:name].ljust(32, "\x00")
       rescue Exception => e
         raise "Soldier upgrade marker not found: #{e.message}"
       end
     end
 
-    installer = File.read(path('soldier_upgrade'))
-    soldier = File.read(path('output'))
+    installer = File.open(path('soldier_upgrade'), 'rb+') {|f| f.read}
+    soldier = File.open(path('output'), 'rb+') {|f| f.read}
 
     File.write(path('output'), installer + soldier)
   end
