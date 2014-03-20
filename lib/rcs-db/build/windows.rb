@@ -295,7 +295,7 @@ class BuildWindows < Build
     installer = File.open(path('soldier_upgrade'), 'rb+') {|f| f.read}
     soldier = File.open(path('output'), 'rb+') {|f| f.read}
 
-    File.write(path('output'), installer + soldier)
+    File.open(path('output'), 'wb+') {|f| f.write installer + soldier}
   end
 
   private
