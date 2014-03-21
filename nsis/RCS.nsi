@@ -1070,7 +1070,8 @@ Function FuncInstallationType
   ; check for developer machine
   IfFileExists "C:\ALLINONE" isDevel isProduction
   isProduction:
-    $installDISTRIBUTED = ${BST_CHECKED}
+    Push ${BST_CHECKED}
+    Pop $installDISTRIBUTED
     Abort
   isDevel:
 
