@@ -202,13 +202,21 @@ class Item
 
     Entity.targets.where(path: self.id).each do |entity|
       entity.remove_from_operation_groups
-      entity.update_attributes(path: new_target_path)
-      RCS::DB::LinkManager.instance.del_all_links(entity)
+      entity.path = new_target_path
       entity.save
+
       moved_entities << entity
     end
 
     moved_entities.each do |entity|
+      # Recreate links to run callbacks
+      entity.links.each { |link|
+        link_attributes = link.attributes.symbolize_keys
+        link_attributes.reject! { |key| key == :_id}
+        link_attributes.merge!(from: entity, to: link.linked_entity)
+
+        RCS::DB::LinkManager.instance.add_link(link_attributes)
+      }
       entity.handles.each { |handle| handle.link! }
       entity.add_to_operation_groups
       Aggregate.target(entity.target_id).positions.each(&:add_to_intelligence_queue)

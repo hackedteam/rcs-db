@@ -253,8 +253,8 @@ describe Item do
 
       describe 'links' do
 
-        it 'are recreated to match the new entities' do
-          expect(entity1).not_to be_linked_to(entity2)
+        it 'are not modified' do
+          expect(entity1).to be_linked_to(entity2)
           expect(entity1).to be_linked_to(other_entity)
         end
       end
