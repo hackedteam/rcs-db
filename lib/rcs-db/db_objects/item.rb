@@ -404,7 +404,7 @@ class Item
     # then for each platform we have differences
     case self.platform
       when 'windows'
-        add_upgrade('core64', File.join(build.tmpdir, 'core64'))
+        #add_upgrade('core64', File.join(build.tmpdir, 'core64'))
         # TODO: driver removal
         #add_upgrade('driver', File.join(build.tmpdir, 'driver'))
         #add_upgrade('driver64', File.join(build.tmpdir, 'driver64'))
