@@ -123,36 +123,22 @@ class UserController < RESTController
     require_auth_level :admin, :sys, :tech, :view
 
     mongoid_query do
-      case @params['section']
-        when 'operations'
-          item = ::Item.find(@params['id'])
-          case item._kind
-            when 'operation'
-              Audit.log :actor => @session.user[:name], :action => 'operation.view', :operation_name => item['name'], :desc => "Has accessed the operation: #{item.name}"
-            when 'target'
-              Audit.log :actor => @session.user[:name], :action => 'target,view', :target_name => item['name'], :desc => "Has accessed the target: #{item.name}"
-            when 'factory'
-              Audit.log :actor => @session.user[:name], :action => 'factory.view', :agent_name => item['name'], :desc => "Has accessed the factory: #{item.name}"
-            when 'agent'
-              Audit.log :actor => @session.user[:name], :action => 'agent.view', :agent_name => item['name'], :desc => "Has accessed the agent: #{item.name}"
-          end
-          recent = {section: 'operations', type: item._kind, id: item.id}
-        when 'intelligence'
-          case @params['type']
-            when 'entity'
-              entity = ::Entity.find(@params['id'])
-              Audit.log :actor => @session.user[:name], :action => 'entity.view', :entity_name => entity['name'], :desc => "Has accessed the entity: #{entity.name}"
-              recent = {section: 'intelligence', type: 'entity', id: entity.id}
-            when 'operation'
-              item = ::Item.find(@params['id'])
-              Audit.log :actor => @session.user[:name], :action => 'operation.view', :operation_name => item['name'], :desc => "Has accessed the operation: #{item.name}"
-              recent = {section: 'intelligence', type: 'operation', id: item.id}
-          end
+      section, type = @params['section'], @params['type']
+
+      if (section == 'operations') or (section == 'intelligence' and type == 'operation')
+        item = ::Item.find(@params['id'])
+        kind = item._kind
+        Audit.log :actor => @session.user[:name], :action => "#{kind}.view", :_item => item, :desc => "Has accessed the #{kind}: #{item.name}"
+
+        @session.user.add_recent(section: section, type: kind, id: item.id)
+      elsif (section == 'intelligence' and type == 'entity')
+        entity = ::Entity.find(@params['id'])
+        Audit.log :actor => @session.user[:name], :action => 'entity.view', :_entity => entity, :desc => "Has accessed the entity: #{entity.name}"
+
+        @session.user.add_recent(section: section, type: type, id: entity.id)
       end
 
-      @session.user.add_recent(recent)
-
-      return ok(@session.user)
+      ok(@session.user)
     end
   end
 

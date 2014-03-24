@@ -97,34 +97,6 @@ class Audit
     return filter, filter_hash
   end
 
-  def self.mongo_filter(params)
-
-    filter = {}
-    filter = JSON.parse(params['filter']) if params.has_key? 'filter' and params['filter'].is_a? String
-    filter = params['filter'] if params.has_key? 'filter' and params['filter'].is_a? Hash
-
-    # default date filtering is last 24 hours
-    filter["from"] = Time.now.to_i - 86400 if filter['from'].nil?
-    filter["to"] = Time.now.to_i if filter['to'].nil?
-
-    filter_hash = {}
-
-    filter_hash["time"] = Hash.new
-    filter_hash["time"]["$gte"] = filter.delete('from') if filter.has_key? 'from'
-    filter_hash["time"]["$lte"] = filter.delete('to') if filter.has_key? 'to'
-
-    filter_hash["desc"] = Regexp.new(filter.delete('desc'), Regexp::IGNORECASE) if filter.has_key? 'desc'
-
-    # remaining filters
-    filter.each_key do |k|
-      filter_hash[k] = {"$in" => filter[k]}
-    end
-
-    puts "FILTER: #{filter} FILTER_HASH: #{filter_hash}"
-
-    return filter, filter_hash
-  end
-
   def self.field_names
     column_names = Audit.fields.keys
     column_names.delete('_type') if fields.has_key? '_type'
@@ -164,6 +136,8 @@ class AuditFilters
   field :entity_name, type: Array
 
   store_in collection: 'audit_filters'
+
+  FILTER_NAMES = %i[actor, action, user_name, group_name, operation_name, target_name, agent_name, entity_name]
 end
 
 #end # ::DB

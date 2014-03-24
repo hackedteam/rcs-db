@@ -12,46 +12,67 @@ class Audit
   extend RCS::Tracer
   
   class << self
-    # expected parameters:
-    #  :actor
-    #  :action
-    #  :user_name
-    #  :group_name
-    #  :operation_name
-    #  :target_name
-    #  :agent_name
-    #  :entity_name
-    #  :desc
-    
-    def log(params)
-      begin
-        params[:time] = Time.now.getutc.to_i
-        audit = ::Audit.new params
-        audit.save
-        save_audit_search params
-      rescue Exception => e
-        trace :error, "Cannot write audit log: #{e.message}"
+
+    def names_from_path(path)
+      hash = {}
+
+      return hash if !path or path.empty?
+
+      Item.collection.find(_id: {'$in' => path}).select(name: 1).each do |doc|
+        if doc['_id'] == path[0]
+          hash[:operation_name] = doc['name']
+        elsif doc['_id'] == path[1]
+          hash[:target_name] = doc['name']
+        end
       end
+
+      hash
     end
 
-    def update_search(field, value)
-      temp = Set.new field
-      return temp.add(value).to_a
+    # Expected parameters:
+    #   :actor
+    #   :action
+    #   :user_name
+    #   :group_name
+    #   :operation_name
+    #   :target_name
+    #   :agent_name
+    #   :entity_name
+    #   :desc
+    #   :_item
+    #   :_entity
+    def log(params)
+      params[:time] = Time.now.getutc.to_i
+
+      if params[:_item]
+        item = params.delete(:_item)
+        params[:"#{item._kind}_name"] = item.name
+        params.merge!(names_from_path(item.path)) if item._kind != 'operation'
+      end
+
+      if params[:_entity]
+        entity = params.delete(:_entity)
+        params[:entity_name] = entity.name
+        params.merge!(names_from_path(entity.path))
+      end
+
+      ::Audit.new(params).save
+
+      update_audit_filters(params)
+    rescue Exception => e
+      trace(:error, "Cannot write audit log: [#{e.class}] #{e.message} #{e.backtrace}")
     end
-    
-    def save_audit_search(params)
-      s = AuditFilters.first
-      s = AuditFilters.new if s.nil?
-      
-      s.actor = update_search s.actor, params[:actor] if params.has_key? :actor
-      s.action = update_search s.action, params[:action] if params.has_key? :action
-      s.user_name = update_search s.user_name, params[:user_name] if params.has_key? :user_name
-      s.group_name = update_search s.group_name, params[:group_name] if params.has_key? :group_name
-      s.operation_name = update_search s.operation_name, params[:operation_name] if params.has_key? :operation_name
-      s.target_name = update_search s.target_name, params[:target_name] if params.has_key? :target_name
-      s.agent_name = update_search s.agent_name, params[:agent_name] if params.has_key? :agent_name
-      s.entity_name = update_search s.entity_name, params[:entity_name] if params.has_key? :entity_name
-      s.save
+
+    def update_audit_filters(params)
+      audit_filters = AuditFilters.first || AuditFilters.new
+
+      AuditFilters::FILTER_NAMES.each do |name|
+        next unless params[name]
+        set = Set.new(audit_filters[name])
+        audit_filters[name] = set.add(params[name]).to_a
+      end
+
+      audit_filters.save
     end
   end
 end

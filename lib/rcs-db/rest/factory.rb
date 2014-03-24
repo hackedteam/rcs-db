@@ -40,10 +40,10 @@ class FactoryController < RESTController
       
       @params.each_pair do |key, value|
         if item[key.to_s] != value and not key['_ids']
-          Audit.log :actor => @session.user[:name],
+          Audit.log :actor  => @session.user[:name],
                     :action => "#{item._kind}.update",
-                    (item._kind + '_name').to_sym => item['name'],
-                    :desc => "Updated '#{key}' to '#{value}' for #{item._kind} '#{item['name']}'"
+                    :_item  => item,
+                    :desc   => "Updated '#{key}' to '#{value}' for #{item._kind} '#{item['name']}'"
         end
       end
       
@@ -66,10 +66,10 @@ class FactoryController < RESTController
       item.status = 'closed'
       item.save
 
-      Audit.log :actor => @session.user[:name],
+      Audit.log :actor  => @session.user[:name],
                 :action => "#{item._kind}.delete",
-                (item._kind + '_name').to_sym => @params['name'],
-                :desc => "Deleted #{item._kind} '#{item['name']}'"
+                :_item  => item,
+                :desc   => "Deleted #{item._kind} '#{item['name']}'"
       
       return ok
     end
