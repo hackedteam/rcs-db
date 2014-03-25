@@ -264,7 +264,7 @@ class DB
       admin_pass = File.read(Config.instance.file('admin_pass'))
       FileUtils.rm_rf Config.instance.file('admin_pass')
     else
-      admin_pass = 'Admin-1234'
+      admin_pass = 'A1d2m3i4n'
     end
 
     user = User.new
