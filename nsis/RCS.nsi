@@ -8,7 +8,16 @@
 !include LogicLib.nsh
 !include WinVer.nsh
 !include StrFunc.nsh
+!include NSISpcre.nsh
 ${StrStr}
+
+!insertmacro REMatches
+!insertmacro RESetOption
+!insertmacro REClearOption
+
+!insertmacro un.REMatches
+!insertmacro un.RESetOption
+!insertmacro un.REClearOption
 
 ;--------------------------------
 ;General
@@ -1288,11 +1297,24 @@ Function FuncInsertCredentialsLeave
   StrCmp $adminpass "" 0 +3
     MessageBox MB_OK|MB_ICONSTOP "Password for user 'admin' cannot be empty"
     Abort
-    
+
+  ${If} $adminpass !~ "(?=.*[a-z]+)(?=.*[A-Z]+)(?=.*[0-9]+)(?=.{10,})"
+    MessageBox MB_OK|MB_ICONSTOP "Password must be at least 10 characters long and contain at least 1 number, 1 uppercase letter and 1 downcase letter."
+    Abort
+  ${EndIf}
+
+  ${RESetOption} "CASELESS"
+
+  ${If} $adminpass =~ "admin"
+    MessageBox MB_OK|MB_ICONSTOP "Password must not contain the word 'admin'."
+    Abort
+  ${EndIf}
+
+  ${REClearOption} "CASELESS"
+
   StrCmp $adminpass $adminpassconfirm +3 0
     MessageBox MB_OK|MB_ICONSTOP "Password does not match the confirmations"
     Abort
-    
 FunctionEnd
 
 
