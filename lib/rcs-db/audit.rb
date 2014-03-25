@@ -46,7 +46,13 @@ class Audit
 
       if params[:_item]
         item = params.delete(:_item)
-        params[:"#{item._kind}_name"] = item.name
+
+        if item._kind == 'factory'
+          params[:agent_name] = item.name
+        else
+          params[:"#{item._kind}_name"] = item.name
+        end
+
         params.merge!(names_from_path(item.path)) if item._kind != 'operation'
       end
 
