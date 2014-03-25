@@ -1,11 +1,4 @@
 
-TODO 9.2.1
-
-    fix the audit log
-      - many actions are not reported correctly (build, config)  [ok?]
-      - insert the op and target even to agent operation         [ok]
-
-
 TODO:  9.2.x
 
   IMPLEMENT:
