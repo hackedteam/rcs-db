@@ -27,7 +27,7 @@ module SingleEvidence
       db = RCS::DB::DB.instance.session
       criteria = self.duplicate_criteria
       criteria.merge! "aid" => agent['_id'].to_s
-      is_duplicated = !!db["evidence.#{target['_id'].to_s}"].find.first
+      is_duplicated = !!db["evidence.#{target['_id'].to_s}"].find(criteria).first
 
       if is_duplicated
         trace(:debug, "DUPLICATE CHECK #{criteria}: #{is_duplicated.inspect}")
