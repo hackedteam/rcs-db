@@ -114,7 +114,7 @@ class Evidence
   end
 
   def intelligence_relevant?
-    %w[addressbook password position].include?(type)
+    %w[addressbook password position url].include?(type)
   end
 
   def enqueue
