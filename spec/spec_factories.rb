@@ -222,7 +222,7 @@ factory_define :raw_evidence do |params|
 
   content = params[:content] || "Random evidence content #{rand(1E15)}"
 
-  RCS::Worker::GridFS.put(content, {filename: filename}, "evidence")
+  RCS::DB::GridFS.put(content, {filename: filename}, "evidence", :worker)
 end
 
 factory_define :evidence do |params|

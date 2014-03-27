@@ -24,7 +24,7 @@ module SingleEvidence
       return false unless self.respond_to? :duplicate_criteria
       return false if agent.nil? or target.nil?
 
-      db = RCS::DB::DB.instance.session
+      db = Mongoid.default_session
       criteria = self.duplicate_criteria
       criteria.merge! "aid" => agent['_id'].to_s
       is_duplicated = !!db["evidence.#{target['_id'].to_s}"].find(criteria).first

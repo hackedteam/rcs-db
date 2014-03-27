@@ -25,7 +25,7 @@ class WorkerBacklog
     # calculate the number and the size of all the evidece for each instance
     entries = {}
 
-    db = RCS::Worker::GridFS.session
+    db = Mongoid.session(:worker)
 
     pipeline = if options[:without_size]
       [{'$group' => {'_id' => '$filename', 'count' => {'$sum' => 1}}}]

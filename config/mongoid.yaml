@@ -6,3 +6,9 @@ production:
         - <%= ENV['MONGOID_HOST'] %>:<%= ENV['MONGOID_PORT'] %>
       options:
         safe: true
+    worker:
+      database: <%= ENV['MONGOID_WORKER_DATABASE'] || 'rcs-worker' %>
+      hosts:
+        - <%= ENV['MONGOID_WORKER_HOST'] || '127.0.0.1' %>:<%= ENV['MONGOID_WORKER_PORT'] || '27018' %>
+      options:
+        safe: true

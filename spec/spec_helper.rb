@@ -25,7 +25,6 @@ RSpec.configure do |config|
     FileUtils.rm_rf(spec_temp_folder)
     FileUtils.mkdir_p(spec_temp_folder)
     mongo_setup
-    stub_worker_db_name
     empty_test_db
   end
 
@@ -34,7 +33,6 @@ RSpec.configure do |config|
     I18n.enforce_available_locales = false
 
     turn_off_tracer
-    stub_worker_db_name
     empty_test_db unless @disable_mongoid_purge
   end
 
@@ -95,10 +93,7 @@ end
 
 def empty_test_db
   Mongoid.purge!
-
-  if defined?(RCS::Worker::DB)
-    RCS::Worker::DB.instance.purge!
-  end
+  Mongoid.default_session.with(database: 'rcs-worker-test').collections.map &:drop
 end
 
 def do_not_empty_test_db
@@ -153,10 +148,4 @@ def stub_temp_folder
   end
 
   after { FileUtils.rm_r RCS::DB::Config.instance.temp }
-end
-
-def stub_worker_db_name
-  return unless defined?(RCS::Worker::DB)
-  RCS::Worker::DB.__send__(:remove_const, :WORKER_DB_NAME)
-  RCS::Worker::DB.const_set(:WORKER_DB_NAME, "rcs-worker-test")
 end

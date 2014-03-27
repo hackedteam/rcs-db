@@ -11,7 +11,7 @@ module RCS
       describe '#db' do
         it 'returns a database class that refers to the correct database' do
           db = described_class.new('foo', 'bar').db
-          expect(db.instance_variable_get('@current_database').name).to eq(DB::WORKER_DB_NAME)
+          expect(db.instance_variable_get('@current_database').name).to include('rcs-worker')
         end
       end
 

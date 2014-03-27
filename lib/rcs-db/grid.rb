@@ -18,12 +18,7 @@ module RCS
           collname.start_with?(DEFAULT_GRID_NAME) ? collname : "#{DEFAULT_GRID_NAME}.#{collname}"
         end
 
-        def session
-          Mongoid.default_session
-        end
-
         def get_bucket(collection = nil, options = {})
-          options[:session] = session
           RCS::Common::GridFS::Bucket.new(collection_name(collection), options)
         end
 
@@ -35,19 +30,19 @@ module RCS
           Shard.set_key(chunks, files_id: 1) unless Shard.sharded?(chunks)
         end
 
-        def put(content, file_attributes = {}, collection = nil)
+        def put(content, file_attributes = {}, collection = nil, mongoid_session_name = nil)
           raise "Cannot put into the grid: content is empty" if content.nil? or content.bytesize.zero?
 
-          bucket = get_bucket(collection, lazy: false)
+          bucket = get_bucket(collection, lazy: false, mongoid_session_name: mongoid_session_name)
           bucket.put(content, file_attributes)
         rescue Exception => ex
           trace(:error, "Cannot put content into the Grid: #{collection_name(collection)} #{file_attributes.inspect} #{ex.message}")
           raise
         end
 
-        def get(id, collection = nil)
+        def get(id, collection = nil, mongoid_session_name = nil)
           id = id.first if id.kind_of?(Array)
-          get_bucket(collection).get(id)
+          get_bucket(collection, mongoid_session_name: mongoid_session_name).get(id)
         rescue Exception => e
           trace :error, "Cannot get content from the Grid: #{collection_name(collection)} #{e.message}"
           raise
@@ -61,9 +56,9 @@ module RCS
           raise
         end
 
-        def delete(id, collection = nil)
+        def delete(id, collection = nil, mongoid_session_name = nil)
           id = id.first if id.kind_of?(Array)
-          get_bucket(collection).delete(id)
+          get_bucket(collection, mongoid_session_name: mongoid_session_name).delete(id)
         rescue Exception => e
           trace :error, "Cannot delete content from the Grid: #{collection_name(collection)} #{e.message}"
           raise
@@ -104,8 +99,8 @@ module RCS
           return []
         end
 
-        def delete_by_filename(filename, collection = nil)
-          bucket = get_bucket(collection)
+        def delete_by_filename(filename, collection = nil, mongoid_session_name = nil)
+          bucket = get_bucket(collection, mongoid_session_name: mongoid_session_name)
 
           bucket.files_collection.find(filename: filename).select(_id: 1, length: 1).each  do |e|
             bucket.delete(e["_id"])

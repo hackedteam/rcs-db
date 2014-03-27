@@ -14,7 +14,7 @@ module RCS::Worker::InstanceWorkerMng
   @worker_threads = {}
 
   def db
-    RCS::Worker::DB.instance.session
+    Mongoid.session(:worker)
   end
 
   def collection

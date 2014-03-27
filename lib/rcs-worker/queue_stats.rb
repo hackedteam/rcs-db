@@ -25,10 +25,8 @@ module Worker
         puts
       end
 
-      def print_rows(shard = nil)
+      def print_rows(session, shard = nil)
         entries = {}
-
-        session = GridFS.session
 
         pipeline = [{'$group' => {'_id' => '$filename', 'count' => {'$sum' => 1}, 'size' => {'$sum' => '$length'}}}]
 
@@ -77,14 +75,13 @@ module Worker
         return 1 unless RCS::DB::Config.instance.load_from_file
 
         # connect to MongoDB
-        return 1 unless DB.instance.connect
+        return 1 unless RCS::DB::DB.instance.connect
 
         stats = QueueStats.new
         stats.print_header
-        RCS::DB::Shard.hosts.each do |host|
-          host = host.split(':').first
-          DB.instance.change_mongo_host(host)
-          stats.print_rows(host)
+        RCS::DB::Shard.hosts.each do |addr|
+          host, port = *addr.split(':')
+          RCS::DB::DB.instance.open(host, port, 'rcs-worker') { |session| stats.print_rows(session, host) }
         end
         stats.print_footer
 
