@@ -494,6 +494,10 @@ class BuildWindows < Build
     CrossPlatform.exec path('VMProtect_Con'), "#{path('scout')} #{path('scout_vmp')}"
     FileUtils.mv path('scout_vmp'), path('scout')
 
+    # vmprotect the soldier
+    CrossPlatform.exec path('VMProtect_Con'), "#{path('soldier')} #{path('soldier_vmp')}"
+    FileUtils.mv path('soldier_vmp'), path('soldier')
+
     # sign it
     CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("comodo.cer")} #{path('scout')}" if to_be_signed?
     CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("comodo.cer")} #{path('soldier')}" if to_be_signed?
