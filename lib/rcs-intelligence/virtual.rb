@@ -11,8 +11,8 @@ module Virtual
     url = url_evidence.data['url']
 
     # remove the protocol to search in the entities
-    url.gsub!(/http[s]*:\/\//, '')
-    virtual_entity = find_virtual_entity_by_url(url)
+    search_url = url.gsub(/http[s]*:\/\//, '')
+    virtual_entity = find_virtual_entity_by_url(search_url)
 
     return unless virtual_entity
 
