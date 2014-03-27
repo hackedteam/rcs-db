@@ -9,7 +9,11 @@ module Virtual
 
   def process_url_evidence target_entity, url_evidence
     url = url_evidence.data['url']
+
+    # remove the protocol to search in the entities
+    url.gsub!(/http[s]*:\/\//, '')
     virtual_entity = find_virtual_entity_by_url(url)
+
     return unless virtual_entity
 
     link_params = {from: target_entity, to: virtual_entity, level: :automatic, type: :virtual, versus: :out, info: url}
@@ -17,7 +21,7 @@ module Virtual
   end
 
   def find_virtual_entity_by_url url
-    Entity.virtuals.with_handle(:url, url).first
+    Entity.virtuals.with_handle(:url, /#{url}/).first
   end
 end
 
