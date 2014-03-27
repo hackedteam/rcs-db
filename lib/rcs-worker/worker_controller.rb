@@ -14,6 +14,11 @@ module RCS::Worker
       instance = @params['_id'].slice(15..-1).downcase
       uid = "#{ident}:#{instance}"
 
+      if content.bytesize == 0
+        trace(:error, "Received an empty evidence belonging to agent #{uid}")
+        return ok(bytes: 0)
+      end
+
       # save the evidence in the db
       trace :debug, "Storing evidence #{uid} into local worker db"
       grid_id = RCS::DB::GridFS.put(content, {filename: "#{uid}"}, "evidence", :worker)
