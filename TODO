@@ -15,8 +15,10 @@ TODO:  9.2.x
     export via command line
       - autosplit on date or size
 
+    thumbinails for screenshots
+
     crypto-currency dissector
-      - support for multibit and armory wallets
+      - check the latest bitcoin wallet (0.9.x)
 
     filter links by type (e.g. I want to see only skype links). We can change the format of the info attribute..
 
