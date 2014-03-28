@@ -47,6 +47,7 @@ describe Item do
     let (:evidence_name) { "evidence.#{target.id}" }
     let (:grid_chunks_name) { RCS::DB::GridFS.collection_name(target.id) + '.chunks' }
     let (:grid_files_name) { RCS::DB::GridFS.collection_name(target.id) + '.files' }
+    let (:db) { RCS::DB::DB.instance }
 
     it 'should create the associated entity' do
       entity = Entity.where(name: target.name).first
@@ -55,31 +56,27 @@ describe Item do
     end
 
     it 'should create sharded aggregate collection' do
-      db = RCS::DB::DB.instance.mongo_connection
       expect(db.collection_names).to include aggregate_name
-      coll = db.collection(aggregate_name)
-      expect(coll.stats['sharded']).to be true
+      coll = db.session[aggregate_name]
+      expect(db.sharded_collection?(aggregate_name)).to be true
     end
 
     it 'should create sharded evidence collection' do
-      db = RCS::DB::DB.instance.mongo_connection
       expect(db.collection_names).to include evidence_name
-      coll = db.collection(evidence_name)
-      expect(coll.stats['sharded']).to be true
+      coll = db.session[evidence_name]
+      expect(db.sharded_collection?(aggregate_name)).to be true
     end
 
     it 'should create sharded grid collection for chunks' do
-      db = RCS::DB::DB.instance.mongo_connection
       expect(db.collection_names).to include grid_chunks_name
-      coll_chunks = db.collection(grid_chunks_name)
-      expect(coll_chunks.stats['sharded']).to be true
+      coll = db.session[grid_chunks_name]
+      expect(db.sharded_collection?(aggregate_name)).to be true
     end
 
-    it 'should not create sharded grid collection for files' do
-      db = RCS::DB::DB.instance.mongo_connection
+    it 'should create sharded grid collection for files' do
       expect(db.collection_names).to include grid_files_name
-      coll_files = db.collection(grid_files_name)
-      expect(coll_files.stats['sharded']).to be false
+      coll = db.session[grid_files_name]
+      expect(db.sharded_collection?(aggregate_name)).to be true
     end
 
   end
@@ -93,6 +90,7 @@ describe Item do
     let (:evidence_name) { "evidence.#{target.id}" }
     let (:grid_chunks_name) { RCS::DB::GridFS.collection_name(target.id) + '.chunks' }
     let (:grid_files_name) { RCS::DB::GridFS.collection_name(target.id) + '.files' }
+    let (:db) { RCS::DB::DB.instance }
 
     before do
       target.destroy
@@ -109,17 +107,14 @@ describe Item do
     end
 
     it 'should delete the aggregate collection' do
-      db = RCS::DB::DB.instance.mongo_connection
       expect(db.collection_names).not_to include aggregate_name
     end
 
     it 'should delete the evidence collection' do
-      db = RCS::DB::DB.instance.mongo_connection
       expect(db.collection_names).not_to include evidence_name
     end
 
     it 'should delete the grid collection' do
-      db = RCS::DB::DB.instance.mongo_connection
       expect(db.collection_names).not_to include grid_chunks_name
       expect(db.collection_names).not_to include grid_files_name
     end
@@ -258,8 +253,8 @@ describe Item do
 
       describe 'links' do
 
-        it 'are recreated to match the new entities' do
-          expect(entity1).not_to be_linked_to(entity2)
+        it 'are not modified' do
+          expect(entity1).to be_linked_to(entity2)
           expect(entity1).to be_linked_to(other_entity)
         end
       end

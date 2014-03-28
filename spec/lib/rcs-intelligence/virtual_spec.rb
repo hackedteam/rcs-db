@@ -97,6 +97,23 @@ module Intelligence
           expect(link.info).to eql ['http://it.wikipedia.org/wiki/Tim_Berners-Lee', 'http://it.wikipedia.org/wiki/Computing']
         end
       end
+
+      context 'when there is a partial matching virtual entity (different protocol)' do
+
+        let!(:entity) { virtual_entity("wikipedia", ["it.wikipedia.org/wiki/Tim_Berners-Lee", 'https://it.wikipedia.org/wiki/Computing']) }
+
+        it 'creates a virtual link' do
+          subject.process_url_evidence target_entity, url_evidence
+          subject.process_url_evidence target_entity, another_url_evidence
+          link = target_entity.links.first
+
+          expect(target_entity.reload).to be_linked_to entity.reload
+          expect(target_entity.links.size).to eql 1
+          expect(link.type).to eql :virtual
+          expect(link.info).to eql ['http://it.wikipedia.org/wiki/Tim_Berners-Lee', 'http://it.wikipedia.org/wiki/Computing']
+        end
+      end
+
     end
   end
 

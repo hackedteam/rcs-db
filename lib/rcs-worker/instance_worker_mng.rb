@@ -14,19 +14,19 @@ module RCS::Worker::InstanceWorkerMng
   @worker_threads = {}
 
   def db
-    RCS::Worker::DB.instance.mongo_connection
+    Mongoid.session(:worker)
   end
 
   def collection
-    @collection ||= db.collection('grid.evidence.files')
+    db['grid.evidence.files']
   end
 
   def agents
-    collection.distinct(:filename)
+    collection.find.distinct(:filename)
   end
 
   def ensure_indexes
-    collection.create_index({filename: 1}, {background: 1})
+    collection.indexes.create({filename: 1}, {background: 1})
   end
 
   def spawn_worker_thread(agent)
@@ -41,6 +41,13 @@ module RCS::Worker::InstanceWorkerMng
         @worker_threads[agent] = Thread.new { RCS::Worker::InstanceWorker.new(instance, ident).run }
       end
     end
+  rescue ThreadError, NoMemoryError => error
+    msgs = ["[#{error.class}] #{error.message}."]
+    msgs << "There are #{Thread.list.size} active threads. EventMachine threadpool_size is #{EM.threadpool_size}."
+    msgs.concat(error.backtrace) if error.backtrace.respond_to?(:concat)
+
+    trace(:fatal, msgs.join("\n"))
+    exit!(1) # Die hard
   end
 
   def remove_dead_worker_threads

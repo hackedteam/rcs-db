@@ -8,7 +8,16 @@
 !include LogicLib.nsh
 !include WinVer.nsh
 !include StrFunc.nsh
+!include NSISpcre.nsh
 ${StrStr}
+
+!insertmacro REMatches
+!insertmacro RESetOption
+!insertmacro REClearOption
+
+!insertmacro un.REMatches
+!insertmacro un.RESetOption
+!insertmacro un.REClearOption
 
 ;--------------------------------
 ;General
@@ -301,7 +310,7 @@ Section "Install Section" SecInstall
   
     !ifdef FULL_INSTALL
       ; fresh install
-      ;${If} $installUPGRADE != ${BST_CHECKED}
+      ${If} $installUPGRADE != ${BST_CHECKED}
         RMDir /r "$INSTDIR\Java"
         SetOutPath "$INSTDIR\Java"
         File /r "..\Java\*.*"
@@ -313,10 +322,10 @@ Section "Install Section" SecInstall
         RMDir /r "$INSTDIR\DB\mongodb\win"
         SetOutPath "$INSTDIR\DB\mongodb\win"
         File /r "mongodb\win\*.*"
-      ;${Else}
+      ${Else}
       ; Upgrade
       ; TODO: check if we need to install a new java/python/mongo version
-      ;${EndIf}
+      ${EndIf}
     !endif
   
     SetOutPath "$INSTDIR\DB\bin"
@@ -369,7 +378,7 @@ Section "Install Section" SecInstall
     File "config\VERSION"
 
     ; TODO: remove this after 9.2!!!
-    File "config\mark_bad"
+    ;;File "config\mark_bad"
 
     SetOutPath "$INSTDIR\DB\config\certs"
     File "config\certs\windows.pfx"
@@ -956,7 +965,7 @@ SectionEnd
 
 Function .onInit
 
-	; check that 9.1.x is already installed
+	; check that 9.2.x is already installed
 	IfFileExists "$INSTDIR\DB\config\VERSION" isDB isCollector
   isDB:
 	  FileOpen $4 "$INSTDIR\DB\config\VERSION" r
@@ -968,9 +977,9 @@ Function .onInit
 	FileRead $4 $1
 	FileClose $4
 	${If} $1 != ""
-	   ${StrStr} $0 $1 "9.1"
+	   ${StrStr} $0 $1 "9.2"
 	   ${If} $0 == ""
-  	   MessageBox MB_OK "This version can only be installed on 9.1.x systems, you have $1"
+  	   MessageBox MB_OK "This version can only be installed on 9.2.x systems, you have $1"
   	   Quit
 	   ${EndIf}
 	${EndIf}
@@ -1063,10 +1072,18 @@ FunctionEnd
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Function FuncInstallationType
-   ${If} $installUPGRADE == ${BST_CHECKED}
+  ${If} $installUPGRADE == ${BST_CHECKED}
+   Abort
+  ${EndIf}
+
+  ; check for developer machine
+  IfFileExists "C:\ALLINONE" isDevel isProduction
+  isProduction:
+    Push ${BST_CHECKED}
+    Pop $installDISTRIBUTED
     Abort
-   ${EndIf}
-   
+  isDevel:
+
   !insertmacro MUI_HEADER_TEXT "Installation Type" "Deployment Method"
 
   nsDialogs::Create /NOUNLOAD 1018
@@ -1280,11 +1297,24 @@ Function FuncInsertCredentialsLeave
   StrCmp $adminpass "" 0 +3
     MessageBox MB_OK|MB_ICONSTOP "Password for user 'admin' cannot be empty"
     Abort
-    
+
+  ${If} $adminpass !~ "(?=.*[a-z]+)(?=.*[A-Z]+)(?=.*[0-9]+)(?=.{10,})"
+    MessageBox MB_OK|MB_ICONSTOP "Password must be at least 10 characters long and contain at least 1 number, 1 uppercase letter and 1 downcase letter."
+    Abort
+  ${EndIf}
+
+  ${RESetOption} "CASELESS"
+
+  ${If} $adminpass =~ "admin"
+    MessageBox MB_OK|MB_ICONSTOP "Password must not contain the word 'admin'."
+    Abort
+  ${EndIf}
+
+  ${REClearOption} "CASELESS"
+
   StrCmp $adminpass $adminpassconfirm +3 0
     MessageBox MB_OK|MB_ICONSTOP "Password does not match the confirmations"
     Abort
-    
 FunctionEnd
 
 

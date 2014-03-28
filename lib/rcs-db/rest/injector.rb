@@ -283,7 +283,7 @@ class InjectorController < RESTController
           injector.upgradable = true
           injector.save
 
-          return server_error("Cannot push to #{injector.name}") unless Frontend.nc_push(injector)
+          #return server_error("Cannot push to #{injector.name}") unless Frontend.nc_push(injector)
 
           return ok
       end

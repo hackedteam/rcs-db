@@ -23,7 +23,7 @@ class Core
   def self.load_all
     trace :info, "Loading cores into db..."
 
-    Dir['./cores/*'].each do |core_file|
+    Dir["#{$execution_directory}/cores/*"].each do |core_file|
       begin
         load_core core_file
       rescue Exception => e
@@ -83,6 +83,11 @@ class Core
     core = Build.factory(platform || name.to_sym)
     core.unique(file)
     core.clean
+  end
+
+  def self.all_loaded?
+    # the core directory must be empty if all the cores are loaded
+    Dir["#{$execution_directory}/cores/*"].size == 0
   end
 
 end #Core

@@ -431,7 +431,7 @@ class Killer
     puts "Requesting info to #{url}"
     info = request(url, 'CHECK')
     raise "Cannot get info, unsupported command by collector" unless info.kind_of? Net::HTTPOK
-    address, watermark = info.body.split(' ')
+    address, watermark, version = info.body.split(' ')
     # we don't have the collector address
     if watermark.nil?
       watermark = address.dup
@@ -439,6 +439,7 @@ class Killer
     end
     puts "Collector ip address: #{address}"
     puts "Collector watermark: #{watermark} (#{$watermark_table[watermark]})"
+    puts "Collector version: #{version || 'unknown'}"
 
     puts
     puts "Requesting SSL info to #{url}"

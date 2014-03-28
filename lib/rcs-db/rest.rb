@@ -10,7 +10,6 @@ require_relative 'rest_response'
 require 'rcs-common/trace'
 
 # system
-require 'bson'
 require 'json'
 require 'base64'
 require 'rcs-common/rest'
@@ -270,7 +269,7 @@ class RESTController
 
     raise BasicAuthRequired.new if user.nil? or not user.enabled
 
-    raise BasicAuthRequired.new unless user.verify_password(password)
+    raise BasicAuthRequired.new unless user.has_password?(password)
 
     trace :info, "Auth granted for user #{username} to #{@request[:uri]}"
   end
@@ -301,7 +300,7 @@ class RESTController
       ret = yield
       @request[:time][:moingoid] = Time.now - start
       return ret
-    rescue Mongo::ConnectionFailure =>  e
+    rescue Moped::Errors::ConnectionFailure =>  e
       trace :error, "Connection to database lost, retrying in 5 seconds..."
       sleep 5
       retry if attempt ||= 0 and attempt += 1 and attempt < 2
@@ -311,7 +310,7 @@ class RESTController
     rescue Mongoid::Errors::InvalidOptions => e
       trace :error, "Invalid parameter => #{e.message}"
       return bad_request(e.message)
-    rescue BSON::InvalidObjectId => e
+    rescue Moped::Errors::InvalidObjectId => e
       trace :error, "Bad request #{e.class} => #{e.message}"
       return bad_request(e.message)
     rescue BlacklistError => e

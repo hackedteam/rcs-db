@@ -1,15 +1,4 @@
 GIT
-  remote: git://github.com/alor/mongo-ruby-driver.git
-  revision: b1d59bfe1700b88b1550b4fc6de1ae8778923ddf
-  branch: 1.9.2_append
-  specs:
-    bson (1.9.2)
-    bson_ext (1.9.2)
-      bson (~> 1.9.2)
-    mongo (1.9.2)
-      bson (~> 1.9.2)
-
-GIT
   remote: git://github.com/danielemilan/minitar.git
   revision: 56af58400e2d8171906dee4bf5c5a1d930e5b7b6
   branch: master
@@ -19,7 +8,7 @@ GIT
 PATH
   remote: ../rcs-common
   specs:
-    rcs-common (9.2.0)
+    rcs-common (9.2.1)
       ffi
       log4r (>= 1.1.9)
       mail
@@ -135,8 +124,6 @@ DEPENDENCIES
   activesupport
   bcrypt-ruby
   bitcoin-ruby
-  bson (= 1.9.2)
-  bson_ext (= 1.9.2)
   bundler (> 1.0.0)
   em-http-request (= 1.0.3)
   em-http-server (>= 0.1.7)
@@ -148,7 +135,6 @@ DEPENDENCIES
   lrucache
   mail
   minitar (>= 0.5.5)!
-  mongo (= 1.9.2)!
   mongoid (>= 3.0.0)
   persistent_http
   plist

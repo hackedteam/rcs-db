@@ -115,10 +115,10 @@ describe Entity do
     it 'should add and remove photos to/from grid' do
       @entity.add_photo("This_is_a_binary_photo")
       photo_id = @entity.photos.first
+      expect(RCS::DB::GridFS.get(photo_id, @entity.path.last.to_s)).not_to be_nil
       photo_id.should be_a String
-
       @entity.del_photo(photo_id)
-      expect { RCS::DB::GridFS.get(photo_id, @entity.path.last.to_s) }.to raise_error(Mongo::GridFileNotFound)
+      expect(RCS::DB::GridFS.get(photo_id, @entity.path.last.to_s)).to be_nil
     end
 
   end
@@ -153,8 +153,9 @@ describe Entity do
     it 'should remove photos in the grid' do
       @entity.add_photo("This_is_a_binary_photo")
       photo_id = @entity.photos.first
+      expect(RCS::DB::GridFS.get(photo_id, @entity.path.last.to_s)).not_to be_nil
       @entity.destroy
-      expect { RCS::DB::GridFS.get(photo_id, @entity.path.last.to_s) }.to raise_error(Mongo::GridFileNotFound)
+      expect(RCS::DB::GridFS.get(photo_id, @entity.path.last.to_s)).to be_nil
     end
   end
 

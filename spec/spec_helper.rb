@@ -1,5 +1,4 @@
 require 'bundler'
-require 'mongo'
 require 'mongoid'
 require 'pry'
 require 'rcs-common/path_utils'
@@ -15,6 +14,8 @@ require_relative 'stubs/tracer'
 require_relative 'stubs/mongoid'
 require_relative 'stubs/archive_server'
 
+$execution_directory = File.expand_path('../..', __FILE__)
+
 # Define global before and each proc
 RSpec.configure do |config|
 
@@ -24,7 +25,6 @@ RSpec.configure do |config|
     FileUtils.rm_rf(spec_temp_folder)
     FileUtils.mkdir_p(spec_temp_folder)
     mongo_setup
-    stub_worker_db_name
     empty_test_db
   end
 
@@ -33,7 +33,6 @@ RSpec.configure do |config|
     I18n.enforce_available_locales = false
 
     turn_off_tracer
-    stub_worker_db_name
     empty_test_db unless @disable_mongoid_purge
   end
 
@@ -86,8 +85,7 @@ end
 def mongo_setup
   Mongoid.load!('config/mongoid.yaml', :production)
 
-  connection = Mongo::MongoClient.new(ENV['MONGOID_HOST'], ENV['MONGOID_PORT'])
-  admin_db = connection.db('admin')
+  admin_db = Mongoid.default_session.with(database: 'admin')
   shard_list = admin_db.command(listshards: 1)['shards']
   admin_db.command(addshard: "#{ENV['MONGOID_HOST']}:27018") if shard_list.empty?
   admin_db.command(enablesharding: ENV['MONGOID_DATABASE']) rescue nil
@@ -95,10 +93,7 @@ end
 
 def empty_test_db
   Mongoid.purge!
-
-  if defined?(RCS::Worker::DB)
-    RCS::Worker::DB.instance.purge!
-  end
+  Mongoid.default_session.with(database: 'rcs-worker-test').collections.map &:drop
 end
 
 def do_not_empty_test_db
@@ -153,10 +148,4 @@ def stub_temp_folder
   end
 
   after { FileUtils.rm_r RCS::DB::Config.instance.temp }
-end
-
-def stub_worker_db_name
-  return unless defined?(RCS::Worker::DB)
-  RCS::Worker::DB.__send__(:remove_const, :WORKER_DB_NAME)
-  RCS::Worker::DB.const_set(:WORKER_DB_NAME, "rcs-worker-test")
 end

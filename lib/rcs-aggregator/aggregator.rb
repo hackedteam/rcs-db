@@ -46,7 +46,7 @@ module RCS
 
       def wait_for_correlation_license
         unless LicenseManager.instance.check(:correlation)
-          database.mongo_connection.drop_collection('aggregator_queue')
+          database.drop_collection('aggregator_queue')
 
           trace(:info, "Correlation license is disabled, going to sleep...")
 

@@ -8,7 +8,7 @@ module EventMachine
       # Wait until next tick to send more data when 50k is still in the outgoing buffer
       BACKPRESSURE_LEVEL = 50000
       # Send 16k chunks at a time
-      CHUNK_SIZE = 16384
+      CHUNK_SIZE = RCS::DB::GridFS::DEFAULT_CHUNK_SIZE
       
       # @param [EventMachine::Connection] connection
       # @param [String] grid_io GridFS object
@@ -32,17 +32,13 @@ module EventMachine
       def stream_one_chunk
         loop do
           break if @connection.closed?
-          if @grid_io.file_position < @grid_io.file_length
+          unless @grid_io.eof?
             if @connection.get_outbound_data_size > BACKPRESSURE_LEVEL
                 EventMachine::next_tick {stream_one_chunk}
                 break
             else
-              break unless @grid_io.file_position < @grid_io.file_length
-              
-              len = @grid_io.file_length - @grid_io.file_position
-              len = CHUNK_SIZE if (len > CHUNK_SIZE)
-              
-              @connection.send_data( @grid_io.read( len ))
+              break if @grid_io.eof?
+              @connection.send_data( @grid_io.read( CHUNK_SIZE ))
             end
           else
             succeed

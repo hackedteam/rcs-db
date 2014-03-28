@@ -14,7 +14,7 @@ module DB
     enable_license
     stub_temp_folder
 
-    let(:admin) { User.create! name: 'admin', enabled: true }
+    let(:admin) { factory_create(:user, name: 'admin', enabled: true) }
 
     let(:operation) do
       Item.create!(name: 'Op LoL', _kind: :operation, path: [], stat: ::Stat.new).tap do |op|

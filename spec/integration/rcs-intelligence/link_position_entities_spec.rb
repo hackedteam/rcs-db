@@ -85,7 +85,7 @@ describe 'The intelligence module process some position aggregates' do
       ]
     end
 
-    let(:admin) { User.create! name: 'admin', enabled: true }
+    let(:admin) { factory_create(:user, name: 'admin', enabled: true) }
 
     let :operation do
       Item.create!(name: 'testoperation', _kind: :operation, path: [], stat: ::Stat.new).tap do |op|

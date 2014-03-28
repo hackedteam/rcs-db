@@ -15,6 +15,7 @@ require_relative 'position'
 require_relative 'ghost'
 require_relative 'money'
 require_relative 'passwords'
+require_relative 'virtual'
 
 module RCS
 module Intelligence

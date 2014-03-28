@@ -34,7 +34,7 @@ class Frontend
       headers['Content-type'] = 'application/json'
       content = object.attributes.reject{ |name| name.to_s == '_grid' }.to_json
 
-      resp = http.send_request('PUSH', content, '', headers)
+      resp = http.send_request('PUSH', '/', content, headers)
 
       return false unless resp.body == "OK"
 

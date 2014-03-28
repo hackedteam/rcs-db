@@ -1,152 +1,123 @@
-#
-# GridFS management
-#
-
-require 'mongo'
 require 'mongoid'
-
-# from RCS::Common
 require 'rcs-common/trace'
+require 'rcs-common/gridfs'
 
 module RCS
-module DB
+  module DB
+    class GridFS
+      extend RCS::Tracer
 
-class GridFS
-  extend RCS::Tracer
+      DEFAULT_GRID_NAME = 'grid'
+      DEFAULT_CHUNK_SIZE = RCS::Common::GridFS::Bucket::DEFAULT_CHUNK_SIZE
 
-  DEFAULT_GRID_NAME = 'grid'
+      class << self
 
-  class << self
-
-    def db
-      RCS::DB::DB.instance.mongo_connection
-    end
-
-    def collection_name(coll)
-      coll.nil? ? DEFAULT_GRID_NAME : DEFAULT_GRID_NAME + '.' + coll
-    end
-
-    def create_collection(collection = nil)
-      grid = Mongo::Grid.new db, collection_name(collection)
-      # insert and delete a fake entry to force collection creation
-      id = grid.put('fakeentry')
-      grid.delete id
-
-      # enable sharding only if not enabled
-      chunks = db.collection(collection_name(collection) + '.chunks')
-      Shard.set_key(chunks, {files_id: 1}) unless chunks.stats['sharded']
-
-      #files = db.collection(collection_name(collection) + '.files')
-      #Shard.set_key(files, {md5: 1}) unless files.stats['sharded']
-    end
-
-    #
-    # Make sure that every internal Mongo::BSON object is returned as Moped::BSON
-    # and that every external parameter is converted from Moped:: to Mongo::
-    #
-
-    def put(content, opts = {}, collection = nil)
-      begin
-        raise "Cannot put into the grid: content is empty" if content.nil?
-
-        grid = Mongo::Grid.new db, collection_name(collection)
-        grid_id = grid.put(content, opts)
-
-        return Moped::BSON::ObjectId.from_string(grid_id.to_s)
-      rescue Exception => e
-        trace :error, "Cannot put content into the Grid: #{collection_name(collection)} #{opts.inspect} #{e.message}"
-        raise
-      end
-    end
-
-    def get(id, collection = nil)
-      begin
-        id = id.first if id.class.eql? Array
-        id = BSON::ObjectId.from_string(id.to_s)
-
-        grid = Mongo::Grid.new db, collection_name(collection)
-        return grid.get id
-      rescue Exception => e
-        trace :error, "Cannot get content from the Grid: #{collection_name(collection)} #{e.message}"
-        raise
-      end
-    end
-    
-    def delete(id, collection = nil)
-      begin
-        id = id.first if id.class.eql? Array
-        id = BSON::ObjectId.from_string(id.to_s)
-
-        grid = Mongo::Grid.new db, collection_name(collection)
-        return grid.delete id
-      rescue Exception => e
-        trace :error, "Cannot delete content from the Grid: #{collection_name(collection)} #{e.message}"
-        raise
-      end
-    end
-
-    def to_tmp(id, collection = nil)
-      begin
-        id = id.first if id.class.eql? Array
-        id = BSON::ObjectId.from_string(id.to_s)
-        file = self.get id, collection
-        raise "Grid content is nil" if file.nil?
-        temp = File.open(Config.instance.temp("#{id}-%f" % Time.now), 'wb+')
-        temp.write file.read(65536) until file.eof?
-        temp.close
-        return temp.path
-      rescue Exception => e
-        trace :error, "Cannot save to tmp from the Grid: #{collection_name(collection)}"
-        trace :error, e.message
-        retry if attempt ||= 0 and attempt += 1 and attempt < 5
-        raise
-      end
-    end
-
-    def delete_by_agent(agent, collection = nil)
-      items = get_by_filename(agent, collection)
-      items.each {|item| delete(item["_id"], collection)}
-    end
-
-    def drop_collection(name)
-      db.drop_collection DEFAULT_GRID_NAME + '.' + name + '.files'
-      db.drop_collection DEFAULT_GRID_NAME + '.' + name + '.chunks'
-    end
-
-    def get_by_filename(filename, collection = nil)
-      begin
-        files = db.collection( collection_name(collection) + ".files")
-        return files.find({"filename" => filename}, :fields => ["_id", "length"])
-      rescue Exception => e
-        trace :error, "Cannot get content from the Grid: #{collection_name(collection)}"
-        return []
-      end
-    end
-
-    def delete_by_filename(filename, collection = nil)
-      begin
-        files = db.collection( collection_name(collection) + ".files")
-        files.find({"filename" => filename}, :fields => ["_id", "length"]).each  do |e|
-          delete(e["_id"], collection)
+        def collection_name(coll)
+          collname = coll.to_s.downcase.strip
+          return DEFAULT_GRID_NAME if collname.empty?
+          collname.start_with?(DEFAULT_GRID_NAME) ? collname : "#{DEFAULT_GRID_NAME}.#{collname}"
         end
-      rescue Exception => e
-        trace :error, "Cannot get content from the Grid: #{collection_name(collection)}"
-        return []
+
+        def get_bucket(collection = nil, options = {})
+          RCS::Common::GridFS::Bucket.new(collection_name(collection), options)
+        end
+
+        def create_collection(collection = nil)
+          bucket = get_bucket(collection, lazy: false)
+
+          # Enable sharding only if not enabled
+          chunks = bucket.chunks_collection
+          Shard.set_key(chunks, files_id: 1) unless Shard.sharded?(chunks)
+        end
+
+        def put(content, file_attributes = {}, collection = nil, mongoid_session_name = nil)
+          raise "Cannot put into the grid: content is empty" if content.nil? or content.bytesize.zero?
+
+          bucket = get_bucket(collection, lazy: false, mongoid_session_name: mongoid_session_name)
+          bucket.put(content, file_attributes)
+        rescue Exception => ex
+          trace(:error, "Cannot put content into the Grid: #{collection_name(collection)} #{file_attributes.inspect} #{ex.message}")
+          raise
+        end
+
+        def get(id, collection = nil, mongoid_session_name = nil)
+          id = id.first if id.kind_of?(Array)
+          get_bucket(collection, mongoid_session_name: mongoid_session_name).get(id)
+        rescue Exception => e
+          trace :error, "Cannot get content from the Grid: #{collection_name(collection)} #{e.message}"
+          raise
+        end
+
+        def append(filename, content, collection = nil)
+          options = {md5: false, filename: true, create: {filename: filename}}
+          get_bucket(collection).append(filename, content, options)
+        rescue Exception => e
+          trace :error, "Cannot append content to the grid file #{filename} of collection #{collection_name(collection)}: #{e.message}"
+          raise
+        end
+
+        def delete(id, collection = nil, mongoid_session_name = nil)
+          id = id.first if id.kind_of?(Array)
+          get_bucket(collection, mongoid_session_name: mongoid_session_name).delete(id)
+        rescue Exception => e
+          trace :error, "Cannot delete content from the Grid: #{collection_name(collection)} #{e.message}"
+          raise
+        end
+
+        def to_tmp(id, collection = nil)
+          id = id.first if id.kind_of?(Array)
+          grid_file = get_bucket(collection).get(id)
+          raise "Grid content is nil, cannot find file #{id}" unless grid_file
+
+          tempfile_path = Config.instance.temp("#{id}-%f" % Time.now)
+
+          File.open(tempfile_path, 'wb+') do |file|
+            file.write grid_file.read(grid_file.chunk_size) until grid_file.eof?
+          end
+
+          tempfile_path
+        rescue Exception => e
+          trace :error, "Cannot save to tmp from the Grid: #{collection_name(collection)}"
+          trace :error, e.message
+          retry if attempt ||= 0 and attempt += 1 and attempt < 5
+          raise
+        end
+
+        def delete_by_agent(agent, collection = nil)
+          delete_by_filename(agent, collection)
+        end
+
+        def drop_collection(collection)
+          get_bucket(collection).drop
+        end
+
+        def get_by_filename(filename, collection = nil)
+          bucket = get_bucket(collection)
+          bucket.files_collection.find(filename: filename).select(_id: 1, length: 1)
+        rescue Exception => e
+          trace :error, "Cannot get content from the Grid: #{collection_name(collection)}"
+          return []
+        end
+
+        def delete_by_filename(filename, collection = nil, mongoid_session_name = nil)
+          bucket = get_bucket(collection, mongoid_session_name: mongoid_session_name)
+
+          bucket.files_collection.find(filename: filename).select(_id: 1, length: 1).each  do |e|
+            bucket.delete(e["_id"])
+          end
+        rescue Exception => e
+          trace :error, "Cannot get content from the Grid: #{collection_name(collection)}"
+          return []
+        end
+
+        def get_distinct_filenames(collection = nil)
+          bucket = get_bucket(collection)
+          bucket.files_collection.find.distinct("filename")
+        rescue Exception => e
+          trace :error, "Cannot get content from the Grid: #{collection_name(collection)}"
+          return []
+        end
       end
     end
-
-    def get_distinct_filenames(collection = nil)
-      begin
-        files = db.collection( collection_name(collection) + ".files")
-        return files.distinct("filename")
-      rescue Exception => e
-        trace :error, "Cannot get content from the Grid: #{collection_name(collection)}"
-        return []
-      end
-    end
-
   end
 end
-
-end # ::DB
-end # ::RCS

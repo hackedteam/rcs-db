@@ -55,8 +55,7 @@ class TargetController < RESTController
 
       Audit.log :actor => @session.user[:name],
                 :action => "target.create",
-                :operation_name => operation['name'],
-                :target_name => item['name'],
+                :_item => item,
                 :desc => "Created target '#{item['name']}'"
       
       ok(item)
@@ -78,7 +77,7 @@ class TargetController < RESTController
         if item[key.to_s] != value and not key['_ids']
           Audit.log :actor => @session.user[:name],
                     :action => "target.update",
-                    :target_name => item['name'],
+                    :_item => item,
                     :desc => "Updated '#{key}' to '#{value}'"
         end
       end
@@ -99,7 +98,7 @@ class TargetController < RESTController
 
       Audit.log :actor => @session.user[:name],
                 :action => "target.delete",
-                :target_name => name,
+                :_item => item,
                 :desc => "Deleted target '#{name}'"
 
       item.destroy
@@ -116,14 +115,16 @@ class TargetController < RESTController
       operation = ::Item.operations.find(@params['operation'])
       return bad_request('INVALID_OPERATION') if operation.nil?
 
+      src_operation = target.get_parent
+
       target = Item.targets.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
 
       target.move_target(operation)
 
       Audit.log :actor => @session.user[:name],
                 :action => "#{target._kind}.move",
-                (target._kind + '_name').to_sym => @params['name'],
-                :desc => "Moved #{target._kind} '#{target['name']}' to #{operation['name']}"
+                :_item => target,
+                :desc => "Moved #{target._kind} '#{target.name}' from '#{src_operation.name}' to '#{operation.name}'"
 
       return ok
     end

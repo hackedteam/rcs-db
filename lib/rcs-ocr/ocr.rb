@@ -42,7 +42,7 @@ module RCS
 
       def wait_for_ocr_license
         unless LicenseManager.instance.check :ocr
-          database.mongo_connection.drop_collection 'ocr_queue'
+          database.drop_collection 'ocr_queue'
 
           # do nothing...
           trace :info, "OCR license is disabled, going to sleep..."
