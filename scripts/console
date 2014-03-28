@@ -1,30 +1,20 @@
 #!/usr/bin/env ruby
 require 'optparse'
 
-module RCSConsole
-  extend self
-
+class RCSConsole
   def verbose?
-    ARGV.include? '--verbose'
+    @options[:verbose]
+  end
+
+  def windows?
+    RbConfig::CONFIG['host_os'] =~ /mingw/
   end
 
   def root_path
     @root_path ||= begin
+      return 'C:/RCS/DB' if windows?
       current_path = File.dirname __FILE__
       root_path = File.expand_path File.join(current_path, '..')
-    end
-  end
-
-  def _require path
-    full_path = File.join root_path, 'lib/rcs-db', path
-
-    if File.exists? "#{full_path}.rb"
-      puts "#{full_path}.rb" if verbose?
-      load "#{full_path}.rb"
-    else
-      if Dir.exists? full_path
-        Dir[File.join(full_path, "*.rb")].each { |p| _require(p) }
-      end
     end
   end
 
@@ -39,69 +29,39 @@ module RCSConsole
     "\033[30;42m#{text}\033[0m "
   end
 
-  def reload!
-    puts 'Loading application...'
-
-    ignoring_warnings do
-      $: << File.expand_path(File.join(root_path, '../rcs-common/lib'))
-
-      _require 'heartbeat'
-      _require 'parser'
-      _require 'sessions'
-      _require 'backup'
-      _require 'websocket'
-      _require 'push'
-      _require 'events'
-      _require 'config'
-      _require 'core'
-      _require 'license'
-      _require 'tasks'
-      _require 'offload_manager'
-      _require 'statistics'
-      _require 'backup'
-      _require 'sessions'
-      _require 'audit'
-
-      # require all the DB objects
-      _require 'db_layer'
-    end
-  end
-
-  def setup(host, db)
-    puts 'Loading bundle...'
-
-    require 'bundler/setup'
-    Bundler.setup
-    Bundler.require :development
-
-    puts "Chdir to #{root_path}"
+  def setup
     $execution_directory = root_path
-    Dir.chdir root_path
 
-    puts "Add #{root_path}/lib folder to $LOAD_PATH"
-    $LOAD_PATH << "#{root_path}/lib"
+    $LOAD_PATH << $execution_directory+"/lib"
+    Dir.chdir($execution_directory)
 
-    reload!
+    unless windows?
+      require 'bundler'
+      Bundler.load
+      Bundler.setup
+    end
 
-    # Load default options
+    require 'pp'
+    require 'rcs-common/path_utils'
+    require_release 'rcs-db/config'
+    require_release 'rcs-db/db_layer'
+
+    host, port = @options[:address]
+    w_host, w_port = @options[:w_address]
+
+    ENV['MONGOID_ENV']      = 'yes'
+
+    ENV['MONGOID_DATABASE'] = @options[:db]
+    ENV['MONGOID_HOST']     = host
+    ENV['MONGOID_PORT']     = port
+
+    ENV['MONGOID_WORKER_DATABASE'] = @options[:w_db]
+    ENV['MONGOID_WORKER_HOST']     = w_host
+    ENV['MONGOID_WORKER_PORT']     = w_port
+
     RCS::DB::Config.instance.load_from_file
 
-    # Override options
-    host, port = host.split(':')
-    port ||= '27017'
-
     RCS::DB::Config.instance.global['CN'] = host
-
-    if RCS::DB::Config.instance.global['DB']
-      RCS::DB::Config.instance.global['DB'] = db
-    end
-
-    ENV['MONGOID_DATABASE'] = db
-    ENV['MONGOID_HOST'] = host
-    ENV['MONGOID_PORT'] = port
-    ENV['MONGOID_ENV'] = 'yes'
-
-    puts colorize("Using #{host}:#{port}/#{db}")
 
     eval "class RCS::DB::DB
       def connect
@@ -111,87 +71,84 @@ module RCSConsole
 
     RCS::DB::DB.instance.connect
 
-    Mongoid.override_database(db)
-    Mongoid.default_session.use(db)
-
-    # Show moped queries
-    Moped.logger = Logger.new $stdout
-    Moped.logger.level = 0
-    Moped.logger.formatter = proc { |sev, time, progname, str| colorize("#{str}\n") }
+    if @options[:show_moped_queries]
+      Moped.logger = Logger.new $stdout
+      Moped.logger.level = 0
+      Moped.logger.formatter = proc { |sev, time, progname, str| colorize("#{str}\n") }
+    end
   end
 
-  def run
+  attr_reader :options
+
+  def initialize(options)
+    @options = options
+
+    @options[:address]   ||= '127.0.0.1'
+    @options[:address] << ':27017' unless @options[:address].include?(':')
+    @options[:address] = @options[:address].split(':')
+    @options[:db]        ||= 'rcs'
+
+    if @options[:w_address]
+      @options[:w_address] << ':27018' unless @options[:w_address].include?(':')
+      @options[:w_address] = @options[:w_address].split(':')
+    else
+      @options[:w_address] = [@options[:address][0], '27018']
+    end
+
+    @options[:w_db] ||= 'rcs-worker'
+  end
+
+  def noecho
+    if verbose?
+      yield
+      return
+    end
+
+    require 'stringio'
+
+    stdout, $stdout = $stdout, StringIO.new
+
+    yield
+  ensure
+    $stdout = stdout if stdout
+  end
+
+  def self.start(binding)
     options = {}
 
     optparse = OptionParser.new do |opts|
       opts.banner = "Usage: console [options]"
-      opts.on( '-h HOST', '--host HOST:PORT', String, 'Ip addr (and port), default is 127.0.0.1:27017') { |value| options[:host] = value }
-      opts.on( '-d DB', '--db DB', String, 'Database name, default is rcs-test') { |value| options[:db] = value }
-      opts.on( '-s SSH_CONFIG', '--ssh-config SSH_CONFIG', String, 'Read ip and port from the given ssh config, ignores -h and -d') { |value| options[:ssh_config] = value }
-    end
+      opts.on( '-h HOST', '--host HOST:PORT', String, 'Ip addr (and port), default is 127.0.0.1:27017') { |value| options[:address] = value }
+      opts.on( '-d DB', '--db DB', String, 'Database name, default is rcs') { |value| options[:db] = value }
+      opts.on( '-q', '--show-moped-queries', 'Show all the queries exceuted by the Moped driver') { |value| options[:show_moped_queries] = true }
+      opts.on( '--w-host HOST:PORT', String, 'Ip addr (and port) of worker database, default is the same of --host but port is 27018') { |value| options[:w_address] = value }
+      opts.on( '--w-db DB', String, 'Worker database name, default is rcs-worker') { |value| options[:w_db] = value }
+      opts.on( '--verbose') { |value| options[:verbose] = true }
+    end.parse!
 
-    optparse.parse(ARGV)
+    console = new(options)
 
-    if options[:ssh_config]
-      host = host_from_ssh_config(options[:ssh_config])
-      if host
-        options[:host] = host
-        options[:db] = 'rcs'
-      else
-        puts "Cannot find a configuratio named #{ssh_config}"
-      end
-    end
+    puts "Options: #{console.options.inspect}"
+    print "Loading..."
 
-    setup(options[:host] || '127.0.0.1:27017', options[:db] || 'rcs-test')
-  end
+    console.noecho {
+      console.setup
+    }
 
-  def host_from_ssh_config(config_name)
-    path = File.expand_path('~/.ssh/config')
-    return unless File.exists?(path)
-    File.open(path) do |f|
-      segment = false
-      f.each_line do |line|
-        segment = true if line =~ /Host\s+#{config_name}/
-        return line.gsub('HostName', '').strip if segment && line =~ /^\s*HostName.+/
-      end
-    end
+    sessions = Mongoid.sessions.dup
+    sessions.keys.each { |key| sessions[key].delete("options") }
+    puts "\rMongoid sessions: #{sessions.inspect}"
+
+    binding.pry
   end
 end
 
-module RCSConsole::Helpers
-  extend self
+if $0 == __FILE__
+  require 'pry'
 
-  def bm(times = 1, &block)
-    es = []
-    times.times do
-      t = Time.now
-      yield
-      es << (Time.now - t)
-    end
-    total = es.inject(0) { |t,n| t += n; t }
-    avg = total.to_f / times.to_f
-
-    msg = "Avg on #{times} executions is #{avg} sec."
-
-    if @_bm_last_result
-      if avg >= @_bm_last_result
-        msg << " #{((100 * (avg - @_bm_last_result)) / avg).round(2)}% loss."
-      else
-        msg << " #{((100 * (@_bm_last_result - avg)) / @_bm_last_result).round(2)}% gain."
-      end
-    end
-
-    puts msg
-    @_bm_last_result = avg
+  class Pry::Command::Whereami
+    def process; end
   end
 
-  def ev_cross_target(evidence_filter, &block)
-    Item.targets.all.each do |t|
-      Evidence.target(t).where(evidence_filter).each { |e| yield(t, e) }
-    end
-    nil
-  end
+  RCSConsole.start(binding)
 end
-
-RCSConsole.run
-binding.pry
