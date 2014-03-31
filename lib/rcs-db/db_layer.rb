@@ -44,10 +44,10 @@ class DB
   end
 
   def connect
-    ENV['MONGOID_ENV'] = 'production'
-    ENV['MONGOID_DATABASE'] = Config.instance.global['DB_NAME'] || 'rcs'
-    ENV['MONGOID_HOST'] = Socket.gethostname
-    ENV['MONGOID_PORT'] = "27017"
+    ENV['MONGOID_ENV']       ||= 'production'
+    ENV['MONGOID_DATABASE']  ||= 'rcs'
+    ENV['MONGOID_HOST']      ||= Socket.gethostname
+    ENV['MONGOID_PORT']      ||= "27017"
 
     Mongoid.load!(Config.instance.file('mongoid.yaml'), :production)
 

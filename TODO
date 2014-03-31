@@ -12,8 +12,8 @@ TODO:  9.2.x
 
     fix usb building zip creation (uses too much ram in f.read)
 
-    export via command line
-      - autosplit on date or size
+    export via command line       [ok]
+      - autosplit on date or size [ok]
 
     thumbinails for screenshots
 
