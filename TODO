@@ -15,7 +15,10 @@ TODO:  9.2.x
     export via command line       [ok]
       - autosplit on date or size [ok]
 
-    thumbinails for screenshots
+    thumbnails for screenshots
+      - avoid imagemagik under windows if possible
+      - direct embed in evidence or gridfs?
+      - update export utility to skip the thumbnails
 
     crypto-currency dissector
       - check the latest bitcoin wallet (0.9.x)
