@@ -129,6 +129,10 @@ module RCS::DB::MultiFileTaskType
     @chunk_num  = 1
     @last_day   = nil
 
+    return if @total == 0
+
+    FileUtils.mkdir_p(RCS::DB::Config.instance.temp)
+
     next_entry do |type, filename, opts|
       step # increment @current
 
@@ -163,7 +167,7 @@ module RCS::DB::MultiFileTaskType
       print "\rExporting #{percentage}%  \r"
     end
 
-    if spli? and @total > 0
+    if @total > 0 and split?
       replicate_style_folder
       replicate_index_html
     end
@@ -189,6 +193,7 @@ OptionParser.new do |parser|
   parser.on('-p', '--pass PASS', "The user password") { |value| $args["options"]["user_pass"] = value }
   parser.on('--size-split SIZE', 'Split the destination folder into subfolders of SIZE megabytes') { |value| $args["options"]["split"] = value.to_i * 1048576 }
   parser.on('--time-split TIME', 'TIME can be nD (put up to n-days of consecutive evidence in the same subfolder) or nM (n-months).') { |value| $args["options"]["time_split"] = value }
+  parser.on('--filter PATH', 'Use a filter file') { |value| $args["options"]["filter_file"] = value }
 
   # Filters
   parser.on('--agent NAME', 'Agent name') { |value| $args["filter"]["agent"] = value }
@@ -291,6 +296,18 @@ module RCS
     }
 
     params.deep_merge!($args)
+
+    # Load filter from a json file (if given) and overwrite "params" with them.
+    # Example of filter_file content:
+    # {"note": false, "options": {"trace": true}, "filter": {"rel": [1, 4]}}
+    filter_file = $args["options"]["filter_file"]
+
+    if filter_file
+      raise("Unable to find file #{filter_file}") unless File.exists?(filter_file)
+      json = JSON.parse(File.read(filter_file))
+      params.deep_merge!(json)
+      puts "Filters: #{params.inspect}"
+    end
 
     item = agent || target
 
