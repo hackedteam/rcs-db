@@ -1,11 +1,8 @@
 
 
-Changelog for 9.2.1
+Changelog for 9.2.2
 
 Collector:
 
 DB:
-  - improved speed and memory handling in the worker service
-  - improved connection handling toward the mongodb router
-  - tika updated to version 1.5 (ocr package)
-  - fixed the issue that prevented the configuration of an Anon with a space in it's name
+  - rcs-db-export utility to export data via commandline (supports autosplit)

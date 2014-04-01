@@ -12,21 +12,12 @@ TODO:  9.2.x
 
     fix usb building zip creation (uses too much ram in f.read)
 
-    export via command line       [ok]
-      - autosplit on date or size [ok]
-
     thumbnails for screenshots
       - avoid imagemagik under windows if possible
       - direct embed in evidence or gridfs?
       - update export utility to skip the thumbnails
 
-    crypto-currency dissector
-      - check the latest bitcoin wallet (0.9.x)
-
     filter links by type (e.g. I want to see only skype links). We can change the format of the info attribute..
-
-  TRY:
-    caching slow query. try to cache already jsonized list of items and similar
 
 TODO: 9.3.0
 
