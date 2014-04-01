@@ -136,10 +136,10 @@ class LicenseManager
 
     begin
       if @limits[:serial] != 'off'
-        trace :info, "Checking for hardware dongle..."
+        trace :debug, "Checking for hardware dongle..."
         # get the version from the dongle (can rise exception)
         info = RCS::DB::Dongle.info
-        trace :info, "Dongle info: " + info.inspect
+        trace :info, "HASP info: " + info.inspect
         raise 'Invalid License File: incorrect serial number' if @limits[:serial] != info[:serial]
         raise 'Cannot read storage from token' if @limits[:type] == 'oneshot' && (info[:error_code] == RCS::DB::Dongle::ERROR_LOGIN || info[:error_code] == RCS::DB::Dongle::ERROR_STORAGE)
       else

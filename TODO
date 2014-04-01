@@ -21,14 +21,14 @@ TODO:  9.2.x
 
 TODO: 9.3.0
 
+    archive mode able to receive from multiple systems
+
     Use Mongodb 2.6.x
 
     Mongoid refactoring
       - check if mongoid 4 is stable
       - migrate to mongoid 4
       - check if the connection pooling helps resolving the "get_stucked" problem
-
-    archive mode able to receive from multiple systems
 
     automatic discovery (and thus suggestion) of groups (communities)
     calculate "centrality" on entities
