@@ -1175,13 +1175,44 @@ Function FuncSelectComponentsLeave
   ${NSD_GetState} $2 $installNetworkController
   ${NSD_GetState} $3 $installMaster
   ${NSD_GetState} $4 $installShard
-  
+
+  ${If} $installCollector != ${BST_CHECKED}
+  ${AndIf} $installNetworkController != ${BST_CHECKED}
+  ${AndIf} $installMaster != ${BST_CHECKED}
+  ${AndIf} $installShard != ${BST_CHECKED}
+    MessageBox MB_OK|MB_ICONSTOP "Select at least a component."
+    Abort
+  ${EndIf}
+
   ${If} $installMaster == ${BST_CHECKED}
   ${AndIf} $installShard == ${BST_CHECKED}
     MessageBox MB_OK|MB_ICONSTOP "The Master Node already includes the first Shard, please deselect it."
     Abort
   ${EndIf}
-  
+
+  ${If} $installMaster == ${BST_CHECKED}
+  ${AndIf} $installCollector == ${BST_CHECKED}
+    MessageBox MB_OK|MB_ICONSTOP "You cannot install the Master Node and the Collector on the same machine."
+    Abort
+  ${EndIf}
+
+  ${If} $installShard == ${BST_CHECKED}
+  ${AndIf} $installCollector == ${BST_CHECKED}
+    MessageBox MB_OK|MB_ICONSTOP "You cannot install a Shard and the Collector on the same machine."
+    Abort
+  ${EndIf}
+
+  ${If} $installMaster == ${BST_CHECKED}
+  ${AndIf} $installNetworkController == ${BST_CHECKED}
+    MessageBox MB_OK|MB_ICONSTOP "You must keep the Network Controller and the Collector on the same machine."
+    Abort
+  ${EndIf}
+
+  ${If} $installShard == ${BST_CHECKED}
+  ${AndIf} $installNetworkController == ${BST_CHECKED}
+    MessageBox MB_OK|MB_ICONSTOP "You must keep the Network Controller and the Collector on the same machine."
+    Abort
+  ${EndIf}
 FunctionEnd
 
 
