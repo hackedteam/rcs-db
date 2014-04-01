@@ -184,8 +184,7 @@ Section "Update Section" SecUpdate
   ${If} $installMaster == ${BST_CHECKED}
     !cd '..'
     SetOutPath "$INSTDIR\DB\bin"
-    File "bin\rcs-license-check"
-    File /r "lib\rgloader"
+    File "bin-release\rcs-license-check"
 
     DetailPrint "Checking the license file.."
     CopyFiles /SILENT $masterLicense "$INSTDIR\DB\temp\rcs.lic"
@@ -256,10 +255,11 @@ Section "Update Section" SecUpdate
   RMDir /r "$INSTDIR\DB\lib\rcs-connector-release"
   RMDir /r "$INSTDIR\DB\lib\rcs-aggregator-release"
   RMDir /r "$INSTDIR\DB\lib\rcs-intelligence-release"
-  RMDir /r "$INSTDIR\DB\lib\rgloader"
+  RMDir /r "$INSTDIR\DB\rgloader"
   RMDir /r "$INSTDIR\DB\bin"
   RMDir /r "$INSTDIR\Collector\bin"
   RMDir /r "$INSTDIR\Collector\lib"
+  RMDir /r "$INSTDIR\Collector\rgloader"
   DetailPrint "done"
 
   DetailPrint "Remove stats file.."
@@ -327,9 +327,12 @@ Section "Install Section" SecInstall
       ; TODO: check if we need to install a new java/python/mongo version
       ${EndIf}
     !endif
-  
+
+    SetOutPath "$INSTDIR\DB"
+    File /r "rgloader"
+
     SetOutPath "$INSTDIR\DB\bin"
-    File /r "bin\*.*"
+    File /r "bin-release\*.*"
 
     SetOutPath "$INSTDIR\DB\lib"
     File "lib\rcs-db.rb"
@@ -337,7 +340,6 @@ Section "Install Section" SecInstall
     File "lib\rcs-connector.rb"
     File "lib\rcs-aggregator.rb"
     File "lib\rcs-intelligence.rb"
-    File /r "lib\rgloader"
  
     SetOutPath "$INSTDIR\DB\log"
     File /r "log\.keep"
@@ -724,16 +726,18 @@ Section "Install Section" SecInstall
     DetailPrint "Installing Collector files..."
     SetDetailsPrint "textonly"
     !cd 'Collector'
-  
+
+    SetOutPath "$INSTDIR\Collector"
+    File /r "rgloader"
+
     SetOutPath "$INSTDIR\Collector\bin"
-    File /r "bin\*.*"
-    
+    File /r "bin-release\*.*"
+
     SetOutPath "$INSTDIR\Collector\lib"
-    File /r "lib\rgloader"
     File "lib\rcs-collector.rb"
     File "lib\rcs-carrier.rb"
     File "lib\rcs-controller.rb"
-    
+
     SetOutPath "$INSTDIR\Collector\lib\rcs-collector-release"
     File /r "lib\rcs-collector-release\*.*"
 

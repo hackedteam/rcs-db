@@ -84,7 +84,7 @@ Section "Install Section" SecInstall
   File /r "lib\rcs-translate-release\*.*"
 
   SetOutPath "$INSTDIR\DB\bin"
-  File /r "bin\rcs-translate"
+  File /r "bin-release\rcs-translate"
 
   SetDetailsPrint "both"
   DetailPrint "done"
