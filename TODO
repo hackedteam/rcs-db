@@ -12,10 +12,10 @@ TODO:  9.2.x
 
     fix usb building zip creation (uses too much ram in f.read)
 
-    thumbnails for screenshots
-      - avoid imagemagik under windows if possible
-      - direct embed in evidence or gridfs?
-      - update export utility to skip the thumbnails
+    thumbnails for screenshots (and camera)           [ok]
+      - avoid imagemagik under windows if possible    [nope]
+      - direct embed in evidence or gridfs?           [ok]
+      - update export utility to skip the thumbnails  [ok]
 
     filter links by type (e.g. I want to see only skype links). We can change the format of the info attribute..
 
