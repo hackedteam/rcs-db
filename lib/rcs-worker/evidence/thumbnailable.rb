@@ -8,7 +8,11 @@ module Thumbnailable
   end
 
   def convert_bin
-    windows? ? "convert.exe" : "convert"
+    if windows?
+      File.expand_path("../../libs/imagemagick/win/convert.exe", __FILE__)
+    else
+      "convert"
+    end
   end
 
   def convert_command
