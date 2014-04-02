@@ -72,7 +72,7 @@ module RCS
       end
 
       def fetch
-        db['grid.evidence.files'].find(filename: @agent_uid).sort(_id: 1).limit(READ_LIMIT).to_a
+        db['grid.evidence.files'].find(filename: @agent_uid).sort('metadata.created_at' => 1, '_id' => 1).limit(READ_LIMIT).to_a
       end
 
       def agent?

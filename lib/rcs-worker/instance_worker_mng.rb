@@ -27,6 +27,7 @@ module RCS::Worker::InstanceWorkerMng
 
   def ensure_indexes
     collection.indexes.create({filename: 1}, {background: 1})
+    collection.indexes.create({'metadata.created_at' => 1}, {background: 1})
   end
 
   def spawn_worker_thread(agent)

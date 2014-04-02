@@ -21,7 +21,7 @@ module RCS::Worker
 
       # save the evidence in the db
       trace :debug, "Storing evidence #{uid} into local worker db"
-      grid_id = RCS::DB::GridFS.put(content, {filename: "#{uid}"}, "evidence", :worker)
+      grid_id = RCS::DB::GridFS.put(content, {filename: "#{uid}", metadata: {created_at: Time.now.utc.to_f}}, "evidence", :worker)
 
       # update the evidence statistics (dump to local file config/worker_stats)
       StatsManager.instance.add(inbound_evidence: 1, inbound_evidence_size: @request[:content]['content'].bytesize)
