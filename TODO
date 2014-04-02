@@ -30,9 +30,10 @@ TODO: 9.3.0
       - migrate to mongoid 4
       - check if the connection pooling helps resolving the "get_stucked" problem
 
-    automatic discovery (and thus suggestion) of groups (communities)
-    calculate "centrality" on entities
-    calculate "weight" on entities
+    Social Network Analisys
+      - automatic discovery (and thus suggestion) of groups (communities)
+      - calculate "centrality" on entities
+      - calculate "weight" on entities
 
 ======================================
 TODO FUTURE:
