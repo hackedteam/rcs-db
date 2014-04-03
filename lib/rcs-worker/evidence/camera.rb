@@ -4,7 +4,7 @@ require_relative 'thumbnailable'
 module RCS
 module CameraProcessing
   extend SingleEvidence
-  include Thumbnailable
+  # include Thumbnailable
 
   def type
     :camera
