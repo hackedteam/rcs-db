@@ -183,11 +183,12 @@ Section "Update Section" SecUpdate
 
   ${If} $installMaster == ${BST_CHECKED}
     !cd '..'
-    SetOutPath "$INSTDIR\DB\bin"
     SetDetailsPrint "textonly"
+    SetOutPath "$INSTDIR\DB\bin"
     File /r "rgloader"
     File "bin-release\rcs-license-check"
 
+    SetDetailsPrint "both"
     DetailPrint "Checking the license file.."
     CopyFiles /SILENT $masterLicense "$INSTDIR\DB\temp\rcs.lic"
 
@@ -195,6 +196,9 @@ Section "Update Section" SecUpdate
     StrCpy $0 1
     nsExec::ExecToLog "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-license-check -v 9.2 -l $INSTDIR\DB\temp\rcs.lic"
     Pop $0
+
+    SetDetailsPrint "textonly"
+
     ${If} $0 != 0
        MessageBox MB_OK|MB_ICONEXCLAMATION "The license file is invalid. Please restart the installation with the correct one."
        RMDir /r "$INSTDIR\DB\bin\rgloader"
