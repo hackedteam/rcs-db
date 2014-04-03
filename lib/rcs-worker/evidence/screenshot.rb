@@ -6,6 +6,10 @@ module ScreenshotProcessing
   extend SingleEvidence
   # include Thumbnailable
 
+  # def process
+  #   create_thumbnail
+  # end
+
   def type
     :screenshot
   end

@@ -6,6 +6,10 @@ module CameraProcessing
   extend SingleEvidence
   # include Thumbnailable
 
+  # def process
+  #   create_thumbnail
+  # end
+
   def type
     :camera
   end

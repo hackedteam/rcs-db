@@ -38,9 +38,7 @@ module Thumbnailable
     self[:grid_content].respond_to?(:size) and self[:grid_content].size > 0
   end
 
-  # Called when the Worker process an evidence that
-  # include this module
-  def process
+  def create_thumbnail
     self[:data] ||= {}
 
     return unless valid_grid_content?
