@@ -341,8 +341,12 @@ class TaskManager
   def audit_new_task(type, user_name, params)
     case type
       when 'build'
-        item = Item.find(params['factory']['_id'])
-        Audit.log :actor => user_name, :action => "build", :desc => "Created an installer for #{params['platform']} from factory #{item.name}", :_item => item
+        if params['factory']
+          item = Item.find(params['factory']['_id'])
+          Audit.log :actor => user_name, :action => "build", :desc => "Created an installer for #{params['platform']} from factory #{item.name}", :_item => item
+        else
+          Audit.log :actor => user_name, :action => "build", :desc => "Created an installer for #{params['platform']}"
+        end
       when 'audit'
         Audit.log :actor => user_name, :action => "audit.export", :desc => "Exported the audit log: #{params.inspect}"
       when 'evidence'
