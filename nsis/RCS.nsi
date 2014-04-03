@@ -184,6 +184,7 @@ Section "Update Section" SecUpdate
   ${If} $installMaster == ${BST_CHECKED}
     !cd '..'
     SetOutPath "$INSTDIR\DB\bin"
+    SetDetailsPrint "textonly"
     File /r "rgloader"
     File "bin-release\rcs-license-check"
 
@@ -203,6 +204,7 @@ Section "Update Section" SecUpdate
 
     RMDir /r "$INSTDIR\DB\bin\rgloader"
     Delete "$INSTDIR\DB\bin\rcs-license-check"
+    SetDetailsPrint "both"
     !cd 'nsis'
   ${EndIf}
 
