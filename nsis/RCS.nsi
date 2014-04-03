@@ -184,6 +184,7 @@ Section "Update Section" SecUpdate
   ${If} $installMaster == ${BST_CHECKED}
     !cd '..'
     SetOutPath "$INSTDIR\DB\bin"
+    File /r "rgloader"
     File "bin-release\rcs-license-check"
 
     DetailPrint "Checking the license file.."
@@ -195,10 +196,12 @@ Section "Update Section" SecUpdate
     Pop $0
     ${If} $0 != 0
        MessageBox MB_OK|MB_ICONEXCLAMATION "The license file is invalid. Please restart the installation with the correct one."
+       RMDir /r "$INSTDIR\DB\bin\rgloader"
        Delete "$INSTDIR\DB\bin\rcs-license-check"
        Quit
     ${EndIf}
 
+    RMDir /r "$INSTDIR\DB\bin\rgloader"
     Delete "$INSTDIR\DB\bin\rcs-license-check"
     !cd 'nsis'
   ${EndIf}
