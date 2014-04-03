@@ -22,7 +22,7 @@ module Migration
     puts "migrating to #{version}"
 
     run [:recalculate_checksums, :drop_sessions, :remove_statuses]
-    run [:fix_users_index_on_name, :add_pwd_changed_at_to_users, :fix_positioner_aggregates] if version >= '9.2.1'
+    run [:fix_users_index_on_name, :add_pwd_changed_at_to_users, :fix_positioner_aggregates, :drop_rebuild_peer_book] if version >= '9.2.1'
 
     return 0
   end
@@ -60,13 +60,20 @@ module Migration
     return 0
   end
 
-  # Safe
   def fix_positioner_aggregates
     count = 0
     Item.targets.each do |target|
       Aggregate.target(target).collection.find({}).update_all('$unset' => {'_type' => 1})
       print "\r%d aggregate collections migrated" % (count += 1)
     end
+  end
+
+  def drop_rebuild_peer_book
+    HandleBook.collection.drop
+    HandleBook.create_indexes
+    HandleBook.rebuild
+  rescue Exception => ex
+    puts "ERROR: Unable to rebuild peer_book collection: #{ex.message}"
   end
 
   def fix_users_index_on_name
