@@ -1026,7 +1026,7 @@ Function FuncUpgrade
   IntCmp $R0 1 +2 0 0
     Abort
 
-  StrCpy $upgradeComponents, ""
+  StrCpy $upgradeComponents ""
 
   ; check which components we have
   ReadRegDWORD $R0 HKLM "Software\HT\RCS" "collector"
