@@ -104,7 +104,7 @@ Section "Install Section" SecInstall
   File /r "lib\rcs-ocr-release\*.*"
 
   SetOutPath "$INSTDIR\DB\bin"
-  File /r "bin\rcs-ocr"
+  File /r "bin-release\rcs-ocr"
 
   SetDetailsPrint "both"
   DetailPrint "done"

@@ -1,0 +1,326 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+require 'fileutils'
+require 'stringio'
+require 'date'
+
+# Put the lib folder into $LOAD_PATH
+LIB_PATH = File.expand_path('../../lib', __FILE__)
+$LOAD_PATH.unshift(LIB_PATH)
+
+# Change the working directory
+Dir.chdir(File.expand_path('..', LIB_PATH))
+
+require 'bundler/setup'
+require 'rcs-common'
+require 'rcs-common/path_utils'
+
+require_release 'rcs-db/db'
+require_release 'rcs-db/tasks'
+
+# Monkey path MultiFileTaskType#run
+module RCS::DB::MultiFileTaskType
+  def base_path
+    @params["options"]["base_path"]
+  end
+
+  def trace(*args)
+    return unless @params["options"]["trace"]
+    super
+  end
+
+  def mkdir_p(path)
+    @created_folders ||= {}
+    return if @created_folders[path]
+    @created_folders[path] = !!FileUtils.mkdir_p(path)
+  rescue
+    raise("Unable to create folder #{path.inspect}")
+  end
+
+  def percentage
+    return 100 if @total == 0
+    p = (100 * @current / @total)
+    p = 100 if p > 100
+    p.round(1)
+  end
+
+  def save_file(destination, content)
+    mkdir_p File.expand_path('..', destination)
+    File.open(destination, 'wb') { |file| file.write(content) }
+  end
+
+  def copy_file(from, to)
+    mkdir_p File.expand_path('..', to)
+    FileUtils.cp(from, to)
+  end
+
+  def split_size
+    @params["options"]["split"]
+  end
+
+  def split_time
+    @params["options"]["time_split"]
+  end
+
+  def replicate_index_html
+    index_html_path = Dir[File.join(base_path, "part_*/index.html")].first
+
+    Dir[File.join(base_path, "part_*")].each do |path|
+      dest = File.join(path, "index.html")
+      FileUtils.cp(index_html_path, dest) unless File.exists?(dest)
+      hide_missing_days(dest)
+    end
+  end
+
+  def hide_missing_days(index_html_path)
+    days = Dir[File.dirname(index_html_path)+"/*"].map { |p| File.basename(p) if p =~ DAY_REGEXP }.compact
+    content = File.read(index_html_path)
+
+    File.open(index_html_path, 'wb') do |file|
+      content.each_line do |line|
+        day = line.scan(/\<tr data\-date=\"(#{DAY_REGEXP.to_s})\"\>/).flatten.first
+        if day and !days.include?(day)
+          line.gsub!('<tr', '<tr style="display:none"')
+        end
+        file.write(line)
+      end
+    end
+  end
+
+  def split_enabled?
+    split_size || split_time
+  end
+
+  def split?
+    if split_size
+      return (@day != @last_day and @chunk_size >= split_size)
+    end
+
+    return false if @chunk_time.include?(nil)
+
+    start, stop = *@chunk_time
+    limit = split_time.to_i
+
+    diff = if split_time =~ /\A\d+d\z/i
+      stop - start
+    else
+      stop.month - start.month + 12 * (stop.year - start.year)
+    end
+
+    diff.to_i >= limit
+  end
+
+  def replicate_style_folder
+    style_folder = Dir[File.join(base_path, "part_*/style")].first
+
+    Dir[File.join(base_path, "part_*")].each do |path|
+      next if Dir.exists?(File.join(path, "style"))
+      FileUtils.cp_r(style_folder, path)
+    end
+  end
+
+  DAY_REGEXP = /\d{4}\-\d{2}\-\d{2}/
+
+  def run
+    @total      = total
+    @chunk_size = 0
+    @chunk_time = [nil, nil]
+    @chunk_num  = 1
+    @last_day   = nil
+
+    return if @total == 0
+
+    FileUtils.mkdir_p(RCS::DB::Config.instance.temp)
+
+    next_entry do |type, filename, opts|
+      step # increment @current
+
+      next unless filename
+
+      @chunk_size += (type == 'file') ? File.size(opts[:path]) : opts[:content].bytesize
+      @day = filename.scan(DAY_REGEXP).first
+      @day = Date.new(*@day.split("-").map(&:to_i)) if @day
+      @chunk_time[0] ||= @day
+      @chunk_time[1] = @day
+
+      if split_enabled? and split?
+        @chunk_size = 0
+        @chunk_num += 1
+        @chunk_time = [@day, @day]
+      end
+
+      if split_enabled?
+        path = File.join(base_path, "part_#{@chunk_num}", filename)
+      else
+        path = File.join(base_path, filename)
+      end
+
+      @last_day = @day
+
+      if type == 'file'
+        copy_file(opts[:path], path)
+      else
+        save_file(path, opts[:content])
+      end
+
+      print "\rExporting #{percentage}%  \r"
+    end
+
+    if @total > 0 and split?
+      replicate_style_folder
+      replicate_index_html
+    end
+  end
+end
+
+ARGV << '--help' if ARGV.empty?
+
+$args = {"filter" => {}, "options" => {}}
+$script_name = File.basename(__FILE__)
+
+OptionParser.new do |parser|
+  parser.banner = "Usage: #{$script_name} [options]\n"
+  parser.banner << "Examples:"
+  parser.banner << "\n\t#{$script_name} -u admin -d /tmp/expoted --target \"John Doe\""
+  parser.banner << "\n\t#{$script_name} -u admin -d /tmp/expoted --target \"John Doe\" --time_split 1M --from 2013-04-05"
+  parser.banner << "\n\t#{$script_name} -u admin -d /tmp/expoted --target \"John Doe\" --size_split 4000"
+  parser.banner << "\n\n"
+
+  # Options
+  parser.on('-d', '--destination PATH', 'Destination folder') { |value| $args["options"]["base_path"] = value }
+  parser.on('-u', '--user NAME', "The user who execute the operation") { |value| $args["options"]["user"] = value }
+  parser.on('-p', '--pass PASS', "The user password") { |value| $args["options"]["user_pass"] = value }
+  parser.on('--size-split SIZE', 'Split the destination folder into subfolders of SIZE megabytes') { |value| $args["options"]["split"] = value.to_i * 1048576 }
+  parser.on('--time-split TIME', 'TIME can be nD (put up to n-days of consecutive evidence in the same subfolder) or nM (n-months).') { |value| $args["options"]["time_split"] = value }
+  parser.on('--filter PATH', 'Use a filter file') { |value| $args["options"]["filter_file"] = value }
+
+  # Filters
+  parser.on('--agent NAME', 'Agent name') { |value| $args["filter"]["agent"] = value }
+  parser.on('--target NAME', 'Target name') { |value| $args["filter"]["target"] = value }
+  parser.on('-f', '--from YYYY-MM-DD') { |value| $args["filter"]["from"] = value }
+  parser.on('-t', '--to YYYY-MM-DD') { |value| $args["filter"]["to"] = value }
+end.parse!
+
+module RCS
+  module DB
+    I18n.enforce_available_locales = false
+
+    # Verify given $args
+    raise("Destination path is missing") unless $args["options"]["base_path"]
+
+    raise("Destination is not empty") if Dir[$args["options"]["base_path"]+"/*"].any?
+
+    raise("Missing username") unless $args["options"]["user"]
+
+    if ($args["filter"]["agent"] and $args["filter"]["target"]) or
+        (!$args["filter"]["agent"] and !$args["filter"]["target"])
+      raise("You must specify a target OR an agent")
+    end
+
+    if ($args["options"]["time_split"] and $args["options"]["split"])
+      raise("You must specify --time_split OR --size-split")
+    end
+
+    # Parse dates
+    %w[from to].each do |name|
+      date = $args["filter"][name]
+      next unless date
+      raise "Invalid date #{date}" unless date =~ /\d\d\d\d\-\d\d\-\d\d/
+      $args["filter"][name] = Time.new(*date.split('-')).utc.to_i
+    end
+
+    # Hide #trace upon #connect
+    stdout, $stdout = $stdout, StringIO.new
+
+    # Load configuration and connect to mongodb
+    begin
+      Config.instance.load_from_file
+      DB.instance.connect
+    ensure
+      $stdout = stdout
+    end
+
+    # Ask for the password, and verify it
+    given_password = $args["options"]["user_pass"]
+
+    if given_password.blank?
+      password = Config.read_password(message: "Enter password for user #{$args["options"]["user"]}: ")
+    else
+      password = given_password
+    end
+
+    user = User.where(name: $args["options"]["user"]).first
+
+    if user.nil? or !user.has_password?(password)
+      raise("Login failed")
+    end
+
+    # Check if agent and/or target exists and
+    # retrive their ids
+    fetch_item_by_name = Proc.new do |type, name|
+      items = Item.where(name: name, _kind: type).all
+      raise("Unable to find #{type} #{name}") if items.empty?
+      raise("There are 2 or more #{type}s named #{name}") if items.count > 1
+      items[0]
+    end
+
+    target, agent = nil
+
+    if $args["filter"]["target"]
+      target = fetch_item_by_name.call("target", $args["filter"]["target"])
+      $args["filter"]["target"] = target.id
+    elsif $args["filter"]["agent"]
+      agent = fetch_item_by_name.call("agent", $args["filter"]["agent"])
+      target = agent.get_parent
+      $args["filter"]["agent"] = agent.id
+    end
+
+    # Check if the current user can access the target
+    unless target.user_ids.include?(user.id)
+      raise("You cannot access to the given target")
+    end
+
+    params = {
+      "note" =>  true,
+      "options" => {
+        "trace" => false,
+      },
+      "filter" =>  {
+        "from"    => 0,
+        "to"      => Time.now.utc.to_i,
+        "rel"     => [0, 1, 2, 3, 4],
+        "blo"     => [false],
+        "date"    => "da",
+      }
+    }
+
+    params.deep_merge!($args)
+
+    # Load filter from a json file (if given) and overwrite "params" with them.
+    # Example of filter_file content:
+    # {"note": false, "options": {"trace": true}, "filter": {"rel": [1, 4]}}
+    filter_file = $args["options"]["filter_file"]
+
+    if filter_file
+      raise("Unable to find file #{filter_file}") unless File.exists?(filter_file)
+      json = JSON.parse(File.read(filter_file))
+      params.deep_merge!(json)
+      puts "Filters: #{params.inspect}"
+    end
+
+    item = agent || target
+
+    Audit.log(actor: $args['user'], action: "evidence.export", desc: "Exported evidence (using #{$script_name}) with filter #{params['filter']}", _item: item)
+
+    task = EvidenceTask.new('evidence', 'exported', params)
+    puts "Export #{task.total} evidence of #{item._kind} #{item.name.inspect} to #{$args["options"]["base_path"].inspect}"
+    task.run
+    puts
+  rescue Interrupt
+    exit!
+  rescue Exception => ex
+    puts "ERROR: #{ex.message}"
+    # raise(ex)
+  end
+end

