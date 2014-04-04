@@ -1,8 +1,7 @@
 
 
-Changelog for 9.2.2
+Changelog for 9.2.3
 
 Collector:
 
 DB:
-  - rcs-db-export utility to export data via commandline (supports autosplit)
