@@ -15,6 +15,8 @@ class Collector
   field :version, type: Integer
   field :configured, type: Boolean, default: false
   field :upgradable, type: Boolean, default: false
+  field :cookie, type: String
+  field :key, type: String
 
   # used in case of crisis
   field :good, type: Boolean, default: true
@@ -34,6 +36,7 @@ class Collector
 
   after_destroy :drop_log_collection
   after_create :create_log_collection
+  before_create :setup_encryption_keys
 
   before_save do
     raise("Unable to save #{name}. The address #{address} is blacklisted.") if (changed_attributes['address'] || new_record?) and blacklisted?
@@ -45,6 +48,12 @@ class Collector
 
   def create_log_collection
     CappedLog.collection_class(self._id.to_s).create_capped_collection
+  end
+
+  def setup_encryption_keys
+    return unless self.type.eql? 'remote'
+    self.cookie = UUIDTools::UUID.random_create.to_s
+    self.key = SecureRandom.hex(16)
   end
 
   def config
