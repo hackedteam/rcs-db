@@ -3,12 +3,9 @@ TODO:  9.2.x
 
   IMPLEMENT:
 
-    new protocol for anonymizers (alor & fabio)
-      - NC will remain only for retro-comp and to upgrade to new anons
-      - anon -> collector status reporting
-      - collector -> anons configuration
+    change scout name hashing for exploits using scout_version (alor & guido)
 
-    change scout name hashing for exploits (use scout_version)
+    force the installer to accept only lowercase CN
 
     rcs-db-status utility to report:
       --monitor (the monitor section with status for each component)
@@ -22,7 +19,12 @@ TODO:  9.2.x
 
 TODO: 9.3.0
 
-    archive mode able to receive from multiple systems
+    new protocol for anonymizers (alor & fabio) (in progress)
+      - NC will remain only for retro-comp and to upgrade to new anons
+      - anon -> collector status reporting
+      - collector -> anons configuration
+
+    archive mode able to receive from multiple systems (topac)
 
     ip sync list -> sync history with number of evidence and data size
 
