@@ -30,6 +30,8 @@ TODO: 9.3.0
 
     Use Mongodb 2.6.x
 
+    text index may be used to index evidence's keywords (verify perf.)
+
     Mongoid refactoring
       - check if mongoid 4 is stable
       - migrate to mongoid 4
