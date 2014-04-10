@@ -6,3 +6,4 @@ Collector:
 
 DB:
   - fixed google api enforcement limit
+  - fixed the memory error on offline USB creation
