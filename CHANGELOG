@@ -5,3 +5,4 @@ Changelog for 9.2.3
 Collector:
 
 DB:
+  - fixed google api enforcement limit

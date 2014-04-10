@@ -779,7 +779,7 @@ if false
 end
 
 # agents
-if true
+if false
 =begin
   res = http.request_get('/operation', {'Cookie' => cookie})
   operations = JSON.parse(res.body)
@@ -1161,7 +1161,7 @@ if false
 end
 
 # position
-if true
+if false
   cells = [{mobileCountryCode: 222, mobileNetworkCode: 1, locationAreaCode: 61208, cellId: 528, signalStrength: -92, timingAdvance: 0, age: 0}]
   request = {'cellTowers' => cells, radioType: 'gsm'}
   loc = {map: request}
