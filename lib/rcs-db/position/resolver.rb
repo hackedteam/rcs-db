@@ -52,11 +52,11 @@ class PositionResolver
 
         # check for cached values (to avoid too many external request)
         cached = get_cache params
-        #if cached
-        #  trace :debug, "Positioning: resolved from cache #{cached.inspect}"
-        #  StatsManager.instance.add gapi_cache: 1
-        #  return cached
-        #end
+        if cached
+          trace :debug, "Positioning: resolved from cache #{cached.inspect}"
+          StatsManager.instance.add gapi_cache: 1
+          return cached
+        end
 
         location = {}
 
