@@ -3,8 +3,6 @@ TODO:  9.2.x
 
   IMPLEMENT:
 
-    change scout name hashing for exploits using scout_version (alor & guido)
-
     force the NSI installer to accept only lowercase CN (deny localhost)
 
     fix the password reset procedure
@@ -13,29 +11,34 @@ TODO:  9.2.x
       --monitor (the monitor section with status for each component)
       --topology (the list of anon, with name, ip, good, status)
 
-TODO: 9.3.0
-
-    new protocol for anonymizers (alor & fabio) (in progress)
-      - NC will remain only for retro-comp and to upgrade to new anons
-      - anon -> collector status reporting
-      - collector -> anons configuration
+TODO: 9.3
 
     archive mode able to receive from multiple systems (topac)
+
+    ip sync list -> sync history with number of evidence and data size
+
+    change scout name hashing for exploits using scout_version (alor & guido)
 
     PUSH messages send the whole object (like dashboard)
 
     filter links by type (e.g. I want to see only skype links). We can change the format of the info attribute..
 
-    ip sync list -> sync history with number of evidence and data size
-
     Use Mongodb 2.6.x
+
+    Mongoid refactoring (only if mongoid 4 is stable)
+      - migrate to mongoid 4
+      - check if the connection pooling helps resolving the "get_stucked" problem
+
+TODO: 9.4
+
+    smarter filesystem pruning on new evidence
 
     text index may be used to index evidence's keywords (verify perf.)
 
-    Mongoid refactoring
-      - check if mongoid 4 is stable
-      - migrate to mongoid 4
-      - check if the connection pooling helps resolving the "get_stucked" problem
+    new protocol for anonymizers (alor & fabio) (in progress)
+      - NC will remain only for retro-comp and to upgrade to new anons
+      - anon -> collector status reporting
+      - collector -> anons configuration
 
     Social Network Analisys
       - automatic discovery (and thus suggestion) of groups (communities)
