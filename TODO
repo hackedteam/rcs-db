@@ -1,8 +1,6 @@
 
 TODO:  9.2.x
 
-  IMPLEMENT:
-
     force the NSI installer to accept only lowercase CN (deny localhost)
 
     fix the password reset procedure
@@ -11,14 +9,16 @@ TODO:  9.2.x
       --monitor (the monitor section with status for each component)
       --topology (the list of anon, with name, ip, good, status)
 
-TODO: 9.3
+TODO: 9.3  (end of may)
 
+  mandatory:
     archive mode able to receive from multiple systems (topac)
 
     ip sync list -> sync history with number of evidence and data size
 
     change scout name hashing for exploits using scout_version (alor & guido)
 
+  optional:
     PUSH messages send the whole object (like dashboard)
 
     filter links by type (e.g. I want to see only skype links). We can change the format of the info attribute..
