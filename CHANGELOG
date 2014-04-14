@@ -8,3 +8,9 @@ DB:
   - fixed google api enforcement limit
   - fixed the memory error on offline USB creation
   - fixed a race condition on upgrade+rename of an agent
+
+Installer:
+  - address cannot be "localhost" anymore
+  - address cannot contain an uppercase letter anymore
+  - errors while executing rcs-db-config with --add-shard are raised
+  - rcs-db-config with --add-shard is now executed only upon fresh shard installation
