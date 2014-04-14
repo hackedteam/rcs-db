@@ -1,10 +1,6 @@
 
 TODO:  9.2.x
 
-    force the NSI installer to accept only lowercase CN (deny localhost)
-
-    fix the password reset procedure
-
     rcs-db-status utility to report:
       --monitor (the monitor section with status for each component)
       --topology (the list of anon, with name, ip, good, status)
