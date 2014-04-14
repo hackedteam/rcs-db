@@ -13,16 +13,6 @@ describe RCS::Connector::Dispatcher do
 
   let(:subject) { described_class }
 
-  describe '#status' do
-
-    context 'when the thread pool is empty' do
-
-      it 'returns Idle' do
-        expect(subject.status).to eq("Idle")
-      end
-    end
-  end
-
   describe '#run' do
 
     before { subject.stub(:loop_and_wait).and_yield }

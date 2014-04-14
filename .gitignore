@@ -59,9 +59,9 @@ config/task_journal
 config/worker_stats
 
 # encrypted code
-lib/rcs-db-release
-lib/rcs-worker-release
-lib/rcs-ocr-release
+lib/rcs-*-release/*
+bin-release/*
+rgloader/*
 
 # evidences
 ./evidence

@@ -66,8 +66,14 @@ class AuthManager
       return nil
     end
 
+    if user.has_password?(pass) and user.password_expired?
+      Audit.log :actor => username, :action => 'login', :user_name => username, :desc => "User '#{username}' cannot access because password is expired"
+      trace :warn, "User [#{username}] EXPIRED PASSWORD"
+      raise "Password expired"
+    end
+
     # the account is valid
-    if user.verify_password(pass)
+    if user.has_password?(pass)
       auth_level = []
       # symbolize the privs array
       user[:privs].each do |p|

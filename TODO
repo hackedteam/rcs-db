@@ -1,26 +1,46 @@
 
 TODO:  9.2.x
 
-  TRY:
-    caching slow query. try to cache already jsonized list of items and similar
-
   IMPLEMENT:
-    PUSH messages send the whole object (like dashboard)
 
-    fix usb building zip creation (uses too much ram in f.read)
+    change scout name hashing for exploits using scout_version (alor & guido)
 
-    crypto-currency dissector
-      - support for multibit and armory wallets
-      - parse the blockchain to get the "from" of a transaction
+    force the NSI installer to accept only lowercase CN (deny localhost)
 
-    filter links by type (e.g. I want to see only skype links). We can change the format of the info attribute..
+    fix the password reset procedure
 
+    rcs-db-status utility to report:
+      --monitor (the monitor section with status for each component)
+      --topology (the list of anon, with name, ip, good, status)
 
 TODO: 9.3.0
 
-    archive mode able to receive from multiple systems
+    new protocol for anonymizers (alor & fabio) (in progress)
+      - NC will remain only for retro-comp and to upgrade to new anons
+      - anon -> collector status reporting
+      - collector -> anons configuration
 
-    automatic discovery (and thus suggestion) of groups (communities)
+    archive mode able to receive from multiple systems (topac)
+
+    PUSH messages send the whole object (like dashboard)
+
+    filter links by type (e.g. I want to see only skype links). We can change the format of the info attribute..
+
+    ip sync list -> sync history with number of evidence and data size
+
+    Use Mongodb 2.6.x
+
+    text index may be used to index evidence's keywords (verify perf.)
+
+    Mongoid refactoring
+      - check if mongoid 4 is stable
+      - migrate to mongoid 4
+      - check if the connection pooling helps resolving the "get_stucked" problem
+
+    Social Network Analisys
+      - automatic discovery (and thus suggestion) of groups (communities)
+      - calculate "centrality" on entities
+      - calculate "weight" on entities
 
 ======================================
 TODO FUTURE:

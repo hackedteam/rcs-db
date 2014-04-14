@@ -5,6 +5,6 @@ $LOAD_PATH.unshift File.join(File.dirname(__FILE__), '..', 'lib')
 Dir.chdir File.dirname(File.dirname(File.realpath(__FILE__)))
 
 require 'bundler/setup'
-require_relative '../lib/rcs-db'
+require_relative '../lib/rcs-worker'
 
-exit RCS::DB::QueueStats.run!(*ARGV)
+exit RCS::Worker::QueueStats.run!(*ARGV)

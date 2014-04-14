@@ -18,7 +18,7 @@
       <tbody>
 
       <% row[:data].each_pair do |k, v| %>
-        <% next if ['_grid', '_grid_size', 'md5', 'body', 'status'].include?(k) %>
+        <% next if ['_grid', '_grid_size', 'md5', 'body', 'status', 'thumb'].include?(k) %>
 
         <tr>
           <td class="inner"><%= k %></td>

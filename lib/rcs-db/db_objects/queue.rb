@@ -22,15 +22,17 @@ class NotificationQueue
   end
 
   def self.create_queues
-    db = RCS::DB::DB.instance.mongo_connection
-    collections = db.collections.map {|c| c.name}
+    db = RCS::DB::DB.instance
+    collections = db.collection_names
+
     # damned mongoid!! it does not support capped collection creation
     @@queues.each do |k|
       begin
         next if collections.include? k.collection.name
         k.mongo_session.command(create: k.collection.name, capped: true, size: k::SIZE, max: k::MAX)
-        coll = db.collection(k.collection.name)
-        coll.create_index('flag')
+        coll = db.session[k.collection.name]
+        coll.indexes.create(flag: 1)
+        k.create_indexes
       rescue Exception => e
         trace :error, "Cannot create queue #{k.name}: #{e.message}"
       end

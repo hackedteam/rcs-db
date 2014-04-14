@@ -13,7 +13,16 @@ class UserController < RESTController
     require_auth_level :admin
     require_auth_level :admin_users
 
-    users = User.all
+    users = User.all.map do |user|
+      user[:password_expired] = !!user.password_expired?
+
+      # Prevent these attributes to reach the client
+      user[:pass]             = nil
+      user[:pwd_changed_at]   = nil
+      user[:pwd_changed_cs]   = nil
+      user
+    end
+
     return ok(users)
   end
 
@@ -35,24 +44,22 @@ class UserController < RESTController
 
     return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :users
 
-    user = User.create(name: @params['name']) do |doc|
+    user = User.new
 
-      doc[:pass] = ''
+    user.name     = @params['name']
+    user.pass     = @params['pass']
+    user.desc     = @params['desc']
+    user.contact  = @params['contact']
+    user.privs    = @params['privs']
+    user.enabled  = @params['enabled']
+    user.locale   = @params['locale']
+    user.timezone = @params['timezone']
 
-      password = @params['pass']
-      doc[:pass] = doc.create_password(password) if password != '' and not password.nil?
+    user.save
 
-      doc[:desc] = @params['desc']
-      doc[:contact] = @params['contact']
-      doc[:privs] = @params['privs']
-      doc[:enabled] = @params['enabled']
-      doc[:locale] = @params['locale']
-      doc[:timezone] = @params['timezone']
-      doc[:dashboard_ids] = []
-      doc[:recent_ids] = []
+    user.errors.each do |attribute, message|
+      return conflict(message)
     end
-    
-    return conflict(user.errors[:name]) unless user.persisted?
 
     if @params.has_key? 'group_ids'
       @params['group_ids'].each do |gid|
@@ -66,27 +73,36 @@ class UserController < RESTController
 
     return ok(user)
   end
-  
+
   def update
     require_auth_level :admin, :sys, :tech, :view
-    
+
     mongoid_query do
       user = User.find(@params['_id'])
       @params.delete('_id')
-      
+
       # if non-admin you can modify only yourself
       unless @session[:level].include? :admin
         return not_found("User not found") if user._id != @session.user[:_id]
       end
-      
+
       # if enabling a user, check the license
-      if user[:enabled] == false and @params.include?('enabled') and @params['enabled'] == true
+      if user.enabled == false and @params.include?('enabled') and @params['enabled'] == true
         return conflict('LICENSE_LIMIT_REACHED') unless LicenseManager.instance.check :users
+      end
+
+      if @params['pass'] and user.has_password?(@params['pass'])
+        return conflict("SAME_PASSWORD")
+      end
+
+      result = user.update_attributes(@params)
+
+      user.errors.each do |attribute, message|
+        return conflict(message)
       end
 
       # if pass is modified, treat it separately
       if @params.has_key? 'pass'
-        @params['pass'] = user.create_password(@params['pass'])
         Audit.log :actor => @session.user[:name], :action => 'user.update', :user_name => user['name'], :desc => "Changed password for user '#{user['name']}'"
       else
         @params.each_pair do |key, value|
@@ -98,10 +114,8 @@ class UserController < RESTController
           end
         end
       end
-      
-      result = user.update_attributes(@params)
-      
-      return ok(user)
+
+      ok(user)
     end
   end
 
@@ -109,36 +123,22 @@ class UserController < RESTController
     require_auth_level :admin, :sys, :tech, :view
 
     mongoid_query do
-      case @params['section']
-        when 'operations'
-          item = ::Item.find(@params['id'])
-          case item._kind
-            when 'operation'
-              Audit.log :actor => @session.user[:name], :action => 'operation.view', :operation_name => item['name'], :desc => "Has accessed the operation: #{item.name}"
-            when 'target'
-              Audit.log :actor => @session.user[:name], :action => 'target,view', :target_name => item['name'], :desc => "Has accessed the target: #{item.name}"
-            when 'factory'
-              Audit.log :actor => @session.user[:name], :action => 'factory.view', :agent_name => item['name'], :desc => "Has accessed the factory: #{item.name}"
-            when 'agent'
-              Audit.log :actor => @session.user[:name], :action => 'agent.view', :agent_name => item['name'], :desc => "Has accessed the agent: #{item.name}"
-          end
-          recent = {section: 'operations', type: item._kind, id: item.id}
-        when 'intelligence'
-          case @params['type']
-            when 'entity'
-              entity = ::Entity.find(@params['id'])
-              Audit.log :actor => @session.user[:name], :action => 'entity.view', :entity_name => entity['name'], :desc => "Has accessed the entity: #{entity.name}"
-              recent = {section: 'intelligence', type: 'entity', id: entity.id}
-            when 'operation'
-              item = ::Item.find(@params['id'])
-              Audit.log :actor => @session.user[:name], :action => 'operation.view', :operation_name => item['name'], :desc => "Has accessed the operation: #{item.name}"
-              recent = {section: 'intelligence', type: 'operation', id: item.id}
-          end
+      section, type = @params['section'], @params['type']
+
+      if (section == 'operations') or (section == 'intelligence' and type == 'operation')
+        item = ::Item.find(@params['id'])
+        kind = item._kind
+        Audit.log :actor => @session.user[:name], :action => "#{kind}.view", :_item => item, :desc => "Has accessed the #{kind}: #{item.name}"
+
+        @session.user.add_recent(section: section, type: kind, id: item.id)
+      elsif (section == 'intelligence' and type == 'entity')
+        entity = ::Entity.find(@params['id'])
+        Audit.log :actor => @session.user[:name], :action => 'entity.view', :_entity => entity, :desc => "Has accessed the entity: #{entity.name}"
+
+        @session.user.add_recent(section: section, type: type, id: entity.id)
       end
 
-      @session.user.add_recent(recent)
-
-      return ok(@session.user)
+      ok(@session.user)
     end
   end
 

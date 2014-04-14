@@ -38,7 +38,7 @@ include RCS::Factory::Helpers
 # Definitions
 
 factory_define :user do |params|
-  attributes = {name: "testuser_#{rand(1E10)}", enabled: true, cookie: "cookie_#{rand(1E20)}"}
+  attributes = {name: "testuser_#{rand(1E10)}", enabled: true, cookie: "cookie_#{rand(1E20)}", pass: 'foo bar f00 BAR'}
   attributes.merge!(params)
 
   ::User.create!(attributes)
@@ -217,13 +217,12 @@ factory_define :raw_evidence do |params|
 
   raise("Agent and filename provided simultaneously") if agent and filename
 
-  filename = "#{agent.ident}:#{agent.instance}" if agent
-
-  raise("Invalid filename") if filename =~ /\ARCS\_\d+\:.+\z/
+  filename = "#{agent.ident}:#{agent.instance}" if agent and agent.ident and agent.instance
+  filename ||= "filename_#{rand(1E10)}"
 
   content = params[:content] || "Random evidence content #{rand(1E15)}"
 
-  RCS::Worker::GridFS.put(content, {filename: filename}, "evidence")
+  RCS::DB::GridFS.put(content, {filename: filename}, "evidence", :worker)
 end
 
 factory_define :evidence do |params|

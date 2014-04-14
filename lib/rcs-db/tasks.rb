@@ -198,8 +198,8 @@ module BuildTaskType
         end
         trace :info, "Task #{@_id} completed."
       rescue Exception => e
-        trace :error, "Cannot complete: #{e.message}"
-        trace :fatal, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
+        trace :error, "Cannot complete task: #{e.message}"
+        #trace :debug, "EXCEPTION: [#{e.class}] " << e.backtrace.join("\n")
         @description = "ERROR: #{e.message}"
         error
       ensure
@@ -333,28 +333,35 @@ end
 class TaskManager
   include Singleton
   include RCS::Tracer
-  
+
   def initialize
     @tasks = Hash.new
-    #Task.instance_eval { @generator_class = DummyTask }
   end
-  
-  def audit_new_task type, user_name, params
+
+  def audit_new_task(type, user_name, params)
     case type
       when 'build'
-        Audit.log :actor => user_name, :action => "build", :desc => "Created an installer for #{params['platform']}"
+        if params['factory']
+          item = Item.find(params['factory']['_id'])
+          Audit.log :actor => user_name, :action => "build", :desc => "Created an installer for #{params['platform']} from factory #{item.name}", :_item => item
+        else
+          Audit.log :actor => user_name, :action => "build", :desc => "Created an installer for #{params['platform']}"
+        end
       when 'audit'
         Audit.log :actor => user_name, :action => "audit.export", :desc => "Exported the audit log: #{params.inspect}"
       when 'evidence'
-        Audit.log :actor => user_name, :action => "evidence.export", :desc => "Exported evidence with filter #{params['filter']}"
+        item = Item.find(params["filter"]["agent"] || params["filter"]["target"])
+        Audit.log :actor => user_name, :action => "evidence.export", :desc => "Exported evidence with filter #{params['filter']}", :_item => item
       when 'injector'
         Audit.log :actor => user_name, :action => "injector.push", :desc => "Pushed the rules to a Network Injector"
       when 'topology'
         Audit.log :actor => user_name, :action => "topology", :desc => "Reconfigured the topology of the frontend"
       when 'entity'
-        Audit.log :actor => user_name, :action => "entity.export", :desc => "Exported some entities: #{params.inspect}"
+        item = Item.find(params["operation"])
+        Audit.log :actor => user_name, :action => "entity.export", :desc => "Exported some entities: #{params.inspect}", :_item => item
       when 'entitygraph'
-        Audit.log :actor => user_name, :action => "entitygraph.export", :desc => "Exported the entities graph: #{params.inspect}"
+        item = Item.find(params["operation"])
+        Audit.log :actor => user_name, :action => "entitygraph.export", :desc => "Exported the entities graph: #{params.inspect}", :_item => item
     end
   end
 
@@ -362,10 +369,10 @@ class TaskManager
     @tasks[user[:name]] ||= Hash.new
 
     params[:user] = user
-    task = eval("#{type.downcase.capitalize}Task").new type, file_name, params
+    task = eval("#{type.downcase.capitalize}Task").new(type, file_name, params)
     trace :info, "Creating task #{task._id} of type #{type} for user '#{user[:name]}', saving to '#{file_name}'"
 
-    audit_new_task(type, user[:name], params)
+    audit_new_task(type, user[:name], params.reject{ |k| k == :user })
 
     begin
       task.run

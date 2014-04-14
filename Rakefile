@@ -185,8 +185,8 @@ $modules = %w[db worker aggregator intelligence ocr translate connector money]
 desc "Remove the protected release code"
 task :unprotect do
   execute "Deleting the protected release folder" do
-    FileUtils.rm_f "bin/rcs-license-check"
-    FileUtils.rm_rf(Dir.pwd + '/lib/rgloader') if File.exist?(Dir.pwd + '/lib/rgloader')
+    FileUtils.rm_rf "bin-release"
+    FileUtils.rm_rf(Dir.pwd + '/rgloader') if File.exist?(Dir.pwd + '/rgloader')
 
     $modules.each do |name|
       FileUtils.rm_rf(Dir.pwd + "/lib/rcs-#{name}-release") if File.exist?(Dir.pwd + "/lib/rcs-#{name}-release")
@@ -216,22 +216,30 @@ task :protect do
 
   execute "Copying the rgloader" do
     RGPATH = RUBYENCPATH + '/Loaders'
-    Dir.mkdir(Dir.pwd + '/lib/rgloader') rescue puts("Folder lib/rgloader already exists.")
+    Dir.mkdir(Dir.pwd + '/rgloader') rescue puts("Folder /rgloader already exists.")
     files = Dir[RGPATH + '/**/**']
     # keep only the interesting files (2.0.x windows, macos)
     files.delete_if {|v| v.match(/bsd/i) or v.match(/linux/i)}
     files.keep_if {|v| v.match(/20/) or v.match(/loader.rb/) }
     files.each do |f|
-      FileUtils.cp(f, Dir.pwd + '/lib/rgloader')
+      FileUtils.cp(f, Dir.pwd + '/rgloader')
     end
   end
 
   execute "Encrypting code" do
 
-    # license check script used during the installation
-    FileUtils.rm_f "bin/rcs-license-check"
-    FileUtils.cp "lib/rcs-license-check.rb", "bin/rcs-license-check"
-    system "#{RUBYENC} --stop-on-error --encoding UTF-8 -b- --ruby 2.0.0 bin/rcs-license-check" || raise("Econding failed.")
+    # Copy the bin folder to bin-release and encode it
+    # Note: The rcs-license-check script is used during the installation
+    FileUtils.rm_rf("bin-release")
+    FileUtils.cp_r("bin", "bin-release")
+    FileUtils.cp("lib/rcs-license-check.rb", "bin-release/rcs-license-check")
+
+    Dir["bin-release/*"].each do |path|
+      extname = File.extname(path).downcase
+      is_ruby_script = (extname == ".rb") || (extname.empty? and File.read(path) =~ /\#\!.+ruby/i)
+      next unless is_ruby_script
+      system "#{RUBYENC} --stop-on-error --encoding UTF-8 -b- --ruby 2.0.0 #{path}" || raise("Econding failed.")
+    end
 
     # we have to change the current dir, otherwise rubyencoder
     # will recreate the lib/rcs-db structure under rcs-db-release

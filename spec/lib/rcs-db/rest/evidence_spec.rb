@@ -1,6 +1,6 @@
 require 'spec_helper'
-require_db 'db_layer'
-require_db 'evidence_manager'
+require_db 'rest'
+require_db 'rest/evidence'
 
 module RCS
 module DB
@@ -30,6 +30,88 @@ module DB
     # Make @params args of the constructor for test purposes.
     def subject(params = {})
       described_class.new.tap { |inst| inst.instance_variable_set('@params', params) }
+    end
+
+    describe '#create' do
+
+      let(:controller) { described_class.new }
+
+      context "when the content of @request is empty" do
+
+        before { controller.instance_variable_set('@request', {content: {}}) }
+
+        it 'calls conflict' do
+          controller.should_receive(:conflict)
+          controller.create
+        end
+      end
+
+      context "when the content of @request is not empty" do
+
+        before do
+          controller.instance_variable_set('@request', {content: {'content' => 'foo bar'}})
+        end
+
+        context "the @params are invalid" do
+
+          before do
+            controller.instance_variable_set('@params', {'_id' => 'foo:bar'})
+          end
+
+          it 'calls conflict' do
+            controller.should_receive(:conflict)
+            controller.create
+          end
+        end
+
+        context "the @params are valid" do
+
+          before do
+            controller.instance_variable_set('@params', {'_id' => 'RCS_0000000001:904649a757f155ed96c462032abb19ddcf02168f'})
+          end
+
+          it 'calls #send_evidence_to_local_worker' do
+            controller.should_receive(:send_evidence_to_local_worker)
+            controller.create
+          end
+
+          context "the sending process raise an error" do
+
+            before do
+              turn_off_tracer(raise_errors: false)
+              controller.stub(:send_evidence_to_local_worker).and_raise
+            end
+
+            it 'calls not_found' do
+              controller.should_receive(:not_found)
+              controller.create
+            end
+          end
+        end
+      end
+    end
+
+    describe '#send_evidence_to_local_worker' do
+
+      # Load the configuration to read the LISTEING_PORT
+      before do
+        RCS::DB::Config.instance.load_from_file
+      end
+
+      let(:controller) { described_class.new }
+
+      let(:ident) { 'RCS_0000000001' }
+
+      let(:instance) { '904649a757f155ed96c462032abb19ddcf02168f' }
+
+      let(:content) { 'payload' }
+
+      context "when the worker is down" do
+
+        it 'raises an error' do
+          expect { controller.send_evidence_to_local_worker(ident, instance, content) }.to raise_error(Errno::ECONNREFUSED)
+        end
+      end
     end
 
     describe '#index' do

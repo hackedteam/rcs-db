@@ -8,7 +8,7 @@ class CompactTask
   include RCS::Tracer
 
   def total
-    collections = DB.instance.mongo_connection.collection_names.keep_if {|c| c['logs.'].nil? and c['system.'].nil?}
+    collections = DB.instance.collection_names.keep_if {|c| c['logs.'].nil? and c['system.'].nil?}
     collections.size * Shard.count
   end
   
@@ -20,15 +20,12 @@ class CompactTask
 
       trace :info, "Compacting #{host} #{port}"
 
-      conn = DB.instance.new_mongo_connection(host, port.to_i)
-      db = conn.db('rcs')
-
-      db.collection_names.sort.keep_if {|c| c['logs.'].nil? and c['system.'].nil?  and c['_queue'].nil?}.each do |coll|
-        yield @description = "Compacting #{coll}"
-        db.command({compact: coll})
+      DB.instance.open(host, port, 'rcs') do |db|
+        db.collections.map(&:name).sort.keep_if {|c| c['logs.'].nil? and c['system.'].nil? and c['_queue'].nil?}.each do |coll|
+          yield @description = "Compacting #{coll}"
+          db.command(compact: coll)
+        end
       end
-
-      conn.close
     end
 
     @description = "DB compacted successfully"

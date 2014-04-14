@@ -27,7 +27,7 @@ class VersionController < RESTController
 
     return not_found() unless File.exist?(console_file)
 
-    trace :info, "Console update (#{@params['_id']}) sent to client"
+    trace :info, "Console update (#{@params['_id']}) sent to client #{@request[:peer]}"
 
     return stream_file(console_file)
   end

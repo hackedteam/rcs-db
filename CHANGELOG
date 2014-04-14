@@ -1,17 +1,9 @@
 
 
-Changelog for 9.2.0
+Changelog for 9.2.3
 
 Collector:
-  - the collector is now splitted into three different services: collector, carrier and controller
-  - new anti-fingerprint technique
-  - new anti-latency discovery technique
-  - no more decoy pages
 
 DB:
-  - intra operation correlation
-  - ability to group entities together
-  - support for cryptocurrencies transactions
-  - Mongodb updated to 2.4.9
-  - Ruby updated to 2.0.0-p451
-  - tika updated to version 1.4
+  - fixed google api enforcement limit
+  - fixed the memory error on offline USB creation

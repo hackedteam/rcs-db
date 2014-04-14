@@ -82,10 +82,10 @@ Section "Install Section" SecInstall
   File /r "lib\rcs-money-release\*.*"
 
   SetOutPath "$INSTDIR\DB\bin"
-  File /r "bin\rcs-money"
+  File /r "bin-release\rcs-money"
 
   SetOutPath "$INSTDIR\DB\bin"
-  File /r "bin\rcs-money.bat"
+  File /r "bin-release\rcs-money.bat"
 
   SetDetailsPrint "both"
   DetailPrint "Done"

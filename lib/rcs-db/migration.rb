@@ -21,11 +21,8 @@ module Migration
   def up_to(version)
     puts "migrating to #{version}"
 
-    run [:migrate_scout_to_level] if version >= '9.2.0'
-
     run [:recalculate_checksums, :drop_sessions, :remove_statuses]
-    run [:remove_ni_java_rules] if version >= '9.1.5'
-    run [:fill_up_handle_book_from_summary, :move_grid_evidence_to_worker_db] if version >= '9.2.0'
+    run [:fix_users_index_on_name, :add_pwd_changed_at_to_users, :fix_positioner_aggregates, :drop_rebuild_peer_book] if version >= '9.2.1'
 
     return 0
   end
@@ -63,47 +60,46 @@ module Migration
     return 0
   end
 
-  def move_grid_evidence_to_worker_db
-    collection_names = %w[grid.evidence.files grid.evidence.chunks]
-    go_on_and_migrate = true
-
-    collection_names.each do |name|
-      collection = Mongoid.default_session.collections.find { |coll| coll.name == name }
-
-      if collection.nil?
-        go_on_and_migrate = false
-      elsif collection.find.count.zero?
-        go_on_and_migrate = false
-        collection.drop rescue nil
-      end
-    end
-
-    return unless go_on_and_migrate
-
-    temp_folder = File.expand_path('../../../temp', __FILE__)
-    Dir.mkdir(temp_folder) unless Dir.exists?(temp_folder)
-    temp_folder = "#{temp_folder}/migration"
-    FileUtils.rm_rf(temp_folder)
-    Dir.mkdir(temp_folder)
-
-    collection_names.each do |name|
-      mongodump = RCS::DB::Config.mongo_exec_path('mongodump')
-      puts "Dump #{name}"
-      command = "#{mongodump} -h localhost -d \"rcs\" -c \"#{name}\" -o \"#{temp_folder}\""
-      `#{command}`
-    end
-
-    collection_names.each do |name|
-      mongorestore = RCS::DB::Config.mongo_exec_path('mongorestore')
-      puts "Restore #{name}"
-      command = "#{mongorestore} -h localhost -d \"rcs-worker\" -c \"#{name}\" \"#{temp_folder}/rcs/#{name}.bson\""
-      `#{command}`
+  def fix_positioner_aggregates
+    count = 0
+    Item.targets.each do |target|
+      Aggregate.target(target).collection.find({}).update_all('$unset' => {'_type' => 1})
+      print "\r%d aggregate collections migrated" % (count += 1)
     end
   end
 
-  def fill_up_handle_book_from_summary
-    puts "Rebuild handle book"
+  def drop_rebuild_peer_book
+    HandleBook.collection.drop
+    HandleBook.create_indexes
     HandleBook.rebuild
+  rescue Exception => ex
+    puts "ERROR: Unable to rebuild peer_book collection: #{ex.message}"
+  end
+
+  def fix_users_index_on_name
+    User.collection.indexes.drop
+    User.create_indexes
+  rescue Exception => error
+    if error.message =~ /duplicate key error/
+      User.index_options[{name: 1}] = {background: true}
+      User.create_indexes
+    else
+      raise
+    end
+  end
+
+  def add_pwd_changed_at_to_users
+    count = 0
+    changed_date = Time.at(Time.now.utc.to_i - (75 * 24 * 3600)).utc
+
+    User.each do |user|
+      next if user[:pwd_changed_at]
+
+      user.reset_pwd_changed_at(changed_date)
+      user.save
+
+      print "\r%d user migrated" % (count += 1)
+    end
   end
 
   def recalculate_checksums
@@ -113,16 +109,6 @@ module Migration
       item.cs = item.calculate_checksum
       item.save
       print "\r%d items migrated" % count
-    end
-  end
-
-  def mark_pre_83_as_bad
-    count = 0
-    ::Item.agents.each do |item|
-      count += 1
-      item.good = false if item.version < 2013031101
-      item.save
-      print "\r%d items checked" % count
     end
   end
 
@@ -148,44 +134,6 @@ module Migration
     end
   end
 
-  def reindex_evidences
-    count = 0
-    ::Item.targets.each do |target|
-      begin
-        klass = Evidence.target(target._id)
-        DB.instance.sync_indexes(klass)
-        print "\r%d evidences collection reindexed" % count += 1
-      rescue Exception => e
-        puts e.message
-      end
-    end
-  end
-
-  def remove_ni_java_rules
-    ::Injector.each do |ni|
-      ni.rules.each do |rule|
-        rule.destroy if rule.action.eql? 'INJECT-HTML-JAVA'
-      end
-    end
-  end
-
-  def migrate_scout_to_level
-    count = 0
-    ::Item.agents.each do |agent|
-      begin
-        agent.level = (agent[:scout] ? :scout : :elite)
-        agent.unset(:scout)
-        agent.save
-        print "\r%d agents migrated" % count += 1
-      rescue Exception => e
-        puts e.message
-      end
-    end
-    ::Item.factories.each do |factory|
-      factory.unset(:scout)
-    end
-  end
-
   def drop_sessions
     ::Session.destroy_all
   end
@@ -196,9 +144,9 @@ module Migration
 
   def cleanup_storage
     count = 0
-    db = DB.instance.mongo_connection
+    db = DB.instance
 
-    total_size =  db.stats['dataSize']
+    total_size =  db.db_stats['dataSize']
 
     collections = db.collection_names
     # keep only collection with _id in the name
@@ -232,13 +180,13 @@ module Migration
       puts
       puts target.name
 
-      pre_size = db[coll].stats['size']
+      pre_size = db.collection_stats(coll)['size'].to_i
       deleted_aid_evidence.each do |aid|
         count = Evidence.target(tid).where(aid: aid).count
         Evidence.target(tid).where(aid: aid).delete_all
         puts "#{count} evidence deleted"
       end
-      post_size = db[coll].stats['size']
+      post_size = db.collection_stats(coll)['size'].to_i
       target.restat
       target.get_parent.restat
       puts "#{(pre_size - post_size).to_s_bytes} cleaned up"
@@ -261,17 +209,17 @@ module Migration
       puts
       puts "#{target.name} (gridfs)"
 
-      pre_size = db["grid.#{tid}.files"].stats['size'] + db["grid.#{tid}.chunks"].stats['size']
+      pre_size = db.collection_stats("grid.#{tid}.files")['size'] + db.collection_stats("grid.#{tid}.chunks")['size']
       deleted_aid_grid.each do |aid|
         GridFS.delete_by_agent(aid, tid)
       end
-      post_size = db["grid.#{tid}.files"].stats['size'] + db["grid.#{tid}.chunks"].stats['size']
+      post_size = db.collection_stats("grid.#{tid}.files")['size'] + db.collection_stats("grid.#{tid}.chunks")['size']
       target.restat
       target.get_parent.restat
       puts "#{(pre_size - post_size).to_s_bytes} cleaned up"
     end
 
-    current_size = total_size - db.stats['dataSize']
+    current_size = total_size - db.db_stats['dataSize']
 
     puts "#{current_size.to_s_bytes} saved"
   end

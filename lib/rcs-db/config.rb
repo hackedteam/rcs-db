@@ -40,6 +40,8 @@ class Config
 
   attr_reader :global
 
+  $execution_directory ||= File.expand_path('../../../', __FILE__)
+
   def initialize
     @global = {}
   end
@@ -142,7 +144,7 @@ class Config
   def run(options)
 
     if options[:reset]
-      reset_admin options
+      reset_pass options
       return 0
     end
 
@@ -244,15 +246,34 @@ class Config
     return 0
   end
 
-  def reset_admin(options)
-    trace :info, "Resetting 'admin' password..."
+  def self.read_password(message: "Enter password: ")
+    require 'io/console'
 
-    http = Net::HTTP.new(options[:db_address] || '127.0.0.1', options[:db_port] || 443)
+    print(message)
+    password = STDIN.noecho(&:gets)
+    password = password[0..-2] if password.end_with?("\n")
+    puts
+
+    password
+  end
+
+  def reset_pass(options)
+    parts = options[:reset].split(':')
+    user, pass = parts[0], parts[1..-1].join(":")
+
+    if pass.empty?
+      pass = self.class.read_password(message: "Enter new password for user #{user.inspect}: ")
+    end
+
+    trace :info, "Resetting #{user.inspect} password..."
+
+    http = Net::HTTP.new(options[:db_address] || '127.0.0.1', options[:db_port] || 4444)
     http.use_ssl = true
+    http.open_timeout = 5
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
-    resp = http.request_post('/auth/reset', {pass: options[:reset]}.to_json, nil)
-    trace :info, resp.body
+    resp = http.request_post('/auth/reset', {user: user, pass: pass}.to_json, nil)
+    trace :info, "[#{resp.code}] #{resp.body}"
   end
 
   def add_shard(options)
@@ -646,7 +667,7 @@ class Config
       opts.on( '-P', '--db-port PORT', Integer, 'Connect to tcp/PORT on rcs-db' ) do |port|
         options[:db_port] = port
       end
-      opts.on( '-R', '--reset-admin PASS', 'Reset the password for user \'admin\'' ) do |pass|
+      opts.on( '-R', '--reset-pass USERNAME', 'Reset password of USERNAME' ) do |pass|
         options[:reset] = pass
       end
       opts.on( '-S', '--add-shard ADDRESS', 'Add ADDRESS as a db shard (sys account required)' ) do |shard|

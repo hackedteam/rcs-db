@@ -24,25 +24,35 @@ class WorkerBacklog
 
     # calculate the number and the size of all the evidece for each instance
     entries = {}
-    RCS::Worker::GridFS.get_distinct_filenames("evidence").each do |inst|
-      entries[inst] = {count: 0, size: 0}
-      RCS::Worker::GridFS.get_by_filename(inst, "evidence").each do |i|
-        entries[inst][:count] += 1
-        entries[inst][:size] += i["length"]
-      end
+
+    db = Mongoid.session(:worker)
+
+    pipeline = if options[:without_size]
+      [{'$group' => {'_id' => '$filename', 'count' => {'$sum' => 1}}}]
+    else
+      [{'$group' => {'_id' => '$filename', 'count' => {'$sum' => 1}, 'size' => {'$sum' => '$length'}}}]
+    end
+
+    db['grid.evidence.files'].aggregate(pipeline).each do |doc|
+      entries[doc['_id']] = doc.symbolize_keys.reject { |k| k == :_id }
     end
 
     # this will become an array
     entries = entries.sort_by {|k,v| k}
 
+    without_size = !!options[:without_size]
+
     # table definitions
-    table_width = 91
+    table_width = without_size ? 92 : 105
     table_line = '+' + '-' * table_width + '+'
 
+    puts "Options: #{options.inspect}" unless options.empty?
+    evidence_count = entries.inject(0) { |size, info| size += info[1][:count].to_i }
+    puts "There are #{evidence_count} evidence in queue\n"
+
     # print the table header
-    puts
     puts table_line
-    puts '|' + 'instance'.center(57) + '|' + 'platform'.center(12) + '|' + 'logs'.center(6) + '|' + 'size'.center(13) + '|'
+    puts table_row('instance', 'platform', 'logs', ('size' unless without_size))
     puts table_line
 
     entries.each do |entry|
@@ -54,13 +64,22 @@ class WorkerBacklog
       # in case the agent is not there anymore
       agent = {platform: 'DELETED'} unless agent
 
-      puts "| #{entry[0]} |#{agent[:platform].center(12)}|#{entry[1][:count].to_s.rjust(5)} | #{entry[1][:size].to_s_bytes.rjust(11)} |"
+      evidence_size = entry[1][:size].to_s_bytes unless without_size
+      puts table_row(entry[0], agent[:platform], entry[1][:count], evidence_size)
     end
 
     puts table_line
     puts
 
     return 0
+  end
+
+  def table_row(*values)
+    values.map!(&:to_s)
+    values.reject! { |v| v.size == 0 }
+    rows = [values[0].center(60), values[1].center(12), values[2].center(18)]
+    rows << values[3].center(12) if values[3]
+    "|#{rows.join('|')}|"
   end
 
   # executed from rcs-worker-queue
@@ -84,11 +103,7 @@ class WorkerBacklog
 
     optparse = OptionParser.new do |opts|
       opts.banner = "Usage: rcs-worker-queue [options] "
-
-      opts.on( '-h', '--help', 'Display this screen' ) do
-        puts opts
-        return 0
-      end
+      opts.on('--no-size', 'Do not calculate queue size') { options[:without_size] = true }
     end
 
     optparse.parse(argv)

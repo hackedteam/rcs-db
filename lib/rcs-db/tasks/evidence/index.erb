@@ -11,7 +11,7 @@
   <tbody>
 
     <% summary.each_pair do |date, nums| %>
-      <tr>
+      <tr data-date="<%= date %>">
         <td class="date">
           <a href="<%= date %>/index.html"><%= date %></a>
         </td>

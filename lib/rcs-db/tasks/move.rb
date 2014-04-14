@@ -38,7 +38,7 @@ class MoveagentTask
 
     Audit.log :actor => @params[:user][:name],
               :action => "#{@agent._kind}.move",
-              (@agent._kind + '_name').to_sym => @agent[:name],
+              :_item => @agent,
               :desc => "Moved #{@agent._kind} '#{@agent[:name]}' to #{@target[:name]}"
 
     if @agent._kind == 'agent'

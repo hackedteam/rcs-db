@@ -180,8 +180,8 @@ class PositionResolver
 
     def daily_limit_reset
       @@daily_requests = 0
-      now = Time.now.strftime("%d%Y%m")
-      File.open(RCS::DB::Config.instance.file('gapi'), "w") {|f| f.write now + "0"}
+      @@last_request = Time.now.strftime("%d%Y%m")
+      File.open(RCS::DB::Config.instance.file('gapi'), "w") {|f| f.write @@last_request + "0"}
     end
 
     def daily_limit_consume
@@ -194,7 +194,7 @@ class PositionResolver
     end
 
     def daily_limit_reached?
-      trace :debug, "request (#{@@daily_requests}/#{daily_limit})"
+      trace :info, "Google API request (#{@@daily_requests}/#{daily_limit})"
       @@daily_requests > daily_limit
     end
 

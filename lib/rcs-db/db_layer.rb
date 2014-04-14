@@ -1,19 +1,11 @@
-#
-# Layer for accessing the real DB
-#
+require 'mongoid'
+require 'rbconfig'
+require 'socket'
+require 'rcs-common/trace'
+require 'rcs-common/fixnum'
 
 require_relative 'audit'
 require_relative 'config'
-
-# from RCS::Common
-require 'rcs-common/trace'
-
-# system
-require 'mongo'
-require 'mongoid'
-require 'moped'
-require 'rbconfig'
-require 'socket'
 
 # require all the DB objects
 Dir[File.dirname(__FILE__) + '/db_objects/*.rb'].each do |file|
@@ -35,7 +27,7 @@ class DB
   end
 
   def change_mongo_profiler_level
-    result = Mongoid.default_session.command('$eval' => "db.getProfilingStatus()")
+    result = session.command('$eval' => "db.getProfilingStatus()")
     profiler_level = result['retval']['was']
 
     trace(:warn, "MongoDB profiler is active") unless profiler_level.zero?
@@ -45,115 +37,124 @@ class DB
 
     if new_level != profiler_level
       trace(:warn, "Changing mongoDB profiler level to #{new_level}")
-      Mongoid.default_session.command('$eval' => "db.setProfilingLevel(#{new_level})")
+      session.command('$eval' => "db.setProfilingLevel(#{new_level})")
     end
   rescue Exception => ex
     trace(:error, "Cannot enable mongoDB profiler: #{ex.message}")
   end
 
   def connect
-    begin
-      # we are standalone (no rails or rack)
-      ENV['MONGOID_ENV'] = 'yes'
+    ENV['MONGOID_ENV']       ||= 'production'
+    ENV['MONGOID_DATABASE']  ||= 'rcs'
+    ENV['MONGOID_HOST']      ||= Socket.gethostname
+    ENV['MONGOID_PORT']      ||= "27017"
 
-      # set the parameters for the mongoid.yaml
-      ENV['MONGOID_DATABASE'] = Config.instance.global['DB_NAME'] || 'rcs'
+    Mongoid.load!(Config.instance.file('mongoid.yaml'), :production)
 
-      ENV['MONGOID_HOST'] = Socket.gethostname
-      ENV['MONGOID_PORT'] = "27017"
+    trace :info, "Connected to MongoDB at #{ENV['MONGOID_HOST']}:#{ENV['MONGOID_PORT']}"
+    trace :info, "mongodb version is #{mongo_version}"
 
-      #Mongoid.logger = ::Logger.new($stdout)
-      #Moped.logger = ::Logger.new($stdout)
-
-      #Mongoid.logger.level = ::Logger::DEBUG
-      #Moped.logger.level = ::Logger::DEBUG
-
-      Mongoid.load!(Config.instance.file('mongoid.yaml'), :production)
-
-      trace :info, "Connected to MongoDB at #{ENV['MONGOID_HOST']}:#{ENV['MONGOID_PORT']} version #{mongo_version}"
-
-      # change_mongo_profiler_level
-    rescue Exception => e
-      trace :fatal, e
-      return false
-    end
-    return true
+    # change_mongo_profiler_level
+    true
+  rescue Exception => ex
+    trace(:fatal, ex)
+    false
   end
 
-  # pooled connection
-  def mongo_connection(db = ENV['MONGOID_DATABASE'], host = ENV['MONGOID_HOST'], port = ENV['MONGOID_PORT'].to_i)
-    time = Time.now
-    # instantiate a pool of connections that are thread-safe
-    # this handle will be returned to every thread requesting for a new connection
-    # also the pool is lazy (connect only on request)
-    @mongo_db ||= Mongo::MongoClient.new(host, port, pool_size: 25, pool_timeout: 30, connect: false)
-    delta = Time.now - time
-    trace :warn, "Opening mongo pool connection is too slow (%f)" % delta if delta > 0.5 and Config.instance.global['PERF']
-    return @mongo_db.db(db)
+  def collection_stats(collection)
+    session.command(collStats: collection_name(collection))
   end
 
-  # single connection
-  def new_mongo_connection(host = ENV['MONGOID_HOST'], port = ENV['MONGOID_PORT'].to_i)
-    time = Time.now
-    conn = Mongo::MongoClient.new(host, port)
-    delta = Time.now - time
-    trace :warn, "Opening new mongo connection is too slow (%f)" % delta if delta > 0.5 and Config.instance.global['PERF']
-    return conn
+  alias :collection_stat :collection_stats
+
+  def sharded_collection?(collection)
+    collection_stats(collection_name(collection))['sharded']
   end
 
-  def new_moped_connection(db = ENV['MONGOID_DATABASE'], host = ENV['MONGOID_HOST'], port = ENV['MONGOID_PORT'].to_i)
-    time = Time.now
-    # moped is not thread-safe.
-    # we need to instantiate a new connection for every thread that is using it
-    session = Moped::Session.new(["#{host}:#{port}"], {safe: true})
-    session.use db
-    delta = Time.now - time
-    trace :warn, "Opening new moped connection is too slow (%f)" % delta if delta > 0.5 and Config.instance.global['PERF']
-    return session
+  def collection_name(collection, ns: false)
+    name = collection.respond_to?(:name) ? collection.name : collection
+    ns ? "#{db_name}.#{name}" : name
+  end
+
+  def collection_names
+    session.collections.map(&:name)
+  end
+
+  def drop_collection(collection_name)
+    session[collection_name.to_s].drop
+  end
+
+  def db_stats
+    session.command(dbStats: 1)
+  end
+
+  # TODO: find out if the parts where this method is used are
+  # executed frequently, in that case, cache the new session
+  def open(host, port, db, options = {})
+    options[:max_retries] ||= 0
+    new_session = Moped::Session.new(["#{host}:#{port}"], options)
+    new_session.use(db)
+    yield(new_session)
+  rescue Moped::Errors::ConnectionFailure
+    options[:raise]==false ? nil : raise
+  ensure
+    new_session.disconnect
+  end
+
+  def session(database = nil)
+    default_session = Mongoid.default_session
+    database ? default_session.with(database: database) : default_session
   end
 
   def mongo_version
-    Mongoid.default_session.command(:buildinfo => 1)['version']
-  rescue
-    "unknown"
+    session.command(:buildinfo => 1)['version'] rescue "unknown"
   end
 
-  def config_collections
-    @config_collections ||= begin
-      mongo_connection unless @mongo_db
-      @mongo_db.db('config').collections.find { |c| c.name == 'collections' }
-    end
+  def sharded_collections
+    session('config')['collections']
+  end
+
+  def db_name
+    session.instance_variable_get('@current_database').name
+  end
+
+  def collection_exists?(collection)
+    collection_stats(collection)
+    true
+  rescue Moped::Errors::OperationFailure
+    false
+  end
+
+  alias :collection_exist? :collection_exists?
+
+  def indexes(collection)
+    namespace = collection_name(collection, ns: true)
+    session['system.indexes'].find(ns: namespace).map { |d| d['key'] }
   end
 
   def index_diff(mongoid_document_class)
-    collection = mongo_connection.collection(mongoid_document_class.collection.name)
+    collection = mongoid_document_class.collection
 
-    # Return if the collection does not exists
-    if !collection
+    if !collection_exists?(collection)
       diff = {missing_collection: true}
-      trace :debug, "Index diff of #{mongoid_document_class.collection.name}: #{diff.inspect}"
+      trace(:debug, "Index diff of #{mongoid_document_class.collection.name}: #{diff.inspect}")
       return diff
     end
 
     # Gets an array of hashes containing the index keys. Something
     # like [{"type"=>1}, {"type"=>1, "da"=>1, "aid"=>1}, {"da"=>1}].
     model_indexes_keys = mongoid_document_class.index_options.keys.map(&:stringify_keys)
-    actual_indexes_keys = collection.index_information.map { |p| p.last['key'] }
+    actual_indexes_keys = indexes(collection)
 
     # Exclude the automatic index on the "_id" attribute
     actual_indexes_keys.reject! { |hash| hash == {'_id' => 1} }
 
     # Exclude the automatic index on the shard key
-    namespace = "rcs.#{collection.name}"
-    model_shard_key = nil
-    actual_shard_key = nil
-    if mongoid_document_class.shard_key_fields.any?
-      model_shard_key = mongoid_document_class.shard_key_fields.inject({}) { |h, v| h[v.to_s] = 1; h } # somehing like {"type"=>1, "da"=>1, "aid"=>1}
-    end
-    if config_collections
-      config_coll = config_collections.find({'_id' => namespace}).first
-      actual_shard_key = config_coll['key'] if config_coll
-    end
+    namespace = collection_name(collection, ns: true)
+    coll = sharded_collections.find(_id: namespace).first
+    model_shard_key = mongoid_document_class.shard_key_fields.inject({}) { |h, v| h[v.to_s] = 1; h }
+    model_shard_key = nil if model_shard_key.empty?
+    actual_shard_key = coll['key'] if coll
 
     diff = {}
 
@@ -181,6 +182,13 @@ class DB
     diff
   end
 
+  # This method may trigger:
+  # - Creation of a new indexes
+  # - Deletion of existing indexes
+  # - Creation of a new shard key
+  #
+  # What is does not is:
+  # - Delete/change an existing shard key
   def sync_indexes(mongoid_document_class)
     diff = index_diff(mongoid_document_class)
     return unless diff
@@ -201,8 +209,7 @@ class DB
 
     if diff[:shard_key]
       trace :debug, "Enable sharding with key #{diff[:shard_key].inspect} on #{coll_name}"
-      coll = mongo_connection.collection(mongoid_document_class.collection.name)
-      result = RCS::DB::Shard.set_key(coll, diff[:shard_key])
+      result = RCS::DB::Shard.set_key(mongoid_document_class.collection, diff[:shard_key])
       trace :debug, result
     end
 
@@ -221,12 +228,10 @@ class DB
   # insert here the class to be indexed
   @@classes_to_be_indexed = [::Audit, ::User, ::Group, ::Alert, ::Status, ::Core, ::Collector,
                              ::Injector, ::Item, ::PublicDocument, ::EvidenceFilter, ::Entity,
-                             ::WatchedItem, ::ConnectorQueue, ::Signature, ::Session]
+                             ::WatchedItem, ::ConnectorQueue, ::Signature, ::Session, ::HandleBook]
 
   def create_indexes
-    db = DB.instance.mongo_connection
-
-    trace :info, "Database size is: " + db.stats['dataSize'].to_s_bytes
+    trace :info, "Database size is: " + db_stats['dataSize'].to_s_bytes
     trace :info, "Ensuring indexing on collections..."
 
     @@classes_to_be_indexed.each { |klass| sync_indexes(klass) }
@@ -246,33 +251,41 @@ class DB
     ::Audit.shard_collection
   end
 
+  # check that at least one admin is present and enabled
+  # if it does not exists, create it
   def ensure_admin
-    # check that at least one admin is present and enabled
-    # if it does not exists, create it
-    if User.where(enabled: true, privs: 'ADMIN').count == 0
-      trace :warn, "No ADMIN found, creating a default admin user..."
-      User.where(name: 'admin').delete_all
-      user = User.create(name: 'admin') do |u|
-        if File.exist? Config.instance.file('admin_pass')
-          pass = File.read(Config.instance.file('admin_pass'))
-          FileUtils.rm_rf Config.instance.file('admin_pass')
-        else
-          pass = 'adminp123'
-        end
-        u[:pass] = u.create_password(pass)
-        u[:enabled] = true
-        u[:desc] = 'Default admin user'
-        u[:privs] = ::User::PRIVS
-        u[:locale] = 'en_US'
-        u[:timezone] = 0
-      end
-      Audit.log :actor => '<system>', :action => 'user.create', :user_name => 'admin', :desc => "Created the default user 'admin'"
+    return if User.where(enabled: true, privs: 'ADMIN').count > 0
 
-      group = Group.create(name: "administrators", alert: false)
-      group.users << user
-      group.save
-      Audit.log :actor => '<system>', :action => 'group.create', :group_name => 'administrators', :desc => "Created the default group 'administrators'"
+    trace :warn, "No ADMIN found, creating a default admin user..."
+
+    User.where(name: 'admin').delete_all
+
+    if File.exist? Config.instance.file('admin_pass')
+      admin_pass = File.read(Config.instance.file('admin_pass'))
+      FileUtils.rm_rf Config.instance.file('admin_pass')
+    else
+      admin_pass = 'A1d2m3i4n5'
     end
+
+    user = User.new
+
+    user.name     = 'admin'
+    user.pass     = admin_pass
+    user.enabled  = true
+    user.desc     = 'Default admin user'
+    user.privs    = ::User::PRIVS
+    user.locale   = 'en_US'
+    user.timezone = 0
+
+    user.save!
+
+    Audit.log :actor => '<system>', :action => 'user.create', :user_name => 'admin', :desc => "Created the default user 'admin'"
+
+    group = Group.create(name: "administrators", alert: false)
+    group.users << user
+    group.save
+
+    Audit.log :actor => '<system>', :action => 'group.create', :group_name => 'administrators', :desc => "Created the default group 'administrators'"
   end
 
   def archive_mode?
@@ -351,17 +364,14 @@ class DB
 
     trace :info, "Log Rotation"
 
-    conn = new_mongo_connection(Config.instance.global['CN'], 27017)
-    conn.db('admin').command({ logRotate: 1 })
-    conn.close
+    host = "127.0.0.1"
+    db_name = 'admin'
 
-    conn = new_mongo_connection(Config.instance.global['CN'], 27018)
-    conn.db('admin').command({ logRotate: 1 })
-    conn.close
+    [27017, 27018, 27019].each do |port|
+      DB.instance.open(host, port, db_name) { |db| db.command(logRotate: 1) }
+    end
 
-    conn = new_mongo_connection(Config.instance.global['CN'], 27019)
-    conn.db('admin').command({ logRotate: 1 })
-    conn.close
+    true
   end
 
   def create_evidence_filters

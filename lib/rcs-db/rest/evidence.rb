@@ -3,15 +3,15 @@
 #
 
 require_relative '../db_layer'
-require_relative '../evidence_manager'
-require_relative '../evidence_dispatcher'
 require_relative '../position/resolver'
 require_relative '../connector_manager'
+require_relative '../evidence_dispatcher'
 
 # rcs-common
 require 'rcs-common/symbolize'
 require 'eventmachine'
 require 'em-http-request'
+
 
 # system
 require 'time'
@@ -22,31 +22,68 @@ module DB
 
 class EvidenceController < RESTController
 
+  SYNC_IDLE = 0
+  SYNC_IN_PROGRESS = 1
+  SYNC_TIMEOUTED = 2
+  SYNC_PROCESSING = 3
+  SYNC_GHOST = 4
+
   # this must be a POST request
   # the instance is passed as parameter to the uri
   # the content is passed as body of the request
+  #
+  # NOTE: this is used only by the evidence imported. It does not send the evidence
+  # to the right shard but always to the LOCAL rcs-worker service
   def create
     require_auth_level :server, :tech_import
 
-    return conflict if @request[:content]['content'].nil?
+    content = @request[:content]['content']
+
+    return conflict unless content
 
     ident = @params['_id'].slice(0..13)
-    instance = @params['_id'].slice(15..-1).downcase
+    instance = @params['_id'].slice(15..-1)
 
-    # save the evidence in the db
+    return conflict if ident.blank? or instance.blank?
+
+    instance.downcase!
+
     begin
-      id, shard_id = RCS::DB::EvidenceManager.instance.store_evidence ident, instance, @request[:content]['content']
-
-      # update the evidence statistics
-      StatsManager.instance.add evidence: 1, evidence_size: @request[:content]['content'].bytesize
+      send_evidence_to_local_worker(ident, instance, content)
     rescue Exception => e
-      trace :warn, "Cannot save evidence: #{e.message}"
+      trace :warn, "Cannot send evidence to local worker: #{e.message}"
       trace :fatal, e.backtrace.join("\n")
       return not_found
     end
-    
-    trace :info, "Evidence [#{ident}::#{instance}][#{id}] saved and dispatched to shard #{shard_id}"
-    return ok({:bytes => @request[:content]['content'].size})
+
+    ok(bytes: content.bytesize)
+  end
+
+  def send_evidence_to_local_worker(ident, instance, content)
+    trace :debug, "Sending evidence of agent #{ident}:#{instance} (#{content.bytesize} bytes) to the local worker"
+
+    host = 'localhost'
+    port = (Config.instance.global['LISTENING_PORT'] || 443) - 1
+
+    connection = Net::HTTP.new(host, port)
+    connection.use_ssl = true
+    connection.verify_mode = OpenSSL::SSL::VERIFY_NONE
+    connection.open_timeout = 5
+
+    request = Net::HTTP::Post.new("/evidence/#{ident}:#{instance}")
+    request.add_field 'Connection', 'keep-alive'
+    request.add_field 'Keep-Alive', '60'
+    request.body = content
+
+    resp = connection.request(request)
+    resp_code = resp.code.to_i
+
+    if resp_code == 200
+      processed_bytes = JSON.parse(resp.body)['bytes'].to_i
+      raise "Invalid bytesize" if processed_bytes != content.bytesize
+    else
+      raise "#{resp_code} error"
+    end
   end
 
   # used by the carrier to send evidence to the correct worker for an instance
@@ -85,7 +122,7 @@ class EvidenceController < RESTController
 
       @params.each_pair do |key, value|
         if evidence[key.to_s] != value
-          Audit.log :actor => @session.user[:name], :action => 'evidence.update', :desc => "Updated '#{key}' to '#{value}' for evidence #{evidence[:_id]}"
+          Audit.log :actor => @session.user[:name], :action => 'evidence.update', :desc => "Updated '#{key}' to '#{value}' for evidence #{evidence[:_id]}", :_item => target
         end
       end
 
@@ -131,7 +168,7 @@ class EvidenceController < RESTController
       agent.stat.grid_size -= evidence.data[:_grid_size] unless evidence.data[:_grid].nil?
       agent.save
 
-      Audit.log :actor => @session.user[:name], :action => 'evidence.destroy', :desc => "Deleted evidence #{evidence.type} #{evidence[:_id]}"
+      Audit.log :actor => @session.user[:name], :action => 'evidence.destroy', :desc => "Deleted evidence #{evidence.type} #{evidence[:_id]}", :_item => agent
 
       evidence.destroy
 
@@ -144,10 +181,17 @@ class EvidenceController < RESTController
 
     return conflict("Unable to delete") unless LicenseManager.instance.check :deletion
 
-    Audit.log :actor => @session.user[:name], :action => 'evidence.destroy',
-              :desc => "Deleted multi evidence from: #{Time.at(@params['from'])} to: #{Time.at(@params['to'])} relevance: #{@params['rel']} type: #{@params['type']}"
+    item_id = @params['agent'] || @params['target']
 
-    #trace :debug, "Deleting evidence: #{@params}"
+    item = Item.find(item_id) or
+      return not_found()
+
+    Audit.log :actor  => @session.user[:name],
+              :action => 'evidence.destroy',
+              :desc   => "Deleted multi evidence from: #{Time.at(@params['from'])} to: #{Time.at(@params['to'])} relevance: #{@params['rel']} type: #{@params['type']}",
+              :_item  => item
+
+    trace :debug, "destroy_all Deleting evidence: #{@params}"
 
     task = {name: "delete multi evidence",
             method: "::Evidence.offload_delete_evidence",
@@ -223,7 +267,7 @@ class EvidenceController < RESTController
 
     # update the stats
     agent.stat[:last_sync] = time
-    agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_IN_PROGRESS
+    agent.stat[:last_sync_status] = SYNC_IN_PROGRESS
     agent.stat[:source] = params['source']
     agent.stat[:user] = params['user']
     agent.stat[:device] = params['device']
@@ -331,7 +375,7 @@ class EvidenceController < RESTController
     trace :info, "#{agent[:name]} sync end [#{agent[:ident]}:#{agent[:instance]}]"
 
     agent.stat[:last_sync] = Time.now.getutc.to_i
-    agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_IDLE
+    agent.stat[:last_sync_status] = SYNC_IDLE
     agent.save
 
     target = agent.get_parent
@@ -362,7 +406,7 @@ class EvidenceController < RESTController
     trace :info, "#{agent[:name]} sync timeouted [#{agent[:ident]}:#{agent[:instance]}]"
 
     agent.stat[:last_sync] = Time.now.getutc.to_i
-    agent.stat[:last_sync_status] = RCS::DB::EvidenceManager::SYNC_TIMEOUTED
+    agent.stat[:last_sync_status] = SYNC_TIMEOUTED
     agent.save
   end
 

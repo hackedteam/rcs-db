@@ -8,7 +8,16 @@
 !include LogicLib.nsh
 !include WinVer.nsh
 !include StrFunc.nsh
+!include NSISpcre.nsh
 ${StrStr}
+
+!insertmacro REMatches
+!insertmacro RESetOption
+!insertmacro REClearOption
+
+!insertmacro un.REMatches
+!insertmacro un.RESetOption
+!insertmacro un.REClearOption
 
 ;--------------------------------
 ;General
@@ -174,10 +183,12 @@ Section "Update Section" SecUpdate
 
   ${If} $installMaster == ${BST_CHECKED}
     !cd '..'
+    SetDetailsPrint "textonly"
     SetOutPath "$INSTDIR\DB\bin"
-    File "bin\rcs-license-check"
-    File /r "lib\rgloader"
+    File /r "rgloader"
+    File "bin-release\rcs-license-check"
 
+    SetDetailsPrint "both"
     DetailPrint "Checking the license file.."
     CopyFiles /SILENT $masterLicense "$INSTDIR\DB\temp\rcs.lic"
 
@@ -185,13 +196,19 @@ Section "Update Section" SecUpdate
     StrCpy $0 1
     nsExec::ExecToLog "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-license-check -v 9.2 -l $INSTDIR\DB\temp\rcs.lic"
     Pop $0
+
+    SetDetailsPrint "textonly"
+
     ${If} $0 != 0
        MessageBox MB_OK|MB_ICONEXCLAMATION "The license file is invalid. Please restart the installation with the correct one."
+       RMDir /r "$INSTDIR\DB\bin\rgloader"
        Delete "$INSTDIR\DB\bin\rcs-license-check"
        Quit
     ${EndIf}
 
+    RMDir /r "$INSTDIR\DB\bin\rgloader"
     Delete "$INSTDIR\DB\bin\rcs-license-check"
+    SetDetailsPrint "both"
     !cd 'nsis'
   ${EndIf}
 
@@ -247,10 +264,11 @@ Section "Update Section" SecUpdate
   RMDir /r "$INSTDIR\DB\lib\rcs-connector-release"
   RMDir /r "$INSTDIR\DB\lib\rcs-aggregator-release"
   RMDir /r "$INSTDIR\DB\lib\rcs-intelligence-release"
-  RMDir /r "$INSTDIR\DB\lib\rgloader"
+  RMDir /r "$INSTDIR\DB\rgloader"
   RMDir /r "$INSTDIR\DB\bin"
   RMDir /r "$INSTDIR\Collector\bin"
   RMDir /r "$INSTDIR\Collector\lib"
+  RMDir /r "$INSTDIR\Collector\rgloader"
   DetailPrint "done"
 
   DetailPrint "Remove stats file.."
@@ -301,7 +319,7 @@ Section "Install Section" SecInstall
   
     !ifdef FULL_INSTALL
       ; fresh install
-      ;${If} $installUPGRADE != ${BST_CHECKED}
+      ${If} $installUPGRADE != ${BST_CHECKED}
         RMDir /r "$INSTDIR\Java"
         SetOutPath "$INSTDIR\Java"
         File /r "..\Java\*.*"
@@ -313,14 +331,17 @@ Section "Install Section" SecInstall
         RMDir /r "$INSTDIR\DB\mongodb\win"
         SetOutPath "$INSTDIR\DB\mongodb\win"
         File /r "mongodb\win\*.*"
-      ;${Else}
+      ${Else}
       ; Upgrade
       ; TODO: check if we need to install a new java/python/mongo version
-      ;${EndIf}
+      ${EndIf}
     !endif
-  
+
+    SetOutPath "$INSTDIR\DB"
+    File /r "rgloader"
+
     SetOutPath "$INSTDIR\DB\bin"
-    File /r "bin\*.*"
+    File /r "bin-release\*.*"
 
     SetOutPath "$INSTDIR\DB\lib"
     File "lib\rcs-db.rb"
@@ -328,7 +349,6 @@ Section "Install Section" SecInstall
     File "lib\rcs-connector.rb"
     File "lib\rcs-aggregator.rb"
     File "lib\rcs-intelligence.rb"
-    File /r "lib\rgloader"
  
     SetOutPath "$INSTDIR\DB\log"
     File /r "log\.keep"
@@ -369,7 +389,7 @@ Section "Install Section" SecInstall
     File "config\VERSION"
 
     ; TODO: remove this after 9.2!!!
-    File "config\mark_bad"
+    ;;File "config\mark_bad"
 
     SetOutPath "$INSTDIR\DB\config\certs"
     File "config\certs\windows.pfx"
@@ -715,16 +735,18 @@ Section "Install Section" SecInstall
     DetailPrint "Installing Collector files..."
     SetDetailsPrint "textonly"
     !cd 'Collector'
-  
+
+    SetOutPath "$INSTDIR\Collector"
+    File /r "rgloader"
+
     SetOutPath "$INSTDIR\Collector\bin"
-    File /r "bin\*.*"
-    
+    File /r "bin-release\*.*"
+
     SetOutPath "$INSTDIR\Collector\lib"
-    File /r "lib\rgloader"
     File "lib\rcs-collector.rb"
     File "lib\rcs-carrier.rb"
     File "lib\rcs-controller.rb"
-    
+
     SetOutPath "$INSTDIR\Collector\lib\rcs-collector-release"
     File /r "lib\rcs-collector-release\*.*"
 
@@ -956,7 +978,7 @@ SectionEnd
 
 Function .onInit
 
-	; check that 9.1.x is already installed
+	; check that 9.2.x is already installed
 	IfFileExists "$INSTDIR\DB\config\VERSION" isDB isCollector
   isDB:
 	  FileOpen $4 "$INSTDIR\DB\config\VERSION" r
@@ -968,9 +990,9 @@ Function .onInit
 	FileRead $4 $1
 	FileClose $4
 	${If} $1 != ""
-	   ${StrStr} $0 $1 "9.1"
+	   ${StrStr} $0 $1 "9.2"
 	   ${If} $0 == ""
-  	   MessageBox MB_OK "This version can only be installed on 9.1.x systems, you have $1"
+  	   MessageBox MB_OK "This version can only be installed on 9.2.x systems, you have $1"
   	   Quit
 	   ${EndIf}
 	${EndIf}
@@ -1003,6 +1025,8 @@ Function FuncUpgrade
   ; RCS is not installed
   IntCmp $R0 1 +2 0 0
     Abort
+
+  StrCpy $upgradeComponents ""
 
   ; check which components we have
   ReadRegDWORD $R0 HKLM "Software\HT\RCS" "collector"
@@ -1063,10 +1087,18 @@ FunctionEnd
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Function FuncInstallationType
-   ${If} $installUPGRADE == ${BST_CHECKED}
+  ${If} $installUPGRADE == ${BST_CHECKED}
+   Abort
+  ${EndIf}
+
+  ; check for developer machine
+  IfFileExists "C:\ALLINONE" isDevel isProduction
+  isProduction:
+    Push ${BST_CHECKED}
+    Pop $installDISTRIBUTED
     Abort
-   ${EndIf}
-   
+  isDevel:
+
   !insertmacro MUI_HEADER_TEXT "Installation Type" "Deployment Method"
 
   nsDialogs::Create /NOUNLOAD 1018
@@ -1154,13 +1186,44 @@ Function FuncSelectComponentsLeave
   ${NSD_GetState} $2 $installNetworkController
   ${NSD_GetState} $3 $installMaster
   ${NSD_GetState} $4 $installShard
-  
+
+  ${If} $installCollector != ${BST_CHECKED}
+  ${AndIf} $installNetworkController != ${BST_CHECKED}
+  ${AndIf} $installMaster != ${BST_CHECKED}
+  ${AndIf} $installShard != ${BST_CHECKED}
+    MessageBox MB_OK|MB_ICONSTOP "Select at least a component."
+    Abort
+  ${EndIf}
+
   ${If} $installMaster == ${BST_CHECKED}
   ${AndIf} $installShard == ${BST_CHECKED}
     MessageBox MB_OK|MB_ICONSTOP "The Master Node already includes the first Shard, please deselect it."
     Abort
   ${EndIf}
-  
+
+  ${If} $installMaster == ${BST_CHECKED}
+  ${AndIf} $installCollector == ${BST_CHECKED}
+    MessageBox MB_OK|MB_ICONSTOP "You cannot install the Master Node and the Collector on the same machine."
+    Abort
+  ${EndIf}
+
+  ${If} $installShard == ${BST_CHECKED}
+  ${AndIf} $installCollector == ${BST_CHECKED}
+    MessageBox MB_OK|MB_ICONSTOP "You cannot install a Shard and the Collector on the same machine."
+    Abort
+  ${EndIf}
+
+  ${If} $installMaster == ${BST_CHECKED}
+  ${AndIf} $installNetworkController == ${BST_CHECKED}
+    MessageBox MB_OK|MB_ICONSTOP "You must keep the Network Controller and the Collector on the same machine."
+    Abort
+  ${EndIf}
+
+  ${If} $installShard == ${BST_CHECKED}
+  ${AndIf} $installNetworkController == ${BST_CHECKED}
+    MessageBox MB_OK|MB_ICONSTOP "You must keep the Network Controller and the Collector on the same machine."
+    Abort
+  ${EndIf}
 FunctionEnd
 
 
@@ -1280,11 +1343,24 @@ Function FuncInsertCredentialsLeave
   StrCmp $adminpass "" 0 +3
     MessageBox MB_OK|MB_ICONSTOP "Password for user 'admin' cannot be empty"
     Abort
-    
+
+  ${If} $adminpass !~ "(?=.*[a-z]+)(?=.*[A-Z]+)(?=.*[0-9]+)(?=.{10,})"
+    MessageBox MB_OK|MB_ICONSTOP "Password must be at least 10 characters long and contain at least 1 number, 1 uppercase letter and 1 downcase letter."
+    Abort
+  ${EndIf}
+
+  ${RESetOption} "CASELESS"
+
+  ${If} $adminpass =~ "admin"
+    MessageBox MB_OK|MB_ICONSTOP "Password must not contain the word 'admin'."
+    Abort
+  ${EndIf}
+
+  ${REClearOption} "CASELESS"
+
   StrCmp $adminpass $adminpassconfirm +3 0
     MessageBox MB_OK|MB_ICONSTOP "Password does not match the confirmations"
     Abort
-    
 FunctionEnd
 
 

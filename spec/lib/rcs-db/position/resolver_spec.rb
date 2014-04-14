@@ -195,7 +195,7 @@ describe PositionResolver do
     accuracy = position['accuracy']
 
     lat.should be_within(0.00005).of(45.4765395)
-    lon.should be_within(0.00005).of(9.190857)
+    lon.should be_within(0.00005).of(9.1907281)
     accuracy.should be_within(10).of(52)
 
     position['address']['text'].should include "Via della Moscova"

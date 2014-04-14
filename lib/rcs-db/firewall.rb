@@ -33,7 +33,7 @@ module RCS
           break if !err
 
           if err and err != last_err
-            trace(:fatal, "#{err}. You must fix this on get this component work correcly.")
+            trace(:fatal, "#{err}. You must fix this to get this component work correcly.")
             last_err = err
           end
 
@@ -63,6 +63,11 @@ module RCS
           WinFirewall.del_rule(rule_name)
           port = (Config.instance.global['LISTENING_PORT'] || 443) + 1
           WinFirewall.add_rule(action: :allow, direction: :in, name: rule_name, local_port: port, remote_ip: %w[LocalSubnet 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16], protocol: :tcp)
+        end
+
+        {"#{RULE_PREFIX} Mongo Router" => 27017, "#{RULE_PREFIX} Mongo Shard" => 27018, "#{RULE_PREFIX} Mongo Config" => 27019}.each do |rule_name, port|
+          next if WinFirewall.has_rule?(rule_name)
+          WinFirewall.add_rule(action: :allow, direction: :in, name: rule_name, local_port: port, remote_ip: 'LocalSubnet', protocol: :tcp)
         end
       end
 

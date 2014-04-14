@@ -98,7 +98,7 @@ class BuildUSB < Build
       @outputs.keep_if {|x| x['winpe'] or x['installer'] or x['usb_bootable']}.each do |out|
         next unless File.file?(path(out))
         name = out.gsub("winpe/", '')
-        z.file.open(name, "wb") { |f| f.write File.open(path(out), 'rb') {|f| f.read} }
+        z.add(name, path(out))
       end
     end
 
