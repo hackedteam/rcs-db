@@ -267,7 +267,7 @@ class Config
 
     trace :info, "Resetting #{user.inspect} password..."
 
-    http = Net::HTTP.new(options[:db_address] || '127.0.0.1', options[:db_port] || 4444)
+    http = Net::HTTP.new('127.0.0.1', options[:db_port] || 443)
     http.use_ssl = true
     http.open_timeout = 5
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE
