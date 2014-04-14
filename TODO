@@ -5,7 +5,9 @@ TODO:  9.2.x
 
     change scout name hashing for exploits using scout_version (alor & guido)
 
-    force the NSI installer to accept only lowercase CN
+    force the NSI installer to accept only lowercase CN (deny localhost)
+
+    fix the password reset procedure
 
     rcs-db-status utility to report:
       --monitor (the monitor section with status for each component)
