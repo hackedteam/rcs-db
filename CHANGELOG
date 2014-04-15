@@ -9,6 +9,7 @@ DB:
   - fixed the memory error on offline USB creation
   - fixed a race condition on upgrade+rename of an agent
   - fixed default port used by rcs-db-config with --reset-pass
+  - fixed moving grid files when moving agents
 
 Installer:
   - address cannot be "localhost" anymore
