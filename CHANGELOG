@@ -10,9 +10,7 @@ DB:
   - fixed the memory error on offline USB creation
   - fixed a race condition on upgrade+rename of an agent
   - fixed password reset procedure (rcs-db-config --reset-pass)
-  - fixed default port used by rcs-db-config with --reset-pass
-  - fixed moving grid files when moving agents
-  - fixed access to target before it was loaded (move target)
+  - fixed moving grid files when moving agents or targets between operations
 
 Installer:
   - CN cannot be "localhost" anymore
