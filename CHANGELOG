@@ -15,5 +15,5 @@ DB:
 Installer:
   - CN cannot be "localhost" anymore
   - CN must be lowercase
-  - errors while executing rcs-db-config with --add-shard are now raised
+  - errors while executing rcs-db-config with --add-shard are now correctly reported
   - rcs-db-config with --add-shard is now executed only upon fresh shard installation
