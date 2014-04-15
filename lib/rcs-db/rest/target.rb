@@ -115,9 +115,9 @@ class TargetController < RESTController
       operation = ::Item.operations.find(@params['operation'])
       return bad_request('INVALID_OPERATION') if operation.nil?
 
-      src_operation = target.get_parent
-
       target = Item.targets.any_in(user_ids: [@session.user[:_id]]).find(@params['_id'])
+
+      src_operation = target.get_parent
 
       target.move_target(operation)
 

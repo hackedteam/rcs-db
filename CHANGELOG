@@ -10,6 +10,7 @@ DB:
   - fixed a race condition on upgrade+rename of an agent
   - fixed default port used by rcs-db-config with --reset-pass
   - fixed moving grid files when moving agents
+  - fixed access to target before it was loaded (move target)
 
 Installer:
   - address cannot be "localhost" anymore
