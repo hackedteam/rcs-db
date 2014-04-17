@@ -21,6 +21,7 @@ TODO: 9.3  (end of may)
 
     filter links by type (e.g. I want to see only skype links). We can change the format of the info attribute..
 
+    remove rerty upon connection failure in #mongoid_query
 
 TODO: 9.4
 
