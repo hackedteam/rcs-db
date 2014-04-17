@@ -3,6 +3,7 @@
 Changelog for 9.2.3
 
 Collector:
+  - fixed dns names resolving for windows firewall
 
 DB:
   - files opened/captured on removable drives now appears in the filesystem section
@@ -10,7 +11,7 @@ DB:
   - fixed the memory error on offline USB creation
   - fixed a race condition on upgrade+rename of an agent
   - fixed password reset procedure (rcs-db-config --reset-pass)
-  - fixed moving grid files when moving agents or targets between operations
+  - fixed a bug that could corrupt evidence when moving agents or targets between operations
 
 Installer:
   - CN cannot be "localhost" anymore

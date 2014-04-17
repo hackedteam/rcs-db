@@ -21,11 +21,6 @@ TODO: 9.3  (end of may)
 
     filter links by type (e.g. I want to see only skype links). We can change the format of the info attribute..
 
-    Use Mongodb 2.6.x
-
-    Mongoid refactoring (only if mongoid 4 is stable)
-      - migrate to mongoid 4
-      - check if the connection pooling helps resolving the "get_stucked" problem
 
 TODO: 9.4
 
@@ -43,6 +38,12 @@ TODO: 9.4
       - calculate "centrality" on entities
       - calculate "weight" on entities
       - read: http://arxiv.org/pdf/1404.1295v1.pdf
+
+    Use Mongodb 2.6.x
+
+    Mongoid refactoring (only if mongoid 4 is stable)
+      - migrate to mongoid 4
+      - check if the connection pooling helps resolving the "get_stucked" problem
 
 ======================================
 TODO FUTURE:
