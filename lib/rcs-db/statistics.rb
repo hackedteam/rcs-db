@@ -175,7 +175,7 @@ class StatsManager < Stats
     options = {}
 
     optparse = OptionParser.new do |opts|
-      opts.banner = "Usage: rcs-db-stats [options] [instance]"
+      opts.banner = "Usage: rcs-db-stats [options]"
 
       opts.on( '-p', '--purge', 'Purge all the stats and restart from ZERO' ) do
         options[:purge] = true

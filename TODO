@@ -1,10 +1,6 @@
 
 TODO:  9.2.x
 
-    rcs-db-status utility to report:
-      --monitor (the monitor section with status for each component)
-      --topology (the list of anon, with name, ip, good, status)
-
     support for -fp[0-9] versioning (strip it in the code, but show in the console)
 
 TODO: 9.3  (end of may)

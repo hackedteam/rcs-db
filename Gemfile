@@ -25,6 +25,7 @@ gem 'xml-simple'
 gem 'persistent_http'
 gem 'mongoid', ">= 3.0.0"
 gem 'rvincenty'
+gem 'colorize'
 
 gem 'ruby-opencv', "= 0.0.10"
 # Install the 2.4.4a version via homebrew, and then launch if your homebrew folder
