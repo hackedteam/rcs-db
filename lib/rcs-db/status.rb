@@ -96,7 +96,7 @@ class Status
     puts
 
     # reset upon request
-    monitor if options[:monitor]
+    monitor if options[:system]
     frontend if options[:frontend]
     backend if options[:backend]
 
@@ -119,8 +119,8 @@ class Status
     optparse = OptionParser.new do |opts|
       opts.banner = "Usage: rcs-db-status [options]"
 
-      opts.on( '-m', '--monitor', 'Show the status of all the components (like monitor in the console)' ) do
-        options[:monitor] = true
+      opts.on( '-s', '--system', 'Show the status of all the components (like monitor in the console)' ) do
+        options[:system] = true
       end
 
       opts.on( '-f', '--frontend', 'Show the frontend topology' ) do
