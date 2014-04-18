@@ -36,19 +36,22 @@ class Status
     return 'OK'.ljust(8).colorize(:green) if status == 0
     return 'WARN'.ljust(8).colorize(:yellow) if status == 1
     return 'ERROR'.ljust(8).colorize(:red) if status == 2
-    return 'UNKNOWN'
+    return 'UNKNOWN'.ljust(8)
   end
 
   def frontend
     collectors = ::Collector.where({type: 'local'}).to_a
     anons = ::Collector.where({type: 'remote'}).to_a
+    system_status = ::Status.all.to_a
 
     puts "Frontend topology:\n\n"
     collectors.each do |coll|
-      puts "\t#{coll.name} - #{coll.address} (#{coll.internal_address}) - #{coll.version}#{coll.good ? '' : '*'}"
+      status = system_status.select {|x| x[:type].eql? 'collector' and x[:address].eql? coll[:internal_address]}.first[:status].to_i rescue -1
+      puts "\t#{coll.name} - #{coll.address} (#{coll.internal_address}) - #{coll.version}#{coll.good ? '' : '*'} -- #{format_status(status)}"
       chain = parse_chain(coll, anons)
       chain.each do |anon|
-        puts "\t\t-> #{anon.name} - #{anon.address} - #{anon.version}"
+        status = system_status.select {|x| x[:type].eql? 'anonymizer' and x[:address].eql? anon[:address]}.first[:status].to_i rescue -1
+        puts "\t\t-> #{anon.name} - #{anon.address} - #{anon.version} -- #{format_status(status)}"
         anons.reject! {|x| x._id == anon._id}
       end
     end
@@ -56,7 +59,8 @@ class Status
     puts
     puts "Not linked:\n\n"
     anons.each do |anon|
-      puts "\t#{anon.name} - #{anon.address} - #{anon.version}"
+      status = system_status.select {|x| x[:type].eql? 'anonymizer' and x[:address].eql? anon[:address]}.first[:status].to_i rescue -1
+      puts "\t#{anon.name} - #{anon.address} - #{anon.version} -- #{format_status(status)}"
     end
   end
 
