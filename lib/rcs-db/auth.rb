@@ -20,7 +20,7 @@ class AuthManager
     # if we are in archive mode, no collector is allowed to login
 
     if LicenseManager.instance.check :archive
-      raise "Collector services cannot login on archive server"
+      return nil
     end
 
     trace :debug, "Server auth: #{username}, #{version}, #{type}, #{peer}"
