@@ -32,7 +32,7 @@ class MoveagentTask
     @agent.save
 
     # update the path in alerts and connectors
-    replace = {0 => @target.path[0], 1 => @target.path[1]}
+    replace = {0 => @target.path[0], 1 => @target.id}
     ::Connector.where(path: @agent.id).each { |c| c.update_path(replace) }
     ::Alert.where(path: @agent.id).each { |a| a.update_path(replace) }
 
