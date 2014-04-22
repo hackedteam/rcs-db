@@ -148,7 +148,7 @@ class Config
       return 0
     end
 
-    $version = File.read(file('VERSION'))
+    $version = File.read(file('VERSION')).strip.split('-').first
 
     # migration
     return Migration.up_to $version if options[:migrate]

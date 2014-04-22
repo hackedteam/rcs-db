@@ -14,6 +14,7 @@ DB:
   - fixed a bug that could corrupt evidence when moving agents or targets between operations
   - fixed a bug that prevent an "archive" server to store an evidence with attachments (e.g. screenshot)
   - fixed a bug that prevent the RCS Console to login into an "archive" server
+  - The VERSION file now accept an hotfix number within the version number (e.g. 9.2.3-hf4)
 
 Installer:
   - CN cannot be "localhost" anymore
