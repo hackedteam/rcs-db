@@ -17,18 +17,17 @@ class AuthManager
   end
 
   def auth_server(username, pass, version, type, peer)
-    # if we are in archive mode, no collector is allowed to login
-
-    if LicenseManager.instance.check :archive
-      return nil
-    end
-
     trace :debug, "Server auth: #{username}, #{version}, #{type}, #{peer}"
 
     server_sig = ::Signature.where({scope: 'server'}).first
 
     # the Collectors are authenticated only by the server signature
     if pass.eql? server_sig['value']
+
+      # if we are in archive mode, no collector is allowed to login
+      if LicenseManager.instance.check :archive
+        raise "Collector services cannot login on archive server"
+      end
 
       # take the external ip address from the username
       instance, address = username.split(':')
