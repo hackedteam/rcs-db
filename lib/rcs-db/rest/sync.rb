@@ -120,7 +120,7 @@ module RCS
           grid_attributes.symbolize_keys!
           content = grid_attributes.delete(:content)
 
-          grid_attributes[:_id] = ::BSON::ObjectId.from_string(grid_attributes[:_id].to_s)
+          grid_attributes[:_id] = Moped::BSON::ObjectId.from_string(grid_attributes[:_id].to_s)
 
           attributes['data']['_grid'] = RCS::DB::GridFS.put(content, grid_attributes, target_id)
         end
