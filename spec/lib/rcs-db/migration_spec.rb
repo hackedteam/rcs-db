@@ -55,6 +55,7 @@ module RCS
 
           before do
             User.any_instance.stub(:now).and_return(now)
+            RCS::DB::Config.instance.global['PASSWORDS_NEVER_EXPIRE'] = nil
           end
 
           context 'the pwd_changed_at attribute already exists' do
