@@ -27,7 +27,7 @@ gem 'mongoid', ">= 3.0.0"
 gem 'rvincenty'
 gem 'colorize'
 
-gem 'ruby-opencv', "= 0.0.10"
+gem 'ruby-opencv', "~> 0.0.10"
 # Install the 2.4.4a version via homebrew, and then launch if your homebrew folder
 # is not in the default location, lauch:
 # gem install ruby-opencv -v 0.0.10 -- --with-opencv-dir="/Users/username/.homebrew/Cellar/opencv/2.4.4a"
