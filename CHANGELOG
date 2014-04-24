@@ -16,6 +16,8 @@ DB:
   - fixed a bug that prevent the RCS Console to login into an "archive" server
   - The VERSION file now accept an hotfix number within the version number (e.g. 9.2.3-hf4)
   - fixed update of alert's (and connector) path when moving an agent from a target to another
+  - fixed a bug in rcs-db-export (this also affects the order in which evidence are added
+    to the zip file created using the "Export evidence" feature)
 
 Installer:
   - CN cannot be "localhost" anymore

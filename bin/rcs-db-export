@@ -167,7 +167,7 @@ module RCS::DB::MultiFileTaskType
       print "\rExporting #{percentage}%  \r"
     end
 
-    if @total > 0 and split?
+    if @total > 0 and split_enabled?
       replicate_style_folder
       replicate_index_html
     end
@@ -183,8 +183,8 @@ OptionParser.new do |parser|
   parser.banner = "Usage: #{$script_name} [options]\n"
   parser.banner << "Examples:"
   parser.banner << "\n\t#{$script_name} -u admin -d /tmp/expoted --target \"John Doe\""
-  parser.banner << "\n\t#{$script_name} -u admin -d /tmp/expoted --target \"John Doe\" --time_split 1M --from 2013-04-05"
-  parser.banner << "\n\t#{$script_name} -u admin -d /tmp/expoted --target \"John Doe\" --size_split 4000"
+  parser.banner << "\n\t#{$script_name} -u admin -d /tmp/expoted --target \"John Doe\" --time-split 1M --from 2013-04-05"
+  parser.banner << "\n\t#{$script_name} -u admin -d /tmp/expoted --target \"John Doe\" --size-split 4000"
   parser.banner << "\n\n"
 
   # Options
@@ -204,7 +204,7 @@ end.parse!
 
 module RCS
   module DB
-    I18n.enforce_available_locales = false
+    I18n.enforce_available_locales = false if defined?(I18n) and I18n.respond_to?(:enforce_available_locales)
 
     # Verify given $args
     raise("Destination path is missing") unless $args["options"]["base_path"]

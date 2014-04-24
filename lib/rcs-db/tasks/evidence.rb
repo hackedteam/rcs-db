@@ -149,7 +149,6 @@ module RCS
         first_element = true
         while cursor < total do
 
-          grid_dumps = []
           trace :info, "Exporting evidence: #{total - cursor} evidence to go..."
 
           evidence.limit(chunk).skip(cursor).each_with_index do |e, i|
@@ -202,24 +201,20 @@ module RCS
             if e[:data]['_grid'].nil?
               yield
             else
-              # add grid exports to queue
-              grid_dumps << {day: day, id: e[:data]['_grid'], file_name: dump_filename(day, e, opts[:target]), target: opts[:target]}
+              g = {day: day, id: e[:data]['_grid'], file_name: dump_filename(day, e, opts[:target]), target: opts[:target]}
+
+              begin
+                filename, file = dump_file(g[:day], g[:id], g[:file_name], g[:target])
+                yield('file', filename, {path: file})
+                FileUtils.rm_rf(file)
+              rescue Exception => e
+                trace :debug, "failed exporting file #{g[:id].inspect} to #{g[:file_name]}"
+              end
             end
 
             # update the stat of the summary
             summary[day][hour] +=  1
 
-          end
-
-          grid_dumps.each do |g|
-            begin
-              filename, file = dump_file(g[:day], g[:id], g[:file_name], g[:target])
-              yield 'file', filename, {path: file}
-              FileUtils.rm_rf(file)
-            rescue Exception => e
-              trace :debug, "failed exporting file #{g[:id].inspect} to #{g[:file_name]}"
-              next
-            end
           end
 
           cursor += chunk
