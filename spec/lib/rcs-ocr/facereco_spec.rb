@@ -51,6 +51,7 @@ module RCS
       end
 
       it 'should react correctly if the image does not exist' do
+        FaceRecognition.should_receive(:trace).with(:error, "Cannot process image: file does not exist or invalid format image.")
         found = FaceRecognition.detect(fixtures_path('faces/not_existant.jpg'))
         found.should eq({:face => false})
       end
