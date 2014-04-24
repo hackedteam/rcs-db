@@ -35,7 +35,8 @@ module RCS
           context 'when the user names are not unique' do
 
             before do
-              2.times { User.collection.insert(name: 'foo') }
+              User.with(safe: true).collection.drop
+              2.times { User.with(safe: true).collection.insert(name: 'foo') }
               described_class.fix_users_index_on_name
             end
 
