@@ -77,6 +77,7 @@ module Migration
   end
 
   def fix_users_index_on_name
+    index_options = User.index_options.dup
     User.collection.indexes.drop
     User.create_indexes
   rescue Exception => error
@@ -86,6 +87,8 @@ module Migration
     else
       raise
     end
+  ensure
+    User.index_options = index_options
   end
 
   def add_pwd_changed_at_to_users

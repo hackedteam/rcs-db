@@ -15,13 +15,14 @@ module RCS
 
         describe "#fix_users_index_on_name" do
 
-          before { User.collection.drop }
+          before do
+            User.collection.drop
+          end
 
           context 'when all the user names are unique' do
 
             before do
-              factory_create(:user)
-              factory_create(:user)
+              2.times { factory_create(:user) }
               User.create_indexes
               described_class.fix_users_index_on_name
             end
@@ -35,7 +36,6 @@ module RCS
           context 'when the user names are not unique' do
 
             before do
-              User.with(safe: true).collection.drop
               2.times { User.with(safe: true).collection.insert(name: 'foo') }
               described_class.fix_users_index_on_name
             end
