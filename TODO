@@ -9,7 +9,9 @@ TODO: 9.3  (end of may)
 
     ip sync list -> sync history with number of evidence and data size
 
-    change scout name hashing for exploits using scout_version (alor & guido)
+    optimize windows build creation
+      - vmprotect only on scout or soldier (it takes too much time to perform both)
+      - only build the needed one (elite, soldier, scout)
 
   optional:
     PUSH messages send the whole object (like dashboard)
