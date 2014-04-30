@@ -24,6 +24,10 @@ class Status
     end
   end
 
+  def purge
+    ::Status.destroy_all
+  end
+
   def format_component(component)
     component.name.ljust(25) +
         component.address.ljust(17) +
@@ -47,11 +51,11 @@ class Status
     puts "Frontend topology:\n\n"
     collectors.each do |coll|
       status = system_status.select {|x| x[:type].eql? 'collector' and x[:address].eql? coll[:internal_address]}.first[:status].to_i rescue -1
-      puts "\t#{coll.name} - #{coll.address} (#{coll.internal_address}) - #{coll.version}#{coll.good ? '' : '*'} -- #{format_status(status)}"
+      puts "\t'#{coll.name}' - #{coll.address} (#{coll.internal_address}) - #{coll.version}#{coll.good ? '' : '*'} -- #{format_status(status)}"
       chain = parse_chain(coll, anons)
       chain.each do |anon|
         status = system_status.select {|x| x[:type].eql? 'anonymizer' and x[:address].eql? anon[:address]}.first[:status].to_i rescue -1
-        puts "\t\t-> #{anon.name} - #{anon.address} - #{anon.version} -- #{format_status(status)}"
+        puts "\t\t-> '#{anon.name}' - #{anon.address} - #{anon.version}#{anon.good ? '' : '*'} -- #{format_status(status)}"
         anons.reject! {|x| x._id == anon._id}
       end
     end
@@ -60,7 +64,7 @@ class Status
     puts "Not linked:\n\n"
     anons.each do |anon|
       status = system_status.select {|x| x[:type].eql? 'anonymizer' and x[:address].eql? anon[:address]}.first[:status].to_i rescue -1
-      puts "\t#{anon.name} - #{anon.address} - #{anon.version} -- #{format_status(status)}"
+      puts "\t'#{anon.name}' - #{anon.address} - #{anon.version}#{anon.good ? '' : '*'} -- #{format_status(status)}"
     end
   end
 
@@ -77,6 +81,11 @@ class Status
     end
 
     return chain
+  end
+
+  def mark_bad(name)
+    ::Collector.where({name: name}).first.update_attributes({good: false})
+    puts "'#{name}' marked as bad"
   end
 
   def backend
@@ -99,7 +108,10 @@ class Status
 
     puts
 
-    # reset upon request
+    purge if options[:purge]
+    mark_bad(options[:mark_bad]) if options[:mark_bad]
+
+    # display the requested info
     monitor if options[:system]
     frontend if options[:frontend]
     backend if options[:backend]
@@ -123,18 +135,32 @@ class Status
     optparse = OptionParser.new do |opts|
       opts.banner = "Usage: rcs-db-status [options]"
 
+      opts.separator ""
+      opts.separator "System options:"
       opts.on( '-s', '--system', 'Show the status of all the components (like monitor in the console)' ) do
         options[:system] = true
       end
+      opts.on( '-p', '--purge', 'Delete all the entries from the system monitor' ) do
+        options[:purge] = true
+      end
 
+      opts.separator ""
+      opts.separator "Frontend options:"
       opts.on( '-f', '--frontend', 'Show the frontend topology' ) do
         options[:frontend] = true
       end
+      opts.on( '-m', '--mark-bad NAME', String, 'Mark a frontend component as \'bad\'' ) do |name|
+        options[:mark_bad] = name
+      end
 
+      opts.separator ""
+      opts.separator "Backend options:"
       opts.on( '-b', '--backend', 'Show the backend topology' ) do
         options[:backend] = true
       end
 
+      opts.separator ""
+      opts.separator "General options:"
       opts.on( '-h', '--help', 'Display this screen' ) do
         puts opts
         return 0
