@@ -43,6 +43,11 @@ class LicenseManager
   def load_from_db
     db = RCS::DB::DB.instance.session
     @limits = db['license'].find({}).first
+    raise "Cannot load license information from db, retrying in 5 seconds..." unless @limits
+  rescue Exception => e
+    trace :error, e.message
+    sleep 5
+    retry
   end
 
 end
