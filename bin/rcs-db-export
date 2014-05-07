@@ -274,6 +274,7 @@ module RCS
       agent = fetch_item_by_name.call("agent", $args["filter"]["agent"])
       target = agent.get_parent
       $args["filter"]["agent"] = agent.id
+      $args["filter"]["target"] = target.id
     end
 
     # Check if the current user can access the target
