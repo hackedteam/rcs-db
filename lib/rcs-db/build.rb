@@ -55,7 +55,7 @@ class Build
   end
 
   def load(params)
-    raise "Not all cores where loaded in the DB. Please check them." unless RCS::DB::Core.all_loaded?
+    raise "Some cores were not loaded in the DB. Please check them." unless RCS::DB::Core.all_loaded?
 
     core = ::Core.where({name: @platform}).first
     raise "Core for #{@platform} not found" if core.nil?

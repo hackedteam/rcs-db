@@ -15,13 +15,14 @@ module RCS
 
         describe "#fix_users_index_on_name" do
 
-          before { User.collection.drop }
+          before do
+            User.collection.drop
+          end
 
           context 'when all the user names are unique' do
 
             before do
-              factory_create(:user)
-              factory_create(:user)
+              2.times { factory_create(:user) }
               User.create_indexes
               described_class.fix_users_index_on_name
             end
@@ -35,7 +36,7 @@ module RCS
           context 'when the user names are not unique' do
 
             before do
-              2.times { User.collection.insert(name: 'foo') }
+              2.times { User.with(safe: true).collection.insert(name: 'foo') }
               described_class.fix_users_index_on_name
             end
 
@@ -55,6 +56,7 @@ module RCS
 
           before do
             User.any_instance.stub(:now).and_return(now)
+            RCS::DB::Config.instance.global['PASSWORDS_NEVER_EXPIRE'] = nil
           end
 
           context 'the pwd_changed_at attribute already exists' do

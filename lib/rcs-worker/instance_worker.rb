@@ -163,7 +163,7 @@ module RCS
         msgs.concat(error.backtrace) if error.backtrace.respond_to?(:concat)
 
         trace(:fatal, msgs.join("\n"))
-        exit!(1) # Die hard
+        exit!(1) # Die hard (will be restarted by windows service manager)
       rescue Exception => e
         trace :fatal, "[#{@agent_uid}] Unrecoverable error processing evidence #{raw_id}: #{e.class} #{e.message}"
         trace :fatal, "[#{@agent_uid}] EXCEPTION: " + e.backtrace.join("\n")

@@ -1,36 +1,47 @@
 
 TODO:  9.2.x
 
-  IMPLEMENT:
 
-    new protocol for anonymizers (alor & fabio)
-      - NC will remain only for retro-comp and to upgrade to new anons
-      - anon -> collector status reporting
-      - collector -> anons configuration
+TODO: 9.3  (end of may)
 
-    change scount name hashing for exploits
+  mandatory:
+    archive mode able to receive from multiple systems (topac)
 
+    ip sync list -> sync history with number of evidence and data size
+
+    optimize windows build creation
+      - vmprotect only on scout or soldier (it takes too much time to perform both)
+      - only build the needed one (elite, soldier, scout)
+
+  optional:
     PUSH messages send the whole object (like dashboard)
-
-    fix usb building zip creation (uses too much ram in f.read)
 
     filter links by type (e.g. I want to see only skype links). We can change the format of the info attribute..
 
-TODO: 9.3.0
+    remove rerty upon connection failure in #mongoid_query
 
-    archive mode able to receive from multiple systems
+TODO: 9.4
 
-    Use Mongodb 2.6.x
+    smarter filesystem pruning on new evidence
 
-    Mongoid refactoring
-      - check if mongoid 4 is stable
-      - migrate to mongoid 4
-      - check if the connection pooling helps resolving the "get_stucked" problem
+    text index may be used to index evidence's keywords (verify perf.)
+
+    new protocol for anonymizers (alor & fabio) (in progress)
+      - NC will remain only for retro-comp and to upgrade to new anons
+      - anon -> collector status reporting
+      - collector -> anons configuration
 
     Social Network Analisys
       - automatic discovery (and thus suggestion) of groups (communities)
       - calculate "centrality" on entities
       - calculate "weight" on entities
+      - read: http://arxiv.org/pdf/1404.1295v1.pdf
+
+    Use Mongodb 2.6.x
+
+    Mongoid refactoring (only if mongoid 4 is stable)
+      - migrate to mongoid 4
+      - check if the connection pooling helps resolving the "get_stucked" problem
 
 ======================================
 TODO FUTURE:

@@ -1,0 +1,68 @@
+#!/usr/bin/env ruby
+
+def to_s_bytes(value)
+  values = {2**40 => 'TiB', 2**30 => 'GiB', 2**20 => 'MiB', 2**10 => 'KiB'}
+  values.each_pair do |k, v|
+    if value >= k
+      return (value.to_f / k).round(2).to_s + ' ' + v
+    end
+  end
+  value.to_s + ' B'
+end
+
+def wait_process(name)
+  loop do
+    list = `ps a | grep ruby`
+
+    list.split("\n").each do |line|
+      line.strip!
+
+      if line =~ /#{name}/i and !line.include?(File.basename(__FILE__))
+        return line.strip.split.first.to_i
+      end
+    end
+
+    sleep 0.01
+  end
+end
+
+def track_mem(pid, echo: true)
+  values = []
+
+  loop do
+    value = `ps -o rss -p #{pid}`.strip.split.last.to_i * 1024
+    break if value == 0
+
+    values << value
+
+    puts [pid, Time.now, to_s_bytes(value)].map { |s| s.to_s.ljust(30) }.join(" | ") if echo
+
+    sleep 0.01
+  end
+
+  values
+end
+
+def dump_mem_values(values)
+  name = File.basename(__FILE__).gsub('.rb', '.txt')
+
+  File.open(name, 'wb') do |file|
+    values.each { |num| file.write("#{num}\n") }
+  end
+end
+
+pname = ARGV[0]
+
+if pname.to_s.empty?
+  puts "Usage: trackmem RUBY_SCRIPT_NAME"
+  exit
+end
+
+puts "Waiting for #{pname.inspect} to start..."
+pid = wait_process(pname)
+
+puts "Process stared with pid #{pid}"
+values = track_mem(pid)
+
+puts "Dumping mem values..."
+dump_mem_values(values)

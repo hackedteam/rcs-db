@@ -1,7 +1,7 @@
 source "http://rubygems.org"
 # Add dependencies required to use your gem here.
 
-gem "rcs-common", ">= 9.2.0", :path => "../rcs-common"
+gem "rcs-common", ">= 9.2.3", :path => "../rcs-common"
 
 gem 'em-http-request', "=1.0.3" # > 1.0.3 version does not work under Windows
 gem 'em-websocket'
@@ -25,8 +25,9 @@ gem 'xml-simple'
 gem 'persistent_http'
 gem 'mongoid', ">= 3.0.0"
 gem 'rvincenty'
+gem 'colorize'
 
-gem 'ruby-opencv', "= 0.0.10"
+gem 'ruby-opencv', "~> 0.0.10"
 # Install the 2.4.4a version via homebrew, and then launch if your homebrew folder
 # is not in the default location, lauch:
 # gem install ruby-opencv -v 0.0.10 -- --with-opencv-dir="/Users/username/.homebrew/Cellar/opencv/2.4.4a"

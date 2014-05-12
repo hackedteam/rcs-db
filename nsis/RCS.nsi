@@ -712,9 +712,21 @@ Section "Install Section" SecInstall
     SimpleSC::StartService "RCSMasterRouter" "" 30
     Sleep 5000
 
-    ; write the config yaml
-    DetailPrint "Updating the shard configuration..."
-    nsExec::Exec  "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config -u admin -p $adminpass -d $masterAddress --add-shard $localAddress"
+    ${If} $installUPGRADE != ${BST_CHECKED}
+      DetailPrint "Updating the shard configuration..."
+
+      StrCpy $0 1
+      ${Do}
+        nsExec::ExecToLog "$INSTDIR\Ruby\bin\ruby.exe $INSTDIR\DB\bin\rcs-db-config -u admin -p $adminpass -d $masterAddress --add-shard $localAddress"
+        Pop $0
+        ${If} $0 != 0
+           MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "Unable to add this shard. Check your configuration and connectivity." IDRETRY addshardretry IDCANCEL addshardquit
+           addshardquit:
+              Quit
+           addshardretry:
+        ${EndIf}
+      ${LoopUntil} $0 == 0
+    ${EndIf}
 
     DetailPrint "Starting RCS Worker..."
     SimpleSC::StartService "RCSWorker" "" 30
@@ -1026,6 +1038,8 @@ Function FuncUpgrade
   IntCmp $R0 1 +2 0 0
     Abort
 
+  StrCpy $upgradeComponents ""
+
   ; check which components we have
   ReadRegDWORD $R0 HKLM "Software\HT\RCS" "collector"
   IntCmp $R0 1 0 +4 +4
@@ -1255,12 +1269,20 @@ Function FuncCertificateLeave
   StrCmp $masterCN "" 0 +3
     MessageBox MB_OK|MB_ICONSTOP "Certificate CN cannot be empty"
     Abort
-    
+
   ${StrFilter} $masterCN "12" "-." "" $0
   StrCmp $0 $masterCN +3 0
     MessageBox MB_OK|MB_ICONSTOP "Certificate CN can only contain alphanumeric characters, hyphens and dots"
     Abort
-    
+
+  StrCmp $masterCN "localhost" 0 +3
+    MessageBox MB_OK|MB_ICONSTOP "Certificate CN cannot be 'localhost'"
+    Abort
+
+  ${If} $masterCN =~ "[A-Z]+"
+    MessageBox MB_OK|MB_ICONSTOP "Certificate CN cannot contain uppercase letters"
+    Abort
+  ${EndIf}
 FunctionEnd
 
 
@@ -1400,6 +1422,28 @@ Function FuncInsertAddressLeave
   StrCmp $masterAddress "" 0 +3
     MessageBox MB_OK|MB_ICONSTOP "Address for Master Node cannot be empty"
     Abort
+
+  StrCmp $localAddress "" 0 +3
+    MessageBox MB_OK|MB_ICONSTOP "Address of this machine cannot be empty"
+    Abort
+
+  StrCmp $masterAddress "localhost" 0 +3
+    MessageBox MB_OK|MB_ICONSTOP "Address for Master Node cannot be 'localhost'"
+    Abort
+
+  StrCmp $localAddress "localhost" 0 +3
+    MessageBox MB_OK|MB_ICONSTOP "Address of this machine cannot be 'localhost'"
+    Abort
+
+  ${If} $masterAddress =~ "[A-Z]+"
+    MessageBox MB_OK|MB_ICONSTOP "Address for Master Node cannot contain uppercase letters"
+    Abort
+  ${EndIf}
+
+  ${If} $localAddress =~ "[A-Z]+"
+    MessageBox MB_OK|MB_ICONSTOP "Address of this machine cannot contain uppercase letters"
+    Abort
+  ${EndIf}
 FunctionEnd
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

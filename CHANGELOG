@@ -1,8 +1,26 @@
 
 
-Changelog for 9.2.2
+Changelog for 9.2.3
 
 Collector:
+  - fixed dns names resolving for windows firewall
 
 DB:
-  - rcs-db-export utility to export data via commandline (supports autosplit)
+  - files opened/captured on removable drives now appears in the filesystem section
+  - fixed google api enforcement limit
+  - fixed the memory error on offline USB creation
+  - fixed a race condition on upgrade+rename of an agent
+  - fixed password reset procedure (rcs-db-config --reset-pass)
+  - fixed a bug that could corrupt evidence when moving agents or targets between operations
+  - fixed a bug that prevent an "archive" server to store an evidence with attachments (e.g. screenshot)
+  - fixed a bug that prevent the RCS Console to login into an "archive" server
+  - The VERSION file now accept an hotfix number within the version number (e.g. 9.2.3-hf4)
+  - fixed update of alert's (and connector) path when moving an agent from a target to another
+  - fixed a bug in rcs-db-export (this also affects the order in which evidence are added
+    to the zip file created using the "Export evidence" feature)
+
+Installer:
+  - CN cannot be "localhost" anymore
+  - CN must be lowercase
+  - errors while executing rcs-db-config with --add-shard are now correctly reported
+  - rcs-db-config with --add-shard is now executed only upon fresh shard installation

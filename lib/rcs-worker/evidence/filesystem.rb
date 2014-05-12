@@ -10,6 +10,10 @@ module FilesystemProcessing
     :filesystem
   end
 
+  def default_keyword_index
+
+  end
+
   def process
 
     if self[:data][:attr] == FilesystemEvidence::FILESYSTEM_IS_FILE

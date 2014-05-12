@@ -48,7 +48,7 @@ module RCS::Worker::InstanceWorkerMng
     msgs.concat(error.backtrace) if error.backtrace.respond_to?(:concat)
 
     trace(:fatal, msgs.join("\n"))
-    exit!(1) # Die hard
+    exit!(1) # Die hard (will be restarted by windows service manager)
   end
 
   def remove_dead_worker_threads

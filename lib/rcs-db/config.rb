@@ -148,7 +148,7 @@ class Config
       return 0
     end
 
-    $version = File.read(file('VERSION'))
+    $version = File.read(file('VERSION')).strip.split('-').first
 
     # migration
     return Migration.up_to $version if options[:migrate]
@@ -267,7 +267,7 @@ class Config
 
     trace :info, "Resetting #{user.inspect} password..."
 
-    http = Net::HTTP.new(options[:db_address] || '127.0.0.1', options[:db_port] || 4444)
+    http = Net::HTTP.new('127.0.0.1', options[:db_port] || 443)
     http.use_ssl = true
     http.open_timeout = 5
     http.verify_mode = OpenSSL::SSL::VERIFY_NONE

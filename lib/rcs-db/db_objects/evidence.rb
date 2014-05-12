@@ -397,12 +397,11 @@ class Evidence
 
         # move the binary content
         if old_ev.data['_grid']
-          begin
-            bin = RCS::DB::GridFS.get(old_ev.data['_grid'], old_target[:_id].to_s)
-            new_ev.data['_grid'] = RCS::DB::GridFS.put(bin, {filename: agent[:_id].to_s}, target[:_id].to_s) unless bin.nil?
+          bin = RCS::DB::GridFS.get(old_ev.data['_grid'], old_target[:_id].to_s)
+
+          if bin
+            new_ev.data['_grid'] = RCS::DB::GridFS.put(bin.read, {filename: agent[:_id].to_s}, target[:_id].to_s)
             new_ev.data['_grid_size'] = old_ev.data['_grid_size']
-          rescue Exception => e
-            trace :error, "Cannot get id #{old_target[:_id].to_s}:#{old_ev.data['_grid']} from grid: #{e.class} #{e.message}"
           end
         end
 

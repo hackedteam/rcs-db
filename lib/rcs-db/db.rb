@@ -11,6 +11,7 @@ require_relative 'statistics'
 require_relative 'backup'
 require_relative 'sessions'
 require_relative 'firewall'
+require_relative 'status'
 
 # from RCS::Common
 require 'rcs-common/trace'

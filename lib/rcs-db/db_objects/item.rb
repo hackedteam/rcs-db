@@ -436,6 +436,7 @@ class Item
 
     build.clean
 
+    self.reload
     self.upgradable = true
     self.save
   end
@@ -460,6 +461,7 @@ class Item
 
     build.clean
 
+    self.reload
     self.upgradable = true
     self.save
   end
@@ -488,6 +490,7 @@ class Item
 
     build.clean
 
+    self.reload
     self.upgradable = true
     self.save
   end

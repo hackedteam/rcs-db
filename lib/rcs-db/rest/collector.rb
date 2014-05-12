@@ -226,6 +226,15 @@ class CollectorController < RESTController
     return ok(File.read(RCS::DB::Config.instance.file('relay_server')).gsub("\n", ''))
   end
 
+  def anon_cookies
+    require_auth_level :server
+
+    mongoid_query do
+      cookies = Collector.remote.all.only(:cookie)
+      return ok(cookies)
+    end
+  end
+
 end
 
 end #DB::

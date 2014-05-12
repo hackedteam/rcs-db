@@ -55,8 +55,12 @@ module RCS
         trace :fatal, "Cannot perform shard check: #{e.message}"
       end
 
+      def status
+        RCS::DB::Core.all_loaded? ? 'OK' : 'ERROR'
+      end
+
       def message
-        "#{SessionManager.instance.all.size} connections..."
+        RCS::DB::Core.all_loaded? ? "#{SessionManager.instance.all.size} connections..." : "Some cores were not loaded in the DB. Please check them..."
       end
     end
   end
