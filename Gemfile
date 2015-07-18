@@ -32,7 +32,7 @@ gem 'ruby-opencv', "~> 0.0.10"
 # is not in the default location, lauch:
 # gem install ruby-opencv -v 0.0.10 -- --with-opencv-dir="/Users/username/.homebrew/Cellar/opencv/2.4.4a"
 # check this out: http://stackoverflow.com/questions/3987683/homebrew-install-specific-version-of-formula
-
+gem 'tuple', :git => 'https://github.com/topac/tuple.git'
 gem 'sbdb'
 # needs some love to compile bdb and tuple under windows
 # see scripts/coins/INSTALL
